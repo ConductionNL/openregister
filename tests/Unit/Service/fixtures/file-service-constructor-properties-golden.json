@@ -1,0 +1,23 @@
+{
+    "logger": "logger",
+    "rootFolder": "rootFolder",
+    "shareUrls": "shareUrls",
+    "userSession": "userSession",
+    "fileValidationHandler": "fileValidHandler",
+    "folderManagementHandler": "folderMgmtHandler",
+    "fileOwnershipHandler": "fileOwnershipHandler",
+    "fileSharingHandler": "fileSharingHandler",
+    "createFileHandler": "createFileHandler",
+    "readFileHandler": "readFileHandler",
+    "updateFileHandler": "updateFileHandler",
+    "deleteFileHandler": "deleteFileHandler",
+    "taggingHandler": "taggingHandler",
+    "fileFormattingHandler": "fileFormatHandler",
+    "documentProcessingHandler": "docProcHandler",
+    "filePublishingHandler": "filePubHandler",
+    "fileVersioningHandler": "fileVerHandler",
+    "fileLockHandler": "fileLockHandler",
+    "fileBatchHandler": "fileBatchHandler",
+    "filePreviewHandler": "filePreviewHandler",
+    "fileAuditHandler": "fileAuditHandler"
+}

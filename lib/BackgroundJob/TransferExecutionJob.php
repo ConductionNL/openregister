@@ -36,6 +36,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\Support\TransferExecutionPlatform;
+use OCA\OpenRegister\BackgroundJob\Support\TransferExecutionRecords;
+use OCA\OpenRegister\BackgroundJob\Support\TransferExecutionTransports;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Edepot\TransferRecordService;
@@ -92,33 +95,94 @@ class TransferExecutionJob extends QueuedJob {
 	private const CONFIG_KEY_MAX_ATTEMPTS = 'edepot_transfer_max_attempts';
 
 	/**
+	 * The transfer service.
+	 *
+	 * @var EdepotTransferService
+	 */
+	private readonly EdepotTransferService $transferService;
+
+	/**
+	 * Durable transfer-record persistence.
+	 *
+	 * @var TransferRecordService
+	 */
+	private readonly TransferRecordService $transferRecordService;
+
+	/**
+	 * Status machine + archivist escalation.
+	 *
+	 * @var TransferListService
+	 */
+	private readonly TransferListService $transferListService;
+
+	/**
+	 * SFTP transport.
+	 *
+	 * @var SftpTransport
+	 */
+	private readonly SftpTransport $sftpTransport;
+
+	/**
+	 * REST API transport.
+	 *
+	 * @var RestApiTransport
+	 */
+	private readonly RestApiTransport $restTransport;
+
+	/**
+	 * OpenConnector transport.
+	 *
+	 * @var OpenConnectorTransport
+	 */
+	private readonly OpenConnectorTransport $ocTransport;
+
+	/**
+	 * Background-job scheduler (re-enqueue).
+	 *
+	 * @var IJobList
+	 */
+	private readonly IJobList $jobList;
+
+	/**
+	 * The app configuration.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time The time factory.
-	 * @param EdepotTransferService $transferService The transfer service.
-	 * @param TransferRecordService $transferRecordService Durable transfer-record persistence.
-	 * @param TransferListService $transferListService Status machine + archivist escalation.
-	 * @param SftpTransport $sftpTransport SFTP transport.
-	 * @param RestApiTransport $restTransport REST API transport.
-	 * @param OpenConnectorTransport $ocTransport OpenConnector transport.
-	 * @param IJobList $jobList Background-job scheduler (re-enqueue).
-	 * @param IAppConfig $appConfig The app configuration.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ITimeFactory                $time       The time factory.
+	 * @param TransferExecutionRecords    $records    The transfer service and the transfer-list stores.
+	 * @param TransferExecutionTransports $transports The SFTP, REST API and OpenConnector transports.
+	 * @param TransferExecutionPlatform   $platform   Scheduler, app config and logger.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly EdepotTransferService $transferService,
-		private readonly TransferRecordService $transferRecordService,
-		private readonly TransferListService $transferListService,
-		private readonly SftpTransport $sftpTransport,
-		private readonly RestApiTransport $restTransport,
-		private readonly OpenConnectorTransport $ocTransport,
-		private readonly IJobList $jobList,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		TransferExecutionRecords $records,
+		TransferExecutionTransports $transports,
+		TransferExecutionPlatform $platform,
 	) {
 		parent::__construct(time: $time);
-
+		$this->transferService = $records->transferService;
+		$this->transferRecordService = $records->recordService;
+		$this->transferListService = $records->listService;
+		$this->sftpTransport = $transports->sftpTransport;
+		$this->restTransport = $transports->restTransport;
+		$this->ocTransport = $transports->ocTransport;
+		$this->jobList = $platform->jobList;
+		$this->appConfig = $platform->appConfig;
+		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**

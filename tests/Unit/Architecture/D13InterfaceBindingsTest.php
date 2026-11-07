@@ -4,7 +4,7 @@
  * Lane D13: the classes below are reached from other components only through
  * an interface next to them.
  *
- * Six Db mappers that Service, Controller, BackgroundJob, BulkAction and Mcp code used to name directly.
+ * Db classes that Service, Controller, BackgroundJob, BulkAction and Mcp code used to name directly.
  *
  * Each class implements its interface, the component's registrar binds the
  * interface to the class, and no lib/ file outside the class's component
@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\JobRunMapper;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
 use OCA\OpenRegister\Db\ObjectRelationMapper;
 use OCA\OpenRegister\Db\ObjectRelationMapperInterface;
 use OCA\OpenRegister\Db\SourceMapper;
@@ -64,6 +66,7 @@ final class D13InterfaceBindingsTest extends TestCase {
 		BulkJobMapper::class => [BulkJobMapperInterface::class, DbRegistrar::class],
 		BulkJobMemberMapper::class => [BulkJobMemberMapperInterface::class, DbRegistrar::class],
 		JobRunMapper::class => [JobRunMapperInterface::class, DbRegistrar::class],
+		MagicTableHandler::class => [MagicTableHandlerInterface::class, DbRegistrar::class],
 		ObjectRelationMapper::class => [ObjectRelationMapperInterface::class, DbRegistrar::class],
 		SourceMapper::class => [SourceMapperInterface::class, DbRegistrar::class],
 	];

@@ -31,6 +31,11 @@ namespace OCA\OpenRegister\Service\Translation;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 
+/**
+ * Flattens translatable properties to `field_lang` CSV columns and back.
+ *
+ * @spec openspec/specs/register-i18n/spec.md
+ */
 class TranslationCsvCodec {
 	/**
 	 * Constructor.
@@ -43,6 +48,11 @@ class TranslationCsvCodec {
 	}//end __construct()
 
 	/**
+	 * BCP 47-style language code accepted as a column suffix or a value key.
+	 */
+	private const LANGUAGE_CODE = '/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/';
+
+	/**
 	 * Flatten an object's data into CSV-compatible columns.
 	 *
 	 * For each translatable property, emit one column per language
@@ -52,68 +62,25 @@ class TranslationCsvCodec {
 	 * Caller iterates the rows in their CSV-build path; this method
 	 * is per-row.
 	 *
-	 * @param array<string, mixed> $data The object's data payload to flatten.
-	 * @param Schema $schema The schema describing translatable properties.
+	 * @param array<string, mixed> $data   The object's data payload to flatten.
+	 * @param Schema               $schema The schema describing translatable properties.
 	 *
 	 * @return array<string, scalar|null>
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function flattenForCsv(array $data, Schema $schema): array {
 		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
 		$row = [];
 
 		foreach ($data as $key => $value) {
-			// Untranslatable property: pass through as-is. Non-scalar
-			// values get JSON-encoded so the CSV row stays single-cell-per-column.
 			if (in_array($key, $translatableProps, true) === false) {
-				if (is_scalar($value) === true || $value === null) {
-					$row[$key] = $value;
-					continue;
-				}
-
-				$row[$key] = json_encode($value, JSON_UNESCAPED_SLASHES);
+				$row[$key] = $this->plainCell(value: $value);
 				continue;
 			}
 
-			// Translatable property with language-keyed value:
-			// emit `field_lang` columns per language present.
-			if (is_array($value) === true && $this->isLanguageKeyed(value: $value) === true) {
-				foreach ($value as $long => $longValue) {
-					if (is_string($long) === false || $long === '') {
-						continue;
-					}
-
-					$longScalar = null;
-					if (is_scalar($longValue) === true) {
-						$longScalar = $longValue;
-					}
-
-					$row[$key . '_' . $long] = $longScalar;
-				}
-
-				continue;
-			}
-
-			// Translatable property holding a plain string (legacy
-			// single-language data): emit under `field_und` (BCP 47
-			// "und" = undetermined language) so the round-trip
-			// preserves the variant without guessing.
-			if (is_string($value) === true) {
-				$row[$key . '_und'] = $value;
-				continue;
-			}
-
-			// Anything else: pass through.
-			$scalarValue = null;
-			if (is_scalar($value) === true) {
-				$scalarValue = $value;
-			}
-
-			$row[$key] = $scalarValue;
-		}//end foreach
+			$row = array_replace($row, $this->translatableCells(key: $key, value: $value));
+		}
 
 		return $row;
 	}//end flattenForCsv()
@@ -124,60 +91,159 @@ class TranslationCsvCodec {
 	 *
 	 * Recognises any column matching `<property>_<lang>` where the
 	 * `<property>` portion is one of the schema's translatable
-	 * properties. Other `_`-suffixed columns are passed through as-is
-	 * (they may be unrelated user fields with underscores in the name).
+	 * properties. Other `_`-suffixed columns, untranslatable or unrecognised,
+	 * are passed through as-is (they may be unrelated user fields with
+	 * underscores in the name).
 	 *
-	 * @param array<string, mixed> $row The flat CSV row to unflatten.
-	 * @param Schema $schema The schema describing translatable properties.
+	 * @param array<string, mixed> $row    The flat CSV row to unflatten.
+	 * @param Schema               $schema The schema describing translatable properties.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function unflattenFromCsv(array $row, Schema $schema): array {
 		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
 		$out = [];
-
 		foreach ($row as $column => $value) {
-			// Check if this column matches a translatable-property + language suffix.
-			$matched = false;
-			foreach ($translatableProps as $prop) {
-				$prefix = $prop . '_';
-				if (str_starts_with($column, $prefix) === true) {
-					$long = substr($column, strlen($prefix));
-					if ($long === '' || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $long) !== 1) {
-						continue;
-					}
-
-					if (is_string($value) === false || $value === '') {
-						// Empty cells: don't write a slot (lets the
-						// projection treat this as "not translated").
-						$matched = true;
-						break;
-					}
-
-					if (isset($out[$prop]) === false || is_array($out[$prop]) === false) {
-						$out[$prop] = [];
-					}
-
-					$out[$prop][$long] = $value;
-					$matched = true;
-					break;
-				}//end if
-			}//end foreach
-
-			if ($matched === true) {
+			$match = $this->matchLanguageColumn(column: $column, props: $translatableProps);
+			if ($match === null) {
+				$out[$column] = $value;
 				continue;
 			}
 
-			// Untranslatable / unrecognised column: pass through.
-			$out[$column] = $value;
-		}//end foreach
+			$out = $this->withTranslation(out: $out, slot: $match, value: $value);
+		}
 
 		return $out;
 	}//end unflattenFromCsv()
+
+	/**
+	 * Cell for an untranslatable property: scalars and null as-is, anything
+	 * else JSON-encoded so the CSV row stays single-cell-per-column.
+	 *
+	 * @param mixed $value The property value.
+	 *
+	 * @return mixed The cell value.
+	 */
+	private function plainCell(mixed $value): mixed {
+		if (is_scalar($value) === true || $value === null) {
+			return $value;
+		}
+
+		return json_encode($value, JSON_UNESCAPED_SLASHES);
+	}//end plainCell()
+
+	/**
+	 * Cells for a translatable property.
+	 *
+	 * A language-keyed value yields one `field_lang` column per language; a
+	 * plain string (legacy single-language data) goes under `field_und`
+	 * (BCP 47 "und" = undetermined language) so the round-trip preserves the
+	 * variant without guessing; anything else passes through as a scalar.
+	 *
+	 * @param int|string $key   The property name.
+	 * @param mixed      $value The property value.
+	 *
+	 * @return array<int|string, mixed> The cells, keyed by column.
+	 */
+	private function translatableCells(int|string $key, mixed $value): array {
+		if (is_array($value) === true && $this->isLanguageKeyed(value: $value) === true) {
+			return $this->languageCells(key: $key, value: $value);
+		}
+
+		if (is_string($value) === true) {
+			return [$key . '_und' => $value];
+		}
+
+		return [$key => $this->scalarOrNull(value: $value)];
+	}//end translatableCells()
+
+	/**
+	 * One `field_lang` column per language; non-scalar values become null.
+	 *
+	 * @param int|string           $key   The property name.
+	 * @param array<string, mixed> $value The language-keyed value.
+	 *
+	 * @return array<string, scalar|null> The cells, keyed by column.
+	 */
+	private function languageCells(int|string $key, array $value): array {
+		$cells = [];
+		foreach ($value as $lang => $langValue) {
+			$cells[$key . '_' . $lang] = $this->scalarOrNull(value: $langValue);
+		}
+
+		return $cells;
+	}//end languageCells()
+
+	/**
+	 * Find the translatable property and language a column encodes.
+	 *
+	 * Properties are tried in order; the first whose `<property>_` prefix
+	 * matches and leaves a valid language code wins.
+	 *
+	 * @param int|string   $column The column name.
+	 * @param list<string> $props  The translatable property names.
+	 *
+	 * @return array{0: string, 1: string}|null Property and language, or null.
+	 */
+	private function matchLanguageColumn(int|string $column, array $props): ?array {
+		foreach ($props as $prop) {
+			$prefix = $prop . '_';
+			if (str_starts_with($column, $prefix) === false) {
+				continue;
+			}
+
+			$lang = substr($column, strlen($prefix));
+			if ($this->isLanguageCode(code: $lang) === true) {
+				return [$prop, $lang];
+			}
+		}
+
+		return null;
+	}//end matchLanguageColumn()
+
+	/**
+	 * Write one language cell into the nested output.
+	 *
+	 * Empty and non-string cells write no slot, which lets the projection
+	 * treat them as "not translated". A non-array value already under the
+	 * property is replaced by a language map.
+	 *
+	 * @param array<string, mixed>        $out   The output built so far.
+	 * @param array{0: string, 1: string} $slot  Property and language.
+	 * @param mixed                       $value The cell value.
+	 *
+	 * @return array<string, mixed> The output with the cell applied.
+	 */
+	private function withTranslation(array $out, array $slot, mixed $value): array {
+		if (is_string($value) === false || $value === '') {
+			return $out;
+		}
+
+		[$prop, $lang] = $slot;
+		if (is_array($out[$prop] ?? null) === false) {
+			$out[$prop] = [];
+		}
+
+		$out[$prop][$lang] = $value;
+		return $out;
+	}//end withTranslation()
+
+	/**
+	 * Return a scalar unchanged and anything else as null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return scalar|null
+	 */
+	private function scalarOrNull(mixed $value): mixed {
+		if (is_scalar($value) === true) {
+			return $value;
+		}
+
+		return null;
+	}//end scalarOrNull()
 
 	/**
 	 * Detect whether an array's keys are all BCP 47-style language codes.
@@ -192,11 +258,22 @@ class TranslationCsvCodec {
 		}
 
 		foreach (array_keys($value) as $key) {
-			if (is_string($key) === false || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $key) !== 1) {
+			if (is_string($key) === false || $this->isLanguageCode(code: $key) === false) {
 				return false;
 			}
 		}
 
 		return true;
 	}//end isLanguageKeyed()
+
+	/**
+	 * Whether a string is a BCP 47-style language code.
+	 *
+	 * @param string $code The candidate code.
+	 *
+	 * @return bool True when it matches.
+	 */
+	private function isLanguageCode(string $code): bool {
+		return preg_match(self::LANGUAGE_CODE, $code) === 1;
+	}//end isLanguageCode()
 }//end class

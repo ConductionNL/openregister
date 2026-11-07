@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
-use OCA\OpenRegister\Service\BulkActionRegistry;
+use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCP\AppFramework\Controller;
@@ -99,9 +99,9 @@ class BulkJobsController extends Controller {
 	/**
 	 * The action catalogue.
 	 *
-	 * @var BulkActionRegistry
+	 * @var BulkActionRegistryInterface
 	 */
-	private readonly BulkActionRegistry $registry;
+	private readonly BulkActionRegistryInterface $registry;
 
 	/**
 	 * Current-user session.

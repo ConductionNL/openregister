@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://OpenRegister.app
  */
-class ApplicationService {
+class ApplicationService implements ApplicationServiceInterface {
 
 	/**
 	 * Application mapper for database operations

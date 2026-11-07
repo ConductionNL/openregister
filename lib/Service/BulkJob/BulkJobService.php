@@ -33,20 +33,12 @@ use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
-use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
-use OCA\OpenRegister\Service\BulkActionRegistry;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCP\BackgroundJob\IJobList;
-use OCP\IAppConfig;
-use OCP\IUserManager;
-use Psr\Log\LoggerInterface;
 
 /**
  * Class BulkJobService
@@ -112,33 +104,14 @@ class BulkJobService implements BulkJobServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param BulkJobMapperInterface $jobMapper Job persistence.
-	 * @param BulkJobMemberMapperInterface $memberMapper Member persistence.
-	 * @param BulkActionRegistry $registry The catalogue of registered actions.
-	 * @param BulkSelectionResolver $resolver Selection resolution.
-	 * @param BulkJobExecutor $executor The one executor.
-	 * @param ObjectOperationsInterface $objectService For running as the job's actor.
-	 * @param IUserManager $userManager Actor lookup.
-	 * @param IJobList $jobList The background queue.
-	 * @param IAppConfig $appConfig Instance settings.
-	 * @param LoggerInterface $logger Logger.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection.
-	 * Each of the ten is a collaborator the lifecycle genuinely uses, and
-	 * bundling them behind a locator would hide the dependencies rather than
-	 * remove them.
+	 * @param BulkJobStore $store The job and member tables, the background queue and the log.
+	 * @param BulkJobActions $actions The action catalogue, the selection resolver and the executor.
+	 * @param BulkJobEnvironment $environment The object service for the job's actor, the actor lookup and the instance settings.
 	 */
 	public function __construct(
-		private readonly BulkJobMapperInterface $jobMapper,
-		private readonly BulkJobMemberMapperInterface $memberMapper,
-		private readonly BulkActionRegistry $registry,
-		private readonly BulkSelectionResolver $resolver,
-		private readonly BulkJobExecutor $executor,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly IUserManager $userManager,
-		private readonly IJobList $jobList,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		private readonly BulkJobStore $store,
+		private readonly BulkJobActions $actions,
+		private readonly BulkJobEnvironment $environment,
 	) {
 	}//end __construct()
 
@@ -150,7 +123,7 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getCeiling(): int {
-		$ceiling = $this->appConfig->getValueInt(self::APP_ID, self::CEILING_KEY, self::CEILING_DEFAULT);
+		$ceiling = $this->environment->appConfig->getValueInt(self::APP_ID, self::CEILING_KEY, self::CEILING_DEFAULT);
 
 		if ($ceiling < 1) {
 			return self::CEILING_DEFAULT;
@@ -167,7 +140,7 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getBatchSize(): int {
-		$size = $this->appConfig->getValueInt(self::APP_ID, self::BATCH_SIZE_KEY, self::BATCH_SIZE_DEFAULT);
+		$size = $this->environment->appConfig->getValueInt(self::APP_ID, self::BATCH_SIZE_KEY, self::BATCH_SIZE_DEFAULT);
 
 		if ($size < 1) {
 			return self::BATCH_SIZE_DEFAULT;
@@ -184,7 +157,7 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getUndoCeiling(): int {
-		$ceiling = $this->appConfig->getValueInt(self::APP_ID, self::UNDO_CEILING_KEY, self::UNDO_CEILING_DEFAULT);
+		$ceiling = $this->environment->appConfig->getValueInt(self::APP_ID, self::UNDO_CEILING_KEY, self::UNDO_CEILING_DEFAULT);
 
 		if ($ceiling < 1) {
 			return self::UNDO_CEILING_DEFAULT;
@@ -221,14 +194,14 @@ class BulkJobService implements BulkJobServiceInterface {
 		?int $registerId = null,
 		?int $schemaId = null
 	): BulkJob {
-		$action = $this->registry->get(id: $actionId);
+		$action = $this->actions->registry->get(id: $actionId);
 		$action->validateParameters(parameters: $parameters);
 		$this->guards()->assertScope(registerId: $registerId, schemaId: $schemaId);
 
 		$selectionType = $this->selectionTypeOf(selection: $selection);
 		$ceiling = $this->getCeiling();
 
-		$uuids = $this->resolver->resolveUuids(
+		$uuids = $this->actions->resolver->resolveUuids(
 			selectionType: $selectionType,
 			selection: $selection,
 			registerId: $registerId,
@@ -238,8 +211,8 @@ class BulkJobService implements BulkJobServiceInterface {
 
 		$this->guards()->assertCeiling(count: count($uuids), ceiling: $ceiling);
 
-		$objects = $this->resolver->hydrate(uuids: $uuids, registerId: $registerId, schemaId: $schemaId);
-		$this->executor->assertGuards(action: $action, objects: $objects);
+		$objects = $this->actions->resolver->hydrate(uuids: $uuids, registerId: $registerId, schemaId: $schemaId);
+		$this->actions->executor->assertGuards(action: $action, objects: $objects);
 		$this->guards()->assertUndoCeiling(action: $action, objects: $objects, parameters: $parameters);
 
 		$window = null;
@@ -252,7 +225,7 @@ class BulkJobService implements BulkJobServiceInterface {
 			$until = (new DateTime())->modify('+'.$window.' seconds');
 		}
 
-		$job = $this->jobMapper->createFromArray(
+		$job = $this->store->jobMapper->createFromArray(
 			[
 				'action' => $actionId,
 				'parameters' => $parameters,
@@ -270,19 +243,19 @@ class BulkJobService implements BulkJobServiceInterface {
 			]
 		);
 
-		$this->executor->writePreviewMembers(
+		$this->actions->executor->writePreviewMembers(
 			job: $job,
 			uuids: $uuids,
 			objects: $objects,
 			action: $action,
-			actor: $this->userManager->get($actorUid)
+			actor: $this->environment->userManager->get($actorUid)
 		);
 
 		// The cursor is still zero, so refreshCounts reports nothing walked
 		// while reporting what the rehearsal found.
-		$this->executor->refreshCounts(job: $job);
+		$this->actions->executor->refreshCounts(job: $job);
 
-		return $this->jobMapper->save($job);
+		return $this->store->jobMapper->save($job);
 	}//end create()
 
 	/**
@@ -302,7 +275,7 @@ class BulkJobService implements BulkJobServiceInterface {
 			$job->setJustification($justification);
 		}
 
-		$action = $this->registry->get(id: (string)$job->getAction());
+		$action = $this->actions->registry->get(id: (string)$job->getAction());
 		$this->guards()->assertJustification(action: $action, job: $job);
 
 		if ($job->getSelectionType() === BulkJob::SELECTION_QUERY) {
@@ -311,9 +284,9 @@ class BulkJobService implements BulkJobServiceInterface {
 
 		$job->setState(BulkJob::STATE_RUNNING);
 		$job->setCursor(0);
-		$saved = $this->jobMapper->save($job);
+		$saved = $this->store->jobMapper->save($job);
 
-		$this->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+		$this->store->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
 
 		return $saved;
 	}//end commit()
@@ -331,7 +304,7 @@ class BulkJobService implements BulkJobServiceInterface {
 		if ($job->getState() === BulkJob::STATE_RUNNING) {
 			$job->setState(BulkJob::STATE_CANCELLING);
 
-			return $this->jobMapper->save($job);
+			return $this->store->jobMapper->save($job);
 		}
 
 		// A previewed job has never run and a paused one has no batch in
@@ -342,7 +315,7 @@ class BulkJobService implements BulkJobServiceInterface {
 		if (in_array($job->getState(), [BulkJob::STATE_PREVIEWED, BulkJob::STATE_PAUSED], true) === true) {
 			$job->setState(BulkJob::STATE_CANCELLED);
 
-			return $this->jobMapper->save($job);
+			return $this->store->jobMapper->save($job);
 		}
 
 		return $job;
@@ -378,7 +351,7 @@ class BulkJobService implements BulkJobServiceInterface {
 
 		$job->setState(BulkJob::STATE_PAUSED);
 
-		return $this->jobMapper->save($job);
+		return $this->store->jobMapper->save($job);
 	}//end pause()
 
 	/**
@@ -407,9 +380,9 @@ class BulkJobService implements BulkJobServiceInterface {
 		}
 
 		$job->setState(BulkJob::STATE_RUNNING);
-		$saved = $this->jobMapper->save($job);
+		$saved = $this->store->jobMapper->save($job);
 
-		$this->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+		$this->store->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
 
 		return $saved;
 	}//end resume()
@@ -436,7 +409,7 @@ class BulkJobService implements BulkJobServiceInterface {
 			);
 		}
 
-		$remaining = $this->memberMapper->findPendingBatch(jobId: (int)$job->getId(), cursor: new IdCursor(afterId: 0, limit: 1));
+		$remaining = $this->store->memberMapper->findPendingBatch(jobId: (int)$job->getId(), cursor: new IdCursor(afterId: 0, limit: 1));
 
 		if ($remaining === []) {
 			throw new BulkJobRefusedException(
@@ -453,9 +426,9 @@ class BulkJobService implements BulkJobServiceInterface {
 		$job->setReport($report);
 		$job->setState(BulkJob::STATE_RUNNING);
 		$job->setCursor(0);
-		$saved = $this->jobMapper->save($job);
+		$saved = $this->store->jobMapper->save($job);
 
-		$this->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+		$this->store->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
 
 		return $saved;
 	}//end retry()
@@ -471,10 +444,10 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function processBatch(BulkJob $job, int $batchSize): bool {
-		$actor = $this->userManager->get((string)$job->getStartedBy());
+		$actor = $this->environment->userManager->get((string)$job->getStartedBy());
 
 		if ($actor === null) {
-			$this->logger->error(
+			$this->store->logger->error(
 				message: '[BulkJobService] The job\'s actor no longer exists',
 				context: ['job' => $job->getUuid(), 'actor' => $job->getStartedBy()]
 			);
@@ -483,14 +456,14 @@ class BulkJobService implements BulkJobServiceInterface {
 			$report = ($job->getReport() ?? []);
 			$report['fatal'] = 'the account that created this job no longer exists';
 			$job->setReport($report);
-			$this->jobMapper->save($job);
+			$this->store->jobMapper->save($job);
 
 			return false;
 		}
 
-		return $this->objectService->runAs(
+		return $this->environment->objectService->runAs(
 			$actor,
-			fn (): bool => $this->executor->processBatch(job: $job, batchSize: $batchSize)
+			fn (): bool => $this->actions->executor->processBatch(job: $job, batchSize: $batchSize)
 		);
 	}//end processBatch()
 
@@ -507,7 +480,7 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function members(BulkJob $job, ?string $outcome = null, int $limit = 100, int $offset = 0): array {
-		return $this->memberMapper->findByJob(
+		return $this->store->memberMapper->findByJob(
 			jobId: (int)$job->getId(),
 			filter: new OutcomeFilter(outcome: $outcome, page: new QueryPage(limit: $limit, offset: $offset))
 		);
@@ -522,7 +495,7 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * @return void
 	 */
 	private function reconcileQuerySelection(BulkJob $job, BulkActionInterface $action): void {
-		$current = $this->resolver->resolveUuids(
+		$current = $this->actions->resolver->resolveUuids(
 			selectionType: BulkJob::SELECTION_QUERY,
 			selection: ($job->getSelection() ?? []),
 			registerId: $job->getRegisterId(),
@@ -530,7 +503,7 @@ class BulkJobService implements BulkJobServiceInterface {
 			ceiling: $this->getCeiling()
 		);
 
-		$known = $this->memberMapper->findUuidsByJob(jobId: (int)$job->getId());
+		$known = $this->store->memberMapper->findUuidsByJob(jobId: (int)$job->getId());
 		$added = array_values(array_diff($current, $known));
 		$gone = array_values(array_diff($known, $current));
 
@@ -547,18 +520,18 @@ class BulkJobService implements BulkJobServiceInterface {
 			return;
 		}
 
-		$objects = $this->resolver->hydrate(
+		$objects = $this->actions->resolver->hydrate(
 			uuids: $added,
 			registerId: $job->getRegisterId(),
 			schemaId: $job->getSchemaId()
 		);
 
-		$this->executor->writePreviewMembers(
+		$this->actions->executor->writePreviewMembers(
 			job: $job,
 			uuids: $added,
 			objects: $objects,
 			action: $action,
-			actor: $this->userManager->get((string)$job->getStartedBy()),
+			actor: $this->environment->userManager->get((string)$job->getStartedBy()),
 			addedAtCommit: true
 		);
 

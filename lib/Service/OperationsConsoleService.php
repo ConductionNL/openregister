@@ -134,28 +134,73 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	private const OWN_JOB_PREFIX = 'OCA\\OpenRegister\\';
 
 	/**
+	 * The bulk job records.
+	 *
+	 * @var BulkJobMapperInterface
+	 */
+	private readonly BulkJobMapperInterface $bulkJobs;
+
+	/**
+	 * Nextcloud's registered background jobs.
+	 *
+	 * @var IJobList
+	 */
+	private readonly IJobList $jobList;
+
+	/**
+	 * The notification dispatch history.
+	 *
+	 * @var NotificationHistoryMapperInterface
+	 */
+	private readonly NotificationHistoryMapperInterface $dispatches;
+
+	/**
+	 * The notifications waiting to go out.
+	 *
+	 * @var QueuedNotificationMapperInterface
+	 */
+	private readonly QueuedNotificationMapperInterface $queue;
+
+	/**
+	 * The shipped notification texts.
+	 *
+	 * @var NotificationTemplateRegistry
+	 */
+	private readonly NotificationTemplateRegistry $templates;
+
+	/**
+	 * The rules engine's run log.
+	 *
+	 * @var RuleRunMapper
+	 */
+	private readonly RuleRunMapper $ruleRuns;
+
+	/**
+	 * One row per rule, with its last error.
+	 *
+	 * @var RuleRunSummaryMapper
+	 */
+	private readonly RuleRunSummaryMapper $ruleSummaries;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param BulkJobMapperInterface                $bulkJobs      The bulk job records.
-	 * @param IJobList                     $jobList       Nextcloud's registered background jobs.
-	 * @param NotificationHistoryMapperInterface    $dispatches    The notification dispatch history.
-	 * @param QueuedNotificationMapperInterface     $queue         The notifications waiting to go out.
-	 * @param NotificationTemplateRegistry $templates     The shipped notification texts.
-	 * @param RuleRunMapper                $ruleRuns      The rules engine's run log.
-	 * @param RuleRunSummaryMapper         $ruleSummaries One row per rule, with its last error.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Seven records, joined
-	 * once. See the class-level note.
+	 * @param OperationsConsoleJobs          $jobs          The bulk job records and Nextcloud's background job list
+	 * @param OperationsConsoleNotifications $notifications The notification dispatch history, queue and templates
+	 * @param OperationsConsoleRules         $rules         The rules engine's run log and per-rule summaries
 	 */
 	public function __construct(
-		private readonly BulkJobMapperInterface $bulkJobs,
-		private readonly IJobList $jobList,
-		private readonly NotificationHistoryMapperInterface $dispatches,
-		private readonly QueuedNotificationMapperInterface $queue,
-		private readonly NotificationTemplateRegistry $templates,
-		private readonly RuleRunMapper $ruleRuns,
-		private readonly RuleRunSummaryMapper $ruleSummaries,
+		OperationsConsoleJobs $jobs,
+		OperationsConsoleNotifications $notifications,
+		OperationsConsoleRules $rules,
 	) {
+		$this->bulkJobs = $jobs->bulkJobs;
+		$this->jobList = $jobs->jobList;
+		$this->dispatches = $notifications->dispatches;
+		$this->queue = $notifications->queue;
+		$this->templates = $notifications->templates;
+		$this->ruleRuns = $rules->ruleRuns;
+		$this->ruleSummaries = $rules->ruleSummaries;
 	}//end __construct()
 
 	/**

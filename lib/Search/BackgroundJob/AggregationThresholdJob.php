@@ -37,15 +37,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Search\BackgroundJob\Support\AggregationThresholdServices;
 use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\IUserManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
 
 /**
@@ -55,36 +53,52 @@ use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
  */
 class AggregationThresholdJob extends ActorForwardedJob {
 	/**
+	 * Stale-safe entry re-fetch.
+	 *
+	 * @var DeferredEntryObjectResolver
+	 */
+	private readonly DeferredEntryObjectResolver $resolver;
+
+	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Shared threshold evaluation logic.
+	 *
+	 * @var ThresholdEvaluationService
+	 */
+	private readonly ThresholdEvaluationService $evaluator;
+
+	/**
 	 * Wire the evaluation collaborators on top of the actor plumbing.
 	 *
-	 * @param ITimeFactory $time Time factory for the parent job class.
-	 * @param IUserSession $userSession Session to impersonate on / restore.
-	 * @param IUserManager $userManager Resolver for the captured user id.
-	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param ThresholdEvaluationService $evaluator Shared threshold evaluation logic.
+	 * @param ITimeFactory                 $time       Time factory for the parent job class.
+	 * @param ActorForwardingServices      $actor      Session, user manager, organisation and logger for the parent job class.
+	 * @param AggregationThresholdServices $evaluation Entry re-fetch, schema lookup and threshold evaluation.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		IUserSession $userSession,
-		IUserManager $userManager,
-		OrganisationServiceInterface $organisation,
-		LoggerInterface $logger,
-		private readonly DeferredEntryObjectResolver $resolver,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ThresholdEvaluationService $evaluator,
+		ActorForwardingServices $actor,
+		AggregationThresholdServices $evaluation,
 	) {
 		parent::__construct(
 			time: $time,
-			userSession: $userSession,
-			userManager: $userManager,
-			organisation: $organisation,
-			logger: $logger
+			userSession: $actor->userSession,
+			userManager: $actor->userManager,
+			organisation: $actor->organisation,
+			logger: $actor->logger
 		);
+		$this->resolver = $evaluation->resolver;
+		$this->schemaMapper = $evaluation->schemaMapper;
+		$this->evaluator = $evaluation->evaluator;
 	}//end __construct()
 
 	/**

@@ -39,6 +39,9 @@ use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\OperationsConsoleJobs;
+use OCA\OpenRegister\Service\OperationsConsoleNotifications;
+use OCA\OpenRegister\Service\OperationsConsoleRules;
 use OCA\OpenRegister\Service\OperationsConsoleService;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
@@ -119,13 +122,9 @@ final class OperationsConsoleServiceTest extends TestCase {
 
 	private function service(): OperationsConsoleService {
 		return new OperationsConsoleService(
-			$this->bulkJobs,
-			$this->jobList,
-			$this->dispatches,
-			$this->queue,
-			$this->templates,
-			$this->ruleRuns,
-			$this->ruleSummaries
+			new OperationsConsoleJobs($this->bulkJobs, $this->jobList),
+			new OperationsConsoleNotifications($this->dispatches, $this->queue, $this->templates),
+			new OperationsConsoleRules($this->ruleRuns, $this->ruleSummaries)
 		);
 	}
 
