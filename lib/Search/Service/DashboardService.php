@@ -27,7 +27,7 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -90,9 +90,9 @@ class DashboardService {
 	 *
 	 * Handles database operations for webhook log entries.
 	 *
-	 * @var WebhookLogMapper Webhook log mapper instance
+	 * @var WebhookLogMapperInterface Webhook log mapper instance
 	 */
-	private readonly WebhookLogMapper $webhookLogMapper;
+	private readonly WebhookLogMapperInterface $webhookLogMapper;
 
 	/**
 	 * Register mapper
@@ -128,7 +128,7 @@ class DashboardService {
 	 *
 	 * @param MagicMapperInterface $objectMapper Object entity mapper for object statistics
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
-	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper for webhook statistics
+	 * @param WebhookLogMapperInterface $webhookLogMapper Webhook log mapper for webhook statistics
 	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations
 	 * @param DashboardSizes $sizes Size recalculation
 	 * @param LoggerInterface $logger Logger instance for error tracking
@@ -138,7 +138,7 @@ class DashboardService {
 	public function __construct(
 		MagicMapperInterface $objectMapper,
 		AuditTrailMapperInterface $auditTrailMapper,
-		WebhookLogMapper $webhookLogMapper,
+		WebhookLogMapperInterface $webhookLogMapper,
 		RegisterMapperInterface $registerMapper,
 		DashboardSizes $sizes,
 		LoggerInterface $logger,

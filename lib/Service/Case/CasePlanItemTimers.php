@@ -50,7 +50,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
  */
-class CasePlanItemTimers {
+class CasePlanItemTimers implements CasePlanItemTimersInterface {
 
 	/**
 	 * The timer subject type of a plan item.

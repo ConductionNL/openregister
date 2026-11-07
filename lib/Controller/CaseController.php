@@ -45,8 +45,8 @@ use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
-use OCA\OpenRegister\Service\Case\CasePlanService;
-use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -75,16 +75,16 @@ class CaseController extends Controller {
 	/**
 	 * The authorized case layer.
 	 *
-	 * @var CasePlanService
+	 * @var CasePlanServiceInterface
 	 */
-	private readonly CasePlanService $plans;
+	private readonly CasePlanServiceInterface $plans;
 
 	/**
 	 * The pure zaaktype mapping.
 	 *
-	 * @var ZaaktypeCaseSkeletonMapper
+	 * @var ZaaktypeCaseSkeletonMapperInterface
 	 */
-	private readonly ZaaktypeCaseSkeletonMapper $zaaktypes;
+	private readonly ZaaktypeCaseSkeletonMapperInterface $zaaktypes;
 
 	/**
 	 * Identity checks for the anchorless route.

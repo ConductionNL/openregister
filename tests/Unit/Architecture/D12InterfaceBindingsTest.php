@@ -23,6 +23,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
+use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
+use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Case\CasePlanTimerRearm;
+use OCA\OpenRegister\Service\Case\CasePlanTimerRearmInterface;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNodeInterface;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
@@ -77,6 +89,11 @@ final class D12InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
+		CaseAdvanceNode::class => [CaseAdvanceNodeInterface::class, ContractBindings::class],
+		CaseOpenNode::class => [CaseOpenNodeInterface::class, ContractBindings::class],
+		CasePlanItemTimers::class => [CasePlanItemTimersInterface::class, ContractBindings::class],
+		CasePlanService::class => [CasePlanServiceInterface::class, ContractBindings::class],
+		CasePlanTimerRearm::class => [CasePlanTimerRearmInterface::class, ContractBindings::class],
 		FlowLocator::class => [FlowLocatorInterface::class, ContractBindings::class],
 		FlowNodeRegistry::class => [FlowNodeRegistryInterface::class, ContractBindings::class],
 		FlowRunMigrationService::class => [FlowRunMigrationServiceInterface::class, ContractBindings::class],
@@ -92,6 +109,7 @@ final class D12InterfaceBindingsTest extends TestCase {
 		TaskProjectionService::class => [TaskProjectionServiceInterface::class, ContractBindings::class],
 		TaskSubjectLocator::class => [TaskSubjectLocatorInterface::class, ContractBindings::class],
 		TaskVtodoWriteBackGate::class => [TaskVtodoWriteBackGateInterface::class, ContractBindings::class],
+		ZaaktypeCaseSkeletonMapper::class => [ZaaktypeCaseSkeletonMapperInterface::class, ContractBindings::class],
 	];
 
 	/**

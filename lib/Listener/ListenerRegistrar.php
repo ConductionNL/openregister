@@ -65,6 +65,16 @@ use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 final class ListenerRegistrar {
 
 	/**
+	 * The interfaces callers outside the component type against, bound to their class.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	public const BINDINGS = [
+		SchemaFlowImportListenerInterface::class => SchemaFlowImportListener::class,
+		UniqueConstraintListenerInterface::class => UniqueConstraintListener::class,
+	];
+
+	/**
 	 * Register all event listeners for the application, in order.
 	 *
 	 * @param IRegistrationContext $context The registration context
@@ -76,6 +86,7 @@ final class ListenerRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	public static function register(IRegistrationContext $context): void {
+		self::registerBindings(context: $context);
 		Registrar\AccessListenerRegistrar::register(context: $context);
 		Registrar\ConfigurationListenerRegistrar::register(context: $context);
 		Registrar\FlowsListenerRegistrar::register(context: $context);
@@ -90,6 +101,21 @@ final class ListenerRegistrar {
 		self::registerDeliveryListeners(context: $context);
 		self::registerDraftListeners(context: $context);
 	}//end register()
+
+	/**
+	 * Alias each interface in BINDINGS to its class.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; no behaviour of its own.
+	 */
+	private static function registerBindings(IRegistrationContext $context): void {
+		foreach (self::BINDINGS as $contract => $service) {
+			$context->registerServiceAlias($contract, $service);
+		}
+	}//end registerBindings()
 
 	/**
 	 * Hook the platform: file changes and writes, sign-in, discovery events, OCM and Context Chat.

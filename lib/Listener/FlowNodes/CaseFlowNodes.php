@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
-use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
-use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNodeInterface;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 
 /**
@@ -40,12 +40,12 @@ final readonly class CaseFlowNodes {
 	/**
 	 * Bundle the nodes.
 	 *
-	 * @param CaseOpenNode $caseOpen The built-in "Open a case" node.
-	 * @param CaseAdvanceNode $caseAdvance The built-in "Advance a case" node.
+	 * @param CaseOpenNodeInterface $caseOpen The built-in "Open a case" node.
+	 * @param CaseAdvanceNodeInterface $caseAdvance The built-in "Advance a case" node.
 	 */
 	public function __construct(
-		private CaseOpenNode $caseOpen,
-		private CaseAdvanceNode $caseAdvance,
+		private CaseOpenNodeInterface $caseOpen,
+		private CaseAdvanceNodeInterface $caseAdvance,
 	) {
 	}//end __construct()
 

@@ -28,7 +28,7 @@ use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
-use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Db\EndpointLogMapperInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -69,9 +69,9 @@ class EndpointService implements EndpointServiceInterface {
 	 *
 	 * Handles database operations for endpoint execution logs.
 	 *
-	 * @var EndpointLogMapper Endpoint log mapper instance
+	 * @var EndpointLogMapperInterface Endpoint log mapper instance
 	 */
-	private readonly EndpointLogMapper $endpointLogMapper;
+	private readonly EndpointLogMapperInterface $endpointLogMapper;
 
 	/**
 	 * Logger
@@ -114,14 +114,14 @@ class EndpointService implements EndpointServiceInterface {
 	 * at lines 402/410/457 and the audit-log write at 487. Same defect as
 	 * NotificationService and UploadService in this repo.
 	 *
-	 * @param EndpointLogMapper $endpointLogMapper Endpoint execution log mapper.
+	 * @param EndpointLogMapperInterface $endpointLogMapper Endpoint execution log mapper.
 	 * @param LoggerInterface   $logger            Logger.
 	 * @param IUserSession      $userSession       Current user context.
 	 * @param IGroupManager     $groupManager      Group membership lookups.
 	 * @param AgentMapperInterface       $agentMapper       Agent lookups for agent-type endpoints.
 	 */
 	public function __construct(
-		EndpointLogMapper $endpointLogMapper,
+		EndpointLogMapperInterface $endpointLogMapper,
 		LoggerInterface $logger,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
