@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
+use OCP\IDBConnection;
+use PDO;
 
 /**
  * Reads every row a whole-table delete is about to remove.
@@ -45,9 +47,11 @@ final class WholeTableRows {
 
 	/**
 	 * @param MagicMapperInterface $mapper Reads the magic table.
+	 * @param IDBConnection        $db     Holds the rows of the table.
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $mapper,
+		private readonly IDBConnection $db,
 	) {
 	}//end __construct()
 
@@ -57,6 +61,9 @@ final class WholeTableRows {
 	 * The mapper primitive empties the table in one statement, so the object deleting
 	 * event that refuses such a row on every other delete never fires there. A lock of
 	 * the caller's own refuses too: this door takes rows of every holder at once.
+	 *
+	 * Call it inside the transaction of the delete: the rows stay held until that
+	 * transaction ends, so what this check saw is what the delete removes.
 	 *
 	 * @param Register $register The register context.
 	 * @param Schema   $schema   The schema context.
@@ -75,6 +82,7 @@ final class WholeTableRows {
 			return;
 		}
 
+		$this->holdRows(register: $register, schema: $schema);
 		foreach ($this->all(register: $register, schema: $schema) as $object) {
 			(new FileWriteGuard())->assertWritable(object: $object);
 			if ($object->isLocked() === true) {
@@ -82,6 +90,31 @@ final class WholeTableRows {
 			}
 		}
 	}//end assertNoneKept()
+
+	/**
+	 * Take a row lock on every row of the table, until the transaction ends.
+	 *
+	 * A plain read holds nothing: a lock or freeze committed after it would be missed.
+	 * SQLite has no row locks and no FOR UPDATE, and it runs one writer at a time.
+	 *
+	 * @param Register $register The register context.
+	 * @param Schema   $schema   The schema context.
+	 *
+	 * @return void
+	 */
+	private function holdRows(Register $register, Schema $schema): void {
+		if ($this->db->getDatabaseProvider() === IDBConnection::PLATFORM_SQLITE) {
+			return;
+		}
+
+		$query = $this->db->getQueryBuilder();
+		$query->select('_uuid')
+			->from($this->mapper->getTableNameForRegisterSchema(register: $register, schema: $schema))
+			->where($query->expr()->eq('_register', $query->createNamedParameter($register->getId(), PDO::PARAM_INT)))
+			->andWhere($query->expr()->eq('_schema', $query->createNamedParameter($schema->getId(), PDO::PARAM_INT)));
+
+		$this->db->executeQuery($query->getSQL().' FOR UPDATE', $query->getParameters(), $query->getParameterTypes())->closeCursor();
+	}//end holdRows()
 
 	/**
 	 * How many rows of the table are frozen, archived or locked.
