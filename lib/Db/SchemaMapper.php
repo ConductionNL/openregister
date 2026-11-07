@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser;
 use OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaLookup;
@@ -1343,7 +1344,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->readTrace()->record(method: 'update');
 		$oldSchema = $this->storedRow(entity: $entity);
 
-		$entity = parent::update(entity: $this->preparedForUpdate(schema: $entity));
+		$entity = parent::update(entity: $this->preparedOver(old: $oldSchema, schema: $entity));
 		$this->announceUpdate(old: $oldSchema, new: $entity);
 
 		return $entity;
@@ -1364,6 +1365,50 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		return $this->findEntity(query: $qb);
 	}//end storedRow()
+
+	/**
+	 * Make a schema ready to be written over its stored row, warning about a url action it keeps as stored.
+	 *
+	 * A url action that cannot be linked to is refused when a save writes it. A save that
+	 * leaves the notification block as stored (an authorization change, a revocation, a
+	 * repair) only warns, so a rule stored before the check does not block other edits.
+	 *
+	 * @param Schema $old    The stored row.
+	 * @param Entity $schema The schema to save.
+	 *
+	 * @return Schema The schema to write.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function preparedOver(Schema $old, Entity $schema): Schema {
+		if (self::keepsNotifications(old: $old, new: $schema) === false) {
+			return $this->preparedForUpdate(schema: $schema);
+		}
+
+		$wasWarning = $this->warnOnUnlinkableNotificationActions();
+		try {
+			return $this->preparedForUpdate(schema: $schema);
+		} finally {
+			$this->warnUnlinkable = $wasWarning;
+		}
+	}//end preparedOver()
+
+	/**
+	 * Whether a save leaves the notification block exactly as stored.
+	 *
+	 * @param Schema $old The stored row.
+	 * @param Entity $new The schema to save.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private static function keepsNotifications(Schema $old, Entity $new): bool {
+		$key = 'x-openregister-notifications';
+
+		return $new instanceof Schema
+			&& (new SchemaAnnotation(schema: $old, key: $key))->value() === (new SchemaAnnotation(schema: $new, key: $key))->value();
+	}//end keepsNotifications()
 
 	/**
 	 * Make a schema ready to be written over its stored row.
