@@ -58,23 +58,49 @@ use Psr\Log\LoggerInterface;
  */
 class LockHandler {
 	/**
+	 * Magic mapper for magic table operations.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Audit trail mapper for logging actions.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Pre-creation locks, for identifiers that do not resolve to a stored object.
+	 *
+	 * @var AdvisoryLockStore
+	 */
+	private readonly AdvisoryLockStore $advisory;
+
+	/**
+	 * Bookkeeping for run-held locks, so the terminal listener and the sweep can find them.
+	 *
+	 * @var RunLockRegistry|null
+	 */
+	private readonly ?RunLockRegistry $runLocks;
+
+	/**
 	 * Constructor
 	 *
-	 * @param MagicMapperInterface      $magicMapper      Magic mapper for magic table operations
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logging actions
-	 * @param LoggerInterface           $logger           PSR-3 logger
-	 * @param AdvisoryLockStore         $advisory         Pre-creation locks, for identifiers that do not resolve to a stored object
-	 * @param LockAuthorization         $authorization    Who may take, release and break a lock
-	 * @param RunLockRegistry|null      $runLocks         Bookkeeping for run-held locks, so the terminal listener and the sweep can find them
+	 * @param LockStores        $stores        The magic, audit trail, advisory and run-lock stores
+	 * @param LoggerInterface   $logger        PSR-3 logger
+	 * @param LockAuthorization $authorization Who may take, release and break a lock
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		LockStores $stores,
 		private readonly LoggerInterface $logger,
-		private readonly AdvisoryLockStore $advisory,
 		private readonly LockAuthorization $authorization,
-		private readonly ?RunLockRegistry $runLocks = null,
 	) {
+		$this->magicMapper      = $stores->magicMapper;
+		$this->auditTrailMapper = $stores->auditTrailMapper;
+		$this->advisory         = $stores->advisory;
+		$this->runLocks         = $stores->runLocks;
 	}//end __construct()
 
 	/**
