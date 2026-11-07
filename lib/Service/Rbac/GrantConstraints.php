@@ -157,11 +157,7 @@ class GrantConstraints {
 	 * @return mixed The value, filtered where it is a rule list.
 	 */
 	private function applyToKey(mixed $key, mixed $value, array $area, DateTimeInterface $now): mixed {
-		if (is_string($key) === false || in_array($key, self::SKIPPED_KEYS, true) === true) {
-			return $value;
-		}
-
-		if (is_array($value) === false) {
+		if ($this->isRuleKey(key: $key, value: $value) === false) {
 			return $value;
 		}
 
@@ -173,13 +169,22 @@ class GrantConstraints {
 			return $this->applyToRoleAssignments(assignments: $value, area: $area, now: $now);
 		}
 
-		return array_values(
-			array_filter(
-				$value,
-				fn (mixed $entry): bool => $this->reaches(entry: $entry, area: $area, now: $now)
-			)
-		);
+		$reaches = fn (mixed $entry): bool => $this->reaches(entry: $entry, area: $area, now: $now);
+
+		return array_values(array_filter($value, $reaches));
 	}//end applyToKey()
+
+	/**
+	 * Whether one block key holds rules the constraints apply to.
+	 *
+	 * @param mixed $key   The block key.
+	 * @param mixed $value Its value.
+	 *
+	 * @return bool False for a non-string or skipped key, and for a value that is not a list or block.
+	 */
+	private function isRuleKey(mixed $key, mixed $value): bool {
+		return is_string($key) === true && in_array($key, self::SKIPPED_KEYS, true) === false && is_array($value) === true;
+	}//end isRuleKey()
 
 	/**
 	 * Whether one entry still reaches this area at this moment.

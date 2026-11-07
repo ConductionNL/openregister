@@ -229,18 +229,21 @@ class TokenGrantNarrower {
 			return [];
 		}
 
-		$verbs = [];
-		foreach (array_keys($block) as $key) {
-			$key = (string)$key;
-			if (in_array($key, PermissionCatalogueInterface::CONTROL_KEYS, true) === true || $key === self::MARKER) {
-				continue;
-			}
+		$keys = array_map(static fn (int|string $key): string => (string)$key, array_keys($block));
 
-			$verbs[] = $key;
-		}
-
-		return $verbs;
+		return array_values(array_filter($keys, self::isVerbKey(...)));
 	}//end verbsIn()
+
+	/**
+	 * Whether one block key is a verb rather than a control key or the grant marker.
+	 *
+	 * @param string $key The block key.
+	 *
+	 * @return bool
+	 */
+	private static function isVerbKey(string $key): bool {
+		return in_array($key, PermissionCatalogueInterface::CONTROL_KEYS, true) === false && $key !== self::MARKER;
+	}//end isVerbKey()
 
 	/**
 	 * The canonical verbs, used to close a block that had no rules at all.

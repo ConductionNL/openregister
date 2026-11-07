@@ -99,22 +99,45 @@ class DenyEntryMatcher {
 	 */
 	private function namesArrayEntry(array $entry, array $principals): ?string {
 		$group = ($entry['group'] ?? null);
-		if (is_string($group) === true && $group !== self::SCOPE_MCP
-			&& in_array(needle: $group, haystack: $principals, strict: true) === true
-		) {
+		if ($this->namesGroup(group: $group, principals: $principals) === true) {
 			return $group;
 		}
 
-		$user = ($entry['user'] ?? null);
-		if (is_string($user) === true && $user !== '') {
-			$named = (DenyResolverInterface::USER_PREFIX . $user);
-			if (in_array(needle: $named, haystack: $principals, strict: true) === true) {
-				return $named;
-			}
+		$named = $this->userPrincipal(user: ($entry['user'] ?? null));
+		if ($named !== null && in_array(needle: $named, haystack: $principals, strict: true) === true) {
+			return $named;
 		}
 
 		return null;
 	}//end namesArrayEntry()
+
+	/**
+	 * Whether an entry's group is one of the caller's principals; the MCP scope never is.
+	 *
+	 * @param mixed    $group      The entry's `group` value.
+	 * @param string[] $principals The caller's principals.
+	 *
+	 * @return bool True when the group names the caller.
+	 */
+	private function namesGroup(mixed $group, array $principals): bool {
+		return is_string($group) === true && $group !== self::SCOPE_MCP
+			&& in_array(needle: $group, haystack: $principals, strict: true) === true;
+	}//end namesGroup()
+
+	/**
+	 * The `user:` principal of a non-empty user id.
+	 *
+	 * @param mixed $user The entry's `user` value.
+	 *
+	 * @return string|null The prefixed principal, or null when the id is not a non-empty string.
+	 */
+	private function userPrincipal(mixed $user): ?string {
+		if (is_string($user) === true && $user !== '') {
+			return (DenyResolverInterface::USER_PREFIX . $user);
+		}
+
+		return null;
+	}//end userPrincipal()
 
 	/**
 	 * The deny entries that reach this caller, as provenance records.

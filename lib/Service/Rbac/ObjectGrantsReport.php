@@ -65,7 +65,7 @@ class ObjectGrantsReport {
 	 * @param ObjectShareReader    $shares        The shares on the object's own folder.
 	 * @param InheritedGrantLister $inherited     The shares on its ancestors' folders.
 	 * @param GrantRuleFit         $rules         How a rule entry fits this record, and whom it names.
-	 * @param ObjectScopeResolverInterface  $scopeResolver The owning group.
+	 * @param ObjectScopeResolver  $scopeResolver The owning group.
 	 * @param IUserManager         $userManager   User display names.
 	 * @param IGroupManager        $groupManager  Group display names.
 	 * @param ShareGrantAttributes $attributes    Extension verbs and the inheritable flag of a share.
@@ -77,7 +77,7 @@ class ObjectGrantsReport {
 		private readonly ObjectShareReader $shares,
 		private readonly InheritedGrantLister $inherited,
 		private readonly GrantRuleFit $rules,
-		private readonly ObjectScopeResolverInterface $scopeResolver,
+		private readonly ObjectScopeResolver $scopeResolver,
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
 		private readonly ShareGrantAttributes $attributes = new ShareGrantAttributes(),
@@ -142,7 +142,7 @@ class ObjectGrantsReport {
 	 * @return array<string, array<string, mixed>> The rows.
 	 */
 	private function ownerRows(ObjectEntity $object, array $rows): array {
-		$verbs = array_keys(PermissionCatalogueInterface::CANONICAL);
+		$verbs = array_keys(PermissionCatalogue::CANONICAL);
 
 		$owner = $object->getOwner();
 		if (is_string($owner) === true && $owner !== '') {

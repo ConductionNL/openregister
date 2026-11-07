@@ -250,30 +250,52 @@ class AuthorizationDenyValidator {
 	 * @return string|null The principal, or null when the entry names none.
 	 */
 	private function principalOf(mixed $entry): ?string {
-		$candidate = null;
-
-		if (is_string($entry) === true) {
-			$candidate = $entry;
-		}
-
-		if (is_array($entry) === true) {
-			$group = ($entry['group'] ?? null);
-			if (is_string($group) === true) {
-				$candidate = $group;
-			}
-
-			$user = ($entry['user'] ?? null);
-			if ($candidate === null && is_string($user) === true && $user !== '') {
-				$candidate = (DenyResolverInterface::USER_PREFIX . $user);
-			}
-		}
-
+		$candidate = $this->candidateOf(entry: $entry);
 		if ($candidate === null || $candidate === '') {
 			return null;
 		}
 
 		return $this->denyResolver->entryNames(entry: $entry, principals: [$candidate]);
 	}//end principalOf()
+
+	/**
+	 * The principal one entry spells: the string itself, its group, else its user.
+	 *
+	 * @param mixed $entry The deny entry as written.
+	 *
+	 * @return string|null The spelled principal, or null when it spells none.
+	 */
+	private function candidateOf(mixed $entry): ?string {
+		if (is_string($entry) === true) {
+			return $entry;
+		}
+
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$group = ($entry['group'] ?? null);
+		if (is_string($group) === true) {
+			return $group;
+		}
+
+		return $this->userPrincipal(user: ($entry['user'] ?? null));
+	}//end candidateOf()
+
+	/**
+	 * The `user:` principal of a non-empty user id.
+	 *
+	 * @param mixed $user The entry's `user` value.
+	 *
+	 * @return string|null The prefixed principal, or null when the id is not a non-empty string.
+	 */
+	private function userPrincipal(mixed $user): ?string {
+		if (is_string($user) === true && $user !== '') {
+			return (DenyResolverInterface::USER_PREFIX . $user);
+		}
+
+		return null;
+	}//end userPrincipal()
 
 	/**
 	 * Render a list of principals for a message.

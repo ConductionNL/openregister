@@ -74,12 +74,7 @@ class ObjectAuthorizationWriter {
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
-	public function writeAuthorizationBlock(
-		Register $register,
-		Schema $schema,
-		string $objectUuid,
-		array $block,
-	): void {
+	public function writeAuthorizationBlock(Register $register, Schema $schema, string $objectUuid, array $block): void {
 		$table = $this->mapper->getTableNameForRegisterSchema($register, $schema);
 
 		$qb = $this->db->getQueryBuilder();
@@ -88,14 +83,10 @@ class ObjectAuthorizationWriter {
 			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($objectUuid)));
 		$qb->executeStatement();
 
+		$scope = ($block[ObjectScopeResolverInterface::SCOPE_KEY] ?? null);
 		$this->logger->info(
 			message: '[ObjectAuthorizationWriter] Wrote the authorization block for an object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $objectUuid,
-				'scope' => ($block[ObjectScopeResolverInterface::SCOPE_KEY] ?? null),
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $objectUuid, 'scope' => $scope]
 		);
 	}//end writeAuthorizationBlock()
 

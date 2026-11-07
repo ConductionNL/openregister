@@ -35,7 +35,7 @@ final class WriteOnlyPathWalkerTest extends TestCase {
 	 * @return void
 	 */
 	public function testStripRemovesTheBodyLeafAndTheMirrorSubtree(): void {
-		$walker = new WriteOnlyPathWalker(new NullLogger());
+		$walker = new WriteOnlyPathWalker(logger: new NullLogger());
 		$object = [
 			'a' => ['b' => ['c' => 1, 'd' => 2]],
 			'a.b' => 'mirror',
@@ -43,8 +43,8 @@ final class WriteOnlyPathWalkerTest extends TestCase {
 			'a.bc' => 'kept',
 		];
 
-		$this->assertSame(['a' => [], 'a.bc' => 'kept'], $walker->strip('a.b', $object));
-		$this->assertSame(['a' => ['b' => ['d' => 2]], 'a.b' => 'mirror', 'a.bc' => 'kept'], $walker->strip('a.b.c', $object));
+		$this->assertSame(['a' => [], 'a.bc' => 'kept'], $walker->strip(path: 'a.b', object: $object));
+		$this->assertSame(['a' => ['b' => ['d' => 2]], 'a.b' => 'mirror', 'a.bc' => 'kept'], $walker->strip(path: 'a.b.c', object: $object));
 	}
 
 	/**
@@ -53,10 +53,10 @@ final class WriteOnlyPathWalkerTest extends TestCase {
 	 * @return void
 	 */
 	public function testStripNeverCreatesKeys(): void {
-		$walker = new WriteOnlyPathWalker(new NullLogger());
+		$walker = new WriteOnlyPathWalker(logger: new NullLogger());
 
-		$this->assertSame(['x' => 1], $walker->strip('a.b', ['x' => 1]));
-		$this->assertSame(['a' => 'flat'], $walker->strip('a.b', ['a' => 'flat']));
+		$this->assertSame(['x' => 1], $walker->strip(path: 'a.b', object: ['x' => 1]));
+		$this->assertSame(['a' => 'flat'], $walker->strip(path: 'a.b', object: ['a' => 'flat']));
 	}
 
 	/**
@@ -65,12 +65,12 @@ final class WriteOnlyPathWalkerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnExplicitNullExists(): void {
-		$walker = new WriteOnlyPathWalker(new NullLogger());
+		$walker = new WriteOnlyPathWalker(logger: new NullLogger());
 
-		$this->assertTrue($walker->exists('a.b', ['a' => ['b' => null]]));
-		$this->assertNull($walker->read('a.b', ['a' => ['b' => null]]));
-		$this->assertFalse($walker->exists('a.b', ['a' => null]));
-		$this->assertFalse($walker->exists('a.b.c', ['a' => ['b' => 'flat']]));
+		$this->assertTrue($walker->exists(path: 'a.b', object: ['a' => ['b' => null]]));
+		$this->assertNull($walker->read(path: 'a.b', object: ['a' => ['b' => null]]));
+		$this->assertFalse($walker->exists(path: 'a.b', object: ['a' => null]));
+		$this->assertFalse($walker->exists(path: 'a.b.c', object: ['a' => ['b' => 'flat']]));
 	}
 
 	/**
@@ -79,12 +79,12 @@ final class WriteOnlyPathWalkerTest extends TestCase {
 	 * @return void
 	 */
 	public function testRestoreWritesOnlyTheLeaf(): void {
-		$walker = new WriteOnlyPathWalker(new NullLogger());
+		$walker = new WriteOnlyPathWalker(logger: new NullLogger());
 
-		$this->assertSame(['a' => ['e' => 1, 'b' => ['c' => 's']]], $walker->restore('a.b.c', ['a' => ['e' => 1]], 's'));
-		$this->assertSame(['a' => ['b' => ['c' => 's']]], $walker->restore('a.b.c', ['a' => null], 's'));
-		$this->assertSame(['a' => 'flat'], $walker->restore('a.b.c', ['a' => 'flat'], 's'));
-		$this->assertSame(['a' => ['b' => 'flat']], $walker->restore('a.b.c', ['a' => ['b' => 'flat']], 's'));
-		$this->assertSame(['top' => 's'], $walker->restore('top', [], 's'));
+		$this->assertSame(['a' => ['e' => 1, 'b' => ['c' => 's']]], $walker->restore(path: 'a.b.c', prepared: ['a' => ['e' => 1]], value: 's'));
+		$this->assertSame(['a' => ['b' => ['c' => 's']]], $walker->restore(path: 'a.b.c', prepared: ['a' => null], value: 's'));
+		$this->assertSame(['a' => 'flat'], $walker->restore(path: 'a.b.c', prepared: ['a' => 'flat'], value: 's'));
+		$this->assertSame(['a' => ['b' => 'flat']], $walker->restore(path: 'a.b.c', prepared: ['a' => ['b' => 'flat']], value: 's'));
+		$this->assertSame(['top' => 's'], $walker->restore(path: 'top', prepared: [], value: 's'));
 	}
 }

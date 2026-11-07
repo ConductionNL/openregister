@@ -124,22 +124,22 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 		];
 
 		$actual = [];
-		$actual['filter'] = [$handler->filterReadableProperties($schema, $object), $log];
+		$actual['filter'] = [$handler->filterReadableProperties(schema: $schema, object: $object), $log];
 		$log = [];
-		$actual['strip'] = [$handler->stripWriteOnlyProperties($schema, $object), $log];
+		$actual['strip'] = [$handler->stripWriteOnlyProperties(schema: $schema, object: $object), $log];
 		$log = [];
-		$actual['unauthorizedUpdate'] = [$handler->getUnauthorizedProperties($schema, $object, $incoming), $log];
+		$actual['unauthorizedUpdate'] = [$handler->getUnauthorizedProperties(schema: $schema, object: $object, incomingData: $incoming), $log];
 		$log = [];
-		$actual['unauthorizedCreate'] = [$handler->getUnauthorizedProperties($schema, [], $incoming, true), $log];
+		$actual['unauthorizedCreate'] = [$handler->getUnauthorizedProperties(schema: $schema, object: [], incomingData: $incoming, isCreate: true), $log];
 		$log = [];
-		$omitted = $handler->collectOmittedWriteOnlyPaths($schema, $incoming);
+		$omitted = $handler->collectOmittedWriteOnlyPaths(schema: $schema, incoming: $incoming);
 		$actual['omittedWriteOnly'] = $omitted;
-		$actual['omittedProtected'] = [$handler->collectOmittedProtectedProperties($schema, ['status' => $status], $object), $log];
+		$actual['omittedProtected'] = [$handler->collectOmittedProtectedProperties(schema: $schema, incoming: ['status' => $status], stored: $object), $log];
 		$log = [];
-		$actual['restore'] = $handler->restoreWriteOnlyValues($incoming, $object, [...$omitted, 'nowhere.at.all']);
-		$actual['restoreScalar'] = $handler->restoreWriteOnlyValues(['cfg' => 'flat'], $object, ['cfg.auth.secret']);
+		$actual['restore'] = $handler->restoreWriteOnlyValues(prepared: $incoming, stored: $object, omittedPaths: [...$omitted, 'nowhere.at.all']);
+		$actual['restoreScalar'] = $handler->restoreWriteOnlyValues(prepared: ['cfg' => 'flat'], stored: $object, omittedPaths: ['cfg.auth.secret']);
 		$actual['couldRead'] = array_map(
-			fn (string $p): bool => $handler->couldReadProperty($schema, $p),
+			fn (string $p): bool => $handler->couldReadProperty(schema: $schema, property: $p),
 			array_combine(array_keys(self::AUTH), array_keys(self::AUTH))
 		);
 		$actual['isAdmin'] = $handler->isAdmin();
@@ -211,7 +211,14 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 			}
 		);
 
-		return new PropertyRbacHandler($session, $groups, $matcher, $logger, $states, $reveals);
+		return new PropertyRbacHandler(
+			userSession: $session,
+			groupManager: $groups,
+			conditionMatcher: $matcher,
+			logger: $logger,
+			stateFieldRules: $states,
+			reveals: $reveals
+		);
 	}
 
 	/**

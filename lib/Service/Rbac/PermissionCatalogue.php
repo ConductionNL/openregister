@@ -218,26 +218,35 @@ class PermissionCatalogue implements PermissionCatalogueInterface {
 			return [];
 		}
 
-		$unknown = [];
-		foreach (array_keys($authorization) as $key) {
-			if (is_string($key) === false || in_array($key, self::CONTROL_KEYS, true) === true) {
-				continue;
-			}
-
-			if ($this->isGrantable(verb: $key) === false) {
-				$unknown[$key] = true;
-			}
-		}
+		$unknown = $this->unknownKeysOf(authorization: $authorization);
 
 		$deny = ($authorization[DenyResolverInterface::DENY_KEY] ?? null);
 		if (is_array($deny) === true) {
-			foreach ($this->unknownVerbsIn(authorization: $deny) as $verb) {
-				$unknown[$verb] = true;
-			}
+			$unknown += array_fill_keys($this->unknownVerbsIn(authorization: $deny), true);
 		}
 
 		return array_keys($unknown);
 	}//end unknownVerbsIn()
+
+	/**
+	 * The top-level keys of a block that are neither a control key nor a grantable verb.
+	 *
+	 * @param array $authorization The block as written.
+	 *
+	 * @return array<string, true> The unknown verbs as keys, in the order they appear.
+	 */
+	private function unknownKeysOf(array $authorization): array {
+		$unknown = [];
+		foreach (array_keys($authorization) as $key) {
+			if (is_string($key) === true && in_array($key, self::CONTROL_KEYS, true) === false
+				&& $this->isGrantable(verb: $key) === false
+			) {
+				$unknown[$key] = true;
+			}
+		}
+
+		return $unknown;
+	}//end unknownKeysOf()
 
 	/**
 	 * The verbs a set of role definitions names that the catalogue does not.
