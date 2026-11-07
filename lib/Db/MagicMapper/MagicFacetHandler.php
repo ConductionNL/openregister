@@ -1840,7 +1840,7 @@ class MagicFacetHandler {
 		$endMonth = $startMonth + 2;
 		return [
 			'from' => sprintf('%04d-%02d-01', $year, $startMonth),
-			'to' => sprintf('%04d-%02d-%02d', $year, $endMonth, cal_days_in_month(0, $endMonth, $year)),
+			'to' => (new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $endMonth)))->format('Y-m-t'),
 		];
 	}//end quarterBounds()
 
