@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCP\AppFramework\Controller;
@@ -54,7 +54,7 @@ class FlowTestRunController extends Controller {
 	 * @param string            $appName     The app id.
 	 * @param IRequest          $request     The request.
 	 * @param FlowRunServiceInterface    $runner      Queues and executes a run.
-	 * @param FlowLocator       $resolvers   Resolves the flow being tested.
+	 * @param FlowLocatorInterface       $resolvers   Resolves the flow being tested.
 	 * @param IUserSession      $userSession Who is asking, for attribution.
 	 * @param FlowRunnableGuard $guard       Whether the caller may run and edit this flow.
 	 */
@@ -62,7 +62,7 @@ class FlowTestRunController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly FlowRunServiceInterface $runner,
-		private readonly FlowLocator $resolvers,
+		private readonly FlowLocatorInterface $resolvers,
 		private readonly IUserSession $userSession,
 		private readonly FlowRunnableGuard $guard,
 	) {
