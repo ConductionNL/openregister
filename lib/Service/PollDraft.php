@@ -144,11 +144,11 @@ final class PollDraft {
 	 */
 	public function pollType(): string {
 		$lower = strtolower(trim($this->type));
-		if ($lower === 'text' || $lower === 'textpoll' || $this->type === '') {
+		if (in_array($lower, ['text', 'textpoll'], true) === true || $this->type === '') {
 			return 'textPoll';
 		}
 
-		if ($lower === 'date' || $lower === 'datepoll') {
+		if (in_array($lower, ['date', 'datepoll'], true) === true) {
 			return 'datePoll';
 		}
 
