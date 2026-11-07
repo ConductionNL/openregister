@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RefLoopGuard;
+use OCA\OpenRegister\Service\Object\RefLoopGuardParser;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -29,6 +30,7 @@ use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\KeywordValidator;
 use Opis\JsonSchema\ValidationContext;
 use Opis\JsonSchema\ValidationResult;
+use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -69,6 +71,33 @@ class ValidateObjectRefLoopTest extends TestCase {
 			ValidationResult::class,
 			$this->handler()->validateObject(object: ['a' => ['x' => 1]], schema: $this->schema(), schemaObject: $this->schemaObject($properties))
 		);
+	}
+
+	/**
+	 * The reference keywords of the other drafts come back to themselves as well.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function otherDraftLoops(): array {
+		return [
+			'$recursiveRef' => ['{"$schema":"https://json-schema.org/draft/2019-09/schema","$recursiveAnchor":true,"allOf":[{"$recursiveRef":"#"}]}'],
+			'$dynamicRef' => ['{"$schema":"https://json-schema.org/draft/2020-12/schema","$dynamicAnchor":"n","allOf":[{"$dynamicRef":"#n"}]}'],
+		];
+	}
+
+	/**
+	 * The guarded parser ends those loops too.
+	 *
+	 * @param string $schema The schema.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('otherDraftLoops')]
+	public function testALoopOfAnotherDraftEnds(string $schema): void {
+		$validator = new Validator();
+		$validator->setParser((new RefLoopGuardParser(keyword: '$ref'))->schemaParser());
+
+		$this->assertTrue($validator->validate((object) ['a' => 1], $schema)->isValid());
 	}
 
 	/**
