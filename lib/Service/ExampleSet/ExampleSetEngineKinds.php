@@ -296,7 +296,7 @@ class ExampleSetEngineKinds {
 	public function delete(array &$record, array &$report, callable $written): void {
 		foreach ($this->kinds() as $part => [$rows, $noun]) {
 			foreach (array_reverse(($record[$part] ?? []), true) as $name => $entry) {
-				$failure = $this->deleteRow(rows: $rows, entry: $entry, part: $part);
+				$failure = $this->failure(outcome: $rows?->revert(entry: $entry), part: $part);
 				if ($failure !== null) {
 					$report['failed'][] = $noun.' '.$name.$failure;
 					continue;
@@ -310,25 +310,24 @@ class ExampleSetEngineKinds {
 	}//end delete()
 
 	/**
-	 * Delete one row the set wrote: null when it is gone, else what follows its name under `failed`.
+	 * What follows a row's name under `failed` when deleting it did not take it away, or null when it is gone.
 	 *
-	 * @param ExampleSetEngineRows|null $rows  The part's writer, null when this OpenRegister has none.
-	 * @param array<string, mixed>      $entry The record entry.
-	 * @param string                    $part  The part.
+	 * @param string|null $outcome What the part's writer's revert() answered; null when this OpenRegister has none.
+	 * @param string      $part    The part.
 	 *
 	 * @return string|null
 	 */
-	private function deleteRow(?ExampleSetEngineRows $rows, array $entry, string $part): ?string {
-		if ($rows === null) {
+	private function failure(?string $outcome, string $part): ?string {
+		if ($outcome === null) {
 			return ': this OpenRegister cannot delete '.$part;
 		}
 
-		if ($rows->revert(entry: $entry) === 'failed') {
+		if ($outcome === 'failed') {
 			return '';
 		}
 
 		return null;
-	}//end deleteRow()
+	}//end failure()
 
 	/**
 	 * Each kind by its part, in the order its rows are checked, written, proved and deleted: the writer (null when
