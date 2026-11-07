@@ -52,21 +52,7 @@ use Psr\Log\LoggerInterface;
  * __construct exists so an outcome cannot be built without saying which of
  * the four it is.
  */
-class RestorePriorValuesAction implements ReversibleBulkActionInterface {
-
-	/**
-	 * The action id.
-	 *
-	 * @var string
-	 */
-	public const ID = 'openregister:restore-prior-values';
-
-	/**
-	 * The parameter naming the job being undone.
-	 *
-	 * @var string
-	 */
-	public const PARAM_JOB = 'reversesJobId';
+class RestorePriorValuesAction implements ReversibleBulkActionInterface, RestorePriorValuesActionInterface {
 
 	/**
 	 * How long a reversal itself stays undoable, in seconds.
