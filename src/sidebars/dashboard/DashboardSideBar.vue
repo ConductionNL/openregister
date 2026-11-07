@@ -89,8 +89,7 @@ import {
 					<span>{{ t('openregister', 'Loading statistics...') }}</span>
 				</div>
 				<div v-else-if="orphanedItems" class="statsContainer">
-					<StatisticsTotalsTable
-						:stats="orphanedItems.stats" />
+					<StatisticsTotalsTable :stats="orphanedItems.stats" />
 				</div>
 			</div>
 		</NcAppSidebarTab>
@@ -194,7 +193,10 @@ export default {
 		 */
 		registerCountRows() {
 			return [
-				{ label: t('openregister', 'Registers'), count: this.filteredRegisters.length },
+				{
+					label: t('openregister', 'Registers'),
+					count: this.filteredRegisters.length,
+				},
 				{ label: t('openregister', 'Schemas'), count: this.totalSchemas },
 			]
 		},

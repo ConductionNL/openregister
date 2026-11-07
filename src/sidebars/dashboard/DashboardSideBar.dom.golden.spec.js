@@ -43,7 +43,11 @@ function mockStores() {
 		const target = reactive(state)
 		return new Proxy(target, {
 			get(obj, key) {
-				if (typeof key === 'string' && !key.startsWith('__v') && !(key in obj)) {
+				if (
+					typeof key === 'string'
+					&& !key.startsWith('__v')
+					&& !(key in obj)
+				) {
 					return (...args) => {
 						log.push([`${name}.${key}`, ...args])
 						return Promise.resolve()
@@ -56,7 +60,10 @@ function mockStores() {
 	return {
 		dashboardStore: store('dashboardStore', { loading: false, registers: [] }),
 		objectStore: store('objectStore', { metadata: {} }),
-		registerStore: store('registerStore', { registerList: [], registerItem: null }),
+		registerStore: store('registerStore', {
+			registerList: [],
+			registerItem: null,
+		}),
 		schemaStore: store('schemaStore', { schemaList: [], schemaItem: null }),
 		navigationStore: store('navigationStore', {}),
 	}
@@ -96,7 +103,8 @@ function mockStub(name) {
 		render() {
 			const attrs = Object.fromEntries(
 				Object.entries(this.$attrs).filter(
-					([key, value]) => !/^on[A-Z]/.test(key) && typeof value !== 'object',
+					([key, value]) =>
+						!/^on[A-Z]/.test(key) && typeof value !== 'object',
 				),
 			)
 			return render(
@@ -123,7 +131,13 @@ function totals(title, base) {
 	return {
 		title,
 		stats: {
-			objects: { total: base, size: base * 1024, invalid: base + 1, deleted: base + 2, locked: base + 3 },
+			objects: {
+				total: base,
+				size: base * 1024,
+				invalid: base + 1,
+				deleted: base + 2,
+				locked: base + 3,
+			},
 			logs: { total: base + 4, size: base * 2048 },
 			files: { total: base + 5, size: base * 1048576 },
 		},
