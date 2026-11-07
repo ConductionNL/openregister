@@ -34,6 +34,16 @@ use OCA\OpenRegister\Service\Config\SchemaShareableConfigScannerInterface;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDestinationValidator;
+use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
+use OCA\OpenRegister\Service\Form\FormIdempotencyStoreInterface;
+use OCA\OpenRegister\Service\Form\FormSubmitService;
+use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -54,6 +64,11 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 */
 	private const HIDDEN = [
 		FederatedConfigService::class => [FederatedConfigServiceInterface::class, ContractBindings::class],
+		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
+		FormDestinationValidator::class => [FormDestinationValidatorInterface::class, ContractBindings::class],
+		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],
+		FormSubmitService::class => [FormSubmitServiceInterface::class, ContractBindings::class],
+		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
 		SchemaShareableConfigScanner::class => [SchemaShareableConfigScannerInterface::class, ContractBindings::class],
 		ShareableConfigTypeRegistry::class => [ShareableConfigTypeRegistryInterface::class, ContractBindings::class],
 	];
