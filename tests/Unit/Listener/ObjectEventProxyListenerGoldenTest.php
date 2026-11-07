@@ -136,10 +136,17 @@ class ObjectEventProxyListenerGoldenTest extends TestCase {
 	 * @param string                            $filter    Kill switch value.
 	 * @param string|null                       $cached    Cached map JSON for every key, or null.
 	 * @param array<string, array<int, string>>|\Throwable $schemaMap What findIdsBySlugs answers for schemas.
+	 * @param \Throwable|null                   $setError  Thrown by every cache write, or null.
 	 *
 	 * @return ObjectEventProxyListener
 	 */
-	private function proxy(array $services, string $filter = 'on', ?string $cached = null, array|\Throwable $schemaMap = []): ObjectEventProxyListener {
+	private function proxy(
+		array $services,
+		string $filter = 'on',
+		?string $cached = null,
+		array|\Throwable $schemaMap = [],
+		?\Throwable $setError = null
+	): ObjectEventProxyListener {
 		$schemaMapper = $this->createMock(SchemaMapperInterface::class);
 		$schemaMapper->method('findIdsBySlugs')->willReturnCallback(
 			function (array $slugs) use ($schemaMap) {
@@ -180,8 +187,12 @@ class ObjectEventProxyListenerGoldenTest extends TestCase {
 		$cache = $this->createMock(ICache::class);
 		$cache->method('get')->willReturn($cached);
 		$cache->method('set')->willReturnCallback(
-			function (string $key, mixed $value, int $ttl = 0): bool {
+			function (string $key, mixed $value, int $ttl = 0) use ($setError): bool {
 				$this->cacheWrites[] = [$key, $value, $ttl];
+				if ($setError !== null) {
+					throw $setError;
+				}
+
 				return true;
 			}
 		);
@@ -293,6 +304,26 @@ class ObjectEventProxyListenerGoldenTest extends TestCase {
 		$this->assertSame([['warning', 'Filtered object-event subscription could not resolve slugs: db down']], $this->logs);
 		$this->assertSame([], $this->cacheWrites);
 	}//end testSlugFailureLogsAndSkips()
+
+	/**
+	 * A failing cache write is logged but the fetched map still routes.
+	 *
+	 * @return void
+	 */
+	public function testCacheWriteFailureKeepsTheFetchedMap(): void {
+		$this->declare(listener: 'a', schemas: ['person']);
+		$proxy = $this->proxy(
+			services: ['a' => $this->spy(name: 'a')],
+			schemaMap: ['person' => ['9']],
+			setError: new \RuntimeException(message: 'cache down')
+		);
+
+		$proxy->handle($this->event());
+
+		$this->assertSame(['a'], $this->invoked);
+		$this->assertSame([['schema', ['person']]], $this->slugQueries);
+		$this->assertSame([['warning', 'Filtered object-event subscription could not resolve slugs: cache down']], $this->logs);
+	}//end testCacheWriteFailureKeepsTheFetchedMap()
 
 	/**
 	 * With the kill switch off every subscription runs.

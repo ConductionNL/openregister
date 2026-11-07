@@ -579,7 +579,7 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * @param ICache             $cache    The local cache.
 	 * @param string             $cacheKey The map's key.
 	 *
-	 * @return array<string, array<int, string>>|null Null when resolution failed.
+	 * @return array<string, array<int, string>>|null Null when the lookup failed.
 	 */
 	private function fetchMap(array $tokens, bool $isSchema, ICache $cache, string $cacheKey): ?array {
 		$mapperClass = RegisterMapperInterface::class;
@@ -587,14 +587,15 @@ final class ObjectEventProxyListener implements IEventListener {
 			$mapperClass = SchemaMapperInterface::class;
 		}
 
+		$map = null;
 		try {
 			$map = $this->container->get($mapperClass)->findIdsBySlugs($tokens);
 			$cache->set($cacheKey, json_encode($map), self::MAP_TTL);
-			return $map;
 		} catch (\Throwable $e) {
 			$this->logger->warning('Filtered object-event subscription could not resolve slugs: ' . $e->getMessage(), ['exception' => $e]);
-			return null;
 		}
+
+		return $map;
 	}//end fetchMap()
 
 	/**
