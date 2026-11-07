@@ -29,6 +29,7 @@ use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
 use OCA\OpenRegister\Service\Case\CasePlanEnsurer;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\UnarmedTimerMarkers;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -69,11 +70,9 @@ class CasePlanEnsurerTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 
 		return new CasePlanEnsurer(
-			items: $this->items,
-			audits: $this->audits,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
 			definitions: new CasePlanDefinition(sentries: new CaseSentryEvaluator(catalog: new EventCatalogService())),
 			transitions: new CasePlanTransitions(),
-			db: $db,
 			timers: $timers
 		);
 	}//end ensurer()

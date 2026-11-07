@@ -244,11 +244,9 @@ class CasePlanService implements CasePlanServiceInterface {
 		$actor = $this->systemActor(app: $app);
 		if ($this->ensurer === null) {
 			$this->ensurer = new CasePlanEnsurer(
-				items: $this->store->items,
-				audits: $this->store->audits,
+				store: $this->store,
 				definitions: $this->mechanics->definitions,
 				transitions: new CasePlanTransitions(),
-				db: $this->store->db,
 				timers: $this->timers
 			);
 		}

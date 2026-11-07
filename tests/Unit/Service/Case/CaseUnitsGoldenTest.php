@@ -307,11 +307,9 @@ class CaseUnitsGoldenTest extends TestCase {
 
 	private function ensurer(?CasePlanItemTimers $timers = null): CasePlanEnsurer {
 		return new CasePlanEnsurer(
-			items: $this->items,
-			audits: $this->audits,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db(), logger: new NullLogger()),
 			definitions: $this->definitions(),
 			transitions: new CasePlanTransitions(),
-			db: $this->db(),
 			timers: $timers
 		);
 	}//end ensurer()
