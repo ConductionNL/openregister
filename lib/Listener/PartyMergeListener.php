@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -68,14 +68,14 @@ class PartyMergeListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $links The link rows.
-	 * @param PartyService $parties The party records.
+	 * @param ContactLinkMapper         $links   The link rows.
+	 * @param PartyServiceInterface     $parties The party records.
 	 * @param ObjectOperationsInterface $objects The object layer, for the address union.
-	 * @param LoggerInterface $logger Diagnostics; a party that will not carry over never fails the merge.
+	 * @param LoggerInterface           $logger  Diagnostics; a party that will not carry over never fails the merge.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
-		private readonly PartyService $parties,
+		private readonly PartyServiceInterface $parties,
 		private readonly ObjectOperationsInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {

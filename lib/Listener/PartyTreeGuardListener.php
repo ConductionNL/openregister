@@ -36,7 +36,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -52,10 +52,10 @@ class PartyTreeGuardListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param PartyService $parties The party records and the tree guard.
+	 * @param PartyServiceInterface $parties The party records and the tree guard.
 	 */
 	public function __construct(
-		private readonly PartyService $parties,
+		private readonly PartyServiceInterface $parties,
 	) {
 	}//end __construct()
 
