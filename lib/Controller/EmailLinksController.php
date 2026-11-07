@@ -39,7 +39,7 @@ use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\EmailLinkServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -62,14 +62,14 @@ class EmailLinksController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param EmailLinkService $emailLinkService Backing service.
+	 * @param EmailLinkServiceInterface $emailLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 * @param PermissionHandler $permissions Answers the object update right
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly EmailLinkService $emailLinkService,
+		private readonly EmailLinkServiceInterface $emailLinkService,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly PermissionHandler $permissions,
 	) {

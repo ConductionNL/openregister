@@ -42,6 +42,8 @@ use OCA\OpenRegister\ContextChat\ContentProvider;
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
 use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
 use OCA\OpenRegister\Files\FilesRegistrar;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
@@ -56,6 +58,8 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -104,9 +108,21 @@ final class D9InterfaceBindingsTest extends TestCase {
 			SearchRegistrar::class,
 			[],
 		],
+		PlaceholderResolver::class => [
+			PlaceholderResolverInterface::class,
+			SearchRegistrar::class,
+			[
+				'lib/Service/Object/SaveObject.php',
+			],
+		],
 		RestorePriorValuesAction::class => [
 			RestorePriorValuesActionInterface::class,
 			BulkActionRegistrar::class,
+			[],
+		],
+		RiskLevelService::class => [
+			RiskLevelServiceInterface::class,
+			FilesRegistrar::class,
 			[],
 		],
 		RunActionAction::class => [
