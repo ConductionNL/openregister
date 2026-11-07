@@ -26,10 +26,12 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\RegisterAccessAudit;
 use OCA\OpenRegister\Controller\Support\RegisterDownloads;
 use OCA\OpenRegister\Controller\Support\RegisterGitHubPublisher;
 use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
 use OCA\OpenRegister\Controller\Support\RegisterStatistics;
+use OCA\OpenRegister\Controller\Support\RegisterUpdate;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -533,8 +535,6 @@ class RegistersController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
-	 *
 	 * @return JSONResponse JSON response with created register or error
 	 *
 	 * @psalm-return JSONResponse<201, Register,
@@ -548,68 +548,87 @@ class RegistersController extends Controller {
 		// restricted to administrators. Reading register metadata stays open so
 		// frontends can build their UIs; only create/update/delete are gated.
 		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(
-				data: ['error' => 'Only administrators may create registers'],
-				statusCode: 403
-			);
+			return new JSONResponse(data: ['error' => 'Only administrators may create registers'], statusCode: 403);
 		}
 
-		// Get request parameters.
-		$data = $this->request->getParams();
+		$data = $this->createFields();
 
-		// Remove internal parameters (starting with '_').
+		try {
+			return new JSONResponse(data: $this->createRegister(data: $data), statusCode: 201);
+		} catch (AuthorizationBlockException | DBException | DatabaseConstraintException $e) {
+			return $this->writeRefusal(error: $e);
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}
+	}//end create()
+
+	/**
+	 * The request's fields without internal parameters, those starting with '_'.
+	 *
+	 * @return array<string, mixed> The fields.
+	 */
+	private function requestFields(): array {
+		$data = $this->request->getParams();
 		foreach (array_keys($data) as $key) {
 			if (str_starts_with($key, '_') === true) {
 				unset($data[$key]);
 			}
 		}
 
-		// Remove ID if present to ensure a new record is created.
+		return $data;
+	}//end requestFields()
+
+	/**
+	 * The fields of a new register; a given id is dropped so a new record is created.
+	 *
+	 * @return array<string, mixed> The fields.
+	 */
+	private function createFields(): array {
+		$data = $this->requestFields();
 		if (($data['id'] ?? null) !== null) {
 			unset($data['id']);
 		}
 
-		try {
-			// Create a new register from the data.
-			$register = $this->registerService->createFromArray($data);
+		return $data;
+	}//end createFields()
 
-			// **CACHE INVALIDATION (runtime-schema-api)**: Drop the request-scoped
-			// find cache for the freshly-created ID so any follow-up read in the
-			// same PHP worker observes the new register.
-			$this->services->registers->registerCacheHandler->invalidate(registerId: $register->getId());
+	/**
+	 * Create a register and drop the request-scoped find cache for its id.
+	 *
+	 * A follow-up read in the same PHP worker then observes the new register.
+	 *
+	 * @param array<string, mixed> $data The fields of the register.
+	 *
+	 * @return Register The new register.
+	 */
+	private function createRegister(array $data): Register {
+		$register = $this->registerService->createFromArray($data);
+		$this->services->registers->registerCacheHandler->invalidate(registerId: $register->getId());
 
-			return new JSONResponse(data: $register, statusCode: 201);
-		} catch (AuthorizationBlockException $e) {
-			// A deny that contradicts a grant beside it, or one that would leave
-			// nobody holding `manage`. The request was understood; the rules
-			// inside it disagree, which is 422 and not 400.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $e->getHttpStatusCode()
-			);
-		} catch (DBException $e) {
-			// Handle database constraint violations with user-friendly messages.
-			$constraintException = DatabaseConstraintException::fromDatabaseException(
-				dbException: $e,
-				entityType: 'register'
-			);
-			return new JSONResponse(
-				data: ['error' => $constraintException->getMessage()],
-				statusCode: $constraintException->getHttpStatusCode()
-			);
-		} catch (DatabaseConstraintException $e) {
-			// Handle our custom database constraint exceptions.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $e->getHttpStatusCode()
-			);
-		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: 500
-			);
-		}//end try
-	}//end create()
+		return $register;
+	}//end createRegister()
+
+	/**
+	 * The answer to a write the storage or the authorization rules refused.
+	 *
+	 * An authorization block is a deny that contradicts a grant beside it, or one
+	 * that would leave nobody holding `manage`: the request was understood and the
+	 * rules inside it disagree, which is 422 and not 400. A database error gets a
+	 * user-friendly constraint message.
+	 *
+	 * @param AuthorizationBlockException|DBException|DatabaseConstraintException $error The refusal.
+	 *
+	 * @return JSONResponse The error and its status.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
+	 */
+	private function writeRefusal(AuthorizationBlockException|DBException|DatabaseConstraintException $error): JSONResponse {
+		if ($error instanceof DBException) {
+			$error = DatabaseConstraintException::fromDatabaseException(dbException: $error, entityType: 'register');
+		}
+
+		return new JSONResponse(data: ['error' => $error->getMessage()], statusCode: $error->getHttpStatusCode());
+	}//end writeRefusal()
 
 	/**
 	 * Updates an existing register
@@ -622,12 +641,6 @@ class RegistersController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)         Uses \OCA\OpenRegister\Exception\ValidationException
-	 *   as a static reference; no injectable factory exists in NC AppFramework for exception types.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The update action must validate each editable
-	 *   field individually (authorization, schemas, config) — extracting branches into separate
-	 *   methods would scatter what is a single transactional write operation.
-	 *
 	 * @return JSONResponse JSON response with updated register or error
 	 *
 	 * @psalm-return JSONResponse<200, Register,
@@ -637,26 +650,12 @@ class RegistersController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	public function update(int $id): JSONResponse {
-		// Get request parameters.
-		$data = $this->request->getParams();
-
-		// Remove internal parameters (starting with '_').
-		foreach (array_keys($data) as $key) {
-			if (str_starts_with($key, '_') === true) {
-				unset($data[$key]);
-			}
-		}
-
-		// Remove immutable fields to prevent tampering.
-		unset($data['id']);
-		unset($data['organisation']);
-		unset($data['owner']);
-		unset($data['created']);
+		$update = new RegisterUpdate(id: $id, data: $this->updateFields());
 
 		// Authorization: modifying a register's definition requires manage
 		// permission (manage-group membership, or administrator when no manage
 		// rules are configured). This gates ALL updates, not just authorization
-		// changes — reading register metadata stays open for frontends.
+		// changes: reading register metadata stays open for frontends.
 		try {
 			$existingRegister = $this->registerMapper->find($id);
 		} catch (DoesNotExistException $e) {
@@ -664,79 +663,72 @@ class RegistersController extends Controller {
 		}
 
 		if ($this->checkRegisterManagePermission(register: $existingRegister) === false) {
-			return new JSONResponse(
-				data: ['error' => 'User does not have permission to manage this register'],
-				statusCode: 403
-			);
+			return new JSONResponse(data: ['error' => 'User does not have permission to manage this register'], statusCode: 403);
 		}
 
-		// Capture prior authorization / roles so changes can be audit-logged below.
-		$oldRegisterAuth = $existingRegister->getAuthorization();
-		$oldConfig = $existingRegister->getConfiguration();
-		$oldRegisterRoles = $oldConfig['roles'] ?? null;
-
-		try {
-			// Update the register with the provided data.
-			$updatedRegister = $this->registerService->updateFromArray(id: $id, data: $data);
-
-			// **CACHE INVALIDATION (runtime-schema-api)**: Drop the request-scoped
-			// find cache for the updated ID so any follow-up read in the same PHP
-			// worker observes the new register state (e.g. an added schema in schemas[]).
-			$this->services->registers->registerCacheHandler->invalidate(registerId: $updatedRegister->getId());
-
-			// Log authorization and role changes.
-			try {
-				$auditService = $this->container->get(AuthorizationAuditService::class);
-
-				if (isset($data['authorization']) === true) {
-					$auditService->logRegisterAuthorizationChange(
-						$id,
-						$updatedRegister->getTitle() ?? '',
-						$oldRegisterAuth,
-						$updatedRegister->getAuthorization()
-					);
-				}
-
-				if (isset($data['configuration']['roles']) === true) {
-					$configuration = $updatedRegister->getConfiguration();
-					$auditService->logRoleDefinitionChange(
-						$id,
-						$updatedRegister->getTitle() ?? '',
-						$oldRegisterRoles,
-						$configuration['roles'] ?? null
-					);
-				}
-			} catch (\Throwable $e) {
-				// Audit logging should not break the update operation.
-			}//end try
-
-			return new JSONResponse(data: $updatedRegister);
-		} catch (AuthorizationBlockException $e) {
-			// A deny that contradicts a grant beside it, or one that would leave
-			// nobody holding `manage`. The request was understood; the rules
-			// inside it disagree, which is 422 and not 400.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $e->getHttpStatusCode()
-			);
-		} catch (DBException $e) {
-			// Handle database constraint violations with user-friendly messages.
-			$constraintException = DatabaseConstraintException::fromDatabaseException(
-				dbException: $e,
-				entityType: 'register'
-			);
-			return new JSONResponse(
-				data: ['error' => $constraintException->getMessage()],
-				statusCode: $constraintException->getHttpStatusCode()
-			);
-		} catch (DatabaseConstraintException $e) {
-			// Handle our custom database constraint exceptions.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $e->getHttpStatusCode()
-			);
-		}//end try
+		return $this->updateResponse(update: $update, existing: $existingRegister);
 	}//end update()
+
+	/**
+	 * Save an update the caller may make and answer with the result.
+	 *
+	 * @param RegisterUpdate $update   The update.
+	 * @param Register       $existing The register as stored.
+	 *
+	 * @return JSONResponse The saved register, or the refusal.
+	 */
+	private function updateResponse(RegisterUpdate $update, Register $existing): JSONResponse {
+		try {
+			return new JSONResponse(data: $this->applyUpdate(update: $update, existing: $existing));
+		} catch (AuthorizationBlockException | DBException | DatabaseConstraintException $e) {
+			return $this->writeRefusal(error: $e);
+		}
+	}//end updateResponse()
+
+	/**
+	 * The fields an update writes, without the immutable ones, to prevent tampering.
+	 *
+	 * @return array<string, mixed> The fields.
+	 */
+	private function updateFields(): array {
+		$data = $this->requestFields();
+		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
+
+		return $data;
+	}//end updateFields()
+
+	/**
+	 * Save an update, drop the request-scoped find cache and log access changes.
+	 *
+	 * @param RegisterUpdate $update   The update.
+	 * @param Register       $existing The register as stored.
+	 *
+	 * @return Register The saved register.
+	 */
+	private function applyUpdate(RegisterUpdate $update, Register $existing): Register {
+		$audit   = new RegisterAccessAudit(update: $update, before: $existing);
+		$updated = $this->registerService->updateFromArray(id: $update->id, data: $update->data);
+		$this->services->registers->registerCacheHandler->invalidate(registerId: $updated->getId());
+		$this->logAccessChanges(audit: $audit, updated: $updated);
+
+		return $updated;
+	}//end applyUpdate()
+
+	/**
+	 * Log authorization and role changes; a failing audit log does not break the update.
+	 *
+	 * @param RegisterAccessAudit $audit   The access settings before the update.
+	 * @param Register            $updated The saved register.
+	 *
+	 * @return void
+	 */
+	private function logAccessChanges(RegisterAccessAudit $audit, Register $updated): void {
+		try {
+			$audit->log(service: $this->container->get(AuthorizationAuditService::class), after: $updated);
+		} catch (\Throwable $e) {
+			// Audit logging should not break the update operation.
+		}
+	}//end logAccessChanges()
 
 	/**
 	 * Patch (partially update) a register
