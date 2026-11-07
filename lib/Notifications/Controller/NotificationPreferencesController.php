@@ -48,8 +48,11 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
 
 class NotificationPreferencesController extends Controller {
+	use NotificationRequestTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -81,7 +84,7 @@ class NotificationPreferencesController extends Controller {
 	public function index(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		// An optional `scope` answers the same list AS IT APPLIES in one
@@ -115,99 +118,47 @@ class NotificationPreferencesController extends Controller {
 	public function update(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		$params = $this->request->getParams();
-
-		$schema = $this->nonEmptyString(value: ($params['schema'] ?? null));
-		$notification = $this->nonEmptyString(value: ($params['notification'] ?? null));
+		$schema = $this->stringParam(params: $params, key: 'schema');
+		$notification = $this->stringParam(params: $params, key: 'notification');
 		if ($schema === null || $notification === null) {
-			return new JSONResponse(
-				data: ['error' => 'Both "schema" and "notification" are required'],
-				statusCode: 422
-			);
+			return new JSONResponse(data: ['error' => 'Both "schema" and "notification" are required'], statusCode: 422);
 		}
 
 		// An optional scope pins this value to one register, one schema or one
 		// domain a leaf app declares, leaving the caller's global value alone.
 		// Absent means global, which is what every stored preference is.
-		$scope = $this->nonEmptyString(value: ($params['scope'] ?? null));
+		$scope = $this->stringParam(params: $params, key: 'scope');
 
-		// Clearing the override restores the layer below: the group default
-		// when the user's groups hold one, else the schema default.
-		if (($params['reset'] ?? false) === true || ($params['reset'] ?? null) === 'true') {
-			$this->preferenceService->setOverride(
-				userId: $userId,
-				schemaSlug: $schema,
-				notificationKey: $notification,
-				override: null,
-				scope: $scope
-			);
-			return new JSONResponse(
-				data: [
-					'schema' => $schema,
-					'notification' => $notification,
-					'scope' => ($scope ?? 'global'),
-					'override' => null,
-				]
-			);
-		}
-
-		$override = ['enabled' => (bool)($params['enabled'] ?? true)];
-		if (isset($params['channels']) === true && is_array($params['channels']) === true) {
-			$override['channels'] = $params['channels'];
-		}
-
-		$this->preferenceService->setOverride(
-			userId: $userId,
-			schemaSlug: $schema,
-			notificationKey: $notification,
-			override: $override,
-			scope: $scope
-		);
-
-		return new JSONResponse(
-			data: [
-				'schema' => $schema,
-				'notification' => $notification,
-				'scope' => ($scope ?? 'global'),
-				'override' => $this->preferenceService->getOverride(
-					userId: $userId,
-					schemaSlug: $schema,
-					notificationKey: $notification,
-					scope: $scope
-				),
-			]
-		);
+		return $this->writeOverride(userId: $userId, target: ['schema' => $schema, 'notification' => $notification, 'scope' => $scope], params: $params);
 	}//end update()
 
 	/**
-	 * Resolve the current user's UID, or null when anonymous.
+	 * Store the override, then answer with what is stored now.
 	 *
-	 * @return string|null
+	 * Clearing the override (`reset`) restores the layer below: the group
+	 * default when the user's groups hold one, else the schema default. A
+	 * cleared override is answered as null without reading it back.
+	 *
+	 * @param string                                                      $userId The current user.
+	 * @param array{schema: string, notification: string, scope: ?string} $target What the override is for.
+	 * @param array<string, mixed>                                        $params The request payload.
+	 *
+	 * @return JSONResponse The stored override.
 	 */
-	private function resolveUserId(): ?string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return null;
+	private function writeOverride(string $userId, array $target, array $params): JSONResponse {
+		[$schema, $notification, $scope] = [$target['schema'], $target['notification'], $target['scope']];
+		$override = $this->requestedSetting(params: $params);
+		$this->preferenceService->setOverride(userId: $userId, schemaSlug: $schema, notificationKey: $notification, override: $override, scope: $scope);
+
+		$stored = null;
+		if ($override !== null) {
+			$stored = $this->preferenceService->getOverride(userId: $userId, schemaSlug: $schema, notificationKey: $notification, scope: $scope);
 		}
 
-		return $user->getUID();
-	}//end resolveUserId()
-
-	/**
-	 * Coerce a request value to a non-empty string, or null.
-	 *
-	 * @param mixed $value Input.
-	 *
-	 * @return string|null
-	 */
-	private function nonEmptyString(mixed $value): ?string {
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end nonEmptyString()
+		return $this->settingResponse(target: $target, key: 'override', stored: $stored);
+	}//end writeOverride()
 }//end class
