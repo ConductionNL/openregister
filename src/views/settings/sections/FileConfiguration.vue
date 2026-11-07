@@ -88,12 +88,9 @@
 						:options="extractionScopes"
 						@update:modelValue="saveSettings">
 						<template #option="{ label, description }">
-							<div class="option-item">
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
+							<LabeledOption
+								:label="label"
+								:description="description" />
 						</template>
 					</NcSelect>
 					<p class="setting-description">
@@ -112,13 +109,11 @@
 						:options="textExtractors"
 						@update:modelValue="saveSettings">
 						<template #option="{ label, description, icon }">
-							<div class="option-item">
-								<span class="option-icon">{{ icon }}</span>
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
+							<LabeledOption
+								:label="label"
+								:description="description"
+								:icon="icon"
+								withIcon />
 						</template>
 					</NcSelect>
 					<p class="setting-description">
@@ -193,12 +188,9 @@
 						:options="extractionModes"
 						@update:modelValue="saveSettings">
 						<template #option="{ label, description }">
-							<div class="option-item">
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
+							<LabeledOption
+								:label="label"
+								:description="description" />
 						</template>
 					</NcSelect>
 					<p class="setting-description">
@@ -324,12 +316,9 @@
 						:options="extractionModes"
 						@update:modelValue="saveObjectSettings">
 						<template #option="{ label, description }">
-							<div class="option-item">
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
+							<LabeledOption
+								:label="label"
+								:description="description" />
 						</template>
 					</NcSelect>
 					<p class="setting-description">
@@ -374,13 +363,11 @@
 						:options="entityRecognitionMethods"
 						@update:modelValue="saveSettings">
 						<template #option="{ label, description, icon }">
-							<div class="option-item">
-								<span class="option-icon">{{ icon }}</span>
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{
-									description
-								}}</span>
-							</div>
+							<LabeledOption
+								:label="label"
+								:description="description"
+								:icon="icon"
+								withIcon />
 						</template>
 					</NcSelect>
 					<p class="setting-description">
@@ -918,6 +905,7 @@ import InformationIcon from 'vue-material-design-icons/Information.vue'
 import KeyIcon from 'vue-material-design-icons/Key.vue'
 import MagnifyIcon from 'vue-material-design-icons/Magnify.vue'
 import RefreshIcon from 'vue-material-design-icons/Refresh.vue'
+import LabeledOption from '../../../components/shared/LabeledOption.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import { freshState } from '../../../services/initialState.js'
@@ -1464,6 +1452,7 @@ export default {
 		CheckIcon,
 		AlertCircleIcon,
 		DotsVertical,
+		LabeledOption,
 	},
 
 	data() {
@@ -2344,26 +2333,6 @@ export default {
 
 .compatibility-note li {
 	margin: 4px 0;
-}
-
-.option-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.option-icon {
-	font-size: 18px;
-	margin-right: 8px;
-}
-
-.option-label {
-	font-weight: 500;
-}
-
-.option-description {
-	font-size: 12px;
-	color: var(--color-text-maxcontrast);
 }
 
 .api-config {

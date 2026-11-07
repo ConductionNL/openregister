@@ -75,7 +75,7 @@ use Symfony\Component\Uid\Uuid;
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Requirement: HandoffService executes conversions on top of SemanticTypeResolver)
  */
-class HandoffService {
+class HandoffService implements HandoffServiceInterface {
 
 	/**
 	 * Reserved relation type prefix for handoff provenance keys in the

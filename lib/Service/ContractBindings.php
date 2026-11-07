@@ -56,8 +56,14 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowScheduleService;
+use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
@@ -73,6 +79,8 @@ use OCA\OpenRegister\Service\Form\FormSubmitService;
 use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
+use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
@@ -111,6 +119,9 @@ final class ContractBindings {
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		CospendLinkServiceInterface::class => CospendLinkService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
+		ExampleSetRecordInterface::class => ExampleSetRecord::class,
+		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
+		FlowScheduleServiceInterface::class => FlowScheduleService::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		FormDefinitionResolverInterface::class => FormDefinitionResolver::class,
 		FormDestinationValidatorInterface::class => FormDestinationValidator::class,
@@ -118,13 +129,17 @@ final class ContractBindings {
 		FormSubmitServiceInterface::class => FormSubmitService::class,
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
+		HandoffServiceInterface::class => HandoffService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
+		MigrationPackServiceInterface::class => MigrationPackService::class,
 		MigrationServiceInterface::class => MigrationService::class,
+		NotificationServiceInterface::class => NotificationService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
 		OasServiceInterface::class => OasService::class,
 		ObjectCalendarEventsInterface::class => CalendarEventService::class,
 		ObjectCalendarTasksInterface::class => \OCA\OpenRegister\Service\TaskService::class,
+		\OCA\OpenRegister\Service\Object\ObjectEventGateInterface::class => \OCA\OpenRegister\Service\Object\ObjectEventGate::class,
 		ObjectExporterInterface::class => ExportService::class,
 		ObjectImporterInterface::class => ImportService::class,
 		ObjectMergerInterface::class => MergeService::class,
@@ -132,8 +147,10 @@ final class ContractBindings {
 		ObjectOperationsInterface::class => ObjectService::class,
 		ObjectReadNodeInterface::class => ObjectReadNode::class,
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
+		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
+		SequenceServiceInterface::class => SequenceService::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
