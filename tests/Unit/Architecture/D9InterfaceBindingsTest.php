@@ -33,6 +33,10 @@ use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInter
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -56,6 +60,16 @@ final class D9InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: array<int, string>}>
 	 */
 	private const HIDDEN = [
+		GeoFilterApplier::class => [
+			GeoFilterApplierInterface::class,
+			SearchRegistrar::class,
+			[],
+		],
+		GeoFilterParser::class => [
+			GeoFilterParserInterface::class,
+			SearchRegistrar::class,
+			[],
+		],
 		ScheduleFlowStore::class => [
 			ScheduleFlowStoreInterface::class,
 			AppHostRegistrar::class,
