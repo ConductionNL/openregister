@@ -26,15 +26,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionLookup;
+use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionRules;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
-use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
-use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -57,25 +53,17 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory                $time           The clock
-	 * @param MagicMapperInterface                 $objectMapper   Reads and writes the records
-	 * @param SchemaMapperInterface                $schemaMapper   Resolves the source record's schema
-	 * @param RegisterMapperInterface              $registerMapper Finds the registers a dependant schema lives in
-	 * @param DependantRetentionIndex     $index          Knows the dependant schemas
-	 * @param ArchiveActionDateCalculator $calculator     Reads the reference a dependant holds
-	 * @param RetentionServiceInterface            $retention      Recalculates one record
-	 * @param LoggerInterface             $logger         The logger
+	 * @param ITimeFactory           $time   The clock
+	 * @param RelatedRetentionLookup $lookup Object, schema and register mappers
+	 * @param RelatedRetentionRules  $rules  Dependant index, reference calculator and retention service
+	 * @param LoggerInterface        $logger The logger
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor; each collaborator is used
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly DependantRetentionIndex $index,
-		private readonly ArchiveActionDateCalculator $calculator,
-		private readonly RetentionServiceInterface $retention,
+		private readonly RelatedRetentionLookup $lookup,
+		private readonly RelatedRetentionRules $rules,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -120,16 +108,16 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
 	public function recalculateDependantsOf(string $uuid): int {
-		$this->objectMapper->invalidateTableMemos();
-		$source = $this->objectMapper->find(identifier: $uuid, _rbac: false, _multitenancy: false);
-		$sourceSchema = $this->schemaMapper->find(id: (string)$source->getSchema(), _rbac: false, _multitenancy: false);
+		$this->lookup->objectMapper->invalidateTableMemos();
+		$source = $this->lookup->objectMapper->find(identifier: $uuid, _rbac: false, _multitenancy: false);
+		$sourceSchema = $this->lookup->schemaMapper->find(id: (string)$source->getSchema(), _rbac: false, _multitenancy: false);
 
 		$changed = 0;
-		foreach ($this->index->dependantsOf(source: $sourceSchema) as $dependant) {
+		foreach ($this->rules->index->dependantsOf(source: $sourceSchema) as $dependant) {
 			$schema = $dependant['schema'];
-			foreach ($this->registerMapper->getAllRegisterIdsWithSchema((int)$schema->getId()) as $registerId) {
-				$register = $this->registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
-				$rows = $this->objectMapper->findByRelationBatchInSchema(
+			foreach ($this->lookup->registerMapper->getAllRegisterIdsWithSchema((int)$schema->getId()) as $registerId) {
+				$register = $this->lookup->registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
+				$rows = $this->lookup->objectMapper->findByRelationBatchInSchema(
 					uuids: [$uuid],
 					schemaId: (int)$schema->getId(),
 					registerId: (int)$registerId,
@@ -170,25 +158,25 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	private function recalculateBatch(array $batch, string $uuid, string $relation, Register $register, Schema $schema): int {
 		$changed = 0;
 		foreach ($batch as $object) {
-			$reference = $this->calculator->referenceOf(value: (($object->getObject() ?? [])[$relation] ?? null));
+			$reference = $this->rules->calculator->referenceOf(value: (($object->getObject() ?? [])[$relation] ?? null));
 			if ($reference === null || str_ends_with($reference, $uuid) === false) {
 				continue;
 			}
 
 			try {
 				// The relation lookup fills only name and data; an update writes the whole row.
-				$stored = $this->objectMapper->find(
+				$stored = $this->lookup->objectMapper->find(
 					identifier: (string)$object->getUuid(),
 					register: $register,
 					schema: $schema,
 					_rbac: false,
 					_multitenancy: false
 				);
-				if ($this->retention->followSourceDate(object: $stored, schema: $schema) === false) {
+				if ($this->rules->retention->followSourceDate(object: $stored, schema: $schema) === false) {
 					continue;
 				}
 
-				$this->objectMapper->update(entity: $stored, register: $register, schema: $schema);
+				$this->lookup->objectMapper->update(entity: $stored, register: $register, schema: $schema);
 				$changed++;
 			} catch (Throwable $failure) {
 				$this->logger->warning(
