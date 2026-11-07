@@ -128,6 +128,7 @@ import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOut
 import GoldenRecordDetail from './GoldenRecordDetail.vue'
 import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import { qualityStore } from '../../store/store.js'
+import { qualitySelection } from './qualitySelection.js'
 
 export default {
 	name: 'MasterEntitiesIndex',
@@ -142,6 +143,8 @@ export default {
 		RegisterSchemaSelector,
 		GoldenRecordDetail,
 	},
+
+	mixins: [qualitySelection],
 
 	data() {
 		return {
@@ -166,20 +169,6 @@ export default {
 
 	computed: {
 		/**
-		 * @spec exclude UI plumbing — proxies the store's hasSelection getter, no backend contract of its own
-		 */
-		hasSelection() {
-			return qualityStore.hasSelection
-		},
-
-		/**
-		 * @spec exclude UI plumbing — proxies the store's loading flag, no backend contract of its own
-		 */
-		loading() {
-			return qualityStore.isLoading
-		},
-
-		/**
 		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		masterEntities() {
@@ -194,23 +183,17 @@ export default {
 		},
 	},
 
-	/**
-	 * @spec openspec/specs/mdm-frontend/spec.md
-	 */
-	mounted() {
-		if (this.hasSelection) {
-			this.loadData()
-		}
-		this.$watch(
-			() => [qualityStore.selectedRegister, qualityStore.selectedSchema],
-			() => {
-				this.selectedObject = null
-				this.loadData()
-			},
-		)
-	},
-
 	methods: {
+		/**
+		 * Drop the open record and reload for the new register and schema.
+		 *
+		 * @spec exclude UI plumbing — delegates to loadData
+		 */
+		selectionChanged() {
+			this.selectedObject = null
+			this.loadData()
+		},
+
 		/**
 		 * Load master-entity objects (via the existing object-read
 		 * endpoint) for the current selection, sorted by quality. No
