@@ -900,9 +900,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('labels', ['board' => $board, 'title' => $title, 'color' => $color]), 'created' => true];
 		});
 		$store->method('insertCard')->willReturnCallback(
-			fn (int $stack, string $owner, string $title, string $description, ?\DateTime $due, ?\DateTime $done, array $labels, array $assignees): int => $add(
+			fn (int $stack, array $card): int => $add(
 				'cards',
-				['stack' => $stack, 'owner' => $owner, 'title' => $title, 'due' => $due?->format('Y-m-d'), 'labels' => $labels, 'assignees' => $assignees]
+				['stack' => $stack, 'owner' => $card['owner'], 'title' => $card['title'], 'due' => $card['due']?->format('Y-m-d'), 'labels' => $card['labels'], 'assignees' => $card['assignees']]
 			)
 		);
 		$store->method('cardExists')->willReturnCallback(fn (int $card): bool => isset($this->deck['cards'][$card]));

@@ -255,13 +255,15 @@ class ExampleSetDeckStoreWritesGoldenTest extends TestCase {
 	private function insertCard(ExampleSetDeckStore $store): int {
 		return $store->insertCard(
 			stack: 3,
-			owner: 'alice',
-			title: 'Call back',
-			description: 'About the permit',
-			due: new DateTime('2026-03-01'),
-			done: null,
-			labels: [5, 6],
-			assignees: ['bob']
+			card: [
+				'owner'       => 'alice',
+				'title'       => 'Call back',
+				'description' => 'About the permit',
+				'due'         => new DateTime('2026-03-01'),
+				'done'        => null,
+				'labels'      => [5, 6],
+				'assignees'   => ['bob'],
+			]
 		);
 	}//end insertCard()
 }//end class
