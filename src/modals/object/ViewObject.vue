@@ -3218,100 +3218,10 @@ export default {
 	font-size: 14px;
 }
 
-/* Property table row border colors matching validation states */
-.viewTableRow.property-invalid {
-	background-color: var(--color-error-light);
-	border-left: 4px solid var(--color-error);
-}
-
-.viewTableRow.property-warning {
-	background-color: var(--color-warning-light);
-	border-left: 4px solid var(--color-warning);
-}
-
-.viewTableRow.property-new {
-	background-color: var(--color-primary-element-light);
-	border-left: 4px solid var(--color-primary-element);
-}
-
+/* Property table row border colors matching validation states; the other
+   row and icon rules live in the SCSS block below. */
 .viewTableRow.property-valid {
 	border-left: 4px solid var(--color-success);
-}
-
-/* Icon colors for file status */
-.warningIcon {
-	color: var(--color-warning);
-}
-
-.publishedIcon {
-	color: var(--color-success);
-}
-
-/* Validation icons */
-.validation-icon {
-	flex-shrink: 0;
-}
-
-.error-icon {
-	color: var(--color-error);
-}
-
-.warning-icon {
-	color: var(--color-warning);
-}
-
-.lock-icon {
-	color: var(--color-text-lighter);
-}
-
-.new-icon {
-	color: var(--color-primary-element);
-}
-
-.prop-cell-content {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-/* Other necessary styles */
-.viewTableRow {
-	cursor: pointer;
-	transition: background-color 0.2s ease;
-}
-
-.viewTableRow:hover {
-	background-color: var(--color-background-hover);
-}
-
-.viewTableRow.selected-row {
-	background-color: var(--color-primary-light);
-}
-
-.viewTableRow.edited-row {
-	background-color: var(--color-success-light);
-	border-left: 3px solid var(--color-success);
-}
-
-.viewTableRow.edited-row.selected-row {
-	background-color: var(--color-primary-light);
-	border-left: 3px solid var(--color-success);
-}
-
-.viewTableRow.non-editable-row {
-	background-color: var(--color-background-dark);
-	cursor: not-allowed;
-	opacity: 0.7;
-}
-
-.viewTableRow.non-editable-row:hover {
-	background-color: var(--color-background-dark);
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.viewTableRow {
-		transition: none;
-	}
 }
 </style>
 
