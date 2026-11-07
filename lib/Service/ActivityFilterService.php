@@ -45,7 +45,7 @@ use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
  * Filtered + paginated read access to NC Activity entries linked to an
  * OpenRegister object.
  */
-class ActivityFilterService {
+class ActivityFilterService implements ActivityFilterServiceInterface {
 	/**
 	 * NC app id required for this leaf.
 	 *
