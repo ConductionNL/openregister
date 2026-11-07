@@ -53,6 +53,8 @@ final class EscalationRule {
 	 * @return array<string, mixed> The rung.
 	 *
 	 * @throws FlowTimerValidationException On a refused trigger, offset, unit, priority or role list.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
 	 */
 	public function toRung(): array {
 		$timing = $this->timing();
