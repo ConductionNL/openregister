@@ -333,9 +333,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return null;
 		}
 
-		return fn (string $lookup): ?ObjectEntity => WriteCause::asLookup(
-			fn () => $this->objectService->find(id: $lookup, _rbac: true)
-		);
+		return fn (string $lookup): ?ObjectEntity => WriteCause::asLookup(fn () => $this->objectService->find(id: $lookup, _rbac: true));
 	}//end objectReader()
 
 	/**
