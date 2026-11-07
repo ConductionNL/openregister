@@ -1,0 +1,438 @@
+{
+    "count: none": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: one column": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: system key skipped": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = bob, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: unknown column skipped": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = 3, 2",
+            "#1 expr.eq(register, :p1, NULL)",
+            "#1 andWhere(eq(register, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: is not null": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 andWhere(isNotNull(search_term))",
+            "#1 param :p1 = IS NOT NULL, 2",
+            "#1 expr.eq(search_term, :p1, NULL)",
+            "#1 andWhere(eq(search_term, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: is null": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNull(schema)",
+            "#1 andWhere(isNull(schema))",
+            "#1 param :p1 = IS NULL, 2",
+            "#1 expr.eq(schema, :p1, NULL)",
+            "#1 andWhere(eq(schema, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: array of values": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 expr.isNull(user)",
+            "#1 expr.isNotNull(user)",
+            "#1 param :p2 = bob, 2",
+            "#1 expr.eq(user, :p2, NULL)",
+            "#1 expr.orX(eq(user, :p1, NULL), isNull(user), isNotNull(user), eq(user, :p2, NULL))",
+            "#1 andWhere(orX(eq(user, :p1, NULL), isNull(user), isNotNull(user), eq(user, :p2, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: empty array": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: comma list": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = [\"1\",\"2\",\"3\"], 102",
+            "#1 expr.in(register, :p1, NULL)",
+            "#1 andWhere(in(register, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: integer value": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = 2, 2",
+            "#1 expr.eq(page, :p1, NULL)",
+            "#1 andWhere(eq(page, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: boolean value": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = true, 2",
+            "#1 expr.eq(published_only, :p1, NULL)",
+            "#1 andWhere(eq(published_only, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: null value": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = NULL, 2",
+            "#1 expr.eq(session, :p1, NULL)",
+            "#1 andWhere(eq(session, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count: several": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 expr.isNull(schema)",
+            "#1 andWhere(isNull(schema))",
+            "#1 param :p2 = IS NULL, 2",
+            "#1 expr.eq(schema, :p2, NULL)",
+            "#1 andWhere(eq(schema, :p2, NULL))",
+            "#1 param :p3 = [\"4\",\"5\"], 102",
+            "#1 expr.in(register, :p3, NULL)",
+            "#1 andWhere(in(register, :p3, NULL))",
+            "#1 param :p4 = 10, 2",
+            "#1 expr.eq(size, :p4, NULL)",
+            "#1 expr.orX(eq(size, :p4, NULL))",
+            "#1 andWhere(orX(eq(size, :p4, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "extract: empty": {
+        "updated": [
+            "facetsRequested",
+            "facetableRequested",
+            "sortParameters",
+            "filters",
+            "queryParameters"
+        ],
+        "searchTerm": null,
+        "page": null,
+        "limit": null,
+        "offset": null,
+        "facetsRequested": false,
+        "facetableRequested": false,
+        "register": null,
+        "registerUuid": null,
+        "schema": null,
+        "schemaUuid": null,
+        "sort": [],
+        "filters": [],
+        "queryParameters": []
+    },
+    "extract: term and paging": {
+        "updated": [
+            "searchTerm",
+            "page",
+            "limit",
+            "offset",
+            "facetsRequested",
+            "facetableRequested",
+            "sortParameters",
+            "filters",
+            "queryParameters"
+        ],
+        "searchTerm": "tax",
+        "page": 2,
+        "limit": 20,
+        "offset": 40,
+        "facetsRequested": false,
+        "facetableRequested": false,
+        "register": null,
+        "registerUuid": null,
+        "schema": null,
+        "schemaUuid": null,
+        "sort": [],
+        "filters": [],
+        "queryParameters": []
+    },
+    "extract: facets": {
+        "updated": [
+            "facetsRequested",
+            "facetableRequested",
+            "sortParameters",
+            "filters",
+            "queryParameters"
+        ],
+        "searchTerm": null,
+        "page": null,
+        "limit": null,
+        "offset": null,
+        "facetsRequested": true,
+        "facetableRequested": true,
+        "register": null,
+        "registerUuid": null,
+        "schema": null,
+        "schemaUuid": null,
+        "sort": [],
+        "filters": [],
+        "queryParameters": []
+    },
+    "extract: facetable not true": {
+        "updated": [
+            "facetsRequested",
+            "facetableRequested",
+            "sortParameters",
+            "filters",
+            "queryParameters"
+        ],
+        "searchTerm": null,
+        "page": null,
+        "limit": null,
+        "offset": null,
+        "facetsRequested": false,
+        "facetableRequested": false,
+        "register": null,
+        "registerUuid": null,
+        "schema": null,
+        "schemaUuid": null,
+        "sort": [],
+        "filters": [],
+        "queryParameters": []
+    },
+    "extract: numeric register and schema": {
+        "updated": [
+            "facetsRequested",
+            "facetableRequested",
+            "register",
+            "schema",
+            "schemaUuid",
+            "sortParameters",
+            "filters",
+            "queryParameters"
+        ],
+        "searchTerm": null,
+        "page": null,
+        "limit": null,
+        "offset": null,
+        "facetsRequested": false,
+        "facetableRequested": false,
+        "register": 5,
+        "registerUuid": null,
+        "schema": 7,
+        "schemaUuid": "7",
+        "sort": [],
+        "filters": [],
+        "queryParameters": {
+            "@self": {
+                "register": 5,
+                "schema": "7"
+            }
+        }
+    },
+    "extract: uuid register and schema": {
+        "updated": [
+            "facetsRequested",
+            "facetableRequested",
+            "registerUuid",
+            "schemaUuid",
+            "sortParameters",
+            "filters",
+            "queryParameters"
+        ],
+        "searchTerm": null,
+        "page": null,
+        "limit": null,
+        "offset": null,
+        "facetsRequested": false,
+        "facetableRequested": false,
+        "register": null,
+        "registerUuid": "r-uuid",
+        "schema": null,
+        "schemaUuid": "s-uuid",
+        "sort": [],
+        "filters": [],
+        "queryParameters": {
+            "@self": {
+                "register": "r-uuid",
+                "schema": "s-uuid"
+            }
+        }
+    },
+    "extract: null metadata": {
+        "updated": [
+            "facetsRequested",
+            "facetableRequested",
+            "sortParameters",
+            "filters",
+            "queryParameters"
+        ],
+        "searchTerm": null,
+        "page": null,
+        "limit": null,
+        "offset": null,
+        "facetsRequested": false,
+        "facetableRequested": false,
+        "register": null,
+        "registerUuid": null,
+        "schema": null,
+        "schemaUuid": null,
+        "sort": [],
+        "filters": [],
+        "queryParameters": {
+            "@self": {
+                "register": null
+            }
+        }
+    },
+    "extract: order string": {
+        "updated": [
+            "facetsRequested",
+            "facetableRequested",
+            "sortParameters",
+            "filters",
+            "queryParameters"
+        ],
+        "searchTerm": null,
+        "page": null,
+        "limit": null,
+        "offset": null,
+        "facetsRequested": false,
+        "facetableRequested": false,
+        "register": null,
+        "registerUuid": null,
+        "schema": null,
+        "schemaUuid": null,
+        "sort": [
+            "title"
+        ],
+        "filters": [],
+        "queryParameters": []
+    },
+    "extract: order array": {
+        "updated": [
+            "facetsRequested",
+            "facetableRequested",
+            "sortParameters",
+            "filters",
+            "queryParameters"
+        ],
+        "searchTerm": null,
+        "page": null,
+        "limit": null,
+        "offset": null,
+        "facetsRequested": false,
+        "facetableRequested": false,
+        "register": null,
+        "registerUuid": null,
+        "schema": null,
+        "schemaUuid": null,
+        "sort": {
+            "title": "asc",
+            "created": "desc"
+        },
+        "filters": [],
+        "queryParameters": []
+    },
+    "extract: filters and query parameters": {
+        "updated": [
+            "page",
+            "facetsRequested",
+            "facetableRequested",
+            "register",
+            "sortParameters",
+            "filters",
+            "queryParameters"
+        ],
+        "searchTerm": null,
+        "page": 1,
+        "limit": null,
+        "offset": null,
+        "facetsRequested": false,
+        "facetableRequested": false,
+        "register": 1,
+        "registerUuid": null,
+        "schema": null,
+        "schemaUuid": null,
+        "sort": [],
+        "filters": {
+            "name": "x",
+            "status": [
+                "a",
+                "b"
+            ]
+        },
+        "queryParameters": {
+            "name": "x",
+            "@self": {
+                "register": 1
+            },
+            "status": [
+                "a",
+                "b"
+            ]
+        }
+    }
+}
