@@ -252,9 +252,9 @@ class ExampleSetDeckStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function deleteCard(int $card): void {
-		$this->deleteWhere(table: 'deck_assigned_labels', column: 'card_id', id: $card);
-		$this->deleteWhere(table: 'deck_assigned_users', column: 'card_id', id: $card);
-		$this->deleteWhere(table: 'deck_cards', column: 'id', id: $card);
+		$this->deleteWhere(rows: new DeckColumn(table: 'deck_assigned_labels', column: 'card_id'), id: $card);
+		$this->deleteWhere(rows: new DeckColumn(table: 'deck_assigned_users', column: 'card_id'), id: $card);
+		$this->deleteWhere(rows: new DeckColumn(table: 'deck_cards', column: 'id'), id: $card);
 	}//end deleteCard()
 
 	/**
@@ -267,8 +267,8 @@ class ExampleSetDeckStore {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function deleteLabel(int $label): void {
-		$this->deleteWhere(table: 'deck_assigned_labels', column: 'label_id', id: $label);
-		$this->deleteWhere(table: 'deck_labels', column: 'id', id: $label);
+		$this->deleteWhere(rows: new DeckColumn(table: 'deck_assigned_labels', column: 'label_id'), id: $label);
+		$this->deleteWhere(rows: new DeckColumn(table: 'deck_labels', column: 'id'), id: $label);
 	}//end deleteLabel()
 
 	/**
@@ -285,13 +285,13 @@ class ExampleSetDeckStore {
 	 */
 	public function deleteUnused(?int $stack, ?int $board): void {
 		if ($stack !== null && $this->count(table: 'deck_cards', column: 'stack_id', id: $stack) === 0) {
-			$this->deleteWhere(table: 'deck_stacks', column: 'id', id: $stack);
+			$this->deleteWhere(rows: new DeckColumn(table: 'deck_stacks', column: 'id'), id: $stack);
 		}
 
 		if ($board !== null && $this->count(table: 'deck_stacks', column: 'board_id', id: $board) === 0) {
-			$this->deleteWhere(table: 'deck_labels', column: 'board_id', id: $board);
-			$this->deleteWhere(table: 'deck_board_acl', column: 'board_id', id: $board);
-			$this->deleteWhere(table: 'deck_boards', column: 'id', id: $board);
+			$this->deleteWhere(rows: new DeckColumn(table: 'deck_labels', column: 'board_id'), id: $board);
+			$this->deleteWhere(rows: new DeckColumn(table: 'deck_board_acl', column: 'board_id'), id: $board);
+			$this->deleteWhere(rows: new DeckColumn(table: 'deck_boards', column: 'id'), id: $board);
 		}
 	}//end deleteUnused()
 
@@ -359,15 +359,14 @@ class ExampleSetDeckStore {
 	/**
 	 * Delete the rows of a table that point at an id.
 	 *
-	 * @param string $table  The table, without prefix.
-	 * @param string $column The column holding the id.
-	 * @param int    $id     The id.
+	 * @param DeckColumn $rows The table and the column holding the id.
+	 * @param int        $id   The id.
 	 *
 	 * @return void
 	 */
-	private function deleteWhere(string $table, string $column, int $id): void {
+	private function deleteWhere(DeckColumn $rows, int $id): void {
 		$qb = $this->db->getQueryBuilder();
-		$qb->delete($table)->where($qb->expr()->eq($column, $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+		$qb->delete($rows->table)->where($qb->expr()->eq($rows->column, $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 		$qb->executeStatement();
 	}//end deleteWhere()
 
