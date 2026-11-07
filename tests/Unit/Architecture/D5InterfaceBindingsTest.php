@@ -46,6 +46,7 @@ final class D5InterfaceBindingsTest extends TestCase {
 	 */
 	private const CASES = [
 		'OCA\OpenRegister\Service\RegisterService' => ['OCA\OpenRegister\Service\RegisterServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\TalkLinkService' => ['OCA\OpenRegister\Service\TalkLinkServiceInterface', ContractBindings::class],
 	];
 
 	/**
