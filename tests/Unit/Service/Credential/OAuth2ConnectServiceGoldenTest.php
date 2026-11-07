@@ -31,10 +31,13 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
+use OCA\OpenRegister\Service\Credential\OAuth2CodeExchange;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectionWriter;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
+use OCA\OpenRegister\Service\Credential\OAuth2UpstreamRevoker;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -518,16 +521,20 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		ObjectOperationsInterface $objectService,
 		IClientService $clientService,
 	): OAuth2ConnectService {
+		$logger = $this->createMock(LoggerInterface::class);
+
 		return new OAuth2ConnectService(
 			catalogue: $catalogue,
-			broker: $broker,
 			clients: $clients,
-			refresh: $refresh,
 			instanceClients: $this->createMock(OAuth2InstanceClient::class),
-			identities: $identities,
-			objectService: $objectService,
-			clientService: $clientService,
-			logger: $this->createMock(LoggerInterface::class)
+			exchange: new OAuth2CodeExchange(clientService: $clientService),
+			writer: new OAuth2ConnectionWriter(
+				broker: $broker,
+				refresh: $refresh,
+				identities: $identities,
+				objectService: $objectService
+			),
+			revoker: new OAuth2UpstreamRevoker(refresh: $refresh, clients: $clients, clientService: $clientService, logger: $logger)
 		);
 	}
 }

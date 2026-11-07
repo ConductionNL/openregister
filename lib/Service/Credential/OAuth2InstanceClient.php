@@ -37,9 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use Throwable;
 
@@ -92,38 +90,17 @@ class OAuth2InstanceClient {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	public function ensure(array $provider, array $claims, string $redirectUri): array {
-		$oauth2 = ($provider['oauth2'] ?? []);
-		if (is_array($oauth2) === false || trim((string)($oauth2['registrationEndpoint'] ?? '')) === '') {
+		$flow = new OAuth2FlowClaims(claims: $claims);
+		if ($this->needsClient(provider: $provider, flow: $flow) === false) {
 			return $claims;
 		}
 
-		if (trim((string)($claims['cl'] ?? '')) !== '' || trim((string)($claims['cr'] ?? '')) !== '') {
-			return $claims;
-		}
-
-		$stored = $this->pinnedClient(credentialId: trim((string)($claims['cid'] ?? '')));
+		$stored = $this->pinnedClient(credentialId: $flow->trimmed(key: 'cid'));
 		if ($stored !== null) {
 			return array_merge($claims, $stored);
 		}
 
-		$registered = $this->register(
-			provider: $provider,
-			instanceBaseUrl: OAuth2InstanceHost::normalise(candidate: (string)($claims['h'] ?? '')),
-			redirectUri: $redirectUri,
-			scopes: $this->scopesOf(claims: $claims, provider: $provider),
-			owner: (string)($claims['u'] ?? ''),
-			scope: (string)($claims['s'] ?? 'personal'),
-			organisation: ($claims['o'] ?? null)
-		);
-
-		return array_merge(
-			$claims,
-			[
-				'cl' => $registered['clientId'],
-				'cr' => $registered['clientCredentialRef'],
-				self::MINTED_KEY => $registered['clientCredentialRef'],
-			]
-		);
+		return array_merge($claims, $this->registerFor(provider: $provider, flow: $flow, redirectUri: $redirectUri));
 	}//end ensure()
 
 	/**
@@ -153,20 +130,128 @@ class OAuth2InstanceClient {
 		?string $organisation = null,
 	): array {
 		$endpoint = $instanceBaseUrl . '/' . ltrim((string)$provider['oauth2']['registrationEndpoint'], '/');
+		$options = $this->registrationRequest(provider: $provider, redirectUri: $redirectUri, scopes: $scopes);
+		$decoded = $this->registeredClient(endpoint: $endpoint, options: $options);
+		$clientRef = $this->mintClientSecret(instanceBaseUrl: $instanceBaseUrl, decoded: $decoded, owner: $owner, scope: $scope, organisation: $organisation);
 
+		return ['clientId' => (string)$decoded['client_id'], 'clientCredentialRef' => $clientRef];
+	}//end register()
+
+	/**
+	 * Store an issued client secret as its own brokered credential.
+	 *
+	 * @param string $instanceBaseUrl The pinned, already-validated host.
+	 * @param array<string, mixed> $decoded The registration answer, carrying the client secret.
+	 * @param string $owner The user the client-secret credential is minted for.
+	 * @param string $scope The credential scope for the client-secret credential.
+	 * @param string|null $organisation The owning organisation, for an organisation-scoped connection.
+	 *
+	 * @return string The client-secret credential's UUID.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 */
+	private function mintClientSecret(string $instanceBaseUrl, #[\SensitiveParameter] array $decoded, string $owner, string $scope, ?string $organisation): string {
+		$minted = $this->broker->mint(
+			name: 'OAuth2 client for ' . $instanceBaseUrl,
+			provider: 'generic-oauth2',
+			owner: $owner,
+			allowedApps: ['openregister'],
+			secret: (string)($decoded['client_secret'] ?? ''),
+			scope: $scope,
+			organisation: $organisation
+		);
+
+		return (string)$minted->getUuid();
+	}//end mintClientSecret()
+
+	/**
+	 * Whether the flow still needs a client registered or reused.
+	 *
+	 * Only a provider with a registration endpoint registers, and a tenant that
+	 * brought its own application is left alone.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * @param OAuth2FlowClaims $flow The claims assembled so far.
+	 *
+	 * @return boolean True when there is no client yet and the provider registers one.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 */
+	private function needsClient(array $provider, OAuth2FlowClaims $flow): bool {
+		$oauth2 = ($provider['oauth2'] ?? []);
+		if (is_array($oauth2) === false || trim((string)($oauth2['registrationEndpoint'] ?? '')) === '') {
+			return false;
+		}
+
+		return $flow->trimmed(key: 'cl') === '' && $flow->trimmed(key: 'cr') === '';
+	}//end needsClient()
+
+	/**
+	 * Register a new client for the flow and name it in the claims.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * @param OAuth2FlowClaims $flow The claims assembled so far.
+	 * @param string $redirectUri The callback to register.
+	 *
+	 * @return array<string, string> The claims to merge: client id, credentialRef and MINTED_KEY.
+	 *
+	 * @throws OAuth2RegistrationFailedException When the account's server refuses the registration.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 */
+	private function registerFor(array $provider, OAuth2FlowClaims $flow, string $redirectUri): array {
+		$registered = $this->register(
+			provider: $provider,
+			instanceBaseUrl: OAuth2InstanceHost::normalise(candidate: $flow->string(key: 'h')),
+			redirectUri: $redirectUri,
+			scopes: $flow->scopes(provider: $provider),
+			owner: $flow->string(key: 'u'),
+			scope: $flow->string(key: 's', default: 'personal'),
+			organisation: $flow->organisation()
+		);
+		$clientRef = $registered['clientCredentialRef'];
+
+		return ['cl' => $registered['clientId'], 'cr' => $clientRef, self::MINTED_KEY => $clientRef];
+	}//end registerFor()
+
+	/**
+	 * The registration request options.
+	 *
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * @param string $redirectUri The callback to register.
+	 * @param array<int, string> $scopes The scopes to register for.
+	 *
+	 * @return array<string, mixed> The HTTP client options.
+	 *
+	 * @spec exclude private request builder with no behaviour of its own
+	 */
+	private function registrationRequest(array $provider, string $redirectUri, array $scopes): array {
+		return [
+			'body' => [
+				'client_name' => 'Nextcloud OpenRegister',
+				'redirect_uris' => $redirectUri,
+				'scopes' => implode((string)($provider['oauth2']['scopeSeparator'] ?? ' '), $scopes),
+			],
+			'headers' => ['Accept' => 'application/json'],
+			'timeout' => 20,
+		];
+	}//end registrationRequest()
+
+	/**
+	 * Post the registration and insist on a client id in the answer.
+	 *
+	 * @param string $endpoint The registration endpoint.
+	 * @param array<string, mixed> $options The HTTP client options.
+	 *
+	 * @return array<string, mixed> The decoded answer, carrying a string `client_id`.
+	 *
+	 * @throws OAuth2RegistrationFailedException When the server is unreachable or issues no client id.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 */
+	private function registeredClient(string $endpoint, array $options): array {
 		try {
-			$response = $this->clientService->newClient()->post(
-				$endpoint,
-				[
-					'body' => [
-						'client_name' => 'Nextcloud OpenRegister',
-						'redirect_uris' => $redirectUri,
-						'scopes' => implode((string)($provider['oauth2']['scopeSeparator'] ?? ' '), $scopes),
-					],
-					'headers' => ['Accept' => 'application/json'],
-					'timeout' => 20,
-				]
-			);
+			$response = $this->clientService->newClient()->post($endpoint, $options);
 			$decoded = json_decode((string)$response->getBody(), true);
 		} catch (Throwable $failure) {
 			// The class name and nothing else: a registration failure can quote the
@@ -178,18 +263,8 @@ class OAuth2InstanceClient {
 			throw new OAuth2RegistrationFailedException(message: 'application registration returned no client id');
 		}
 
-		$minted = $this->broker->mint(
-			name: 'OAuth2 client for ' . $instanceBaseUrl,
-			provider: 'generic-oauth2',
-			owner: $owner,
-			allowedApps: ['openregister'],
-			secret: (string)($decoded['client_secret'] ?? ''),
-			scope: $scope,
-			organisation: $organisation
-		);
-
-		return ['clientId' => (string)$decoded['client_id'], 'clientCredentialRef' => (string)$minted->getUuid()];
-	}//end register()
+		return $decoded;
+	}//end registeredClient()
 
 	/**
 	 * The client a credential already carries, when a re-authorisation names one.
@@ -201,28 +276,7 @@ class OAuth2InstanceClient {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	private function pinnedClient(string $credentialId): ?array {
-		if ($credentialId === '') {
-			return null;
-		}
-
-		try {
-			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $credentialId,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				_rbac: false,
-				_multitenancy: false,
-				_render: false
-			));
-		} catch (Throwable $missing) {
-			return null;
-		}
-
-		if ($entity instanceof ObjectEntity === false) {
-			return null;
-		}
-
-		$data = $entity->jsonSerialize();
+		$data = $this->storedCredential(credentialId: $credentialId);
 		$clientId = trim((string)($data['clientId'] ?? ''));
 		if ($clientId === '') {
 			return null;
@@ -232,26 +286,28 @@ class OAuth2InstanceClient {
 	}//end pinnedClient()
 
 	/**
-	 * The scopes a flow asked for, falling back to the provider's declared defaults.
+	 * The stored data of the credential being re-authorised, or nothing.
 	 *
-	 * @param array<string, mixed> $claims The flow's claims.
-	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * A credential that is gone, or a lookup that fails, means there is no client
+	 * to reuse; the flow registers a fresh one rather than failing the connect.
 	 *
-	 * @return array<int, string> The scopes.
+	 * @param string $credentialId The credential being re-authorised, or an empty string.
 	 *
-	 * @spec exclude private claims accessor with no behaviour of its own
+	 * @return array<string, mixed> The credential's data, or an empty array.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
-	private function scopesOf(array $claims, array $provider): array {
-		$scopes = ($claims['sc'] ?? null);
-		if (is_array($scopes) === true && $scopes !== []) {
-			return array_values(array_map('strval', $scopes));
-		}
-
-		$defaults = ($provider['oauth2']['defaultScopes'] ?? []);
-		if (is_array($defaults) === false) {
+	private function storedCredential(string $credentialId): array {
+		if ($credentialId === '') {
 			return [];
 		}
 
-		return array_values(array_map('strval', $defaults));
-	}//end scopesOf()
+		try {
+			$entity = (new OAuth2CredentialObjects(objectService: $this->objectService))->find(credentialId: $credentialId);
+		} catch (Throwable $missing) {
+			return [];
+		}
+
+		return ($entity?->jsonSerialize() ?? []);
+	}//end storedCredential()
 }//end class
