@@ -84,6 +84,10 @@ use RuntimeException;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
+ * @uses \OCA\OpenRegister\Listener\LifecycleAttempt
+ * @uses \OCA\OpenRegister\Listener\LifecycleDeclaration
+ * @uses \OCA\OpenRegister\Listener\LifecycleEdit
+ * @uses \OCA\OpenRegister\Listener\LifecycleEditReader
  */
 class TransitionEngineAsSystemTest extends TestCase {
 	private const OBJECT_ID = '00000000-0000-0000-0000-00000000a5e1';
@@ -182,13 +186,11 @@ class TransitionEngineAsSystemTest extends TestCase {
 			ast: new CalculationEvaluator(placeholders: new PlaceholderResolver(userSession: $this->createMock(IUserSession::class)))
 		);
 		$this->listener = new LifecycleValidationListener(
-			$this->schemaMapper,
+			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new LifecycleTransitionResolver($this->actions), $this->logger),
 			new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger),
 			$this->userSession,
 			$this->permission,
-			$this->logger,
 			new LifecycleConditionEvaluator($this->userSession, $groupManager, $l10n, $this->logger, $dialect),
-			new LifecycleTransitionResolver($this->actions),
 			new ConditionTracer(dialect: $dialect),
 			$this->createMock(RuleRunRecorder::class)
 		);
@@ -422,7 +424,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 			}
 		}
 
-		$controllers = array_values(array_filter($callers, static fn (string $path): bool => str_starts_with($path, 'Controller/')));
+		$controllers = array_values(array_filter($callers, static fn (string $path): bool => preg_match('~(^|/)Controller/~', $path) === 1));
 		$this->assertSame([], $controllers, 'A controller calls transitionAsSystem().');
 		$this->assertSame([], $callers, 'OpenRegister itself has no caller of transitionAsSystem(); it is for apps.');
 	}//end testNoControllerCallsTheSystemPath()

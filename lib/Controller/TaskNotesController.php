@@ -10,7 +10,7 @@
  * no schema, and the object route's first act is to resolve all three.
  *
  * Why it is this small. The STORAGE was already anchor-agnostic.
- * {@see \OCA\OpenRegister\Service\NoteService} writes Nextcloud comments
+ * {@see \OCA\OpenRegister\Files\Service\NoteService} writes Nextcloud comments
  * with `object_type = 'openregister'` and `object_id = <uuid string>`; it
  * takes a bare uuid and asks nothing about what that uuid names. So a task
  * note and an object note are the same row in the same table, read back by
@@ -68,7 +68,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -105,7 +105,7 @@ class TaskNotesController extends Controller {
 	 * @param IRequest $request The request.
 	 * @param TaskManagerInterface $tasks Resolves a task by uuid.
 	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
-	 * @param NoteService $notes The same note storage the object leaf uses.
+	 * @param NoteServiceInterface $notes The same note storage the object leaf uses.
 	 * @param IUserSession $userSession Names the acting identity.
 	 *
 	 * @return void
@@ -115,7 +115,7 @@ class TaskNotesController extends Controller {
 		IRequest $request,
 		private readonly TaskManagerInterface $tasks,
 		private readonly TaskAuthorizationService $authorization,
-		private readonly NoteService $notes,
+		private readonly NoteServiceInterface $notes,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -201,6 +201,10 @@ class TaskNotesController extends Controller {
 			return new JSONResponse(['error' => 'Note message is required'], Http::STATUS_BAD_REQUEST);
 		}
 
+		if ($this->isNoteOfTask(uuid: $uuid, noteId: (int)$noteId) === false) {
+			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
+		}
+
 		return new JSONResponse($this->notes->updateNote((int)$noteId, $message));
 	}//end update()
 
@@ -222,10 +226,32 @@ class TaskNotesController extends Controller {
 			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
 		}
 
+		if ($this->isNoteOfTask(uuid: $uuid, noteId: (int)$noteId) === false) {
+			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
+		}
+
 		$this->notes->deleteNote((int)$noteId);
 
 		return new JSONResponse(['success' => true]);
 	}//end destroy()
+
+	/**
+	 * Whether the note hangs on this task.
+	 *
+	 * @param string $uuid   The task uuid.
+	 * @param int    $noteId The note id.
+	 *
+	 * @return bool
+	 */
+	private function isNoteOfTask(string $uuid, int $noteId): bool {
+		try {
+			$this->notes->requireNoteOf(objectUuid: $uuid, noteId: $noteId);
+		} catch (\Exception $e) {
+			return false;
+		}
+
+		return true;
+	}//end isNoteOfTask()
 
 	/**
 	 * The task this request may act on, or null.

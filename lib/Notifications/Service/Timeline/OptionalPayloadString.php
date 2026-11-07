@@ -43,4 +43,21 @@ trait OptionalPayloadString {
 
 		return $value;
 	}//end stringOrNull()
+
+	/**
+	 * Read one optional list off a payload.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 * @param string              $key  The key.
+	 *
+	 * @return array<mixed> The value, or an empty array when absent or not an array.
+	 */
+	private function arrayOrEmpty(array $data, string $key): array {
+		$value = ($data[$key] ?? []);
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end arrayOrEmpty()
 }//end trait

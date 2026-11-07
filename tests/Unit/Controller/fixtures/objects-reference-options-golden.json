@@ -1,0 +1,851 @@
+{
+    "ambiguous identifier": {
+        "status": 409,
+        "data": {
+            "message": "Identifier \"object-1\" matches more than one object in this register and schema",
+            "error": "ambiguous-identifier"
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            }
+        ]
+    },
+    "blank property": {
+        "status": 400,
+        "data": {
+            "message": "Name the property whose options you want, with ?property=<name>."
+        },
+        "calls": []
+    },
+    "draft beats stored": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "filtered": true,
+            "filter": {
+                "organisation": "o3"
+            },
+            "needs": []
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "contact"
+                ]
+            },
+            {
+                "searchObjectsPaginated": [
+                    {
+                        "organisation": "o3",
+                        "_limit": 50,
+                        "_offset": 0
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "draft not an array": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "filtered": true,
+            "filter": {
+                "organisation": "o2"
+            },
+            "needs": []
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "contact"
+                ]
+            },
+            {
+                "searchObjectsPaginated": [
+                    {
+                        "organisation": "o2",
+                        "_limit": 50,
+                        "_offset": 0
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "item reference": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "filtered": false,
+            "filter": [],
+            "needs": []
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "contact"
+                ]
+            },
+            {
+                "searchObjectsPaginated": [
+                    {
+                        "_limit": 50,
+                        "_offset": 0
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "limit and offset": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "filtered": false,
+            "filter": [],
+            "needs": []
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "setRegister": [
+                    "other"
+                ]
+            },
+            {
+                "setSchema": [
+                    "contact"
+                ]
+            },
+            {
+                "searchObjectsPaginated": [
+                    {
+                        "_limit": 5,
+                        "_offset": 10
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "lookup fails, draft only": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "filtered": true,
+            "filter": {
+                "organisation": "o1"
+            },
+            "needs": []
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "debug": [
+                    "[ObjectsController] No stored record for a reference-options read; using the draft alone",
+                    {
+                        "id": "object-1",
+                        "error": "no read"
+                    }
+                ]
+            },
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "contact"
+                ]
+            },
+            {
+                "searchObjectsPaginated": [
+                    {
+                        "organisation": "o1",
+                        "_limit": 50,
+                        "_offset": 0
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "needs a value": {
+        "status": 200,
+        "data": {
+            "results": [],
+            "total": 0,
+            "needs": [
+                "org"
+            ],
+            "filter": [],
+            "message": "Choose org first; there are no options until then."
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            }
+        ]
+    },
+    "no property": {
+        "status": 400,
+        "data": {
+            "message": "Name the property whose options you want, with ?property=<name>."
+        },
+        "calls": []
+    },
+    "no schema entity": {
+        "status": 404,
+        "data": {
+            "message": "Schema not found."
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            }
+        ]
+    },
+    "no stored record": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "filtered": true,
+            "filter": {
+                "organisation": "o1"
+            },
+            "needs": []
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "contact"
+                ]
+            },
+            {
+                "searchObjectsPaginated": [
+                    {
+                        "organisation": "o1",
+                        "_limit": 50,
+                        "_offset": 0
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "no target schema": {
+        "status": 422,
+        "data": {
+            "message": "'untargeted' does not name a schema to read options from."
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            }
+        ]
+    },
+    "own register": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "filtered": false,
+            "filter": [],
+            "needs": []
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "contact"
+                ]
+            },
+            {
+                "searchObjectsPaginated": [
+                    {
+                        "_limit": 50,
+                        "_offset": 0
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "plain reference": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "filtered": false,
+            "filter": [],
+            "needs": []
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "setRegister": [
+                    "other"
+                ]
+            },
+            {
+                "setSchema": [
+                    "contact"
+                ]
+            },
+            {
+                "searchObjectsPaginated": [
+                    {
+                        "_limit": 50,
+                        "_offset": 0
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "register not found": {
+        "status": 404,
+        "data": {
+            "message": "Register not found: 'reg'"
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            }
+        ]
+    },
+    "schema not found": {
+        "status": 404,
+        "data": {
+            "message": "Schema not found: 'sch'"
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            }
+        ]
+    },
+    "search fails": {
+        "status": 500,
+        "data": {
+            "message": "The options for this field could not be read."
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "setRegister": [
+                    "other"
+                ]
+            },
+            {
+                "setSchema": [
+                    "contact"
+                ]
+            },
+            {
+                "searchObjectsPaginated": [
+                    {
+                        "_limit": 50,
+                        "_offset": 0
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "warning": [
+                    "[ObjectsController] A reference-options read failed",
+                    {
+                        "property": "plain",
+                        "error": "no search"
+                    }
+                ]
+            }
+        ]
+    },
+    "stored record decides": {
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "filtered": true,
+            "filter": {
+                "organisation": "o2"
+            },
+            "needs": []
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "contact"
+                ]
+            },
+            {
+                "searchObjectsPaginated": [
+                    {
+                        "organisation": "o2",
+                        "_limit": 50,
+                        "_offset": 0
+                    },
+                    true,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ]
+    },
+    "unknown property": {
+        "status": 422,
+        "data": {
+            "message": "There is no property 'nope' on this schema to read options for."
+        },
+        "calls": [
+            {
+                "setRegister": [
+                    "reg"
+                ]
+            },
+            {
+                "setSchema": [
+                    "sch"
+                ]
+            },
+            {
+                "find": [
+                    "object-1",
+                    [],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            }
+        ]
+    }
+}

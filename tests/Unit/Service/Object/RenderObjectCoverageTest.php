@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -51,6 +51,8 @@ use ReflectionClass;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RenderObjectCoverageTest extends TestCase {
+	use InverseRelationAccess;
+
 	/** @var RenderObject */
 	private RenderObject $handler;
 
@@ -115,7 +117,6 @@ class RenderObjectCoverageTest extends TestCase {
 			$this->schemaMapper,
 			$this->systemTagManager,
 			$this->systemTagMapper,
-			$this->cacheHandler,
 			$this->objectCacheService,
 			$this->propertyRbacHandler,
 			$this->logger,
@@ -160,10 +161,10 @@ class RenderObjectCoverageTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $method, array $args = []) {
-		$ref = new ReflectionClass($this->handler);
-		$m = $ref->getMethod($method);
+		$owner = $this->methodOwner($this->handler, $method);
+		$m = new \ReflectionMethod($owner, $method);
 		$m->setAccessible(true);
-		return $m->invokeArgs($this->handler, $args);
+		return $m->invokeArgs($owner, $args);
 	}
 
 	/**
@@ -175,10 +176,14 @@ class RenderObjectCoverageTest extends TestCase {
 	 * @return void
 	 */
 	private function setPrivateProperty(string $property, $value): void {
-		$ref = new ReflectionClass($this->handler);
-		$p = $ref->getProperty($property);
+		$owner = $this->handler;
+		if ($property === 'inverseRelationCache') {
+			$owner = $this->inversePart($this->handler);
+		}
+
+		$p = new \ReflectionProperty($owner, $property);
 		$p->setAccessible(true);
-		$p->setValue($this->handler, $value);
+		$p->setValue($owner, $value);
 	}
 
 	/**
@@ -584,9 +589,9 @@ class RenderObjectCoverageTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
-		$cache = $prop->getValue($this->handler);
+		$cache = $prop->getValue($this->inversePart($this->handler));
 
 		$this->assertSame([], $cache['uuid-1_contacts']);
 		$this->assertSame([], $cache['uuid-2_contacts']);
@@ -601,16 +606,16 @@ class RenderObjectCoverageTest extends TestCase {
 		$existing = $this->createObjectEntity(1, 'ref-uuid');
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
-		$prop->setValue($this->handler, ['uuid-1_contacts' => [$existing]]);
+		$prop->setValue($this->inversePart($this->handler), ['uuid-1_contacts' => [$existing]]);
 
 		$this->invokePrivate('initializeInverseCacheEntries', [
 			['uuid-1'],
 			'contacts',
 		]);
 
-		$cache = $prop->getValue($this->handler);
+		$cache = $prop->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache['uuid-1_contacts']);
 	}
 
@@ -631,18 +636,13 @@ class RenderObjectCoverageTest extends TestCase {
 
 		// Initialize cache.
 		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
-		$prop->setValue($this->handler, [$entityUuid . '_contacts' => []]);
+		$prop->setValue($this->inversePart($this->handler), [$entityUuid . '_contacts' => []]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['organisation'],
-			[$entityUuid],
-			'contacts',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['organisation'], [$entityUuid], 'contacts')]);
 
-		$cache = $prop->getValue($this->handler);
+		$cache = $prop->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache[$entityUuid . '_contacts']);
 	}
 
@@ -658,18 +658,13 @@ class RenderObjectCoverageTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
-		$prop->setValue($this->handler, [$entityUuid . '_contacts' => []]);
+		$prop->setValue($this->inversePart($this->handler), [$entityUuid . '_contacts' => []]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['organisation'],
-			[$entityUuid],
-			'contacts',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['organisation'], [$entityUuid], 'contacts')]);
 
-		$cache = $prop->getValue($this->handler);
+		$cache = $prop->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache[$entityUuid . '_contacts']);
 	}
 
@@ -685,16 +680,11 @@ class RenderObjectCoverageTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
-		$prop->setValue($this->handler, [$entityUuid . '_contacts' => []]);
+		$prop->setValue($this->inversePart($this->handler), [$entityUuid . '_contacts' => []]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['organisation'],
-			[$entityUuid],
-			'contacts',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['organisation'], [$entityUuid], 'contacts')]);
 
 		$objectsCache = $ref->getProperty('objectsCache');
 		$objectsCache->setAccessible(true);
@@ -736,11 +726,7 @@ class RenderObjectCoverageTest extends TestCase {
 		];
 
 		$objectData = ['name' => 'Test'];
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			$objectData,
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), $objectData]);
 
 		$this->assertArrayHasKey('contacts', $result);
 		$this->assertIsArray($result['contacts']);
@@ -775,11 +761,7 @@ class RenderObjectCoverageTest extends TestCase {
 		];
 
 		$objectData = ['name' => 'Test'];
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			$objectData,
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), $objectData]);
 
 		$this->assertArrayHasKey('parent', $result);
 		$this->assertIsArray($result['parent']);
@@ -808,11 +790,7 @@ class RenderObjectCoverageTest extends TestCase {
 		];
 
 		$objectData = ['name' => 'Test'];
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			$objectData,
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), $objectData]);
 
 		$this->assertNull($result['parent']);
 	}
@@ -834,11 +812,7 @@ class RenderObjectCoverageTest extends TestCase {
 		];
 
 		$objectData = ['name' => 'Test'];
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			$objectData,
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), $objectData]);
 
 		$this->assertArrayNotHasKey('field', $result);
 	}
@@ -896,27 +870,36 @@ class RenderObjectCoverageTest extends TestCase {
 	}
 
 	/**
-	 * Test resolveSchemaReference with UUID falls through to slug lookup.
-	 *
-	 * Note: The UUID branch uses preg_match() === true, but preg_match returns int,
-	 * so 1 === true is false. UUID values fall through to the slug lookup path.
+	 * Test resolveSchemaReference answers a UUID with the schema's numeric id.
 	 *
 	 * @return void
 	 */
-	public function testResolveSchemaReferenceByUuidFallsToSlug(): void {
-		$schema = $this->createSchema(5, 'test-schema');
+	public function testResolveSchemaReferenceByUuidReturnsSchemaId(): void {
+		$uuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 
-		// UUID branch is dead code (preg_match returns int, not bool).
-		// So it falls through to findAll slug match.
-		$this->schemaMapper->method('findAll')
-			->willReturn([]);
-		$this->schemaMapper->method('find')
+		$this->schemaMapper->expects($this->once())
+			->method('find')
+			->with($uuid)
+			->willReturn($this->createSchema(5, 'test-schema'));
+		$this->schemaMapper->expects($this->never())->method('findAll');
+
+		$this->assertSame('5', $this->invokePrivate('resolveSchemaReference', [$uuid]));
+	}
+
+	/**
+	 * Test resolveSchemaReference keeps a UUID no schema answers to.
+	 *
+	 * @return void
+	 */
+	public function testResolveSchemaReferenceByUnknownUuidFallsToSlug(): void {
+		$uuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+
+		$this->schemaMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->expects($this->once())
+			->method('find')
 			->willThrowException(new Exception('not found'));
 
-		// Falls through to return the UUID as-is.
-		$result = $this->invokePrivate('resolveSchemaReference', ['aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee']);
-
-		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result);
+		$this->assertSame($uuid, $this->invokePrivate('resolveSchemaReference', [$uuid]));
 	}
 
 	/**

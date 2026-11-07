@@ -5,7 +5,6 @@
  *
  * Tests for the RelationHandler service class, covering:
  * - Inverse relation filtering (applyInversedByFilter)
- * - Relationship ID extraction (extractAllRelationshipIds)
  * - Bulk relationship loading (bulkLoadRelationshipsBatched, loadRelationshipChunkOptimized)
  * - Contract lookups (getContracts)
  * - Use lookups (getUses, getUsedBy)
@@ -34,7 +33,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -70,9 +68,6 @@ class RelationHandlerTest extends TestCase {
 	/** @var SchemaMapper&MockObject */
 	private SchemaMapper $schemaMapper;
 
-	/** @var PerformanceHandler&MockObject */
-	private PerformanceHandler $performanceHandler;
-
 	/** @var MagicRbacHandler&MockObject */
 	private MagicRbacHandler $rbacHandler;
 
@@ -90,7 +85,6 @@ class RelationHandlerTest extends TestCase {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->performanceHandler = $this->createMock(PerformanceHandler::class);
 		$this->rbacHandler = $this->createMock(MagicRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
@@ -141,172 +135,6 @@ class RelationHandlerTest extends TestCase {
 	// =========================================================================
 	// applyInversedByFilter tests
 	// =========================================================================
-
-	// =========================================================================
-	// extractAllRelationshipIds tests
-	// =========================================================================
-
-	/**
-	 * Returns empty array when objects list is empty.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsReturnsEmptyForNoObjects(): void {
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([], ['field']);
-
-		$this->assertSame([], $result);
-	}//end testExtractAllRelationshipIdsReturnsEmptyForNoObjects()
-
-	/**
-	 * Returns empty array when extend list is empty.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsReturnsEmptyForNoExtendFields(): void {
-		$object = $this->makeObjectEntity(1);
-		$object->setObject(['related' => 'some-id']);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], []);
-
-		$this->assertSame([], $result);
-	}//end testExtractAllRelationshipIdsReturnsEmptyForNoExtendFields()
-
-	/**
-	 * Extracts a single string relationship ID from an object property.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsExtractsSingleStringId(): void {
-		$object = $this->makeObjectEntity(1);
-		$object->setObject(['relatedId' => 'abc-123']);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], ['relatedId']);
-
-		$this->assertContains('abc-123', $result);
-		$this->assertCount(1, $result);
-	}//end testExtractAllRelationshipIdsExtractsSingleStringId()
-
-	/**
-	 * Extracts multiple relationship IDs from an array property.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsExtractsArrayOfIds(): void {
-		$object = $this->makeObjectEntity(1);
-		$object->setObject(['members' => ['id-1', 'id-2', 'id-3']]);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], ['members']);
-
-		$this->assertContains('id-1', $result);
-		$this->assertContains('id-2', $result);
-		$this->assertContains('id-3', $result);
-	}//end testExtractAllRelationshipIdsExtractsArrayOfIds()
-
-	/**
-	 * Deduplicates IDs that appear in multiple objects.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsDeduplicates(): void {
-		$object1 = $this->makeObjectEntity(1);
-		$object1->setObject(['link' => 'shared-id']);
-
-		$object2 = $this->makeObjectEntity(2);
-		$object2->setObject(['link' => 'shared-id']);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object1, $object2], ['link']);
-
-		$this->assertCount(1, $result);
-		$this->assertContains('shared-id', $result);
-	}//end testExtractAllRelationshipIdsDeduplicates()
-
-	/**
-	 * Skips empty string values inside arrays.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsSkipsEmptyStringsInArrays(): void {
-		$object = $this->makeObjectEntity(1);
-		$object->setObject(['items' => ['valid-id', '', '  ']]);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], ['items']);
-
-		// Only 'valid-id' is non-empty.
-		$this->assertContains('valid-id', $result);
-		$this->assertNotContains('', $result);
-	}//end testExtractAllRelationshipIdsSkipsEmptyStringsInArrays()
-
-	/**
-	 * Skips empty string scalar values.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsSkipsEmptyStringScalar(): void {
-		$object = $this->makeObjectEntity(1);
-		$object->setObject(['link' => '']);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], ['link']);
-
-		$this->assertSame([], $result);
-	}//end testExtractAllRelationshipIdsSkipsEmptyStringScalar()
-
-	/**
-	 * Array properties are limited to 10 items per object (performance protection).
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsLimitsArrayTo10Items(): void {
-		$ids = array_map(fn ($i) => "id-$i", range(1, 15));
-
-		$object = $this->makeObjectEntity(1);
-		$object->setObject(['items' => $ids]);
-
-		// Logger gets info (completion) + debug (truncation notice).
-		$this->logger->expects($this->atLeastOnce())->method('debug');
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], ['items']);
-
-		// Max 10 from a single array property.
-		$this->assertCount(10, $result);
-	}//end testExtractAllRelationshipIdsLimitsArrayTo10Items()
-
-	/**
-	 * Stops extracting after hitting the 200-ID circuit breaker limit.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsCircuitBreakerAt200(): void {
-		// 25 objects each with 10 IDs = 250 total; circuit breaker caps at 200.
-		$objects = [];
-		for ($i = 1; $i <= 25; $i++) {
-			$ids = array_map(fn ($j) => "obj{$i}-id{$j}", range(1, 10));
-			$object = $this->makeObjectEntity($i);
-			$object->setObject(['items' => $ids]);
-			$objects[] = $object;
-		}
-
-		$this->logger->expects($this->atLeastOnce())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds($objects, ['items']);
-
-		// Should be at most 200 unique IDs.
-		$this->assertLessThanOrEqual(200, count($result));
-	}//end testExtractAllRelationshipIdsCircuitBreakerAt200()
 
 	// =========================================================================
 	// bulkLoadRelationshipsBatched tests
@@ -840,85 +668,6 @@ class RelationHandlerTest extends TestCase {
 	}//end testGetContractsResponseAlwaysHasRequiredKeys()
 
 	// =========================================================================
-	// Additional extractAllRelationshipIds tests
-	// =========================================================================
-
-	/**
-	 * Logs info once when array property count exceeds 10.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsLogsDebugWhenArrayTruncated(): void {
-		$ids = array_map(fn ($i) => "id-$i", range(1, 12));
-
-		$object = $this->makeObjectEntity(1);
-		$object->setObject(['items' => $ids]);
-
-		$this->logger->expects($this->once())->method('debug');
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], ['items']);
-
-		$this->assertCount(10, $result);
-	}//end testExtractAllRelationshipIdsLogsDebugWhenArrayTruncated()
-
-	/**
-	 * Skips non-string values inside array properties.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsSkipsNonStringArrayValues(): void {
-		$object = $this->makeObjectEntity(1);
-		$object->setObject(['items' => ['valid', 42, null, true, 'also-valid']]);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], ['items']);
-
-		$this->assertContains('valid', $result);
-		$this->assertContains('also-valid', $result);
-		$this->assertCount(2, $result);
-	}//end testExtractAllRelationshipIdsSkipsNonStringArrayValues()
-
-	/**
-	 * Skips non-string/non-array property values entirely.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsSkipsNonStringScalar(): void {
-		$object = $this->makeObjectEntity(1);
-		$object->setObject(['count' => 42]);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], ['count']);
-
-		$this->assertSame([], $result);
-	}//end testExtractAllRelationshipIdsSkipsNonStringScalar()
-
-	/**
-	 * Logs info with circuit breaker hit when exactly 200 IDs extracted.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsExactly200UniqueIds(): void {
-		// 20 objects x 10 IDs each = exactly 200 IDs.
-		$objects = [];
-		for ($i = 1; $i <= 20; $i++) {
-			$ids = array_map(fn ($j) => "obj{$i}-id{$j}", range(1, 10));
-			$object = $this->makeObjectEntity($i);
-			$object->setObject(['items' => $ids]);
-			$objects[] = $object;
-		}
-
-		$this->logger->expects($this->atLeastOnce())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds($objects, ['items']);
-
-		$this->assertCount(200, $result);
-	}//end testExtractAllRelationshipIdsExactly200UniqueIds()
-
-	// =========================================================================
 	// Additional bulkLoadRelationshipsBatched tests
 	// =========================================================================
 
@@ -1131,96 +880,6 @@ class RelationHandlerTest extends TestCase {
 	// =========================================================================
 	// NEW: applyInversedByFilter -- advanced filter processing
 	// =========================================================================
-
-	// =========================================================================
-	// NEW: extractAllRelationshipIds -- circuit breaker with mixed properties
-	// =========================================================================
-
-	/**
-	 * Circuit breaker counts both scalar and array extractions towards the 200 limit.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsCircuitBreakerWithMixedTypes(): void {
-		// Create objects with both scalar and array properties.
-		$objects = [];
-		for ($i = 1; $i <= 30; $i++) {
-			$object = $this->makeObjectEntity($i);
-			$object->setObject([
-				'scalar' => "scalar-$i",
-				'array' => array_map(fn ($j) => "arr{$i}-{$j}", range(1, 10)),
-			]);
-			$objects[] = $object;
-		}
-
-		$this->logger->expects($this->atLeastOnce())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds($objects, ['scalar', 'array']);
-
-		// Circuit breaker checks at the start of each outer-loop iteration.
-		// Within a single iteration it can add up to 11 IDs (1 scalar + 10 array)
-		// before the check fires, so the count can overshoot by up to 11.
-		$this->assertLessThanOrEqual(211, count($result));
-		// But it must be significantly less than the theoretical max of 330.
-		$this->assertLessThan(330, count($result));
-	}//end testExtractAllRelationshipIdsCircuitBreakerWithMixedTypes()
-
-	/**
-	 * Extracts IDs from multiple extend properties on the same object.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsMultipleExtendProperties(): void {
-		$object = $this->makeObjectEntity(1);
-		$object->setObject([
-			'author' => 'author-uuid',
-			'editor' => 'editor-uuid',
-		]);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], ['author', 'editor']);
-
-		$this->assertContains('author-uuid', $result);
-		$this->assertContains('editor-uuid', $result);
-		$this->assertCount(2, $result);
-	}//end testExtractAllRelationshipIdsMultipleExtendProperties()
-
-	/**
-	 * Skips extend properties that do not exist on the object.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsSkipsMissingExtendProperties(): void {
-		$object = $this->makeObjectEntity(1);
-		$object->setObject(['name' => 'test']);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$object], ['nonexistent']);
-
-		$this->assertSame([], $result);
-	}//end testExtractAllRelationshipIdsSkipsMissingExtendProperties()
-
-	/**
-	 * Deduplicates IDs across different extend properties on different objects.
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsDeduplicatesAcrossProperties(): void {
-		$obj1 = $this->makeObjectEntity(1);
-		$obj1->setObject(['field1' => 'shared-uuid']);
-
-		$obj2 = $this->makeObjectEntity(2);
-		$obj2->setObject(['field2' => 'shared-uuid']);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$result = $this->handler->extractAllRelationshipIds([$obj1, $obj2], ['field1', 'field2']);
-
-		$this->assertCount(1, $result);
-		$this->assertContains('shared-uuid', $result);
-	}//end testExtractAllRelationshipIdsDeduplicatesAcrossProperties()
 
 	// =========================================================================
 	// NEW: bulkLoadRelationshipsBatched -- >200 IDs batching

@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 
@@ -36,18 +36,18 @@ final class ConversationMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ConversationMapper $conversationMapper Conversation mapper
+	 * @param ConversationMapperInterface $conversationMapper Conversation mapper
 	 * @param MessageMapperInterface      $messageMapper      Message mapper
 	 * @param FeedbackMapper     $feedbackMapper     Feedback mapper
-	 * @param AgentMapper        $agentMapper        Agent mapper
+	 * @param AgentMapperInterface        $agentMapper        Agent mapper
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		public readonly ConversationMapper $conversationMapper,
+		public readonly ConversationMapperInterface $conversationMapper,
 		public readonly MessageMapperInterface $messageMapper,
 		public readonly FeedbackMapper $feedbackMapper,
-		public readonly AgentMapper $agentMapper,
+		public readonly AgentMapperInterface $agentMapper,
 	) {
 	}//end __construct()
 }//end class

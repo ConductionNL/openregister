@@ -95,6 +95,10 @@ class SaveObjectReferenceValidationTest extends TestCase {
 	}//end buildHandler()
 
 	private function invoke(SaveObject $handler, string $methodName, array $args): mixed {
+		if ($methodName === 'validateReferences' || $methodName === 'validateReferenceExists') {
+			return ReferenceValidationCalls::{$methodName}($handler, $args);
+		}
+
 		$reflection = new ReflectionMethod(SaveObject::class, $methodName);
 		$reflection->setAccessible(true);
 		return $reflection->invokeArgs($handler, array_values($args));
@@ -882,4 +886,27 @@ class SaveObjectReferenceValidationTest extends TestCase {
 			]
 		);
 	}//end testStrictnessFalseDisablesValidation()
+
+	public function testAStrictnessWithoutTheSwitchValidatesNothing(): void {
+		$unifiedMapper = $this->createMock(MagicMapper::class);
+		$unifiedMapper->expects($this->never())->method('find');
+		$schema = $this->getMockBuilder(Schema::class)->onlyMethods(['getProperties'])->getMock();
+		$schema->method('getProperties')->willReturn(
+			['organisation' => ['type' => 'string', '$ref' => '#/components/schemas/organisation', 'validationStrictness' => 'strict']]
+		);
+
+		$handler = $this->buildHandler(
+			userSession: $this->makeAdminSession(),
+			groupManager: $this->makeAdminGroupManager(false),
+			appConfig: $this->makeAppConfig('true'),
+			eventDispatcher: $this->createMock(IEventDispatcher::class),
+			unifiedObjectMapper: $unifiedMapper,
+		);
+
+		$this->invoke(
+			$handler,
+			'validateReferences',
+			['schema' => $schema, 'data' => ['organisation' => 'not-looked-up'], 'register' => '1', 'oldData' => null]
+		);
+	}//end testAStrictnessWithoutTheSwitchValidatesNothing()
 }//end class

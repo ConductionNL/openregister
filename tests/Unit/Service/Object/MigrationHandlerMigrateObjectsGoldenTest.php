@@ -219,9 +219,6 @@ class MigrationHandlerMigrateObjectsGoldenTest extends TestCase {
 
 		return new MigrationHandler(
 			objectMapper: $mapper,
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			saveHandler: $this->createMock(SaveObject::class),
 			utilityHandler: $utility,
 			dataManipHandler: $manipulation,
 			logger: $logger

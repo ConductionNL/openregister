@@ -35,7 +35,7 @@ use OCA\OpenRegister\Service\Deletion\DestructionScope;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeReader;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\TaskService;
 use PHPUnit\Framework\TestCase;
