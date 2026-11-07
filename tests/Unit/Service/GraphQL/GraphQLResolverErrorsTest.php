@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
@@ -62,6 +63,13 @@ class GraphQLResolverErrorsTest extends TestCase {
 	private $getObject;
 
 	/**
+	 * The permission double.
+	 *
+	 * @var PermissionHandler&MockObject
+	 */
+	private $permissions;
+
+	/**
 	 * Build the resolver over permissive doubles.
 	 *
 	 * @return GraphQLResolver The resolver.
@@ -69,6 +77,7 @@ class GraphQLResolverErrorsTest extends TestCase {
 	private function resolver(): GraphQLResolver {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->getObject     = $this->createMock(GetObject::class);
+		$this->permissions   = $this->createMock(PermissionHandler::class);
 
 		$register = new Register();
 		$register->setId(1);
@@ -82,7 +91,7 @@ class GraphQLResolverErrorsTest extends TestCase {
 		return new GraphQLResolver(
 			$this->getObject,
 			$this->objectService,
-			$this->createMock(PermissionHandler::class),
+			$this->permissions,
 			$rbac,
 			$this->createMock(RelationHandler::class),
 			$registerMapper,
@@ -92,6 +101,21 @@ class GraphQLResolverErrorsTest extends TestCase {
 			new TimeseriesRequestValidator()
 		);
 	}//end resolver()
+
+	/**
+	 * A caller without read on the schema gets no list: the search does not run.
+	 *
+	 * @return void
+	 */
+	public function testAListWithoutReadRightIsRefusedBeforeTheSearch(): void {
+		$resolver = $this->resolver();
+		$this->permissions->method('checkPermission')->willThrowException(new NotAuthorizedException('No read right.'));
+		$this->objectService->expects($this->never())->method('searchObjectsPaginated');
+
+		$error = $this->errorOf(fn () => $resolver->resolveList($this->schema(), []));
+
+		$this->assertSame('FORBIDDEN', $error->getExtensions()['code']);
+	}//end testAListWithoutReadRightIsRefusedBeforeTheSearch()
 
 	/**
 	 * A schema with a slug and, optionally, a title.
@@ -145,7 +169,7 @@ class GraphQLResolverErrorsTest extends TestCase {
 	public function testSingleNotFoundNamesTheTitle(): void {
 		$resolver = $this->resolver();
 		$this->getObject->method('find')->willThrowException(new DoesNotExistException('gone'));
-		$error = $this->errorOf(fn () => $resolver->resolveSingle($this->schema('Zaak'), null, ['id' => 'obj-1']));
+		$error = $this->errorOf(fn () => $resolver->resolveSingle($this->schema('Zaak'), ['id' => 'obj-1']));
 		$this->assertSame(["Zaak with ID 'obj-1' not found", ['code' => 'NOT_FOUND'], null], $this->parts($error));
 	}//end testSingleNotFoundNamesTheTitle()
 

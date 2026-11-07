@@ -178,7 +178,7 @@ class GraphQLResolverRecordRulesTest extends TestCase {
 		$resolver = $this->resolver();
 		$this->getObject->method('find')->willReturn($this->record());
 
-		$resolver->resolveSingle(schema: $this->schema(), root: null, args: ['id' => 'obj-1']);
+		$resolver->resolveSingle(schema: $this->schema(), args: ['id' => 'obj-1']);
 
 		$this->assertSame('org-b', $this->seen['read']['@self']['organisation'] ?? null);
 	}//end testTheReadFilterReadsTheRecord()
