@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\FacetCacheVersion;
 use OCA\OpenRegister\Service\Object\FacetCacheVersionInterface;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillService;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -58,6 +60,7 @@ final class D2InterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		AggregationRunner::class => [AggregationRunnerInterface::class, ContractBindings::BINDINGS, 'Service'],
 		FacetCacheVersion::class => [FacetCacheVersionInterface::class, ContractBindings::BINDINGS, 'Service'],
+		ObjectEventGate::class => [ObjectEventGateInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectSlugBackfillService::class => [ObjectSlugBackfillServiceInterface::class, ContractBindings::BINDINGS, 'Service'],
 		SchemaTypeConverter::class => [SchemaTypeConverterInterface::class, ContractBindings::BINDINGS, 'Service'],
 		TranslationHandler::class => [TranslationHandlerInterface::class, ContractBindings::BINDINGS, 'Service'],
@@ -69,6 +72,10 @@ final class D2InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array<string, string>>
 	 */
 	private const KEPT = [
+		ObjectEventGate::class => [
+			'BackgroundJob/DeferredObjectEventJob.php' => 'constructs the gate (`new`) around its own dispatcher',
+			'Db/MagicMapper.php' => 'constructs the gate (`new`); the file is also changed by open PR #6108',
+		],
 		SchemaTypeConverter::class => [
 			'Command/RematerialiseCalculationsCommand.php' => 'constructs the converter as a parameter default (`new`)',
 			'Db/MagicMapper.php' => 'left while open PR #6108 changes the file',
