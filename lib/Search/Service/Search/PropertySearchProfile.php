@@ -103,6 +103,29 @@ final class PropertySearchProfile {
 	private const DATE_FORMATS = ['date', 'date-time', 'datetime', 'time'];
 
 	/**
+	 * The match type an undeclared, non-date property gets per type; any
+	 * other type matches exactly.
+	 *
+	 * @var array<string, string>
+	 */
+	private const TYPE_MATCH_TYPES = [
+		'integer' => self::MATCH_RANGE,
+		'number' => self::MATCH_RANGE,
+		'boolean' => self::MATCH_EXACT,
+		'string' => self::MATCH_FULLTEXT,
+	];
+
+	/**
+	 * The input control a non-range property gets from its type alone.
+	 *
+	 * @var array<string, string>
+	 */
+	private const TYPE_INPUT_CONTROLS = [
+		'boolean' => 'boolean',
+		'array' => 'multiselect',
+	];
+
+	/**
 	 * What a property declares about being searched: its match type, input control and whether the type was declared.
 	 *
 	 * @param array<string, mixed> $property The property definition.
@@ -181,19 +204,7 @@ final class PropertySearchProfile {
 		}
 
 		$type = strtolower((string)($property['type'] ?? 'string'));
-		if ($type === 'integer' || $type === 'number') {
-			return self::MATCH_RANGE;
-		}
-
-		if ($type === 'boolean') {
-			return self::MATCH_EXACT;
-		}
-
-		if ($type === 'string') {
-			return self::MATCH_FULLTEXT;
-		}
-
-		return self::MATCH_EXACT;
+		return (self::TYPE_MATCH_TYPES[$type] ?? self::MATCH_EXACT);
 	}//end autoDetect()
 
 	/**
@@ -252,23 +263,46 @@ final class PropertySearchProfile {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public static function inputControlFor(array $property): string {
-		$declared = ($property['inputControl'] ?? null);
-		if (is_string($declared) === true
-			&& in_array(strtolower(trim($declared)), self::INPUT_CONTROLS, true) === true
-		) {
-			return strtolower(trim($declared));
+		$declared = self::declaredInputControl(property: $property);
+		if ($declared !== null) {
+			return $declared;
 		}
 
-		if (self::matchTypeFor(property: $property) === self::MATCH_RANGE) {
-			if (self::isDate(property: $property) === true) {
-				return 'date-range';
-			}
-
-			return 'range';
+		if (self::matchTypeFor(property: $property) !== self::MATCH_RANGE) {
+			return self::controlFromShape(property: $property);
 		}
 
-		return self::controlFromShape(property: $property);
+		if (self::isDate(property: $property) === true) {
+			return 'date-range';
+		}
+
+		return 'range';
 	}//end inputControlFor()
+
+	/**
+	 * The property's own `inputControl`, normalised, when it is a known one.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @phpstan-param array<string, mixed> $property
+	 *
+	 * @psalm-param array<string, mixed> $property
+	 *
+	 * @return string|null One of the INPUT_CONTROLS values, or null.
+	 */
+	private static function declaredInputControl(array $property): ?string {
+		$declared = ($property['inputControl'] ?? null);
+		if (is_string($declared) === false) {
+			return null;
+		}
+
+		$control = strtolower(trim($declared));
+		if (in_array($control, self::INPUT_CONTROLS, true) === false) {
+			return null;
+		}
+
+		return $control;
+	}//end declaredInputControl()
 
 	/**
 	 * The control a property's own shape asks for, once ranges are settled.
@@ -283,16 +317,11 @@ final class PropertySearchProfile {
 	 */
 	private static function controlFromShape(array $property): string {
 		$type = strtolower((string)($property['type'] ?? ''));
-
-		if ($type === 'boolean') {
-			return 'boolean';
+		if (isset(self::TYPE_INPUT_CONTROLS[$type]) === true) {
+			return self::TYPE_INPUT_CONTROLS[$type];
 		}
 
-		if ($type === 'array') {
-			return 'multiselect';
-		}
-
-		if (isset($property['enum']) === true && is_array($property['enum']) === true) {
+		if (is_array($property['enum'] ?? null) === true) {
 			return 'select';
 		}
 
