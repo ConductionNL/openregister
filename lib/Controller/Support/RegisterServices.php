@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\MigrationPackService;
-use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceInterface;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 
@@ -36,15 +36,15 @@ final class RegisterServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param RegisterService      $registerService      The register service.
-	 * @param RegisterCacheHandler $registerCacheHandler The register cache.
-	 * @param RegisterSerializer   $registerSerializer   The register serializer.
-	 * @param MigrationPackService $migrationPackService The migration pack service.
+	 * @param RegisterServiceInterface $registerService      The register service.
+	 * @param RegisterCacheHandler     $registerCacheHandler The register cache.
+	 * @param RegisterSerializer       $registerSerializer   The register serializer.
+	 * @param MigrationPackService     $migrationPackService The migration pack service.
 	 *
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 */
 	public function __construct(
-		public readonly RegisterService $registerService,
+		public readonly RegisterServiceInterface $registerService,
 		public readonly RegisterCacheHandler $registerCacheHandler,
 		public readonly RegisterSerializer $registerSerializer,
 		public readonly MigrationPackService $migrationPackService,

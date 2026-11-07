@@ -56,7 +56,7 @@ use Psr\Log\LoggerInterface;
  * contract shared with RegisterMapper::findAll/find; the method signature must match callers that
  * explicitly pass `false` to bypass multitenancy for admin/repair contexts.
  */
-class RegisterService {
+class RegisterService implements RegisterServiceInterface {
 
 	/**
 	 * Register mapper
