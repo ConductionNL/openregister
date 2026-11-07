@@ -20,6 +20,8 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use DateTime;
+use OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationCandidates;
+use OCA\OpenRegister\Notifications\BackgroundJob\TaskNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\TaskScheduledNotificationJob;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
@@ -78,14 +80,8 @@ class TaskScheduledNotificationJobTest extends TestCase {
 
 		return new TaskScheduledNotificationJob(
 			$time,
-			new TaskNotificationRules(),
-			$this->tasks,
-			$inbox,
-			new ScheduledFilterEvaluator(),
-			$this->dedupe,
-			$this->dispatcher,
-			$this->appConfig,
-			new NullLogger()
+			new TaskNotificationCandidates(new TaskNotificationRules(), $this->tasks, $inbox, new ScheduledFilterEvaluator()),
+			new TaskNotificationDelivery($this->dedupe, $this->dispatcher, $this->appConfig, new NullLogger())
 		);
 	}
 
