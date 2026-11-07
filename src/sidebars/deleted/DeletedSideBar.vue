@@ -387,25 +387,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/sidebars.scss' as *;
 
-.filterSection,
-.statsSection {
-	padding: 12px 0;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.filterSection:last-child,
-.statsSection:last-child {
-	border-bottom: none;
-}
-
-.filterSection h3,
-.statsSection h3 {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
+@include divided-sections(filterSection, statsSection);
 
 @include filter-group-rules;
 
