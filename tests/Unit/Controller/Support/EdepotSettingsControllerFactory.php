@@ -54,7 +54,6 @@ final class EdepotSettingsControllerFactory {
 				platform: new \OCA\OpenRegister\Controller\Support\EdepotSettingsPlatform(
 					connectionReporter: $connectionReporter,
 					appConfig: $appConfig,
-					logger: $logger,
 				),
 			),
 		];

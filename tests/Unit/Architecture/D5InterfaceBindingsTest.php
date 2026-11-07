@@ -45,9 +45,11 @@ final class D5InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const CASES = [
+		'OCA\OpenRegister\Service\SearchTrailService' => ['OCA\OpenRegister\Service\SearchTrailServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\SemanticTypeResolver' => ['OCA\OpenRegister\Service\SemanticTypeResolverInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\SequenceService' => ['OCA\OpenRegister\Service\SequenceServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\TalkLinkService' => ['OCA\OpenRegister\Service\TalkLinkServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\TimeTrackerLinkService' => ['OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\TranslationProjectionService' => [
 			'OCA\OpenRegister\Service\TranslationProjectionServiceInterface',
 			ContractBindings::class,
