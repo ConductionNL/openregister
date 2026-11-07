@@ -47,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
  */
-class OperationsJobsService {
+class OperationsJobsService implements OperationsJobsServiceInterface {
 
 	/**
 	 * The maintenance actions the console may start, by their own names.

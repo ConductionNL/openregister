@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use Psr\Log\LoggerInterface;
 
-class BulkTranslationService {
+class BulkTranslationService implements BulkTranslationServiceInterface {
 	/**
 	 * Constructor.
 	 *

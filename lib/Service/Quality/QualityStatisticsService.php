@@ -58,7 +58,7 @@ use Throwable;
  *
  * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
  */
-class QualityStatisticsService {
+class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	/**
 	 * Default field the score is read from when the annotation omits `field`.
 	 *
@@ -85,13 +85,6 @@ class QualityStatisticsService {
 	 * @var int
 	 */
 	private const HISTOGRAM_BUCKETS = 10;
-
-	/**
-	 * Default page size for the lowest-quality listing.
-	 *
-	 * @var int
-	 */
-	private const DEFAULT_LIMIT = 20;
 
 	/**
 	 * The shared register-scoped schema resolver.

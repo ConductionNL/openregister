@@ -54,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
  */
-class PartyRoleService {
+class PartyRoleService implements PartyRoleServiceInterface {
 
 	/**
 	 * The audit action written when the party a case is filed against changes.

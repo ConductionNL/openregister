@@ -22,7 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Service\DeckCardService;
+use OCA\OpenRegister\Service\DeckCardServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -40,9 +40,9 @@ class DeckController extends Controller {
 	/**
 	 * Deck card service.
 	 *
-	 * @var DeckCardService
+	 * @var DeckCardServiceInterface
 	 */
-	private readonly DeckCardService $deckCardService;
+	private readonly DeckCardServiceInterface $deckCardService;
 
 	/**
 	 * Object service.
@@ -56,7 +56,7 @@ class DeckController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param DeckCardService $deckCardService Deck card service
+	 * @param DeckCardServiceInterface $deckCardService Deck card service
 	 * @param ObjectOperationsInterface $objectService Object service
 	 *
 	 * @return void
@@ -64,7 +64,7 @@ class DeckController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		DeckCardService $deckCardService,
+		DeckCardServiceInterface $deckCardService,
 		ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);

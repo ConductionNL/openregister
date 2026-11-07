@@ -59,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-1
  */
-class ReferenceResolver {
+class ReferenceResolver implements ReferenceResolverInterface {
 
 	use PayloadTokenReading;
 	/**

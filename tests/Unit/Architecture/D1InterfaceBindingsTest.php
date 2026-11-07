@@ -61,11 +61,11 @@ final class D1InterfaceBindingsTest extends TestCase {
 	/**
 	 * Class => the outside callers deliberately left naming it, relative to lib/.
 	 *
-	 * ObjectActionElevationEntries resolves the ids a permission elevation is
-	 * checked against; permission code is out of scope for this refactor, so
-	 * it keeps its concrete RegisterMapper and SchemaMapper.
 	 *
 	 * BackfillTranslationSourceLanguageCommand is an occ command, whose
+	 * checked against; permission code is out of scope for this refactor, so
+	 * it keeps its concrete RegisterMapper and SchemaMapper.
+	 * ObjectActionElevationEntries resolves the ids a permission elevation is
 	 * public signature this refactor keeps unchanged.
 	 *
 	 * @var array<class-string, list<string>>

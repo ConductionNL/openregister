@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Interaction\FavouriteService;
+use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -56,17 +56,17 @@ class ObjectFavouriteController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
+	 * @param string                    $appName       App name.
+	 * @param IRequest                  $request       Request.
 	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
-	 * @param FavouriteService $favourites The favourite primitive.
-	 * @param LoggerInterface $logger Logger.
+	 * @param FavouriteServiceInterface $favourites    The favourite primitive.
+	 * @param LoggerInterface           $logger        Logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly FavouriteService $favourites,
+		private readonly FavouriteServiceInterface $favourites,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

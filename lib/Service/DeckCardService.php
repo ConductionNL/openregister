@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
  *   There is no alternative API that avoids this pattern; complexity is intrinsic
  *   to defensive interop with the Deck app's internal entity layer.
  */
-class DeckCardService {
+class DeckCardService implements DeckCardServiceInterface {
 
 	/**
 	 * Deck link mapper.
