@@ -109,10 +109,12 @@ class ViewsControllerWriteGoldenTest extends TestCase {
 		$controller = new ViewsController(
 			'openregister',
 			$request,
-			$this->viewService($case),
-			$this->createMock(ViewPresentationService::class),
-			$logger,
-			$this->resolver($case)
+			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
+				$this->viewService($case),
+				$this->createMock(ViewPresentationService::class),
+				$logger,
+				$this->resolver($case)
+			)
 		);
 
 		$response = match ($case['action']) {
