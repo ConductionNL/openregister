@@ -476,6 +476,12 @@ class TaskAuthorizationService {
 
 		$groups = ($task->getCandidateGroups() ?? []);
 		foreach ($groups as $groupId) {
+			// A typed `{type, id}` entry is the typed branch's to resolve below,
+			// never a bare group name.
+			if (is_array($groupId) === true) {
+				continue;
+			}
+
 			if ($this->isInGroup(uid: $uid, groupId: (string)$groupId) === true) {
 				return;
 			}
