@@ -1,0 +1,449 @@
+{
+    "normalize": {
+        "server-ams": {
+            "minimal": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "Europe/Amsterdam",
+                "days": null
+            },
+            "with-tz": {
+                "enabled": true,
+                "start": "09:00",
+                "end": "17:30",
+                "timezone": "America/New_York",
+                "days": null
+            },
+            "no-start": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "bad-start": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "int-start": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "bad-end": "refused: \"end\" must be an \"HH:MM\" time string.",
+            "both-bad": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "tz-empty": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "tz-int": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "tz-bogus": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "tz-null": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "Europe/Amsterdam",
+                "days": null
+            },
+            "days-ok": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "Europe/Amsterdam",
+                "days": [
+                    5,
+                    1,
+                    0,
+                    6
+                ]
+            },
+            "days-empty": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "Europe/Amsterdam",
+                "days": []
+            },
+            "days-null": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "Europe/Amsterdam",
+                "days": null
+            },
+            "days-string": "refused: \"days\" must be an array of integers 0-6.",
+            "days-out-of-range": "refused: \"days\" entries must be integers 0-6.",
+            "days-negative": "refused: \"days\" entries must be integers 0-6.",
+            "days-string-day": "refused: \"days\" entries must be integers 0-6.",
+            "tz-bad-and-days": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "enabled-false": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "Europe/Amsterdam",
+                "days": null
+            },
+            "same-start-end": {
+                "enabled": true,
+                "start": "08:00",
+                "end": "08:00",
+                "timezone": "UTC",
+                "days": null
+            }
+        },
+        "server-throws": {
+            "minimal": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": null
+            },
+            "with-tz": {
+                "enabled": true,
+                "start": "09:00",
+                "end": "17:30",
+                "timezone": "America/New_York",
+                "days": null
+            },
+            "no-start": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "bad-start": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "int-start": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "bad-end": "refused: \"end\" must be an \"HH:MM\" time string.",
+            "both-bad": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "tz-empty": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "tz-int": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "tz-bogus": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "tz-null": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": null
+            },
+            "days-ok": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": [
+                    5,
+                    1,
+                    0,
+                    6
+                ]
+            },
+            "days-empty": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": []
+            },
+            "days-null": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": null
+            },
+            "days-string": "refused: \"days\" must be an array of integers 0-6.",
+            "days-out-of-range": "refused: \"days\" entries must be integers 0-6.",
+            "days-negative": "refused: \"days\" entries must be integers 0-6.",
+            "days-string-day": "refused: \"days\" entries must be integers 0-6.",
+            "tz-bad-and-days": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "enabled-false": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": null
+            },
+            "same-start-end": {
+                "enabled": true,
+                "start": "08:00",
+                "end": "08:00",
+                "timezone": "UTC",
+                "days": null
+            }
+        },
+        "no-server": {
+            "minimal": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": null
+            },
+            "with-tz": {
+                "enabled": true,
+                "start": "09:00",
+                "end": "17:30",
+                "timezone": "America/New_York",
+                "days": null
+            },
+            "no-start": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "bad-start": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "int-start": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "bad-end": "refused: \"end\" must be an \"HH:MM\" time string.",
+            "both-bad": "refused: \"start\" must be an \"HH:MM\" time string.",
+            "tz-empty": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "tz-int": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "tz-bogus": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "tz-null": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": null
+            },
+            "days-ok": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": [
+                    5,
+                    1,
+                    0,
+                    6
+                ]
+            },
+            "days-empty": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": []
+            },
+            "days-null": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": null
+            },
+            "days-string": "refused: \"days\" must be an array of integers 0-6.",
+            "days-out-of-range": "refused: \"days\" entries must be integers 0-6.",
+            "days-negative": "refused: \"days\" entries must be integers 0-6.",
+            "days-string-day": "refused: \"days\" entries must be integers 0-6.",
+            "tz-bad-and-days": "refused: \"timezone\" must be a valid IANA timezone name.",
+            "enabled-false": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": null
+            },
+            "same-start-end": {
+                "enabled": true,
+                "start": "08:00",
+                "end": "08:00",
+                "timezone": "UTC",
+                "days": null
+            }
+        }
+    },
+    "timezone": {
+        "server-ams": {
+            "NULL": "Europe/Amsterdam",
+            "''": "Europe/Amsterdam",
+            "'Asia/Tokyo'": "Asia/Tokyo",
+            "'Mars/Base'": "Europe/Amsterdam",
+            "'UTC'": "UTC"
+        },
+        "server-throws": {
+            "NULL": "UTC",
+            "''": "UTC",
+            "'Asia/Tokyo'": "Asia/Tokyo",
+            "'Mars/Base'": "UTC",
+            "'UTC'": "UTC"
+        },
+        "no-server": {
+            "NULL": "UTC",
+            "''": "UTC",
+            "'Asia/Tokyo'": "Asia/Tokyo",
+            "'Mars/Base'": "UTC",
+            "'UTC'": "UTC"
+        }
+    },
+    "inside": {
+        "server-ams": {
+            "disabled": "00000000000000000",
+            "enabled-missing": "00000000000000000",
+            "enabled-truthy": "00000000000000000",
+            "bad-start": "00000000000000000",
+            "bad-end": "00000000000000000",
+            "zero-length": "00000000000000000",
+            "day-utc": "01100000000001001",
+            "night-utc": "00000111011110010",
+            "night-ams": "00001110011110100",
+            "day-ny": "00111000000000000",
+            "tz-int": "11000000000001001",
+            "tz-bogus": "11000000000001001",
+            "tz-absent": "11000000000001001",
+            "day-weekdays": "01100000000001000",
+            "night-friday": "00000111000000000",
+            "night-sunday": "00000000000110000",
+            "days-empty": "00000111011110010",
+            "days-string": "00000111011110010",
+            "days-strs": "00000000000000000",
+            "edge-minute": "00100000000000000"
+        },
+        "server-throws": {
+            "disabled": "00000000000000000",
+            "enabled-missing": "00000000000000000",
+            "enabled-truthy": "00000000000000000",
+            "bad-start": "00000000000000000",
+            "bad-end": "00000000000000000",
+            "zero-length": "00000000000000000",
+            "day-utc": "01100000000001001",
+            "night-utc": "00000111011110010",
+            "night-ams": "00001110011110100",
+            "day-ny": "00111000000000000",
+            "tz-int": "01100000000001001",
+            "tz-bogus": "01100000000001001",
+            "tz-absent": "01100000000001001",
+            "day-weekdays": "01100000000001000",
+            "night-friday": "00000111000000000",
+            "night-sunday": "00000000000110000",
+            "days-empty": "00000111011110010",
+            "days-string": "00000111011110010",
+            "days-strs": "00000000000000000",
+            "edge-minute": "00100000000000000"
+        },
+        "no-server": {
+            "disabled": "00000000000000000",
+            "enabled-missing": "00000000000000000",
+            "enabled-truthy": "00000000000000000",
+            "bad-start": "00000000000000000",
+            "bad-end": "00000000000000000",
+            "zero-length": "00000000000000000",
+            "day-utc": "01100000000001001",
+            "night-utc": "00000111011110010",
+            "night-ams": "00001110011110100",
+            "day-ny": "00111000000000000",
+            "tz-int": "01100000000001001",
+            "tz-bogus": "01100000000001001",
+            "tz-absent": "01100000000001001",
+            "day-weekdays": "01100000000001000",
+            "night-friday": "00000111000000000",
+            "night-sunday": "00000000000110000",
+            "days-empty": "00000111011110010",
+            "days-string": "00000111011110010",
+            "days-strs": "00000000000000000",
+            "edge-minute": "00100000000000000"
+        }
+    },
+    "store": {
+        "server-ams": {
+            "after-set": {
+                "alice/openregister/notification_delivery_window": "{\"enabled\":true,\"start\":\"22:00\",\"end\":\"07:00\",\"timezone\":\"Europe\\/Amsterdam\",\"days\":[1]}"
+            },
+            "get": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "Europe/Amsterdam",
+                "days": [
+                    1
+                ]
+            },
+            "after-disable": [],
+            "after-clear": [],
+            "get-corrupt": null,
+            "get-missing": null
+        },
+        "server-throws": {
+            "after-set": {
+                "alice/openregister/notification_delivery_window": "{\"enabled\":true,\"start\":\"22:00\",\"end\":\"07:00\",\"timezone\":\"UTC\",\"days\":[1]}"
+            },
+            "get": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": [
+                    1
+                ]
+            },
+            "after-disable": [],
+            "after-clear": [],
+            "get-corrupt": null,
+            "get-missing": null
+        },
+        "no-server": {
+            "after-set": {
+                "alice/openregister/notification_delivery_window": "{\"enabled\":true,\"start\":\"22:00\",\"end\":\"07:00\",\"timezone\":\"UTC\",\"days\":[1]}"
+            },
+            "get": {
+                "enabled": true,
+                "start": "22:00",
+                "end": "07:00",
+                "timezone": "UTC",
+                "days": [
+                    1
+                ]
+            },
+            "after-disable": [],
+            "after-clear": [],
+            "get-corrupt": null,
+            "get-missing": null
+        }
+    },
+    "log": {
+        "server-ams": [],
+        "server-throws": [
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone",
+            "[NotificationDeliveryWindowService] server timezone resolution failed: no zone"
+        ],
+        "no-server": []
+    }
+}
