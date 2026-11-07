@@ -43,6 +43,8 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use OCA\OpenRegister\Service\OperationsConsoleServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
+use OCA\OpenRegister\Service\Operations\JobRunFilter;
+use OCA\OpenRegister\Service\Operations\JobScheduleChange;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -160,9 +162,11 @@ class OperationsConsoleController extends Controller {
 
 		return new JSONResponse(
 			data: $this->jobsService->runs(
-				jobClass: $this->stringParam(name: 'job'),
-				outcome: $this->stringParam(name: 'outcome'),
-				windowHours: $windowHours,
+				filter: new JobRunFilter(
+					jobClass: $this->stringParam(name: 'job'),
+					outcome: $this->stringParam(name: 'outcome'),
+					windowHours: $windowHours
+				),
 				limit: $this->intParam(name: 'limit', fallback: 50),
 				offset: $this->intParam(name: 'offset', fallback: 0)
 			)
@@ -243,10 +247,12 @@ class OperationsConsoleController extends Controller {
 		return new JSONResponse(
 			data: $this->jobsService->administerSchedule(
 				jobClass: $job,
-				enabled: $wantedEnabled,
-				intervalSeconds: $this->nullableIntParam(name: 'intervalSeconds'),
-				windowStartHour: $this->nullableIntParam(name: 'windowStartHour'),
-				windowEndHour: $this->nullableIntParam(name: 'windowEndHour')
+				change: new JobScheduleChange(
+					enabled: $wantedEnabled,
+					intervalSeconds: $this->nullableIntParam(name: 'intervalSeconds'),
+					windowStartHour: $this->nullableIntParam(name: 'windowStartHour'),
+					windowEndHour: $this->nullableIntParam(name: 'windowEndHour')
+				)
 			)
 		);
 	}//end schedule()
