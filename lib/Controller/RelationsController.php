@@ -114,7 +114,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedAlbums',
 		],
 		'cospend' => [
-			'class' => \OCA\OpenRegister\Service\CospendLinkService::class,
+			'class' => \OCA\OpenRegister\Service\CospendLinkServiceInterface::class,
 			'available' => 'isCospendAvailable',
 			'method' => 'getLinkedEntries',
 		],

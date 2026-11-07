@@ -60,6 +60,31 @@ class FlowGraphDiff {
 	public const MINOR = 'minor';
 
 	/**
+	 * The summary label of each removal list, in the order they are read out.
+	 *
+	 * @var array<string, string>
+	 */
+	private const SUMMARY_LABELS = [
+		'removedNodes' => 'steps',
+		'removedEdges' => 'connections',
+		'removedKeys'  => 'settings',
+	];
+
+	/**
+	 * Reads edge endpoints the one way the engine defines them.
+	 *
+	 * @var FlowGraph
+	 */
+	private FlowGraph $graph;
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->graph = new FlowGraph();
+	}//end __construct()
+
+	/**
 	 * What the candidate graph takes away from the published one.
 	 *
 	 * @param array<string, mixed> $published The graph currently published.
@@ -73,47 +98,15 @@ class FlowGraphDiff {
 		$before = $this->nodesById(graph: $published);
 		$after = $this->nodesById(graph: $candidate);
 
-		$removedNodes = array_values(array_diff(array_keys($before), array_keys($after)));
-		sort($removedNodes);
-
-		$removedEdges = array_values(
-			array_diff($this->edgeKeys(graph: $published), $this->edgeKeys(graph: $candidate))
-		);
-		sort($removedEdges);
-
-		$removedKeys = [];
-		foreach ($before as $id => $node) {
-			// 🔴 ONLY SURVIVING NODES. A key that went with its node is one
-			// change, already reported as the node.
-			if (array_key_exists($id, $after) === false) {
-				continue;
-			}
-
-			$gone = array_diff(
-				array_keys($this->configOf(node: $node)),
-				array_keys($this->configOf(node: $after[$id]))
-			);
-
-			foreach ($gone as $key) {
-				$removedKeys[] = $id . '.' . $key;
-			}
-		}
-
-		sort($removedKeys);
-
-		$breaks = ($removedNodes !== [] || $removedEdges !== [] || $removedKeys !== []);
-
-		$verdict = self::MINOR;
-		if ($breaks === true) {
-			$verdict = self::MAJOR;
-		}
-
-		return [
-			'verdict' => $verdict,
-			'removedNodes' => $removedNodes,
-			'removedEdges' => $removedEdges,
-			'removedKeys' => $removedKeys,
+		$removed = [
+			'removedNodes' => $this->sorted(values: array_diff(array_keys($before), array_keys($after))),
+			'removedEdges' => $this->sorted(
+				values: array_diff($this->edgeKeys(graph: $published), $this->edgeKeys(graph: $candidate))
+			),
+			'removedKeys'  => $this->removedKeys(before: $before, after: $after),
 		];
+
+		return ['verdict' => $this->verdictFor(removed: $removed)] + $removed;
 	}//end compare()
 
 	/**
@@ -131,17 +124,10 @@ class FlowGraphDiff {
 	 */
 	public function summarise(array $diff): string {
 		$parts = [];
-
-		if (($diff['removedNodes'] ?? []) !== []) {
-			$parts[] = 'steps ' . implode(', ', $diff['removedNodes']);
-		}
-
-		if (($diff['removedEdges'] ?? []) !== []) {
-			$parts[] = 'connections ' . implode(', ', $diff['removedEdges']);
-		}
-
-		if (($diff['removedKeys'] ?? []) !== []) {
-			$parts[] = 'settings ' . implode(', ', $diff['removedKeys']);
+		foreach (self::SUMMARY_LABELS as $key => $label) {
+			if (($diff[$key] ?? []) !== []) {
+				$parts[] = $label . ' ' . implode(', ', $diff[$key]);
+			}
 		}
 
 		if ($parts === []) {
@@ -150,6 +136,68 @@ class FlowGraphDiff {
 
 		return 'This removes ' . implode('; ', $parts) . '.';
 	}//end summarise()
+
+	/**
+	 * MAJOR when any list is non-empty, MINOR otherwise.
+	 *
+	 * @param array{removedNodes: array<int, string>, removedEdges: array<int, string>, removedKeys: array<int, string>} $removed The removals.
+	 *
+	 * @return string The verdict.
+	 */
+	private function verdictFor(array $removed): string {
+		if ($removed['removedNodes'] === [] && $removed['removedEdges'] === [] && $removed['removedKeys'] === []) {
+			return self::MINOR;
+		}
+
+		return self::MAJOR;
+	}//end verdictFor()
+
+	/**
+	 * The config keys removed from nodes that survive, as sorted `node.key` strings.
+	 *
+	 * @param array<string, array<string, mixed>> $before The published nodes by id.
+	 * @param array<string, array<string, mixed>> $after  The candidate nodes by id.
+	 *
+	 * @return array<int, string> The removed keys.
+	 */
+	private function removedKeys(array $before, array $after): array {
+		$removedKeys = [];
+		// 🔴 ONLY SURVIVING NODES. A key that went with its node is one
+		// change, already reported as the node.
+		foreach (array_intersect_key($before, $after) as $id => $node) {
+			foreach ($this->goneKeys(node: $node, survivor: $after[$id]) as $key) {
+				$removedKeys[] = $id . '.' . $key;
+			}
+		}
+
+		return $this->sorted(values: $removedKeys);
+	}//end removedKeys()
+
+	/**
+	 * The config keys a node had that its surviving version no longer has.
+	 *
+	 * @param array<string, mixed> $node     The published node.
+	 * @param array<string, mixed> $survivor The candidate node with the same id.
+	 *
+	 * @return array<int|string, int|string> The removed keys.
+	 */
+	private function goneKeys(array $node, array $survivor): array {
+		return array_diff(array_keys($this->configOf(node: $node)), array_keys($this->configOf(node: $survivor)));
+	}//end goneKeys()
+
+	/**
+	 * A list's values, re-indexed and sorted.
+	 *
+	 * @param array<int|string, int|string> $values The values.
+	 *
+	 * @return array<int, int|string> The sorted list.
+	 */
+	private function sorted(array $values): array {
+		$values = array_values($values);
+		sort($values);
+
+		return $values;
+	}//end sorted()
 
 	/**
 	 * The graph's nodes, keyed by id, skipping anything without one.
@@ -163,22 +211,30 @@ class FlowGraphDiff {
 	 */
 	private function nodesById(array $graph): array {
 		$byId = [];
-
 		foreach (($graph['nodes'] ?? []) as $node) {
-			if (is_array($node) === false) {
-				continue;
+			$id = $this->idOf(node: $node);
+			if ($id !== '') {
+				$byId[$id] = $node;
 			}
-
-			$id = trim((string)($node['id'] ?? ''));
-			if ($id === '') {
-				continue;
-			}
-
-			$byId[$id] = $node;
 		}
 
 		return $byId;
 	}//end nodesById()
+
+	/**
+	 * A node entry's trimmed id, or '' when it is not a node or has none.
+	 *
+	 * @param mixed $node One entry from the node list.
+	 *
+	 * @return string The id.
+	 */
+	private function idOf(mixed $node): string {
+		if (is_array($node) === false) {
+			return '';
+		}
+
+		return trim((string)($node['id'] ?? ''));
+	}//end idOf()
 
 	/**
 	 * Every edge as a comparable `from->to` string.
@@ -193,16 +249,9 @@ class FlowGraphDiff {
 	 */
 	private function edgeKeys(array $graph): array {
 		$keys = [];
-
 		foreach (($graph['edges'] ?? []) as $edge) {
-			if (is_array($edge) === false) {
-				continue;
-			}
-
-			foreach ($this->endpoints(value: ($edge['from'] ?? null)) as $from) {
-				foreach ($this->endpoints(value: ($edge['to'] ?? null)) as $to) {
-					$keys[] = $from . '->' . $to;
-				}
+			if (is_array($edge) === true) {
+				$keys = array_merge($keys, $this->keysOf(edge: $edge));
 			}
 		}
 
@@ -210,28 +259,22 @@ class FlowGraphDiff {
 	}//end edgeKeys()
 
 	/**
-	 * One endpoint value as a list of node ids.
+	 * One edge as `from->to` strings, one per endpoint pair.
 	 *
-	 * @param mixed $value The raw endpoint.
+	 * @param array<string, mixed> $edge The edge.
 	 *
-	 * @return array<int, string> The ids.
+	 * @return array<int, string> The edge keys.
 	 */
-	private function endpoints(mixed $value): array {
-		$list = [$value];
-		if (is_array($value) === true) {
-			$list = $value;
-		}
-
-		$ids = [];
-		foreach ($list as $item) {
-			$id = trim((string)$item);
-			if ($id !== '') {
-				$ids[] = $id;
+	private function keysOf(array $edge): array {
+		$keys = [];
+		foreach ($this->graph->normaliseEndpoints(value: ($edge['from'] ?? null)) as $from) {
+			foreach ($this->graph->normaliseEndpoints(value: ($edge['to'] ?? null)) as $to) {
+				$keys[] = $from . '->' . $to;
 			}
 		}
 
-		return $ids;
-	}//end endpoints()
+		return $keys;
+	}//end keysOf()
 
 	/**
 	 * A node's configuration, as an array whatever it was stored as.
