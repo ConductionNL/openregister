@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Object\BatchOperationStatus;
+use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -49,6 +51,7 @@ final class D2InterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		AggregationRunner::class => [AggregationRunnerInterface::class, ContractBindings::BINDINGS, 'Service'],
+		BatchOperationStatus::class => [BatchOperationStatusInterface::class, ContractBindings::BINDINGS, 'Service'],
 	];
 
 	/**
