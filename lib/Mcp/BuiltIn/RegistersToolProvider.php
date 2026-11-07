@@ -31,7 +31,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
-use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceInterface;
 use RuntimeException;
 
 /**
@@ -55,11 +55,11 @@ class RegistersToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param RegisterService       $registerService Register service for CRUD operations
-	 * @param DefinitionWriteRights $rights          The rights of the signed-in user
+	 * @param RegisterServiceInterface $registerService Register service for CRUD operations
+	 * @param DefinitionWriteRights    $rights          The rights of the signed-in user
 	 */
 	public function __construct(
-		private readonly RegisterService $registerService,
+		private readonly RegisterServiceInterface $registerService,
 		private readonly DefinitionWriteRights $rights,
 	) {
 	}//end __construct()
@@ -156,7 +156,7 @@ class RegistersToolProvider implements IMcpToolProvider {
 		$limit = $arguments['limit'] ?? null;
 		$offset = $arguments['offset'] ?? null;
 
-		// IDOR boundary (IMcpToolProvider contract): RegisterService::findAll
+		// IDOR boundary (IMcpToolProvider contract): RegisterServiceInterface::findAll
 		// applies RBAC + multi-tenancy filtering by default — the underlying
 		// mapper joins on the active organisation and filters by RBAC role.
 		// We pass the flags explicitly so a future refactor of the service

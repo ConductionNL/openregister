@@ -72,7 +72,7 @@ use Throwable;
  *     for one of the Tier-2 flows (link, create, unlink, list, picker,
  *     cache refresh, graceful degradation).
  */
-class PhotoLinkService {
+class PhotoLinkService implements PhotoLinkServiceInterface {
 	private const REQUIRED_APP = 'photos';
 
 	private const ALBUM_MAPPER = 'OCA\\Photos\\Album\\AlbumMapper';

@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Db;
 
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
