@@ -63,7 +63,7 @@ use Throwable;
  *
  * @spec openspec/specs/register-scoped-slug-resolution/spec.md
  */
-class RegisterSchemaLinkageRepairService {
+class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairServiceInterface {
 
 	/**
 	 * Marker the shard tables are matched on.

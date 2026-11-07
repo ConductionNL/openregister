@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Throwable;
@@ -65,15 +65,15 @@ class AutoTransitionRecordListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Resolves the written object's schema.
-	 * @param AutoTransitionSelector $selector Answers the cheap "does this schema declare any autoWhen" read.
-	 * @param AutoTransitionPass $pass The request-scoped pass the object is recorded in.
+	 * @param SchemaMapperInterface           $schemaMapper Resolves the written object's schema.
+	 * @param AutoTransitionSelectorInterface $selector     Answers the cheap "does this schema declare any autoWhen" read.
+	 * @param AutoTransitionPass              $pass         The request-scoped pass the object is recorded in.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly AutoTransitionSelector $selector,
+		private readonly AutoTransitionSelectorInterface $selector,
 		private readonly AutoTransitionPass $pass,
 	) {
 	}//end __construct()
