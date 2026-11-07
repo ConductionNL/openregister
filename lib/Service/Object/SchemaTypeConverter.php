@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\Object;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Match expression unavoidable for typed dispatch
  */
-class SchemaTypeConverter {
+class SchemaTypeConverter implements SchemaTypeConverterInterface {
 	/**
 	 * Convert a database column value to the type declared in the JSON Schema.
 	 *

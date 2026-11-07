@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class TranslationHandler {
+class TranslationHandler implements TranslationHandlerInterface {
 	/**
 	 * Constructor.
 	 *
