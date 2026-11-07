@@ -135,14 +135,9 @@
 						"
 						@update:modelValue="handleRegisterChange">
 						<template #option="{ title, description }">
-							<div class="option-content">
-								<span class="option-title">{{ title }}</span>
-								<span
-									v-if="description"
-									class="option-description"
-									>{{ description }}</span
-								>
-							</div>
+							<SelectOption
+								:title="title"
+								:description="description" />
 						</template>
 					</NcSelect>
 					<p class="field-hint">
@@ -168,14 +163,9 @@
 						"
 						@update:modelValue="handleSchemaChange">
 						<template #option="{ title, description }">
-							<div class="option-content">
-								<span class="option-title">{{ title }}</span>
-								<span
-									v-if="description"
-									class="option-description"
-									>{{ description }}</span
-								>
-							</div>
+							<SelectOption
+								:title="title"
+								:description="description" />
 						</template>
 					</NcSelect>
 					<p class="field-hint">
@@ -556,6 +546,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Star from 'vue-material-design-icons/Star.vue'
 import StarOutline from 'vue-material-design-icons/StarOutline.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
+import SelectOption from '../../components/shared/SelectOption.vue'
 import DeleteView from '../../modals/view/DeleteView.vue'
 import EditView from '../../modals/view/EditView.vue'
 import { freshState } from '../../services/initialState.js'
@@ -629,6 +620,7 @@ export default {
 		CogOutline,
 		EditView,
 		DeleteView,
+		SelectOption,
 	},
 
 	data() {
@@ -2128,8 +2120,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@use '../../styles/components.scss' as *;
-
 .section {
 	padding: 16px;
 	margin-bottom: 0;
@@ -2370,8 +2360,6 @@ export default {
 	margin: 0;
 	padding-top: 4px;
 }
-
-@include option-content-rules;
 
 .search-input-container {
 	display: flex;
