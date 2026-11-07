@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\CalculationsControllerServices;
-use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -78,7 +78,7 @@ class CalculationsController extends Controller {
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param CalculationsControllerServices $services The calculations controller services.
-	 * @param MagicTableRowReaderInterface $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
+	 * @param MagicMapperInterface $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
 	 *
 	 * @return void
 	 */
@@ -86,7 +86,7 @@ class CalculationsController extends Controller {
 		string $appName,
 		IRequest $request,
 		CalculationsControllerServices $services,
-		private readonly MagicTableRowReaderInterface $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->catalogue = $services->catalogue;

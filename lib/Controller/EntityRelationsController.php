@@ -44,11 +44,11 @@ use OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
@@ -100,9 +100,9 @@ class EntityRelationsController extends Controller {
 	/**
 	 * ObjectEntity loader (for object-bound authz).
 	 *
-	 * @var MagicObjectFinderInterface
+	 * @var MagicMapperInterface
 	 */
-	private readonly MagicObjectFinderInterface $magicMapper;
+	private readonly MagicMapperInterface $magicMapper;
 
 	/**
 	 * Schema loader (for hasPermission inputs).

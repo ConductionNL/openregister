@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
@@ -45,11 +45,11 @@ use Throwable;
 final class LifecycleSeed {
 
 	/**
-	 * @param MagicObjectFinderInterface $mapper Loads the parent object.
+	 * @param MagicMapperInterface $mapper Loads the parent object.
 	 * @param LoggerInterface      $logger Records why a seed did nothing.
 	 */
 	public function __construct(
-		private readonly MagicObjectFinderInterface $mapper,
+		private readonly MagicMapperInterface $mapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

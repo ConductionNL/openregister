@@ -30,14 +30,14 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
-use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -59,7 +59,7 @@ class GetObject
     /**
      * Constructor for GetObject handler.
      *
-     * @param MagicObjectFinderInterface          $objectMapper         Object entity data mapper.
+     * @param MagicMapperInterface          $objectMapper         Object entity data mapper.
      * @param AuditTrailMapperInterface     $auditTrailMapper     Audit trail mapper for logs.
      * @param ReadHistoryService   $readHistory          The one read registration (audit trail and AVG log).
      * @param ObjectSourceRegistry $objectSourceRegistry Registry of object-source providers (virtual schemas).
@@ -68,7 +68,7 @@ class GetObject
      * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
-        private readonly MagicObjectFinderInterface $objectMapper,
+        private readonly MagicMapperInterface $objectMapper,
         private readonly AuditTrailMapperInterface $auditTrailMapper,
         private readonly ReadHistoryService $readHistory,
         private readonly ObjectSourceRegistry $objectSourceRegistry,

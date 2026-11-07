@@ -34,15 +34,15 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
-use OCA\OpenRegister\Formats\CronFormat;
 use OCA\OpenRegister\Formats\Iso8601DateTimeFormat;
+use OCA\OpenRegister\Formats\CronFormat;
 use OCA\OpenRegister\Formats\SemVerFormat;
 use OCA\OpenRegister\Formats\UserFormat;
 use OCP\AppFramework\Http\JSONResponse;
@@ -311,9 +311,9 @@ class ValidateObject implements ValidateObjectInterface {
 	/**
 	 * Object mapper.
 	 *
-	 * @var MagicObjectSearchInterface
+	 * @var MagicMapperInterface
 	 */
-	private MagicObjectSearchInterface $objectMapper;
+	private MagicMapperInterface $objectMapper;
 
 	/**
 	 * Schema mapper.

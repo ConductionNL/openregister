@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
@@ -80,7 +80,7 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator.
 	 * @param ConditionTracer $tracer Names the operand that decided.
 	 * @param RegisterMapperInterface $registerMapper Register lookup for a named object.
-	 * @param MagicTableRowReaderInterface $objectMapper Object lookup in the register and schema table.
+	 * @param MagicMapperInterface $objectMapper Object lookup in the register and schema table.
 	 * @param ConditionDialect $dialect Decides and evaluates a condition in whichever dialect it is written.
 	 *
 	 * @return void
@@ -90,7 +90,7 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly ConditionTracer $tracer,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicTableRowReaderInterface $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly ConditionDialect $dialect,
 	) {
 	}//end __construct()

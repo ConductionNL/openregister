@@ -68,8 +68,7 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		'lib/Service/GraphQL/ListRequest.php' => 'reads the groupBy argument for ListAggregations, which goes through AggregationRunner; computes nothing',
 		'lib/Controller/ObjectsController.php' => 'delegates to ObjectService and FacetHandler',
 		'lib/Db/MagicMapper.php' => 'delegates to its handlers',
-		'lib/Db/MagicMapper/MagicObjectSearchInterface.php' => 'a role of the mapper\'s interface, declares, summarises nothing',
-		'lib/Db/MagicMapper/MagicTableMaintenanceInterface.php' => 'a role of the mapper\'s interface, declares, summarises nothing',
+		'lib/Db/MagicMapperInterface.php' => 'the mapper\'s interface, declares, summarises nothing',
 		'lib/Service/ObjectService.php' => 'delegates to FacetHandler and the mappers',
 		'lib/Db/AbstractObjectMapper.php' => 'base class; concrete mappers carry the gate',
 

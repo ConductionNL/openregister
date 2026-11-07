@@ -23,7 +23,7 @@
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Exception\CircularReferenceException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -45,13 +45,13 @@ final class ReferenceExistence {
 	/**
 	 * @param SaveLookups          $lookups   Schema and register lookups.
 	 * @param SaveCallStack        $saveCalls The saves in flight.
-	 * @param MagicObjectFinderInterface $mapper    Reads the referenced object.
+	 * @param MagicMapperInterface $mapper    Reads the referenced object.
 	 * @param ReferenceEvents      $events    Announces the verdicts.
 	 */
 	public function __construct(
 		private readonly SaveLookups $lookups,
 		private readonly SaveCallStack $saveCalls,
-		private readonly MagicObjectFinderInterface $mapper,
+		private readonly MagicMapperInterface $mapper,
 		private readonly ReferenceEvents $events,
 	) {
 	}//end __construct()

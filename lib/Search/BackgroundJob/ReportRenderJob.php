@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -142,9 +142,9 @@ class ReportRenderJob extends TimedJob {
 	/**
 	 * Object loader.
 	 *
-	 * @var MagicTableRowReaderInterface
+	 * @var MagicMapperInterface
 	 */
-	private readonly MagicTableRowReaderInterface $objectMapper;
+	private readonly MagicMapperInterface $objectMapper;
 
 	/**
 	 * Render composer.
