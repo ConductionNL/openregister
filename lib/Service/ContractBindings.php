@@ -85,7 +85,10 @@ final class ContractBindings {
 	public const BINDINGS = [
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppSettingsInterface::class => SettingsService::class,
+		BulkTranslationServiceInterface::class => BulkTranslationService::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
+		DemoDataServiceInterface::class => DemoDataService::class,
+		EndpointServiceInterface::class => EndpointService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		GitHubClientInterface::class => GitHubHandler::class,

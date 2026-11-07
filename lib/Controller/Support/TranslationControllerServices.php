@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\TranslationMapper;
-use OCA\OpenRegister\Service\BulkTranslationService;
+use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
 use OCA\OpenRegister\Service\TranslationStatusService;
 
 /**
@@ -39,7 +39,7 @@ final class TranslationControllerServices {
 	 * @param TranslationStatusService $statusService     The translation status service.
 	 * @param TranslationMapper        $translationMapper The translation mapper.
 	 * @param SchemaMapperInterface    $schemaMapper      The schema mapper.
-	 * @param BulkTranslationService   $bulkService       The bulk translation service.
+	 * @param BulkTranslationServiceInterface $bulkService       The bulk translation service.
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
@@ -47,7 +47,7 @@ final class TranslationControllerServices {
 		public readonly TranslationStatusService $statusService,
 		public readonly TranslationMapper $translationMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly BulkTranslationService $bulkService,
+		public readonly BulkTranslationServiceInterface $bulkService,
 	) {
 	}//end __construct()
 }//end class
