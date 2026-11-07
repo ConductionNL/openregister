@@ -1,7 +1,7 @@
 <?php
 
 /**
- * TextExtractionStorage: the stores TextExtractionService reads files from and writes chunks to.
+ * TextExtractionStorage: the stores TextExtractionService reads files from.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -22,28 +22,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
-use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
 
 /**
- * The stores TextExtractionService reads files from and writes chunks to.
+ * The stores TextExtractionService reads files from.
  */
 final class TextExtractionStorage {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param FileMapperInterface $fileMapper  Mapper for Nextcloud files
-	 * @param ChunkMapper         $chunkMapper Mapper for chunks
-	 * @param IRootFolder         $rootFolder  Nextcloud root folder
-	 * @param IDBConnection       $db          Database connection
+	 * @param FileMapperInterface $fileMapper Mapper for Nextcloud files
+	 * @param IRootFolder         $rootFolder Nextcloud root folder
+	 * @param IDBConnection       $db         Database connection
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $db is a well-known PHP idiom for a database connection parameter.
 	 */
 	public function __construct(
 		public readonly FileMapperInterface $fileMapper,
-		public readonly ChunkMapper $chunkMapper,
 		public readonly IRootFolder $rootFolder,
 		public readonly IDBConnection $db,
 	) {

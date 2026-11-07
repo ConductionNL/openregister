@@ -73,7 +73,8 @@ final class TextExtractionServiceFactory {
 		WordExtractor $wordExtractor,
 	): array {
 		return [
-			new TextExtractionStorage($fileMapper, $chunkMapper, $rootFolder, $db),
+			new TextExtractionStorage($fileMapper, $rootFolder, $db),
+			$chunkMapper,
 			new TextExtractionObjects($objectEntityMapper, $schemaMapper, $registerMapper),
 			new TextExtractionAnalysis($entityHandler, $settingsService, $riskLevelService, $logger),
 			new TextExtractionReaders($emlParser, $spreadsheetExtractor, $pdfExtractor, $wordExtractor),

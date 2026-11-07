@@ -30,6 +30,7 @@ use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use Exception;
 use JsonException;
 use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
@@ -131,13 +132,15 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param TextExtractionStorage  $storage  The file, chunk and database stores.
-	 * @param TextExtractionObjects  $objects  The object, schema and register mappers.
-	 * @param TextExtractionAnalysis $analysis Entity recognition, settings, risk level and logging.
-	 * @param TextExtractionReaders  $readers  The document readers.
+	 * @param TextExtractionStorage  $storage     The file and database stores.
+	 * @param ChunkMapper            $chunkMapper The chunk store, passed on to ObjectHandler.
+	 * @param TextExtractionObjects  $objects     The object, schema and register mappers.
+	 * @param TextExtractionAnalysis $analysis    Entity recognition, settings, risk level and logging.
+	 * @param TextExtractionReaders  $readers     The document readers.
 	 */
 	public function __construct(
 		private readonly TextExtractionStorage $storage,
+		private readonly ChunkMapper $chunkMapper,
 		private readonly TextExtractionObjects $objects,
 		private readonly TextExtractionAnalysis $analysis,
 		private readonly TextExtractionReaders $readers,
@@ -371,7 +374,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	public function getExtractedText(int $fileId): ?string {
 		$text = null;
-		foreach ($this->storage->chunkMapper->findBySource(sourceType: 'file', sourceId: $fileId) as $chunk) {
+		foreach ($this->chunkMapper->findBySource(sourceType: 'file', sourceId: $fileId) as $chunk) {
 			if ($this->isContentChunk(chunk: $chunk) === true) {
 				$text = $this->joinChunk(text: $text, content: $chunk->getTextContent());
 			}
@@ -520,7 +523,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private function newObjectHandler(): ObjectHandler {
 		return new ObjectHandler(
 			objectMapper: $this->objects->objectEntityMapper,
-			chunkMapper: $this->storage->chunkMapper,
+			chunkMapper: $this->chunkMapper,
 			schemaMapper: $this->objects->schemaMapper,
 			registerMapper: $this->objects->registerMapper,
 			logger: $this->analysis->logger
@@ -639,7 +642,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		}
 
 		// Look at the newest chunk timestamp for this source.
-		$latestChunkTimestamp = $this->storage->chunkMapper->getLatestUpdatedTimestamp(sourceType: $sourceType, sourceId: $sourceId);
+		$latestChunkTimestamp = $this->chunkMapper->getLatestUpdatedTimestamp(sourceType: $sourceType, sourceId: $sourceId);
 
 		if ($latestChunkTimestamp === null) {
 			return false;
@@ -855,7 +858,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		try {
 			// Remove all existing chunks for this source to avoid stale data.
-			$this->storage->chunkMapper->deleteBySource(sourceType: $sourceType, sourceId: $sourceId);
+			$this->chunkMapper->deleteBySource(sourceType: $sourceType, sourceId: $sourceId);
 
 			foreach ($chunks as $chunkData) {
 				$chunkEntity = $this->hydrateChunkEntity(
@@ -867,7 +870,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 					sourceTimestamp: $sourceTimestamp
 				);
 
-				$this->storage->chunkMapper->insert($chunkEntity);
+				$this->chunkMapper->insert($chunkEntity);
 			}
 
 			$this->persistMetadataChunk(
@@ -979,7 +982,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			sourceTimestamp: $sourceTimestamp
 		);
 
-		$this->storage->chunkMapper->insert($chunkEntity);
+		$this->chunkMapper->insert($chunkEntity);
 	}//end persistMetadataChunk()
 
 	/**
