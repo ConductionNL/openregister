@@ -42,8 +42,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use OCA\OpenRegister\Service\OperationsConsoleService;
-use OCA\OpenRegister\Service\Operations\JobAlertService;
-use OCA\OpenRegister\Service\Operations\OperationsJobsService;
+use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
+use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -61,12 +61,12 @@ class OperationsConsoleController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName     Application name.
-	 * @param IRequest                  $request     HTTP request.
-	 * @param OperationsConsoleService  $console     The read model.
-	 * @param OperationsJobsService     $jobsService The run history, run now and the schedule.
-	 * @param JobAlertService           $alerts      The administered failure threshold.
-	 * @param IUserSession              $userSession Names the administrator acting.
+	 * @param string                         $appName     Application name.
+	 * @param IRequest                       $request     HTTP request.
+	 * @param OperationsConsoleService       $console     The read model.
+	 * @param OperationsJobsServiceInterface $jobsService The run history, run now and the schedule.
+	 * @param JobAlertServiceInterface       $alerts      The administered failure threshold.
+	 * @param IUserSession                   $userSession Names the administrator acting.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One console, one
 	 * controller: splitting it would put the operations surface behind two
@@ -76,8 +76,8 @@ class OperationsConsoleController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly OperationsConsoleService $console,
-		private readonly OperationsJobsService $jobsService,
-		private readonly JobAlertService $alerts,
+		private readonly OperationsJobsServiceInterface $jobsService,
+		private readonly JobAlertServiceInterface $alerts,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
