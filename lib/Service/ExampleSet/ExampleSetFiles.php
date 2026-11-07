@@ -88,29 +88,38 @@ class ExampleSetFiles {
 	public function attach(string $dir, array $object, string $objectId): array {
 		$result = ['files' => [], 'errors' => []];
 		foreach ((array) ($object['files'] ?? []) as $file) {
-			$path  = $this->pathOf(dir: $dir, path: (string) $file['path']);
-			$share = (($file['share'] ?? false) === true);
-			if ($path === null) {
-				$result['errors'][] = 'file "'.$file['path'].'" is not there';
+			$attached = $this->attachOne(dir: $dir, file: $file, objectId: $objectId);
+			if (isset($attached['error']) === true) {
+				$result['errors'][] = $attached['error'];
 				continue;
 			}
 
-			try {
-				$added = $this->fileService()->addFile(
-					objectEntity: $objectId,
-					fileName: basename($path),
-					content: (string) file_get_contents($path),
-					share: $share
-				);
-			} catch (Throwable $e) {
-				$result['errors'][] = 'file "'.$file['path'].'": '.$e->getMessage();
-				continue;
-			}
-
-			$result['files'][] = ['id' => (string) $added->getId(), 'name' => basename($path), 'shared' => $share];
-		}//end foreach
+			$result['files'][] = $attached;
+		}
 
 		return $result;
+	}//end attach()
+
+	/**
+	 * Attach one declared file to the object: the file as the record keeps it, or why it was not attached.
+	 *
+	 * @param string               $dir      The fragment's folder.
+	 * @param array<string, mixed> $file     The declared file: `path`, and `share`.
+	 * @param string               $objectId The object's id.
+	 *
+	 * @return array{id: string, name: string, shared: bool}|array{error: string}
+	 */
+	private function attachOne(string $dir, array $file, string $objectId): array {
+		$path = $this->pathOf(dir: $dir, path: (string) $file['path']);
+		if ($path === null) {
+			return ['error' => 'file "'.$file['path'].'" is not there'];
+		}
+
+		try {
+			return $this->add(objectId: $objectId, path: $path, share: (($file['share'] ?? false) === true));
+		} catch (Throwable $e) {
+			return ['error' => 'file "'.$file['path'].'": '.$e->getMessage()];
+		}
 	}//end attach()
 
 	/**
@@ -188,11 +197,7 @@ class ExampleSetFiles {
 		try {
 			$file = $this->fileService()->getFileById(fileId: (int) $fileId);
 			if ($file === null) {
-				if (in_array($name, $this->names(objectId: $objectId), true) === true) {
-					return 'OpenRegister cannot find file id '.$fileId.' although the object still has '.$name;
-				}
-
-				return '';
+				return $this->missingRefusal(fileId: $fileId, name: $name, objectId: $objectId);
 			}
 
 			if ($this->fileService()->deleteFile(file: $file) === false) {
@@ -206,6 +211,44 @@ class ExampleSetFiles {
 	}//end delete()
 
 	/**
+	 * Why a file OpenRegister cannot find counts as not deleted: the object still has a file of that name; '' when
+	 * it is gone.
+	 *
+	 * @param string $fileId   The file id the record holds.
+	 * @param string $name     The file name the record holds.
+	 * @param string $objectId The object's id.
+	 *
+	 * @return string
+	 */
+	private function missingRefusal(string $fileId, string $name, string $objectId): string {
+		if (in_array($name, $this->names(objectId: $objectId), true) === true) {
+			return 'OpenRegister cannot find file id '.$fileId.' although the object still has '.$name;
+		}
+
+		return '';
+	}//end missingRefusal()
+
+	/**
+	 * Attach one file to the object.
+	 *
+	 * @param string $objectId The object's id.
+	 * @param string $path     The file's real path.
+	 * @param bool   $share    Whether the file is shared publicly.
+	 *
+	 * @return array{id: string, name: string, shared: bool} The file as the record keeps it.
+	 */
+	private function add(string $objectId, string $path, bool $share): array {
+		$added = $this->fileService()->addFile(
+			objectEntity: $objectId,
+			fileName: basename($path),
+			content: (string) file_get_contents($path),
+			share: $share
+		);
+
+		return ['id' => (string) $added->getId(), 'name' => basename($path), 'shared' => $share];
+	}//end add()
+
+	/**
 	 * The real path of a file inside the fragment's folder, or null.
 	 *
 	 * @param string $dir  The fragment's folder.
@@ -216,12 +259,27 @@ class ExampleSetFiles {
 	private function pathOf(string $dir, string $path): ?string {
 		$root = realpath($dir);
 		$real = realpath($dir.'/'.$path);
-		if ($root === false || $real === false || str_starts_with($real, $root.'/') === false || is_file($real) === false || is_readable($real) === false) {
+		if ($root === false || $real === false || str_starts_with($real, $root.'/') === false) {
 			return null;
 		}
 
-		return $real;
+		return $this->readableFile(path: $real);
 	}//end pathOf()
+
+	/**
+	 * The path when it names a file that can be read, else null.
+	 *
+	 * @param string $path The real path.
+	 *
+	 * @return string|null
+	 */
+	private function readableFile(string $path): ?string {
+		if (is_file($path) === false || is_readable($path) === false) {
+			return null;
+		}
+
+		return $path;
+	}//end readableFile()
 
 	/**
 	 * OpenRegister's FileService.
