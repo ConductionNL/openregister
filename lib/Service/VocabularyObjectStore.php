@@ -65,16 +65,29 @@ class VocabularyObjectStore {
 			return ['status' => 'created', 'uuid' => (string)$this->save(data: $data, uuid: null)->getUuid()];
 		}
 
+		return $this->updateExisting(existing: $existing, data: $data);
+	}//end upsertByUri()
+
+	/**
+	 * Update a stored object when a compared key changed.
+	 *
+	 * @param ObjectEntity        $existing The stored object with the same uri.
+	 * @param array<string,mixed> $data     The computed data, including `uri`.
+	 *
+	 * @return array{status: string, uuid: string} status is updated|unchanged.
+	 */
+	private function updateExisting(ObjectEntity $existing, array $data): array {
 		$existingData = ($existing->getObject() ?? []);
+		$uuid = (string)$existing->getUuid();
 		if ($this->dataChanged(existingData: $existingData, newData: $data) === false) {
-			return ['status' => 'unchanged', 'uuid' => (string)$existing->getUuid()];
+			return ['status' => 'unchanged', 'uuid' => $uuid];
 		}
 
 		// The saveObject call is PUT-semantic (omitted properties are cleared)
 		// — carry every existing field forward, only the compared keys are overridden.
 		$this->save(data: array_merge($existingData, $data), uuid: $existing->getUuid());
-		return ['status' => 'updated', 'uuid' => (string)$existing->getUuid()];
-	}//end upsertByUri()
+		return ['status' => 'updated', 'uuid' => $uuid];
+	}//end updateExisting()
 
 	/**
 	 * Save an object of this store's schema.
@@ -108,15 +121,29 @@ class VocabularyObjectStore {
 			$results = $this->conceptPage(schemeUuid: $schemeUuid, offset: $offset);
 			// Counted once per page, not re-counted by the loop condition.
 			$pageSize = count($results);
-			foreach ($results as $entity) {
-				$count += $this->deprecate(entity: $entity, seenUris: $seenUris);
-			}
-
+			$count += $this->deprecateAll(entities: $results, seenUris: $seenUris);
 			$offset += self::PAGE_SIZE;
 		} while ($pageSize === self::PAGE_SIZE);
 
 		return $count;
 	}//end deprecateMissing()
+
+	/**
+	 * Flag every concept of one page deprecated unless it is still current.
+	 *
+	 * @param array<int,ObjectEntity> $entities The stored concepts of one page.
+	 * @param array<string>           $seenUris URIs present in the just-completed import.
+	 *
+	 * @return int Count of concepts newly marked deprecated.
+	 */
+	private function deprecateAll(array $entities, array $seenUris): int {
+		$count = 0;
+		foreach ($entities as $entity) {
+			$count += $this->deprecate(entity: $entity, seenUris: $seenUris);
+		}
+
+		return $count;
+	}//end deprecateAll()
 
 	/**
 	 * One page of a scheme's concepts.
@@ -127,26 +154,36 @@ class VocabularyObjectStore {
 	 * @return array<int,ObjectEntity>
 	 */
 	private function conceptPage(string $schemeUuid, int $offset): array {
-		// The pair goes UNDER `filters`. `prepareFindAllConfig()` reads
-		// `$config['filters']['register']` / `['schema']` and no other key, so
-		// a top-level pair scopes NOTHING — the read ran on whatever the last
-		// write left on the shared ObjectService. In this sweep that was
-		// self-concealing: the `saveObject()` in deprecate() anchors the service
-		// on exactly this pair, so page 1 read an arbitrary scope and every later
-		// page read the right one, by accident. openregister#3408 is what the
-		// same shape costs when no write happens to precede the read.
-		return $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => VocabularyImporterInterface::REGISTER,
-					'schema' => $this->schema,
-					'inScheme' => $schemeUuid,
-				],
-				'limit' => self::PAGE_SIZE,
-				'offset' => $offset,
-			]
+		return $this->findInSchema(
+			filters: ['inScheme' => $schemeUuid],
+			page: ['limit' => self::PAGE_SIZE, 'offset' => $offset]
 		);
 	}//end conceptPage()
+
+	/**
+	 * Find objects of this store's schema, scoped by register + schema under `filters`.
+	 *
+	 * The pair goes UNDER `filters`. `prepareFindAllConfig()` reads
+	 * `$config['filters']['register']` / `['schema']` and no other key, so
+	 * a top-level pair scopes NOTHING — the read runs on whatever the last
+	 * write left on the shared ObjectService. In the deprecation sweep that was
+	 * self-concealing: the `saveObject()` in deprecate() anchors the service
+	 * on exactly this pair, so page 1 read an arbitrary scope and every later
+	 * page read the right one, by accident. openregister#3408 is what the
+	 * same shape costs when no write happens to precede the read. For the uri
+	 * lookup an unscoped read answers "does this uri already exist?" from the
+	 * wrong table, and the import creates a duplicate rather than updating.
+	 *
+	 * @param array<string,mixed> $filters Filters after the register + schema pair.
+	 * @param array<string,int>   $page    `limit`, and optionally `offset`.
+	 *
+	 * @return array<int,ObjectEntity>
+	 */
+	private function findInSchema(array $filters, array $page): array {
+		$scope = ['register' => VocabularyImporterInterface::REGISTER, 'schema' => $this->schema];
+
+		return $this->objectService->findAll(config: array_merge(['filters' => array_merge($scope, $filters)], $page));
+	}//end findInSchema()
 
 	/**
 	 * Flag one concept deprecated unless it is still current.
@@ -190,20 +227,8 @@ class VocabularyObjectStore {
 	 * @return ObjectEntity|null The matching object, or null when absent.
 	 */
 	private function findByUri(string $uri): ?ObjectEntity {
-		// The pair goes UNDER `filters` — see conceptPage() for why a top-level
-		// pair is inert. This one is the import's identity lookup: an unscoped
-		// read here answers "does this uri already exist?" from the wrong
-		// table, and the import creates a duplicate rather than updating.
-		$results = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => VocabularyImporterInterface::REGISTER,
-					'schema' => $this->schema,
-					'uri' => $uri,
-				],
-				'limit' => 1,
-			]
-		);
+		// The import's identity lookup — see findInSchema() for why the scope matters.
+		$results = $this->findInSchema(filters: ['uri' => $uri], page: ['limit' => 1]);
 
 		return ($results[0] ?? null);
 	}//end findByUri()
