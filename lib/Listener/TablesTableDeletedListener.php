@@ -46,6 +46,8 @@ use Throwable;
  * Retires the bound virtual schema when a Tables table is deleted.
  *
  * @template-implements IEventListener<Event>
+ *
+ * @spec openspec/specs/tables-virtual-register/spec.md#requirement-auto-seeded-virtual-schemas-for-all-tables-tables
  */
 class TablesTableDeletedListener implements IEventListener {
 	/**
@@ -99,27 +101,63 @@ class TablesTableDeletedListener implements IEventListener {
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	private function tableIdFromEvent(object $event): ?int {
+		return ($this->nestedTableId(event: $event) ?? $this->flatTableId(event: $event));
+	}//end tableIdFromEvent()
+
+	/**
+	 * The id from `getTable()->getId()`, or null when either getter is absent,
+	 * throws, or answers something unusable.
+	 *
+	 * @param object $event The event.
+	 *
+	 * @return int|null The table id.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function nestedTableId(object $event): ?int {
 		try {
 			$table = $event->getTable();
-			if (is_object($table) === true) {
-				$id = $table->getId();
-				if (is_scalar($id) === true) {
-					return (int)$id;
-				}
+			if (is_object($table) === false) {
+				return null;
 			}
+
+			return $this->scalarId(id: $table->getId());
 		} catch (Throwable $e) {
 			// Fall through to the flat getter.
+			return null;
 		}
+	}//end nestedTableId()
 
+	/**
+	 * The id from a direct `getTableId()`, or null when it is absent, throws,
+	 * or answers something unusable.
+	 *
+	 * @param object $event The event.
+	 *
+	 * @return int|null The table id.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function flatTableId(object $event): ?int {
 		try {
-			$id = $event->getTableId();
-			if (is_scalar($id) === true) {
-				return (int)$id;
-			}
+			return $this->scalarId(id: $event->getTableId());
 		} catch (Throwable $e) {
 			return null;
 		}
+	}//end flatTableId()
+
+	/**
+	 * A scalar id cast to int, or null for anything else.
+	 *
+	 * @param mixed $id The getter's answer.
+	 *
+	 * @return int|null The id.
+	 */
+	private function scalarId(mixed $id): ?int {
+		if (is_scalar($id) === true) {
+			return (int) $id;
+		}
 
 		return null;
-	}//end tableIdFromEvent()
+	}//end scalarId()
 }//end class
