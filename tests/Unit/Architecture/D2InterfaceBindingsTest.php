@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
@@ -48,6 +50,7 @@ final class D2InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: array<class-string, class-string>, 2: string}>
 	 */
 	private const CLASSES = [
+		AggregationRunner::class => [AggregationRunnerInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectEventGate::class => [ObjectEventGateInterface::class, ContractBindings::BINDINGS, 'Service'],
 	];
 
