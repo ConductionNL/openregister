@@ -47,6 +47,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectShareLinkControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
@@ -60,7 +61,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\IRequest;
-use OCP\Security\Bruteforce\IThrottler;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Log\LoggerInterface;
@@ -116,11 +116,11 @@ class ObjectShareLinkController extends Controller {
 	private readonly AccessLinkReaderInterface $reader;
 
 	/**
-	 * Brute-force throttler for rejected tokens.
+	 * Counts rejected tokens against the brute-force throttler.
 	 *
-	 * @var IThrottler
+	 * @var ObjectShareLinkThrottle
 	 */
-	private readonly IThrottler $throttler;
+	private readonly ObjectShareLinkThrottle $rejections;
 
 	/**
 	 * Constructor.
@@ -140,7 +140,12 @@ class ObjectShareLinkController extends Controller {
 		$this->shareManager = $services->shareManager;
 		$this->objectService = $services->objectService;
 		$this->reader = $services->reader;
-		$this->throttler = $services->throttler;
+		$this->rejections = new ObjectShareLinkThrottle(
+			throttler: $services->throttler,
+			logger: $logger,
+			action: self::THROTTLE_ACTION,
+			label: 'ObjectShareLinkController'
+		);
 	}//end __construct()
 
 	/**
@@ -166,7 +171,7 @@ class ObjectShareLinkController extends Controller {
 			// That uniformity is necessary and not sufficient: it hides WHICH
 			// failure happened, but says nothing about how fast a caller may
 			// keep trying. The counter is the other half.
-			$this->countRejectedToken();
+			$this->rejections->countRejected(address: $this->request->getRemoteAddress());
 
 			return $this->refused();
 		}
@@ -185,26 +190,6 @@ class ObjectShareLinkController extends Controller {
 
 		return $this->published(object: $object, share: $share);
 	}//end show()
-
-	/**
-	 * Count a rejected token against the caller's address.
-	 *
-	 * A throttler that fails is logged and the refusal still stands.
-	 *
-	 * @return void
-	 */
-	private function countRejectedToken(): void {
-		try {
-			$this->throttler->registerAttempt(
-				action: self::THROTTLE_ACTION,
-				ip: $this->request->getRemoteAddress()
-			);
-		} catch (\Throwable $throttlerFailure) {
-			$this->logger->warning(
-				'ObjectShareLinkController: registerAttempt failed: ' . $throttlerFailure->getMessage()
-			);
-		}
-	}//end countRejectedToken()
 
 	/**
 	 * The object a live token addressed, or null when it cannot be loaded.

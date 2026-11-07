@@ -79,9 +79,9 @@ final class ObjectSharingEndpoint {
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function resolve(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+		// Aimed outside the try: an unknown register or schema is not an
+		// unreadable object, and is left to propagate as it always has.
+		$this->aimAt(register: $register, schema: $schema, id: $id);
 
 		try {
 			$object = $this->objectService->getObject();
@@ -95,6 +95,21 @@ final class ObjectSharingEndpoint {
 
 		return $object;
 	}//end resolve()
+
+	/**
+	 * Point the object service at the register, schema and object of the route.
+	 *
+	 * @param string $register Register slug or id.
+	 * @param string $schema   Schema slug or id.
+	 * @param string $id       Object uuid.
+	 *
+	 * @return void
+	 */
+	private function aimAt(string $register, string $schema, string $id): void {
+		$this->objectService->setRegister($register);
+		$this->objectService->setSchema($schema);
+		$this->objectService->setObject($id);
+	}//end aimAt()
 
 	/**
 	 * The one answer for an object the caller cannot read.
