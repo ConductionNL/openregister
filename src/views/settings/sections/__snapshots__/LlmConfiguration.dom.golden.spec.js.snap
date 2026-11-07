@@ -1,0 +1,235 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LLM settings section DOM golden LLM off 1`] = `
+"<x-settingssection id="section-llm" name="LLM Configuration" description="Configure Large Language Model settings for AI features" loading="false" loadingmessage="Loading LLM configuration…">
+  <slot-actions>
+    <x-ncactions aria-label="LLM actions menu" menuname="Actions">
+      <slot-icon>
+        <x-dotsvertical size="20"></x-dotsvertical>
+      </slot-icon>
+      <slot-default>
+        <x-ncactionbutton data-on="onClick">
+          <slot-icon>
+            <x-robot size="20"></x-robot>
+          </slot-icon>
+          <slot-default> LLM Configuration</slot-default>
+        </x-ncactionbutton>
+        <x-ncactionbutton data-on="onClick">
+          <slot-icon>
+            <x-filedocument size="20"></x-filedocument>
+          </slot-icon>
+          <slot-default> File Management</slot-default>
+        </x-ncactionbutton>
+        <x-ncactionbutton data-on="onClick">
+          <slot-icon>
+            <x-cubeoutline size="20"></x-cubeoutline>
+          </slot-icon>
+          <slot-default> Object Management</slot-default>
+        </x-ncactionbutton>
+        <x-ncactionseparator></x-ncactionseparator>
+        <x-ncactionbutton disabled="true" data-on="onClick">
+          <slot-icon>
+            <x-vectorsquare size="20"></x-vectorsquare>
+          </slot-icon>
+          <slot-default> Vectorize All Objects</slot-default>
+        </x-ncactionbutton>
+        <x-ncactionbutton disabled="true" data-on="onClick">
+          <slot-icon>
+            <x-filedocumentcheckoutline size="20"></x-filedocumentcheckoutline>
+          </slot-icon>
+          <slot-default> Vectorize All Files</slot-default>
+        </x-ncactionbutton>
+      </slot-default>
+    </x-ncactions>
+  </slot-actions>
+  <slot-default>
+    <div class="section-description-full">
+      <p class="main-description"> Large Language Models (LLMs) power AI features including semantic search, text generation, document summarization, and content classification. When enabled, OpenRegister will automatically vectorize objects and files for semantic search capabilities and provide AI-powered content understanding. Choose from providers like OpenAI, Fireworks AI, Ollama (local), or Azure OpenAI. </p>
+      <p class="main-description info-note"><strong>📝 Note:</strong> File vectorization requires text extraction to be enabled. Large files are split into smaller <strong>chunks</strong> (text portions), which are then converted into <strong>embeddings</strong> (vector representations) for semantic search. Without text extraction, files cannot be processed into chunks and embeddings. </p>
+      <p class="toggle-status"><strong>Current Status:</strong><span class="status-disabled">LLM features disabled</span></p>
+    </div>
+    <div class="option-section">
+      <x-nccheckboxradioswitch modelvalue="false" disabled="false" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>LLM features disabled</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="option-description">Enable or disable LLM features. Configure providers and models using the LLM configuration button above.
+      </p>
+    </div>
+    <div class="provider-info-grid">
+      <div class="provider-info-card">
+        <h5>Embedding Provider</h5>
+        <p class="not-configured">Not configured</p>
+      </div>
+      <div class="provider-info-card">
+        <h5>Chat Provider (RAG)</h5>
+        <p class="not-configured">Not configured</p>
+      </div>
+      <div class="provider-info-card warning-card">
+        <div class="card-header">
+          <h5>Vector Storage</h5>
+          <x-ncbutton variant="tertiary" disabled="false" aria-label="Refresh database info" data-on="onClick">
+            <slot-icon>
+              <x-refresh size="16"></x-refresh>
+            </slot-icon>
+          </x-ncbutton>
+        </div>
+        <p class="provider-name">Unknown</p>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Agents</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Conversations</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Messages</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Total Vectors</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Object Embeddings</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">File Embeddings</div>
+      </div>
+    </div>
+    <x-llmconfigmodal show="false" data-on="onClosing onEmbeddingsCleared"></x-llmconfigmodal>
+    <x-filemanagementmodal show="false" data-on="onClosing"></x-filemanagementmodal>
+    <x-objectmanagementmodal show="false" data-on="onClosing"></x-objectmanagementmodal>
+    <x-objectvectorizationmodal show="false" data-on="onClosing onCompleted"></x-objectvectorizationmodal>
+    <x-filevectorizationmodal show="false" extractionstats="[object Object]" vectorstats="[object Object]" data-on="onClosing onCompleted"></x-filevectorizationmodal>
+  </slot-default>
+</x-settingssection>"
+`;
+
+exports[`LLM settings section DOM golden LLM on 1`] = `
+"<x-settingssection id="section-llm" name="LLM Configuration" description="Configure Large Language Model settings for AI features" loading="false" loadingmessage="Loading LLM configuration…">
+  <slot-actions>
+    <x-ncactions aria-label="LLM actions menu" menuname="Actions">
+      <slot-icon>
+        <x-dotsvertical size="20"></x-dotsvertical>
+      </slot-icon>
+      <slot-default>
+        <x-ncactionbutton data-on="onClick">
+          <slot-icon>
+            <x-robot size="20"></x-robot>
+          </slot-icon>
+          <slot-default> LLM Configuration</slot-default>
+        </x-ncactionbutton>
+        <x-ncactionbutton data-on="onClick">
+          <slot-icon>
+            <x-filedocument size="20"></x-filedocument>
+          </slot-icon>
+          <slot-default> File Management</slot-default>
+        </x-ncactionbutton>
+        <x-ncactionbutton data-on="onClick">
+          <slot-icon>
+            <x-cubeoutline size="20"></x-cubeoutline>
+          </slot-icon>
+          <slot-default> Object Management</slot-default>
+        </x-ncactionbutton>
+        <x-ncactionseparator></x-ncactionseparator>
+        <x-ncactionbutton disabled="false" data-on="onClick">
+          <slot-icon>
+            <x-vectorsquare size="20"></x-vectorsquare>
+          </slot-icon>
+          <slot-default> Vectorize All Objects</slot-default>
+        </x-ncactionbutton>
+        <x-ncactionbutton disabled="false" data-on="onClick">
+          <slot-icon>
+            <x-filedocumentcheckoutline size="20"></x-filedocumentcheckoutline>
+          </slot-icon>
+          <slot-default> Vectorize All Files</slot-default>
+        </x-ncactionbutton>
+      </slot-default>
+    </x-ncactions>
+  </slot-actions>
+  <slot-default>
+    <div class="section-description-full">
+      <p class="main-description"> Large Language Models (LLMs) power AI features including semantic search, text generation, document summarization, and content classification. When enabled, OpenRegister will automatically vectorize objects and files for semantic search capabilities and provide AI-powered content understanding. Choose from providers like OpenAI, Fireworks AI, Ollama (local), or Azure OpenAI. </p>
+      <p class="main-description info-note"><strong>📝 Note:</strong> File vectorization requires text extraction to be enabled. Large files are split into smaller <strong>chunks</strong> (text portions), which are then converted into <strong>embeddings</strong> (vector representations) for semantic search. Without text extraction, files cannot be processed into chunks and embeddings. </p>
+      <p class="toggle-status"><strong>Current Status:</strong><span class="status-enabled">LLM features enabled</span></p>
+    </div>
+    <div class="option-section">
+      <x-nccheckboxradioswitch modelvalue="true" disabled="false" type="switch" data-on="onUpdate:modelValue">
+        <slot-default>LLM features enabled</slot-default>
+      </x-nccheckboxradioswitch>
+      <p class="option-description">Enable or disable LLM features. Configure providers and models using the LLM configuration button above.
+      </p>
+    </div>
+    <div class="provider-info-grid">
+      <div class="provider-info-card">
+        <h5>Embedding Provider</h5>
+        <p class="not-configured">Not configured</p>
+      </div>
+      <div class="provider-info-card">
+        <h5>Chat Provider (RAG)</h5>
+        <p class="not-configured">Not configured</p>
+      </div>
+      <div class="provider-info-card warning-card">
+        <div class="card-header">
+          <h5>Vector Storage</h5>
+          <x-ncbutton variant="tertiary" disabled="false" aria-label="Refresh database info" data-on="onClick">
+            <slot-icon>
+              <x-refresh size="16"></x-refresh>
+            </slot-icon>
+          </x-ncbutton>
+        </div>
+        <p class="provider-name">Unknown</p>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Agents</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Conversations</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Messages</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Total Vectors</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Object Embeddings</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value">0</div>
+        <div class="stat-label">File Embeddings</div>
+      </div>
+    </div>
+    <div class="llm-management-section">
+      <div class="dashboard-section">
+        <div class="connection-success"><span class="success-icon">✅</span><span>Unknown</span>
+          <x-ncbutton variant="secondary" data-on="onClick">
+            <slot-icon>
+              <x-refresh size="16"></x-refresh>
+            </slot-icon>
+            <slot-default> Test Connection </slot-default>
+          </x-ncbutton>
+        </div>
+      </div>
+    </div>
+    <x-llmconfigmodal show="false" data-on="onClosing onEmbeddingsCleared"></x-llmconfigmodal>
+    <x-filemanagementmodal show="false" data-on="onClosing"></x-filemanagementmodal>
+    <x-objectmanagementmodal show="false" data-on="onClosing"></x-objectmanagementmodal>
+    <x-objectvectorizationmodal show="false" data-on="onClosing onCompleted"></x-objectvectorizationmodal>
+    <x-filevectorizationmodal show="false" extractionstats="[object Object]" vectorstats="[object Object]" data-on="onClosing onCompleted"></x-filevectorizationmodal>
+  </slot-default>
+</x-settingssection>"
+`;

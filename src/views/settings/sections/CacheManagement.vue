@@ -1033,17 +1033,5 @@ export default {
 	.cache-services-grid {
 		grid-template-columns: 1fr;
 	}
-
-	.section-header-inline {
-		position: static;
-		flex-direction: column;
-		gap: 12px;
-		align-items: stretch;
-		margin-bottom: 20px;
-	}
-
-	.button-group {
-		justify-content: center;
-	}
 }
 </style>
