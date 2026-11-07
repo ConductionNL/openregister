@@ -93,10 +93,7 @@ class UiController extends Controller {
 
 			return $response;
 		} catch (\Exception $e) {
-			$response = new TemplateResponse(appName: $this->appName, templateName: 'error', params: ['error' => $e->getMessage()]);
-			$response->setStatus(500);
-
-			return $response;
+			return (new TemplateResponse(appName: $this->appName, templateName: 'error', params: ['error' => $e->getMessage()]))->setStatus(500);
 		}
 	}//end makeSpaResponse()
 
