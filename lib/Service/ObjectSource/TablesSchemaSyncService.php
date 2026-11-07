@@ -46,7 +46,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class TablesSchemaSyncService {
+class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 
 	/**
 	 * The virtual register slug every Tables schema is seeded under.
