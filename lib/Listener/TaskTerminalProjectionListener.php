@@ -81,6 +81,20 @@ class TaskTerminalProjectionListener implements IEventListener {
 			return;
 		}
 
+		$this->withdrawNotifications(task: $task);
+		$this->projections->reconcileTask(task: $task);
+	}//end handle()
+
+	/**
+	 * Withdraw every notification about the task; a failure is logged, never thrown.
+	 *
+	 * @param Task $task The terminal task.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-notification-for-an-answered-task-is-withdrawn
+	 */
+	private function withdrawNotifications(Task $task): void {
 		try {
 			$notification = $this->notifications->createNotification();
 			$notification->setApp('openregister')->setObject('object', (string)$task->getUuid());
@@ -91,9 +105,7 @@ class TaskTerminalProjectionListener implements IEventListener {
 				['task' => $task->getUuid()]
 			);
 		}
-
-		$this->projections->reconcileTask(task: $task);
-	}//end handle()
+	}//end withdrawNotifications()
 
 	/**
 	 * The terminal task an event carries, or null when it carries none.
