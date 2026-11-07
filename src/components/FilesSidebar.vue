@@ -1,133 +1,24 @@
 <template>
-	<div class="files-sidebar">
-		<div class="sidebar-header">
-			<h3>{{ t('openregister', 'Search Files') }}</h3>
-		</div>
-
-		<!-- Search Field -->
-		<div class="search-section">
-			<NcTextField
-				v-model="localSearch"
-				:aria-label="t('openregister', 'Search by file name or path')"
-				:placeholder="t('openregister', 'Search by file name or path')"
-				@update:modelValue="handleSearchInput">
-				<Magnify :size="20" />
-			</NcTextField>
-		</div>
-
-		<!-- Filter by Status -->
-		<div class="filter-section">
-			<h4>{{ t('openregister', 'Extraction Status') }}</h4>
-			<div class="filter-options">
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedStatus === null"
-					type="radio"
-					value="all"
-					@update:modelValue="updateStatus(null)">
-					{{ t('openregister', 'All Files') }}
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedStatus === 'pending'"
-					type="radio"
-					value="pending"
-					@update:modelValue="updateStatus('pending')">
-					{{ t('openregister', 'Pending') }}
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedStatus === 'processing'"
-					type="radio"
-					value="processing"
-					@update:modelValue="updateStatus('processing')">
-					{{ t('openregister', 'Processing') }}
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedStatus === 'completed'"
-					type="radio"
-					value="completed"
-					@update:modelValue="updateStatus('completed')">
-					{{ t('openregister', 'Completed') }}
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedStatus === 'failed'"
-					type="radio"
-					value="failed"
-					@update:modelValue="updateStatus('failed')">
-					{{ t('openregister', 'Failed') }}
-				</NcCheckboxRadioSwitch>
-			</div>
-		</div>
-
-		<!-- Filter by Risk Level -->
-		<div class="filter-section">
-			<h4>{{ t('openregister', 'Risk Level') }}</h4>
-			<div class="filter-options">
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedRiskLevel === null"
-					type="radio"
-					value="all"
-					@update:modelValue="updateRiskLevel(null)">
-					{{ t('openregister', 'All Levels') }}
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedRiskLevel === 'none'"
-					type="radio"
-					value="none"
-					@update:modelValue="updateRiskLevel('none')">
-					{{ t('openregister', 'None') }}
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedRiskLevel === 'low'"
-					type="radio"
-					value="low"
-					@update:modelValue="updateRiskLevel('low')">
-					{{ t('openregister', 'Low') }}
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedRiskLevel === 'medium'"
-					type="radio"
-					value="medium"
-					@update:modelValue="updateRiskLevel('medium')">
-					{{ t('openregister', 'Medium') }}
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedRiskLevel === 'high'"
-					type="radio"
-					value="high"
-					@update:modelValue="updateRiskLevel('high')">
-					{{ t('openregister', 'High') }}
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch
-					:modelValue="selectedRiskLevel === 'very_high'"
-					type="radio"
-					value="very_high"
-					@update:modelValue="updateRiskLevel('very_high')">
-					{{ t('openregister', 'Very High') }}
-				</NcCheckboxRadioSwitch>
-			</div>
-		</div>
-
-		<!-- Clear Filters Button -->
-		<div v-if="hasActiveFilters" class="clear-filters">
-			<NcButton variant="secondary" @click="clearFilters">
-				{{ t('openregister', 'Clear filters') }}
-			</NcButton>
-		</div>
-	</div>
+	<RadioFilterSidebar
+		rootClass="files-sidebar"
+		:title="t('openregister', 'Search Files')"
+		:searchLabel="t('openregister', 'Search by file name or path')"
+		:search="search"
+		:groups="groups"
+		:values="{ status, riskLevel }"
+		@update:search="$emit('update:search', $event)"
+		@update:filter="(key, value) => $emit(`update:${key}`, value)" />
 </template>
 
 <script>
 import { t } from '@nextcloud/l10n'
-import { NcButton, NcCheckboxRadioSwitch, NcTextField } from '@nextcloud/vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
+import RadioFilterSidebar from './shared/RadioFilterSidebar.vue'
 
 export default {
 	name: 'FilesSidebar',
 
 	components: {
-		NcTextField,
-		NcCheckboxRadioSwitch,
-		NcButton,
-		Magnify,
+		RadioFilterSidebar,
 	},
 
 	props: {
@@ -156,117 +47,85 @@ export default {
 		},
 	},
 
-	data() {
-		return {
-			localSearch: this.search,
-			selectedStatus: this.status,
-			selectedRiskLevel: this.riskLevel,
-			searchTimeout: null,
-		}
-	},
+	emits: ['update:search', 'update:status', 'update:riskLevel'],
 
 	computed: {
 		/**
-		 * Check if there are active filters
+		 * The extraction status and risk level radio groups.
 		 *
-		 * @return {boolean} True if filters are active
+		 * @return {Array<object>} The groups
 		 */
-		hasActiveFilters() {
-			return (
-				this.selectedStatus !== null
-				|| this.localSearch !== ''
-				|| this.selectedRiskLevel !== null
-			)
-		},
-	},
-
-	watch: {
-		/**
-		 * @param {string} newVal
-		 * @spec exclude computed filter-state binding
-		 */
-		search(newVal) {
-			this.localSearch = newVal
-		},
-
-		/**
-		 * @param {string|null} newVal
-		 * @spec exclude computed filter-state binding
-		 */
-		status(newVal) {
-			this.selectedStatus = newVal
-		},
-
-		/**
-		 * @param {string|null} newVal
-		 * @spec exclude computed filter-state binding
-		 */
-		riskLevel(newVal) {
-			this.selectedRiskLevel = newVal
+		groups() {
+			return [
+				{
+					key: 'status',
+					heading: t('openregister', 'Extraction Status'),
+					options: [
+						{
+							id: 'all',
+							value: null,
+							label: t('openregister', 'All Files'),
+						},
+						{
+							id: 'pending',
+							value: 'pending',
+							label: t('openregister', 'Pending'),
+						},
+						{
+							id: 'processing',
+							value: 'processing',
+							label: t('openregister', 'Processing'),
+						},
+						{
+							id: 'completed',
+							value: 'completed',
+							label: t('openregister', 'Completed'),
+						},
+						{
+							id: 'failed',
+							value: 'failed',
+							label: t('openregister', 'Failed'),
+						},
+					],
+				},
+				{
+					key: 'riskLevel',
+					heading: t('openregister', 'Risk Level'),
+					options: [
+						{
+							id: 'all',
+							value: null,
+							label: t('openregister', 'All Levels'),
+						},
+						{
+							id: 'none',
+							value: 'none',
+							label: t('openregister', 'None'),
+						},
+						{ id: 'low', value: 'low', label: t('openregister', 'Low') },
+						{
+							id: 'medium',
+							value: 'medium',
+							label: t('openregister', 'Medium'),
+						},
+						{
+							id: 'high',
+							value: 'high',
+							label: t('openregister', 'High'),
+						},
+						{
+							id: 'very_high',
+							value: 'very_high',
+							label: t('openregister', 'Very High'),
+						},
+					],
+				},
+			]
 		},
 	},
 
 	methods: {
 		t,
-
-		/**
-		 * Handle search input with debouncing
-		 *
-		 * @param {string} value - The search value
-		 * @return {void}
-		 * @spec exclude debounced search-emit UI plumbing
-		 */
-		handleSearchInput(value) {
-			clearTimeout(this.searchTimeout)
-			this.searchTimeout = setTimeout(() => {
-				this.$emit('update:search', value)
-			}, 500)
-		},
-
-		/**
-		 * Update the selected status filter
-		 *
-		 * @param {string|null} status - The status to filter by
-		 * @return {void}
-		 * @spec exclude filter-state writer emitting update:status, UI plumbing
-		 */
-		updateStatus(status) {
-			this.selectedStatus = status
-			this.$emit('update:status', status)
-		},
-
-		/**
-		 * Update the selected risk level filter
-		 *
-		 * @param {string|null} level - The risk level to filter by
-		 * @return {void}
-		 * @spec exclude filter-state writer emitting update:riskLevel, UI plumbing
-		 */
-		updateRiskLevel(level) {
-			this.selectedRiskLevel = level
-			this.$emit('update:riskLevel', level)
-		},
-
-		/**
-		 * Clear all filters
-		 *
-		 * @return {void}
-		 * @spec exclude filter-reset emitting cleared values, UI plumbing
-		 */
-		clearFilters() {
-			this.localSearch = ''
-			this.selectedStatus = null
-			this.selectedRiskLevel = null
-			this.$emit('update:search', '')
-			this.$emit('update:status', null)
-			this.$emit('update:riskLevel', null)
-		},
 	},
 }
 </script>
-
-<style scoped lang="scss">
-@use '../styles/components.scss' as *;
-
-@include filter-sidebar('files-sidebar');
-</style>
