@@ -1,0 +1,348 @@
+{
+    "bare": {
+        "result": {
+            "returned": {
+                "source_type": "object",
+                "source_id": 11,
+                "text": "Object ID: ",
+                "length": 11,
+                "checksum": "23e16ed4b35a51b26551af576fa4a5e96e811dd699d3aa0c906be4bc7dde53e0",
+                "method": "object_extraction",
+                "owner": null,
+                "organisation": null,
+                "language": null,
+                "language_level": null,
+                "language_confidence": null,
+                "detection_method": null,
+                "metadata": {
+                    "uuid": null,
+                    "schema_id": null,
+                    "register_id": null,
+                    "version": null
+                }
+            }
+        },
+        "calls": [
+            "object.find(11)"
+        ],
+        "log": [
+            "info: [ObjectHandler] Extracting text from object {\"file\":\"ObjectHandler.php\",\"objectId\":11}"
+        ]
+    },
+    "deep": {
+        "result": {
+            "returned": {
+                "source_type": "object",
+                "source_id": 11,
+                "text": "Object ID: u-5\nContent: id: u-5\nlevel11.level10.level9.level8.level7.level6.level5.level4.level3.level2.at1: 1\nlevel11.level10.level9.level8.level7.level6.level5.level4.level3.at2: 2\nlevel11.level10.level9.level8.level7.level6.level5.level4.at3: 3\nlevel11.level10.level9.level8.level7.level6.level5.at4: 4\nlevel11.level10.level9.level8.level7.level6.at5: 5\nlevel11.level10.level9.level8.level7.at6: 6\nlevel11.level10.level9.level8.at7: 7\nlevel11.level10.level9.at8: 8\nlevel11.level10.at9: 9\nlevel11.at10: 10\nat11: 11",
+                "length": 516,
+                "checksum": "b0e2d3be70dae85f341170af60862d2013e895ccc44c1b4d492d4a079006d638",
+                "method": "object_extraction",
+                "owner": null,
+                "organisation": null,
+                "language": null,
+                "language_level": null,
+                "language_confidence": null,
+                "detection_method": null,
+                "metadata": {
+                    "uuid": "u-5",
+                    "schema_id": null,
+                    "register_id": null,
+                    "version": null
+                }
+            }
+        },
+        "calls": [
+            "object.find(11)"
+        ],
+        "log": [
+            "info: [ObjectHandler] Extracting text from object {\"file\":\"ObjectHandler.php\",\"objectId\":11}"
+        ]
+    },
+    "find-fails": {
+        "result": {
+            "threw": "RuntimeException: object store down"
+        },
+        "calls": [
+            "object.find(11)"
+        ],
+        "log": [
+            "info: [ObjectHandler] Extracting text from object {\"file\":\"ObjectHandler.php\",\"objectId\":11}"
+        ]
+    },
+    "full": {
+        "result": {
+            "returned": {
+                "source_type": "object",
+                "source_id": 11,
+                "text": "Object ID: u-1\nVersion: 1.2.3\nType: Person\nSchema Description: A person\nRegister: People\nRegister Description: All people\nContent: id: u-1\ntitle: Hello\ncount: 3\nratio: 1.5\nnumericString: 42\nyes: true\nno: false\nlist.0: a\nlist.2: 7\nlist.4.x: y\nnested.inner.deeper: value\nnested.inner.flag: false\nOrganisation: Org",
+                "length": 311,
+                "checksum": "efb11d57c5062843bb19091cb8d8b79be437546f0a1e1c03b96544abed754020",
+                "method": "object_extraction",
+                "owner": "alice",
+                "organisation": "Org",
+                "language": null,
+                "language_level": null,
+                "language_confidence": null,
+                "detection_method": null,
+                "metadata": {
+                    "uuid": "u-1",
+                    "schema_id": "5",
+                    "register_id": "3",
+                    "version": "1.2.3"
+                }
+            }
+        },
+        "calls": [
+            "object.find(11)",
+            "schema.find(\"5\")",
+            "register.find(\"3\")"
+        ],
+        "log": [
+            "info: [ObjectHandler] Extracting text from object {\"file\":\"ObjectHandler.php\",\"objectId\":11}"
+        ]
+    },
+    "list-root": {
+        "result": {
+            "returned": {
+                "source_type": "object",
+                "source_id": 11,
+                "text": "Object ID: u-6\nContent: id: u-6\n0: first\n1: second\n2.0: third",
+                "length": 61,
+                "checksum": "951ee993be98b1b3a3e3995196fca0d503b1646f46545818063cf4d9d34fcd3a",
+                "method": "object_extraction",
+                "owner": null,
+                "organisation": null,
+                "language": null,
+                "language_level": null,
+                "language_confidence": null,
+                "detection_method": null,
+                "metadata": {
+                    "uuid": "u-6",
+                    "schema_id": null,
+                    "register_id": null,
+                    "version": null
+                }
+            }
+        },
+        "calls": [
+            "object.find(11)"
+        ],
+        "log": [
+            "info: [ObjectHandler] Extracting text from object {\"file\":\"ObjectHandler.php\",\"objectId\":11}"
+        ]
+    },
+    "lookups-fail": {
+        "result": {
+            "returned": {
+                "source_type": "object",
+                "source_id": 11,
+                "text": "Object ID: u-3\nContent: id: u-3",
+                "length": 31,
+                "checksum": "e2984e594f0d26e6b672d08ec771782ca211f472ef645c52fc8bf93241c0ec12",
+                "method": "object_extraction",
+                "owner": null,
+                "organisation": null,
+                "language": null,
+                "language_level": null,
+                "language_confidence": null,
+                "detection_method": null,
+                "metadata": {
+                    "uuid": "u-3",
+                    "schema_id": "9",
+                    "register_id": "8",
+                    "version": null
+                }
+            }
+        },
+        "calls": [
+            "object.find(11)",
+            "schema.find(\"9\")",
+            "register.find(\"8\")"
+        ],
+        "log": [
+            "info: [ObjectHandler] Extracting text from object {\"file\":\"ObjectHandler.php\",\"objectId\":11}",
+            "debug: [ObjectHandler] Could not load schema {\"file\":\"ObjectHandler.php\",\"object_id\":11,\"schema_id\":\"9\"}",
+            "debug: [ObjectHandler] Could not load register {\"file\":\"ObjectHandler.php\",\"object_id\":11,\"register_id\":\"8\"}"
+        ]
+    },
+    "lookups-not-found": {
+        "result": {
+            "returned": {
+                "source_type": "object",
+                "source_id": 11,
+                "text": "Object ID: u-4\nContent: id: u-4",
+                "length": 31,
+                "checksum": "214386e022ca3b8ea673bb717eb14ba50a0197c5b785a371de182eb4a69ed268",
+                "method": "object_extraction",
+                "owner": null,
+                "organisation": "",
+                "language": null,
+                "language_level": null,
+                "language_confidence": null,
+                "detection_method": null,
+                "metadata": {
+                    "uuid": "u-4",
+                    "schema_id": "9",
+                    "register_id": "8",
+                    "version": null
+                }
+            }
+        },
+        "calls": [
+            "object.find(11)",
+            "schema.find(\"9\")",
+            "register.find(\"8\")"
+        ],
+        "log": [
+            "info: [ObjectHandler] Extracting text from object {\"file\":\"ObjectHandler.php\",\"objectId\":11}",
+            "debug: [ObjectHandler] Could not load schema {\"file\":\"ObjectHandler.php\",\"object_id\":11,\"schema_id\":\"9\"}",
+            "debug: [ObjectHandler] Could not load register {\"file\":\"ObjectHandler.php\",\"object_id\":11,\"register_id\":\"8\"}"
+        ]
+    },
+    "meta": {
+        "result": {
+            "returned": {
+                "id": 11,
+                "uuid": "u-7",
+                "schema": "5",
+                "register": "3",
+                "version": "2",
+                "organisation": "Org",
+                "owner": "bob",
+                "updated": "1700000000"
+            }
+        },
+        "calls": [
+            "object.find(11)"
+        ],
+        "log": []
+    },
+    "meta-fails": {
+        "result": {
+            "threw": "RuntimeException: object store down"
+        },
+        "calls": [
+            "object.find(11)"
+        ],
+        "log": []
+    },
+    "needs-equal": {
+        "result": {
+            "returned": false
+        },
+        "calls": [
+            "chunk.latest(object, 7)"
+        ],
+        "log": []
+    },
+    "needs-forced": {
+        "result": {
+            "returned": true
+        },
+        "calls": [],
+        "log": []
+    },
+    "needs-fresh": {
+        "result": {
+            "returned": false
+        },
+        "calls": [
+            "chunk.latest(object, 7)"
+        ],
+        "log": []
+    },
+    "needs-no-chunks": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            "chunk.latest(object, 7)"
+        ],
+        "log": []
+    },
+    "needs-stale": {
+        "result": {
+            "returned": true
+        },
+        "calls": [
+            "chunk.latest(object, 7)"
+        ],
+        "log": []
+    },
+    "source-type": {
+        "result": {
+            "returned": "object"
+        },
+        "calls": [],
+        "log": []
+    },
+    "timestamp": {
+        "result": {
+            "returned": 1700000000
+        },
+        "calls": [
+            "object.find(11)"
+        ],
+        "log": []
+    },
+    "timestamp-fails": {
+        "result": {
+            "threw": "RuntimeException: object store down"
+        },
+        "calls": [
+            "object.find(11)"
+        ],
+        "log": []
+    },
+    "timestamp-missing": {
+        "result": {
+            "returned": "now"
+        },
+        "calls": [
+            "object.find(11)"
+        ],
+        "log": []
+    },
+    "timestamp-no-updated": {
+        "result": {
+            "returned": "now"
+        },
+        "calls": [
+            "object.find(11)"
+        ],
+        "log": []
+    },
+    "titles-missing": {
+        "result": {
+            "returned": {
+                "source_type": "object",
+                "source_id": 11,
+                "text": "Object ID: u-2\nType: Unknown\nRegister: Unknown\nContent: id: u-2\nk: v",
+                "length": 68,
+                "checksum": "efaa5d9d814e655ad9aaa04671c6a01d5eac22d0681c482877e0c5f2ff22b971",
+                "method": "object_extraction",
+                "owner": null,
+                "organisation": null,
+                "language": null,
+                "language_level": null,
+                "language_confidence": null,
+                "detection_method": null,
+                "metadata": {
+                    "uuid": "u-2",
+                    "schema_id": "5",
+                    "register_id": "3",
+                    "version": null
+                }
+            }
+        },
+        "calls": [
+            "object.find(11)",
+            "schema.find(\"5\")",
+            "register.find(\"3\")"
+        ],
+        "log": [
+            "info: [ObjectHandler] Extracting text from object {\"file\":\"ObjectHandler.php\",\"objectId\":11}"
+        ]
+    }
+}

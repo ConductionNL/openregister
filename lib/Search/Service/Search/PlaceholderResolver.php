@@ -44,7 +44,7 @@ use OCP\IUserSession;
  * after a date placeholder defaults to the placeholder's natural unit
  * (`$startOfMonth-1` = one month earlier).
  */
-final class PlaceholderResolver {
+final class PlaceholderResolver implements PlaceholderResolverInterface {
 	/**
 	 * Constructor.
 	 *
