@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\EndpointLog;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Service\EndpointService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\EndpointsControllerFactory;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -68,7 +69,7 @@ class EndpointsControllerAllLogsScopeTest extends TestCase {
 		$groups->method('isAdmin')->willReturn($admin);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		return new EndpointsController(
+		return EndpointsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->endpointMapper,
