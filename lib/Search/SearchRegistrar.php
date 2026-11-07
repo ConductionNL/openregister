@@ -28,6 +28,10 @@ use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -57,6 +61,8 @@ final class SearchRegistrar {
 	public const BINDINGS = [
 		VectorEmbeddingsInterface::class => VectorEmbeddings::class,
 		EmbeddingGeneratorInterface::class => VectorEmbeddings::class,
+		GeoFilterApplierInterface::class => GeoFilterApplier::class,
+		GeoFilterParserInterface::class => GeoFilterParser::class,
 		MetricsRetentionInterface::class => MetricsService::class,
 		DuplicateDetectionServiceInterface::class => DuplicateDetectionService::class,
 		VectorizationServiceInterface::class => VectorizationService::class,
