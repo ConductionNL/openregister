@@ -116,6 +116,10 @@ use OCA\OpenRegister\Service\Operations\JobAlertService;
 use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
 use OCA\OpenRegister\Service\Operations\OperationsJobsService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
+use OCA\OpenRegister\Service\Party\PartyRoleService;
+use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
+use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
@@ -229,6 +233,8 @@ final class ContractBindings {
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
 		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
 		OperationsJobsServiceInterface::class => OperationsJobsService::class,
+		PartyRoleServiceInterface::class => PartyRoleService::class,
+		PartyServiceInterface::class => PartyService::class,
 		PersonLinkServiceInterface::class => PersonLinkService::class,
 		PhotoLinkServiceInterface::class => PhotoLinkService::class,
 		PollLinkServiceInterface::class => PollLinkService::class,
