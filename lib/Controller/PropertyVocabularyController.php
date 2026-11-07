@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
@@ -101,25 +102,7 @@ class PropertyVocabularyController extends Controller {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function extendingForms(): JSONResponse {
-		$rows = [];
-		foreach ($this->schemaMapper->findAll() as $schema) {
-			$configuration = ($schema->getConfiguration() ?? []);
-			$properties = ($schema->getProperties() ?? []);
-			if (is_array($configuration) === false) {
-				$configuration = [];
-			}
-
-			if (is_array($properties) === false) {
-				$properties = [];
-			}
-
-			$found = $this->declarations->fromSchema(configuration: $configuration, properties: $properties);
-			foreach ($found as $path => $annotation) {
-				$row = $this->declarations->describe(annotation: $annotation, path: $path);
-				$row['schema'] = (string)($schema->getSlug() ?? '');
-				$rows[] = $row;
-			}
-		}
+		$rows = $this->allDeclarationRows();
 
 		return new JSONResponse(
 			[
@@ -133,4 +116,56 @@ class PropertyVocabularyController extends Controller {
 		);
 
 	}//end extendingForms()
+
+	/**
+	 * The described extending-form declarations of every readable schema.
+	 *
+	 * @return array<int, array<string, mixed>> One row per declaration.
+	 */
+	private function allDeclarationRows(): array {
+		$rows = [];
+		foreach ($this->schemaMapper->findAll() as $schema) {
+			array_push($rows, ...$this->declarationRows(schema: $schema));
+		}
+
+		return $rows;
+	}//end allDeclarationRows()
+
+	/**
+	 * The described extending-form declarations of one schema.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int, array<string, mixed>> One row per declaration, naming the schema.
+	 */
+	private function declarationRows(Schema $schema): array {
+		$found = $this->declarations->fromSchema(
+			configuration: $this->arrayOr(value: $schema->getConfiguration()),
+			properties: $this->arrayOr(value: $schema->getProperties())
+		);
+
+		$rows = [];
+		foreach ($found as $path => $annotation) {
+			$row = $this->declarations->describe(annotation: $annotation, path: $path);
+			$row['schema'] = (string)($schema->getSlug() ?? '');
+			$rows[] = $row;
+		}
+
+		return $rows;
+	}//end declarationRows()
+
+	/**
+	 * The value when it is an array, else an empty array.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<mixed> The array.
+	 */
+	private function arrayOr(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end arrayOr()
 }//end class
