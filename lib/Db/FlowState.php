@@ -97,17 +97,9 @@ class FlowState extends Entity implements JsonSerializable {
 	 * @return array The serialised state.
 	 */
 	public function jsonSerialize(): array {
-		$updated = null;
-		if ($this->updated !== null) {
-			$updated = $this->updated->format('c');
-		}
+		$json = (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
+		$json['state'] = ($this->state ?? []);
 
-		return [
-			'id' => $this->id,
-			'flowId' => $this->flowId,
-			'state' => ($this->state ?? []),
-			'updated' => $updated,
-		];
-
+		return $json;
 	}//end jsonSerialize()
 }//end class

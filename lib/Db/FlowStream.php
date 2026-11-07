@@ -274,19 +274,6 @@ class FlowStream extends Entity implements JsonSerializable {
 	 * @return array<string, mixed> The stream as an array.
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'runUuid' => $this->runUuid,
-			'streamId' => $this->streamId,
-			'ordinalPath' => $this->ordinalPath,
-			'parentStreamId' => $this->parentStreamId,
-			'place' => $this->place,
-			'status' => $this->status,
-			'resumeAt' => $this->resumeAt?->format('c'),
-			'nextSequence' => $this->nextSequence,
-			'error' => $this->error,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-		];
+		return (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
 	}//end jsonSerialize()
 }//end class
