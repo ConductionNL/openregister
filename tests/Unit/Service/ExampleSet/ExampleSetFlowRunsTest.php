@@ -66,6 +66,7 @@ use OCA\OpenRegister\Db\FlowRun;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRunCheck
  */
 class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 	/**

@@ -6,13 +6,13 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
 use OCA\OpenRegister\Controller\ConversationController;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapper;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -400,7 +400,7 @@ class ConversationControllerTest extends TestCase {
 	// ── Create with agentUuid ──
 
 	public function testCreateWithAgentUuid(): void {
-		$agent = new \OCA\OpenRegister\Db\Agent();
+		$agent = new \OCA\OpenRegister\Mcp\Db\Agent();
 		$agent->setId(42);
 
 		$this->request->method('getParams')->willReturn(['agentUuid' => 'agent-uuid-1']);

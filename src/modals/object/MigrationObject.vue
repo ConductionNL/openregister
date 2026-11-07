@@ -85,43 +85,15 @@ import {
 				don't want to migrate by clicking the remove button.
 			</NcNoteCard>
 
-			<div class="selected-objects-container">
-				<h4>Selected Objects ({{ selectedObjects.length }})</h4>
-
-				<div v-if="selectedObjects.length" class="selected-objects-list">
-					<div
-						v-for="obj in selectedObjects"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{
-								obj['@self']?.name
-								|| obj.name
-								|| obj.title
-								|| obj['@self']?.title
-								|| 'Unnamed Object'
-							}}</strong>
-							<p class="object-id">
-								ID: {{ obj.id || obj['@self']?.id }}
-							</p>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
-							@click="removeObject(obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent v-else name="No objects selected">
-					<template #description>
-						No objects are currently selected for migration.
-					</template>
-				</NcEmptyContent>
-			</div>
+			<SelectedObjectsList
+				:objects="selectedObjects"
+				:emptyDescription="
+					t(
+						'openregister',
+						'No objects are currently selected for migration.',
+					)
+				"
+				@remove="removeObject" />
 		</div>
 
 		<!-- Step 2: Select Target Register and Schema -->
@@ -408,7 +380,6 @@ import {
 import {
 	NcButton,
 	NcDialog,
-	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
@@ -417,24 +388,23 @@ import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 // Icons
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
+import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
 
 export default {
 	name: 'MigrationObject',
 	components: {
+		SelectedObjectsList,
 		NcButton,
 		NcDialog,
-		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		Cancel,
 		ArrowRight,
 		ArrowLeft,
-		Close,
 		DatabaseExport,
 		DatabaseOutline,
 		FileTreeOutline,
@@ -793,23 +763,6 @@ export default {
 	color: var(--color-main-text);
 }
 
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-.selected-objects-list {
-	max-height: 400px;
-	overflow-y: auto;
-	border: 1px solid var(--color-border);
-	border-radius: 4px;
-}
-
-@include selected-object-item;
-
-.selected-object-item:last-child {
-	border-bottom: none;
-}
-
 .selection-section {
 	margin: 20px 0;
 }
@@ -976,7 +929,6 @@ export default {
 
 @include loading-container;
 
-@include object-info-strong-rules;
 
 @include report-section;
 
@@ -986,13 +938,7 @@ export default {
 	margin-bottom: 4px;
 }
 
-.error-text {
-	color: var(--color-error);
-}
-
-.warning-text {
-	color: var(--color-warning);
-}
+@include error-text-rules;
 
 .detail-grid {
 	display: grid;
@@ -1081,5 +1027,4 @@ export default {
 	color: var(--color-primary);
 	margin-top: 40px;
 }
-
 </style>

@@ -571,11 +571,6 @@ import {
  * The state every instance of this component starts from.
  */
 const INITIAL_STATE = {
-	navigationStore,
-	objectStore,
-	registerStore,
-	schemaStore,
-	viewsStore,
 	activeTab: 'search-tab', // Active tab tracker
 	registerLoading: false,
 	schemaLoading: false,
@@ -637,7 +632,14 @@ export default {
 	},
 
 	data() {
-		return freshState(INITIAL_STATE)
+		return {
+			navigationStore,
+			objectStore,
+			registerStore,
+			schemaStore,
+			viewsStore,
+			...freshState(INITIAL_STATE),
+		}
 	},
 
 	computed: {
@@ -2155,6 +2157,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/components.scss' as *;
+
 .section {
 	padding: 16px;
 	margin-bottom: 0;
@@ -2396,23 +2400,7 @@ export default {
 	padding-top: 4px;
 }
 
-.option-content {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-}
-
-.option-title {
-	font-weight: 500;
-}
-
-.option-description {
-	font-size: 0.875rem;
-	color: var(--color-text-maxcontrast);
-	max-width: 100%;
-	white-space: normal;
-	overflow-wrap: break-word;
-}
+@include option-content-rules;
 
 .search-input-container {
 	display: flex;

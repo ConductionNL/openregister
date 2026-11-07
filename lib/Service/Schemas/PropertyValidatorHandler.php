@@ -35,7 +35,6 @@ use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
  * Service class for validating schema properties according to JSON Schema specification
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema property validation logic
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength) The length is the TYPES and STRING_FORMATS
  *   vocabulary tables (~170 lines of pure data), deliberately co-located so a type is
  *   accepted, published and documented in one edit — see the TYPES docblock: "there is no
@@ -470,6 +469,13 @@ class PropertyValidatorHandler {
 	 *
 	 * @var array<string, array<int, string>>
 	 */
+	/**
+	 * The actions an onDelete may name.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ON_DELETE_ACTIONS = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
+
 	public const CLOSED_MODIFIER_VALUES = [
 		'matchType' => PropertySearchProfile::MATCH_TYPES,
 		'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
@@ -630,6 +636,13 @@ class PropertyValidatorHandler {
 	private RepeatingGroupDeclarationValidator $repeatingGroups;
 
 	/**
+	 * The save-time rules for the options of a file property.
+	 *
+	 * @var FilePropertyOptionsValidator
+	 */
+	private FilePropertyOptionsValidator $fileOptions;
+
+	/**
 	 * Read the two allowlists off the published vocabulary.
 	 *
 	 * @return void
@@ -638,6 +651,7 @@ class PropertyValidatorHandler {
 		$this->validTypes = array_map('strval', array_keys(self::TYPES));
 		$this->validStringFormats = self::STRING_FORMATS;
 		$this->repeatingGroups = new RepeatingGroupDeclarationValidator();
+		$this->fileOptions = new FilePropertyOptionsValidator();
 	}//end __construct()
 
 	/**
@@ -703,30 +717,48 @@ class PropertyValidatorHandler {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function assertKeysAreInTheVocabulary(array $property, string $path): void {
-		$known = self::vocabularyKeys();
 		$errors = [];
 		foreach (array_keys($property) as $key) {
-			$key = (string)$key;
-			if (str_starts_with($key, 'x-') === true || is_numeric($key) === true) {
-				continue;
+			if ($this->isAcceptedKey(key: (string)$key) === false) {
+				$errors[] = [
+					'code' => 'property-vocabulary-unknown-key',
+					'key' => (string)$key,
+					'path' => $path,
+					'message' => "Unknown property key '{$key}' at '$path'. It is not in the property vocabulary.",
+				];
 			}
-
-			if (in_array($key, $known, true) === true) {
-				continue;
-			}
-
-			if (self::isLocalisedKey(key: $key) === true) {
-				continue;
-			}
-
-			$errors[] = [
-				'code' => 'property-vocabulary-unknown-key',
-				'key' => $key,
-				'path' => $path,
-				'message' => "Unknown property key '{$key}' at '$path'. It is not in the property vocabulary.",
-			];
 		}
 
+		$this->refuseUnknownKeys(errors: $errors, path: $path);
+	}//end assertKeysAreInTheVocabulary()
+
+	/**
+	 * Whether a property key may stand: a vendor extension, a numeric key, a
+	 * vocabulary key or a localised spelling of a prose key.
+	 *
+	 * @param string $key The property key.
+	 *
+	 * @return bool True when the key is accepted.
+	 */
+	private function isAcceptedKey(string $key): bool {
+		if (str_starts_with($key, 'x-') === true || is_numeric($key) === true) {
+			return true;
+		}
+
+		return in_array($key, self::vocabularyKeys(), true) === true || self::isLocalisedKey(key: $key) === true;
+	}//end isAcceptedKey()
+
+	/**
+	 * Throw one refusal naming every unknown key, or nothing when there is none.
+	 *
+	 * @param array<int, array<string, string>> $errors The unknown-key errors.
+	 * @param string                            $path   The current path in the schema.
+	 *
+	 * @throws PropertyVocabularyException When there is at least one unknown key.
+	 *
+	 * @return void
+	 */
+	private function refuseUnknownKeys(array $errors, string $path): void {
 		if ($errors === []) {
 			return;
 		}
@@ -736,10 +768,15 @@ class PropertyValidatorHandler {
 			"Unknown property key(s) '{$keys}' at '$path'. Read /api/schemas/property-vocabulary for the keys this layer accepts.",
 			$errors
 		);
-	}//end assertKeysAreInTheVocabulary()
+	}//end refuseUnknownKeys()
 
 	/**
 	 * Validate a property definition against JSON Schema rules
+	 *
+	 * Every key on the property has to be one the vocabulary holds. A key
+	 * nobody defines is a typo, and a typo that passes is a constraint that
+	 * silently constrains nothing for as long as nobody counts. A property
+	 * with oneOf is checked as the separate properties it lists.
 	 *
 	 * @param array $property The property definition to validate
 	 * @param string $path The current path in the schema (for error messages)
@@ -753,13 +790,8 @@ class PropertyValidatorHandler {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function validateProperty(array $property, string $path = ''): bool {
-		// Every key on the property has to be one the vocabulary holds. A key
-		// nobody defines is a typo, and a typo that passes is a constraint
-		// that silently constrains nothing for as long as nobody counts.
 		$this->assertKeysAreInTheVocabulary(property: $property, path: $path);
 		$this->assertDeclarations(property: $property, path: $path);
-
-		// If property has oneOf, treat the contents as separate properties and return the result of those checks.
 		if (($property['oneOf'] ?? null) !== null) {
 			return $this->validateProperties(properties: $property['oneOf'], path: $path . '/oneOf');
 		}
@@ -769,39 +801,90 @@ class PropertyValidatorHandler {
 			return true;
 		}
 
-		$this->assertKnownType(property: $property, path: $path);
-		$this->assertKnownStringFormat(property: $property, path: $path);
-
-		// A repeating group is an array of objects that somebody authors row by
-		// row, so the declaration has to hold together before any object is
-		// written against it. Checked here rather than at save time because a
-		// group whose members nobody declared is a schema mistake, and the
-		// schema author is the only person who can fix it.
-		$this->repeatingGroups->validate(property: $property, path: $path);
-
-		$this->validateNestedDefinitions(property: $property, path: $path);
-		$this->assertNumericBounds(property: $property, path: $path);
-
-		if ($property['type'] === 'file') {
-			$this->validateFileProperty(property: $property, path: $path);
-		}
-
-		$this->assertModifierShapes(property: $property, path: $path);
-		$this->assertSourceLanguage(property: $property, path: $path);
-		$this->assertOnDelete(property: $property, path: $path);
-
-		// Validate the declared search profile if present. An unknown match type
-		// is refused here rather than ignored at query time: ignoring it leaves
-		// the property matching the way it did before, which looks exactly like
-		// the declaration working.
-		$this->validateSearchProfile(property: $property, path: $path);
-
+		$this->assertTypedShape(property: $property, path: $path);
 		return true;
 	}//end validateProperty()
 
 	/**
+	 * Check a typed property: its type, format, nested definitions, bounds and modifiers.
+	 *
+	 * A repeating group is an array of objects that somebody authors row by
+	 * row, so the declaration has to hold together before any object is
+	 * written against it. Checked here rather than at save time because a
+	 * group whose members nobody declared is a schema mistake, and the schema
+	 * author is the only person who can fix it.
+	 *
+	 * @param array  $property The typed property definition.
+	 * @param string $path     The current path in the schema.
+	 *
+	 * @throws Exception When the type, format, nesting or bounds are invalid.
+	 *
+	 * @return void
+	 */
+	private function assertTypedShape(array $property, string $path): void {
+		$this->assertKnownType(property: $property, path: $path);
+		$this->assertKnownStringFormat(property: $property, path: $path);
+		$this->repeatingGroups->validate(property: $property, path: $path);
+		$this->validateNestedDefinitions(property: $property, path: $path);
+		$this->assertNumericBounds(property: $property, path: $path);
+		if ($property['type'] === 'file') {
+			$this->fileOptions->validate(property: $property, path: $path);
+		}
+
+		$this->assertModifiers(property: $property, path: $path);
+	}//end assertTypedShape()
+
+	/**
+	 * Check the modifiers of a typed property: enum and display flags, source language, onDelete and search profile.
+	 *
+	 * An unknown match type is refused here rather than ignored at query time:
+	 * ignoring it leaves the property matching the way it did before, which
+	 * looks exactly like the declaration working.
+	 *
+	 * @param array  $property The typed property definition.
+	 * @param string $path     The current path in the schema.
+	 *
+	 * @throws Exception When a modifier is invalid.
+	 *
+	 * @return void
+	 */
+	private function assertModifiers(array $property, string $path): void {
+		$this->assertModifierShapes(property: $property, path: $path);
+		$this->assertSourceLanguage(property: $property, path: $path);
+		$this->assertOnDelete(property: $property, path: $path);
+		$this->validateSearchProfile(property: $property, path: $path);
+	}//end assertModifiers()
+
+	/**
 	 * Check the annotations that declare their own shape: generated identifier,
 	 * coded choice, reference filter, scope and source.
+	 *
+	 * A generated identifier is checked where every other property key is. The
+	 * refusal extends PropertyVocabularyException, so every schema-save path
+	 * already answers it as a 422 naming the property, and no controller had
+	 * to learn about this annotation to do it.
+	 *
+	 * A choice property has to resolve to exactly one list of answers. Same
+	 * reason, same place, same exception family: a field that offers nothing,
+	 * or offers two different things, is not something a reader can tell apart
+	 * from a field nobody has configured yet.
+	 *
+	 * A reference filter is checked here for the same reason: an annotation
+	 * that is unusable is a picker that silently offers everything, and the
+	 * author is present at save and nowhere near the picker later. The
+	 * OPERANDS are checked where both schemas are in hand, because this method
+	 * sees one property: `ReferenceFilterOperandGuard`, which
+	 * `SchemasController::validateReferenceFilterOperands()` calls on create
+	 * and on update.
+	 *
+	 * A scope that is accepted but not enforced is worse than no scope: the
+	 * author believes the field is team-only BECAUSE the platform took the
+	 * word. Refusing here is what keeps the published key honest.
+	 *
+	 * A source is checked because an `x-` key is accepted without this:
+	 * assertKeysAreInTheVocabulary() skips every one of them, so
+	 * `{"provider": 7}` would save cleanly and the consumer would read what it
+	 * could and guess the rest.
 	 *
 	 * @param array  $property The property definition to check.
 	 * @param string $path     The current path in the schema, for the message.
@@ -817,35 +900,10 @@ class PropertyValidatorHandler {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function assertDeclarations(array $property, string $path): void {
-		// A generated identifier is checked where every other property key is.
-		// The refusal extends PropertyVocabularyException, so every schema-save
-		// path already answers it as a 422 naming the property, and no controller
-		// had to learn about this annotation to do it.
 		GeneratedIdentifierDeclaration::fromProperty(property: $property, path: $path);
-
-		// And a choice property has to resolve to exactly one list of answers.
-		// Same reason, same place, same exception family: a field that offers
-		// nothing, or offers two different things, is not something a reader
-		// can tell apart from a field nobody has configured yet.
 		CodedChoiceDeclaration::assert(property: $property, path: $path);
-
-		// A reference filter is checked here for the same reason: an annotation
-		// that is unusable is a picker that silently offers everything, and the
-		// author is present at save and nowhere near the picker later.
-		// The OPERANDS are checked where both schemas are in hand, because
-		// this method sees one property: `ReferenceFilterOperandGuard`, which
-		// `SchemasController::validateReferenceFilterOperands()` calls on
-		// create and on update.
 		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
-
-		// A scope that is accepted but not enforced is worse than no scope: the
-		// author believes the field is team-only BECAUSE the platform took the
-		// word. Refusing here is what keeps the published key honest.
 		ScopedPropertyDeclaration::assert(property: $property, path: $path);
-
-		// An `x-` key is accepted without this: assertKeysAreInTheVocabulary()
-		// skips every one of them, so `{"provider": 7}` would save cleanly and
-		// the consumer would read what it could and guess the rest.
 		PropertySourceDeclaration::assert(property: $property, path: $path);
 	}//end assertDeclarations()
 
@@ -900,21 +958,13 @@ class PropertyValidatorHandler {
 			return;
 		}
 
-		$typeLabel = $property['type'];
-		if (is_string($typeLabel) === false) {
-			$typeLabel = (string)json_encode($typeLabel);
-		}
-
-		$message = "Invalid type '{$typeLabel}' at '$path'. Must be one of: " . implode(', ', $this->validTypes);
-		throw new PropertyVocabularyException(
-			$message,
-			[
-				[
-					'code' => 'property-vocabulary-unknown-type',
-					'key' => $typeLabel,
-					'path' => $path,
-					'message' => $message,
-				],
+		$typeLabel = $this->labelOf(value: $property['type']);
+		$this->refuseVocabulary(
+			error: [
+				'code' => 'property-vocabulary-unknown-type',
+				'key' => $typeLabel,
+				'path' => $path,
+				'message' => "Invalid type '{$typeLabel}' at '$path'. Must be one of: " . implode(', ', $this->validTypes),
 			]
 		);
 	}//end assertKnownType()
@@ -936,32 +986,64 @@ class PropertyValidatorHandler {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function assertKnownStringFormat(array $property, string $path): void {
-		if ($property['type'] !== 'string'
-			|| ($property['format'] ?? null) === null
-			|| in_array($property['format'], $this->validStringFormats) === true
-		) {
+		if ($this->hasUnknownStringFormat(property: $property) === false) {
 			return;
 		}
 
-		$formatLabel = $property['format'];
-		if (is_string($formatLabel) === false) {
-			$formatLabel = (string)json_encode($formatLabel);
-		}
-
-		$validFormats = implode(', ', $this->validStringFormats);
-		$message = "Invalid string format '{$formatLabel}' at '$path'. Must be one of: $validFormats";
-		throw new PropertyVocabularyException(
-			$message,
-			[
-				[
-					'code' => 'property-vocabulary-unknown-format',
-					'key' => $formatLabel,
-					'path' => $path,
-					'message' => $message,
-				],
+		$formatLabel = $this->labelOf(value: $property['format']);
+		$this->refuseVocabulary(
+			error: [
+				'code' => 'property-vocabulary-unknown-format',
+				'key' => $formatLabel,
+				'path' => $path,
+				'message' => "Invalid string format '{$formatLabel}' at '$path'. Must be one of: " . implode(', ', $this->validStringFormats),
 			]
 		);
 	}//end assertKnownStringFormat()
+
+	/**
+	 * Whether a string property declares a format outside the allowlist.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return bool True when the format is declared and unknown.
+	 */
+	private function hasUnknownStringFormat(array $property): bool {
+		return $property['type'] === 'string'
+			&& ($property['format'] ?? null) !== null
+			&& in_array($property['format'], $this->validStringFormats) === false;
+	}//end hasUnknownStringFormat()
+
+	/**
+	 * A declared value as message text: a string as is, anything else as JSON.
+	 *
+	 * Union types arrive as arrays; rendering them as JSON avoids the
+	 * "Array to string conversion" string interpolation would emit.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return string The label.
+	 */
+	private function labelOf(mixed $value): string {
+		if (is_string($value) === true) {
+			return $value;
+		}
+
+		return (string)json_encode($value);
+	}//end labelOf()
+
+	/**
+	 * Throw a vocabulary refusal carrying the one error it describes.
+	 *
+	 * @param array<string, string> $error The error, with its code, key, path and message.
+	 *
+	 * @throws PropertyVocabularyException Always.
+	 *
+	 * @return void
+	 */
+	private function refuseVocabulary(array $error): void {
+		throw new PropertyVocabularyException($error['message'], [$error]);
+	}//end refuseVocabulary()
 
 	/**
 	 * Validate the items of an array and the properties of an object.
@@ -978,15 +1060,30 @@ class PropertyValidatorHandler {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateNestedDefinitions(array $property, string $path): void {
-		$hasItems = ($property['items'] ?? null) !== null;
-		if ($property['type'] === 'array' && $hasItems === true && isset($property['items']['$ref']) === false) {
-			$this->validateProperty(property: $property['items'], path: $path . '/items');
+		if ($property['type'] === 'array') {
+			$this->validateItems(items: ($property['items'] ?? null), path: $path . '/items');
 		}
 
 		if ($property['type'] === 'object' && (($property['properties'] ?? null) !== null)) {
 			$this->validateProperties(properties: $property['properties'], path: $path . '/properties');
 		}
 	}//end validateNestedDefinitions()
+
+	/**
+	 * Validate the items of an array, unless absent or a `$ref`.
+	 *
+	 * @param mixed  $items The declared items.
+	 * @param string $path  The path of the items in the schema.
+	 *
+	 * @throws Exception When the items definition is invalid.
+	 *
+	 * @return void
+	 */
+	private function validateItems(mixed $items, string $path): void {
+		if ($items !== null && isset($items['$ref']) === false) {
+			$this->validateProperty(property: $items, path: $path);
+		}
+	}//end validateItems()
 
 	/**
 	 * Refuse a non-numeric minimum or maximum, or a minimum above the maximum, on a numeric type.
@@ -1005,20 +1102,31 @@ class PropertyValidatorHandler {
 			return;
 		}
 
+		$this->assertBoundsAreNumeric(property: $property, path: $path);
 		$minimum = ($property['minimum'] ?? null);
 		$maximum = ($property['maximum'] ?? null);
-		if ($minimum !== null && is_numeric($minimum) === false) {
-			throw new Exception("'minimum' at '$path' must be numeric");
-		}
-
-		if ($maximum !== null && is_numeric($maximum) === false) {
-			throw new Exception("'maximum' at '$path' must be numeric");
-		}
-
 		if ($minimum !== null && $maximum !== null && ($minimum > $maximum) === true) {
 			throw new Exception("'minimum' cannot be greater than 'maximum' at '$path'");
 		}
 	}//end assertNumericBounds()
+
+	/**
+	 * Refuse a minimum or maximum that is present and not numeric, minimum first.
+	 *
+	 * @param array  $property The numeric property definition.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When a bound is not numeric.
+	 *
+	 * @return void
+	 */
+	private function assertBoundsAreNumeric(array $property, string $path): void {
+		foreach (['minimum', 'maximum'] as $bound) {
+			if (($property[$bound] ?? null) !== null && is_numeric($property[$bound]) === false) {
+				throw new Exception("'{$bound}' at '$path' must be numeric");
+			}
+		}
+	}//end assertBoundsAreNumeric()
 
 	/**
 	 * Refuse an enum that is not a non-empty array, and a display flag that is not a boolean.
@@ -1033,18 +1141,31 @@ class PropertyValidatorHandler {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function assertModifierShapes(array $property, string $path): void {
-		if (($property['enum'] ?? null) !== null
-			&& (is_array($property['enum']) === false || empty($property['enum']) === true)
-		) {
+		$enum = ($property['enum'] ?? null);
+		if ($enum !== null && (is_array($enum) === false || empty($enum) === true)) {
 			throw new Exception("'enum' at '$path' must be a non-empty array");
 		}
 
+		$this->assertDisplayFlags(property: $property, path: $path);
+	}//end assertModifierShapes()
+
+	/**
+	 * Refuse a visible, hideOnCollection or hideOnForm flag that is present and not a boolean.
+	 *
+	 * @param array  $property The property definition.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When a display flag is not a boolean.
+	 *
+	 * @return void
+	 */
+	private function assertDisplayFlags(array $property, string $path): void {
 		foreach (['visible', 'hideOnCollection', 'hideOnForm'] as $flag) {
 			if (($property[$flag] ?? null) !== null && is_bool($property[$flag]) === false) {
 				throw new Exception("'{$flag}' at '$path' must be a boolean");
 			}
 		}
-	}//end assertModifierShapes()
+	}//end assertDisplayFlags()
 
 	/**
 	 * Refuse a sourceLanguage on a property that is not translatable, or one that is not a BCP-47 tag.
@@ -1067,18 +1188,33 @@ class PropertyValidatorHandler {
 			throw new Exception("'sourceLanguage' at '$path' requires translatable: true");
 		}
 
-		$sourceLanguage = $property['sourceLanguage'];
+		$this->assertLanguageTag(sourceLanguage: $property['sourceLanguage'], path: $path);
+	}//end assertSourceLanguage()
+
+	/**
+	 * Refuse a sourceLanguage that is not a non-empty BCP-47 tag.
+	 *
+	 * The syntax check is basic: 2-3 lowercase letters, then optional
+	 * region or subtag suffixes.
+	 *
+	 * @param mixed  $sourceLanguage The declared source language.
+	 * @param string $path           The current path in the schema, for the message.
+	 *
+	 * @throws Exception When the value is empty, not a string, or not a BCP-47 tag.
+	 *
+	 * @return void
+	 */
+	private function assertLanguageTag(mixed $sourceLanguage, string $path): void {
 		if (is_string($sourceLanguage) === false || $sourceLanguage === '') {
 			throw new Exception("'sourceLanguage' at '$path' must be a non-empty string");
 		}
 
-		// Basic BCP-47 syntax check: 2-3 lowercase letters, optional region/subtag suffix.
 		if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $sourceLanguage) !== 1) {
 			throw new Exception(
 				"'sourceLanguage' at '$path' is not a valid BCP-47 language tag: '$sourceLanguage'"
 			);
 		}
-	}//end assertSourceLanguage()
+	}//end assertLanguageTag()
 
 	/**
 	 * Refuse an onDelete outside a relation, outside the known actions, or other than RESTRICT on a reference by key.
@@ -1101,28 +1237,51 @@ class PropertyValidatorHandler {
 			return;
 		}
 
-		$hasRef = isset($property['$ref']) === true
-			|| (isset($property['items']['$ref']) === true)
-			|| isset($property['referenceSchema']) === true
-			|| (isset($property['items']['referenceSchema']) === true);
-		if ($hasRef === false) {
+		if ($this->isRelation(property: $property) === false) {
 			throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref' or 'referenceSchema'");
 		}
 
+		$this->assertOnDeleteAction(property: $property, path: $path);
+	}//end assertOnDelete()
+
+	/**
+	 * Refuse an onDelete action other than RESTRICT on a reference by key, or outside the known actions.
+	 *
+	 * @param array  $property The relation property definition.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws Exception When the action is not allowed.
+	 *
+	 * @return void
+	 */
+	private function assertOnDeleteAction(array $property, string $path): void {
 		$upperValue = strtoupper((string)$property['onDelete']);
-		$referenceKey = (new ReferenceKey())->keyOf(property: $property);
-		if ($referenceKey !== null && $upperValue !== 'RESTRICT') {
+		if ((new ReferenceKey())->keyOf(property: $property) !== null && $upperValue !== 'RESTRICT') {
 			throw new Exception("'referenceKey' at '$path' is only valid with onDelete RESTRICT");
 		}
 
-		$validActions = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
-		if (in_array($upperValue, $validActions, true) === false) {
-			$validList = implode(', ', $validActions);
-			throw new Exception(
-				"Invalid onDelete value '{$property['onDelete']}' at '$path'. Must be one of: {$validList}"
-			);
+		if (in_array($upperValue, self::ON_DELETE_ACTIONS, true) === false) {
+			$validList = implode(', ', self::ON_DELETE_ACTIONS);
+			throw new Exception("Invalid onDelete value '{$property['onDelete']}' at '$path'. Must be one of: {$validList}");
 		}
-	}//end assertOnDelete()
+	}//end assertOnDeleteAction()
+
+	/**
+	 * Whether the property, or its items, references another schema.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return bool True when a `$ref` or `referenceSchema` is declared.
+	 */
+	private function isRelation(array $property): bool {
+		$items = ($property['items'] ?? null);
+		if (is_array($items) === false) {
+			$items = [];
+		}
+
+		return isset($property['$ref']) === true || isset($items['$ref']) === true
+			|| isset($property['referenceSchema']) === true || isset($items['referenceSchema']) === true;
+	}//end isRelation()
 
 	/**
 	 * Refuse an unknown match type or input control, naming the property.
@@ -1143,21 +1302,25 @@ class PropertyValidatorHandler {
 	private function validateSearchProfile(array $property, string $path): void {
 		foreach (self::CLOSED_MODIFIER_VALUES as $key => $allowed) {
 			$declared = ($property[$key] ?? null);
-			if ($declared === null) {
-				continue;
-			}
-
-			if (is_string($declared) === false
-				|| in_array(strtolower(trim($declared)), $allowed, true) === false
-			) {
+			if ($declared !== null && $this->isAllowedValue(declared: $declared, allowed: $allowed) === false) {
 				$rendered = json_encode($declared);
 				$allowedList = implode(', ', $allowed);
-				throw new Exception(
-					"Invalid {$key} {$rendered} at '$path'. Must be one of: {$allowedList}"
-				);
+				throw new Exception("Invalid {$key} {$rendered} at '$path'. Must be one of: {$allowedList}");
 			}
 		}
 	}//end validateSearchProfile()
+
+	/**
+	 * Whether a declared closed-modifier value is a string in the allowed list, ignoring case and padding.
+	 *
+	 * @param mixed             $declared The declared value.
+	 * @param array<int,string> $allowed  The allowed values.
+	 *
+	 * @return bool True when allowed.
+	 */
+	private function isAllowedValue(mixed $declared, array $allowed): bool {
+		return is_string($declared) === true && in_array(strtolower(trim($declared)), $allowed, true) === true;
+	}//end isAllowedValue()
 
 	/**
 	 * Validate an entire properties object
@@ -1183,112 +1346,4 @@ class PropertyValidatorHandler {
 		return true;
 	}//end validateProperties()
 
-	/**
-	 * Validate file-specific properties
-	 *
-	 * Validates file property configuration options including allowedTypes,
-	 * maxSize, allowedTags, and autoTags
-	 *
-	 * @param array $property The file property definition to validate
-	 * @param string $path The current path in the schema (for error messages)
-	 *
-	 * @throws Exception If the file property configuration is invalid
-	 *
-	 * @return true
-	 *
-	 * @psalm-param array<string, mixed> $property
-	 *
-	 * @phpstan-param array<string, mixed> $property
-	 *
-	 * @psalm-return   bool
-	 * @phpstan-return bool
-	 *
-	 * @psalm-suppress UnusedReturnValue
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple file property validations
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for file properties
-	 */
-	private function validateFileProperty(array $property, string $path): bool {
-		// Validate allowedTypes if present.
-		if (($property['allowedTypes'] ?? null) !== null) {
-			if (is_array($property['allowedTypes']) === false) {
-				throw new Exception("'allowedTypes' at '$path' must be an array");
-			}
-
-			// Validate each MIME type.
-			foreach ($property['allowedTypes'] as $index => $mimeType) {
-				if (is_string($mimeType) === false) {
-					throw new Exception("'allowedTypes[$index]' at '$path' must be a string");
-				}
-
-				// Basic MIME type validation (type/subtype).
-				if (preg_match('/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/', $mimeType) === 0) {
-					throw new Exception("'allowedTypes[$index]' at '$path' contains invalid MIME type format: '$mimeType'");
-				}
-			}
-		}
-
-		// Validate maxSize if present.
-		if (($property['maxSize'] ?? null) !== null) {
-			if (is_int($property['maxSize']) === false && is_numeric($property['maxSize']) === false) {
-				throw new Exception("'maxSize' at '$path' must be a numeric value");
-			}
-
-			$maxSize = (int)$property['maxSize'];
-			if ($maxSize < 0) {
-				throw new Exception("'maxSize' at '$path' must be a positive number");
-			}
-
-			// Reasonable upper limit (100MB).
-			if ($maxSize > 104857600) {
-				throw new Exception("'maxSize' at '$path' exceeds maximum allowed size (100MB)");
-			}
-		}
-
-		// Validate allowedTags if present.
-		if (($property['allowedTags'] ?? null) !== null) {
-			if (is_array($property['allowedTags']) === false) {
-				throw new Exception("'allowedTags' at '$path' must be an array");
-			}
-
-			foreach ($property['allowedTags'] as $index => $tag) {
-				if (is_string($tag) === false) {
-					throw new Exception("'allowedTags[$index]' at '$path' must be a string");
-				}
-
-				// Basic tag validation (no empty strings, reasonable length).
-				if (trim($tag) === '') {
-					throw new Exception("'allowedTags[$index]' at '$path' cannot be empty");
-				}
-
-				if (strlen($tag) > 50) {
-					throw new Exception("'allowedTags[$index]' at '$path' exceeds maximum length (50 characters)");
-				}
-			}
-		}
-
-		// Validate autoTags if present.
-		if (($property['autoTags'] ?? null) !== null) {
-			if (is_array($property['autoTags']) === false) {
-				throw new Exception("'autoTags' at '$path' must be an array");
-			}
-
-			foreach ($property['autoTags'] as $index => $tag) {
-				if (is_string($tag) === false) {
-					throw new Exception("'autoTags[$index]' at '$path' must be a string");
-				}
-
-				// Basic tag validation (no empty strings, reasonable length).
-				if (trim($tag) === '') {
-					throw new Exception("'autoTags[$index]' at '$path' cannot be empty");
-				}
-
-				if (strlen($tag) > 50) {
-					throw new Exception("'autoTags[$index]' at '$path' exceeds maximum length (50 characters)");
-				}
-			}
-		}
-
-		return true;
-	}//end validateFileProperty()
 }//end class

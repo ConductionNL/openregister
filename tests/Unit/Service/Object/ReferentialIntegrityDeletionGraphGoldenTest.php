@@ -42,6 +42,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode
  * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep
  * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk
+ * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityDeletionGraphGoldenTest extends TestCase {
 
