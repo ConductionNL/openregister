@@ -3911,11 +3911,6 @@ parameters:
 			path: lib/Service/File/CreateFileHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\DeleteFileHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/DeleteFileHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\DeleteFileHandler\\:\\:\\$rootFolder is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/DeleteFileHandler.php

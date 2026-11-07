@@ -17,7 +17,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
 use OCP\Files\File;
@@ -56,11 +55,6 @@ class DeleteFileHandlerTest extends TestCase {
 	private $fileValidHandler;
 
 	/**
-	 * @var FileOwnershipHandler&MockObject
-	 */
-	private $fileOwnershipHandler;
-
-	/**
 	 * @var LoggerInterface&MockObject
 	 */
 	private $logger;
@@ -83,7 +77,6 @@ class DeleteFileHandlerTest extends TestCase {
 		$this->rootFolder = $this->createMock(IRootFolder::class);
 		$this->readFileHandler = $this->createMock(ReadFileHandler::class);
 		$this->fileValidHandler = $this->createMock(FileValidationHandler::class);
-		$this->fileOwnershipHandler = $this->createMock(FileOwnershipHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->fileLockHandler = $this->createMock(FileLockHandler::class);
 
@@ -91,7 +84,6 @@ class DeleteFileHandlerTest extends TestCase {
 			$this->rootFolder,
 			$this->readFileHandler,
 			$this->fileValidHandler,
-			$this->fileOwnershipHandler,
 			$this->logger,
 			$this->fileLockHandler
 		);
