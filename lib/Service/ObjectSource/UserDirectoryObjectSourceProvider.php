@@ -118,7 +118,7 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 			return null;
 		}
 
-		return $this->toObjectEntity(register: $register, schema: $schema, user: $user);
+		return $this->toObjectEntity(binding: new SourcedObjectBinding(register: $register, schema: $schema), user: $user);
 	}//end find()
 
 	/**
@@ -139,9 +139,10 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
+		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
 		$objects = [];
 		foreach ($this->readUsers(query: $query) as $user) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, user: $user);
+			$objects[] = $this->toObjectEntity(binding: $binding, user: $user);
 		}
 
 		return $objects;
@@ -230,15 +231,14 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * Map a Nextcloud user onto a non-persisted virtual ObjectEntity.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
-	 * @param IUser $user The Nextcloud user.
+	 * @param SourcedObjectBinding $binding The bound register and schema.
+	 * @param IUser                $user    The Nextcloud user.
 	 *
 	 * @return ObjectEntity The virtual object (never saved).
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
 	 */
-	private function toObjectEntity(Register $register, Schema $schema, IUser $user): ObjectEntity {
+	private function toObjectEntity(SourcedObjectBinding $binding, IUser $user): ObjectEntity {
 		$uid = $user->getUID();
 
 		$data = [
@@ -247,12 +247,6 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 			'email' => ($user->getEMailAddress() ?? ''),
 		];
 
-		$entity = new ObjectEntity();
-		$entity->setUuid($uid);
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($data);
-
-		return $entity;
+		return $binding->toEntity(uuid: $uid, data: $data);
 	}//end toObjectEntity()
 }//end class

@@ -102,7 +102,7 @@ use RuntimeException;
  * to the portal side (party resolver, delivery seam); every import is one of
  * the two halves it exists to connect.
  */
-class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * The configuration boundary: validation and templating.
