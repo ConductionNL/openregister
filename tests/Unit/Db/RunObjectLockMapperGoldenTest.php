@@ -58,7 +58,7 @@ class RunObjectLockMapperGoldenTest extends TestCase {
 		$expected = json_decode((string) file_get_contents(self::FIXTURE), true);
 		$this->assertNotEmpty($expected);
 		foreach ($expected as $name => $outcome) {
-			$this->assertNotEmpty($outcome['queries'] === [] ? ($outcome['thrown'] ?? null) : $outcome['queries'], $name);
+			$this->assertNotEmpty(array_merge($outcome['queries'], (array) ($outcome['thrown'] ?? [])), $name);
 			$this->assertSame($outcome, $actual[$name] ?? null, $name);
 		}
 
@@ -127,7 +127,10 @@ class RunObjectLockMapperGoldenTest extends TestCase {
 			$result = $mapper->$method(...$args);
 			$outcome['result'] = $this->render($result);
 		} catch (\Throwable $e) {
-			$outcome['thrown'] = $e instanceof DbException ? 'DbException reason ' . $e->getReason() : get_class($e);
+			$outcome['thrown'] = get_class($e);
+			if ($e instanceof DbException) {
+				$outcome['thrown'] = 'DbException reason ' . $e->getReason();
+			}
 		}
 
 		$outcome['queries'] = $this->queryLog;
@@ -138,6 +141,8 @@ class RunObjectLockMapperGoldenTest extends TestCase {
 	 * Call arguments as text, with dates written out so their value is pinned.
 	 *
 	 * @param array<int|string, mixed> $args The arguments.
+	 *
+	 * @return string The arguments joined by commas.
 	 */
 	private function renderArgs(array $args): string {
 		foreach ($args as $key => $arg) {
