@@ -15,6 +15,8 @@ use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
@@ -46,6 +48,7 @@ final class D1InterfaceBindingsTest extends TestCase {
 	private const HIDDEN = [
 		EntityRelationMapper::class => [EntityRelationMapperInterface::class, DbRegistrar::class, 'Db'],
 		FlowRunMapper::class => [FlowRunMapperInterface::class, DbRegistrar::class, 'Db'],
+		MagicMapper::class => [MagicMapperInterface::class, DbRegistrar::class, 'Db'],
 		MappingMapper::class => [MappingMapperInterface::class, DbRegistrar::class, 'Db'],
 	];
 

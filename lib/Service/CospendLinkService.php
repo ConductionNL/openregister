@@ -75,7 +75,7 @@ use Throwable;
  *     picker, cache refresh, graceful degradation).
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class CospendLinkService {
+class CospendLinkService implements CospendLinkServiceInterface {
 	private const REQUIRED_APP = 'cospend';
 
 	private const PROJECT_SERVICE = 'OCA\\Cospend\\Service\\ProjectService';
