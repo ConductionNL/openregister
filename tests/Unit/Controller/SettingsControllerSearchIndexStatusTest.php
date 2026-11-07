@@ -33,6 +33,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -57,7 +58,7 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 	private function controllerWith(SearchIndexMaintenance $maintenance): SettingsController {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')
-			->with(SearchIndexMaintenance::class)
+			->with(SearchIndexMaintenanceInterface::class)
 			->willReturn($maintenance);
 
 		return SettingsControllerFactory::create(
