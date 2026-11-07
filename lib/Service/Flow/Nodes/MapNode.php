@@ -48,7 +48,7 @@ use UnexpectedValueException;
 /**
  * Transforms the item list through a stored mapping.
  */
-class MapNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class MapNode implements IFlowNode, MapNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	/**
 	 * Constructor.
 	 *

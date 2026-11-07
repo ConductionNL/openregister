@@ -48,7 +48,7 @@ use UnexpectedValueException;
 /**
  * Suspends the run for a duration or until a moment.
  */
-class WaitNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class WaitNode implements IFlowNode, WaitNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	/**
 	 * Constructor.
 	 *
