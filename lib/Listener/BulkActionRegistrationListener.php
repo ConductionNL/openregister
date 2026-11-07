@@ -26,12 +26,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BulkAction\ApplyRuleAction;
-use OCA\OpenRegister\BulkAction\AssignAction;
+use OCA\OpenRegister\BulkAction\ApplyRuleActionInterface;
+use OCA\OpenRegister\BulkAction\AssignActionInterface;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
-use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
-use OCA\OpenRegister\BulkAction\RunActionAction;
-use OCA\OpenRegister\BulkAction\SetPropertiesAction;
+use OCA\OpenRegister\BulkAction\RestorePriorValuesActionInterface;
+use OCA\OpenRegister\BulkAction\RunActionActionInterface;
+use OCA\OpenRegister\BulkAction\SetPropertiesActionInterface;
 use OCA\OpenRegister\Event\BulkActionRegistrationEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -48,21 +48,21 @@ class BulkActionRegistrationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SetPropertiesAction $setProperties The bulk attribute write.
-	 * @param AssignAction $assign The bulk redistribution.
-	 * @param ApplyRuleAction $applyRule The rule replay.
+	 * @param SetPropertiesActionInterface $setProperties The bulk attribute write.
+	 * @param AssignActionInterface $assign The bulk redistribution.
+	 * @param ApplyRuleActionInterface $applyRule The rule replay.
 	 * @param ExportWholeSetAction $exportWholeSet The whole-set extract.
-	 * @param RestorePriorValuesAction $restore The inverse of a reversible job.
-	 * @param RunActionAction $runAction A declared object action on a large selection.
+	 * @param RestorePriorValuesActionInterface $restore The inverse of a reversible job.
+	 * @param RunActionActionInterface $runAction A declared object action on a large selection.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly SetPropertiesAction $setProperties,
-		private readonly AssignAction $assign,
-		private readonly ApplyRuleAction $applyRule,
+		private readonly SetPropertiesActionInterface $setProperties,
+		private readonly AssignActionInterface $assign,
+		private readonly ApplyRuleActionInterface $applyRule,
 		private readonly ExportWholeSetAction $exportWholeSet,
-		private readonly RestorePriorValuesAction $restore,
-		private readonly RunActionAction $runAction,
+		private readonly RestorePriorValuesActionInterface $restore,
+		private readonly RunActionActionInterface $runAction,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
