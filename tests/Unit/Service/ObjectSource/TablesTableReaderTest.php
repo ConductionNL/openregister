@@ -205,4 +205,18 @@ class TablesTableReaderTest extends TestCase {
 		$this->assertSame(42, $row['id']);
 		$this->assertSame([['columnId' => 1, 'value' => 'Swing']], $row['cells']);
 	}//end testFindRowReturnsAReadableRowOfTheBoundTable()
+
+	/**
+	 * On a View-bound scope the read right is asked of the table, not of an id equal to the View's.
+	 *
+	 * @return void
+	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState(false)]
+	public function testFindRowOnAViewAsksTheTable(): void {
+		$reader = $this->readerOverFakeTables(rowTables: [42 => 5], readable: ['alice' => [5], 'bob' => [9]]);
+
+		$this->assertNotNull($reader->findRow(rowId: 42, scope: (new TablesReadScope(5, 'alice'))->withView(viewId: 9)));
+		$this->assertNull($reader->findRow(rowId: 42, scope: (new TablesReadScope(5, 'bob'))->withView(viewId: 9)));
+	}//end testFindRowOnAViewAsksTheTable()
 }//end class
