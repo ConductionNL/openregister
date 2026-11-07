@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BackgroundJob\ObjectCleanupJob;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
@@ -91,21 +92,30 @@ class ObjectCleanupListener implements IEventListener {
 	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
 	 */
 	public function handle(Event $event): void {
-		if (($event instanceof ObjectDeletedEvent) === false) {
+		if (($event instanceof ObjectDeletedEvent) === false || (string)$event->getObject()->getUuid() === '') {
 			return;
 		}
 
 		$object = $event->getObject();
-		$objectUuid = (string)$object->getUuid();
-		if ($objectUuid === '') {
-			return;
-		}
-
 		if ($this->deferral->isDeferralEnabled() === false) {
-			$this->cleanup->cleanup(objectUuid: $objectUuid);
+			$this->cleanup->cleanup(objectUuid: (string)$object->getUuid());
 			return;
 		}
 
+		$this->deferCleanup(object: $object);
+	}//end handle()
+
+	/**
+	 * Buffer the deleted object's identity for ObjectCleanupJob, coalesced on its uuid.
+	 *
+	 * @param ObjectEntity $object The deleted object; its uuid is non-empty.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
+	 */
+	private function deferCleanup(ObjectEntity $object): void {
+		$objectUuid = (string)$object->getUuid();
 		$this->deferral->defer(
 			jobClass: ObjectCleanupJob::class,
 			entry: [
@@ -115,5 +125,5 @@ class ObjectCleanupListener implements IEventListener {
 			],
 			dedupeKey: $objectUuid
 		);
-	}//end handle()
+	}//end deferCleanup()
 }//end class

@@ -111,24 +111,16 @@ final class SearchTermParser {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function parse(string $term): SearchTermNode {
-		$tokens = $this->tokenize(term: $term);
-		if (empty($tokens) === true) {
-			throw new SearchTermSyntaxException(
-				reason: 'The search term is empty',
-				position: 1,
-				term: $term
-			);
+		$stream = new SearchTokenStream(tokens: $this->tokenize(term: $term), term: $term);
+		if (empty($stream->tokens) === true) {
+			throw $stream->refuse(reason: 'The search term is empty', position: 1);
 		}
 
 		$cursor = 0;
-		$node = $this->parseOr(tokens: $tokens, cursor: $cursor, term: $term);
+		$node = $this->parseOr(stream: $stream, cursor: $cursor);
 
-		if ($cursor < count($tokens)) {
-			throw new SearchTermSyntaxException(
-				reason: 'Unexpected closing bracket',
-				position: $tokens[$cursor]['position'],
-				term: $term
-			);
+		if ($cursor < count($stream->tokens)) {
+			throw $stream->refuse(reason: 'Unexpected closing bracket', position: $stream->tokens[$cursor]['position']);
 		}
 
 		return $node;
@@ -316,29 +308,19 @@ final class SearchTermParser {
 	/**
 	 * Parse a disjunction, the loosest binding level.
 	 *
-	 * @param array<int, array{type: string, value: string, position: int, leading: bool, trailing: bool}> $tokens The tokens.
-	 * @param int                                                                                          $cursor Cursor, by reference.
-	 * @param string                                                                                       $term   The raw term, for messages.
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
 	 *
 	 * @throws SearchTermSyntaxException When an operand is missing.
 	 *
 	 * @return SearchTermNode The parsed node.
 	 */
-	private function parseOr(array $tokens, int &$cursor, string $term): SearchTermNode {
-		$operands = [$this->parseAnd(tokens: $tokens, cursor: $cursor, term: $term)];
+	private function parseOr(SearchTokenStream $stream, int &$cursor): SearchTermNode {
+		$operands = [$this->parseAnd(stream: $stream, cursor: $cursor)];
 
-		while (($tokens[$cursor]['type'] ?? null) === 'OR') {
-			$operator = $tokens[$cursor];
-			$cursor++;
-			if ($this->startsOperand(token: ($tokens[$cursor] ?? null)) === false) {
-				throw new SearchTermSyntaxException(
-					reason: 'OR needs a term after it',
-					position: $operator['position'],
-					term: $term
-				);
-			}
-
-			$operands[] = $this->parseAnd(tokens: $tokens, cursor: $cursor, term: $term);
+		while ($stream->typeAt(cursor: $cursor) === 'OR') {
+			$this->stepPastOperator(stream: $stream, cursor: $cursor);
+			$operands[] = $this->parseAnd(stream: $stream, cursor: $cursor);
 		}
 
 		return SearchTermNode::any(children: $operands);
@@ -347,155 +329,146 @@ final class SearchTermParser {
 	/**
 	 * Parse a conjunction. Two terms side by side are a conjunction too.
 	 *
-	 * @param array<int, array{type: string, value: string, position: int, leading: bool, trailing: bool}> $tokens The tokens.
-	 * @param int                                                                                          $cursor Cursor, by reference.
-	 * @param string                                                                                       $term   The raw term, for messages.
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
 	 *
 	 * @throws SearchTermSyntaxException When an operand is missing.
 	 *
 	 * @return SearchTermNode The parsed node.
 	 */
-	private function parseAnd(array $tokens, int &$cursor, string $term): SearchTermNode {
-		$operands = [$this->parseNot(tokens: $tokens, cursor: $cursor, term: $term)];
+	private function parseAnd(SearchTokenStream $stream, int &$cursor): SearchTermNode {
+		$operands = [$this->parseNot(stream: $stream, cursor: $cursor)];
 
-		while (true) {
-			$next = ($tokens[$cursor] ?? null);
-			if ($next === null || $next['type'] === 'OR' || $next['type'] === self::TOKEN_CLOSE) {
-				break;
+		while ($this->continuesConjunction(type: $stream->typeAt(cursor: $cursor)) === true) {
+			if ($stream->typeAt(cursor: $cursor) === 'AND') {
+				$this->stepPastOperator(stream: $stream, cursor: $cursor);
 			}
 
-			if ($next['type'] === 'AND') {
-				$cursor++;
-				if ($this->startsOperand(token: ($tokens[$cursor] ?? null)) === false) {
-					throw new SearchTermSyntaxException(
-						reason: 'AND needs a term after it',
-						position: $next['position'],
-						term: $term
-					);
-				}
-			}
-
-			$operands[] = $this->parseNot(tokens: $tokens, cursor: $cursor, term: $term);
-		}//end while
+			$operands[] = $this->parseNot(stream: $stream, cursor: $cursor);
+		}
 
 		return SearchTermNode::all(children: $operands);
 	}//end parseAnd()
 
 	/**
+	 * Whether the token type after an operand continues the conjunction.
+	 *
+	 * @param string|null $type The next token type, or null at the end.
+	 *
+	 * @return bool False at the end, at an OR and at a closing bracket.
+	 */
+	private function continuesConjunction(?string $type): bool {
+		return ($type !== null && $type !== 'OR' && $type !== self::TOKEN_CLOSE);
+	}//end continuesConjunction()
+
+	/**
+	 * Step past a binary or unary operator, refusing when no operand follows it.
+	 *
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
+	 *
+	 * @throws SearchTermSyntaxException When the operator has no operand after it.
+	 *
+	 * @return void
+	 */
+	private function stepPastOperator(SearchTokenStream $stream, int &$cursor): void {
+		$operator = $stream->tokens[$cursor];
+		$cursor++;
+		if ($this->startsOperand(token: $stream->tokenAt(cursor: $cursor)) === false) {
+			throw $stream->refuse(reason: $operator['type'] . ' needs a term after it', position: $operator['position']);
+		}
+	}//end stepPastOperator()
+
+	/**
 	 * Parse an optionally negated primary.
 	 *
-	 * @param array<int, array{type: string, value: string, position: int, leading: bool, trailing: bool}> $tokens The tokens.
-	 * @param int                                                                                          $cursor Cursor, by reference.
-	 * @param string                                                                                       $term   The raw term, for messages.
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
 	 *
 	 * @throws SearchTermSyntaxException When an operand is missing.
 	 *
 	 * @return SearchTermNode The parsed node.
 	 */
-	private function parseNot(array $tokens, int &$cursor, string $term): SearchTermNode {
-		if (($tokens[$cursor]['type'] ?? null) !== 'NOT') {
-			return $this->parsePrimary(tokens: $tokens, cursor: $cursor, term: $term);
+	private function parseNot(SearchTokenStream $stream, int &$cursor): SearchTermNode {
+		if ($stream->typeAt(cursor: $cursor) !== 'NOT') {
+			return $this->parsePrimary(stream: $stream, cursor: $cursor);
 		}
 
-		$operator = $tokens[$cursor];
-		$cursor++;
-		if ($this->startsOperand(token: ($tokens[$cursor] ?? null)) === false) {
-			throw new SearchTermSyntaxException(
-				reason: 'NOT needs a term after it',
-				position: $operator['position'],
-				term: $term
-			);
-		}
+		$this->stepPastOperator(stream: $stream, cursor: $cursor);
 
-		return SearchTermNode::not(child: $this->parseNot(tokens: $tokens, cursor: $cursor, term: $term));
+		return SearchTermNode::not(child: $this->parseNot(stream: $stream, cursor: $cursor));
 	}//end parseNot()
 
 	/**
 	 * Parse a bracketed group or a single term.
 	 *
-	 * @param array<int, array{type: string, value: string, position: int, leading: bool, trailing: bool}> $tokens The tokens.
-	 * @param int                                                                                          $cursor Cursor, by reference.
-	 * @param string                                                                                       $term   The raw term, for messages.
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
 	 *
 	 * @throws SearchTermSyntaxException When a bracket is unbalanced or a term is missing.
 	 *
 	 * @return SearchTermNode The parsed node.
 	 */
-	private function parsePrimary(array $tokens, int &$cursor, string $term): SearchTermNode {
-		$token = ($tokens[$cursor] ?? null);
-
-		if ($token === null) {
-			throw new SearchTermSyntaxException(
-				reason: 'The search term ends where a word was expected',
-				position: (mb_strlen($term) + 1),
-				term: $term
-			);
-		}
-
-		if ($token['type'] === self::TOKEN_CLOSE) {
-			throw new SearchTermSyntaxException(
-				reason: 'Unexpected closing bracket',
-				position: $token['position'],
-				term: $term
-			);
-		}
-
-		if (in_array($token['type'], self::KEYWORDS, true) === true) {
-			throw new SearchTermSyntaxException(
-				reason: $token['type'] . ' needs a term before it',
-				position: $token['position'],
-				term: $term
-			);
-		}
+	private function parsePrimary(SearchTokenStream $stream, int &$cursor): SearchTermNode {
+		$token = $stream->tokenAt(cursor: $cursor);
+		$this->refuseNonOperand(stream: $stream, token: $token);
 
 		if ($token['type'] === self::TOKEN_OPEN) {
-			return $this->parseGroup(tokens: $tokens, cursor: $cursor, term: $term);
+			return $this->parseGroup(stream: $stream, cursor: $cursor);
 		}
 
 		$cursor++;
 
-		return SearchTermNode::term(
-			value: $token['value'],
-			leadingWildcard: $token['leading'],
-			trailingWildcard: $token['trailing']
-		);
+		return SearchTermNode::term(value: $token['value'], leadingWildcard: $token['leading'], trailingWildcard: $token['trailing']);
 	}//end parsePrimary()
+
+	/**
+	 * Refuse a token that cannot begin an operand where one is expected.
+	 *
+	 * @param SearchTokenStream                                                                    $stream The tokens and the raw term.
+	 * @param array{type: string, value: string, position: int, leading: bool, trailing: bool}|null $token  The token, or null at the end.
+	 *
+	 * @throws SearchTermSyntaxException When the term ends, a bracket closes or a keyword stands first.
+	 *
+	 * @return void
+	 */
+	private function refuseNonOperand(SearchTokenStream $stream, ?array $token): void {
+		if ($token === null) {
+			throw $stream->refuse(reason: 'The search term ends where a word was expected', position: (mb_strlen($stream->term) + 1));
+		}
+
+		if ($token['type'] === self::TOKEN_CLOSE) {
+			throw $stream->refuse(reason: 'Unexpected closing bracket', position: $token['position']);
+		}
+
+		if (in_array($token['type'], self::KEYWORDS, true) === true) {
+			throw $stream->refuse(reason: $token['type'] . ' needs a term before it', position: $token['position']);
+		}
+	}//end refuseNonOperand()
 
 	/**
 	 * Parse a bracketed group, the cursor sitting on the opening bracket.
 	 *
-	 * @param array<int, array{type: string, value: string, position: int, leading: bool, trailing: bool}> $tokens The tokens.
-	 * @param int                                                                                          $cursor Cursor, by reference.
-	 * @param string                                                                                       $term   The raw term, for messages.
+	 * @param SearchTokenStream $stream The tokens and the raw term.
+	 * @param int               $cursor Cursor, by reference.
 	 *
 	 * @throws SearchTermSyntaxException When the group is empty or never closed.
 	 *
 	 * @return SearchTermNode The parsed node.
 	 */
-	private function parseGroup(array $tokens, int &$cursor, string $term): SearchTermNode {
-		$opening = $tokens[$cursor];
+	private function parseGroup(SearchTokenStream $stream, int &$cursor): SearchTermNode {
+		$opening = $stream->tokens[$cursor];
 		$cursor++;
-
-		if (($tokens[$cursor]['type'] ?? null) === self::TOKEN_CLOSE) {
-			throw new SearchTermSyntaxException(
-				reason: 'Empty group opened',
-				position: $opening['position'],
-				term: $term
-			);
+		if ($stream->typeAt(cursor: $cursor) === self::TOKEN_CLOSE) {
+			throw $stream->refuse(reason: 'Empty group opened', position: $opening['position']);
 		}
 
-		$node = $this->parseOr(tokens: $tokens, cursor: $cursor, term: $term);
-
-		if (($tokens[$cursor]['type'] ?? null) !== self::TOKEN_CLOSE) {
-			throw new SearchTermSyntaxException(
-				reason: 'Unbalanced opening bracket',
-				position: $opening['position'],
-				term: $term
-			);
+		$node = $this->parseOr(stream: $stream, cursor: $cursor);
+		if ($stream->typeAt(cursor: $cursor) !== self::TOKEN_CLOSE) {
+			throw $stream->refuse(reason: 'Unbalanced opening bracket', position: $opening['position']);
 		}
 
 		$cursor++;
-
 		return $node;
 	}//end parseGroup()
 
