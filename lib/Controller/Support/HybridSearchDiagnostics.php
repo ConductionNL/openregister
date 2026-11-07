@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
@@ -241,8 +241,8 @@ final class HybridSearchDiagnostics
 	private function chunkVectorizationProgress(): array {
 		$progress = ['total' => 0, 'vectorized' => 0];
 		try {
-			$chunkMapper = $this->container->get(ChunkMapper::class);
-			if ($chunkMapper instanceof ChunkMapper) {
+			$chunkMapper = $this->container->get(ChunkMapperInterface::class);
+			if ($chunkMapper instanceof ChunkMapperInterface) {
 				$progress['total'] = $chunkMapper->countAll();
 				$progress['vectorized'] = $chunkMapper->countVectorized();
 			}

@@ -6,7 +6,7 @@
 	<NcDialog
 		:name="t('openregister', 'Merge objects')"
 		size="large"
-		:canClose="!executing"
+		:noClose="executing"
 		@closing="$emit('close')">
 		<div class="mergeWizard">
 			<template v-if="loading">

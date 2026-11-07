@@ -10,14 +10,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load linked emails')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Mail app not installed (HTTP 501 graceful degradation) -->
 		<NcEmptyContent
@@ -92,10 +88,10 @@ SPDX-License-Identifier: EUPL-1.2
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
 import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
 import { relationTab } from './relationTab.js'
 
 /**
@@ -113,10 +109,10 @@ export default {
 	name: 'EmailsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcButton,
-		AlertCircleOutline,
 		EmailOutline,
 		EmailOffOutline,
 		CloseCircleOutline,

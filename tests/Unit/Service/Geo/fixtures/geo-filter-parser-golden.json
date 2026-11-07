@@ -1,0 +1,263 @@
+{
+    "body both": [
+        {
+            "type": "within",
+            "payload": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                0
+                            ],
+                            [
+                                1,
+                                1
+                            ],
+                            [
+                                0,
+                                0
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "property": null
+        },
+        {
+            "type": "intersects",
+            "payload": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                0
+                            ],
+                            [
+                                1,
+                                1
+                            ],
+                            [
+                                0,
+                                0
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "property": null
+        }
+    ],
+    "body empty geometry": {
+        "error": "geo-search body MUST include at least one of: geometry.within, geometry.intersects"
+    },
+    "body geometry scalar": {
+        "error": "geo-search body MUST include a geometry object"
+    },
+    "body intersects": [
+        {
+            "type": "intersects",
+            "payload": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                0
+                            ],
+                            [
+                                1,
+                                1
+                            ],
+                            [
+                                0,
+                                0
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "property": "5"
+        }
+    ],
+    "body intersects scalar": {
+        "error": "geometry.intersects MUST be a GeoJSON geometry object"
+    },
+    "body no geometry": {
+        "error": "geo-search body MUST include a geometry object"
+    },
+    "body property null": [
+        {
+            "type": "within",
+            "payload": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                0
+                            ],
+                            [
+                                1,
+                                1
+                            ],
+                            [
+                                0,
+                                0
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "property": null
+        }
+    ],
+    "body within": [
+        {
+            "type": "within",
+            "payload": {
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                0,
+                                0
+                            ],
+                            [
+                                1,
+                                0
+                            ],
+                            [
+                                1,
+                                1
+                            ],
+                            [
+                                0,
+                                0
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "property": "area"
+        }
+    ],
+    "body within null": {
+        "error": "geo-search body MUST include at least one of: geometry.within, geometry.intersects"
+    },
+    "body within point": {
+        "error": "within geometry type MUST be Polygon or MultiPolygon (got: 'Point')"
+    },
+    "body within scalar": {
+        "error": "geometry.within MUST be a GeoJSON geometry object"
+    },
+    "params bad bbox before pair": {
+        "error": "bbox MUST be exactly 4 comma-separated decimal values"
+    },
+    "params bbox": [
+        {
+            "type": "bbox",
+            "payload": {
+                "west": 4.1,
+                "south": 52.0,
+                "east": 5.0,
+                "north": 53.0
+            },
+            "property": null
+        }
+    ],
+    "params bbox and near": [
+        {
+            "type": "bbox",
+            "payload": {
+                "west": 0.0,
+                "south": 0.0,
+                "east": 1.0,
+                "north": 1.0
+            },
+            "property": "p"
+        },
+        {
+            "type": "near",
+            "payload": {
+                "lon": 1.0,
+                "lat": 2.0,
+                "radius": 5.0
+            },
+            "property": "p"
+        }
+    ],
+    "params bbox bad": {
+        "error": "bbox MUST be exactly 4 comma-separated decimal values"
+    },
+    "params bbox empty": [],
+    "params bbox int property": [
+        {
+            "type": "bbox",
+            "payload": {
+                "west": 0.0,
+                "south": 0.0,
+                "east": 1.0,
+                "north": 1.0
+            },
+            "property": "12"
+        }
+    ],
+    "params bbox null": [],
+    "params empty": [],
+    "params near and radius": [
+        {
+            "type": "near",
+            "payload": {
+                "lon": 4.9,
+                "lat": 52.3,
+                "radius": 250.0
+            },
+            "property": "location"
+        }
+    ],
+    "params near empty radius": {
+        "error": "geo.near and geo.radius MUST be used together \u2014 neither is meaningful alone"
+    },
+    "params near non-numeric": {
+        "error": "near coordinates and radius MUST be numeric"
+    },
+    "params near three values": {
+        "error": "geo.near MUST be `lon,lat` \u2014 exactly two values"
+    },
+    "params near without radius": {
+        "error": "geo.near and geo.radius MUST be used together \u2014 neither is meaningful alone"
+    },
+    "params pair error before near": {
+        "error": "geo.near and geo.radius MUST be used together \u2014 neither is meaningful alone"
+    },
+    "params radius without near": {
+        "error": "geo.near and geo.radius MUST be used together \u2014 neither is meaningful alone"
+    },
+    "params unrelated": [],
+    "params zero radius": {
+        "error": "radius MUST be greater than 0 meters"
+    }
+}

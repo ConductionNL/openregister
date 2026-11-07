@@ -54,7 +54,7 @@ class LlmSettingsControllerCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testTestChatSuccessPath(): void {
-		$chatServiceMock = $this->createMock(\OCA\OpenRegister\Service\ChatService::class);
+		$chatServiceMock = $this->createMock(\OCA\OpenRegister\Mcp\Service\ChatService::class);
 
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -63,7 +63,7 @@ class LlmSettingsControllerCoverageTest extends TestCase {
 				['testMessage', 'Hello! Please respond with a brief greeting.', 'Hi'],
 			]);
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\ChatService')
+			->with('OCA\\OpenRegister\\Kernel\\Contracts\\ChatServiceInterface')
 			->willReturn($chatServiceMock);
 
 		$chatServiceMock->method('testChat')->willReturn(['success' => true]);

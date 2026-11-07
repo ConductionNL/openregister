@@ -28,15 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Closure;
-use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use DateTimeZone;
-use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -45,6 +41,11 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Import\ImportErrorsCsv;
+use OCA\OpenRegister\Service\Import\ImportValueCaster;
+use OCA\OpenRegister\Service\Import\JsonImportRows;
+use OCA\OpenRegister\Service\Import\MappingErrorRow;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCP\IGroupManager;
@@ -160,6 +161,13 @@ class ImportService implements ObjectImporterInterface {
 	private readonly \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec;
 
 	/**
+	 * Casts cell values by schema type.
+	 *
+	 * @var ImportValueCaster
+	 */
+	private readonly ImportValueCaster $valueCaster;
+
+	/**
 	 * Constructor for the ImportService
 	 *
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper
@@ -189,6 +197,8 @@ class ImportService implements ObjectImporterInterface {
 		$this->logger = $logger;
 		$this->groupManager = $groupManager;
 		$this->translationCsvCodec = $translationCsvCodec;
+
+		$this->valueCaster = new ImportValueCaster();
 
 		// Initialize cache arrays to prevent issues.
 		$this->schemaPropertiesCache = [];
@@ -694,32 +704,38 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	private function importJsonObjects(array $objects, array $job): array {
 		$schema = $job['schema'];
-
-		// Phase 1: resolve every row to an (uuid, body) pair.
-		$resolution = $this->resolveJsonImportRows(
-			objects: $objects,
-			run: ['pack' => $job['pack'], 'propertyKeys' => array_flip(array_keys($schema->getProperties()))]
+		$rows = new JsonImportRows(
+			mappingEngine: $this->mappingEngine,
+			pack: $job['pack'],
+			propertyKeys: array_flip(array_keys($schema->getProperties()))
 		);
 
-		// Phase 2: a dry run validates every resolved row and saves nothing.
-		$summary = $resolution['summary'];
-		if ($job['dryRun'] === true) {
-			$summary = $this->buildDryRunSummary(
-				summary: $summary,
-				objects: array_column($resolution['rows'], 'body'),
-				schema: $schema,
-				startTime: $job['startTime']
-			);
-		}
-
-		if ($job['dryRun'] === false) {
-			$summary = $this->saveJsonImportRows(rows: $resolution['rows'], target: ['summary' => $summary] + $job);
-		}
-
+		$summary = $this->applyJsonImportRows(resolution: $rows->resolve(objects: $objects), job: $job);
 		$summary['schema'] = self::schemaSummary(schema: $schema);
 
 		return $summary;
 	}//end importJsonObjects()
+
+	/**
+	 * Save resolved rows; a dry run validates them and saves nothing.
+	 *
+	 * @param array{rows: list<array<string, mixed>>, summary: array<string, mixed>} $resolution The resolved rows.
+	 * @param array<string, mixed>                                                   $job        The import job.
+	 *
+	 * @return array<string, mixed> The summary.
+	 */
+	private function applyJsonImportRows(array $resolution, array $job): array {
+		if ($job['dryRun'] === true) {
+			return $this->buildDryRunSummary(
+				summary: $resolution['summary'],
+				objects: array_column($resolution['rows'], 'body'),
+				schema: $job['schema'],
+				startTime: $job['startTime']
+			);
+		}
+
+		return $this->saveJsonImportRows(rows: $resolution['rows'], target: ['summary' => $resolution['summary']] + $job);
+	}//end applyJsonImportRows()
 
 	/**
 	 * Read and decode a JSON import file.
@@ -798,174 +814,6 @@ class ImportService implements ObjectImporterInterface {
 	}//end jsonImportObjects()
 
 	/**
-	 * Resolve every JSON import row to an upsert uuid and a body, and start the summary.
-	 *
-	 * With a pack each object is mapped through it; a row with mapping errors is
-	 * reported and excluded, never partially mapped or saved. Without a pack the
-	 * body is the object reduced to the schema's own properties.
-	 *
-	 * @param array<mixed>         $objects The objects to import
-	 * @param array<string, mixed> $run     The pack (or null) and the schema property keys as a set
-	 *
-	 * @return array{rows: list<array<string, mixed>>, summary: array<string, mixed>} The rows and the summary so far
-	 */
-	private function resolveJsonImportRows(array $objects, array $run): array {
-		$summary = [
-			'found' => count($objects),
-			'created' => [],
-			'updated' => [],
-			'unchanged' => [],
-			'errors' => [],
-			// Non-fatal findings, such as a dropped undeclared property.
-			'warnings' => [],
-		];
-
-		$rows = [];
-		foreach ($objects as $rowIndex => $raw) {
-			if (is_array($raw) === false) {
-				continue;
-			}
-
-			// Keys are list indexes for a JSON array export; the cast guards an object-with-string-keys envelope.
-			$run['rowNumber'] = ((int)$rowIndex + 1);
-			$resolved = $this->resolveJsonImportRow(raw: $raw, run: $run);
-			array_push($summary['errors'], ...$resolved['errors']);
-			if ($resolved['warning'] !== null) {
-				$summary['warnings'][] = $resolved['warning'];
-			}
-
-			if ($resolved['row'] !== null) {
-				$rows[] = $resolved['row'];
-			}
-		}//end foreach
-
-		return ['rows' => $rows, 'summary' => $summary];
-	}//end resolveJsonImportRows()
-
-	/**
-	 * Resolve one JSON import row.
-	 *
-	 * @param array<string, mixed> $raw The source object
-	 * @param array<string, mixed> $run The pack, the schema property keys and the row number
-	 *
-	 * @return array{row: array<string, mixed>|null, errors: list<array<string, mixed>>, warning: string|null}
-	 *     The resolved row (null when skipped or refused), its errors and its warning
-	 */
-	private function resolveJsonImportRow(array $raw, array $run): array {
-		$pack = $run['pack'];
-		if ($pack === null) {
-			return $this->resolvePlainJsonImportRow(raw: $raw, run: $run);
-		}
-
-		$outcome = ['row' => null, 'errors' => [], 'warning' => null];
-		if ($this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $run['rowNumber']) === true) {
-			return $outcome;
-		}
-
-		$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $raw, rowNumber: $run['rowNumber']);
-		if (empty($mapped['errors']) === false) {
-			$outcome['errors'] = array_values(
-				array_map(fn (array $error): array => $this->formatMappingError(error: $error), $mapped['errors'])
-			);
-			return $outcome;
-		}
-
-		$body = $mapped['data'];
-		$uuid = $body['id'] ?? null;
-		unset($body['id']);
-		if ($uuid !== null) {
-			$uuid = (string)$uuid;
-		}
-
-		$outcome['row'] = ['uuid' => $uuid, 'body' => $body, 'name' => ($raw['name'] ?? $uuid)];
-		return $outcome;
-	}//end resolveJsonImportRow()
-
-	/**
-	 * Resolve one JSON import row without a pack.
-	 *
-	 * The upsert key is `@self.id`, then a top-level `id` or `uuid`. The body is
-	 * the object reduced to the schema's properties, with empty strings as null.
-	 *
-	 * @param array<string, mixed> $raw The source object
-	 * @param array<string, mixed> $run The schema property keys and the row number
-	 *
-	 * @return array{row: array<string, mixed>, errors: list<never>, warning: string|null}
-	 *     The resolved row and the dropped-property warning, if any
-	 */
-	private function resolvePlainJsonImportRow(array $raw, array $run): array {
-		$uuid = ($raw['@self']['id'] ?? $raw['id'] ?? $raw['uuid'] ?? null);
-		if ($uuid !== null) {
-			$uuid = (string)$uuid;
-		}
-
-		$body = array_intersect_key($raw, $run['propertyKeys']);
-		foreach ($body as $key => $value) {
-			if ($value === '') {
-				$body[$key] = null;
-			}
-		}
-
-		return [
-			'row' => ['uuid' => $uuid, 'body' => $body, 'name' => ($raw['name'] ?? $uuid)],
-			'errors' => [],
-			'warning' => $this->droppedPropertiesWarning(raw: $raw, run: $run),
-		];
-	}//end resolvePlainJsonImportRow()
-
-	/**
-	 * The warning for properties a row carries that the schema does not declare.
-	 *
-	 * An import drops undeclared keys before the save, so the warning at the
-	 * database write never sees them. `@`/`_` keys, `id` and `uuid` are envelope
-	 * and metadata, never user data, so they are not reported.
-	 *
-	 * @param array<string, mixed> $raw The source object
-	 * @param array<string, mixed> $run The schema property keys and the row number
-	 *
-	 * @return string|null The warning, or null when nothing was dropped
-	 */
-	private function droppedPropertiesWarning(array $raw, array $run): ?string {
-		$dropped = [];
-		foreach (array_keys($raw) as $rawKey) {
-			$rawName = (string)$rawKey;
-			if (array_key_exists($rawName, $run['propertyKeys']) === false && $this->isUserDataKey(key: $rawName) === true) {
-				$dropped[] = $rawName;
-			}
-		}
-
-		if ($dropped === []) {
-			return null;
-		}
-
-		$plural = 'ies';
-		if (count($dropped) === 1) {
-			$plural = 'y';
-		}
-
-		return sprintf(
-			'Row %d: dropped %d propert%s the schema does not declare: %s.',
-			$run['rowNumber'],
-			count($dropped),
-			$plural,
-			implode(', ', $dropped)
-		);
-	}//end droppedPropertiesWarning()
-
-	/**
-	 * Whether an object key holds user data rather than envelope or metadata.
-	 *
-	 * `@`/`_` keys, `id` and `uuid` are envelope and metadata.
-	 *
-	 * @param string $key The object key
-	 *
-	 * @return bool True for a user data key
-	 */
-	private function isUserDataKey(string $key): bool {
-		return $key !== '' && $key !== 'id' && $key !== 'uuid' && $key[0] !== '@' && $key[0] !== '_';
-	}//end isUserDataKey()
-
-	/**
 	 * Save every resolved JSON import row and record the outcome in the summary.
 	 *
 	 * Rows go through the single-object saveObject() path the REST create/update
@@ -981,33 +829,39 @@ class ImportService implements ObjectImporterInterface {
 		$summary = $target['summary'];
 		foreach ($rows as $row) {
 			try {
-				$saved = $this->objectService->saveObject(
-					object: $row['body'],
-					register: $target['register'],
-					schema: $target['schema'],
-					uuid: $row['uuid'],
-					_rbac: $target['_rbac'],
-					_multitenancy: $target['_multitenancy'],
-					currentUser: $target['currentUser']
-				);
-
 				$outcome = 'created';
 				if ($row['uuid'] !== null) {
 					$outcome = 'updated';
 				}
 
-				$summary[$outcome][] = $saved->getUuid();
+				$summary[$outcome][] = $this->saveJsonImportRow(row: $row, target: $target)->getUuid();
 			} catch (\Throwable $e) {
-				$summary['errors'][] = [
-					'object' => $row['name'],
-					'error' => $e->getMessage(),
-					'type' => get_class($e),
-				];
-			}//end try
-		}//end foreach
+				$summary['errors'][] = ['object' => $row['name'], 'error' => $e->getMessage(), 'type' => get_class($e)];
+			}
+		}
 
 		return $summary;
 	}//end saveJsonImportRows()
+
+	/**
+	 * Save one resolved row.
+	 *
+	 * @param array<string, mixed> $row    The row.
+	 * @param array<string, mixed> $target The register, schema and access flags of the import.
+	 *
+	 * @return ObjectEntity The saved object.
+	 */
+	private function saveJsonImportRow(array $row, array $target): ObjectEntity {
+		return $this->objectService->saveObject(
+			object: $row['body'],
+			register: $target['register'],
+			schema: $target['schema'],
+			uuid: $row['uuid'],
+			_rbac: $target['_rbac'],
+			_multitenancy: $target['_multitenancy'],
+			currentUser: $target['currentUser']
+		);
+	}//end saveJsonImportRow()
 
 	/**
 	 * Resolve or auto-create a register (and its schemas) from a register-bundle
@@ -1460,7 +1314,7 @@ class ImportService implements ObjectImporterInterface {
 				$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $rowData, rowNumber: $row);
 				if (empty($mapped['errors']) === false) {
 					foreach ($mapped['errors'] as $mappingError) {
-						$parsed['errors'][] = $this->formatMappingError(error: $mappingError);
+						$parsed['errors'][] = (new MappingErrorRow())->format(error: $mappingError);
 					}
 
 					continue;
@@ -1662,34 +1516,6 @@ class ImportService implements ObjectImporterInterface {
 	}//end importPerformance()
 
 	/**
-	 * Format one MappingEngine row error into the shape `serializeErrorsToCsv()`
-	 * and the controller's `summary['errors']` contract already expect
-	 * (`row`/`field`/`error`/`type`), so migration-pack mapping failures show
-	 * up in the same per-row error report as any other import error —
-	 * clearly labeled with the source column and transform that failed.
-	 *
-	 * @param array{row: int, source: string, target: ?string, transform: ?string, message: string} $error One MappingEngine error entry.
-	 *
-	 * @return array{row: int, field: string, error: string, type: string, original_value: string}
-	 *
-	 * @spec openspec/specs/migration-mapping-packs/spec.md
-	 */
-	private function formatMappingError(array $error): array {
-		$label = 'source column "' . $error['source'] . '"';
-		if ($error['transform'] !== null) {
-			$label .= ' (transform: ' . $error['transform'] . ')';
-		}
-
-		return [
-			'row' => $error['row'],
-			'field' => $error['target'] ?? $error['source'],
-			'error' => '[migration-pack] ' . $error['message'] . ' — ' . $label,
-			'type' => 'MigrationPackMappingError',
-			'original_value' => $error['source'],
-		];
-	}//end formatMappingError()
-
-	/**
 	 * Build a dry-run summary: every mapped row is validated against the
 	 * target schema via `ValidateObject::validateObject()` (read-only —
 	 * schema resolution + uniqueness SELECTs, no writes) and NOTHING is
@@ -1811,7 +1637,7 @@ class ImportService implements ObjectImporterInterface {
 		foreach (array_filter($rowData, static fn ($value): bool => $value !== null && $value !== '') as $key => $value) {
 			$selfPropertyName = $this->selfColumnProperty(key: $key, isAdmin: $isAdmin);
 			if ($selfPropertyName !== null) {
-				$selfColumns[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
+				$selfColumns[$selfPropertyName] = $this->valueCaster->castSelfProperty(propertyName: $selfPropertyName, value: $value);
 			}
 
 			$firstChar = ((string)$key)[0] ?? '';
@@ -1835,7 +1661,7 @@ class ImportService implements ObjectImporterInterface {
 		$schemaProperties = $this->cachedSchemaProperties(schema: $schema);
 		foreach ($columns as $key => $value) {
 			if (($schemaProperties[$key] ?? null) !== null) {
-				$columns[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
+				$columns[$key] = $this->valueCaster->cast(value: $value, propertyDef: $schemaProperties[$key]);
 			}
 		}
 
@@ -1897,73 +1723,6 @@ class ImportService implements ObjectImporterInterface {
 	}//end isRowImporterAdmin()
 
 	/**
-	 * Transform datetime values from various formats to MySQL datetime format
-	 *
-	 * @param string $value The datetime value to transform
-	 *
-	 * @return string The transformed datetime value in MySQL format
-	 */
-	private function transformDateTimeValue(string $value): string {
-		// Early return if already in MySQL datetime format (Y-m-d H:i:s).
-		if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value) === 1) {
-			return $value;
-		}
-
-		// Handle ISO 8601 format with timezone (e.g., "2025-01-01T00:00:00+00:00").
-		if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value) === 1) {
-			try {
-				$dateTime = new DateTime($value);
-				// BUG-SVC-5: normalise to UTC before stripping the offset, so
-				// an offset-bearing timestamp persists the correct instant
-				// instead of its local wall-clock reading (e.g. +05:00 input
-				// must shift back five hours, not just drop the offset).
-				$dateTime->setTimezone(new DateTimeZone('UTC'));
-				return $dateTime->format(format: 'Y-m-d H:i:s');
-			} catch (Exception $e) {
-				// Fallback to original value if parsing fails.
-				return $value;
-			}
-		}
-
-		// Handle ISO 8601 format without timezone (e.g., "2025-01-01T00:00:00").
-		if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value) === 1) {
-			try {
-				$dateTime = new DateTime($value);
-				return $dateTime->format(format: 'Y-m-d H:i:s');
-			} catch (Exception $e) {
-				// Fallback to original value if parsing fails.
-				return $value;
-			}
-		}
-
-		// Handle date-only format (e.g., "2025-01-01").
-		if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
-			return $value . ' 00:00:00';
-		}
-
-		// Return original value if no transformation needed.
-		return $value;
-	}//end transformDateTimeValue()
-
-	/**
-	 * Transform @self properties based on their type
-	 *
-	 * @param string $propertyName The name of the @self property
-	 * @param string $value The value to transform
-	 *
-	 * @return string The transformed value
-	 */
-	private function transformSelfProperty(string $propertyName, string $value): string {
-		// Transform datetime properties to MySQL datetime format.
-		if (in_array($propertyName, ['published', 'created', 'updated'], true) === true) {
-			return $this->transformDateTimeValue(value: $value);
-		}
-
-		// Return original value for other properties.
-		return $value;
-	}//end transformSelfProperty()
-
-	/**
 	 * Transform Excel row data to object format for batch saving
 	 *
 	 * @param array $rowData Row data from Excel
@@ -2004,7 +1763,7 @@ class ImportService implements ObjectImporterInterface {
 			return $objectData;
 		}
 
-		return $this->transformObjectBySchema(objectData: $objectData, schema: $schema);
+		return $this->valueCaster->castObject(objectData: $objectData, properties: $schema->getProperties());
 	}//end transformExcelRowToObject()
 
 	/**
@@ -2098,202 +1857,6 @@ class ImportService implements ObjectImporterInterface {
 	}//end getSchemaBySlug()
 
 	/**
-	 * Transform object data based on schema property definitions
-	 *
-	 * This method transforms string values from Excel to the expected types defined in the schema.
-	 * It handles type conversion for integers, numbers, booleans, arrays, and objects.
-	 *
-	 * @param array $objectData The object data to transform
-	 * @param Schema $schema The schema containing property definitions
-	 *
-	 * @return array The transformed object data
-	 *
-	 * @phpstan-return array<string, mixed>
-	 * @psalm-return   array<string, mixed>
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function transformObjectBySchema(array $objectData, Schema $schema): array {
-		// NO ERROR SUPPRESSION: Let schema transformation errors bubble up immediately!
-		$schemaProperties = $schema->getProperties();
-		$transformedData = [];
-
-		foreach ($objectData as $propertyName => $value) {
-			// Skip @self array - it's handled separately.
-			if ($propertyName === '@self') {
-				$transformedData[$propertyName] = $value;
-				continue;
-			}
-
-			// Get property definition from schema.
-			$propertyDef = $schemaProperties[$propertyName] ?? null;
-
-			if ($propertyDef === null) {
-				// Property not in schema, keep as is.
-				$transformedData[$propertyName] = $value;
-				continue;
-			}
-
-			// Transform based on type.
-			$transformedData[$propertyName] = $this->transformValueByType(value: $value, propertyDef: $propertyDef);
-		}
-
-		return $transformedData;
-	}//end transformObjectBySchema()
-
-	/**
-	 * Transform a value based on its property definition type
-	 *
-	 * @param mixed $value The value to transform
-	 * @param array $propertyDef The property definition from the schema
-	 *
-	 * @return mixed The transformed value
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type transformation switch requires branches for each data type
-	 * @SuppressWarnings(PHPMD.StaticAccess)         ObjectHandling::relates() is the established enum-style helper idiom
-	 */
-	private function transformValueByType($value, array $propertyDef) {
-		// If value is empty or null, return as is.
-		if ($value === null || $value === '') {
-			return $value;
-		}
-
-		$type = $propertyDef['type'] ?? 'string';
-
-		switch ($type) {
-			case 'integer':
-				return (int)$value;
-			case 'number':
-				return (float)$value;
-			case 'boolean':
-				return $this->stringToBoolean(value: $value);
-			case 'array':
-				return $this->stringToArray(value: $value);
-			case 'object':
-				// Check if this is a related-object that should store UUID strings directly.
-				if (($propertyDef['objectConfiguration']['handling'] ?? null) !== null
-					&& ObjectHandling::relates($propertyDef['objectConfiguration']['handling']) === true
-				) {
-					// For related objects, store UUID strings directly instead of wrapping in objects.
-					return (string)$value;
-				}
-				return $this->stringToObject(value: $value);
-			default:
-				return (string)$value;
-		}//end switch
-	}//end transformValueByType()
-
-	/**
-	 * Convert string to boolean
-	 *
-	 * @param mixed $value The value to convert
-	 *
-	 * @return bool The boolean value
-	 */
-	private function stringToBoolean($value): bool {
-		if (is_bool($value) === true) {
-			return $value;
-		}
-
-		$value = strtolower(trim((string)$value));
-		return in_array($value, ['true', '1', 'yes', 'on', 'enabled']);
-	}//end stringToBoolean()
-
-	/**
-	 * Convert string to object
-	 *
-	 * @param mixed $value The value to convert
-	 *
-	 * @return array|object The object value
-	 */
-	private function stringToObject($value) {
-		if (is_array($value) === true || is_object($value) === true) {
-			return $value;
-		}
-
-		$value = trim((string)$value);
-
-		// Try to parse as JSON first.
-		if (str_starts_with($value, '{') === true && str_ends_with($value, '}') === true) {
-			$decoded = json_decode($value, true);
-			if (json_last_error() === JSON_ERROR_NONE) {
-				return $decoded;
-			}
-		}
-
-		// If not JSON, return as single-key object.
-		return ['value' => $value];
-	}//end stringToObject()
-
-	/**
-	 * Convert string to array handling multiple formats
-	 *
-	 * This method handles various array formats:
-	 * - Comma-separated: 1,2,3
-	 * - Quoted comma-separated: "1","2","3"
-	 * - JSON arrays: ["1","2","3"]
-	 * - Mixed formats
-	 *
-	 * @param mixed $value The value to convert
-	 *
-	 * @return array The array value
-	 *
-	 * @phpstan-return array<int|string, mixed>
-	 * @psalm-return   array<int|string, mixed>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Array parsing requires branches for JSON, CSV, quoted formats
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple array format detection paths needed
-	 */
-	private function stringToArray($value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === false) {
-			return [$value];
-		}
-
-		$value = trim($value);
-
-		// Empty string returns empty array.
-		if ($value === '') {
-			return [];
-		}
-
-		// Try JSON first.
-		if (str_starts_with($value, '[') === true && str_ends_with($value, ']') === true) {
-			$decoded = json_decode($value, true);
-			if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-				return $decoded;
-			}
-		}
-
-		// Handle comma-separated values.
-		if (str_contains($value, ',') === true) {
-			$parts = explode(',', $value);
-			$result = [];
-
-			foreach ($parts as $part) {
-				$part = trim($part);
-
-				// Remove surrounding quotes.
-				if ((str_starts_with($part, '"') === true && str_ends_with($part, '"') === true)
-					|| (str_starts_with($part, "'") === true && str_ends_with($part, "'") === true)
-				) {
-					$part = substr($part, 1, -1);
-				}
-
-				$result[] = $part;
-			}
-
-			return $result;
-		}
-
-		// Single value - return as array with one element.
-		return [$value];
-	}//end stringToArray()
-
-	/**
 	 * Clear all internal caches to prevent issues between imports
 	 *
 	 * @return void
@@ -2347,109 +1910,9 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @phpstan-param array<string, array{errors?: array<int, mixed>}> $summary
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/data-import-export/spec.md#import-must-provide-detailed-error-reporting-with-downloadable-error-files
 	 */
 	public function serializeErrorsToCsv(array $summary): string {
-		$errors = [];
-
-		foreach ($summary as $sheetTitle => $sheetData) {
-			if (is_array($sheetData) === false) {
-				continue;
-			}
-
-			$sheetErrors = $sheetData['errors'] ?? [];
-			if (is_array($sheetErrors) === false || count($sheetErrors) === 0) {
-				continue;
-			}
-
-			foreach ($sheetErrors as $error) {
-				if (is_array($error) === false) {
-					$error = ['error' => (string)$error];
-				}
-
-				$originalValue = ($error['object'] ?? ($error['original_value'] ?? ''));
-				$errors[] = [
-					'sheet' => (string)($error['sheet'] ?? $sheetTitle),
-					'row' => (string)($error['row'] ?? ''),
-					'field' => (string)($error['field'] ?? ($error['type'] ?? '')),
-					'error_message' => (string)($error['error'] ?? ''),
-					'original_value' => $this->stringifyOriginalValue(value: $originalValue),
-				];
-			}//end foreach
-		}//end foreach
-
-		if (count($errors) === 0) {
-			return '';
-		}
-
-		$headers = ['sheet', 'row', 'field', 'error_message', 'original_value'];
-
-		$stream = fopen('php://temp', 'r+');
-		if ($stream === false) {
-			return '';
-		}
-
-		// Excel needs the UTF-8 BOM to detect encoding.
-		fwrite($stream, "\xEF\xBB\xBF");
-		fputcsv($stream, $headers);
-
-		foreach ($errors as $row) {
-			fputcsv(
-				$stream,
-				[
-					$row['sheet'],
-					$row['row'],
-					$row['field'],
-					$row['error_message'],
-					$row['original_value'],
-				]
-			);
-		}
-
-		rewind($stream);
-		$csv = stream_get_contents($stream);
-		fclose($stream);
-
-		if ($csv === false) {
-			return '';
-		}
-
-		return $csv;
+		return (new ImportErrorsCsv())->render(summary: $summary);
 	}//end serializeErrorsToCsv()
-
-	/**
-	 * Stringify the `original_value` carried by an error entry.
-	 *
-	 * Errors collected by the import pipeline embed either a row-level scalar
-	 * (e.g. a malformed cell), an associative array (the parsed object that
-	 * failed validation), or nothing at all. A single CSV cell needs a stable
-	 * string projection of all three.
-	 *
-	 * @param mixed $value The raw value lifted off the error envelope.
-	 *
-	 * @return string Compact string representation suitable for a CSV cell.
-	 */
-	private function stringifyOriginalValue(mixed $value): string {
-		if ($value === null || $value === '') {
-			return '';
-		}
-
-		if (is_scalar($value) === true) {
-			return (string)$value;
-		}
-
-		if (is_array($value) === true || is_object($value) === true) {
-			$encoded = json_encode($value, (JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-			if ($encoded === false) {
-				return '';
-			}
-
-			return $encoded;
-		}
-
-		return '';
-	}//end stringifyOriginalValue()
 }//end class

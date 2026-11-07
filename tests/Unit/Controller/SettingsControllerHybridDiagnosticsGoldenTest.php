@@ -9,7 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -97,7 +97,7 @@ class SettingsControllerHybridDiagnosticsGoldenTest extends TestCase {
 				return new stdClass();
 			}
 
-			$chunks = $this->createMock(ChunkMapper::class);
+			$chunks = $this->createMock(ChunkMapperInterface::class);
 			$chunks->method('countAll')->willReturn(70);
 			$chunks->method('countVectorized')->willReturn(55);
 			return $chunks;

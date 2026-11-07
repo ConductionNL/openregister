@@ -41,6 +41,7 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\ImportService
+ * @uses   \OCA\OpenRegister\Service\Import\ImportValueCaster
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\MigrationPack\MappingEngine

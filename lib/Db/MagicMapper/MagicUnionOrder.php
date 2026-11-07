@@ -83,10 +83,47 @@ final class MagicUnionOrder {
 		}
 
 		$uuidColumn = self::PREFIX . 'uuid';
-		$keys[] = ['row' => $uuidColumn, 'sql' => $uuidColumn, 'dir' => 'ASC'];
+		if (in_array($uuidColumn, array_column($keys, 'row'), true) === false) {
+			$keys[] = ['row' => $uuidColumn, 'sql' => $uuidColumn, 'dir' => 'ASC'];
+		}
 
 		return $keys;
 	}//end keys()
+
+	/**
+	 * A query whose `_order` keeps only what a union of these columns can order on.
+	 *
+	 * Like a single-table search, a union leaves out a field it does not know:
+	 * in its ORDER BY such a field is an error from the database. A property
+	 * counts under its exact name only, because the refusal of a field that may
+	 * not be sorted on compares exact names. A request left with nothing orders
+	 * on the uuid, not on the search score: every batch of one search has to
+	 * order alike for the merge to find the rows of its page.
+	 *
+	 * @param array                $query   Search parameters.
+	 * @param array<string, mixed> $columns Column name => property name.
+	 *
+	 * @return array The query.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	public function orderable(array $query, array $columns): array {
+		if (array_key_exists('_order', $query) === false) {
+			return $query;
+		}
+
+		$fields = (new OrderParameter(order: $query['_order']))->fields();
+		$query['_order'] = array_filter(
+			$fields,
+			fn (int|string $field): bool => $this->isOrderable(field: (string) $field, columns: $columns),
+			ARRAY_FILTER_USE_KEY
+		);
+		if ($fields !== [] && $query['_order'] === []) {
+			$query['_order'] = [self::PREFIX . 'uuid' => 'ASC'];
+		}
+
+		return $query;
+	}//end orderable()
 
 	/**
 	 * Sort merged rows on the SQL's own order keys.
@@ -108,6 +145,27 @@ final class MagicUnionOrder {
 
 		return $rows;
 	}//end sorted()
+
+	/**
+	 * Whether a union can order on a field.
+	 *
+	 * @param string               $field   The field.
+	 * @param array<string, mixed> $columns Column name => property name.
+	 *
+	 * @return bool
+	 */
+	private function isOrderable(string $field, array $columns): bool {
+		$column = $this->sanitizeColumnName(name: $field);
+		if ((string) ($columns[$column] ?? '') === $field) {
+			return true;
+		}
+
+		if (str_starts_with($field, '@self.') === true || in_array($field, ['_relevance', self::SCORE], true) === true) {
+			return true;
+		}
+
+		return str_starts_with($field, self::PREFIX) === true && array_key_exists($column, MagicMetadataColumns::ALL) === true;
+	}//end isOrderable()
 
 	/**
 	 * The keys of an `_order` parameter.
