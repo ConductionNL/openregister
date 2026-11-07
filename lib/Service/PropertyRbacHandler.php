@@ -106,6 +106,51 @@ class PropertyRbacHandler {
 	}//end canReadProperty()
 
 	/**
+	 * Whether the current user could read a property on some row.
+	 *
+	 * Asks the groups of the read rule and leaves out its `match` conditions, because
+	 * no row is at hand: a rule that admits the caller on their own rows answers yes.
+	 * What a row actually shows stays with canReadProperty().
+	 *
+	 * @param Schema $schema Schema containing property definition
+	 * @param string $property Property name to check
+	 *
+	 * @return bool True unless no row could ever show this property to the user
+	 *
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
+	 */
+	public function couldReadProperty(Schema $schema, string $property): bool {
+		$rules = $this->actionRules(schema: $schema, property: $property)['read'] ?? [];
+		if (empty($rules) === true) {
+			return true;
+		}
+
+		$request = $this->forCurrentUser(request: new PropertyAccessRequest(object: []));
+		if ($request->isAdmin() === true) {
+			return true;
+		}
+
+		$groups = array_filter(array_map($this->ruleGroup(...), $rules), is_string(...));
+
+		return array_filter($groups, $request->qualifiesFor(...)) !== [];
+	}//end couldReadProperty()
+
+	/**
+	 * The group a read rule names.
+	 *
+	 * @param mixed $rule Authorization rule
+	 *
+	 * @return mixed The group, or null for a rule without one
+	 */
+	private function ruleGroup(mixed $rule): mixed {
+		if (is_array($rule) === true) {
+			return ($rule['group'] ?? null);
+		}
+
+		return $rule;
+	}//end ruleGroup()
+
+	/**
 	 * Check if the current user can update a specific property
 	 *
 	 * @param Schema $schema Schema containing property definition
@@ -776,7 +821,7 @@ class PropertyRbacHandler {
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	public function stripStateHiddenProperties(Schema $schema, array $object): array {
+	private function stripStateHiddenProperties(Schema $schema, array $object): array {
 		$rules = $this->stateFieldRules->resolve(schema: $schema, data: $object);
 		foreach ($rules->getHidden() as $property) {
 			if (array_key_exists($property, $object) === false) {
@@ -895,13 +940,7 @@ class PropertyRbacHandler {
 			return true;
 		}
 
-		$user = $this->userSession->getUser();
-		$userGroups = [];
-		if ($user !== null) {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
-		}
-
-		$request = $request->withUser(userId: $user?->getUID(), userGroups: $userGroups);
+		$request = $this->forCurrentUser(request: $request);
 
 		// Admin users bypass all checks.
 		if ($request->isAdmin() === true) {
@@ -916,6 +955,23 @@ class PropertyRbacHandler {
 
 		return false;
 	}//end checkPropertyAccess()
+
+	/**
+	 * The request for the user of this session.
+	 *
+	 * @param PropertyAccessRequest $request The object and create flag.
+	 *
+	 * @return PropertyAccessRequest The request with the user and their groups
+	 */
+	private function forCurrentUser(PropertyAccessRequest $request): PropertyAccessRequest {
+		$user = $this->userSession->getUser();
+		$userGroups = [];
+		if ($user !== null) {
+			$userGroups = $this->groupManager->getUserGroupIds($user);
+		}
+
+		return $request->withUser(userId: $user?->getUID(), userGroups: $userGroups);
+	}//end forCurrentUser()
 
 	/**
 	 * Check if a single rule grants access

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
 use OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
+use OCA\OpenRegister\Service\ObjectSource\TablesReadScope;
 use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
 use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
 use OCP\IUser;
@@ -158,6 +159,11 @@ class TablesObjectSourceProviderTest extends TestCase {
 		[$register, $schema] = $this->binding();
 		$provider = $this->provider(false);
 
+		$this->reader->expects($this->never())->method('findRows');
+		$this->reader->expects($this->never())->method('findRow');
+		$this->reader->expects($this->never())->method('countRows');
+		$this->reader->expects($this->never())->method('listColumns');
+
 		$this->assertSame([], $provider->findAll($register, $schema, [], ['tableId' => 5]));
 		$this->assertSame(0, $provider->count($register, $schema, [], ['tableId' => 5]));
 		$this->assertNull($provider->find($register, $schema, '1', ['tableId' => 5]));
@@ -173,8 +179,8 @@ class TablesObjectSourceProviderTest extends TestCase {
 
 		$this->reader->method('listColumns')->willReturn($this->columns());
 		$this->reader->expects($this->once())
-			->method('findRowsByTable')
-			->with(5, 'alice', 10, 20)
+			->method('findRows')
+			->with((new TablesReadScope(5, 'alice'))->withPage(limit: 10, offset: 20))
 			->willReturn([['id' => 42, 'cells' => [['columnId' => 1, 'value' => 'Swing']]]]);
 
 		$objects = $this->provider()->findAll($register, $schema, ['limit' => 10, 'offset' => 20], ['tableId' => 5]);
@@ -196,7 +202,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$this->reader->method('listColumns')->willReturn($this->columns());
 		$this->reader->expects($this->once())
 			->method('findRow')
-			->with(42, 5, 'alice')
+			->with(42, new TablesReadScope(5, 'alice'))
 			->willReturn(['id' => 42, 'cells' => [['columnId' => 1, 'value' => 'Swing']]]);
 
 		$object = $this->provider()->find($register, $schema, '42', ['tableId' => 5]);
@@ -228,7 +234,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$uuid = $this->deriver->deriveObjectUuid(tableId: 5, rowId: 42);
 
 		$this->reader->method('listColumns')->willReturn($this->columns());
-		$this->reader->method('findRowsByTable')->willReturn(
+		$this->reader->method('findRows')->willReturn(
 			[
 				['id' => 41, 'cells' => []],
 				['id' => 42, 'cells' => [['columnId' => 1, 'value' => 'Swing']]],
@@ -251,8 +257,8 @@ class TablesObjectSourceProviderTest extends TestCase {
 		[$register, $schema] = $this->binding();
 
 		$this->reader->method('countRows')->willReturnCallback(
-			static function (int $id, string $userId, bool $isView) {
-				return ($isView === true) ? 7 : 3;
+			static function (TablesReadScope $scope) {
+				return ($scope->isView() === true) ? 7 : 3;
 			}
 		);
 
@@ -261,7 +267,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 	}//end testCountTableAndView()
 
 	/**
-	 * A config.viewId binds a Tables View (findRowsByView, not findRowsByTable).
+	 * A config.viewId binds a Tables View.
 	 *
 	 * @return void
 	 */
@@ -270,10 +276,9 @@ class TablesObjectSourceProviderTest extends TestCase {
 
 		$this->reader->method('listColumns')->willReturn($this->columns());
 		$this->reader->expects($this->once())
-			->method('findRowsByView')
-			->with(9, 'alice', 200, 0)
+			->method('findRows')
+			->with((new TablesReadScope(5, 'alice'))->withView(viewId: 9)->withPage(limit: 200, offset: 0))
 			->willReturn([['id' => 1, 'cells' => []]]);
-		$this->reader->expects($this->never())->method('findRowsByTable');
 
 		$objects = $this->provider()->findAll($register, $schema, [], ['tableId' => 5, 'viewId' => 9]);
 
@@ -289,4 +294,78 @@ class TablesObjectSourceProviderTest extends TestCase {
 		[$register, $schema] = $this->binding();
 		$this->assertNull($this->provider()->find($register, $schema, 'nonsense', ['tableId' => 5]));
 	}//end testFindRejectsGarbageId()
+
+	/**
+	 * The row's owner and timestamps land on the entity; an empty owner, a bad date
+	 * and an empty date leave the field unset.
+	 *
+	 * @return void
+	 */
+	public function testRowMetadata(): void {
+		[$register, $schema] = $this->binding();
+		$this->reader->method('listColumns')->willReturn($this->columns());
+		$this->reader->method('findRow')->willReturnOnConsecutiveCalls(
+			['id' => 42, 'createdBy' => 'alice', 'createdAt' => '2026-01-02T03:04:05+00:00', 'lastEditAt' => '2026-02-03T00:00:00+00:00', 'cells' => []],
+			['id' => 43, 'createdBy' => '', 'createdAt' => 'not a date', 'lastEditAt' => '', 'cells' => []]
+		);
+		$provider = $this->provider();
+
+		$full = $provider->find($register, $schema, '42', ['tableId' => 5]);
+		$this->assertSame('alice', $full->getOwner());
+		$this->assertSame('2026-01-02', $full->getCreated()->format('Y-m-d'));
+		$this->assertSame('2026-02-03', $full->getUpdated()->format('Y-m-d'));
+		$this->assertSame('30', $full->getRegister());
+		$this->assertSame('300', $full->getSchema());
+
+		$bare = $provider->find($register, $schema, '43', ['tableId' => 5]);
+		$this->assertNull($bare->getOwner());
+		$this->assertNull($bare->getCreated());
+		$this->assertNull($bare->getUpdated());
+	}//end testRowMetadata()
+
+	/**
+	 * Without a table or view binding nothing is read.
+	 *
+	 * @return void
+	 */
+	public function testNoBindingReadsNothing(): void {
+		[$register, $schema] = $this->binding();
+		$this->reader->expects($this->never())->method('countRows');
+		$this->reader->expects($this->never())->method('findRow');
+		$provider = $this->provider();
+
+		$this->assertSame(0, $provider->count($register, $schema));
+		$this->assertSame([], $provider->findAll($register, $schema));
+		$this->assertNull($provider->find($register, $schema, '42'));
+	}//end testNoBindingReadsNothing()
+
+	/**
+	 * A view binding without a table id can be counted but not listed.
+	 *
+	 * @return void
+	 */
+	public function testViewWithoutTableCountsButDoesNotList(): void {
+		[$register, $schema] = $this->binding();
+		$this->reader->method('countRows')->willReturn(4);
+		$provider = $this->provider();
+
+		$this->assertSame(4, $provider->count($register, $schema, [], ['viewId' => 9]));
+		$this->assertSame([], $provider->findAll($register, $schema, [], ['viewId' => 9]));
+	}//end testViewWithoutTableCountsButDoesNotList()
+
+	/**
+	 * A UUID that matches no row is null, and the bounded scan goes through the bound View.
+	 *
+	 * @return void
+	 */
+	public function testUnknownUuidIsNull(): void {
+		[$register, $schema] = $this->binding();
+		$this->reader->expects($this->once())
+			->method('findRows')
+			->with((new TablesReadScope(5, 'alice'))->withView(viewId: 9)->withPage(limit: 1000, offset: 0))
+			->willReturn([['id' => 1, 'cells' => []]]);
+
+		$uuid = $this->deriver->deriveObjectUuid(tableId: 5, rowId: 2);
+		$this->assertNull($this->provider()->find($register, $schema, $uuid, ['tableId' => 5, 'viewId' => 9]));
+	}//end testUnknownUuidIsNull()
 }//end class

@@ -8,7 +8,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.modal === 'viewConfiguration'"
 		:name="`View Configuration: ${configurationStore.configurationItem?.title || 'Unknown'}`"
 		size="large"
-		:canClose="false">
+		noClose>
 		<div class="formContainer viewConfigurationDialog">
 			<!-- Configuration Details -->
 			<div class="configurationDetailsGrid">

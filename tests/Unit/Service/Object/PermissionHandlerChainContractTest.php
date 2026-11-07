@@ -68,6 +68,8 @@ use Stringable;
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerChainContractTest extends TestCase {
 

@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -20,7 +20,7 @@ use ReflectionMethod;
 /**
  * Pins RelationDetectionTrait::isSchemaDeclaredReference() on a table of property definitions.
  *
- * @covers \OCA\OpenRegister\Service\Object\SaveObjects
+ * @covers \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
  */
 class SchemaDeclaredReferenceTest extends TestCase {
 
@@ -49,7 +49,7 @@ class SchemaDeclaredReferenceTest extends TestCase {
 	 * @dataProvider definitions
 	 */
 	public function testDeclaredReference(?array $definition, bool $expected): void {
-		$object = (new ReflectionClass(SaveObjects::class))->newInstanceWithoutConstructor();
+		$object = (new ReflectionClass(BulkRelationScanner::class))->newInstanceWithoutConstructor();
 		$method = new ReflectionMethod($object, 'isSchemaDeclaredReference');
 		$method->setAccessible(true);
 		$this->assertSame($expected, $method->invoke($object, $definition));

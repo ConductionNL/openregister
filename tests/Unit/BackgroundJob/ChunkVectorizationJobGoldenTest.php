@@ -8,9 +8,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
-use OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
@@ -32,9 +32,9 @@ use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
  * Compared with fixtures/chunk-vectorization-job-golden.json; set
  * UPDATE_GOLDEN=1 to rewrite it.
  *
- * @covers \OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob
- * @covers \OCA\OpenRegister\BackgroundJob\ChunkVectorizationBatch
- * @uses   \OCA\OpenRegister\Db\Chunk
+ * @covers \OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob
+ * @covers \OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationBatch
+ * @uses   \OCA\OpenRegister\Files\Db\Chunk
  */
 class ChunkVectorizationJobGoldenTest extends TestCase
 {

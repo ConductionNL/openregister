@@ -31,7 +31,7 @@ exports[`EditOrganisation leaving and creating another clears the form after a s
 `;
 
 exports[`EditOrganisation markup renders a stored organisation 1`] = `
-"<x-ncdialog name="Edit Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -236,7 +236,7 @@ exports[`EditOrganisation markup renders a stored organisation 1`] = `
 `;
 
 exports[`EditOrganisation markup renders an error 1`] = `
-"<x-ncdialog name="Create Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Create Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-nccheckboxradioswitch modelvalue="false" class="create-another-checkbox" disabled="false" data-on="onUpdate:modelValue">
       <slot-default>Create another</slot-default>
@@ -427,7 +427,7 @@ exports[`EditOrganisation markup renders an error 1`] = `
 `;
 
 exports[`EditOrganisation markup renders create another 1`] = `
-"<x-ncdialog name="Create Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Create Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-nccheckboxradioswitch modelvalue="true" class="create-another-checkbox" disabled="false" data-on="onUpdate:modelValue">
       <slot-default>Create another</slot-default>
@@ -618,7 +618,7 @@ exports[`EditOrganisation markup renders create another 1`] = `
 `;
 
 exports[`EditOrganisation markup renders loading 1`] = `
-"<x-ncdialog name="Edit Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -823,7 +823,7 @@ exports[`EditOrganisation markup renders loading 1`] = `
 `;
 
 exports[`EditOrganisation markup renders loading groups 1`] = `
-"<x-ncdialog name="Edit Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -943,7 +943,7 @@ exports[`EditOrganisation markup renders loading groups 1`] = `
 `;
 
 exports[`EditOrganisation markup renders loading users 1`] = `
-"<x-ncdialog name="Edit Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -1131,7 +1131,7 @@ exports[`EditOrganisation markup renders loading users 1`] = `
 `;
 
 exports[`EditOrganisation markup renders no members 1`] = `
-"<x-ncdialog name="Edit Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -1315,7 +1315,7 @@ exports[`EditOrganisation markup renders no members 1`] = `
 `;
 
 exports[`EditOrganisation markup renders removing a user 1`] = `
-"<x-ncdialog name="Edit Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -1520,7 +1520,7 @@ exports[`EditOrganisation markup renders removing a user 1`] = `
 `;
 
 exports[`EditOrganisation markup renders success on create 1`] = `
-"<x-ncdialog name="Create Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Create Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-nccheckboxradioswitch modelvalue="false" class="create-another-checkbox" disabled="false" data-on="onUpdate:modelValue">
       <slot-default>Create another</slot-default>
@@ -1544,7 +1544,7 @@ exports[`EditOrganisation markup renders success on create 1`] = `
 `;
 
 exports[`EditOrganisation markup renders success on edit 1`] = `
-"<x-ncdialog name="Edit Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -1565,7 +1565,7 @@ exports[`EditOrganisation markup renders success on edit 1`] = `
 `;
 
 exports[`EditOrganisation markup renders the empty create form 1`] = `
-"<x-ncdialog name="Create Organisation" size="large" canclose="true" data-on="onUpdate:open">
+"<x-ncdialog name="Create Organisation" size="large" data-on="onUpdate:open">
   <slot-actions>
     <x-nccheckboxradioswitch modelvalue="false" class="create-another-checkbox" disabled="false" data-on="onUpdate:modelValue">
       <slot-default>Create another</slot-default>

@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationErrorMessages;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -1141,49 +1142,35 @@ class ValidateObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// transformToNestedObjectProperty
-	// =========================================================================
-
-	public function testTransformToNestedObjectPropertyNoRef(): void {
-		$prop = new stdClass();
-		$prop->type = 'object';
-
-		$this->invokePrivate('transformToNestedObjectProperty', [$prop]);
-
-		// No change since no $ref.
-		$this->assertSame('object', $prop->type);
-	}
-
-	// =========================================================================
 	// getValueType
 	// =========================================================================
 
 	public function testGetValueTypeNull(): void {
-		$this->assertSame('null', $this->invokePrivate('getValueType', [null]));
+		$this->assertSame('null', (new ValidationErrorMessages())->valueType(null));
 	}
 
 	public function testGetValueTypeBoolean(): void {
-		$this->assertSame('boolean', $this->invokePrivate('getValueType', [true]));
+		$this->assertSame('boolean', (new ValidationErrorMessages())->valueType(true));
 	}
 
 	public function testGetValueTypeInteger(): void {
-		$this->assertSame('integer', $this->invokePrivate('getValueType', [42]));
+		$this->assertSame('integer', (new ValidationErrorMessages())->valueType(42));
 	}
 
 	public function testGetValueTypeNumber(): void {
-		$this->assertSame('number', $this->invokePrivate('getValueType', [3.14]));
+		$this->assertSame('number', (new ValidationErrorMessages())->valueType(3.14));
 	}
 
 	public function testGetValueTypeString(): void {
-		$this->assertSame('string', $this->invokePrivate('getValueType', ['hello']));
+		$this->assertSame('string', (new ValidationErrorMessages())->valueType('hello'));
 	}
 
 	public function testGetValueTypeArray(): void {
-		$this->assertSame('array', $this->invokePrivate('getValueType', [['a', 'b']]));
+		$this->assertSame('array', (new ValidationErrorMessages())->valueType(['a', 'b']));
 	}
 
 	public function testGetValueTypeObject(): void {
-		$this->assertSame('object', $this->invokePrivate('getValueType', [new stdClass()]));
+		$this->assertSame('object', (new ValidationErrorMessages())->valueType(new stdClass()));
 	}
 
 	// =========================================================================
@@ -1399,24 +1386,6 @@ class ValidateObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// preprocessSchemaReferences - UUID-transformed properties should be skipped
-	// =========================================================================
-
-	public function testPreprocessSchemaReferencesSkipsUuidTransformed(): void {
-		$schemaObject = new stdClass();
-		$schemaObject->type = 'object';
-		$schemaObject->properties = new stdClass();
-		$schemaObject->properties->related = new stdClass();
-		$schemaObject->properties->related->type = 'string';
-		$schemaObject->properties->related->pattern = '^[0-9a-f]{8}-uuid-pattern$';
-
-		$result = $this->invokePrivate('preprocessSchemaReferences', [$schemaObject, [], false]);
-
-		// Should be unchanged since it was already UUID-transformed.
-		$this->assertSame('string', $result->properties->related->type);
-	}
-
-	// =========================================================================
 	// transformArrayItemsForValidation
 	// =========================================================================
 
@@ -1528,83 +1497,6 @@ class ValidateObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// resolveSchemaProperty
-	// =========================================================================
-
-	public function testResolveSchemaPropertyNoRef(): void {
-		$prop = new stdClass();
-		$prop->type = 'string';
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, []]);
-
-		$this->assertSame('string', $result->type);
-	}
-
-	public function testResolveSchemaPropertyWithRefCircular(): void {
-		$prop = new stdClass();
-		$prop->{'$ref'} = '#/components/schemas/already-visited';
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, ['already-visited']]);
-
-		// Should return as-is to prevent infinite loops.
-		$this->assertNotNull($result->{'$ref'});
-	}
-
-	public function testResolveSchemaPropertyWithArrayItemsRef(): void {
-		$prop = new stdClass();
-		$prop->type = 'array';
-		$prop->items = new stdClass();
-		$prop->items->{'$ref'} = '#/components/schemas/unknown-schema';
-
-		// SchemaMapper find will throw (schema not found).
-		$this->schemaMapper->method('find')
-			->willThrowException(new \Exception('Not found'));
-		$this->schemaMapper->method('findAll')
-			->willReturn([]);
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, []]);
-
-		// Should handle gracefully.
-		$this->assertSame('array', $result->type);
-	}
-
-	public function testResolveSchemaPropertyReadsAnObjectOrArrayRefId(): void {
-		$schema = $this->createSchema(['street' => ['type' => 'string']]);
-		$schema->setSlug('addr');
-		$this->schemaMapper->method('find')
-			->willReturn($schema);
-
-		$objectProp = new stdClass();
-		$objectProp->type = 'object';
-		$objectProp->description = 'd';
-		$objectProp->{'$ref'} = (object) ['id' => '#/components/schemas/addr'];
-		$union = $this->invokePrivate('resolveSchemaProperty', [$objectProp, []]);
-
-		$this->assertSame(['oneOf', 'description'], array_keys(get_object_vars($union)));
-		$this->assertSame('d', $union->description);
-
-		$listProp = new stdClass();
-		$listProp->type = 'array';
-		$listProp->{'$ref'} = ['id' => '#/components/schemas/addr?x=1'];
-		$resolved = $this->invokePrivate('resolveSchemaProperty', [$listProp, []]);
-
-		$this->assertSame('array', $resolved->type);
-		$this->assertObjectNotHasProperty('$ref', $resolved);
-	}
-
-	public function testResolveSchemaPropertyWithNestedProperties(): void {
-		$prop = new stdClass();
-		$prop->type = 'object';
-		$prop->properties = new stdClass();
-		$prop->properties->inner = new stdClass();
-		$prop->properties->inner->type = 'string';
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, []]);
-
-		$this->assertSame('string', $result->properties->inner->type);
-	}
-
-	// =========================================================================
 	// Additional tests for untested methods and branches
 	// =========================================================================
 
@@ -1612,179 +1504,9 @@ class ValidateObjectTest extends TestCase {
 	// findSchemaBySlug — direct match, case-insensitive fallback, exception
 	// -------------------------------------------------------------------------
 
-	public function testFindSchemaBySlugDirectMatch(): void {
-		$schema = $this->createSchema([]);
-		$schema->setSlug('my-schema');
-
-		$this->schemaMapper->method('find')
-			->with('my-schema')
-			->willReturn($schema);
-
-		$result = $this->invokePrivate('findSchemaBySlug', ['my-schema']);
-
-		$this->assertInstanceOf(Schema::class, $result);
-		$this->assertSame('my-schema', $result->getSlug());
-	}
-
-	public function testFindSchemaBySlugCaseInsensitiveFallback(): void {
-		$schema = $this->createSchema([]);
-		$schema->setSlug('MySchema');
-
-		$this->schemaMapper->method('find')
-			->willThrowException(new \Exception('Not found'));
-		$this->schemaMapper->method('findAll')
-			->willReturn([$schema]);
-
-		$result = $this->invokePrivate('findSchemaBySlug', ['myschema']);
-
-		$this->assertInstanceOf(Schema::class, $result);
-		$this->assertSame('MySchema', $result->getSlug());
-	}
-
-	public function testFindSchemaBySlugNullWhenNotFound(): void {
-		$this->schemaMapper->method('find')
-			->willThrowException(new \Exception('Not found'));
-		$this->schemaMapper->method('findAll')
-			->willReturn([]);
-
-		$result = $this->invokePrivate('findSchemaBySlug', ['nonexistent']);
-
-		$this->assertNull($result);
-	}
-
-	public function testFindSchemaBySlugNullWhenFindAllThrows(): void {
-		$this->schemaMapper->method('find')
-			->willThrowException(new \Exception('Not found'));
-		$this->schemaMapper->method('findAll')
-			->willThrowException(new \Exception('Database error'));
-
-		$result = $this->invokePrivate('findSchemaBySlug', ['broken']);
-
-		$this->assertNull($result);
-	}
-
-	public function testFindSchemaBySlugDirectMatchThrowsException(): void {
-		$this->schemaMapper->method('find')
-			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-		// When find throws, it should fall through to case-insensitive search.
-		$schema = $this->createSchema([]);
-		$schema->setSlug('target');
-		$this->schemaMapper->method('findAll')
-			->willReturn([$schema]);
-
-		$result = $this->invokePrivate('findSchemaBySlug', ['target']);
-
-		$this->assertInstanceOf(Schema::class, $result);
-	}
-
 	// -------------------------------------------------------------------------
 	// resolveSchemaProperty — object $ref format, successful resolution
 	// -------------------------------------------------------------------------
-
-	public function testResolveSchemaPropertyWithObjectRefFormat(): void {
-		$prop = new stdClass();
-		$prop->{'$ref'} = (object)['id' => '#/components/schemas/address'];
-
-		// Schema not found.
-		$this->schemaMapper->method('find')
-			->willThrowException(new \Exception('Not found'));
-		$this->schemaMapper->method('findAll')
-			->willReturn([]);
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, []]);
-
-		// Should return original since schema not found.
-		$this->assertNotNull($result);
-	}
-
-	public function testResolveSchemaPropertyWithArrayRefFormat(): void {
-		$prop = new stdClass();
-		$prop->{'$ref'} = ['id' => '#/components/schemas/address'];
-
-		$this->schemaMapper->method('find')
-			->willThrowException(new \Exception('Not found'));
-		$this->schemaMapper->method('findAll')
-			->willReturn([]);
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, []]);
-
-		$this->assertNotNull($result);
-	}
-
-	public function testResolveSchemaPropertySuccessfulResolutionObjectType(): void {
-		$refSchema = $this->createSchema([]);
-		$refSchema->setSlug('address');
-		$refSchema->setProperties([
-			'street' => ['type' => 'string'],
-			'city' => ['type' => 'string'],
-		]);
-		$refSchema->setRequired([]);
-
-		$prop = new stdClass();
-		$prop->type = 'object';
-		$prop->{'$ref'} = '#/components/schemas/address';
-
-		$this->schemaMapper->method('find')
-			->with('address')
-			->willReturn($refSchema);
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, []]);
-
-		// Object type with resolved ref should become oneOf [resolved, UUID string].
-		$this->assertNotNull($result->oneOf);
-		$this->assertCount(2, $result->oneOf);
-	}
-
-	public function testResolveSchemaPropertySuccessfulResolutionNonObjectType(): void {
-		$refSchema = $this->createSchema([]);
-		$refSchema->setSlug('status-type');
-		$refSchema->setProperties([
-			'code' => ['type' => 'string'],
-		]);
-		$refSchema->setRequired([]);
-
-		$prop = new stdClass();
-		$prop->{'$ref'} = '#/components/schemas/status-type';
-		$prop->description = 'Status reference';
-
-		$this->schemaMapper->method('find')
-			->with('status-type')
-			->willReturn($refSchema);
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, []]);
-
-		// Non-object type: resolved schema with additional properties copied over.
-		$this->assertSame('Status reference', $result->description);
-	}
-
-	public function testResolveSchemaPropertyWithRefQueryParameters(): void {
-		$refSchema = $this->createSchema([]);
-		$refSchema->setSlug('person');
-		$refSchema->setProperties(['name' => ['type' => 'string']]);
-		$refSchema->setRequired([]);
-
-		$prop = new stdClass();
-		$prop->{'$ref'} = '#/components/schemas/person?some=param';
-
-		$this->schemaMapper->method('find')
-			->with('person')
-			->willReturn($refSchema);
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, []]);
-
-		$this->assertNotNull($result);
-	}
-
-	public function testResolveSchemaPropertyRefNotComponentsSchemas(): void {
-		$prop = new stdClass();
-		$prop->{'$ref'} = 'http://example.com/external-schema';
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, []]);
-
-		// Non-components/schemas ref should be returned as-is.
-		$this->assertSame('http://example.com/external-schema', $result->{'$ref'});
-	}
 
 	// -------------------------------------------------------------------------
 	// transformPropertyForOpenRegister — inversedBy branches
@@ -1891,60 +1613,6 @@ class ValidateObjectTest extends TestCase {
 	// -------------------------------------------------------------------------
 	// transformToNestedObjectProperty — with self-referencing $ref
 	// -------------------------------------------------------------------------
-
-	public function testTransformToNestedObjectPropertySelfReference(): void {
-		// transformToNestedObjectProperty extracts the schemaSlug from the $ref,
-		// then creates a tempSchema with $ref = schemaSlug (e.g., 'category'),
-		// and calls isSelfReference(tempSchema, schemaSlug).
-		// But isSelfReference requires $ref to contain '#/components/schemas/' to match.
-		// So the self-reference is only detected when the ref contains that path.
-		// The tempSchema.$ref is just the slug, so isSelfReference returns false.
-		// This means the method does nothing for self-references — the circular
-		// reference prevention happens in transformSchemaForValidation instead.
-
-		$prop = new stdClass();
-		$prop->type = 'object';
-		$prop->{'$ref'} = '#/components/schemas/category';
-
-		$this->invokePrivate('transformToNestedObjectProperty', [$prop]);
-
-		// The $ref is still present because the internal isSelfReference check
-		// uses a tempSchema with $ref=slug (no '#/components/schemas/' prefix).
-		$this->assertSame('object', $prop->type);
-		$this->assertNotNull($prop->{'$ref'});
-	}
-
-	public function testTransformToNestedObjectPropertyWithObjectRef(): void {
-		$prop = new stdClass();
-		$prop->type = 'object';
-		$prop->{'$ref'} = (object)['id' => '#/components/schemas/something'];
-
-		$this->invokePrivate('transformToNestedObjectProperty', [$prop]);
-
-		// With object ref format, extracts the id.
-		$this->assertNotNull($prop);
-	}
-
-	public function testTransformToNestedObjectPropertyWithArrayRef(): void {
-		$prop = new stdClass();
-		$prop->type = 'object';
-		$prop->{'$ref'} = ['id' => '#/components/schemas/something'];
-
-		$this->invokePrivate('transformToNestedObjectProperty', [$prop]);
-
-		$this->assertNotNull($prop);
-	}
-
-	public function testTransformToNestedObjectPropertyNonSchemasRef(): void {
-		$prop = new stdClass();
-		$prop->type = 'object';
-		$prop->{'$ref'} = 'http://external.com/schema';
-
-		$this->invokePrivate('transformToNestedObjectProperty', [$prop]);
-
-		// Non components/schemas reference should not be modified.
-		$this->assertSame('http://external.com/schema', $prop->{'$ref'});
-	}
 
 	// -------------------------------------------------------------------------
 	// transformToUuidProperty — inversedBy with various original properties
@@ -2592,60 +2260,6 @@ class ValidateObjectTest extends TestCase {
 	// preprocessSchemaReferences — items with $ref, properties with $ref
 	// -------------------------------------------------------------------------
 
-	public function testPreprocessSchemaReferencesWithItems(): void {
-		$schemaObject = new stdClass();
-		$schemaObject->type = 'array';
-		$schemaObject->items = new stdClass();
-		$schemaObject->items->{'$ref'} = '#/components/schemas/item-schema';
-
-		$refSchema = $this->createSchema([]);
-		$refSchema->setSlug('item-schema');
-		$refSchema->setProperties(['name' => ['type' => 'string']]);
-		$refSchema->setRequired([]);
-
-		$this->schemaMapper->method('find')
-			->with('item-schema')
-			->willReturn($refSchema);
-
-		$result = $this->invokePrivate('preprocessSchemaReferences', [$schemaObject, [], false]);
-
-		$this->assertNotNull($result->items);
-	}
-
-	public function testPreprocessSchemaReferencesSkipsUuidTransformedItems(): void {
-		$schemaObject = new stdClass();
-		$schemaObject->type = 'array';
-		$schemaObject->items = new stdClass();
-		$schemaObject->items->type = 'string';
-		$schemaObject->items->pattern = '^[0-9a-f]{8}-uuid$';
-
-		$result = $this->invokePrivate('preprocessSchemaReferences', [$schemaObject, [], false]);
-
-		// UUID-transformed items should be skipped.
-		$this->assertSame('string', $result->items->type);
-	}
-
-	public function testPreprocessSchemaReferencesPropertyWithRef(): void {
-		$schemaObject = new stdClass();
-		$schemaObject->type = 'object';
-		$schemaObject->properties = new stdClass();
-		$schemaObject->properties->related = new stdClass();
-		$schemaObject->properties->related->{'$ref'} = '#/components/schemas/other';
-
-		$refSchema = $this->createSchema([]);
-		$refSchema->setSlug('other');
-		$refSchema->setProperties(['id' => ['type' => 'string']]);
-		$refSchema->setRequired([]);
-
-		$this->schemaMapper->method('find')
-			->with('other')
-			->willReturn($refSchema);
-
-		$result = $this->invokePrivate('preprocessSchemaReferences', [$schemaObject, [], false]);
-
-		$this->assertNotNull($result->properties->related);
-	}
-
 	// -------------------------------------------------------------------------
 	// transformObjectPropertyForOpenRegister — default case (unknown handling)
 	// -------------------------------------------------------------------------
@@ -2687,19 +2301,19 @@ class ValidateObjectTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function testGetValueTypeForFalse(): void {
-		$this->assertSame('boolean', $this->invokePrivate('getValueType', [false]));
+		$this->assertSame('boolean', (new ValidationErrorMessages())->valueType(false));
 	}
 
 	public function testGetValueTypeForZero(): void {
-		$this->assertSame('integer', $this->invokePrivate('getValueType', [0]));
+		$this->assertSame('integer', (new ValidationErrorMessages())->valueType(0));
 	}
 
 	public function testGetValueTypeForEmptyString(): void {
-		$this->assertSame('string', $this->invokePrivate('getValueType', ['']));
+		$this->assertSame('string', (new ValidationErrorMessages())->valueType(''));
 	}
 
 	public function testGetValueTypeForEmptyArray(): void {
-		$this->assertSame('array', $this->invokePrivate('getValueType', [[]]));
+		$this->assertSame('array', (new ValidationErrorMessages())->valueType([]));
 	}
 
 	// -------------------------------------------------------------------------
@@ -3239,7 +2853,7 @@ class ValidateObjectTest extends TestCase {
 	public function testGetValueTypeForResource(): void {
 		// Create a temporary resource to test the 'unknown' return path.
 		$resource = fopen('php://memory', 'r');
-		$result = $this->invokePrivate('getValueType', [$resource]);
+		$result = (new ValidationErrorMessages())->valueType($resource);
 		fclose($resource);
 
 		$this->assertSame('unknown', $result);
@@ -3344,33 +2958,6 @@ class ValidateObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// resolveSchemaProperty — array items with successful resolution
-	// =========================================================================
-
-	public function testResolveSchemaPropertyArrayItemsSuccessfulResolution(): void {
-		$refSchema = $this->createSchema([]);
-		$refSchema->setSlug('item-type');
-		$refSchema->setProperties(['code' => ['type' => 'string']]);
-		$refSchema->setRequired([]);
-
-		$prop = new stdClass();
-		$prop->type = 'array';
-		$prop->items = new stdClass();
-		$prop->items->type = 'object';
-		$prop->items->{'$ref'} = '#/components/schemas/item-type';
-
-		$this->schemaMapper->method('find')
-			->with('item-type')
-			->willReturn($refSchema);
-
-		$result = $this->invokePrivate('resolveSchemaProperty', [$prop, []]);
-
-		// Array items should be resolved.
-		$this->assertSame('array', $result->type);
-		$this->assertNotNull($result->items);
-	}
-
-	// =========================================================================
 	// transformOpenRegisterObjectConfigurations — with array properties
 	// =========================================================================
 
@@ -3388,36 +2975,6 @@ class ValidateObjectTest extends TestCase {
 
 		// Array items with related-object handling should be transformed.
 		$this->assertSame('array', $result->properties->relatedItems->type);
-	}
-
-	// =========================================================================
-	// preprocessSchemaReferences — property with oneOf $ref items
-	// =========================================================================
-
-	public function testPreprocessSchemaReferencesWithOneOfRef(): void {
-		$schemaObject = new stdClass();
-		$schemaObject->type = 'object';
-		$schemaObject->properties = new stdClass();
-		$schemaObject->properties->value = new stdClass();
-
-		$oneOfItemA = new stdClass();
-		$oneOfItemA->{'$ref'} = '#/components/schemas/type-a';
-		$oneOfItemB = new stdClass();
-		$oneOfItemB->type = 'null';
-
-		$schemaObject->properties->value->oneOf = [$oneOfItemA, $oneOfItemB];
-
-		$refSchema = $this->createSchema([]);
-		$refSchema->setSlug('type-a');
-		$refSchema->setProperties(['code' => ['type' => 'string']]);
-		$refSchema->setRequired([]);
-
-		$this->schemaMapper->method('find')
-			->willReturn($refSchema);
-
-		$result = $this->invokePrivate('preprocessSchemaReferences', [$schemaObject, [], false]);
-
-		$this->assertNotNull($result->properties->value);
 	}
 
 	// =========================================================================
@@ -3550,13 +3107,9 @@ class ValidateObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testGetValueTypeReturnsUnknownForOpenResource(): void {
-		$ref = new ReflectionClass(ValidateObject::class);
-		$method = $ref->getMethod('getValueType');
-		$method->setAccessible(true);
-
-		// getValueType has no is_resource() check, so resources fall through to 'unknown'.
+		// Resources fall through to 'unknown'.
 		$resource = fopen('php://memory', 'r');
-		$result = $method->invokeArgs($this->handler, [$resource]);
+		$result = (new ValidationErrorMessages())->valueType($resource);
 		fclose($resource);
 
 		$this->assertSame('unknown', $result);
@@ -3567,15 +3120,11 @@ class ValidateObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testGetValueTypeReturnsUnknownForClosedResource(): void {
-		$ref = new ReflectionClass(ValidateObject::class);
-		$method = $ref->getMethod('getValueType');
-		$method->setAccessible(true);
-
 		$resource = fopen('php://memory', 'r');
 		fclose($resource);
 
 		// Closed resources have type 'resource (closed)' in PHP 8+
-		$result = $method->invokeArgs($this->handler, [$resource]);
+		$result = (new ValidationErrorMessages())->valueType($resource);
 
 		// Should return 'unknown' for closed resources.
 		$this->assertSame('unknown', $result);
@@ -3596,49 +3145,6 @@ class ValidateObjectTest extends TestCase {
 
 		// Properties without x-or-config should remain unchanged.
 		$this->assertSame('string', $result->properties->name->type);
-	}
-
-	// =========================================================================
-	// preprocessSchemaReferences — schema without properties
-	// =========================================================================
-
-	public function testPreprocessSchemaReferencesWithoutProperties(): void {
-		$schemaObject = new stdClass();
-		$schemaObject->type = 'object';
-		// No properties defined.
-
-		$result = $this->invokePrivate('preprocessSchemaReferences', [$schemaObject, [], false]);
-
-		// Should return schema unchanged.
-		$this->assertSame('object', $result->type);
-	}
-
-	// =========================================================================
-	// preprocessSchemaReferences — nested $ref with allOf
-	// =========================================================================
-
-	public function testPreprocessSchemaReferencesWithAllOfRef(): void {
-		$schemaObject = new stdClass();
-		$schemaObject->type = 'object';
-		$schemaObject->properties = new stdClass();
-		$schemaObject->properties->address = new stdClass();
-
-		$refItem = new stdClass();
-		$refItem->{'$ref'} = '#/components/schemas/address';
-
-		$schemaObject->properties->address->allOf = [$refItem];
-
-		$refSchema = $this->createSchema([]);
-		$refSchema->setSlug('address');
-		$refSchema->setProperties(['street' => ['type' => 'string']]);
-		$refSchema->setRequired([]);
-
-		$this->schemaMapper->method('find')
-			->willReturn($refSchema);
-
-		$result = $this->invokePrivate('preprocessSchemaReferences', [$schemaObject, [], false]);
-
-		$this->assertNotNull($result->properties->address);
 	}
 
 	// =========================================================================

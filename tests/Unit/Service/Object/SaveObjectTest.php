@@ -171,6 +171,18 @@ class SaveObjectTest extends TestCase {
 	 * @return mixed The method return value
 	 */
 	private function invokePrivateMethod(string $methodName, array $args = []) {
+		if (in_array($methodName, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, PropertyDefaultsCalls::METHODS, true) === true) {
+			return PropertyDefaultsCalls::{$methodName}($this->handler, $args);
+		}
+
+		if ($methodName === 'validateReferences' || $methodName === 'validateReferenceExists') {
+			return ReferenceValidationCalls::{$methodName}($this->handler, $args);
+		}
+
 		$reflection = new ReflectionMethod(SaveObject::class, $methodName);
 		$reflection->setAccessible(true);
 		// Use array_values to ensure positional args (PHP 8+ treats string keys as named params).

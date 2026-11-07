@@ -146,6 +146,7 @@ class SftpTransportGoldenTest extends TestCase {
 		$this->assertSame(
 			[
 				'info [SftpTransport] Starting SFTP transfer {"host":"depot.example"}',
+				'warning [SftpTransport] No hostKeyFingerprint configured, server identity not verified []',
 				'info [SftpTransport] SFTP transfer successful ' . json_encode(['remotePath' => $remote, 'size' => 5]),
 			],
 			$this->logs
@@ -189,6 +190,35 @@ class SftpTransportGoldenTest extends TestCase {
 	}//end testCredentialsRequired()
 
 	/**
+	 * A pinned key that matches is checked before the login and logs no warning.
+	 *
+	 * @return void
+	 */
+	public function testPinnedHostKeyMatches(): void {
+		$pin = 'SHA256:' . rtrim(base64_encode(hash('sha256', 'server key', true)), '=');
+
+		$result = $this->transport()->send($this->sip, $this->config() + ['hostKeyFingerprint' => $pin]);
+
+		$this->assertTrue($result->isSuccess());
+		$this->assertSame(['hostKey'], SFTP::$calls[1] ?? null);
+		$this->assertSame('login', SFTP::$calls[2][0] ?? null);
+		$this->assertCount(2, $this->logs);
+	}//end testPinnedHostKeyMatches()
+
+	/**
+	 * A server with another key gets no credentials and no file.
+	 *
+	 * @return void
+	 */
+	public function testPinnedHostKeyMismatchSendsNothing(): void {
+		$result = $this->transport()->send($this->sip, $this->config() + ['hostKeyFingerprint' => 'SHA256:other']);
+
+		$this->assertSame('SFTP host key does not match hostKeyFingerprint', $result->getErrorMessage());
+		$this->assertSame([['connect', 'depot.example', 22], ['hostKey']], SFTP::$calls);
+		$this->assertFalse($this->transport()->testConnection($this->config() + ['hostKeyFingerprint' => 'SHA256:other']));
+	}//end testPinnedHostKeyMismatchSendsNothing()
+
+	/**
 	 * A refused login stops before the upload.
 	 *
 	 * @return void
@@ -202,7 +232,7 @@ class SftpTransportGoldenTest extends TestCase {
 		$this->assertFalse($result->isSuccess());
 		$this->assertSame('SFTP authentication failed', $result->getErrorMessage());
 		$this->assertCount(2, SFTP::$calls);
-		$this->assertSame('error [SftpTransport] SFTP transfer failed {"error":"SFTP authentication failed"}', $this->logs[1]);
+		$this->assertSame('error [SftpTransport] SFTP transfer failed {"error":"SFTP authentication failed"}', $this->logs[2]);
 	}//end testAuthenticationFailure()
 
 	/**

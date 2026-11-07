@@ -9,19 +9,19 @@ namespace Unit\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapper;
-use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
-use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
-use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
-use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
-use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
-use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Mcp\Service\ChatService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -29,11 +29,11 @@ use Psr\Log\LoggerInterface;
  * Records every collaborator call processMessage() makes, in order, and its result,
  * against fixtures/chat-process-message-golden.json. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
- * @covers \OCA\OpenRegister\Service\ChatService
- * @uses   \OCA\OpenRegister\Service\ChatMessageRequest
- * @uses   \OCA\OpenRegister\Db\Conversation
+ * @covers \OCA\OpenRegister\Mcp\Service\ChatService
+ * @uses   \OCA\OpenRegister\Mcp\Service\ChatMessageRequest
+ * @uses   \OCA\OpenRegister\Mcp\Db\Conversation
  * @uses   \OCA\OpenRegister\Notifications\Db\Message
- * @uses   \OCA\OpenRegister\Db\Agent
+ * @uses   \OCA\OpenRegister\Mcp\Db\Agent
  */
 class ChatServiceProcessMessageGoldenTest extends TestCase {
 
