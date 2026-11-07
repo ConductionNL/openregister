@@ -24,6 +24,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
@@ -97,7 +99,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 	 * @return TasksController
 	 */
 	private function controller(array $params = []): TasksController {
-		return TasksControllerFactory::create('openregister', $this->request($params), $this->taskService, $this->objectService);
+		return TasksControllerFactory::create('openregister', $this->request(params: $params), $this->taskService, $this->objectService);
 	}//end controller()
 
 	/**
@@ -120,7 +122,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 
 		return TasksControllerFactory::create(
 			'openregister',
-			$this->request($params),
+			$this->request(params: $params),
 			$this->taskService,
 			$this->objectService,
 			$inbox,
@@ -175,7 +177,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 		$this->objectService->method('getObject')->willReturn(null);
 		$this->expectNoTaskTouched();
 
-		$response = $verb($this->controller(['summary' => 'x', 'calendarId' => 'c']));
+		$response = $verb($this->controller(params: ['summary' => 'x', 'calendarId' => 'c']));
 
 		$this->assertSame([404, ['error' => 'Object not found']], [$response->getStatus(), $response->getData()]);
 	}//end testAbsentObjectIsRefused()
@@ -193,7 +195,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 		$this->objectService->method('getObject')->willThrowException(new DoesNotExistException('no'));
 		$this->expectNoTaskTouched();
 
-		$response = $verb($this->controller(['summary' => 'x', 'calendarId' => 'c']));
+		$response = $verb($this->controller(params: ['summary' => 'x', 'calendarId' => 'c']));
 
 		$this->assertSame([404, ['error' => 'Object not found']], [$response->getStatus(), $response->getData()]);
 	}//end testMissingObjectIsRefused()
@@ -207,7 +209,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 		$this->givenObject();
 		$this->taskService->method('getTasksForObject')->with('obj-uuid')->willReturnOnConsecutiveCalls(
 			[['id' => 'a']],
-			$this->throwException(new NoVtodoCalendarException('none')),
+			$this->throwException(new NoVtodoCalendarException(userId: 'none')),
 			$this->throwException(new Exception('boom'))
 		);
 
@@ -231,9 +233,9 @@ class TasksControllerA24GoldenTest extends TestCase {
 			->with(1, 2, 'obj-uuid', 'obj-uuid', ['summary' => 'Do'])
 			->willReturnOnConsecutiveCalls(['id' => 'n'], $this->throwException(new Exception('caldav', 404)));
 
-		$blank = $this->controller(['summary' => ''])->create('r', 's', 'o');
-		$ok = $this->controller(['summary' => 'Do'])->create('r', 's', 'o');
-		$failed = $this->controller(['summary' => 'Do'])->create('r', 's', 'o');
+		$blank = $this->controller(params: ['summary' => ''])->create('r', 's', 'o');
+		$ok = $this->controller(params: ['summary' => 'Do'])->create('r', 's', 'o');
+		$failed = $this->controller(params: ['summary' => 'Do'])->create('r', 's', 'o');
 
 		$this->assertSame([400, ['error' => 'Task summary is required']], [$blank->getStatus(), $blank->getData()]);
 		$this->assertSame([201, ['id' => 'n']], [$ok->getStatus(), $ok->getData()]);
@@ -259,7 +261,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 				return ['id' => 'task.ics'];
 			});
 
-		$response = $this->controller(['calendarId' => 'cal-1', 'x' => 1])->update('r', 's', 'o', 'task.ics');
+		$response = $this->controller(params: ['calendarId' => 'cal-1', 'x' => 1])->update('r', 's', 'o', 'task.ics');
 
 		$this->assertSame([200, ['id' => 'task.ics']], [$response->getStatus(), $response->getData()]);
 		$this->assertSame(['require', 'update'], $order);
@@ -282,7 +284,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 		$this->taskService->expects($this->once())->method('deleteTask')->with('cal-2', 'task.ics');
 
 		$updated = $this->controller()->update('r', 's', 'o', 'task.ics');
-		$deleted = $this->controller(['calendarId' => 'ignored'])->destroy('r', 's', 'o', 'task.ics');
+		$deleted = $this->controller(params: ['calendarId' => 'ignored'])->destroy('r', 's', 'o', 'task.ics');
 
 		$this->assertSame([200, ['ok' => 1]], [$updated->getStatus(), $updated->getData()]);
 		$this->assertSame([200, ['success' => true]], [$deleted->getStatus(), $deleted->getData()]);
@@ -319,7 +321,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 		$this->taskService->expects($this->never())->method('updateTask');
 		$this->taskService->expects($this->never())->method('deleteTask');
 
-		$updated = $this->controller(['calendarId' => 'c'])->update('r', 's', 'o', 'task.ics');
+		$updated = $this->controller(params: ['calendarId' => 'c'])->update('r', 's', 'o', 'task.ics');
 		$deleted = $this->controller()->destroy('r', 's', 'o', 'task.ics');
 
 		$this->assertSame([404, ['error' => 'Task not found']], [$updated->getStatus(), $updated->getData()]);
@@ -337,7 +339,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 		$this->taskService->method('updateTask')->willThrowException(new Exception('bad', 3));
 		$this->taskService->method('deleteTask')->willThrowException(new Exception('worse'));
 
-		$updated = $this->controller(['calendarId' => 'c'])->update('r', 's', 'o', 'task.ics');
+		$updated = $this->controller(params: ['calendarId' => 'c'])->update('r', 's', 'o', 'task.ics');
 		$deleted = $this->controller()->destroy('r', 's', 'o', 'task.ics');
 
 		$this->assertSame([400, ['error' => 'bad']], [$updated->getStatus(), $updated->getData()]);
@@ -354,9 +356,9 @@ class TasksControllerA24GoldenTest extends TestCase {
 		$inbox->expects($this->never())->method('inbox');
 
 		$cases = [
-			$this->aggregate([], null, $inbox, null)->allUserTasks(),
-			$this->aggregate([], '  ', $inbox, null)->allUserTasks(),
-			$this->aggregate([], 'alice', null, null)->allUserTasks(),
+			$this->aggregate(params: [], uid: null, inbox: $inbox, groups: null)->allUserTasks(),
+			$this->aggregate(params: [], uid: '  ', inbox: $inbox, groups: null)->allUserTasks(),
+			$this->aggregate(params: [], uid: 'alice', inbox: null, groups: null)->allUserTasks(),
 		];
 
 		foreach ($cases as $response) {
@@ -373,7 +375,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 		$inbox = $this->createMock(TaskInboxService::class);
 		$inbox->expects($this->never())->method('inbox');
 
-		$response = $this->aggregate(['state' => 'nonsense-state'], 'alice', $inbox, null)->allUserTasks();
+		$response = $this->aggregate(params: ['state' => 'nonsense-state'], uid: 'alice', inbox: $inbox, groups: null)->allUserTasks();
 
 		$this->assertSame(400, $response->getStatus());
 		$this->assertArrayHasKey('error', $response->getData());
@@ -400,9 +402,9 @@ class TasksControllerA24GoldenTest extends TestCase {
 		$broken->method('getUserGroupIds')->willThrowException(new Exception('ldap'));
 
 		$params = ['_limit' => '500', 'offset' => '7', 'scope' => 'all', 'sort' => '-priority', 'isTerminal' => 'false', 'status' => 'open'];
-		$first = $this->aggregate($params, 'alice', $inbox, $admin)->allUserTasks();
-		$this->aggregate(['limit' => '3'], 'alice', $inbox, $broken)->allUserTasks();
-		$this->aggregate([], 'alice', $inbox, null)->allUserTasks();
+		$first = $this->aggregate(params: $params, uid: 'alice', inbox: $inbox, groups: $admin)->allUserTasks();
+		$this->aggregate(params: ['limit' => '3'], uid: 'alice', inbox: $inbox, groups: $broken)->allUserTasks();
+		$this->aggregate(params: [], uid: 'alice', inbox: $inbox, groups: null)->allUserTasks();
 
 		$this->assertSame([200, ['results' => [], 'total' => 0]], [$first->getStatus(), $first->getData()]);
 		$first0 = $seen[0][0];
@@ -430,7 +432,7 @@ class TasksControllerA24GoldenTest extends TestCase {
 			throw new Exception('query failed');
 		});
 
-		$response = $this->aggregate(['overdue' => 'true'], 'alice', $inbox, null)->allUserTasks();
+		$response = $this->aggregate(params: ['overdue' => 'true'], uid: 'alice', inbox: $inbox, groups: null)->allUserTasks();
 
 		$this->assertSame([500, ['error' => 'query failed']], [$response->getStatus(), $response->getData()]);
 		$this->assertNotNull($seen[0]->overdueAt);

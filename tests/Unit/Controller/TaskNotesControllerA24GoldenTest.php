@@ -22,6 +22,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
@@ -93,7 +95,14 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($params);
 
-		return new TaskNotesController('openregister', $request, $this->tasks, $this->authorization, $this->notes, $session);
+		return new TaskNotesController(
+			appName: 'openregister',
+			request: $request,
+			tasks: $this->tasks,
+			authorization: $this->authorization,
+			notes: $this->notes,
+			userSession: $session
+		);
 	}//end controller()
 
 	/**
@@ -136,7 +145,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$this->authorization->expects($this->never())->method('mayRead');
 		$this->expectNoNoteTouched();
 
-		$response = $verb($this->controller(['message' => 'hi']));
+		$response = $verb($this->controller(params: ['message' => 'hi']));
 
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame(['error' => 'No such task'], $response->getData());
@@ -155,7 +164,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$this->tasks->method('get')->willThrowException(new \Error('db down'));
 		$this->expectNoNoteTouched();
 
-		$response = $verb($this->controller(['message' => 'hi']));
+		$response = $verb($this->controller(params: ['message' => 'hi']));
 
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame(['error' => 'No such task'], $response->getData());
@@ -176,7 +185,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$this->authorization->expects($this->once())->method('mayRead')->with($task, 'alice')->willReturn(false);
 		$this->expectNoNoteTouched();
 
-		$response = $verb($this->controller(['message' => 'hi']));
+		$response = $verb($this->controller(params: ['message' => 'hi']));
 
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame(['error' => 'No such task'], $response->getData());
@@ -192,7 +201,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$this->tasks->method('get')->willReturn($task);
 		$this->authorization->expects($this->once())->method('mayRead')->with($task, null)->willReturn(false);
 
-		$response = $this->controller([], null)->index('t-1');
+		$response = $this->controller(params: [], uid: null)->index('t-1');
 
 		$this->assertSame(404, $response->getStatus());
 	}//end testNoSessionAsksForNullUid()
@@ -206,7 +215,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$this->givenReadable();
 		$this->notes->expects($this->once())->method('getNotesForObject')->with('real-uuid', 5, 10)->willReturn([['id' => 1]]);
 
-		$response = $this->controller(['limit' => '5', 'offset' => '10'])->index('t-1');
+		$response = $this->controller(params: ['limit' => '5', 'offset' => '10'])->index('t-1');
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame(['results' => [['id' => 1]], 'total' => 1], $response->getData());
@@ -235,7 +244,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$this->givenReadable();
 		$this->notes->expects($this->once())->method('createNote')->with('real-uuid', 'hello')->willReturn(['id' => 3]);
 
-		$response = $this->controller(['message' => '  hello  '])->create('t-1');
+		$response = $this->controller(params: ['message' => '  hello  '])->create('t-1');
 
 		$this->assertSame(201, $response->getStatus());
 		$this->assertSame(['id' => 3], $response->getData());
@@ -250,7 +259,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$this->givenReadable();
 		$this->notes->expects($this->never())->method('createNote');
 
-		$response = $this->controller(['message' => '   '])->create('t-1');
+		$response = $this->controller(params: ['message' => '   '])->create('t-1');
 
 		$this->assertSame(400, $response->getStatus());
 		$this->assertSame(['error' => 'Note message is required'], $response->getData());
@@ -266,7 +275,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$this->notes->expects($this->once())->method('requireNoteOf')->with('t-1', 7);
 		$this->notes->expects($this->once())->method('updateNote')->with(7, 'new')->willReturn(['id' => 7]);
 
-		$response = $this->controller(['message' => 'new'])->update('t-1', '7');
+		$response = $this->controller(params: ['message' => 'new'])->update('t-1', '7');
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame(['id' => 7], $response->getData());
@@ -282,7 +291,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$this->notes->expects($this->never())->method('requireNoteOf');
 		$this->notes->expects($this->never())->method('updateNote');
 
-		$response = $this->controller(['message' => ''])->update('t-1', '7');
+		$response = $this->controller(params: ['message' => ''])->update('t-1', '7');
 
 		$this->assertSame(400, $response->getStatus());
 		$this->assertSame(['error' => 'Note message is required'], $response->getData());
@@ -299,7 +308,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$this->notes->expects($this->never())->method('updateNote');
 		$this->notes->expects($this->never())->method('deleteNote');
 
-		$update = $this->controller(['message' => 'x'])->update('t-1', '7');
+		$update = $this->controller(params: ['message' => 'x'])->update('t-1', '7');
 		$destroy = $this->controller()->destroy('t-1', '7');
 
 		$this->assertSame([404, ['error' => 'No such task']], [$update->getStatus(), $update->getData()]);

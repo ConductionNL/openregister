@@ -22,6 +22,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
@@ -150,7 +152,7 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 		$this->authorization->expects($this->never())->method('mayRead');
 		$this->expectNothingTouched();
 
-		$response = $verb($this->controller($this->fullParams()));
+		$response = $verb($this->controller(params: $this->fullParams()));
 
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame(['error' => 'No such task'], $response->getData());
@@ -171,7 +173,7 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 		$this->authorization->expects($this->once())->method('mayRead')->with($task, 'alice')->willReturn(false);
 		$this->expectNothingTouched();
 
-		$response = $verb($this->controller($this->fullParams()));
+		$response = $verb($this->controller(params: $this->fullParams()));
 
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame(['error' => 'No such task'], $response->getData());
@@ -187,7 +189,7 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 		$this->tasks->method('get')->willReturn($task);
 		$this->authorization->expects($this->once())->method('mayRead')->with($task, null)->willReturn(false);
 
-		$this->assertSame(404, $this->controller([], null)->index('t-1')->getStatus());
+		$this->assertSame(404, $this->controller(params: [], uid: null)->index('t-1')->getStatus());
 	}//end testNoSessionAsksForNullUid()
 
 	/**
@@ -221,8 +223,8 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 			->with('real-uuid', 4, 9, ['summary' => 'Meet', 'objectTitle' => 'real-uuid'])
 			->willReturn($link);
 
-		$blank = $this->controller(['summary' => '  '])->create('t-1');
-		$ok = $this->controller(['summary' => 'Meet'])->create('t-1');
+		$blank = $this->controller(params: ['summary' => '  '])->create('t-1');
+		$ok = $this->controller(params: ['summary' => 'Meet'])->create('t-1');
 
 		$this->assertSame([400, ['error' => 'Event summary is required']], [$blank->getStatus(), $blank->getData()]);
 		$this->assertSame([201, $link->jsonSerialize()], [$ok->getStatus(), $ok->getData()]);
@@ -237,7 +239,7 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 		$this->givenReadable();
 		$this->links->method('createAndLinkEvent')->willThrowException(new Exception('nope'));
 
-		$response = $this->controller(['summary' => 'Meet'])->create('t-1');
+		$response = $this->controller(params: ['summary' => 'Meet'])->create('t-1');
 
 		$this->assertSame([400, ['error' => 'nope']], [$response->getStatus(), $response->getData()]);
 	}//end testCreateFailure()
@@ -254,9 +256,9 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 			->with('real-uuid', 4, 9, 'cal', 'uid-1')
 			->willReturnOnConsecutiveCalls($link, $this->throwException(new Exception('dup')));
 
-		$missing = $this->controller(['calendarUri' => 'cal', 'eventUid' => ' '])->link('t-1');
-		$ok = $this->controller(['calendarUri' => ' cal ', 'eventUid' => 'uid-1'])->link('t-1');
-		$failed = $this->controller(['calendarUri' => 'cal', 'eventUid' => 'uid-1'])->link('t-1');
+		$missing = $this->controller(params: ['calendarUri' => 'cal', 'eventUid' => ' '])->link('t-1');
+		$ok = $this->controller(params: ['calendarUri' => ' cal ', 'eventUid' => 'uid-1'])->link('t-1');
+		$failed = $this->controller(params: ['calendarUri' => 'cal', 'eventUid' => 'uid-1'])->link('t-1');
 
 		$this->assertSame([400, ['error' => 'calendarUri and eventUid are required']], [$missing->getStatus(), $missing->getData()]);
 		$this->assertSame([201, $link->jsonSerialize()], [$ok->getStatus(), $ok->getData()]);

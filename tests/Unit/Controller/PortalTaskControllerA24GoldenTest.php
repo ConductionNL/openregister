@@ -23,6 +23,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
@@ -172,7 +174,7 @@ class PortalTaskControllerA24GoldenTest extends TestCase {
 	 */
 	public function testDeliveryWithoutSession(callable $route): void {
 		$this->expectOutboxUntouched();
-		$response = $route($this->controller(null, $this->groupBackend(true)));
+		$response = $route($this->controller(uid: null, groups: $this->groupBackend(answer: true)));
 
 		$this->assertSame([401, ['error' => 'No session', 'code' => 'no-session']], [$response->getStatus(), $response->getData()]);
 	}//end testDeliveryWithoutSession()
@@ -188,9 +190,9 @@ class PortalTaskControllerA24GoldenTest extends TestCase {
 	 */
 	public function testDeliveryForNonAdmins(callable $route): void {
 		$this->expectOutboxUntouched();
-		$backends = [$this->groupBackend(false), $this->groupBackend(new Exception('ldap')), null];
+		$backends = [$this->groupBackend(answer: false), $this->groupBackend(answer: new Exception('ldap')), null];
 		foreach ($backends as $groups) {
-			$response = $route($this->controller('alice', $groups));
+			$response = $route($this->controller(uid: 'alice', groups: $groups));
 			$this->assertSame([403, ['error' => 'Administrators only', 'code' => 'admin-required']], [$response->getStatus(), $response->getData()]);
 		}
 	}//end testDeliveryForNonAdmins()
@@ -207,7 +209,7 @@ class PortalTaskControllerA24GoldenTest extends TestCase {
 		$this->delivery->method('markDelivered')->willThrowException(new DoesNotExistException('x'));
 		$this->delivery->method('markFailed')->with('d-1', 'smtp')
 			->willReturnOnConsecutiveCalls($row, $this->throwException(new DoesNotExistException('x')));
-		$admin = $this->controller('alice', $this->groupBackend(true));
+		$admin = $this->controller(uid: 'alice', groups: $this->groupBackend(answer: true));
 
 		$listed = $admin->deliveries(7);
 		$missing = $admin->deliveryDelivered('d-9');
@@ -256,11 +258,11 @@ class PortalTaskControllerA24GoldenTest extends TestCase {
 		$this->assertion->method('resolve')->willReturn(new PortalSubject(subjectRef: 'sub-1'));
 		$boom = new Exception('SQL detail');
 		$this->portal->method('show')->willReturnOnConsecutiveCalls(
-			$this->throwException(new TaskValidationException('too big')),
-			$this->throwException(new TaskAccessDeniedException('not yours')),
+			$this->throwException(new TaskValidationException(message: 'too big')),
+			$this->throwException(new TaskAccessDeniedException(message: 'not yours')),
 			$this->throwException(new DoesNotExistException('gone')),
 			$this->throwException(new TaskCompleteViaAppException(app: 'a', action: 'b')),
-			$this->throwException(new TaskConflictException('closed')),
+			$this->throwException(new TaskConflictException(message: 'closed')),
 			$this->throwException($boom)
 		);
 		$this->logger->expects($this->once())->method('error')
