@@ -77,7 +77,7 @@ final class BuiltinIntegrationServices {
 			'l10n'        => \OCP\IL10N::class,
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider::class => [
-			'noteService' => \OCA\OpenRegister\Files\Service\NoteService::class,
+			'noteService' => \OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface::class,
 			'l10n'        => \OCP\IL10N::class,
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class => [
