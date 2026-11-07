@@ -33,6 +33,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Controller\GenericStoreController;
+use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices;
+use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreInstall;
+use OCA\OpenRegister\AppHost\Controller\Support\GenericStorePlatform;
+use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreSources;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
@@ -130,15 +134,23 @@ class GenericStoreControllerTest extends TestCase {
 		return new GenericStoreController(
 			appName: $appId,
 			request: $this->request,
-			manifestLoader: $this->manifestLoader,
-			storeService: $this->storeService,
-			installer: $this->installer,
-			catalog: $this->catalog,
-			gitHubSource: $this->gitHubSource,
-			actionAuthorizer: $this->actionAuthorizer,
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
-			logger: $this->createMock(LoggerInterface::class)
+			services: new GenericStoreControllerServices(
+				sources: new GenericStoreSources(
+					manifestLoader: $this->manifestLoader,
+					storeService: $this->storeService,
+					gitHubSource: $this->gitHubSource,
+					catalog: $this->catalog
+				),
+				install: new GenericStoreInstall(
+					installer: $this->installer,
+					actionAuthorizer: $this->actionAuthorizer
+				),
+				platform: new GenericStorePlatform(
+					userSession: $this->userSession,
+					groupManager: $this->groupManager,
+					logger: $this->createMock(LoggerInterface::class)
+				)
+			)
 		);
 	}//end controller()
 

@@ -27,8 +27,8 @@ use OCA\OpenRegister\Db\FlowVersion;
 use Throwable;
 
 /**
- * Flow definition versioning, as the flow controller and the scheduled-flow
- * store use it. Only the methods those callers call.
+ * Flow definition versioning, as the flow controller, the scheduled-flow
+ * store and the schema flow-import listener use it. Only the methods those callers call.
  */
 interface FlowVersionServiceInterface {
 
@@ -75,6 +75,19 @@ interface FlowVersionServiceInterface {
 	 * @throws Throwable            When the transaction could not be committed.
 	 */
 	public function publish(Flow $flow, ?string $publishedBy = null, ?string $bump = null): FlowVersion;
+
+	/**
+	 * Publish an app's changed flow declaration as the next version, when the
+	 * shipped declaration still owns the flow.
+	 *
+	 * @param Flow $flow The flow whose head now holds the shipped declaration.
+	 *
+	 * @return FlowVersion|null The newly published version, or null when nothing was published.
+	 *
+	 * @throws FlowLifecycleRefused When the shipped graph cannot be published (a dead end).
+	 * @throws Throwable            When a transaction could not be committed.
+	 */
+	public function publishShippedUpdate(Flow $flow): ?FlowVersion;
 
 	/**
 	 * Copy the published graph into a new draft at version N+1.

@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 
 /**
@@ -38,7 +38,7 @@ final class FlowRunRuns {
 	 *
 	 * @param FlowRunMapperInterface         $mapper      Reads runs.
 	 * @param FlowRunServiceInterface        $runner      Retries, requeues and runs.
-	 * @param FlowLocator           $resolvers   Resolves a flow id to its document.
+	 * @param FlowLocatorInterface           $resolvers   Resolves a flow id to its document.
 	 * @param ?AuditFlowAttribution $auditTrails Reads the attribution stamped on
 	 *
 	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
@@ -46,7 +46,7 @@ final class FlowRunRuns {
 	public function __construct(
 		public readonly FlowRunMapperInterface $mapper,
 		public readonly FlowRunServiceInterface $runner,
-		public readonly FlowLocator $resolvers,
+		public readonly FlowLocatorInterface $resolvers,
 		public readonly ?AuditFlowAttribution $auditTrails = null,
 	) {
 	}//end __construct()

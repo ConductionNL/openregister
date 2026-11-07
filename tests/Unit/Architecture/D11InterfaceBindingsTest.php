@@ -4,7 +4,7 @@
  * Top-level Service classes are reached through their interfaces.
  *
  * Controllers, commands, the Files, Db, Notifications, Contacts and ContextChat
- * components, a capability, an event and a middleware named six concrete
+ * components, a capability, two events and a middleware named eight concrete
  * classes in lib/Service directly. Each now has an interface next to it that
  * declares only what those callers use; they type against and resolve that
  * interface, and ContractBindings aliases it to the class. A missing alias is a
@@ -24,6 +24,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\ApplicationService;
+use OCA\OpenRegister\Service\ApplicationServiceInterface;
+use OCA\OpenRegister\Service\BulkActionRegistry;
+use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
@@ -60,6 +64,8 @@ final class D11InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, class-string>
 	 */
 	private const CLASSES = [
+		ApplicationService::class => ApplicationServiceInterface::class,
+		BulkActionRegistry::class => BulkActionRegistryInterface::class,
 		DeepLinkRegistryService::class => DeepLinkRegistryServiceInterface::class,
 		FileService::class => FileServiceInterface::class,
 		LanguageService::class => LanguageServiceInterface::class,

@@ -59,6 +59,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
+use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
+use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
+use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
 
 /**
  * A tiny in-memory ICache for the rate limiter, so bucket state is real
@@ -239,37 +243,44 @@ class FlowMessagingServiceTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($this->cache);
 
 		return new FlowMessagingService(
-			channelPolicy: $this->channelPolicy(),
-			recipientResolver: new NotificationRecipientResolver(
-				userManager: $this->userManager,
-				groupManager: $this->groupManager,
-				logger: $logger
+			channels: new FlowMessagingChannels(
+				channelPolicy: $this->channelPolicy(),
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->notificationManager,
+					logger: $logger,
+					userManager: $this->userManager,
+					jobList: $this->jobList,
+					channelPolicy: $this->channelPolicy()
+				),
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->mailer,
+					logger: $logger,
+					channelPolicy: $this->channelPolicy()
+				),
+				talkSender: $this->talkSender
 			),
-			templating: new NotificationTemplating(logger: $logger),
-			ncSender: new NcNotificationSender(
-				notificationManager: $this->notificationManager,
+			recipients: new FlowMessagingRecipients(
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->groupManager,
+					logger: $logger
+				),
+				preferences: new NotificationPreferenceService(
+					config: $this->config,
+					schemaMapper: $this->createMock(SchemaMapper::class),
+					logger: $logger
+				),
+				rateLimiter: $this->rateLimiter(),
+				userManager: $this->userManager
+			),
+			platform: new FlowMessagingPlatform(
+				templating: new NotificationTemplating(logger: $logger),
+				appConfig: $this->appConfig,
 				logger: $logger,
-				userManager: $this->userManager,
-				jobList: $this->jobList,
-				channelPolicy: $this->channelPolicy()
+				eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
 			),
-			emailSender: new EmailSender(
-				userManager: $this->userManager,
-				mailer: $this->mailer,
-				logger: $logger,
-				channelPolicy: $this->channelPolicy()
-			),
-			talkSender: $this->talkSender,
-			rateLimiter: $this->rateLimiter(),
-			preferences: new NotificationPreferenceService(
-				config: $this->config,
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				logger: $logger
-			),
-			userManager: $this->userManager,
-			appConfig: $this->appConfig,
-			logger: $logger,
-			eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
+			overrides: new FlowMessagingOverrides()
 		);
 	}//end makeService()
 
