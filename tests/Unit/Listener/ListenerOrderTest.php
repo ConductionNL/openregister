@@ -25,7 +25,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Listener\Registrar\AccessListenerRegistrar
  * @uses   \OCA\OpenRegister\Listener\Registrar\ConfigurationListenerRegistrar
  * @uses   \OCA\OpenRegister\Listener\Registrar\FlowsListenerRegistrar
- * @uses   \OCA\OpenRegister\Listener\Registrar\McpListenerRegistrar
+ * @uses   \OCA\OpenRegister\Mcp\Listener\Registrar\McpListenerRegistrar
  * @uses   \OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar
  * @uses   \OCA\OpenRegister\Listener\Registrar\WorkListenerRegistrar
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap

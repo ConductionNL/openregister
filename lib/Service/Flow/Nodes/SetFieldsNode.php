@@ -47,6 +47,14 @@ use UnexpectedValueException;
  * Reshapes each item's record.
  */
 class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+
+	/**
+	 * The config keys of which at least one must be non-empty.
+	 *
+	 * @var string[]
+	 */
+	private const RESHAPING_KEYS = ['set', 'compute', 'rename', 'remove'];
+
 	/**
 	 * Constructor.
 	 *
@@ -128,6 +136,10 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	 * A step that silently does nothing is worse than one that refuses to
 	 * save: the author believes their flow reshapes data and it does not.
 	 *
+	 * An empty or blank path is refused when the flow is SAVED. It can only
+	 * write to a key nothing reads, and the author should not have to find
+	 * that out from an item that came back looking fine.
+	 *
 	 * @param array $config The step configuration.
 	 *
 	 * @return void
@@ -135,27 +147,56 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	 * @throws UnexpectedValueException When nothing is configured.
 	 */
 	public function validateConfig(array $config): void {
-		$set = (array)($config['set'] ?? []);
-		$compute = (array)($config['compute'] ?? []);
-		$rename = (array)($config['rename'] ?? []);
-		$remove = (array)($config['remove'] ?? []);
+		$this->assertSomethingConfigured(config: $config);
 
-		if ($set === [] && $compute === [] && $rename === [] && $remove === []) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('Choose at least one field to set, compute, rename or remove.')
-			);
+		$compute = (array)($config['compute'] ?? []);
+		$this->assertPathsAreNamed(bag: (array)($config['set'] ?? []), key: 'set');
+		$this->assertPathsAreNamed(bag: $compute, key: 'compute');
+		$this->assertExpressionsAreValid(compute: $compute);
+
+	}//end validateConfig()
+
+	/**
+	 * Refuse a configuration in which every reshaping mapping is empty.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When nothing is configured.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function assertSomethingConfigured(array $config): void {
+		foreach (self::RESHAPING_KEYS as $key) {
+			if ((array)($config[$key] ?? []) !== []) {
+				return;
+			}
 		}
 
-		// An empty or blank path is refused when the flow is SAVED. It can only
-		// write to a key nothing reads, and the author should not have to find
-		// that out from an item that came back looking fine.
-		$this->assertPathsAreNamed(bag: $set, key: 'set');
-		$this->assertPathsAreNamed(bag: $compute, key: 'compute');
+		throw new UnexpectedValueException(
+			$this->l10n->t('Choose at least one field to set, compute, rename or remove.')
+		);
 
-		// A malformed expression is caught HERE, when the flow is saved, rather
-		// than evaluating to null on every item at 03:00 — `FlowExpression`
-		// swallows a broken rule and returns null, which is indistinguishable
-		// from a field that legitimately resolved to nothing.
+	}//end assertSomethingConfigured()
+
+	/**
+	 * Refuse a `compute` expression that cannot be evaluated.
+	 *
+	 * A malformed expression is caught HERE, when the flow is saved, rather
+	 * than evaluating to null on every item at 03:00 — `FlowExpression`
+	 * swallows a broken rule and returns null, which is indistinguishable
+	 * from a field that legitimately resolved to nothing.
+	 *
+	 * @param array $compute The configured expression mapping.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When an expression is not valid.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function assertExpressionsAreValid(array $compute): void {
 		foreach ($compute as $field => $logic) {
 			if (FlowExpression::isValid(logic: $logic) === false) {
 				throw new UnexpectedValueException(
@@ -164,18 +205,16 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 			}
 		}
 
-	}//end validateConfig()
+	}//end assertExpressionsAreValid()
 
 	/**
 	 * Apply the configured reshaping to every item.
 	 *
-	 * Order is remove, then rename, then set, then compute. Rename before set
-	 * so setting a field the author also renamed away is not silently undone,
-	 * and remove first so a rename can legitimately reuse a removed name.
-	 * Compute last so a derived value can build on one just substituted.
-	 *
 	 * `keepOnlySet` mirrors n8n's option of the same name: drop everything the
 	 * step did not explicitly set, for building a clean payload.
+	 *
+	 * Provenance: each output item carries its own input's index, one in and
+	 * one out, so the chain back to the input that caused it stays intact.
 	 *
 	 * @param array $items The input items.
 	 * @param array $config The step configuration.
@@ -184,95 +223,78 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	 * @return array The output items, one per input item.
 	 */
 	public function execute(array $items, array $config, array $context): array {
-		$set = (array)($config['set'] ?? []);
-		$compute = (array)($config['compute'] ?? []);
-		$rename = (array)($config['rename'] ?? []);
-		$remove = (array)($config['remove'] ?? []);
-		$keepOnlySet = (($config['keepOnlySet'] ?? false) === true);
-		$count = count($items);
+		$plan = new SetFieldsPlan(config: $config, context: $context, itemCount: count($items));
 
 		$out = [];
 		foreach ($items as $index => $item) {
-			$json = (array)($item[FlowItems::JSON] ?? []);
-
-			foreach ($remove as $field) {
-				unset($json[(string)$field]);
-			}
-
-			foreach ($rename as $from => $to) {
-				$from = (string)$from;
-				$to = (string)$to;
-				if ($from === '' || $to === '' || array_key_exists($from, $json) === false) {
-					continue;
-				}
-
-				$json[$to] = $json[$from];
-				unset($json[$from]);
-			}
-
-			if ($keepOnlySet === true) {
-				$json = [];
-			}
-
-			// Values are rendered against the item, the way every other node
-			// resolves its authored config — `source-call` its endpoint and
-			// body, `agent-step` its prompt, `object-write` its fields.
-			//
-			// This node could previously only write CONSTANTS: `{{retries}}`
-			// was stored as the literal seven characters. That makes the one
-			// node whose entire job is setting fields the only one that cannot
-			// refer to the item it is setting them on — and it is also the
-			// reference implementation other node authors copy.
-			//
-			// A value that is exactly one placeholder keeps its TYPE, so a
-			// counter stays a number and a list stays a list.
-			// The PATH is templated as well as the value. Without this the one
-			// node whose job is setting fields could refer to the item in its
-			// values but not in its positions, so no flow could write to a
-			// place the run decides — `stages.{{stage}}.status` created a key
-			// literally called `stages.{{stage}}.status`. Same invisible no-op
-			// as the dotted-path bug, same fix.
-			$this->applySet(json: $json, set: $set);
-
-			// `compute` is the same idea as `set` for values that have to be
-			// DERIVED rather than substituted. `{{retries}}` can copy a
-			// counter; nothing could add one to it, because a template
-			// substitutes and does not calculate.
-			//
-			// That gap was not academic — it is what stopped hydra's
-			// retry/escalation flow: read the count, increment, store. The
-			// read and the store were expressible and the `+ 1` was not, so
-			// the counter sat at 0 and a run "retried" forever.
-			//
-			// The expression language is the one the routers already use
-			// (`FlowExpression`), so an author who can write a branch condition
-			// can write this, and the same `{"var": "json.…"}` paths work in
-			// both. It is applied AFTER `set`, so a computed value can build on
-			// one that was just substituted.
-			// `compute` gets the same path treatment as `set`, deliberately.
-			// It used to write FLAT — `$json['a.b'] = …` — so it could express
-			// neither a nested position nor a templated one, and an author who
-			// learned the path rules from `set` got a silently different result
-			// from the node's other half.
-			$this->applyCompute(
-				json: $json,
-				compute: $compute,
-				itemIndex: (int)$index,
-				itemCount: $count,
-				context: $context
-			);
-
-			// Provenance: this item's own index, one in and one out, so the
-			// chain back to the input that caused it stays intact.
 			$out[] = FlowItems::item(
-				json: $json,
+				json: $this->reshape(json: (array)($item[FlowItems::JSON] ?? []), plan: $plan->forItem(itemIndex: (int)$index)),
 				binary: (array)($item[FlowItems::BINARY] ?? []),
 				fromItemIndex: $index
 			);
-		}//end foreach
+		}
 
 		return $out;
 	}//end execute()
+
+	/**
+	 * Apply the plan to one item's record.
+	 *
+	 * Order is remove, then rename, then set, then compute. Rename before set
+	 * so setting a field the author also renamed away is not silently undone,
+	 * and remove first so a rename can legitimately reuse a removed name.
+	 * Compute last so a derived value can build on one just substituted.
+	 *
+	 * @param array         $json The item's record.
+	 * @param SetFieldsPlan $plan The step's reshaping, positioned at this item.
+	 *
+	 * @return array The reshaped record.
+	 *
+	 * @throws UnexpectedValueException When a path segment cannot be rendered.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function reshape(array $json, SetFieldsPlan $plan): array {
+		foreach ($plan->remove as $field) {
+			unset($json[(string)$field]);
+		}
+
+		$json = $this->applyRename(json: $json, rename: $plan->rename);
+		if ($plan->keepOnlySet === true) {
+			$json = [];
+		}
+
+		$this->applySet(json: $json, set: $plan->set);
+		$this->applyCompute(json: $json, plan: $plan);
+
+		return $json;
+	}//end reshape()
+
+	/**
+	 * Apply the `rename` mapping to one item's record.
+	 *
+	 * A pair with an empty name on either side, or naming a key the record
+	 * does not have, is skipped.
+	 *
+	 * @param array $json   The item's record.
+	 * @param array $rename The configured old-to-new mapping.
+	 *
+	 * @return array The record with the keys renamed.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function applyRename(array $json, array $rename): array {
+		foreach ($rename as $from => $to) {
+			$from = (string)$from;
+			$to = (string)$to;
+			if ($from !== '' && $to !== '' && array_key_exists($from, $json) === true) {
+				$json[$to] = $json[$from];
+				unset($json[$from]);
+			}
+		}
+
+		return $json;
+	}//end applyRename()
 
 	/**
 	 * Refuse a configured field path that names nothing.
@@ -299,6 +321,23 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 
 	/**
 	 * Apply the `set` mapping to one item's record.
+	 *
+	 * Values are rendered against the item, the way every other node resolves
+	 * its authored config — `source-call` its endpoint and body, `agent-step`
+	 * its prompt, `object-write` its fields.
+	 *
+	 * This node could previously only write CONSTANTS: `{{retries}}` was
+	 * stored as the literal seven characters. That makes the one node whose
+	 * entire job is setting fields the only one that cannot refer to the item
+	 * it is setting them on — and it is also the reference implementation
+	 * other node authors copy.
+	 *
+	 * A value that is exactly one placeholder keeps its TYPE, so a counter
+	 * stays a number and a list stays a list. The PATH is templated as well as
+	 * the value. Without this the one node whose job is setting fields could
+	 * refer to the item in its values but not in its positions, so no flow
+	 * could write to a place the run decides — `stages.{{stage}}.status`
+	 * created a key literally called `stages.{{stage}}.status`.
 	 *
 	 * Both halves of a pair are resolved against the record as it stands, and
 	 * the record is mutated as we go, so a later entry can read what an earlier
@@ -327,11 +366,21 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	/**
 	 * Apply the `compute` mapping to one item's record.
 	 *
-	 * @param array $json The item's record, modified in place.
-	 * @param array $compute The configured expression mapping.
-	 * @param int $itemIndex This item's position in the batch.
-	 * @param int $itemCount The batch size.
-	 * @param array $context The run context.
+	 * `compute` is the same idea as `set` for values that have to be DERIVED
+	 * rather than substituted. `{{retries}}` can copy a counter; nothing could
+	 * add one to it, because a template substitutes and does not calculate.
+	 * That gap is what stopped hydra's retry/escalation flow: read the count,
+	 * increment, store — the `+ 1` was not expressible, so the counter sat at
+	 * 0 and a run "retried" forever.
+	 *
+	 * The expression language is the one the routers already use
+	 * (`FlowExpression`), so an author who can write a branch condition can
+	 * write this. Paths get the same treatment as `set`, deliberately: an
+	 * author who learned the path rules from `set` must not get a silently
+	 * different result from the node's other half.
+	 *
+	 * @param array         $json The item's record, modified in place.
+	 * @param SetFieldsPlan $plan The step's reshaping, positioned at this item.
 	 *
 	 * @return void
 	 *
@@ -339,30 +388,36 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	 *
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function applyCompute(
-		array &$json,
-		array $compute,
-		int $itemIndex,
-		int $itemCount,
-		array $context,
-	): void {
-		foreach ($compute as $field => $logic) {
+	private function applyCompute(array &$json, SetFieldsPlan $plan): void {
+		foreach ($plan->compute as $field => $logic) {
 			FlowFieldPath::assign(
 				json: $json,
 				path: $this->renderPath(path: (string)$field, json: $json),
-				value: FlowExpression::evaluate(
-					logic: $logic,
-					data: FlowExpression::dataFor(
-						item: [FlowItems::JSON => $json],
-						itemIndex: $itemIndex,
-						itemCount: $itemCount,
-						context: $context
-					)
-				)
+				value: FlowExpression::evaluate(logic: $logic, data: $this->expressionData(json: $json, plan: $plan))
 			);
 		}
 
 	}//end applyCompute()
+
+	/**
+	 * The data a `compute` expression is evaluated against.
+	 *
+	 * @param array         $json The item's record as it stands.
+	 * @param SetFieldsPlan $plan The step's reshaping, positioned at this item.
+	 *
+	 * @return array The expression data.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function expressionData(array $json, SetFieldsPlan $plan): array {
+		return FlowExpression::dataFor(
+			item: [FlowItems::JSON => $json],
+			itemIndex: $plan->itemIndex(),
+			itemCount: $plan->itemCount,
+			context: $plan->context
+		);
+
+	}//end expressionData()
 
 	/**
 	 * Render a configured path against the item, one segment at a time.
@@ -378,18 +433,6 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	 * on its own. That makes the structure a property of the CONFIGURATION and
 	 * only the segment names a property of the data.
 	 *
-	 * Two decisions taken explicitly rather than by accident:
-	 *
-	 *  - **A dot in a rendered segment is REFUSED, not escaped.** There is no
-	 *    escape syntax anywhere in this node — `assign()` splits on `.`
-	 *    unconditionally — so an escaped segment would produce a key no other
-	 *    node could address, including this one's own `rename` and `remove`.
-	 *    Inventing half an escape mechanism here would be worse than saying no.
-	 *  - **A segment that renders EMPTY is REFUSED.** Writing to `""` is a
-	 *    silent write to a key nothing reads, which is exactly the failure this
-	 *    change exists to remove. An unresolved placeholder is a broken path,
-	 *    not a path to an empty name.
-	 *
 	 * A path containing no placeholder renders to itself, so every existing
 	 * configuration is unaffected.
 	 *
@@ -403,71 +446,147 @@ class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	private function renderPath(string $path, array $json): string {
-		// Untouched fast path: nothing to render, so nothing can go wrong.
 		if (str_contains($path, '{{') === false) {
 			return $path;
 		}
 
-		$segments = explode('.', $path);
 		$rendered = [];
-
-		foreach ($segments as $segment) {
-			if (str_contains($segment, '{{') === false) {
-				$rendered[] = $segment;
-				continue;
-			}
-
-			$value = FlowValueTemplate::render(value: $segment, json: $json);
-
-			// An unresolved placeholder renders to null. That is a BROKEN path,
-			// not a path to a field called "": say so in those terms, because
-			// the author's mistake is the missing value, not the empty name.
-			if ($value === null) {
-				throw new UnexpectedValueException(
-					$this->l10n->t(
-						'The path segment "%s" resolved to nothing; a field position is never empty.',
-						[$segment]
-					)
-				);
-			}
-
-			// A container has no meaning as a key, and casting one would give a
-			// key like "Array" or a JSON blob.
-			if (is_scalar($value) === false) {
-				throw new UnexpectedValueException(
-					$this->l10n->t(
-						'The path segment "%s" resolved to a value that cannot name a field.',
-						[$segment]
-					)
-				);
-			}
-
-			$value = trim((string)$value);
-
-			if ($value === '') {
-				throw new UnexpectedValueException(
-					$this->l10n->t(
-						'The path segment "%s" resolved to nothing; a field position is never empty.',
-						[$segment]
-					)
-				);
-			}
-
-			if (str_contains($value, '.') === true) {
-				throw new UnexpectedValueException(
-					$this->l10n->t(
-						'The path segment "%1$s" resolved to "%2$s", which contains a dot. '
-						. 'A rendered segment names one field and cannot introduce nesting.',
-						[$segment, $value]
-					)
-				);
-			}
-
-			$rendered[] = $value;
-		}//end foreach
+		foreach (explode('.', $path) as $segment) {
+			$rendered[] = $this->renderSegment(segment: $segment, json: $json);
+		}
 
 		return implode('.', $rendered);
 	}//end renderPath()
+
+	/**
+	 * Render one path segment against the item.
+	 *
+	 * @param string $segment The configured segment.
+	 * @param array  $json    The item's record, for placeholder resolution.
+	 *
+	 * @return string The rendered segment.
+	 *
+	 * @throws UnexpectedValueException When the segment renders empty or introduces a dot.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function renderSegment(string $segment, array $json): string {
+		if (str_contains($segment, '{{') === false) {
+			return $segment;
+		}
+
+		$value = FlowValueTemplate::render(value: $segment, json: $json);
+		$this->assertNamesAField(segment: $segment, value: $value);
+
+		$name = trim((string)$value);
+		$this->assertOneField(segment: $segment, name: $name);
+
+		return $name;
+	}//end renderSegment()
+
+	/**
+	 * Refuse a rendered segment value that cannot be a key at all.
+	 *
+	 * An unresolved placeholder renders to null. That is a BROKEN path, not a
+	 * path to a field called "": say so in those terms, because the author's
+	 * mistake is the missing value, not the empty name. A container has no
+	 * meaning as a key, and casting one would give a key like "Array" or a
+	 * JSON blob.
+	 *
+	 * @param string $segment The configured segment, for the message.
+	 * @param mixed  $value   What the segment rendered to.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the value is null or not scalar.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function assertNamesAField(string $segment, mixed $value): void {
+		if ($value === null) {
+			throw $this->emptySegment(segment: $segment);
+		}
+
+		if (is_scalar($value) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('The path segment "%s" resolved to a value that cannot name a field.', [$segment])
+			);
+		}
+
+	}//end assertNamesAField()
+
+	/**
+	 * Refuse a rendered segment name that is empty or nests.
+	 *
+	 * Two decisions taken explicitly rather than by accident:
+	 *
+	 *  - **A dot in a rendered segment is REFUSED, not escaped.** There is no
+	 *    escape syntax anywhere in this node — `assign()` splits on `.`
+	 *    unconditionally — so an escaped segment would produce a key no other
+	 *    node could address, including this one's own `rename` and `remove`.
+	 *    Inventing half an escape mechanism here would be worse than saying no.
+	 *  - **A segment that renders EMPTY is REFUSED.** Writing to `""` is a
+	 *    silent write to a key nothing reads, which is exactly the failure this
+	 *    change exists to remove.
+	 *
+	 * @param string $segment The configured segment, for the message.
+	 * @param string $name    The rendered, trimmed segment.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the name is empty or contains a dot.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function assertOneField(string $segment, string $name): void {
+		if ($name === '') {
+			throw $this->emptySegment(segment: $segment);
+		}
+
+		$this->assertNoNesting(segment: $segment, name: $name);
+
+	}//end assertOneField()
+
+	/**
+	 * Refuse a rendered segment name that contains a dot.
+	 *
+	 * @param string $segment The configured segment, for the message.
+	 * @param string $name    The rendered, trimmed segment.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the name contains a dot.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function assertNoNesting(string $segment, string $name): void {
+		if (str_contains($name, '.') === true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'The path segment "%1$s" resolved to "%2$s", which contains a dot. '
+					. 'A rendered segment names one field and cannot introduce nesting.',
+					[$segment, $name]
+				)
+			);
+		}
+
+	}//end assertNoNesting()
+
+	/**
+	 * The refusal for a segment that resolved to nothing.
+	 *
+	 * @param string $segment The configured segment.
+	 *
+	 * @return UnexpectedValueException The refusal.
+	 *
+	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+	 */
+	private function emptySegment(string $segment): UnexpectedValueException {
+		return new UnexpectedValueException(
+			$this->l10n->t('The path segment "%s" resolved to nothing; a field position is never empty.', [$segment])
+		);
+
+	}//end emptySegment()
 
 	/**
 	 * What kind of step this is. Reshapes each item.

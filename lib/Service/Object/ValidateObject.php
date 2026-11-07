@@ -41,7 +41,6 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
-use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Formats\Iso8601DateTimeFormat;
 use OCA\OpenRegister\Formats\CronFormat;
 use OCA\OpenRegister\Formats\SemVerFormat;
@@ -139,27 +138,6 @@ class ValidateObject implements ValidateObjectInterface {
 	];
 
 	/**
-	 * Messages that name the property, one argument and the value: the argument key, its
-	 * default, and the sprintf template.
-	 *
-	 * @var array<string, array{0: string, 1: int|string, 2: string}>
-	 */
-	private const SIMPLE_ERROR_MESSAGES = [
-		'format'  => [
-			'format',
-			'unknown',
-			"Property '%s' should match format '%s' but '%s' does not. Please provide a value in the correct format.",
-		],
-		'minimum' => ['min', 0, "Property '%s' should be at least %s, but is %s. Please provide a larger number."],
-		'maximum' => ['max', 0, "Property '%s' should be at most %s, but is %s. Please provide a smaller number."],
-		'pattern' => [
-			'pattern',
-			'unknown',
-			"Property '%s' should match pattern '%s' but '%s' does not. Please provide a value that matches the required pattern.",
-		],
-	];
-
-	/**
 	 * Request-scoped memoized validator instance.
 	 *
 	 * Building an Opis Validator and registering the custom formats and the
@@ -196,36 +174,6 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @var array<string, array{schemaObject: object, computed: list<string>, required: array}>
 	 */
 	private array $preparedSchemaCache = [];
-
-	/**
-	 * Walk the schema's property definitions (raw `$schema->getProperties()`
-	 * shape: associative array) and find every property whose definition sets
-	 * `readOnly: true` at the top level.
-	 *
-	 * Wave-12 Fix 1 helper. We deliberately ignore nested readOnly inside
-	 * object/array sub-schemas — the wave-11 audit (Section A) flagged
-	 * top-level enforcement only; nested cases can be added by the same
-	 * mechanism in a follow-up once the leaf-app contract is stabilised.
-	 *
-	 * @param array $properties Raw schema properties (associative array; key = property name).
-	 *
-	 * @return array<int, string> List of property names whose schema sets `readOnly: true`.
-	 */
-	private function collectReadOnlyPropertyNames(array $properties): array {
-		$readOnly = [];
-		foreach ($properties as $name => $definition) {
-			if (is_array($definition) === false) {
-				continue;
-			}
-
-			$isReadOnly = ($definition['readOnly'] ?? false);
-			if ($isReadOnly === true) {
-				$readOnly[] = (string)$name;
-			}
-		}
-
-		return $readOnly;
-	}//end collectReadOnlyPropertyNames()
 
 	/**
 	 * Enforce JSON-Schema `readOnly: true` on the UPDATE write path.
@@ -270,55 +218,9 @@ class ValidateObject implements ValidateObjectInterface {
 			return [];
 		}
 
-		$names   = $this->collectReadOnlyPropertyNames(properties: self::declaredProperties(schema: $schema));
-		$changed = array_filter(
-			$names,
-			static fn (string $name): bool => array_key_exists($name, $incomingObject) === true
-				&& $incomingObject[$name] !== ($existingObject[$name] ?? null)
-		);
-
-		return array_values(
-			array_map(
-				static fn (string $name): array => [
-					'property'  => $name,
-					'attempted' => $incomingObject[$name],
-					'stored'    => $existingObject[$name] ?? null,
-					'message'   => sprintf("Property '%s' is declared readOnly and cannot be modified after creation.", $name),
-				],
-				$changed
-			)
-		);
+		return (new WriteConstraintCheck(incoming: $incomingObject, stored: $existingObject))
+			->readOnlyViolations(names: self::flaggedProperties(schema: $schema, keyword: 'readOnly'));
 	}//end validateReadOnlyConstraints()
-
-	/**
-	 * Walk the schema's property definitions and find every property declared
-	 * `immutable: true` at the top level.
-	 *
-	 * Deliberately the same shallow walk {@see self::collectReadOnlyPropertyNames()}
-	 * does, for the same reason: nested immutability inside an object or array
-	 * sub-schema is a separate contract and enforcing half of it would be worse
-	 * than enforcing none.
-	 *
-	 * @param array $properties Raw schema properties (associative array; key = property name).
-	 *
-	 * @return array<int, string> Names of properties declared immutable.
-	 *
-	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
-	 */
-	private function collectImmutablePropertyNames(array $properties): array {
-		$immutable = [];
-		foreach ($properties as $name => $definition) {
-			if (is_array($definition) === false) {
-				continue;
-			}
-
-			if (($definition[Schema::IMMUTABLE_PROPERTY_KEYWORD] ?? false) === true) {
-				$immutable[] = (string)$name;
-			}
-		}
-
-		return $immutable;
-	}//end collectImmutablePropertyNames()
 
 	/**
 	 * Enforce `immutable: true` on the UPDATE write path.
@@ -356,26 +258,30 @@ class ValidateObject implements ValidateObjectInterface {
 			return [];
 		}
 
-		$names   = $this->collectImmutablePropertyNames(properties: self::declaredProperties(schema: $schema));
-		$changed = array_filter(
-			$names,
-			static fn (string $name): bool => array_key_exists($name, $incomingObject) === true
-				&& in_array($existingObject[$name] ?? null, [null, ''], true) === false
-				&& $incomingObject[$name] !== $existingObject[$name]
-		);
-
-		return array_values(
-			array_map(
-				static fn (string $name): array => [
-					'property'  => $name,
-					'attempted' => $incomingObject[$name],
-					'stored'    => $existingObject[$name],
-					'message'   => sprintf("Property '%s' is immutable once set and cannot be changed.", $name),
-				],
-				$changed
-			)
-		);
+		return (new WriteConstraintCheck(incoming: $incomingObject, stored: $existingObject))
+			->immutableViolations(names: self::flaggedProperties(schema: $schema, keyword: Schema::IMMUTABLE_PROPERTY_KEYWORD));
 	}//end validateImmutableConstraints()
+
+	/**
+	 * The names of the top-level properties that set a keyword to true.
+	 *
+	 * Nested declarations are deliberately ignored: the write constraints apply to top-level properties.
+	 *
+	 * @param Schema $schema  The schema.
+	 * @param string $keyword The keyword.
+	 *
+	 * @return list<string> The property names.
+	 */
+	private static function flaggedProperties(Schema $schema, string $keyword): array {
+		$flagged = [];
+		foreach (self::declaredProperties(schema: $schema) as $name => $definition) {
+			if (is_array($definition) === true && ($definition[$keyword] ?? false) === true) {
+				$flagged[] = (string)$name;
+			}
+		}
+
+		return $flagged;
+	}//end flaggedProperties()
 
 	/**
 	 * The schema's property definitions, or an empty list when it declares none.
@@ -440,190 +346,6 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end notSupplied()
 
 	/**
-	 * Pre-processes a schema object to resolve all schema references.
-	 *
-	 * This method recursively walks through the schema object and replaces
-	 * any "#/components/schemas/[slug]" references with the actual schema definitions.
-	 * This ensures the validation library can work with fully resolved schemas.
-	 *
-	 * @param object $schemaObject The schema object to process
-	 * @param array $visited Array to track visited schemas to prevent infinite loops
-	 * @param bool $_skipUuidTransformed Whether to skip UUID transformation (unused)
-	 *
-	 * @return object The processed schema object with resolved references
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema reference resolution requires multiple type checks
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag needed for backward compatibility
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function preprocessSchemaReferences(
-		object $schemaObject,
-		array $visited = [],
-		bool $_skipUuidTransformed = false,
-	): object {
-		// Clone the schema object to avoid modifying the original.
-		$processedSchema = json_decode(json_encode($schemaObject));
-
-		// Recursively process all properties.
-		if (($processedSchema->properties ?? null) !== null) {
-			foreach ($processedSchema->properties as $propertyName => $propertySchema) {
-				// Skip processing if this property has been transformed to a UUID type by OpenRegister logic.
-				// This prevents circular references for related-object properties.
-				$isStringType = ($propertySchema->type ?? null) !== null
-					&& $propertySchema->type === 'string';
-				$hasUuidPattern = ($propertySchema->pattern ?? null) !== null
-					&& str_contains($propertySchema->pattern, 'uuid') === true;
-				if ($isStringType === true && $hasUuidPattern === true) {
-					continue;
-				}
-
-				$processedSchema->properties->$propertyName = $this->resolveSchemaProperty(
-					propertySchema: $propertySchema,
-					visited: $visited
-				);
-			}
-		}
-
-		// Process array items if present.
-		if (($processedSchema->items ?? null) !== null) {
-			// Skip processing if array items have been transformed to UUID type by OpenRegister logic.
-			$isStringType = ($processedSchema->items->type ?? null) !== null
-				&& $processedSchema->items->type === 'string';
-			$hasUuidPattern = ($processedSchema->items->pattern ?? null) !== null
-				&& str_contains($processedSchema->items->pattern, 'uuid') === true;
-			$isAlreadyTransformed = $isStringType && $hasUuidPattern;
-
-			if ($isAlreadyTransformed === false) {
-				$processedSchema->items = $this->resolveSchemaProperty(
-					propertySchema: $processedSchema->items,
-					visited: $visited
-				);
-			}
-		}
-
-		return $processedSchema;
-	}//end preprocessSchemaReferences()
-
-	/**
-	 * Resolves schema references in a property definition.
-	 *
-	 * @param object $propertySchema The property schema to resolve
-	 * @param array $visited Array to track visited schemas to prevent infinite loops
-	 *
-	 * @return object The resolved property schema
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex reference resolution with multiple format handlers
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple reference types and nested schema scenarios
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function resolveSchemaProperty(object $propertySchema, array $visited = []): object {
-		$schemaSlug = $this->componentSchemaSlug(propertySchema: $propertySchema);
-		if ($schemaSlug !== null) {
-			// Prevent infinite loops.
-			if (in_array($schemaSlug, $visited) === true) {
-				return $propertySchema;
-			}
-
-			$referencedSchema = $this->findSchemaBySlug(slug: $schemaSlug);
-			if ($referencedSchema !== null) {
-				$resolvedSchema = $this->preprocessSchemaReferences(
-					schemaObject: $referencedSchema->getSchemaObject($this->urlGenerator),
-					visited: array_merge($visited, [$schemaSlug])
-				);
-				return self::mergeResolvedReference(propertySchema: $propertySchema, resolvedSchema: $resolvedSchema);
-			}
-		}
-
-		// Handle array items with $ref.
-		if (($propertySchema->items ?? null) !== null && (($propertySchema->items->{'$ref'} ?? null) !== null) === true) {
-			$propertySchema->items = $this->resolveSchemaProperty(propertySchema: $propertySchema->items, visited: $visited);
-		}
-
-		// Recursively process nested properties.
-		if (($propertySchema->properties ?? null) !== null) {
-			foreach ($propertySchema->properties ?? [] as $nestedPropertyName => $nestedPropertySchema) {
-				$propertySchema->properties->$nestedPropertyName = $this->resolveSchemaProperty(
-					propertySchema: $nestedPropertySchema,
-					visited: $visited
-				);
-			}
-		}
-
-		return $propertySchema;
-	}//end resolveSchemaProperty()
-
-	/**
-	 * The slug of the `#/components/schemas/` schema a property's `$ref` points at.
-	 *
-	 * The `$ref` may be a string, or an object or array carrying an `id`; query parameters are dropped.
-	 *
-	 * @param object $propertySchema The property schema.
-	 *
-	 * @return string|null The schema slug, or null when the property has no such reference.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function componentSchemaSlug(object $propertySchema): ?string {
-		$reference = ($propertySchema->{'$ref'} ?? null);
-		if (is_object($reference) === true && (($reference->id ?? null) !== null)) {
-			$reference = $reference->id;
-		} elseif (is_array($reference) === true && (($reference['id'] ?? null) !== null)) {
-			$reference = $reference['id'];
-		}
-
-		if (is_string($reference) === false || str_contains($reference, '#/components/schemas/') === false) {
-			return null;
-		}
-
-		$cleanReference = $this->removeQueryParameters(reference: $reference);
-		return substr($cleanReference, strrpos($cleanReference, '/') + 1);
-	}//end componentSchemaSlug()
-
-	/**
-	 * A property schema with its `$ref` replaced by the resolved schema.
-	 *
-	 * An object property accepts the full object or a UUID string; its other keywords except `type`
-	 * stay. Any other property becomes the resolved schema carrying its other keywords.
-	 *
-	 * @param object $propertySchema The property schema.
-	 * @param object $resolvedSchema The resolved referenced schema.
-	 *
-	 * @return object The merged schema.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function mergeResolvedReference(object $propertySchema, object $resolvedSchema): object {
-		if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
-			$unionSchema = new stdClass();
-			$unionSchema->oneOf = [
-				$resolvedSchema,
-				(object)[
-					'type' => 'string',
-					'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-				],
-			];
-
-			foreach ($propertySchema as $key => $value) {
-				if ($key !== '$ref' && $key !== 'type') {
-					$unionSchema->$key = $value;
-				}
-			}
-
-			return $unionSchema;
-		}
-
-		foreach ($propertySchema as $key => $value) {
-			if ($key !== '$ref') {
-				$resolvedSchema->$key = $value;
-			}
-		}
-
-		return $resolvedSchema;
-	}//end mergeResolvedReference()
-
-	/**
 	 * Transforms OpenRegister-specific object configurations before validation.
 	 *
 	 * This method handles the difference between:
@@ -686,11 +408,8 @@ class ValidateObject implements ValidateObjectInterface {
 		// branches below exactly as before.
 		$this->dropUnusableRef(schema: $propertySchema);
 
-		// UUID pattern for related object references.
-		$uuidPat = self::UUID_REFERENCE_PATTERN;
-
-		$this->applyInversedByRelation(propertySchema: $propertySchema, uuidPattern: $uuidPat);
-		$this->transformArrayItemsForOpenRegister(propertySchema: $propertySchema, uuidPattern: $uuidPat);
+		$this->applyInversedByRelation(propertySchema: $propertySchema);
+		$this->transformArrayItemsForOpenRegister(propertySchema: $propertySchema);
 
 		// Handle direct object properties.
 		if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
@@ -711,13 +430,12 @@ class ValidateObject implements ValidateObjectInterface {
 	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
 	 *
 	 * @param object $propertySchema The property schema to transform
-	 * @param string $uuidPattern    The pattern a related-object reference matches
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function applyInversedByRelation(object $propertySchema, string $uuidPattern): void {
+	private function applyInversedByRelation(object $propertySchema): void {
 		if (($propertySchema->inversedBy ?? null) === null || $propertySchema->inversedBy === '') {
 			return;
 		}
@@ -725,59 +443,48 @@ class ValidateObject implements ValidateObjectInterface {
 		$type = ($propertySchema->type ?? null);
 		if ($type === 'array') {
 			// For inversedBy array properties, allow objects or UUIDs.
-			$propertySchema->items = (object)[
-				'oneOf' => [
-					(object)[
-						'type' => 'string',
-						'pattern' => $uuidPattern,
-						'description' => 'UUID reference to a related object',
-					],
-					(object)[
-						'type' => 'object',
-						'description' => 'Nested object that will be created separately',
-					],
-				],
-			];
+			$propertySchema->items = (object)['oneOf' => [self::uuidReference(), self::separatelyCreatedObject()]];
 			return;
 		}
 
 		if ($type === 'object') {
 			// For inversedBy object properties, allow objects, UUIDs, or null.
-			$propertySchema->oneOf = $this->inversedByObjectAlternatives(uuidPattern: $uuidPattern);
-			unset(
-				$propertySchema->type,
-				$propertySchema->pattern,
-				$propertySchema->properties,
-				$propertySchema->required,
-				$propertySchema->{'$ref'}
-			);
+			$propertySchema->oneOf = $this->inversedByObjectAlternatives();
+			unset($propertySchema->type, $propertySchema->pattern, $propertySchema->properties, $propertySchema->required, $propertySchema->{'$ref'});
 		}
 	}//end applyInversedByRelation()
 
 	/**
+	 * The schema of a UUID string that references a related object.
+	 *
+	 * @return object The schema.
+	 */
+	private static function uuidReference(): object {
+		return (object)['type' => 'string', 'pattern' => self::UUID_REFERENCE_PATTERN, 'description' => 'UUID reference to a related object'];
+	}//end uuidReference()
+
+	/**
+	 * The schema of a nested object the save creates on its own.
+	 *
+	 * @return object The schema.
+	 */
+	private static function separatelyCreatedObject(): object {
+		return (object)['type' => 'object', 'description' => 'Nested object that will be created separately'];
+	}//end separatelyCreatedObject()
+
+	/**
 	 * What an inversedBy object property accepts: null (managed by the other side), a UUID, or a nested object.
 	 *
-	 * @param string $uuidPattern The pattern a related-object reference matches
 	 *
 	 * @return array<int, object> The oneOf alternatives.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function inversedByObjectAlternatives(string $uuidPattern): array {
+	private function inversedByObjectAlternatives(): array {
 		return [
-			(object)[
-				'type' => 'null',
-				'description' => 'No related object (inversedBy - managed by other side)',
-			],
-			(object)[
-				'type' => 'string',
-				'pattern' => $uuidPattern,
-				'description' => 'UUID reference to a related object',
-			],
-			(object)[
-				'type' => 'object',
-				'description' => 'Nested object that will be created separately',
-			],
+			(object)['type' => 'null', 'description' => 'No related object (inversedBy - managed by other side)'],
+			self::uuidReference(),
+			self::separatelyCreatedObject(),
 		];
 	}//end inversedByObjectAlternatives()
 
@@ -785,27 +492,27 @@ class ValidateObject implements ValidateObjectInterface {
 	 * Rewrite the items of an array property: relation items become UUID strings, object items are transformed.
 	 *
 	 * @param object $propertySchema The property schema to transform
-	 * @param string $uuidPattern    The pattern a related-object reference matches
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function transformArrayItemsForOpenRegister(object $propertySchema, string $uuidPattern): void {
-		$isArrayType = ($propertySchema->type ?? null) !== null
-			&& $propertySchema->type === 'array';
-		$hasItems = ($propertySchema->items ?? null) !== null;
+	private function transformArrayItemsForOpenRegister(object $propertySchema): void {
+		if (($propertySchema->type ?? null) !== 'array' || ($propertySchema->items ?? null) === null) {
+			return;
+		}
+
 		// `items` may decode as an associative array rather than a stdClass depending on the
 		// schema source; normalise it to an object so the $ref-strip below runs. Without this,
 		// an array-items $ref (e.g. `installedOn.items {"$ref":"Agent"}`) is left intact and
 		// Opis JSON Schema fails with "Unresolved reference: schema:///Agent#" — unlike a scalar
 		// string $ref, which is stripped by a separate branch that needs no object cast.
-		if ($isArrayType === true && $hasItems === true && is_array($propertySchema->items) === true) {
+		if (is_array($propertySchema->items) === true) {
 			$propertySchema->items = (object)$propertySchema->items;
 		}
 
-		if ($isArrayType === true && $hasItems === true && is_object($propertySchema->items) === true) {
-			$this->transformArrayItemSchema(itemsSchema: $propertySchema->items, uuidPattern: $uuidPattern);
+		if (is_object($propertySchema->items) === true) {
+			$this->transformArrayItemSchema(itemsSchema: $propertySchema->items);
 		}
 	}//end transformArrayItemsForOpenRegister()
 
@@ -813,54 +520,77 @@ class ValidateObject implements ValidateObjectInterface {
 	 * Rewrite one array's item schema: an inversedBy or `$ref` item becomes a UUID string, an object item is transformed.
 	 *
 	 * @param object $itemsSchema The item schema to transform
-	 * @param string $uuidPattern The pattern a related-object reference matches
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function transformArrayItemSchema(object $itemsSchema, string $uuidPattern): void {
+	private function transformArrayItemSchema(object $itemsSchema): void {
 		// Same normalisation as the property itself — see dropUnusableRef().
 		$this->dropUnusableRef(schema: $itemsSchema);
 
-		// Handle inversedBy relationships for array items.
 		// TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
 		if (($itemsSchema->inversedBy ?? null) !== null) {
-			// For inversedBy array items, transform to UUID string validation.
-			$itemsSchema->type = 'string';
-			$itemsSchema->pattern = $uuidPattern;
-			$itemsSchema->description = 'UUID reference to a related object (inversedBy - should be empty)';
-			unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
-		} elseif (($itemsSchema->{'$ref'} ?? null) !== null) {
-			// Array items that $ref another schema are relation references
-			// stored as UUID strings (e.g. assignment.briefingMaterialIds,
-			// item-bank.itemIds declared as items {"$ref":"<slug>","format":
-			// "uuid"}). OpenRegister uses the $ref only for relation tracking;
-			// Opis JSON Schema would otherwise try to resolve the bare slug as
-			// a URI and fail with "Unresolved reference: schema:///<slug>#".
-			// Treat the items as opaque UUID strings for validation — this
-			// mirrors how single string $ref props (below) and array
-			// self-references (transformSchemaForValidation Step 1) are handled.
-			$itemsSchema->type = 'string';
-			$itemsSchema->pattern = $uuidPattern;
-			$itemsSchema->description = 'UUID reference to a related object';
-			unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
-		} elseif (isset($itemsSchema->type) === true && $itemsSchema->type === 'object') {
-			$this->transformObjectPropertyForOpenRegister(objectSchema: $itemsSchema);
+			self::asUuidItem(itemsSchema: $itemsSchema, description: 'UUID reference to a related object (inversedBy - should be empty)');
+			return;
+		}
 
-			// 🔴 AND THE ITEM OBJECT'S OWN PROPERTIES. Without this a `$ref` on a
-			// property of an object inside `items` (learniq
-			// ReportCard.subjectGrades[].curriculumPlanId, Lesson.blocks[],
-			// HourPlan.lines[]) reached Opis untouched, and every write that
-			// carried the array failed with `Unresolved reference:
-			// schema:///CurriculumPlan#` (openregister#2179). Each such
-			// property gets exactly the treatment a top-level property gets.
-			$this->transformNestedPropertiesForOpenRegister(schema: $itemsSchema);
-		}//end if
+		// Array items that $ref another schema are relation references stored as UUID
+		// strings (e.g. assignment.briefingMaterialIds, item-bank.itemIds declared as
+		// items {"$ref":"<slug>","format":"uuid"}). OpenRegister uses the $ref only for
+		// relation tracking; Opis JSON Schema would otherwise try to resolve the bare
+		// slug as a URI and fail with "Unresolved reference: schema:///<slug>#". This
+		// mirrors how single string $ref props and array self-references are handled.
+		if (($itemsSchema->{'$ref'} ?? null) !== null) {
+			self::asUuidItem(itemsSchema: $itemsSchema, description: 'UUID reference to a related object');
+			return;
+		}
+
+		if (($itemsSchema->type ?? null) === 'object') {
+			$this->transformObjectItem(itemsSchema: $itemsSchema);
+		}
 	}//end transformArrayItemSchema()
 
 	/**
-	 * Strip a relation `$ref` Opis would try to resolve as a URI: from a string property, and from an untyped one.
+	 * Turn array items into opaque UUID strings for validation.
+	 *
+	 * @param object $itemsSchema The items schema.
+	 * @param string $description What the UUID stands for.
+	 *
+	 * @return void
+	 */
+	private static function asUuidItem(object $itemsSchema, string $description): void {
+		$itemsSchema->type        = 'string';
+		$itemsSchema->pattern     = self::UUID_REFERENCE_PATTERN;
+		$itemsSchema->description = $description;
+		unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
+	}//end asUuidItem()
+
+	/**
+	 * Transform object items and the item object's own properties.
+	 *
+	 * Without the second step a `$ref` on a property of an object inside `items`
+	 * (learniq ReportCard.subjectGrades[].curriculumPlanId, Lesson.blocks[],
+	 * HourPlan.lines[]) reached Opis untouched, and every write that carried the
+	 * array failed with `Unresolved reference: schema:///CurriculumPlan#`
+	 * (openregister#2179). Each such property gets exactly the treatment a
+	 * top-level property gets.
+	 *
+	 * @param object $itemsSchema The items schema.
+	 *
+	 * @return void
+	 */
+	private function transformObjectItem(object $itemsSchema): void {
+		$this->transformObjectPropertyForOpenRegister(objectSchema: $itemsSchema);
+		$this->transformNestedPropertiesForOpenRegister(schema: $itemsSchema);
+	}//end transformObjectItem()
+
+	/**
+	 * Strip a relation `$ref`, at any depth and on any type, so Opis does not try to resolve it as a URI.
+	 *
+	 * OpenRegister uses `$ref` to record a relation (e.g. for onDelete), not for validation. A property that
+	 * keeps one fails every write with `Unresolved reference: schema:///<slug>#`, which names neither the
+	 * property nor the schema.
 	 *
 	 * @param object $propertySchema The property schema to transform
 	 *
@@ -869,42 +599,35 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function stripRelationRefs(object $propertySchema): void {
-		// Strip $ref from string-type properties referencing other schemas.
-		// OpenRegister uses $ref to denote schema relationships, but Opis JSON Schema
-		// interprets $ref as a JSON Schema reference and tries to resolve it as a URI.
-		// The $ref is only needed by OpenRegister for relation tracking (e.g. onDelete),
-		// not for validation.
-		if (($propertySchema->type ?? null) !== null
-			&& $propertySchema->type === 'string'
-			&& ($propertySchema->{'$ref'} ?? null) !== null
-		) {
-			unset($propertySchema->{'$ref'});
+		$reference = ($propertySchema->{'$ref'} ?? null);
+		if ($reference === null) {
+			return;
 		}
 
-		// 🔴 AND FROM A PROPERTY THAT DECLARES NO TYPE AT ALL, which is the one
-		// shape every branch above misses. `{"$ref": "besluit"}` on its own is
-		// not an array, not an object and not a string, so the slug survived
-		// into Opis and every object write of that schema failed with
-		// `Unresolved reference: schema:///besluit#` — a message that names
-		// neither the property nor the schema. The schema itself saved with a
-		// 200, so the author read a success and then could not store anything.
-		// Measured 2026-09-19 on tests/e2e/ci/link-exposure.spec.ts, whose
-		// disclosure assertion never ran for this reason.
-		//
-		// A ref that could genuinely be a JSON Schema reference — a fragment
-		// or a URI — is left alone: this app writes slugs, and dropping
-		// something that resolves would change validation rather than restore
-		// it.
-		$bareRef = ($propertySchema->{'$ref'} ?? null);
-		if (($propertySchema->type ?? null) === null
-			&& is_string($bareRef) === true
-			&& $bareRef !== ''
-			&& str_contains($bareRef, '#') === false
-			&& str_contains($bareRef, '/') === false
-		) {
+		if (($propertySchema->type ?? null) === 'string' || self::isRelationMarker(reference: $reference) === true) {
 			unset($propertySchema->{'$ref'});
 		}
 	}//end stripRelationRefs()
+
+	/**
+	 * Whether a `$ref` names a schema: a slug or `#/components/schemas/<slug>`, neither of which Opis can resolve.
+	 *
+	 * Any other fragment or URI could be a genuine JSON Schema reference and stays.
+	 *
+	 * @param mixed $reference The `$ref` value
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isRelationMarker(mixed $reference): bool {
+		if (is_string($reference) === false) {
+			return false;
+		}
+
+		return str_starts_with($reference, '#/components/schemas/') === true
+			|| (str_contains($reference, '#') === false && str_contains($reference, '/') === false);
+	}//end isRelationMarker()
 
 	/**
 	 * Apply transformPropertyForOpenRegister() to every property of an object schema.
@@ -918,32 +641,39 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @return void
 	 */
 	private function transformNestedPropertiesForOpenRegister(object $schema): void {
-		if (($schema->properties ?? null) === null) {
-			return;
-		}
-
 		// `properties` and each property may decode as associative arrays for some
 		// schema sources; cast them and WRITE THE CAST BACK, or the transform runs
 		// on a copy and the original keeps its `$ref`.
-		if (is_array($schema->properties) === true) {
+		if (is_array(($schema->properties ?? null)) === true) {
 			$schema->properties = (object)$schema->properties;
 		}
 
-		if (is_object($schema->properties) === false) {
+		if (is_object(($schema->properties ?? null)) === false) {
 			return;
 		}
 
-		foreach (get_object_vars($schema->properties) as $nestedPropertyName => $nestedPropertySchema) {
-			if (is_array($nestedPropertySchema) === true) {
-				$nestedPropertySchema = (object)$nestedPropertySchema;
-				$schema->properties->{$nestedPropertyName} = $nestedPropertySchema;
-			}
-
-			if (is_object($nestedPropertySchema) === true) {
-				$this->transformPropertyForOpenRegister(propertySchema: $nestedPropertySchema);
-			}
+		foreach (array_keys(get_object_vars($schema->properties)) as $name) {
+			$this->transformNestedProperty(properties: $schema->properties, name: $name);
 		}
 	}//end transformNestedPropertiesForOpenRegister()
+
+	/**
+	 * Transform one nested property, writing an array shape back as an object.
+	 *
+	 * @param object     $properties The `properties` object.
+	 * @param int|string $name       The property's name.
+	 *
+	 * @return void
+	 */
+	private function transformNestedProperty(object $properties, int|string $name): void {
+		if (is_array($properties->{$name}) === true) {
+			$properties->{$name} = (object)$properties->{$name};
+		}
+
+		if (is_object($properties->{$name}) === true) {
+			$this->transformPropertyForOpenRegister(propertySchema: $properties->{$name});
+		}
+	}//end transformNestedProperty()
 
 	/**
 	 * Remove a `$ref` that cannot be a JSON Schema reference.
@@ -985,29 +715,11 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function transformObjectPropertyForOpenRegister(object $objectSchema): void {
-		// Check if this has objectConfiguration (can be array or object).
-		// Also check inside items.oneOf for polymorphic references.
 		$handling = $this->extractObjectConfigurationHandling(propertySchema: $objectSchema);
 
-		if ($handling === null) {
-			return;
-		}
-
-		switch ($handling) {
-			case 'related-schema':
-			case 'related-object':
-				// For related objects, expect UUID strings instead of full objects.
-				$this->transformToUuidProperty(objectSchema: $objectSchema);
-				break;
-
-			case 'nested-object':
-				// For nested objects, keep the full object structure but remove circular refs.
-				$this->transformToNestedObjectProperty(objectSchema: $objectSchema);
-				break;
-
-			default:
-				// For other handling types, leave as-is.
-				break;
+		// For related objects, expect UUID strings instead of full objects. Other handling leaves it as-is.
+		if ($handling === 'related-schema' || $handling === 'related-object') {
+			$this->transformToUuidProperty(objectSchema: $objectSchema);
 		}
 	}//end transformObjectPropertyForOpenRegister()
 
@@ -1021,115 +733,46 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function transformToUuidProperty(object $objectSchema): void {
-		// UUID pattern for related object references.
-		$uuidPat = self::UUID_REFERENCE_PATTERN;
-
 		// If this property has inversedBy, it should support both objects and UUID strings.
 		if (($objectSchema->inversedBy ?? null) === null) {
-			// Original behavior for non-inversedBy properties.
-			// Remove object-specific properties.
-			unset($objectSchema->properties, $objectSchema->required);
-
-			// Set to string type with UUID pattern.
-			$objectSchema->type = 'string';
-			$objectSchema->pattern = $uuidPat;
+			unset($objectSchema->properties, $objectSchema->required, $objectSchema->{'$ref'});
+			$objectSchema->type        = 'string';
+			$objectSchema->pattern     = self::UUID_REFERENCE_PATTERN;
 			$objectSchema->description = 'UUID reference to a related object';
-
-			// Remove $ref to prevent circular references.
-			unset($objectSchema->{'$ref'});
 			return;
 		}
 
-		// Create a union type that allows both full objects and UUID strings.
-		$originalProperties = $objectSchema->properties ?? null;
-		$originalRequired = $objectSchema->required ?? null;
-		$originalRef = $objectSchema->{'$ref'} ?? null;
+		$objectAlternative = self::fullObjectAlternative(objectSchema: $objectSchema);
 
-		// Create the object schema (preserve original structure).
-		$objectTypeSchema = (object)[
-			'type' => 'object',
-		];
-
-		if ($originalProperties !== null && empty($originalProperties) === false) {
-			$objectTypeSchema->properties = $originalProperties;
-		}
-
-		if ($originalRequired !== null && empty($originalRequired) === false) {
-			$objectTypeSchema->required = $originalRequired;
-		}
-
-		if ($originalRef !== null && $originalRef !== '') {
-			$objectTypeSchema->{'$ref'} = $originalRef;
-		}
-
-		// Create the UUID string schema.
-		$uuidTypeSchema = (object)[
-			'type' => 'string',
-			'pattern' => $uuidPat,
-			'description' => 'UUID reference to a related object',
-		];
-
-		// Clear the current object and set up union type.
+		// Clear the current object and set up the union type.
 		$objectSchema->type = null;
 		unset($objectSchema->properties, $objectSchema->required, $objectSchema->{'$ref'});
-
-		// Create union type.
-		$objectSchema->oneOf = [
-			$objectTypeSchema,
-			$uuidTypeSchema,
-		];
-
+		$objectSchema->oneOf       = [$objectAlternative, self::uuidReference()];
 		$objectSchema->description = 'Related object (can be full object or UUID reference)';
-		// End if.
 	}//end transformToUuidProperty()
 
 	/**
-	 * Transforms an object property for nested objects, removing circular references.
+	 * The full-object side of a related object's union, with the original structure.
 	 *
-	 * @param object $objectSchema The object schema to transform
+	 * @param object $objectSchema The property as declared.
 	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @return object The object schema.
 	 */
-	private function transformToNestedObjectProperty(object $objectSchema): void {
-		// For nested objects, we need to resolve the $ref but prevent circular references.
-		if (($objectSchema->{'$ref'} ?? null) !== null) {
-			$ref = $objectSchema->{'$ref'};
-
-			// Handle both string and object formats for $ref.
-			$reference = $ref;
-			if (is_object($ref) === true && (($ref->id ?? null) !== null)) {
-				$reference = $ref->id;
-			} elseif (is_array($ref) === true && (($ref['id'] ?? null) !== null)) {
-				$reference = $ref['id'];
+	private static function fullObjectAlternative(object $objectSchema): object {
+		$alternative = (object)['type' => 'object'];
+		foreach (['properties', 'required'] as $key) {
+			if (empty($objectSchema->{$key}) === false) {
+				$alternative->{$key} = $objectSchema->{$key};
 			}
+		}
 
-			// If this is a self-reference (circular), convert to a simple object type.
-			if (is_string($reference) === true && str_contains($reference, '/components/schemas/') === true) {
-				// Remove query parameters if present.
-				$cleanReference = $this->removeQueryParameters(reference: $reference);
-				$schemaSlug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
+		$ref = ($objectSchema->{'$ref'} ?? null);
+		if ($ref !== null && $ref !== '') {
+			$alternative->{'$ref'} = $ref;
+		}
 
-				// For self-references, create a generic object structure to prevent circular validation.
-				// Create a temporary object for isSelfReference check.
-				$tempSchema = (object)['$ref' => $schemaSlug];
-				if ($this->isSelfReference(propertySchema: $tempSchema, schemaSlug: $schemaSlug) === true) {
-					$objectSchema->type = 'object';
-					$objectSchema->description = 'Nested object (self-reference prevented)';
-					unset($objectSchema->{'$ref'});
-
-					// Add basic properties that most objects should have.
-					$objectSchema->properties = (object)[
-						'id' => (object)[
-							'type' => 'string',
-							'description' => 'Object identifier',
-						],
-					];
-				}
-			}//end if
-		}//end if
-	}//end transformToNestedObjectProperty()
+		return $alternative;
+	}//end fullObjectAlternative()
 
 	/**
 	 * Extracts the objectConfiguration handling value from a property schema.
@@ -1146,44 +789,41 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function extractObjectConfigurationHandling(object $propertySchema): ?string {
-		// Check directly on the property schema.
-		if (isset($propertySchema->objectConfiguration) === true) {
-			$handling = $this->getMixedValue(data: $propertySchema->objectConfiguration, key: 'handling');
-			if ($handling !== null) {
-				return $handling;
-			}
-		}
-
-		// Check inside items (for properties with items structure).
-		// Items can be either an object (stdClass) or an array depending on how the schema was processed.
-		if (isset($propertySchema->items) === true) {
-			$items = $propertySchema->items;
-
-			// Check if items has objectConfiguration directly.
-			$itemsConfig = $this->getMixedValue(data: $items, key: 'objectConfiguration');
-			if ($itemsConfig !== null) {
-				$handling = $this->getMixedValue(data: $itemsConfig, key: 'handling');
-				if ($handling !== null) {
-					return $handling;
-				}
-			}
-
-			// Check inside items.oneOf (for polymorphic references).
-			$oneOf = $this->getMixedValue(data: $items, key: 'oneOf');
-			$handling = $this->extractHandlingFromOneOfItems(oneOf: $oneOf);
-			if ($handling !== null) {
-				return $handling;
-			}
-		}//end if
-
-		// Check inside oneOf directly on the property (alternative structure).
-		$handling = $this->extractHandlingFromOneOfItems(oneOf: ($propertySchema->oneOf ?? null));
-		if ($handling !== null) {
-			return $handling;
-		}
-
-		return null;
+		return ($this->handlingOf(holder: $propertySchema)
+			?? $this->itemsHandling(propertySchema: $propertySchema)
+			?? $this->extractHandlingFromOneOfItems(oneOf: ($propertySchema->oneOf ?? null)));
 	}//end extractObjectConfigurationHandling()
+
+	/**
+	 * The handling in a schema's own objectConfiguration.
+	 *
+	 * @param mixed $holder An object or array that may carry an objectConfiguration.
+	 *
+	 * @return string|null The handling, if any.
+	 */
+	private function handlingOf(mixed $holder): ?string {
+		return $this->getMixedValue(data: $this->getMixedValue(data: $holder, key: 'objectConfiguration'), key: 'handling');
+	}//end handlingOf()
+
+	/**
+	 * The handling inside `items`: its own, then inside its oneOf for polymorphic references.
+	 *
+	 * Items can be either an object (stdClass) or an array depending on how the schema was processed.
+	 *
+	 * @param object $propertySchema The property schema.
+	 *
+	 * @return string|null The handling, if any.
+	 */
+	private function itemsHandling(object $propertySchema): ?string {
+		if (isset($propertySchema->items) === false) {
+			return null;
+		}
+
+		$items = $propertySchema->items;
+
+		return ($this->handlingOf(holder: $items)
+			?? $this->extractHandlingFromOneOfItems(oneOf: $this->getMixedValue(data: $items, key: 'oneOf')));
+	}//end itemsHandling()
 
 	/**
 	 * Extracts the handling value from a oneOf array of schema items.
@@ -1198,17 +838,14 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function extractHandlingFromOneOfItems($oneOf): ?string {
-		if ($oneOf === null || (is_array($oneOf) === false && is_object($oneOf) === false)) {
+		if (is_array($oneOf) === false && is_object($oneOf) === false) {
 			return null;
 		}
 
 		foreach ($oneOf as $oneOfItem) {
-			$oneOfConfig = $this->getMixedValue(data: $oneOfItem, key: 'objectConfiguration');
-			if ($oneOfConfig !== null) {
-				$handling = $this->getMixedValue(data: $oneOfConfig, key: 'handling');
-				if ($handling !== null) {
-					return $handling;
-				}
+			$handling = $this->handlingOf(holder: $oneOfItem);
+			if ($handling !== null) {
+				return $handling;
 			}
 		}
 
@@ -1320,7 +957,7 @@ class ValidateObject implements ValidateObjectInterface {
 	private function transformSelfRelatedObject(object $propertySchema): void {
 		unset($propertySchema->properties, $propertySchema->required);
 		if (($propertySchema->inversedBy ?? null) !== null) {
-			$propertySchema->oneOf = $this->inversedByObjectAlternatives(uuidPattern: self::UUID_REFERENCE_PATTERN);
+			$propertySchema->oneOf = $this->inversedByObjectAlternatives();
 			unset($propertySchema->type, $propertySchema->pattern);
 			return;
 		}
@@ -1646,44 +1283,6 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end isSelfReference()
 
 	/**
-	 * Finds a schema by slug (case-insensitive).
-	 *
-	 * @param string $slug The schema slug to find
-	 *
-	 * @return Schema|null The found schema or null if not found
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function findSchemaBySlug(string $slug): ?Schema {
-		try {
-			// Try direct slug match first using the find method which supports slug lookups.
-			// find() throws when there is no match; the catch below is the
-			// "not found" path, so no null test is needed here.
-			return $this->schemaMapper->find($slug);
-		} catch (Exception $e) {
-			// Continue with case-insensitive search.
-		}
-
-		// Try case-insensitive search.
-		try {
-			$schemas = $this->schemaMapper->findAll();
-			foreach ($schemas as $schema) {
-				if (strcasecmp($schema->getSlug(), $slug) === 0) {
-					return $schema;
-				}
-			}
-		} catch (Exception $e) {
-			// Failed to fetch schemas, returning null.
-			$this->logger->debug(
-				message: '[ValidateObject] Failed to find schema by slug',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $slug, 'exception' => $e->getMessage()]
-			);
-		}
-
-		return null;
-	}//end findSchemaBySlug()
-
-	/**
 	 * Validates an object against a schema, letting a `user` format accept the given account ids.
 	 *
 	 * For a caller that writes those accounts before the object, such as an
@@ -1734,58 +1333,108 @@ class ValidateObject implements ValidateObjectInterface {
 		int $_depth = 0,
 		array $notSupplied = [],
 	): ValidationResult {
-
-		// Resolve a schema id to its entity once so downstream steps (unique-field
-		// validation, prepared-schema caching) always work with the entity.
-		// SchemaMapper::find() memoizes lookups in its own findCache.
-		if ($schema !== null && ($schema instanceof Schema) === false) {
-			$schema = $this->schemaMapper->find($schema);
-		}
-
+		$schema = $this->schemaEntity(schema: $schema);
 		$target = $this->validationTarget(schema: $schema, given: ['schemaObject' => $schemaObject, 'notSupplied' => $notSupplied]);
-		$schemaObject = $target['schemaObject'];
 
-		if ($schema instanceof Schema) {
-			$this->validateUniqueFields(object: $object, schema: $schema);
-		}
-
-		// Validate extended field types (color, recurrence) against the original,
-		// un-transformed schema so the declared `type`/`format` annotations are intact.
-		$this->validateExtendedFieldTypes(object: $object, schemaObject: $schemaObject);
+		$this->checkFieldRules(object: $object, target: ['schema' => $schema, 'schemaObject' => $target['schemaObject']]);
 
 		// The per-schema preparation pipeline (transform, clean, computed strip,
 		// null-type widening) is memoized per schemaId:version, so bulk
 		// validation of N objects against one schema prepares it once.
-		$prepared = $this->preparedSchema(schemaObject: $schemaObject, target: ['schema' => $schema, 'cacheKey' => $target['cacheKey']]);
+		return $this->validatePrepared(
+			object: $object,
+			prepared: $this->preparedSchema(schemaObject: $target['schemaObject'], target: ['schema' => $schema, 'cacheKey' => $target['cacheKey']])
+		);
+	}//end validateObject()
+
+	/**
+	 * Resolve a schema id to its entity once, so unique-field validation and prepared-schema caching work with the entity.
+	 *
+	 * SchemaMapper::find() memoizes lookups in its own findCache.
+	 *
+	 * @param Schema|int|string|null $schema The schema or its id.
+	 *
+	 * @return Schema|null The entity.
+	 */
+	private function schemaEntity(Schema|int|string|null $schema): ?Schema {
+		if ($schema === null || $schema instanceof Schema) {
+			return $schema;
+		}
+
+		return $this->schemaMapper->find($schema);
+	}//end schemaEntity()
+
+	/**
+	 * The checks Opis does not make: unique fields and the extended field types.
+	 *
+	 * Extended field types (color, recurrence) are read from the original,
+	 * un-transformed schema so the declared `type`/`format` annotations are intact.
+	 *
+	 * @param array                                         $object The object data.
+	 * @param array{schema: ?Schema, schemaObject: object} $target What it is validated against.
+	 *
+	 * @return void
+	 *
+	 * @throws CustomValidationException When a rule is broken.
+	 */
+	private function checkFieldRules(array $object, array $target): void {
+		if ($target['schema'] instanceof Schema) {
+			$this->validateUniqueFields(object: $object, schema: $target['schema']);
+		}
+
+		(new ExtendedFieldCheck(object: $object))->assertValid(schemaObject: $target['schemaObject']);
+	}//end checkFieldRules()
+
+	/**
+	 * Validate the object against a prepared schema.
+	 *
+	 * @param array                                                        $object   The object data.
+	 * @param array{schemaObject: object, computed: array, required: array} $prepared The prepared schema.
+	 *
+	 * @return ValidationResult The result.
+	 */
+	private function validatePrepared(array $object, array $prepared): ValidationResult {
 		$schemaObject = $prepared['schemaObject'];
 
-		// If there are no properties, we don't need to validate.
-		// Skip validation ONLY if properties are NOT set OR if properties are empty.
+		// Without properties there is nothing to validate: validate against an
+		// empty schema object to get a valid ValidationResult.
 		if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
-			// Validate against an empty schema object to get a valid ValidationResult.
 			return $this->getValidator()->validate(json_decode(json_encode($object)), new stdClass());
 		}
 
+		$values = $this->significantValues(object: $object, prepared: $prepared);
+
+		return $this->getValidator()->validate(json_decode(json_encode($values)), $schemaObject);
+	}//end validatePrepared()
+
+	/**
+	 * The object data that goes to the validator.
+	 *
+	 * Computed fields are system-generated and are not validated against user input.
+	 * Only truly empty values without validation significance are removed: empty
+	 * strings stay for required fields so they fail with a proper error message.
+	 *
+	 * @param array                                                        $object   The object data.
+	 * @param array{schemaObject: object, computed: array, required: array} $prepared The prepared schema.
+	 *
+	 * @return array The values to validate.
+	 */
+	private function significantValues(array $object, array $prepared): array {
 		// @todo This should be done earlier.
 		unset($object['extend'], $object['filters']);
 
-		// Remove computed properties from input data.
-		// Computed fields are system-generated and should not be validated against user input.
 		foreach ($prepared['computed'] as $computedProperty) {
 			unset($object[$computedProperty]);
 		}
 
-		// Remove only truly empty values that have no validation significance.
-		// Keep empty strings for required fields so they can fail validation with proper error messages.
-		$context = ['required' => $prepared['required'], 'schemaObject' => $schemaObject];
-		$object = array_filter(
+		$context = ['required' => $prepared['required'], 'schemaObject' => $prepared['schemaObject']];
+
+		return array_filter(
 			$object,
 			fn ($value, $key): bool => $this->isSignificantForValidation(entry: ['key' => $key, 'value' => $value], context: $context),
 			ARRAY_FILTER_USE_BOTH
 		);
-
-		return $this->getValidator()->validate(json_decode(json_encode($object)), $schemaObject);
-	}//end validateObject()
+	}//end significantValues()
 
 	/**
 	 * The schema object to validate against, and the key its preparation is cached under.
@@ -1805,31 +1454,41 @@ class ValidateObject implements ValidateObjectInterface {
 	 */
 	private function validationTarget(?Schema $schema, array $given): array {
 		$schemaObject = $given['schemaObject'];
-		// Use == because === will never be true when comparing stdClass-instances.
-		// Phpcs:ignore Squiz.Operators.ComparisonOperatorUsage.NotAllowed
-		$useDefaultSchema = ($schemaObject == new stdClass());
 		if ($schema === null) {
 			return ['schemaObject' => $schemaObject, 'cacheKey' => null];
 		}
 
+		// Use == because === will never be true when comparing stdClass-instances.
+		// Phpcs:ignore Squiz.Operators.ComparisonOperatorUsage.NotAllowed
+		$useDefaultSchema = ($schemaObject == new stdClass());
 		if ($useDefaultSchema === true) {
 			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
 		}
 
 		if ($given['notSupplied'] !== []) {
-			return [
-				'schemaObject' => $this->notSupplied()->excuse(schemaObject: $schemaObject, declared: $given['notSupplied']),
-				'cacheKey' => null,
-			];
+			return ['schemaObject' => $this->notSupplied()->excuse(schemaObject: $schemaObject, declared: $given['notSupplied']), 'cacheKey' => null];
 		}
 
-		$cacheKey = null;
-		if ($useDefaultSchema === true) {
-			$cacheKey = ((string)$schema->getId()) . ':' . ((string)$schema->getVersion());
-		}
-
-		return ['schemaObject' => $schemaObject, 'cacheKey' => $cacheKey];
+		return ['schemaObject' => $schemaObject, 'cacheKey' => self::preparedCacheKey(schema: $schema, cacheable: $useDefaultSchema)];
 	}//end validationTarget()
+
+	/**
+	 * The key a prepared schema is cached under; only the schema's own object is cached.
+	 *
+	 * @param Schema $schema    The schema.
+	 * @param bool   $cacheable Whether the validation uses the schema's own object.
+	 *
+	 * @return string|null `{schemaId}:{schemaVersion}`, or null.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag says which object is validated against.
+	 */
+	private static function preparedCacheKey(Schema $schema, bool $cacheable): ?string {
+		if ($cacheable === false) {
+			return null;
+		}
+
+		return ((string)$schema->getId()).':'.((string)$schema->getVersion());
+	}//end preparedCacheKey()
 
 	/**
 	 * The prepared schema for validation, memoized per schemaId:version.
@@ -1874,20 +1533,20 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/specs/object-validation/spec.md
 	 */
 	private function isSignificantForValidation(array $entry, array $context): bool {
-		$key = $entry['key'];
-		$value = $entry['value'];
-		if (in_array($key, $context['required']) === true) {
+		if (in_array($entry['key'], $context['required']) === true) {
 			return true;
 		}
 
-		$propertySchema = $context['schemaObject']->properties->$key ?? null;
+		$value          = $entry['value'];
+		$propertySchema = ($context['schemaObject']->properties->{$entry['key']} ?? null);
+
 		// Strict: loosely, null == "", so an enum listing "" (stored as null)
 		// would read as allowing null, keep the null, and fail the string type.
 		if ($value === null && is_array($propertySchema->enum ?? null) === true) {
 			return in_array(null, $propertySchema->enum, true) === true;
 		}
 
-		if (is_array($value) === true && empty($value) === true) {
+		if ($value === []) {
 			return $this->constrainsItems(propertySchema: $propertySchema);
 		}
 
@@ -1904,13 +1563,9 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/specs/object-validation/spec.md
 	 */
 	private function constrainsItems(?object $propertySchema): bool {
-		if ($propertySchema === null) {
-			return false;
-		}
-
-		return (isset($propertySchema->minItems) === true && $propertySchema->minItems > 0)
+		return ($propertySchema->minItems ?? 0) > 0
 			|| isset($propertySchema->maxItems) === true
-			|| (isset($propertySchema->uniqueItems) === true && $propertySchema->uniqueItems === true);
+			|| ($propertySchema->uniqueItems ?? false) === true;
 	}//end constrainsItems()
 
 	/**
@@ -1931,17 +1586,8 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @return array{schemaObject: object, computed: list<string>, required: array}
 	 */
 	private function prepareSchemaForValidation(object $schemaObject, ?Schema $schema): array {
-		// Get the current schema slug for circular reference detection.
-		$currentSchemaSlug = '';
-		if ($schema instanceof Schema) {
-			$currentSchemaSlug = $schema->getSlug();
-		}
-
 		// Transform schema for validation (handles circular references, OpenRegister configs, and schema resolution).
-		$schemaObject = $this->transformSchemaForValidation(
-			schemaObject: $schemaObject,
-			currentSchemaSlug: $currentSchemaSlug
-		);
+		$schemaObject = $this->transformSchemaForValidation(schemaObject: $schemaObject, currentSchemaSlug: self::slugOf(schema: $schema));
 
 		// Collect computed property names BEFORE cleaning: the cleaning step
 		// strips the per-property `computed` marker.
@@ -1954,23 +1600,45 @@ class ValidateObject implements ValidateObjectInterface {
 		// optional top-level property already does (widened further down).
 		$this->allowNullForNestedNullable(schemaObject: $schemaObject);
 
-		// If schemaObject required is empty unset it.
+		$requiredFields = $this->settledRequired(schemaObject: $schemaObject, computed: $computedProperties);
+		$this->allowNullForOptionalProperties(schemaObject: $schemaObject, requiredFields: $requiredFields);
+		$this->acceptTranslationMaps(schemaObject: $schemaObject);
+
+		return ['schemaObject' => $schemaObject, 'computed' => $computedProperties, 'required' => $requiredFields];
+	}//end prepareSchemaForValidation()
+
+	/**
+	 * The slug for circular reference detection; an entity without a slug is a TypeError.
+	 *
+	 * @param Schema|null $schema The schema.
+	 *
+	 * @return string The slug, empty without a schema.
+	 */
+	private static function slugOf(?Schema $schema): string {
+		if ($schema === null) {
+			return '';
+		}
+
+		return $schema->getSlug();
+	}//end slugOf()
+
+	/**
+	 * The required list without computed properties; an empty list is dropped from the schema.
+	 *
+	 * @param object       $schemaObject The cleaned schema.
+	 * @param list<string> $computed     The computed property names.
+	 *
+	 * @return mixed The required fields.
+	 */
+	private function settledRequired(object $schemaObject, array $computed): mixed {
 		if (($schemaObject->required ?? null) !== null && empty($schemaObject->required) === true) {
 			unset($schemaObject->required);
 		}
 
-		$this->dropComputedFromRequired(schemaObject: $schemaObject, computed: $computedProperties);
+		$this->dropComputedFromRequired(schemaObject: $schemaObject, computed: $computed);
 
-		$requiredFields = ($schemaObject->required ?? []);
-		$this->allowNullForOptionalProperties(schemaObject: $schemaObject, requiredFields: $requiredFields);
-		$this->acceptTranslationMaps(schemaObject: $schemaObject);
-
-		return [
-			'schemaObject' => $schemaObject,
-			'computed' => $computedProperties,
-			'required' => $requiredFields,
-		];
-	}//end prepareSchemaForValidation()
+		return ($schemaObject->required ?? []);
+	}//end settledRequired()
 
 	/**
 	 * The names of the properties the system derives: a Twig `computed` marker or a JSON-AST `calculation`.
@@ -2103,25 +1771,27 @@ class ValidateObject implements ValidateObjectInterface {
 		}
 
 		foreach ($schemaObject->properties as $propertyName => $propertySchema) {
-			if (is_object($propertySchema) === false || ($propertySchema->translatable ?? null) !== true) {
-				continue;
+			if (is_object($propertySchema) === true && ($propertySchema->translatable ?? null) === true) {
+				$schemaObject->properties->$propertyName = self::translationUnion(propertySchema: $propertySchema);
 			}
-
-			// Scalar branch: the property schema minus the custom marker.
-			$valueSchema = json_decode(json_encode($propertySchema));
-			unset($valueSchema->translatable);
-
-			$schemaObject->properties->$propertyName = (object)[
-				'anyOf' => [
-					$valueSchema,
-					(object)[
-						'type' => 'object',
-						'additionalProperties' => json_decode(json_encode($valueSchema)),
-					],
-				],
-			];
 		}
 	}//end acceptTranslationMaps()
+
+	/**
+	 * A union of the scalar value and a map of those values by language.
+	 *
+	 * @param object $propertySchema The translatable property.
+	 *
+	 * @return object The union: the property minus the custom marker, or an object of them.
+	 */
+	private static function translationUnion(object $propertySchema): object {
+		$valueSchema = json_decode(json_encode($propertySchema));
+		unset($valueSchema->translatable);
+
+		$map = (object)['type' => 'object', 'additionalProperties' => json_decode(json_encode($valueSchema))];
+
+		return (object)['anyOf' => [$valueSchema, $map]];
+	}//end translationUnion()
 
 	/**
 	 * Let every NESTED property marked `nullable: true` accept `null`.
@@ -2169,25 +1839,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec exclude bug fix: nested nullable parity with the top-level null widening
 	 */
 	private function allowNullBeneath(object $schema): void {
-		$children = [];
-		if (is_object($schema->properties ?? null) === true) {
-			$children = array_values(get_object_vars($schema->properties));
-		}
-
-		$items = ($schema->items ?? null);
-		if (is_object($items) === true) {
-			$children[] = $items;
-		} elseif (is_array($items) === true) {
-			$children = array_merge($children, $items);
-		}
-
-		foreach (['oneOf', 'anyOf', 'allOf'] as $keyword) {
-			if (is_array($schema->{$keyword} ?? null) === true) {
-				$children = array_merge($children, $schema->{$keyword});
-			}
-		}
-
-		foreach ($children as $child) {
+		foreach (self::childSchemas(schema: $schema) as $child) {
 			if (is_object($child) === false) {
 				continue;
 			}
@@ -2201,6 +1853,29 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end allowNullBeneath()
 
 	/**
+	 * The schemas directly beneath a schema: its properties, items and union branches.
+	 *
+	 * @param object $schema The schema.
+	 *
+	 * @return array<int|string, mixed> The children.
+	 */
+	private static function childSchemas(object $schema): array {
+		$children = [];
+		if (is_object($schema->properties ?? null) === true) {
+			$children = array_values(get_object_vars($schema->properties));
+		}
+
+		$items = ($schema->items ?? null);
+		if (is_object($items) === true) {
+			$items = [$items];
+		}
+
+		$lists = [$items, ($schema->oneOf ?? null), ($schema->anyOf ?? null), ($schema->allOf ?? null)];
+
+		return array_merge($children, ...array_filter($lists, 'is_array'));
+	}//end childSchemas()
+
+	/**
 	 * Make one schema accept `null` alongside what it already accepts.
 	 *
 	 * @param object $schema The schema to widen in place.
@@ -2211,38 +1886,60 @@ class ValidateObject implements ValidateObjectInterface {
 	 */
 	private function widenToAcceptNull(object $schema): void {
 		$type = ($schema->type ?? null);
-		if (is_string($type) === true && $type !== 'null') {
-			$schema->type = [$type, 'null'];
-		} elseif (is_array($type) === true && in_array('null', $type, true) === false) {
-			$schema->type[] = 'null';
+		if ($type !== 'null') {
+			$this->addNullType(propertySchema: $schema);
 		}
 
 		// An enum is checked on its own, so null has to be one of its values.
-		if (is_array($schema->enum ?? null) === true && in_array(null, $schema->enum, true) === false) {
+		if ($this->enumExcludesNull(propertySchema: $schema) === true) {
 			$schema->enum[] = null;
 		}
 
-		if ($type !== null) {
-			return;
-		}
-
-		// A typeless union (a related object rewritten to oneOf) needs a null
-		// branch, unless it has one: a second would make a oneOf match twice.
-		foreach (['oneOf', 'anyOf'] as $keyword) {
-			if (is_array($schema->{$keyword} ?? null) === false) {
-				continue;
-			}
-
-			foreach ($schema->{$keyword} as $branch) {
-				if (is_object($branch) === true && ($branch->type ?? null) === 'null') {
-					return;
-				}
-			}
-
-			$schema->{$keyword}[] = (object)['type' => 'null'];
-			return;
+		if ($type === null) {
+			self::addNullBranch(schema: $schema);
 		}
 	}//end widenToAcceptNull()
+
+	/**
+	 * Give a typeless union (a related object rewritten to oneOf) a null branch.
+	 *
+	 * Unless it has one: a second would make a oneOf match twice.
+	 *
+	 * @param object $schema The schema.
+	 *
+	 * @return void
+	 */
+	private static function addNullBranch(object $schema): void {
+		$keyword = 'anyOf';
+		if (is_array($schema->oneOf ?? null) === true) {
+			$keyword = 'oneOf';
+		}
+
+		if (is_array($schema->{$keyword} ?? null) === false) {
+			return;
+		}
+
+		if (self::hasNullBranch(branches: $schema->{$keyword}) === false) {
+			$schema->{$keyword}[] = (object)['type' => 'null'];
+		}
+	}//end addNullBranch()
+
+	/**
+	 * Whether a union already accepts null.
+	 *
+	 * @param array $branches The union's branches.
+	 *
+	 * @return bool True when one branch is the null type.
+	 */
+	private static function hasNullBranch(array $branches): bool {
+		foreach ($branches as $branch) {
+			if (is_object($branch) === true && ($branch->type ?? null) === 'null') {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasNullBranch()
 
 	/**
 	 * Get the request-scoped memoized validator.
@@ -2264,24 +1961,10 @@ class ValidateObject implements ValidateObjectInterface {
 		$validator->setParser((new RefLoopGuardParser(keyword: '$ref'))->schemaParser());
 		$validator->setMaxErrors(100);
 
-		// Register custom format validators using our helper method that supports named parameters.
-		$this->registerCustomFormat(validator: $validator, type: 'string', format: 'bsn', resolver: new BsnFormat());
-		$this->registerCustomFormat(validator: $validator, type: 'string', format: 'semver', resolver: new SemVerFormat());
-		$this->registerCustomFormat(validator: $validator, type: 'string', format: 'cron', resolver: new CronFormat());
-		$this->registerCustomFormat(
-			validator: $validator,
-			type: 'string',
-			format: 'user',
-			resolver: new UserFormat(
-				userManager: $this->userManager,
-				planned: fn (string $uid): bool => in_array($uid, $this->plannedUsers, true)
-			)
-		);
-
-		// Accept ISO 8601 date-time input (optional seconds/timezone), overriding the
-		// opis built-in date-time format whose regex mandates seconds. Storage still
-		// normalises to a DATETIME column and reads emit RFC 3339.
-		$this->registerCustomFormat(validator: $validator, type: 'string', format: 'date-time', resolver: new Iso8601DateTimeFormat());
+		$formats = $validator->parser()->getFormatResolver();
+		foreach ($this->customFormats() as $format => $resolver) {
+			$formats->register('string', $format, $resolver);
+		}
 
 		$validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
@@ -2291,24 +1974,23 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end getValidator()
 
 	/**
-	 * Register a custom format validator with named parameters support
+	 * The custom string formats.
 	 *
-	 * This helper method wraps the Opis\JsonSchema FormatResolver::register() method
-	 * to support named parameters, maintaining consistency with our codebase style.
+	 * `date-time` accepts ISO 8601 input (optional seconds/timezone), overriding the
+	 * opis built-in format whose regex mandates seconds. Storage still normalises to
+	 * a DATETIME column and reads emit RFC 3339.
 	 *
-	 * @param Validator $validator The validator instance
-	 * @param string $type The data type (e.g., 'string', 'number')
-	 * @param string $format The format name (e.g., 'bsn', 'semver')
-	 * @param object $resolver The format resolver instance
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @return array<string, object> The resolvers by format.
 	 */
-	private function registerCustomFormat(Validator $validator, string $type, string $format, object $resolver): void {
-		// The underlying library doesn't support named parameters, so we convert them here.
-		$validator->parser()->getFormatResolver()->register($type, $format, $resolver);
-	}//end registerCustomFormat()
+	private function customFormats(): array {
+		return [
+			'bsn'       => new BsnFormat(),
+			'semver'    => new SemVerFormat(),
+			'cron'      => new CronFormat(),
+			'user'      => new UserFormat(userManager: $this->userManager, planned: fn (string $uid): bool => in_array($uid, $this->plannedUsers, true)),
+			'date-time' => new Iso8601DateTimeFormat(),
+		];
+	}//end customFormats()
 
 	/**
 	 * Resolves a schema from a given URI.
@@ -2326,45 +2008,56 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function resolveSchema(Uri $uri): string {
-		// Local schema resolution.
-		if ($this->urlGenerator->getBaseUrl() === $uri->scheme() . '://' . $uri->host()
-			&& str_contains($uri->path() ?? '', '/api/schemas') === true
-		) {
-			$exploded = explode('/', $uri->path() ?? '');
-			$schema = $this->schemaMapper->find(end($exploded));
+		$local = ($this->urlGenerator->getBaseUrl() === $uri->scheme().'://'.$uri->host());
+		$path  = ($uri->path() ?? '');
+
+		if ($local === true && str_contains($path, '/api/schemas') === true) {
+			$exploded = explode('/', $path);
+			$schema   = $this->schemaMapper->find(end($exploded));
 
 			return json_encode($schema->getSchemaObject($this->urlGenerator));
 		}
 
-		// File schema resolution.
-		if ($this->urlGenerator->getBaseUrl() === $uri->scheme() . '://' . $uri->host()
-			&& str_contains($uri->path(), '/api/files/schema') === true
-		) {
-			// Return a basic file schema object.
-			// TODO: Implement proper file schema resolution.
-			$fileSchema = (object)[
-				'type' => 'object',
-				'properties' => (object)[
-					'id' => (object)['type' => 'integer'],
-					'name' => (object)['type' => 'string'],
-					'path' => (object)['type' => 'string'],
-					'mimetype' => (object)['type' => 'string'],
-					'size' => (object)['type' => 'integer'],
-				],
-			];
-			return json_encode($fileSchema);
+		if ($local === true && str_contains($path, '/api/files/schema') === true) {
+			return self::fileSchema();
 		}
 
-		// External schema resolution.
-		if ($this->config->getValueBool('openregister', 'allowExternalSchemas') === true) {
-			$client = new Client();
-			$result = $client->get(\GuzzleHttp\Psr7\Uri::fromParts($uri->components()));
-
-			return $result->getBody()->getContents();
-		}
-
-		return '';
+		return $this->externalSchema(uri: $uri);
 	}//end resolveSchema()
+
+	/**
+	 * A basic file schema object.
+	 *
+	 * TODO: Implement proper file schema resolution.
+	 *
+	 * @return string The JSON.
+	 */
+	private static function fileSchema(): string {
+		$properties = ['id' => 'integer', 'name' => 'string', 'path' => 'string', 'mimetype' => 'string', 'size' => 'integer'];
+
+		return json_encode(
+			(object)['type' => 'object', 'properties' => (object)array_map(static fn (string $type): object => (object)['type' => $type], $properties)]
+		);
+	}//end fileSchema()
+
+	/**
+	 * The schema at an external URI, when external schemas are allowed.
+	 *
+	 * @param Uri $uri The URI.
+	 *
+	 * @return string The schema, empty when not allowed.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uri::fromParts is standard GuzzleHttp\Psr7 pattern
+	 */
+	private function externalSchema(Uri $uri): string {
+		if ($this->config->getValueBool('openregister', 'allowExternalSchemas') !== true) {
+			return '';
+		}
+
+		$client = new Client();
+
+		return $client->get(\GuzzleHttp\Psr7\Uri::fromParts($uri->components()))->getBody()->getContents();
+	}//end externalSchema()
 
 	/**
 	 * Removes query parameters from a reference string.
@@ -2397,326 +2090,8 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function generateErrorMessage(ValidationResult $result): string {
-		if ($result->isValid() === true) {
-			return 'Validation passed';
-		}
-
-		// Get the primary validation error.
-		$error = $result->error();
-
-		return $this->formatValidationError(error: $error);
+		return (new ValidationErrorMessages())->forResult(result: $result);
 	}//end generateErrorMessage()
-
-	/**
-	 * Formats a validation error into a user-friendly message.
-	 *
-	 * @param \Opis\JsonSchema\Errors\ValidationError $error The validation error.
-	 *
-	 * @return string A formatted error message.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function formatValidationError(\Opis\JsonSchema\Errors\ValidationError $error): string {
-		$keyword      = $error->keyword();
-		$propertyPath = $this->errorPropertyPath(error: $error);
-
-		if (isset(self::SIMPLE_ERROR_MESSAGES[$keyword]) === true) {
-			return $this->simpleErrorMessage(error: $error, propertyPath: $propertyPath);
-		}
-
-		return match ($keyword) {
-			'required' => $this->requiredErrorMessage(args: $error->args()),
-			'type' => $this->typeErrorMessage(error: $error, propertyPath: $propertyPath),
-			'minItems', 'maxItems' => $this->itemCountErrorMessage(error: $error, propertyPath: $propertyPath),
-			'minLength', 'maxLength' => $this->lengthErrorMessage(error: $error, propertyPath: $propertyPath),
-			'enum' => $this->enumErrorMessage(error: $error, propertyPath: $propertyPath),
-			default => $this->otherErrorMessage(error: $error, propertyPath: $propertyPath),
-		};
-	}//end formatValidationError()
-
-	/**
-	 * The dotted path of the failing value, or `root`.
-	 *
-	 * @param \Opis\JsonSchema\Errors\ValidationError $error The validation error.
-	 *
-	 * @return string
-	 */
-	private function errorPropertyPath(\Opis\JsonSchema\Errors\ValidationError $error): string {
-		$dataPath = $error->data()->fullPath();
-		if (empty($dataPath) === true) {
-			return 'root';
-		}
-
-		return implode('.', $dataPath);
-	}//end errorPropertyPath()
-
-	/**
-	 * The message for a keyword in {@see self::SIMPLE_ERROR_MESSAGES}.
-	 *
-	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
-	 * @param string                                  $propertyPath The failing property.
-	 *
-	 * @return string
-	 */
-	private function simpleErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
-		[$argName, $default, $template] = self::SIMPLE_ERROR_MESSAGES[$error->keyword()];
-
-		return sprintf($template, $propertyPath, ($error->args()[$argName] ?? $default), $error->data()->value());
-	}//end simpleErrorMessage()
-
-	/**
-	 * The message for a missing required property or properties.
-	 *
-	 * @param array $args The error arguments.
-	 *
-	 * @return string
-	 */
-	private function requiredErrorMessage(array $args): string {
-		$missing = $args['missing'] ?? [];
-		if (is_array($missing) === false || count($missing) === 0) {
-			return 'Required property is missing';
-		}
-
-		if (count($missing) === 1) {
-			$hint = 'Please provide a value for this property or set it to null if allowed.';
-			return "The required property ({$missing[0]}) is missing. {$hint}";
-		}
-
-		$missingList = implode(', ', $missing);
-		return "The required properties ({$missingList}) are missing. Please provide values for these properties.";
-	}//end requiredErrorMessage()
-
-	/**
-	 * The message for a value of the wrong type, with specific guidance for an empty value.
-	 *
-	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
-	 * @param string                                  $propertyPath The failing property.
-	 *
-	 * @return string
-	 */
-	private function typeErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
-		$value        = $error->data()->value();
-		$expectedType = $error->args()['expected'] ?? 'unknown';
-		$actualType   = $this->getValueType(value: $value);
-
-		// A type list such as ["string", "null"].
-		if (is_array($expectedType) === true) {
-			$expectedType = implode(' or ', $expectedType);
-		}
-
-		$emptyHint = $this->emptyValueTypeMessage(expectedType: $expectedType, value: $value);
-		if ($emptyHint !== null) {
-			return "Property '{$propertyPath}' {$emptyHint}";
-		}
-
-		$hint = 'Please provide a value of the correct type.';
-		return "Property '{$propertyPath}' should be type '{$expectedType}' but is '{$actualType}'. {$hint}";
-	}//end typeErrorMessage()
-
-	/**
-	 * The rest of a type message for an empty object, array or string, or null for any other value.
-	 *
-	 * @param mixed $expectedType The expected type.
-	 * @param mixed $value        The failing value.
-	 *
-	 * @return string|null
-	 */
-	private function emptyValueTypeMessage(mixed $expectedType, mixed $value): ?string {
-		if ($expectedType === 'string' && $value === '') {
-			$hint1 = 'For non-required string properties, set this to null to clear the field.';
-			$hint2 = 'For required string properties, provide a valid string value.';
-			return "expects non-empty string but got empty string. {$hint1} {$hint2}";
-		}
-
-		if (is_array($value) === false || empty($value) === false) {
-			return null;
-		}
-
-		if ($expectedType === 'object') {
-			$hint1 = 'For non-required object properties, set this to null to clear the field.';
-			$hint2 = 'For required object properties, provide a valid object with the necessary properties.';
-			return "expects object but got empty ({}). {$hint1} {$hint2}";
-		}
-
-		if ($expectedType === 'array') {
-			$hint = 'This likely has a minItems constraint. Please provide at least one item.';
-			return "expects non-empty array but got empty array ([]). {$hint}";
-		}
-
-		return null;
-	}//end emptyValueTypeMessage()
-
-	/**
-	 * The message for an array with too few or too many items.
-	 *
-	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
-	 * @param string                                  $propertyPath The failing property.
-	 *
-	 * @return string
-	 */
-	private function itemCountErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
-		$value       = $error->data()->value();
-		$actualItems = 0;
-		if (is_array($value) === true) {
-			$actualItems = count($value);
-		}
-
-		if ($error->keyword() === 'minItems') {
-			$minItems = $error->args()['min'] ?? 0;
-			$hint     = 'Please add more items to the array or set to null if the property is not required.';
-			return "Property '{$propertyPath}' requires at least {$minItems} items, has {$actualItems}. {$hint}";
-		}
-
-		$maxItems = $error->args()['max'] ?? 0;
-		$hint     = 'Please remove some items from the array.';
-		return "Property '{$propertyPath}' allows at most {$maxItems} items, has {$actualItems}. {$hint}";
-	}//end itemCountErrorMessage()
-
-	/**
-	 * The message for a string that is too short or too long.
-	 *
-	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
-	 * @param string                                  $propertyPath The failing property.
-	 *
-	 * @return string
-	 */
-	private function lengthErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
-		$value        = $error->data()->value();
-		$actualLength = 0;
-		if (is_string($value) === true) {
-			$actualLength = strlen($value);
-		}
-
-		if ($error->keyword() === 'maxLength') {
-			$maxLength = $error->args()['max'] ?? 0;
-			$hint      = 'Please provide a shorter string value.';
-			return "Property '{$propertyPath}' allows at most {$maxLength} chars, has {$actualLength}. {$hint}";
-		}
-
-		$minLength = $error->args()['min'] ?? 0;
-		if ($actualLength === 0) {
-			$hint = 'Please provide a non-empty string value.';
-			return "Property '{$propertyPath}' requires at least {$minLength} characters, but is empty. {$hint}";
-		}
-
-		$hint = 'Please provide a longer string value.';
-		return "Property '{$propertyPath}' requires at least {$minLength} chars, has {$actualLength}. {$hint}";
-	}//end lengthErrorMessage()
-
-	/**
-	 * The message for a value outside an enum, listing the allowed values when they are known.
-	 *
-	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
-	 * @param string                                  $propertyPath The failing property.
-	 *
-	 * @return string
-	 */
-	private function enumErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
-		$value         = $error->data()->value();
-		$allowedValues = $error->args()['values'] ?? [];
-		if ($allowedValues === []) {
-			$allowedValues = $this->enumValuesFromSchema(error: $error);
-		}
-
-		if (is_array($allowedValues) === true && $allowedValues !== []) {
-			$valuesList = implode(
-				', ',
-				array_map(
-					function ($v) {
-						return "'{$v}'";
-					},
-					$allowedValues
-				)
-			);
-			$msg = "Property '{$propertyPath}' should be one of: {$valuesList}, ";
-			return $msg . "but is '{$value}'. Please choose one of the allowed values.";
-		}
-
-		$msg = "Property '{$propertyPath}' has an invalid value '{$value}'. ";
-		return $msg . 'Please provide one of the allowed values.';
-	}//end enumErrorMessage()
-
-	/**
-	 * The enum values the failing schema declares, or an empty list.
-	 *
-	 * Opis passes no arguments for `enum` (`EnumKeyword::validate()` reports the error
-	 * without a fourth argument), so the allowed values have to come from the schema.
-	 * Without them the message would list nothing, which reads as "no value is valid".
-	 *
-	 * @param \Opis\JsonSchema\Errors\ValidationError $error The validation error.
-	 *
-	 * @return array
-	 */
-	private function enumValuesFromSchema(\Opis\JsonSchema\Errors\ValidationError $error): array {
-		$schemaData = $error->schema()->info()->data();
-		if (is_object($schemaData) === true
-			&& isset($schemaData->enum) === true
-			&& is_array($schemaData->enum) === true
-		) {
-			return $schemaData->enum;
-		}
-
-		return [];
-	}//end enumValuesFromSchema()
-
-	/**
-	 * The message for any other keyword: the first sub-error's message when there is one.
-	 *
-	 * @param \Opis\JsonSchema\Errors\ValidationError $error        The validation error.
-	 * @param string                                  $propertyPath The failing property.
-	 *
-	 * @return string
-	 */
-	private function otherErrorMessage(\Opis\JsonSchema\Errors\ValidationError $error, string $propertyPath): string {
-		$subErrors = $error->subErrors();
-		if (empty($subErrors) === false) {
-			return $this->formatValidationError(error: $subErrors[0]);
-		}
-
-		$msg = "Property '{$propertyPath}' failed validation for rule '{$error->keyword()}'. ";
-		return $msg . 'Please check the property value and schema requirements.';
-	}//end otherErrorMessage()
-
-	/**
-	 * Gets a human-readable type name for a value.
-	 *
-	 * @param mixed $value The value to get the type for.
-	 *
-	 * @return string The type name.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function getValueType($value): string {
-		if ($value === null) {
-			return 'null';
-		}
-
-		if (is_bool($value) === true) {
-			return 'boolean';
-		}
-
-		if (is_int($value) === true) {
-			return 'integer';
-		}
-
-		if (is_float($value) === true) {
-			return 'number';
-		}
-
-		if (is_string($value) === true) {
-			return 'string';
-		}
-
-		if (is_array($value) === true) {
-			return 'array';
-		}
-
-		if (is_object($value) === true) {
-			return 'object';
-		}
-
-		return 'unknown';
-	}//end getValueType()
 
 	/**
 	 * Handles validation exceptions by formatting them into a JSON response.
@@ -2732,23 +2107,34 @@ class ValidateObject implements ValidateObjectInterface {
 			return self::validationFailedResponse(errors: array_values($exception->getErrors()));
 		}
 
-		// `getErrors()` is null for a ValidationException thrown with a message alone (readOnly
-		// enforcement is one); formatting null is a TypeError and would turn this 400 into a 500.
-		$formatted       = [];
-		$validationError = $exception->getErrors();
-		if ($validationError !== null) {
-			$formatted = (new ErrorFormatter())->format($validationError);
-		}
-
 		$property = null;
 		if (method_exists($exception, 'getProperty') === true) {
 			$property = $exception->getProperty();
 		}
 
 		return self::validationFailedResponse(
-			errors: [['property' => $property, 'message' => $exception->getMessage(), 'errors' => $formatted]]
+			errors: [['property' => $property, 'message' => $exception->getMessage(), 'errors' => self::formattedErrors(exception: $exception)]]
 		);
 	}//end handleValidationException()
+
+	/**
+	 * The formatted Opis errors of an exception.
+	 *
+	 * `getErrors()` is null for a ValidationException thrown with a message alone (readOnly
+	 * enforcement is one); formatting null is a TypeError and would turn this 400 into a 500.
+	 *
+	 * @param ValidationException $exception The exception.
+	 *
+	 * @return array The formatted errors.
+	 */
+	private static function formattedErrors(ValidationException $exception): array {
+		$validationError = $exception->getErrors();
+		if ($validationError === null) {
+			return [];
+		}
+
+		return (new ErrorFormatter())->format($validationError);
+	}//end formattedErrors()
 
 	/**
 	 * The 400 response for a failed validation.
@@ -2835,74 +2221,4 @@ class ValidateObject implements ValidateObjectInterface {
 			errors: [$errorName => "The identifying fields ({$fieldNames}) are not unique. Found duplicate values: {$fieldValues}"]
 		);
 	}//end validateUniqueFields()
-
-	/**
-	 * Validate extended field-type values (`color`, `recurrence`).
-	 *
-	 * The base Opis validator only understands JSON-Schema primitives, so the
-	 * extended types are mapped to `string` for structural validation. This hook
-	 * performs the per-type value validation that the spec mandates and emits the
-	 * exact 422 messages required by REQ-EFT-003 / REQ-EFT-005. It walks the
-	 * schema's declared properties, and for each `color`/`recurrence` property
-	 * present in the submitted object validates the value via the shared
-	 * ExtendedFieldTypeValidator. `null` values are skipped (handled by the
-	 * required/optional logic elsewhere).
-	 *
-	 * @param array $object The submitted object data.
-	 * @param object $schemaObject The original, un-transformed schema object.
-	 *
-	 * @return void
-	 *
-	 * @throws CustomValidationException When a color/recurrence value is invalid.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Per-type dispatch over schema properties
-	 *
-	 * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
-	 * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
-	 */
-	private function validateExtendedFieldTypes(array $object, object $schemaObject): void {
-		$properties = ($schemaObject->properties ?? null);
-		if (is_object($properties) === false && is_array($properties) === false) {
-			return;
-		}
-
-		$validator = new ExtendedFieldTypeValidator();
-
-		foreach ($properties as $propertyName => $propertySchema) {
-			// Property not present in the submitted object - nothing to validate.
-			if (array_key_exists($propertyName, $object) === false) {
-				continue;
-			}
-
-			$value = $object[$propertyName];
-			if ($value === null) {
-				continue;
-			}
-
-			// Read the declared type and format from the (possibly object/array) schema.
-			$type = null;
-			$format = null;
-			if (is_object($propertySchema) === true) {
-				$type = ($propertySchema->type ?? null);
-				$format = ($propertySchema->format ?? null);
-			} elseif (is_array($propertySchema) === true) {
-				$type = ($propertySchema['type'] ?? null);
-				$format = ($propertySchema['format'] ?? null);
-			}
-
-			$error = null;
-			if ($type === 'color') {
-				$error = $validator->validateColor(value: $value, format: $format, propertyName: (string)$propertyName);
-			} elseif ($type === 'recurrence') {
-				$error = $validator->validateRecurrence(value: $value, propertyName: (string)$propertyName);
-			}
-
-			if ($error !== null) {
-				throw new CustomValidationException(
-					message: $error,
-					errors: [(string)$propertyName => $error]
-				);
-			}
-		}//end foreach
-	}//end validateExtendedFieldTypes()
 }//end class

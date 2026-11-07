@@ -1276,7 +1276,7 @@ class ConfigurationController extends Controller {
 		try {
 			$this->logger->debug(
 				message: "[ConfigurationController] Importing configuration from {$sourceType}",
-				context: ['file' => __FILE__, 'line' => __LINE__, 'params' => $params]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fields' => array_keys($params)]
 			);
 
 			// Step 1: Fetch configuration data from source (source-specific logic).

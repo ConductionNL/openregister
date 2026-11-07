@@ -1,0 +1,462 @@
+<?php
+
+/**
+ * TaggingHandler
+ *
+ * This file is part of the OpenRegister app for Nextcloud.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Files\Service\File;
+
+use Exception;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
+use OCP\IUserSession;
+use OCP\SystemTag\ISystemTag;
+use OCP\SystemTag\ISystemTagManager;
+use OCP\SystemTag\ISystemTagObjectMapper;
+use OCP\SystemTag\TagAlreadyExistsException;
+use OCP\SystemTag\TagCreationForbiddenException;
+use OCP\SystemTag\TagNotFoundException;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Handles file tagging operations with Single Responsibility.
+ *
+ * This handler is responsible ONLY for:
+ * - Attaching tags to files
+ * - Retrieving tags from files
+ * - Generating object tags
+ * - Managing system tags
+ *
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://github.com/ConductionNL/openregister
+ * @version  1.0.0
+ */
+class TaggingHandler implements TaggingHandlerInterface {
+	/**
+	 * File tag type identifier.
+	 *
+	 * @var string
+	 */
+	private const FILE_TAG_TYPE = 'files';
+
+	/**
+	 * Object tag type identifier for OpenRegister objects.
+	 *
+	 * @var string
+	 */
+	private const OBJECT_TAG_TYPE = 'openregister';
+
+	/**
+	 * Prefix of the internal tag that links a file to its object.
+	 *
+	 * @var string
+	 */
+	public const OBJECT_TAG_PREFIX = 'object:';
+
+	/**
+	 * Constructor for TaggingHandler.
+	 *
+	 * @param ISystemTagManager $systemTagManager System tag manager.
+	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper.
+	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param IUserSession $userSession The caller whose tag rights Nextcloud decides.
+	 */
+	public function __construct(
+		private readonly ISystemTagManager $systemTagManager,
+		private readonly ISystemTagObjectMapper $systemTagMapper,
+		private readonly LoggerInterface $logger,
+		private readonly IUserSession $userSession,
+	) {
+	}//end __construct()
+
+	/**
+	 * Attach tags to a file.
+	 *
+	 * @param string $fileId The file ID.
+	 * @param array $tags Tags to associate with the file.
+	 *
+	 * @return void
+	 *
+	 * @phpstan-param array<int, string> $tags
+	 * @psalm-param   array<int, string> $tags
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Tag management requires handling create/find/attach scenarios
+	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for tag creation and attachment
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function attachTagsToFile(string $fileId, array $tags = []): void {
+		// Get all existing tags for the file and convert to array of just the IDs.
+		$oldTagIdsResult = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: self::FILE_TAG_TYPE);
+		$oldTagIds = [];
+		if (isset($oldTagIdsResult[$fileId]) === true && empty($oldTagIdsResult[$fileId]) === false) {
+			$oldTagIds = $oldTagIdsResult[$fileId];
+		}
+
+		// Create new tags if they don't exist.
+		$newTagIds = [];
+		foreach ($tags as $tag) {
+			// Check if tag exists by trying to get it by name.
+			try {
+				$tagObj = false;
+				if (ctype_digit($tag) === true) {
+					$tagObj = $this->systemTagManager->getTagsByIds([$tag]);
+				}
+
+				if (empty($tagObj) === false) {
+					// Tag exists (found by ID), just use its ID.
+					$newTagIds[] = $tag;
+				}
+
+				if (empty($tagObj) === true) {
+					// Tag doesn't exist with this ID, search by name and create if needed.
+					$existingTag = $this->findOrCreateTag(tagName: $tag);
+					$newTagIds[] = $existingTag->getId();
+				}
+			} catch (TagNotFoundException) {
+				// Tag doesn't exist, create it.
+				$newTag = $this->findOrCreateTag(tagName: $tag);
+				$newTagIds[] = $newTag->getId();
+			} catch (Exception $e) {
+				$this->logger->error(
+					message: '[TaggingHandler] Error processing tag ' . $tag . ': ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTrace()]
+				);
+				// Try to create it anyway.
+				try {
+					$newTag = $this->findOrCreateTag(tagName: $tag);
+					$newTagIds[] = $newTag->getId();
+				} catch (Exception $e2) {
+					$this->logger->error(
+						message: '[TaggingHandler] Failed to create tag ' . $tag . ': ' . $e2->getMessage(),
+						context: ['file' => __FILE__, 'line' => __LINE__]
+					);
+				}
+			}//end try
+		}//end foreach
+
+		// Calculate tags to add and remove.
+		$tagsToAdd = array_diff($newTagIds, $oldTagIds);
+		$tagsToRemove = array_diff($oldTagIds, $newTagIds);
+
+		// Remove old tags.
+		if (empty($tagsToRemove) === false) {
+			$this->systemTagMapper->unassignTags(objId: $fileId, objectType: self::FILE_TAG_TYPE, tagIds: $tagsToRemove);
+		}
+
+		// Add new tags.
+		if (empty($tagsToAdd) === false) {
+			$this->systemTagMapper->assignTags(objId: $fileId, objectType: self::FILE_TAG_TYPE, tagIds: $tagsToAdd);
+		}
+	}//end attachTagsToFile()
+
+	/**
+	 * Find tag by name or create it if it doesn't exist.
+	 *
+	 * @param string $tagName Tag name.
+	 *
+	 * @return ISystemTag The tag object.
+	 *
+	 * @throws Exception If tag creation fails.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Tag lookup requires handling multiple search and creation scenarios
+	 */
+	private function findOrCreateTag(string $tagName): ISystemTag {
+		try {
+			// Search for tag by name.
+			$allTags = $this->systemTagManager->getAllTags(visibilityFilter: null, nameSearchPattern: $tagName);
+			foreach ($allTags as $tag) {
+				if ($tag->getName() === $tagName) {
+					return $this->hideInternalTag(tag: $tag);
+				}
+			}
+
+			// Tag not found, create it. The internal object link is bookkeeping:
+			// hidden from users and not assignable, so it stays out of the
+			// Files tag picker and of every user's tag list.
+			$userFacing = str_starts_with($tagName, self::OBJECT_TAG_PREFIX) === false;
+
+			return $this->systemTagManager->createTag(
+				tagName: $tagName,
+				userVisible: $userFacing,
+				userAssignable: $userFacing
+			);
+		} catch (TagAlreadyExistsException $e) {
+			// Tag exists, get it by searching again.
+			$allTags = $this->systemTagManager->getAllTags(visibilityFilter: null, nameSearchPattern: $tagName);
+			foreach ($allTags as $tag) {
+				if ($tag->getName() === $tagName) {
+					return $this->hideInternalTag(tag: $tag);
+				}
+			}
+
+			throw new Exception('Tag exists but could not be found: ' . $tagName);
+		}//end try
+	}//end findOrCreateTag()
+
+	/**
+	 * Hide an existing internal `object:<uuid>` tag from users, when it is still visible or assignable.
+	 *
+	 * 🔴 CREATION IS NOT THE ONLY WAY AN OBJECT TAG EXISTS. A tag created before
+	 * the hidden/not-assignable default, or first created by a user in the Files
+	 * tag UI under the same name, keeps `userVisible` and `userAssignable` true,
+	 * so the "out of every user's tag list" outcome held for new installs only.
+	 * Every attach goes through here, so the tag is repaired the next time it is
+	 * touched. A tag that is never attached again is not reached; hiding those
+	 * needs an upgrade step. Best effort: a refused update is logged and the tag
+	 * is still used, because losing the file link is worse than a visible tag.
+	 *
+	 * @param ISystemTag $tag The tag that was found.
+	 *
+	 * @return ISystemTag The same tag.
+	 */
+	private function hideInternalTag(ISystemTag $tag): ISystemTag {
+		if (str_starts_with($tag->getName(), self::OBJECT_TAG_PREFIX) === false) {
+			return $tag;
+		}
+
+		if ($tag->isUserVisible() === false && $tag->isUserAssignable() === false) {
+			return $tag;
+		}
+
+		try {
+			$this->systemTagManager->updateTag(
+				tagId: $tag->getId(),
+				newName: $tag->getName(),
+				userVisible: false,
+				userAssignable: false,
+				color: $tag->getColor()
+			);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[TaggingHandler] Could not hide the internal tag ' . $tag->getName() . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		return $tag;
+	}//end hideInternalTag()
+
+	/**
+	 * Get tags for a file.
+	 *
+	 * @param string $fileId The file ID.
+	 *
+	 * @return string[]
+	 *
+	 * @phpstan-return array<int, string>
+	 *
+	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function getFileTags(string $fileId): array {
+		try {
+			// Get tag IDs for the file.
+			$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: self::FILE_TAG_TYPE);
+
+			if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
+				return [];
+			}
+
+			// Get actual tag objects from IDs.
+			$tags = $this->systemTagManager->getTagsByIds($tagIds[$fileId]);
+
+			// Extract tag names.
+			$tagNames = [];
+			foreach ($tags as $tag) {
+				$tagNames[] = $tag->getName();
+			}
+
+			return $tagNames;
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[TaggingHandler] Error getting tags for file ' . $fileId . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}//end try
+	}//end getFileTags()
+
+	/**
+	 * Generate the tag of an object.
+	 *
+	 * @param string $objectIdentifier The object's UUID, or its id when it has no UUID.
+	 *
+	 * @return string The object tag (e.g., 'object:uuid').
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function generateObjectTag(string $objectIdentifier): string {
+		return self::OBJECT_TAG_PREFIX . $objectIdentifier;
+	}//end generateObjectTag()
+
+	/**
+	 * Get tags for an OpenRegister object.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return string[] Tag names attached to this object.
+	 *
+	 * @phpstan-return array<int, string>
+	 * @psalm-return   list<string>
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function getObjectTags(string $objectUuid): array {
+		try {
+			$tagIds = $this->systemTagMapper->getTagIdsForObjects(
+				objIds: [$objectUuid],
+				objectType: self::OBJECT_TAG_TYPE
+			);
+
+			if (isset($tagIds[$objectUuid]) === false || empty($tagIds[$objectUuid]) === true) {
+				return [];
+			}
+
+			$tags = $this->systemTagManager->getTagsByIds($tagIds[$objectUuid]);
+			$tagNames = [];
+			foreach ($tags as $tag) {
+				$tagNames[] = $tag->getName();
+			}
+
+			sort($tagNames);
+			return $tagNames;
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[TaggingHandler] Error getting tags for object ' . $objectUuid . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}//end try
+	}//end getObjectTags()
+
+	/**
+	 * Add a tag to an OpenRegister object.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $tagName The tag name to add.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function addObjectTag(string $objectUuid, string $tagName): void {
+		try {
+			$tag = $this->findOrCreateTag(tagName: $tagName);
+		} catch (TagCreationForbiddenException $e) {
+			throw new NotAuthorizedException(message: 'You may not create the tag \'' . $tagName . '\'.');
+		}
+
+		$this->assertMayAssign(tag: $tag);
+		$this->systemTagMapper->assignTags(
+			objId: $objectUuid,
+			objectType: self::OBJECT_TAG_TYPE,
+			tagIds: [$tag->getId()]
+		);
+	}//end addObjectTag()
+
+	/**
+	 * Remove a tag from an OpenRegister object.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $tagName The tag name to remove.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the tag is not found.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function removeObjectTag(string $objectUuid, string $tagName): void {
+		$allTags = $this->systemTagManager->getAllTags(visibilityFilter: null, nameSearchPattern: $tagName);
+		foreach ($allTags as $tag) {
+			if ($tag->getName() === $tagName) {
+				$this->assertMayAssign(tag: $tag);
+				$this->systemTagMapper->unassignTags(
+					objId: $objectUuid,
+					objectType: self::OBJECT_TAG_TYPE,
+					tagIds: [$tag->getId()]
+				);
+				return;
+			}
+		}
+
+		throw new Exception('Tag not found: ' . $tagName);
+	}//end removeObjectTag()
+
+	/**
+	 * Refuse a tag the signed-in caller may not assign or remove.
+	 *
+	 * Tags are looked up with no visibility filter and assigned through the
+	 * object mapper, which does not ask Nextcloud's rule for restricted and
+	 * invisible tags. This asks it, so an admin-only tag cannot be put on or
+	 * taken off an object by anyone else (openregister#4096). A call without
+	 * a session (a background job or occ) is not a user Nextcloud can refuse.
+	 *
+	 * @param ISystemTag $tag The tag.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When Nextcloud does not let the caller assign it.
+	 *
+	 * @spec openspec/changes/flow-tag-object-step/proposal.md
+	 */
+	private function assertMayAssign(ISystemTag $tag): void {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return;
+		}
+
+		if ($this->systemTagManager->canUserAssignTag($tag, $user) === false) {
+			throw new NotAuthorizedException(message: 'You may not assign or remove the tag \'' . $tag->getName() . '\'.');
+		}
+	}//end assertMayAssign()
+
+	/**
+	 * Get all system tags.
+	 *
+	 * @return string[] Tag names.
+	 *
+	 * @phpstan-return array<int, string>
+	 *
+	 * @psalm-return list<string>
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function getAllTags(): array {
+		try {
+			$tags = $this->systemTagManager->getAllTags(visibilityFilter: null);
+
+			$tagNames = [];
+			foreach ($tags as $tag) {
+				$tagNames[] = $tag->getName();
+			}
+
+			return $tagNames;
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[TaggingHandler] Error getting all tags: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
+	}//end getAllTags()
+}//end class

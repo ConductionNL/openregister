@@ -50,6 +50,7 @@ use RuntimeException;
  * `note` schema whose `labels` property lists codes.
  *
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
@@ -58,6 +59,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityKeyReferenceTest extends TestCase {
 
@@ -311,6 +313,18 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 	}//end testRowWithoutKeyIsDeletable()
 
 	/**
+	 * A key of only spaces cites nothing, so nothing is asked of the citing table.
+	 *
+	 * @return void
+	 */
+	public function testBlankKeyIsDeletable(): void {
+		$this->schemas(labelsProperty: ['type' => 'array', 'referenceSchema' => 'label', 'referenceKey' => 'code', 'onDelete' => 'RESTRICT']);
+		$this->db->expects(self::never())->method('prepare');
+
+		self::assertTrue($this->service->canDelete($this->label(code: '   '))->deletable);
+	}//end testBlankKeyIsDeletable()
+
+	/**
 	 * A key reference with an action other than RESTRICT is not indexed at all.
 	 *
 	 * @return void
@@ -374,4 +388,23 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 
 		self::assertSame('unverifiable', $this->service->canDelete($this->label(code: 'A1'))->blockers[0]['reason']);
 	}//end testAPropertyWithoutAColumnFailsClosed()
+
+	/**
+	 * A relation's own `$ref` goes first, then the one on its items, then `referenceSchema`.
+	 *
+	 * @return void
+	 */
+	public function testTheTargetOfARelationIsReadInOrder(): void {
+		$read = new \ReflectionMethod(ReferentialIntegrityService::class, 'extractTargetRef');
+		$service = (new \ReflectionClass(ReferentialIntegrityService::class))->newInstanceWithoutConstructor();
+
+		$all = ['$ref' => 'own', 'referenceSchema' => 'key', 'items' => ['$ref' => 'items', 'referenceSchema' => 'itemKey']];
+		self::assertSame('own', $read->invoke($service, $all));
+		self::assertSame('items', $read->invoke($service, array_diff_key($all, ['$ref' => true])));
+
+		$noRef = ['referenceSchema' => 'key', 'items' => ['referenceSchema' => 'itemKey']];
+		self::assertSame('key', $read->invoke($service, $noRef));
+		self::assertSame('itemKey', $read->invoke($service, ['items' => ['referenceSchema' => 'itemKey']]));
+		self::assertNull($read->invoke($service, ['items' => 'string']));
+	}
 }//end class

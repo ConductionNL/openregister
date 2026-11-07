@@ -169,6 +169,7 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import auditTrailModal from '../../services/auditTrailModal.js'
 
 export default {
 	name: 'AuditTrailChanges',
@@ -186,29 +187,9 @@ export default {
 		InformationOutline,
 	},
 
+	mixins: [auditTrailModal],
+
 	computed: {
-		/**
-		 * Check if audit trail has changes data
-		 *
-		 * @return {boolean} True if has changes
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		hasChanges() {
-			const changed = auditTrailStore.auditTrailItem?.changed
-			if (!changed) return false
-
-			if (Array.isArray(changed)) {
-				return changed.length > 0
-			}
-
-			if (typeof changed === 'object') {
-				return Object.keys(changed).length > 0
-			}
-
-			return !!changed
-		},
-
 		/**
 		 * Get processed changes data
 		 *
@@ -252,62 +233,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Close the dialog
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		closeDialog() {
-			navigationStore.setDialog(false)
-		},
-
-		/**
-		 * Format date for display
-		 *
-		 * @param {string} dateString - Date string to format
-		 * @return {string} Formatted date
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		formatDate(dateString) {
-			if (!dateString) return '-'
-			try {
-				return new Date(dateString).toLocaleString()
-			} catch {
-				return dateString
-			}
-		},
-
-		/**
-		 * Format changes data for display
-		 *
-		 * @param {*} changes - Changes data
-		 * @return {string} Formatted changes
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		formatChanges(changes) {
-			if (!changes) return ''
-
-			try {
-				if (typeof changes === 'string') {
-					// Try to parse if it's a JSON string
-					try {
-						const parsed = JSON.parse(changes)
-						return JSON.stringify(parsed, null, 2)
-					} catch {
-						return changes
-					}
-				}
-
-				return JSON.stringify(changes, null, 2)
-			} catch {
-				return String(changes)
-			}
-		},
-
 		/**
 		 * Format value for display
 		 *
@@ -388,30 +313,6 @@ export default {
 		},
 
 		/**
-		 * Copy changes data to clipboard
-		 *
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async copyChanges() {
-			try {
-				const changes = this.formatChanges(
-					auditTrailStore.auditTrailItem.changed,
-				)
-				await navigator.clipboard.writeText(changes)
-				OC.Notification.showSuccess(
-					this.t('openregister', 'Changes copied to clipboard'),
-				)
-			} catch (error) {
-				console.error('Error copying to clipboard:', error)
-				OC.Notification.showError(
-					this.t('openregister', 'Failed to copy changes'),
-				)
-			}
-		},
-
-		/**
 		 * Switch to full details view
 		 *
 		 * @return {void}
@@ -454,21 +355,7 @@ export default {
 
 @include action-badge;
 
-.action-badge.action-create {
-	background: var(--color-success);
-}
-
-.action-badge.action-update {
-	background: var(--color-warning);
-}
-
-.action-badge.action-delete {
-	background: var(--color-error);
-}
-
-.action-badge.action-read {
-	background: var(--color-info);
-}
+@include action-badge-colours;
 
 .timestamp,
 .user {

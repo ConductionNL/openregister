@@ -3,7 +3,7 @@
 /**
  * OfficeDocumentSanitizerTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\OfficeDocumentSanitizer}
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer}
  * — strategy dispatch, unsupported-MIME handling, original-file preservation,
  * and PII-free logging.
  *
@@ -27,9 +27,9 @@ declare(strict_types=1);
 namespace Unit\Service\File;
 
 use OCA\OpenRegister\Exception\SanitizationException;
-use OCA\OpenRegister\Service\File\OfficeDocumentSanitizer;
-use OCA\OpenRegister\Service\File\SanitizationReport;
-use OCA\OpenRegister\Service\File\Sanitizer\SanitizerInterface;
+use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
+use OCA\OpenRegister\Files\Service\File\SanitizationReport;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\SanitizerInterface;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\ITempManager;

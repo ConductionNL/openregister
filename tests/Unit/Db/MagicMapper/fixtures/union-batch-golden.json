@@ -23,6 +23,10 @@
         "rows": [],
         "events": []
     },
+    "postgres / none / unlimited with an offset of one": {
+        "rows": [],
+        "events": []
+    },
     "postgres / none / unlimited": {
         "rows": [],
         "events": []
@@ -504,6 +508,83 @@
             },
             {
                 "prepare": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, _owner::text AS _owner, _organisation::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, _description::text AS _description, _summary::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, _created::text AS _created, _updated::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, _deleted::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"count\"::text AS \"count\", \"status\"::text AS \"status\", '1' AS _union_register_id, '2' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_2 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) UNION ALL SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, _owner::text AS _owner, _organisation::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, _description::text AS _description, _summary::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, _created::text AS _created, _updated::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, _deleted::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"count\"::text AS \"count\", \"status\"::text AS \"status\", '1' AS _union_register_id, '3' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_3 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) ORDER BY _uuid ASC LIMIT 18446744073709551615 OFFSET 3"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Union batch completed",
+                "context": {
+                    "armCount": 2,
+                    "rowCount": 2
+                }
+            }
+        ]
+    },
+    "postgres / two / unlimited with an offset of one": {
+        "rows": [
+            {
+                "_uuid": "u-1",
+                "_schema": 2
+            },
+            {
+                "_uuid": "u-2",
+                "_schema": 3
+            }
+        ],
+        "events": [
+            {
+                "tableExists": 2
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[MagicRbacHandler] Could not determine the database platform for $contains \u2014 defaulting to MariaDB syntax",
+                "context": {
+                    "exception": "Call to a member function getDatabasePlatform() on null"
+                }
+            },
+            {
+                "tableExists": 3
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for cross-search",
+                "context": {
+                    "registerId": 1,
+                    "schemaId": 3
+                }
+            },
+            {
+                "ensureTable": 3
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "prepare": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, _owner::text AS _owner, _organisation::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, _description::text AS _description, _summary::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, _created::text AS _created, _updated::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, _deleted::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"count\"::text AS \"count\", \"status\"::text AS \"status\", '1' AS _union_register_id, '2' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_2 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) UNION ALL SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, _owner::text AS _owner, _organisation::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, _description::text AS _description, _summary::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, _created::text AS _created, _updated::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, _deleted::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"count\"::text AS \"count\", \"status\"::text AS \"status\", '1' AS _union_register_id, '3' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_3 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) ORDER BY _uuid ASC LIMIT 18446744073709551615 OFFSET 1"
             },
             {
                 "log": "debug",
@@ -1466,6 +1547,86 @@
             }
         ]
     },
+    "postgres / mixed / unlimited with an offset of one": {
+        "rows": [
+            {
+                "_uuid": "u-1",
+                "_schema": 2
+            },
+            {
+                "_uuid": "u-2",
+                "_schema": 3
+            }
+        ],
+        "events": [
+            {
+                "tableExists": 2
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[MagicRbacHandler] Could not determine the database platform for $contains \u2014 defaulting to MariaDB syntax",
+                "context": {
+                    "exception": "Call to a member function getDatabasePlatform() on null"
+                }
+            },
+            {
+                "tableExists": 3
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for cross-search",
+                "context": {
+                    "registerId": 1,
+                    "schemaId": 3
+                }
+            },
+            {
+                "ensureTable": 3
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "tableExists": 4
+            },
+            {
+                "prepare": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, _owner::text AS _owner, _organisation::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, _description::text AS _description, _summary::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, _created::text AS _created, _updated::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, _deleted::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"count\"::text AS \"count\", \"status\"::text AS \"status\", '1' AS _union_register_id, '2' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_2 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) UNION ALL SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, _owner::text AS _owner, _organisation::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, _description::text AS _description, _summary::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, _created::text AS _created, _updated::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, _deleted::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"count\"::text AS \"count\", \"status\"::text AS \"status\", '1' AS _union_register_id, '3' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_3 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) ORDER BY _uuid ASC LIMIT 18446744073709551615 OFFSET 1"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Union batch completed",
+                "context": {
+                    "armCount": 2,
+                    "rowCount": 2
+                }
+            }
+        ]
+    },
     "postgres / mixed / unlimited": {
         "rows": [
             {
@@ -1997,6 +2158,14 @@
             }
         ]
     },
+    "postgres / disabled only / unlimited with an offset of one": {
+        "rows": [],
+        "events": [
+            {
+                "tableExists": 4
+            }
+        ]
+    },
     "postgres / disabled only / unlimited": {
         "rows": [],
         "events": [
@@ -2495,6 +2664,80 @@
             }
         ]
     },
+    "postgres / over budget / unlimited with an offset of one": {
+        "rows": [
+            {
+                "_uuid": "u-1",
+                "_schema": 2
+            },
+            {
+                "_uuid": "u-2",
+                "_schema": 3
+            }
+        ],
+        "events": [
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Cross-schema property superset exceeds the column budget; using metadata-only projection",
+                "context": {
+                    "budget": 1500,
+                    "schemaCount": 2
+                }
+            },
+            {
+                "tableExists": 2
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[MagicRbacHandler] Could not determine the database platform for $contains \u2014 defaulting to MariaDB syntax",
+                "context": {
+                    "exception": "Call to a member function getDatabasePlatform() on null"
+                }
+            },
+            {
+                "tableExists": 5
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "prepare": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, _owner::text AS _owner, _organisation::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, _description::text AS _description, _summary::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, _created::text AS _created, _updated::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, _deleted::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '1' AS _union_register_id, '2' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_2 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) UNION ALL SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, _owner::text AS _owner, _organisation::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, _description::text AS _description, _summary::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, _created::text AS _created, _updated::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, _deleted::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '1' AS _union_register_id, '5' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_5 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) ORDER BY _uuid ASC LIMIT 18446744073709551615 OFFSET 1"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Union batch completed",
+                "context": {
+                    "armCount": 2,
+                    "rowCount": 2
+                }
+            }
+        ]
+    },
     "postgres / over budget / unlimited": {
         "rows": [
             {
@@ -2963,6 +3206,10 @@
         "events": []
     },
     "mysql / none / unlimited with offset": {
+        "rows": [],
+        "events": []
+    },
+    "mysql / none / unlimited with an offset of one": {
         "rows": [],
         "events": []
     },
@@ -3441,6 +3688,83 @@
             },
             {
                 "prepare": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, CAST(_owner AS CHAR) AS _owner, CAST(_organisation AS CHAR) AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, CAST(_description AS CHAR) AS _description, CAST(_summary AS CHAR) AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, CAST(_created AS CHAR) AS _created, CAST(_updated AS CHAR) AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, CAST(_deleted AS CHAR) AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`count` AS CHAR) AS `count`, CAST(`status` AS CHAR) AS `status`, '1' AS _union_register_id, '2' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_2 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) UNION ALL SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, CAST(_owner AS CHAR) AS _owner, CAST(_organisation AS CHAR) AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, CAST(_description AS CHAR) AS _description, CAST(_summary AS CHAR) AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, CAST(_created AS CHAR) AS _created, CAST(_updated AS CHAR) AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, CAST(_deleted AS CHAR) AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`count` AS CHAR) AS `count`, CAST(`status` AS CHAR) AS `status`, '1' AS _union_register_id, '3' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_3 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) ORDER BY _uuid ASC LIMIT 18446744073709551615 OFFSET 3"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Union batch completed",
+                "context": {
+                    "armCount": 2,
+                    "rowCount": 2
+                }
+            }
+        ]
+    },
+    "mysql / two / unlimited with an offset of one": {
+        "rows": [
+            {
+                "_uuid": "u-1",
+                "_schema": 2
+            },
+            {
+                "_uuid": "u-2",
+                "_schema": 3
+            }
+        ],
+        "events": [
+            {
+                "tableExists": 2
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[MagicRbacHandler] Could not determine the database platform for $contains \u2014 defaulting to MariaDB syntax",
+                "context": {
+                    "exception": "Call to a member function getDatabasePlatform() on null"
+                }
+            },
+            {
+                "tableExists": 3
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for cross-search",
+                "context": {
+                    "registerId": 1,
+                    "schemaId": 3
+                }
+            },
+            {
+                "ensureTable": 3
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "prepare": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, CAST(_owner AS CHAR) AS _owner, CAST(_organisation AS CHAR) AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, CAST(_description AS CHAR) AS _description, CAST(_summary AS CHAR) AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, CAST(_created AS CHAR) AS _created, CAST(_updated AS CHAR) AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, CAST(_deleted AS CHAR) AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`count` AS CHAR) AS `count`, CAST(`status` AS CHAR) AS `status`, '1' AS _union_register_id, '2' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_2 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) UNION ALL SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, CAST(_owner AS CHAR) AS _owner, CAST(_organisation AS CHAR) AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, CAST(_description AS CHAR) AS _description, CAST(_summary AS CHAR) AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, CAST(_created AS CHAR) AS _created, CAST(_updated AS CHAR) AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, CAST(_deleted AS CHAR) AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`count` AS CHAR) AS `count`, CAST(`status` AS CHAR) AS `status`, '1' AS _union_register_id, '3' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_3 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) ORDER BY _uuid ASC LIMIT 18446744073709551615 OFFSET 1"
             },
             {
                 "log": "debug",
@@ -4394,6 +4718,86 @@
             }
         ]
     },
+    "mysql / mixed / unlimited with an offset of one": {
+        "rows": [
+            {
+                "_uuid": "u-1",
+                "_schema": 2
+            },
+            {
+                "_uuid": "u-2",
+                "_schema": 3
+            }
+        ],
+        "events": [
+            {
+                "tableExists": 2
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[MagicRbacHandler] Could not determine the database platform for $contains \u2014 defaulting to MariaDB syntax",
+                "context": {
+                    "exception": "Call to a member function getDatabasePlatform() on null"
+                }
+            },
+            {
+                "tableExists": 3
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for cross-search",
+                "context": {
+                    "registerId": 1,
+                    "schemaId": 3
+                }
+            },
+            {
+                "ensureTable": 3
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "tableExists": 4
+            },
+            {
+                "prepare": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, CAST(_owner AS CHAR) AS _owner, CAST(_organisation AS CHAR) AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, CAST(_description AS CHAR) AS _description, CAST(_summary AS CHAR) AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, CAST(_created AS CHAR) AS _created, CAST(_updated AS CHAR) AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, CAST(_deleted AS CHAR) AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`count` AS CHAR) AS `count`, CAST(`status` AS CHAR) AS `status`, '1' AS _union_register_id, '2' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_2 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) UNION ALL SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, CAST(_owner AS CHAR) AS _owner, CAST(_organisation AS CHAR) AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, CAST(_description AS CHAR) AS _description, CAST(_summary AS CHAR) AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, CAST(_created AS CHAR) AS _created, CAST(_updated AS CHAR) AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, CAST(_deleted AS CHAR) AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`count` AS CHAR) AS `count`, CAST(`status` AS CHAR) AS `status`, '1' AS _union_register_id, '3' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_3 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) ORDER BY _uuid ASC LIMIT 18446744073709551615 OFFSET 1"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Union batch completed",
+                "context": {
+                    "armCount": 2,
+                    "rowCount": 2
+                }
+            }
+        ]
+    },
     "mysql / mixed / unlimited": {
         "rows": [
             {
@@ -4922,6 +5326,14 @@
             }
         ]
     },
+    "mysql / disabled only / unlimited with an offset of one": {
+        "rows": [],
+        "events": [
+            {
+                "tableExists": 4
+            }
+        ]
+    },
     "mysql / disabled only / unlimited": {
         "rows": [],
         "events": [
@@ -5403,6 +5815,80 @@
             },
             {
                 "prepare": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, CAST(_owner AS CHAR) AS _owner, CAST(_organisation AS CHAR) AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, CAST(_description AS CHAR) AS _description, CAST(_summary AS CHAR) AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, CAST(_created AS CHAR) AS _created, CAST(_updated AS CHAR) AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, CAST(_deleted AS CHAR) AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, '1' AS _union_register_id, '2' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_2 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) UNION ALL SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, CAST(_owner AS CHAR) AS _owner, CAST(_organisation AS CHAR) AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, CAST(_description AS CHAR) AS _description, CAST(_summary AS CHAR) AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, CAST(_created AS CHAR) AS _created, CAST(_updated AS CHAR) AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, CAST(_deleted AS CHAR) AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, '1' AS _union_register_id, '5' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_5 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) ORDER BY _uuid ASC LIMIT 18446744073709551615 OFFSET 3"
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Union batch completed",
+                "context": {
+                    "armCount": 2,
+                    "rowCount": 2
+                }
+            }
+        ]
+    },
+    "mysql / over budget / unlimited with an offset of one": {
+        "rows": [
+            {
+                "_uuid": "u-1",
+                "_schema": 2
+            },
+            {
+                "_uuid": "u-2",
+                "_schema": 3
+            }
+        ],
+        "events": [
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Cross-schema property superset exceeds the column budget; using metadata-only projection",
+                "context": {
+                    "budget": 1500,
+                    "schemaCount": 2
+                }
+            },
+            {
+                "tableExists": 2
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "warning",
+                "message": "[MagicRbacHandler] Could not determine the database platform for $contains \u2014 defaulting to MariaDB syntax",
+                "context": {
+                    "exception": "Call to a member function getDatabasePlatform() on null"
+                }
+            },
+            {
+                "tableExists": 5
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly",
+                "context": {
+                    "error": "Call to a member function resolveAuthorization() on null"
+                }
+            },
+            {
+                "prepare": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, CAST(_owner AS CHAR) AS _owner, CAST(_organisation AS CHAR) AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, CAST(_description AS CHAR) AS _description, CAST(_summary AS CHAR) AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, CAST(_created AS CHAR) AS _created, CAST(_updated AS CHAR) AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, CAST(_deleted AS CHAR) AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, '1' AS _union_register_id, '2' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_2 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) UNION ALL SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, CAST(_owner AS CHAR) AS _owner, CAST(_organisation AS CHAR) AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, CAST(_description AS CHAR) AS _description, CAST(_summary AS CHAR) AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, CAST(_created AS CHAR) AS _created, CAST(_updated AS CHAR) AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, CAST(_deleted AS CHAR) AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, '1' AS _union_register_id, '5' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_1_5 WHERE _deleted IS NULL AND _archived IS NULL AND (_status IS NULL OR _status <> 'draft') AND (((_authorization IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) IS NULL OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = '' OR (JSON_UNQUOTE(JSON_EXTRACT(_authorization, '$.scope'))) = 'organisation') AND (_status IS NULL OR _status <> 'draft'))) ORDER BY _uuid ASC LIMIT 18446744073709551615 OFFSET 1"
             },
             {
                 "log": "debug",

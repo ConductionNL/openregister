@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
@@ -171,6 +173,22 @@ class SaveObjectTest extends TestCase {
 	 * @return mixed The method return value
 	 */
 	private function invokePrivateMethod(string $methodName, array $args = []) {
+		if (in_array($methodName, FilePropertyCalls::METHODS, true) === true) {
+			return FilePropertyCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, EmptyValueCalls::METHODS, true) === true) {
+			return EmptyValueCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, PropertyDefaultsCalls::METHODS, true) === true) {
+			return PropertyDefaultsCalls::{$methodName}($this->handler, $args);
+		}
+
 		if ($methodName === 'validateReferences' || $methodName === 'validateReferenceExists') {
 			return ReferenceValidationCalls::{$methodName}($this->handler, $args);
 		}
@@ -3291,12 +3309,14 @@ class SaveObjectTest extends TestCase {
 				return $target;
 			}
 		);
-		\Closure::bind(function () use ($mapper): void {
-			$this->objectEntityMapper = $mapper;
-		}, $handler, SaveObject::class)();
-
-		$method = new \ReflectionMethod(SaveObject::class, 'writeBackToTarget');
-		$method->invoke($handler, '12', ['inverseProperty' => 'deelnames', 'register' => '1', 'schema' => '2', 'source' => 'parent-uuid']);
+		$writeBack = new InverseWriteBack(
+			objects: $mapper,
+			saver: $handler,
+			lookups: new SaveLookups(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class)),
+			urls: $this->createMock(IURLGenerator::class)
+		);
+		$method = new \ReflectionMethod(InverseWriteBack::class, 'writeToTarget');
+		$method->invoke($writeBack, '12', ['inverseProperty' => 'deelnames', 'register' => '1', 'schema' => '2', 'source' => 'parent-uuid']);
 
 		$this->assertCount(1, $saved);
 		[$register, $schema, $data, $uuid] = $saved[0];

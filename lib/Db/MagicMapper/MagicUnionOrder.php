@@ -113,13 +113,11 @@ final class MagicUnionOrder {
 		}
 
 		$fields = (new OrderParameter(order: $query['_order']))->fields();
-		$query['_order'] = [];
-		foreach ($fields as $field => $direction) {
-			if ($this->isOrderable(field: (string) $field, columns: $columns) === true) {
-				$query['_order'][$field] = $direction;
-			}
-		}
-
+		$query['_order'] = array_filter(
+			$fields,
+			fn (int|string $field): bool => $this->isOrderable(field: (string) $field, columns: $columns),
+			ARRAY_FILTER_USE_KEY
+		);
 		if ($fields !== [] && $query['_order'] === []) {
 			$query['_order'] = [self::PREFIX . 'uuid' => 'ASC'];
 		}

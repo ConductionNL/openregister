@@ -6,18 +6,18 @@ namespace Unit\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -50,7 +50,7 @@ class TextExtractionServiceTest extends TestCase {
 	private IRootFolder&MockObject $rootFolder;
 	private IDBConnection&MockObject $db;
 	private LoggerInterface&MockObject $logger;
-	private \OCA\OpenRegister\Service\TextExtraction\EmlParser&MockObject $emlParser;
+	private \OCA\OpenRegister\Files\Service\TextExtraction\EmlParser&MockObject $emlParser;
 
 	protected function setUp(): void {
 		$this->fileMapper = $this->createMock(FileMapper::class);
@@ -66,7 +66,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
 		$this->settingsService = $this->createMock(SettingsService::class);
 		$this->riskLevelService = $this->createMock(RiskLevelService::class);
-		$this->emlParser = $this->createMock(\OCA\OpenRegister\Service\TextExtraction\EmlParser::class);
+		$this->emlParser = $this->createMock(\OCA\OpenRegister\Files\Service\TextExtraction\EmlParser::class);
 
 		$this->service = new TextExtractionService(
 			$this->fileMapper,
@@ -81,9 +81,9 @@ class TextExtractionServiceTest extends TestCase {
 			$this->settingsService,
 			$this->riskLevelService,
 			$this->emlParser,
-			new \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor($this->logger),
-			new \OCA\OpenRegister\Service\TextExtraction\PdfExtractor($this->logger),
-			new \OCA\OpenRegister\Service\TextExtraction\WordExtractor($this->logger)
+			new \OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor($this->logger),
+			new \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor($this->logger),
+			new \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor($this->logger)
 		);
 	}
 
@@ -3688,9 +3688,9 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testParseEmlStructuredDelegatesToEmlParser(): void {
 		$file = $this->createMock(File::class);
-		$structure = new \OCA\OpenRegister\Service\TextExtraction\EmlStructure(
+		$structure = new \OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure(
 			headers: ['Subject' => 'hello'],
-			body: new \OCA\OpenRegister\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
+			body: new \OCA\OpenRegister\Files\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
 			attachments: []
 		);
 
@@ -3714,9 +3714,9 @@ class TextExtractionServiceTest extends TestCase {
 
 	public function testExtractEmlReturnsFlattenedStringOnSuccess(): void {
 		$file = $this->createMock(File::class);
-		$structure = new \OCA\OpenRegister\Service\TextExtraction\EmlStructure(
+		$structure = new \OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure(
 			headers: ['Subject' => 'hello'],
-			body: new \OCA\OpenRegister\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
+			body: new \OCA\OpenRegister\Files\Service\TextExtraction\EmlBody(plainText: 'body', html: null),
 			attachments: []
 		);
 

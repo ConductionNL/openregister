@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\TaskNotesController;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\AppFramework\Db\DoesNotExistException;

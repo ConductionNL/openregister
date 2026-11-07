@@ -27,6 +27,7 @@ use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotPermittedException;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 
 /**
  * Handles file deletion operations with Single Responsibility.

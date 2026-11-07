@@ -31,6 +31,7 @@ use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotPermittedException;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 
 /**
  * Handles file creation operations with Single Responsibility.

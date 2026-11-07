@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionPage
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
@@ -87,6 +88,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeaf
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeafScope
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionScore
  */
 class MagicMapperUnionBatchGoldenTest extends TestCase {
 
@@ -116,6 +118,7 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 			'title order' => ['_order' => ['title' => 'desc'], '_limit' => 5, '_offset' => 10],
 			'created order' => ['_order' => ['@self.created' => 'asc', 'count' => 'ASC']],
 			'unlimited with offset' => ['_limit' => false, '_offset' => 3],
+			'unlimited with an offset of one' => ['_limit' => false, '_offset' => 1],
 			'unlimited' => ['_limit' => false],
 			'over max' => ['_limit' => 5000, '_offset' => -4],
 			'zero limit' => ['_limit' => 0],

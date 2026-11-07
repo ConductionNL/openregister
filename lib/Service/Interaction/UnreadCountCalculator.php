@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use DateTime;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use Psr\Log\LoggerInterface;

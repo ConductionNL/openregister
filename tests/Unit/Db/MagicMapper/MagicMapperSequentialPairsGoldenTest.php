@@ -68,6 +68,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionPage
  * @uses   \OCA\OpenRegister\Support\OrderParameter
  * @uses   \OCA\OpenRegister\Support\QueryLimit
  */

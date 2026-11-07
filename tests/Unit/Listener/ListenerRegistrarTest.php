@@ -44,6 +44,26 @@ class ListenerRegistrarTest extends TestCase {
 	}//end testEveryListenerExists()
 
 	/**
+	 * A lock and the archive answer on the deleting event, the one every delete path asks.
+	 *
+	 * @return void
+	 */
+	public function testTheObjectStateGuardListensToTheDeletingEvent(): void {
+		$context = new RecordingRegistrationContext();
+		ListenerRegistrar::register(context: $context);
+
+		$events = array_column(
+			array_filter(
+				$context->listeners,
+				static fn (array $registration): bool => $registration['listener'] === \OCA\OpenRegister\Listener\ObjectStateDeleteGuardListener::class
+			),
+			'event'
+		);
+
+		$this->assertSame(expected: [\OCA\OpenRegister\Event\ObjectDeletingEvent::class], actual: $events);
+	}//end testTheObjectStateGuardListensToTheDeletingEvent()
+
+	/**
 	 * Every OpenRegister event a listener is registered on exists.
 	 *
 	 * Events dispatch by class name, so a listener on a name no event carries

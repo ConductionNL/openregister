@@ -110,6 +110,13 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\AggregationTypes
  * @uses   \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses   \OCA\OpenRegister\Support\FilterParams
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\GraphQLNames
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\GraphQLScalars
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectMetadataFields
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectPropertyFields
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectTypes
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntry
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntryFields
  */
 class AnonymousEnvelopeReadPathsTest extends TestCase {
 

@@ -6,14 +6,10 @@
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load register data')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Empty state -->
 		<NcEmptyContent
@@ -57,16 +53,16 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import DatabaseOffOutline from 'vue-material-design-icons/DatabaseOffOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
 
 export default {
 	name: 'RegisterObjectsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
-		AlertCircleOutline,
 		DatabaseOffOutline,
 	},
 

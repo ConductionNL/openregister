@@ -3,7 +3,7 @@
 namespace Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\Agent;
 use PHPUnit\Framework\TestCase;
 
 class AgentTest extends TestCase {

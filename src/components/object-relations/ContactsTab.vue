@@ -20,14 +20,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load linked contacts')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Contacts app missing (HTTP 501 graceful degradation) -->
 		<NcEmptyContent
@@ -107,8 +103,8 @@ import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AccountOff from 'vue-material-design-icons/AccountOff.vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
 import { useContactRelationsStore } from '../../store/modules/object-relations/contacts.js'
 import { storeRelationTab } from './relationTab.js'
 
@@ -128,10 +124,10 @@ export default {
 	name: 'ContactsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcButton,
-		AlertCircleOutline,
 		AccountOutline,
 		AccountPlus,
 		AccountOff,
@@ -155,7 +151,10 @@ export default {
 		 * @spec exclude store passthrough unlinking contact + change emit; contact-relations contract owned by integration-contacts capability
 		 */
 		unlinkContact(contact) {
-			return this.unlink(contact.uid || contact.contactUid || contact.id, 'contacts-changed')
+			return this.unlink(
+				contact.uid || contact.contactUid || contact.id,
+				'contacts-changed',
+			)
 		},
 
 		/**

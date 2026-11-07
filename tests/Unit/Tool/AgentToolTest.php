@@ -3,9 +3,9 @@
 namespace Unit\Tool;
 
 use BadMethodCallException;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Tool\AgentTool;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;

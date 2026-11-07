@@ -5,7 +5,7 @@ namespace Unit\Tool;
 use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;

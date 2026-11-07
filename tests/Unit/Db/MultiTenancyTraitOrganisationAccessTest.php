@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Exception;
-use OCA\OpenRegister\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Endpoint;
@@ -156,7 +156,7 @@ final class TenancyGuardHost {
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Db\Webhook
- * @uses \OCA\OpenRegister\Db\Agent
+ * @uses \OCA\OpenRegister\Mcp\Db\Agent
  * @uses \OCA\OpenRegister\Db\Application
  * @uses \OCA\OpenRegister\Db\Mapping
  * @uses \OCA\OpenRegister\Db\Register

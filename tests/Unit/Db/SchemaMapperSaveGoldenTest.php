@@ -79,7 +79,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleFieldCheck
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleGraphValidator
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleStateValidator
- * @uses \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator
+ * @uses \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator
+ * @uses \OCA\OpenRegister\Mcp\Service\Mcp\McpVerbAnnotation
  * @uses \OCA\OpenRegister\Service\Merge\MergeAnnotationValidator
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevation

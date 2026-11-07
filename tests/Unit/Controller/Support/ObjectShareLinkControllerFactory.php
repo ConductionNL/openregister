@@ -33,7 +33,7 @@ final class ObjectShareLinkControllerFactory {
 		\OCP\IRequest $request,
 		\OCP\Share\IManager $shareManager,
 		\OCA\OpenRegister\Service\ObjectService $objectService,
-		\OCA\OpenRegister\Service\Sharing\AccessLinkReader $reader,
+		\OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader $reader,
 		\OCP\Security\Bruteforce\IThrottler $throttler,
 		\Psr\Log\LoggerInterface $logger,
 	): array {

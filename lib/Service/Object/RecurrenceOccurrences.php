@@ -67,16 +67,30 @@ final class RecurrenceOccurrences {
 		$count = $this->requestedCount();
 		$validator = new ExtendedFieldTypeValidator();
 		foreach ($rules as $propertyName => $rrule) {
-			$key = $propertyName . '_occurrences';
-			if (count($rules) === 1) {
-				$key = '_occurrences';
-			}
-
+			$key = self::occurrencesKey(propertyName: $propertyName, ruleCount: count($rules));
 			$objectData[$key] = $validator->materialiseOccurrences(rrule: $rrule, count: $count);
 		}
 
 		return $objectData;
 	}//end enrich()
+
+	/**
+	 * The key of an occurrence list: plain for a lone rule, named by property otherwise.
+	 *
+	 * @param string $propertyName The recurrence property.
+	 * @param int    $ruleCount    The number of rules on the object.
+	 *
+	 * @return string The key.
+	 *
+	 * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
+	 */
+	private static function occurrencesKey(string $propertyName, int $ruleCount): string {
+		if ($ruleCount === 1) {
+			return '_occurrences';
+		}
+
+		return $propertyName . '_occurrences';
+	}//end occurrencesKey()
 
 	/**
 	 * The recurrence properties present with a string value.

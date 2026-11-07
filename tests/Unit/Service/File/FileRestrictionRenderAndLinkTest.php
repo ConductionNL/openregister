@@ -20,15 +20,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\File\FileRestrictionStore;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -38,7 +38,7 @@ use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\SystemTag\ISystemTagManager;

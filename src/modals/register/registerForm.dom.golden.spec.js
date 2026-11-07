@@ -45,6 +45,7 @@ jest.mock('vue-material-design-icons/FolderOutline.vue', () => ({ __esModule: tr
 jest.mock('vue-material-design-icons/InformationOutline.vue', () => ({ __esModule: true, default: { render: () => null } }))
 jest.mock('vue-material-design-icons/PackageVariantClosed.vue', () => ({ __esModule: true, default: { render: () => null } }))
 jest.mock('vue-material-design-icons/Pencil.vue', () => ({ __esModule: true, default: { render: () => null } }))
+jest.mock('vue-material-design-icons/Refresh.vue', () => ({ __esModule: true, default: { render: () => null } }))
 jest.mock('vue-material-design-icons/PostOutline.vue', () => ({ __esModule: true, default: { render: () => null } }))
 jest.mock('vue-material-design-icons/Sync.vue', () => ({ __esModule: true, default: { render: () => null } }))
 jest.mock('vue-material-design-icons/Table.vue', () => ({ __esModule: true, default: { render: () => null } }))

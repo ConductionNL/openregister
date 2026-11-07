@@ -22,8 +22,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Service\ToolRegistry;
-use OCA\OpenRegister\Tool\ToolInterface;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 use OCP\EventDispatcher\Event;
 
 /**

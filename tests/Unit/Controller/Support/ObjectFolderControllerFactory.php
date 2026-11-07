@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
-use OCA\OpenRegister\Controller\ObjectFolderController;
+use OCA\OpenRegister\Files\Controller\ObjectFolderController;
 
 /**
  * Builds ObjectFolderController from its services as separate arguments, wrapped into its constructor bundles.
@@ -31,16 +31,16 @@ final class ObjectFolderControllerFactory {
 	public static function args(
 		string $appName,
 		\OCP\IRequest $request,
-		\OCA\OpenRegister\Service\File\ObjectFileAccess $objectFileAccess,
-		\OCA\OpenRegister\Service\File\ObjectFolderBrowser $browser,
-		\OCA\OpenRegister\Service\File\ObjectFolderUploads $uploads,
-		\OCA\OpenRegister\Service\File\ObjectFolderResponder $responder,
+		\OCA\OpenRegister\Files\Service\File\ObjectFileAccess $objectFileAccess,
+		\OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser $browser,
+		\OCA\OpenRegister\Files\Service\File\ObjectFolderUploads $uploads,
+		\OCA\OpenRegister\Files\Service\File\ObjectFolderResponder $responder,
 		\OCA\OpenRegister\Service\Object\FileWriteGuard $fileWriteGuard,
 	): array {
 		return [
 			$appName,
 			$request,
-			new \OCA\OpenRegister\Controller\Support\ObjectFolderControllerServices(
+			new \OCA\OpenRegister\Files\Controller\Support\ObjectFolderControllerServices(
 				objectFileAccess: $objectFileAccess,
 				browser: $browser,
 				uploads: $uploads,
