@@ -286,7 +286,10 @@ class DeletedControllerGapTest extends TestCase {
 			]);
 
 		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
-			->willReturn([$deletedObject, $notDeletedObject]);
+			->willReturn([$this->slim(full: $deletedObject), $this->slim(full: $notDeletedObject)]);
+		$this->objectMapper->method('find')->willReturnCallback(
+			static fn (...$args): ObjectEntity => ['uuid-1' => $deletedObject, 'uuid-2' => $notDeletedObject][$args[0]]
+		);
 		$this->objectMapper->method('restoreObject')
 			->willReturn($deletedObject);
 
@@ -323,7 +326,10 @@ class DeletedControllerGapTest extends TestCase {
 			]);
 
 		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
-			->willReturn([$deletedObject, $notDeletedObject]);
+			->willReturn([$this->slim(full: $deletedObject), $this->slim(full: $notDeletedObject)]);
+		$this->objectMapper->method('find')->willReturnCallback(
+			static fn (...$args): ObjectEntity => ['uuid-1' => $deletedObject, 'uuid-2' => $notDeletedObject][$args[0]]
+		);
 
 		$result = $this->controller->destroyMultiple();
 
@@ -459,5 +465,20 @@ class DeletedControllerGapTest extends TestCase {
 		$this->assertEquals(200, $result->getStatus());
 		$data = $result->getData();
 		$this->assertStringNotContainsString('not found', $data['message']);
+	}
+
+	/**
+	 * The row as the cross-table lookup answers it: uuid and schema, no deleted stamp.
+	 *
+	 * @param ObjectEntity $full The stored row.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function slim(ObjectEntity $full): ObjectEntity {
+		$slim = new ObjectEntity();
+		$slim->setUuid($full->getUuid());
+		$slim->setSchema($full->getSchema());
+
+		return $slim;
 	}
 }
