@@ -60,13 +60,7 @@ final readonly class ArchivalDecisionSources {
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
 	public function firstText(string ...$paths): ?string {
-		$blocks = [
-			'retention' => $this->retention,
-			'tmlo' => $this->tmlo,
-			'annotation' => $this->annotation,
-			'declared' => $this->declared,
-		];
-
+		$blocks = ['retention' => $this->retention, 'tmlo' => $this->tmlo, 'annotation' => $this->annotation, 'declared' => $this->declared];
 		foreach ($paths as $path) {
 			[$block, $key] = explode('.', $path, 2);
 			$text = ArchivalText::fromString(value: ($blocks[$block][$key] ?? null));
