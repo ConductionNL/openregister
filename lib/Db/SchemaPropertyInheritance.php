@@ -139,26 +139,43 @@ final class SchemaPropertyInheritance {
 		$merged = $parentProperties;
 
 		foreach ($childProperties as $propertyName => $childProperty) {
-			if (isset($merged[$propertyName]) === false) {
-				$merged[$propertyName] = $childProperty;
-				continue;
-			}
-
-			$parentProperty = $merged[$propertyName];
-			if (is_array($parentProperty) === false || is_array($childProperty) === false) {
-				$this->atPath(path: (string) $propertyName)->assertNotRemoved(pair: [$parentProperty, $childProperty]);
-				$merged[$propertyName] = $childProperty;
-				continue;
-			}
-
-			$merged[$propertyName] = $this->atPath(path: (string) $propertyName)->mergeProperty(
-				parentProperty: $parentProperty,
+			$merged[$propertyName] = $this->mergeNamedProperty(
+				propertyName: $propertyName,
+				parentProperty: ($merged[$propertyName] ?? null),
 				childProperty: $childProperty
 			);
 		}
 
 		return $merged;
 	}//end mergeProperties()
+
+	/**
+	 * One child property merged over its parent's: a new or null parent property is the child's.
+	 *
+	 * A property that is not an array on either side is replaced, provided
+	 * the child does not empty what the parent constrained.
+	 *
+	 * @param int|string $propertyName   The property's name.
+	 * @param mixed      $parentProperty The parent's definition, or null.
+	 * @param mixed      $childProperty  The child's definition.
+	 *
+	 * @return mixed The merged definition.
+	 *
+	 * @throws Exception When the child relaxes or removes a parent constraint.
+	 */
+	private function mergeNamedProperty(int|string $propertyName, mixed $parentProperty, mixed $childProperty): mixed {
+		if ($parentProperty === null) {
+			return $childProperty;
+		}
+
+		$atProperty = $this->atPath(path: (string) $propertyName);
+		if (is_array($parentProperty) === false || is_array($childProperty) === false) {
+			$atProperty->assertNotRemoved(pair: [$parentProperty, $childProperty]);
+			return $childProperty;
+		}
+
+		return $atProperty->mergeProperty(parentProperty: $parentProperty, childProperty: $childProperty);
+	}//end mergeNamedProperty()
 
 	/**
 	 * The same merge, at another property path.
@@ -216,6 +233,22 @@ final class SchemaPropertyInheritance {
 			return $this->atPath(path: "{$this->path}.{$key}")->mergeNested(parentValue: $parentValue, childValue: $childValue);
 		}
 
+		return $this->mergeConstraintOrObject(key: $key, pair: $pair, bothArrays: $bothArrays);
+	}//end mergeValue()
+
+	/**
+	 * Merge a value that is not metadata nor a nested schema: a validation keyword, a scalar or an object.
+	 *
+	 * @param int|string $key        The keyword.
+	 * @param array      $pair       The parent's and the child's value.
+	 * @param bool       $bothArrays Whether both values are arrays.
+	 *
+	 * @return mixed The merged value.
+	 *
+	 * @throws Exception When the child relaxes a parent constraint.
+	 */
+	private function mergeConstraintOrObject(int|string $key, array $pair, bool $bothArrays): mixed {
+		[$parentValue, $childValue] = $pair;
 		if (in_array($key, self::VALIDATION_FIELDS) === true) {
 			$this->assertNotRelaxed(constraint: (string) $key, pair: $pair);
 			return $childValue;
@@ -226,7 +259,7 @@ final class SchemaPropertyInheritance {
 		}
 
 		return $this->atPath(path: "{$this->path}.{$key}")->mergeProperty(parentProperty: $parentValue, childProperty: $childValue);
-	}//end mergeValue()
+	}//end mergeConstraintOrObject()
 
 	/**
 	 * Merge nested property definitions (properties or items), keyed by name.
@@ -241,17 +274,42 @@ final class SchemaPropertyInheritance {
 	private function mergeNested(array $parentValue, array $childValue): array {
 		$merged = [];
 		foreach ($childValue as $nestedKey => $nestedChild) {
-			if (($parentValue[$nestedKey] ?? null) === null) {
-				$merged[$nestedKey] = $nestedChild;
-				continue;
-			}
-
-			$merged[$nestedKey] = $this->atPath(path: "{$this->path}.{$nestedKey}")->mergeProperty(
-				parentProperty: $parentValue[$nestedKey],
-				childProperty: $nestedChild
+			$merged[$nestedKey] = $this->mergeNestedEntry(
+				nestedKey: $nestedKey,
+				nestedParent: ($parentValue[$nestedKey] ?? null),
+				nestedChild: $nestedChild
 			);
 		}
 
+		return $this->withInherited(merged: $merged, parentValue: $parentValue);
+	}//end mergeNested()
+
+	/**
+	 * One nested entry: the child's when the parent has none (or null), else merged over the parent's.
+	 *
+	 * @param int|string $nestedKey    The nested key.
+	 * @param mixed      $nestedParent The parent's entry, or null.
+	 * @param mixed      $nestedChild  The child's entry.
+	 *
+	 * @return mixed The merged entry.
+	 */
+	private function mergeNestedEntry(int|string $nestedKey, mixed $nestedParent, mixed $nestedChild): mixed {
+		if ($nestedParent === null) {
+			return $nestedChild;
+		}
+
+		return $this->atPath(path: "{$this->path}.{$nestedKey}")->mergeProperty(parentProperty: $nestedParent, childProperty: $nestedChild);
+	}//end mergeNestedEntry()
+
+	/**
+	 * Add every parent entry the merge does not hold (or holds as null).
+	 *
+	 * @param array $merged      The merged child entries.
+	 * @param array $parentValue The parent's entries.
+	 *
+	 * @return array
+	 */
+	private function withInherited(array $merged, array $parentValue): array {
 		foreach ($parentValue as $nestedKey => $nestedParent) {
 			if (isset($merged[$nestedKey]) === false) {
 				$merged[$nestedKey] = $nestedParent;
@@ -259,7 +317,7 @@ final class SchemaPropertyInheritance {
 		}
 
 		return $merged;
-	}//end mergeNested()
+	}//end withInherited()
 
 	/**
 	 * Reject a change of a validation field that relaxes the parent's constraint.
@@ -307,30 +365,35 @@ final class SchemaPropertyInheritance {
 			return;
 		}
 
-		if (is_array($parentValue) === true && is_array($childValue) === true) {
-			if (count(array_diff($childValue, $parentValue)) > 0) {
-				throw new Exception(
-					sprintf(
-						"Schema '%s': Property '%s' cannot change type from %s to %s (adds types not in parent)",
-						$this->schemaId,
-						$this->path,
-						json_encode($parentValue),
-						json_encode($childValue)
-					)
-				);
-			}
+		$parentIsArray = is_array($parentValue);
+		if ($parentIsArray !== is_array($childValue)) {
+			throw new Exception("Schema '{$this->schemaId}': Property '{$this->path}' type change is not compatible");
+		}
 
+		if ($parentIsArray === true) {
+			$this->assertTypesNotAdded(parentValue: $parentValue, childValue: $childValue);
 			return;
 		}
 
-		if (is_array($parentValue) === false && is_array($childValue) === false) {
-			throw new Exception(
-				sprintf("Schema '%s': Property '%s' cannot change type from '%s' to '%s'", $this->schemaId, $this->path, $parentValue, $childValue)
-			);
-		}
-
-		throw new Exception("Schema '{$this->schemaId}': Property '{$this->path}' type change is not compatible");
+		$this->refuse(format: "Schema '%s': Property '%s' cannot change type from '%s' to '%s'", args: [$parentValue, $childValue]);
 	}//end assertTypeNotWidened()
+
+	/**
+	 * Refuse a union type that adds types the parent does not allow.
+	 *
+	 * @param array $parentValue The parent's types.
+	 * @param array $childValue  The child's types.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the child adds a type.
+	 */
+	private function assertTypesNotAdded(array $parentValue, array $childValue): void {
+		if (count(array_diff($childValue, $parentValue)) > 0) {
+			$format = "Schema '%s': Property '%s' cannot change type from %s to %s (adds types not in parent)";
+			$this->refuse(format: $format, args: [json_encode($parentValue), json_encode($childValue)]);
+		}
+	}//end assertTypesNotAdded()
 
 	/**
 	 * Reject an enum that adds values the parent does not allow.
@@ -349,14 +412,7 @@ final class SchemaPropertyInheritance {
 
 		$diff = array_diff($childValue, $parentValue);
 		if (count($diff) > 0) {
-			throw new Exception(
-				sprintf(
-					"Schema '%s': Property '%s' enum cannot add values not in parent (added: %s)",
-					$this->schemaId,
-					$this->path,
-					json_encode($diff)
-				)
-			);
+			$this->refuse(format: "Schema '%s': Property '%s' enum cannot add values not in parent (added: %s)", args: [json_encode($diff)]);
 		}
 	}//end assertEnumNotWidened()
 
@@ -373,9 +429,7 @@ final class SchemaPropertyInheritance {
 	private function assertFixedValueKept(string $constraint, array $pair): void {
 		[$parentValue, $childValue] = $pair;
 		if ($parentValue !== null && $parentValue !== $childValue) {
-			throw new Exception(
-				sprintf(self::FIXED_VALUE_MESSAGES[$constraint], $this->schemaId, $this->path, $parentValue, $childValue)
-			);
+			$this->refuse(format: self::FIXED_VALUE_MESSAGES[$constraint], args: [$parentValue, $childValue]);
 		}
 	}//end assertFixedValueKept()
 
@@ -397,17 +451,8 @@ final class SchemaPropertyInheritance {
 
 		[$direction, $sign] = self::BOUND_RELAXATIONS[$constraint];
 		if (($childValue <=> $parentValue) === $sign) {
-			throw new Exception(
-				sprintf(
-					"Schema '%s': Property '%s' %s cannot be %s from %s to %s (relaxes constraint)",
-					$this->schemaId,
-					$this->path,
-					$constraint,
-					$direction,
-					$parentValue,
-					$childValue
-				)
-			);
+			$format = "Schema '%s': Property '%s' %s cannot be %s from %s to %s (relaxes constraint)";
+			$this->refuse(format: $format, args: [$constraint, $direction, $parentValue, $childValue]);
 		}
 	}//end assertBoundNotRelaxed()
 
@@ -423,13 +468,21 @@ final class SchemaPropertyInheritance {
 	private function assertNotRemoved(array $pair): void {
 		[$parentValue, $childValue] = $pair;
 		if (empty($parentValue) === false && empty($childValue) === true) {
-			throw new Exception(
-				sprintf(
-					"Schema '%s': Property '%s' cannot remove constraints (parent had value, child is empty)",
-					$this->schemaId,
-					$this->path
-				)
-			);
+			$this->refuse(format: "Schema '%s': Property '%s' cannot remove constraints (parent had value, child is empty)");
 		}
 	}//end assertNotRemoved()
+
+	/**
+	 * Throw the refusal: the format gets this schema's id and the property path, then the arguments.
+	 *
+	 * @param string $format The sprintf format, starting with the schema id and path.
+	 * @param array  $args   The remaining sprintf arguments.
+	 *
+	 * @return never
+	 *
+	 * @throws Exception Always.
+	 */
+	private function refuse(string $format, array $args = []): never {
+		throw new Exception(sprintf($format, $this->schemaId, $this->path, ...$args));
+	}//end refuse()
 }//end class
