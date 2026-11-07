@@ -149,13 +149,15 @@ final class D4InterfaceBindingsTest extends TestCase {
 	/**
 	 * The first-level lib/ directory holding the class.
 	 *
+	 * Read from the namespace, which PSR-4 maps onto lib/ (OCA\OpenRegister\<Component>\...
+	 * lives in lib/<Component>/), so it does not depend on where the checkout or the
+	 * autoloader's copy of the file sits.
+	 *
 	 * @param string $class The fully qualified class name
 	 *
 	 * @return string The component directory name
 	 */
 	private function componentOf(string $class): string {
-		$file = (string) (new \ReflectionClass($class))->getFileName();
-		$path = substr($file, strlen((string) realpath(self::LIB)) + 1);
-		return explode('/', $path)[0];
+		return explode('\\', $class)[2];
 	}//end componentOf()
 }//end class
