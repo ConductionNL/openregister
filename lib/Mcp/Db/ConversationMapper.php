@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Mcp\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Event\ConversationCreatedEvent;
 use OCA\OpenRegister\Event\ConversationDeletedEvent;
 use OCA\OpenRegister\Event\ConversationUpdatedEvent;
@@ -63,7 +64,7 @@ use OCP\IDBConnection;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
-class ConversationMapper extends QBMapper {
+class ConversationMapper extends QBMapper implements ConversationMapperInterface {
 
 	/**
 	 * Event dispatcher for dispatching conversation events
@@ -485,7 +486,7 @@ class ConversationMapper extends QBMapper {
 	 * @return bool True if user can access
 	 */
 	public function canUserAccessConversation(
-		Conversation $conversation,
+		Entity $conversation,
 		string $userId,
 		?string $organisationUuid = null,
 	): bool {
@@ -513,7 +514,7 @@ class ConversationMapper extends QBMapper {
 	 *
 	 * @return bool True if user can modify
 	 */
-	public function canUserModifyConversation(Conversation $conversation, string $userId): bool {
+	public function canUserModifyConversation(Entity $conversation, string $userId): bool {
 		return $conversation->getUserId() === $userId;
 	}//end canUserModifyConversation()
 }//end class
