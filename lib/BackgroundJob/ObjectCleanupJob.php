@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\ObjectRelationCleanupService;
+use OCA\OpenRegister\Service\ObjectRelationCleanupServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
@@ -66,7 +66,7 @@ class ObjectCleanupJob extends ActorForwardedJob {
 	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param DeferredEntryObjectResolver $resolver Re-create guard lookup.
-	 * @param ObjectRelationCleanupService $cleanup Shared cleanup implementation.
+	 * @param ObjectRelationCleanupServiceInterface $cleanup Shared cleanup implementation.
 	 *
 	 * @return void
 	 */
@@ -77,7 +77,7 @@ class ObjectCleanupJob extends ActorForwardedJob {
 		OrganisationServiceInterface $organisation,
 		LoggerInterface $logger,
 		private readonly DeferredEntryObjectResolver $resolver,
-		private readonly ObjectRelationCleanupService $cleanup,
+		private readonly ObjectRelationCleanupServiceInterface $cleanup,
 	) {
 		parent::__construct(
 			time: $time,

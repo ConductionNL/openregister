@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
 
 /**
  * Warns when a nominated property's value is already held elsewhere.
@@ -60,7 +60,7 @@ class UniqueHintChecker {
 	 * Wire collaborators.
 	 *
 	 * @param ObjectOperationsInterface $objectService Object query path (RBAC + tenant scoped).
-	 * @param UniqueHintAnnotationValidator $annotation Reader for the nominations.
+	 * @param UniqueHintAnnotationValidatorInterface $annotation Reader for the nominations.
 	 * @param UniqueHintWarnings $warnings Per-request collector the controller drains.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -68,7 +68,7 @@ class UniqueHintChecker {
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly UniqueHintAnnotationValidator $annotation,
+		private readonly UniqueHintAnnotationValidatorInterface $annotation,
 		private readonly UniqueHintWarnings $warnings,
 		private readonly LoggerInterface $logger,
 	) {

@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -59,6 +61,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 		TransitionNode::class => [TransitionNodeInterface::class, ContractBindings::class],
 		TriggerObjectNode::class => [TriggerObjectNodeInterface::class, ContractBindings::class],
 		TriggerScheduleNode::class => [TriggerScheduleNodeInterface::class, ContractBindings::class],
+		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
 	];
 
 	/**
