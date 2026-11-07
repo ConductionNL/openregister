@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -52,6 +54,7 @@ final class D2InterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		AggregationRunner::class => [AggregationRunnerInterface::class, ContractBindings::BINDINGS, 'Service'],
 		BatchOperationStatus::class => [BatchOperationStatusInterface::class, ContractBindings::BINDINGS, 'Service'],
+		ObjectEventGate::class => [ObjectEventGateInterface::class, ContractBindings::BINDINGS, 'Service'],
 	];
 
 	/**
@@ -59,7 +62,12 @@ final class D2InterfaceBindingsTest extends TestCase {
 	 *
 	 * @var array<class-string, array<string, string>>
 	 */
-	private const KEPT = [];
+	private const KEPT = [
+		ObjectEventGate::class => [
+			'BackgroundJob/DeferredObjectEventJob.php' => 'constructs the gate (`new`) around its own dispatcher',
+			'Db/MagicMapper.php' => 'constructs the gate (`new`); the file is also changed by open PR #6108',
+		],
+	];
 
 	/**
 	 * Each class implements its interface.
