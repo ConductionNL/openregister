@@ -54,8 +54,8 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
-use OCA\OpenRegister\Service\Task\TaskFormCompletion;
-use OCA\OpenRegister\Service\Task\TaskFormResolver;
+use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
+use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Controller;
@@ -135,16 +135,16 @@ class TaskController extends Controller {
 	/**
 	 * Resolves the form a task presents, per read.
 	 *
-	 * @var TaskFormResolver
+	 * @var TaskFormResolverInterface
 	 */
-	private readonly TaskFormResolver $forms;
+	private readonly TaskFormResolverInterface $forms;
 
 	/**
 	 * Completes a task with a form payload,
 	 *
-	 * @var TaskFormCompletion
+	 * @var TaskFormCompletionInterface
 	 */
-	private readonly TaskFormCompletion $completion;
+	private readonly TaskFormCompletionInterface $completion;
 
 	/**
 	 * Where an unexpected failure's

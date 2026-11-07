@@ -194,10 +194,20 @@ use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskFormCompletion;
+use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
+use OCA\OpenRegister\Service\Task\TaskFormResolver;
+use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
+use OCA\OpenRegister\Service\Task\TaskProjectionService;
+use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCA\OpenRegister\Service\Task\TaskSequenceServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
+use OCA\OpenRegister\Service\Task\TaskSubjectLocatorInterface;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -356,8 +366,13 @@ final class ContractBindings {
 		SubstantiveChangeEvaluatorInterface::class => SubstantiveChangeEvaluator::class,
 		SurvivorshipResolverInterface::class => SurvivorshipResolver::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
+		TaskFormCompletionInterface::class => TaskFormCompletion::class,
+		TaskFormResolverInterface::class => TaskFormResolver::class,
 		TaskManagerInterface::class => TaskService::class,
+		TaskProjectionServiceInterface::class => TaskProjectionService::class,
 		TaskSequenceServiceInterface::class => TaskSequenceService::class,
+		TaskSubjectLocatorInterface::class => TaskSubjectLocator::class,
+		TaskVtodoWriteBackGateInterface::class => TaskVtodoWriteBackGate::class,
 		TemporalCalculationSweepServiceInterface::class => TemporalCalculationSweepService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		TransitionNodeInterface::class => TransitionNode::class,

@@ -35,7 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\Task\TaskProjectionService;
+use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Notification\IManager as INotificationManager;
@@ -55,12 +55,12 @@ class TaskTerminalProjectionListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param INotificationManager $notifications Withdrawal only, never delivery.
-	 * @param TaskProjectionService $projections Failure-isolated re-render.
+	 * @param TaskProjectionServiceInterface $projections Failure-isolated re-render.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly INotificationManager $notifications,
-		private readonly TaskProjectionService $projections,
+		private readonly TaskProjectionServiceInterface $projections,
 		private readonly LoggerInterface $logger,
 	) {
 

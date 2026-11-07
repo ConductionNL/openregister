@@ -71,7 +71,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
  */
-class TaskFormCompletion {
+class TaskFormCompletion implements TaskFormCompletionInterface {
 
 	/**
 	 * The action name the allowlist reports for an inline field list.
