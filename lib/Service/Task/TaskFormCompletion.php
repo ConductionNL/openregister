@@ -44,7 +44,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 
@@ -88,7 +87,7 @@ class TaskFormCompletion implements TaskFormCompletionInterface {
 	 *
 	 * @throws TaskFormRefusedException When the payload violates the form (400, fields named).
 	 * @throws TaskSubjectWriteRefusedException When the subject's own validation or lifecycle refuses the write (422).
-	 * @throws TaskAccessDeniedException When the task verb or the object write is not authorized.
+	 * @throws \OCA\OpenRegister\Exception\TaskAccessDeniedException When the task verb or the object write is not authorized.
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */

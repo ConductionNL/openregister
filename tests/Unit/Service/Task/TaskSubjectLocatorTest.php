@@ -228,7 +228,7 @@ class TaskSubjectLocatorTest extends TestCase {
 			$task('e', 3, 4),
 		];
 
-		$locator = new TaskSubjectLocator($objects, $registers, $schemas, new NullLogger());
+		$locator = new TaskSubjectLocator(objects: $objects, registers: $registers, schemas: $schemas, logger: new NullLogger());
 
 		$this->assertSame(['a' => 'subject a', 'c' => 'subject c', 'e' => 'subject e'], $locator->readLocated(tasks: $tasks));
 		$this->assertSame([[1, 2, ['a', 'c']], [3, 4, ['e']]], $reads);
