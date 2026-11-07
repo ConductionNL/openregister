@@ -33,6 +33,9 @@ use OCA\OpenRegister\BulkAction\RunActionAction;
 use OCA\OpenRegister\BulkAction\RunActionActionInterface;
 use OCA\OpenRegister\BulkAction\SetPropertiesAction;
 use OCA\OpenRegister\BulkAction\SetPropertiesActionInterface;
+use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -77,6 +80,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 		SetPropertiesAction::class => [
 			SetPropertiesActionInterface::class,
 			BulkActionRegistrar::class,
+			[],
+		],
+		TimeseriesRequestValidator::class => [
+			TimeseriesRequestValidatorInterface::class,
+			SearchRegistrar::class,
 			[],
 		],
 	];
