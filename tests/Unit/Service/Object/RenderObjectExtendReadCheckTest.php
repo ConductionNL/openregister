@@ -141,7 +141,12 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 			static function ($id) use ($exposes): Schema {
 				$schema = new Schema();
 				(new ReflectionProperty(Schema::class, 'id'))->setValue($schema, (int)$id);
-				$schema->setProperties(['one' => ['$ref' => '#/components/schemas/far', 'x-openregister-relation' => ['type' => 'gerelateerd']]]);
+				$schema->setProperties(
+					[
+						'secret' => ['type' => 'string', 'writeOnly' => true],
+						'one' => ['$ref' => '#/components/schemas/far', 'x-openregister-relation' => ['type' => 'gerelateerd']],
+					]
+				);
 				if ($exposes !== null) {
 					$schema->setConfiguration(
 						['x-openregister-relation-types' => [['key' => 'gerelateerd', 'label' => 'related to', LinkExposure::KEY => $exposes]]]
@@ -163,6 +168,11 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 			}
 		);
 
+		$properties = $this->createMock(PropertyRbacHandler::class);
+		$properties->method('stripWriteOnlyProperties')->willReturnCallback(
+			static fn (Schema $schema, array $object): array => array_diff_key($object, ['secret' => true])
+		);
+
 		$translations = $this->createMock(TranslationHandler::class);
 		$translations->method('resolveTranslationsForRender')->willReturnArgument(0);
 
@@ -175,7 +185,7 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 			'systemTagMapper' => $this->createMock(ISystemTagObjectMapper::class),
 			'cacheHandler' => $this->createMock(CacheHandler::class),
 			'objectCacheService' => $this->cache,
-			'propertyRbacHandler' => $this->createMock(PropertyRbacHandler::class),
+			'propertyRbacHandler' => $properties,
 			'logger' => new NullLogger(),
 			'fileService' => $this->createMock(FileService::class),
 			'computedFieldHandler' => $this->createMock(ComputedFieldHandler::class),
@@ -342,6 +352,50 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 		$this->assertSame(LinkExposure::WITHHELD, $data['one']['note']);
 		$this->assertSame(self::CLOSED, $data['many'][0]);
 		$this->assertArrayNotHasKey(self::CLOSED, $renderer->getObjectsCache());
+	}
+
+	/**
+	 * What `@self.objects` holds for a target carrying a write-only value.
+	 *
+	 * @param array $extend The extend list.
+	 *
+	 * @return array The target as `@self.objects` gives it.
+	 */
+	private function selfObjectUnder(array $extend): array {
+		$this->cache = $this->createMock(CacheHandler::class);
+		$this->cache->method('preloadObjects')->willReturnCallback(
+			fn (): array => [$this->target(self::OPEN, ['name' => 'target', 'secret' => 'hidden'])]
+		);
+		$renderer = $this->renderer();
+		$renderer->renderEntity(entity: $this->parent(self::OPEN, []), _extend: $extend);
+
+		return $renderer->getObjectsCache()[self::OPEN];
+	}
+
+	public function testAnExtendedObjectInSelfObjectsHasNoWriteOnlyValue(): void {
+		$object = $this->selfObjectUnder(['one']);
+
+		$this->assertSame('target', $object['name']);
+		$this->assertArrayNotHasKey('secret', $object);
+	}
+
+	public function testAnObjectThatWasOnlyLoadedIsRenderedForSelfObjects(): void {
+		$object = $this->selfObjectUnder(['one.deep']);
+
+		$this->assertSame('target', $object['name']);
+		$this->assertArrayNotHasKey('secret', $object);
+	}
+
+	public function testARenderedObjectIsNotRenderedAgainForSelfObjects(): void {
+		$this->cache = $this->createMock(CacheHandler::class);
+		$this->cache->method('preloadObjects')->willReturnCallback(fn (): array => [$this->target(self::OPEN)]);
+		$renderer = $this->renderer();
+		$renderer->renderEntity(entity: $this->parent(self::OPEN, []), _extend: ['one']);
+		$probe = new ReflectionProperty(RenderObject::class, 'objectsCache');
+		$cached = $probe->getValue($renderer)[self::OPEN];
+		$cached->setObject(['secret' => 'a render would remove this']);
+
+		$this->assertArrayHasKey('secret', $renderer->getObjectsCache()[self::OPEN]);
 	}
 
 	public function testEachTableIsAskedOnItsOwn(): void {

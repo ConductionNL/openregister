@@ -68,6 +68,7 @@ use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use WeakMap;
 
 /**
  * Handler class for rendering objects in the OpenRegister application.
@@ -205,6 +206,13 @@ class RenderObject {
 	 * @var ExtendTargetReads|null
 	 */
 	private ?ExtendTargetReads $extendTargetReads = null;
+
+	/**
+	 * The entities that went through a render, so `@self.objects` can tell them from loaded ones.
+	 *
+	 * @var WeakMap<ObjectEntity, true>|null
+	 */
+	private ?WeakMap $renderedEntities = null;
 
 	/**
 	 * The explicit-reveal masker, resolved on first use.
@@ -458,7 +466,7 @@ class RenderObject {
 			// Only include entries keyed by UUID (skip numeric IDs).
 			if (is_string($key) === true && UuidFormat::isCanonical(value: $key) === true) {
 				if ($object instanceof ObjectEntity) {
-					$result[$key] = $object->jsonSerialize();
+					$result[$key] = $this->renderedCopy(object: $object);
 				} elseif (is_array($object) === true) {
 					$result[$key] = $object;
 				}
@@ -467,6 +475,23 @@ class RenderObject {
 
 		return $result;
 	}//end getObjectsCache()
+
+	/**
+	 * A cached object as a reader may get it: an object that was only loaded is rendered first.
+	 *
+	 * @param ObjectEntity $object The cached object.
+	 *
+	 * @return array The serialized object.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function renderedCopy(ObjectEntity $object): array {
+		if (isset($this->renderedEntities[$object]) === true) {
+			return $object->jsonSerialize();
+		}
+
+		return $this->renderRelated(object: $object);
+	}//end renderedCopy()
 
 	/**
 	 * Attach the lightweight `\@self.files` ID list to a batch of un-rendered rows.
@@ -1940,7 +1965,11 @@ class RenderObject {
 			$registers, $schemas, $objects, self::withVisitedId(entity: $entity, visitedIds: $visitedIds), $_rbac
 		);
 
-		return $this->renderWithContext(entity: $entity, context: $context);
+		$rendered = $this->renderWithContext(entity: $entity, context: $context);
+		$this->renderedEntities ??= new WeakMap();
+		$this->renderedEntities[$rendered] = true;
+
+		return $rendered;
 	}//end renderEntity()
 
 	/**
