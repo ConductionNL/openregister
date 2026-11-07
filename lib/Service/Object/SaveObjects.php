@@ -591,31 +591,49 @@ class SaveObjects {
 	private function saveBulkChunk(BulkSaveRun $run, array $chunk): void {
 		$chunkStart = microtime(true);
 		$chunkResult = $this->processObjectsChunk(run: $run, objects: $chunk);
-
-		foreach (['saved', 'updated', 'invalid', 'errors', 'unchanged'] as $category) {
-			$run->result[$category] = array_merge($run->result[$category], $chunkResult[$category]);
-		}
-
-		foreach (['saved', 'updated', 'invalid', 'errors', 'unchanged'] as $counter) {
-			$run->result['statistics'][$counter] += $chunkResult['statistics'][$counter] ?? 0;
-		}
-
+		$this->mergeChunkResult(run: $run, chunkResult: $chunkResult);
 		$chunkTime = microtime(true) - $chunkStart;
 		$run->result['chunkStatistics'][] = [
 			'chunkIndex' => $run->chunkIndex,
 			'count' => count($chunk),
-			'saved' => $chunkResult['statistics']['saved'] ?? 0,
-			'updated' => $chunkResult['statistics']['updated'] ?? 0,
-			'unchanged' => $chunkResult['statistics']['unchanged'] ?? 0,
-			'invalid' => $chunkResult['statistics']['invalid'] ?? 0,
-			// Milliseconds.
+			...self::chunkCounts(statistics: ($chunkResult['statistics'] ?? [])),
+			// Milliseconds; objects per second; the per-phase breakdown in milliseconds.
 			'processingTime' => round($chunkTime * 1000, 2),
-			// Objects per second.
 			'speed' => round(count($chunk) / max($chunkTime, 0.001), 2),
-			// Per-phase breakdown of the chunk pipeline, in milliseconds.
 			'phaseMs' => ($chunkResult['statistics']['phaseMs'] ?? []),
 		];
 	}//end saveBulkChunk()
+
+	/**
+	 * Append a chunk's rows to the run result and add its counters to the run statistics.
+	 *
+	 * @param BulkSaveRun $run         The run, whose result is changed.
+	 * @param array       $chunkResult The chunk outcome from processObjectsChunk().
+	 *
+	 * @return void
+	 */
+	private function mergeChunkResult(BulkSaveRun $run, array $chunkResult): void {
+		foreach (['saved', 'updated', 'invalid', 'errors', 'unchanged'] as $category) {
+			$run->result[$category] = array_merge($run->result[$category], $chunkResult[$category]);
+			$run->result['statistics'][$category] += $chunkResult['statistics'][$category] ?? 0;
+		}
+	}//end mergeChunkResult()
+
+	/**
+	 * The saved, updated, unchanged and invalid counts of one chunk, zero where absent.
+	 *
+	 * @param array $statistics The chunk statistics.
+	 *
+	 * @return array<string, int>
+	 */
+	private static function chunkCounts(array $statistics): array {
+		$counts = [];
+		foreach (['saved', 'updated', 'unchanged', 'invalid'] as $counter) {
+			$counts[$counter] = ($statistics[$counter] ?? 0);
+		}
+
+		return $counts;
+	}//end chunkCounts()
 
 	/**
 	 * Add the run's timing, speed and deduplication metrics to its result.
