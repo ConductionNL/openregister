@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
  */
-class JobAlertService {
+class JobAlertService implements JobAlertServiceInterface {
 
 	/**
 	 * The app the administered settings belong to.

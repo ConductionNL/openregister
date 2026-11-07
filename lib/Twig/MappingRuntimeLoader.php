@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Twig;
 
 use OCA\OpenRegister\Db\MappingMapper;
-use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\MappingServiceInterface;
 use Twig\RuntimeLoader\RuntimeLoaderInterface;
 
 /**
@@ -38,13 +38,13 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface {
 	/**
 	 * MappingRuntimeLoader constructor
 	 *
-	 * @param MappingService $mappingService The mapping service
+	 * @param MappingServiceInterface $mappingService The mapping service
 	 * @param MappingMapper $mappingMapper The mapping mapper
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MappingService $mappingService,
+		private readonly MappingServiceInterface $mappingService,
 		private readonly MappingMapper $mappingMapper,
 	) {
 	}//end __construct()

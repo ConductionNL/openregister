@@ -26,7 +26,7 @@ use OCA\OpenRegister\Controller\Support\RelationsControllerServices;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\ContactService;
-use OCA\OpenRegister\Service\DeckCardService;
+use OCA\OpenRegister\Service\DeckCardServiceInterface;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -99,12 +99,12 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedPolls',
 		],
 		'bookmarks' => [
-			'class' => \OCA\OpenRegister\Service\BookmarkLinkService::class,
+			'class' => \OCA\OpenRegister\Service\BookmarkLinkServiceInterface::class,
 			'available' => 'isBookmarksAvailable',
 			'method' => 'getLinkedBookmarks',
 		],
 		'collectives' => [
-			'class' => \OCA\OpenRegister\Service\CollectiveLinkService::class,
+			'class' => \OCA\OpenRegister\Service\CollectiveLinkServiceInterface::class,
 			'available' => 'isCollectivesAvailable',
 			'method' => 'getLinkedPages',
 		],
@@ -124,7 +124,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedEntries',
 		],
 		'analytics' => [
-			'class' => \OCA\OpenRegister\Service\AnalyticsLinkService::class,
+			'class' => \OCA\OpenRegister\Service\AnalyticsLinkServiceInterface::class,
 			'available' => 'isAnalyticsAvailable',
 			'method' => 'getLinkedReports',
 		],
@@ -190,9 +190,9 @@ class RelationsController extends Controller {
 	/**
 	 * Deck card service.
 	 *
-	 * @var DeckCardService
+	 * @var DeckCardServiceInterface
 	 */
-	private readonly DeckCardService $deckCardService;
+	private readonly DeckCardServiceInterface $deckCardService;
 
 	/**
 	 * Logger for surfacing per-type aggregation failures.

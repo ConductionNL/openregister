@@ -54,20 +54,13 @@ use Throwable;
  *
  * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
  */
-class AppRegisterImportRunner {
+class AppRegisterImportRunner implements AppRegisterImportRunnerInterface {
 	/**
 	 * The import ran through the app's own SettingsService.
 	 *
 	 * @var string
 	 */
 	public const PATH_APP = 'app';
-
-	/**
-	 * The import ran through OpenRegister's reader of the app's files.
-	 *
-	 * @var string
-	 */
-	public const PATH_OPENREGISTER = 'openregister';
 
 	/**
 	 * The forced entry points the fleet's SettingsServices have, in order.

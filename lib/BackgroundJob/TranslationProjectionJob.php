@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Service\TranslationProjectionService;
+use OCA\OpenRegister\Service\TranslationProjectionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -59,7 +59,7 @@ class TranslationProjectionJob extends ActorForwardedJob {
 	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
-	 * @param TranslationProjectionService $projection Projection service doing the real work.
+	 * @param TranslationProjectionServiceInterface $projection Projection service doing the real work.
 	 *
 	 * @return void
 	 */
@@ -70,7 +70,7 @@ class TranslationProjectionJob extends ActorForwardedJob {
 		OrganisationServiceInterface $organisation,
 		LoggerInterface $logger,
 		private readonly DeferredEntryObjectResolver $resolver,
-		private readonly TranslationProjectionService $projection,
+		private readonly TranslationProjectionServiceInterface $projection,
 	) {
 		parent::__construct(
 			time: $time,

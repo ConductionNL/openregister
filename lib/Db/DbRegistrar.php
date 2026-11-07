@@ -50,6 +50,7 @@ final class DbRegistrar {
 		OrganisationMapperInterface::class => OrganisationMapper::class,
 		RegisterMapperInterface::class => RegisterMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
+		TranslationMapperInterface::class => TranslationMapper::class,
 	];
 
 	/**

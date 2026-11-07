@@ -38,10 +38,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
-use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Symfony\Component\Console\Command\Command;
@@ -59,14 +59,14 @@ class RematerialiseCalculationsCommand extends Command {
 	/**
 	 * Wire the mappers, evaluator, and object service used by the command.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapperInterface $magicMapper Magic table mapper for objects.
-	 * @param ObjectOperationsInterface $objectService Object persistence service.
-	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
-	 * @param ReferenceResolver $references Cross-object reference pre-resolver.
-	 * @param AggregateReferenceResolver $aggregates Aggregate-reference pre-resolver.
-	 * @param SchemaTypeConverter $types Restores the stored form of `type: string` values the read decoded.
+	 * @param RegisterMapperInterface             $registerMapper Register lookup mapper.
+	 * @param SchemaMapperInterface               $schemaMapper   Schema lookup mapper.
+	 * @param MagicMapperInterface                $magicMapper    Magic table mapper for objects.
+	 * @param ObjectOperationsInterface           $objectService  Object persistence service.
+	 * @param CalculationEvaluatorInterface       $evaluator      Expression evaluator.
+	 * @param ReferenceResolverInterface          $references     Cross-object reference pre-resolver.
+	 * @param AggregateReferenceResolverInterface $aggregates     Aggregate-reference pre-resolver.
+	 * @param SchemaTypeConverter                 $types          Restores the stored form of `type: string` values the read decoded.
 	 *
 	 * @return void
 	 *
@@ -80,8 +80,8 @@ class RematerialiseCalculationsCommand extends Command {
 		private readonly MagicMapperInterface $magicMapper,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly CalculationEvaluatorInterface $evaluator,
-		private readonly ReferenceResolver $references,
-		private readonly AggregateReferenceResolver $aggregates,
+		private readonly ReferenceResolverInterface $references,
+		private readonly AggregateReferenceResolverInterface $aggregates,
 		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),
 	) {
 		parent::__construct();

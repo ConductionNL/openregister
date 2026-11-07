@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
@@ -437,7 +437,7 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 		}
 
 		try {
-			$watchers = $this->serverContainer->get(WatcherService::class);
+			$watchers = $this->serverContainer->get(WatcherServiceInterface::class);
 			$uids = $watchers->watcherUids(objectUuid: (string)$object->getUuid());
 			if ($uids === []) {
 				return [];
