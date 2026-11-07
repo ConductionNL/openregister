@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -29,6 +30,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck
+ * @covers \OCA\OpenRegister\Db\SchemaMapper
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\LinkableUrl
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -102,6 +104,34 @@ final class NotificationActionHrefRefusalTest extends TestCase {
 
 		(new NotificationAnnotationCheck(logger: $logger))->check(schema: self::schemaWith($target));
 	}//end testALinkableTargetSaves()
+
+	public function testAnImportOnlyWarnsAboutARefusedHref(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with($this->stringContains('target.href "call" is not an absolute URL'));
+
+		(new NotificationAnnotationCheck(logger: $logger))->warn(schema: self::schemaWith(['kind' => 'url', 'href' => 'call']));
+	}//end testAnImportOnlyWarnsAboutARefusedHref()
+
+	public function testTheMapperWarnsOnlyWhileAnImportAsksIt(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning');
+		$mapper = (new \ReflectionClass(SchemaMapper::class))->newInstanceWithoutConstructor();
+		$check = function (Schema $schema): void {
+			$this->checkDataDeclarations(schema: $schema);
+		};
+		(function (LoggerInterface $logger): void {
+			$this->logger = $logger;
+		})->call($mapper, $logger);
+		$schema = self::schemaWith(['kind' => 'url', 'href' => 'call']);
+
+		$this->assertFalse($mapper->warnOnUnlinkableNotificationActions());
+		$check->call($mapper, $schema);
+		$this->assertTrue($mapper->warnOnUnlinkableNotificationActions());
+		$mapper->refuseUnlinkableNotificationActions();
+
+		$this->expectException(NotificationDeclarationException::class);
+		$check->call($mapper, $schema);
+	}//end testTheMapperWarnsOnlyWhileAnImportAsksIt()
 
 	public function testAnotherFaultStaysAWarning(): void {
 		$logger = $this->createMock(LoggerInterface::class);

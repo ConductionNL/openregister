@@ -1306,6 +1306,12 @@ For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `
 - **THEN** the schema save is refused with `notification-action-bad-href`, naming the rule and the action
 - **AND** a rule stored before this check keeps firing, and the dispatcher drops that one action
 
+#### Scenario: url target outside the linkable schemes in a configuration import
+
+- **WHEN** a configuration import writes a schema with such a `url` target
+- **THEN** the import stores the schema and logs a warning naming the rule and the action, as it does for every other notification fault
+- **AND** a later save of that schema by hand is refused with `notification-action-bad-href`
+
 ### Requirement: Notifier renders declared actions with the originApp icon
 
 `AnnotationNotifier` SHALL render the declared `actions[]` via `addAction()` (keeping the implicit "View" action as the default only when no actions are declared, for back-compat), labelling each in the recipient's locale (nl/en per ADR-007) and marking the `primary` one. It SHALL set the notification icon to the originApp hex composite (served by the hex-icon endpoint) instead of the static openregister image path.
