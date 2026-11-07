@@ -149,32 +149,14 @@ final class ObjectFileProperties {
 	 * @return void
 	 */
 	private function writeFileIds(ObjectFileWrite $write): void {
-		$this->logger->warning(
+		$this->logger->debug(
 			message: '[SaveObject] File properties processed, updating object with file IDs',
-			context: ['app' => 'openregister', 'uuid' => $write->entity->getUuid(), 'data' => json_encode($write->data)]
+			context: ['app' => 'openregister', 'uuid' => $write->entity->getUuid()]
 		);
 		$write->entity->setObject($write->data);
-		$this->logStep(message: 'After setObject - entity object is now', context: ['entityObject' => json_encode($write->entity->getObject())]);
-		$this->logStep(message: 'About to call objectEntityMapper->update()', context: ['uuid' => $write->entity->getUuid()]);
 		$this->clearImage(object: $write->entity, schema: $write->schema);
 		$write->entity = $this->objects->update(entity: $write->entity, register: $write->register, schema: $write->schema);
-		$this->logStep(
-			message: 'After objectEntityMapper->update() - result object',
-			context: ['resultObject' => json_encode($write->entity->getObject())]
-		);
 	}//end writeFileIds()
-
-	/**
-	 * Log one step of writing the file ids.
-	 *
-	 * @param string $message The step.
-	 * @param array  $context What to log with it.
-	 *
-	 * @return void
-	 */
-	private function logStep(string $message, array $context): void {
-		$this->logger->error(message: '[SaveObject] DEBUG: ' . $message, context: ['app' => 'openregister'] + $context);
-	}//end logStep()
 
 	/**
 	 * Clear the image metadata when objectImageField points to a file property.
