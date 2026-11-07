@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
 use OCA\OpenRegister\Service\SequenceServiceInterface;
 use OCP\EventDispatcher\Event;
@@ -68,13 +68,13 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
 	 * @param SequenceServiceInterface $sequences Reserves a number, atomically.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param ObjectEventGate $gate Decides what a draft is held from.
+	 * @param ObjectEventGateInterface $gate Decides what a draft is held from.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly SequenceServiceInterface $sequences,
 		private readonly LoggerInterface $logger,
-		private readonly ObjectEventGate $gate,
+		private readonly ObjectEventGateInterface $gate,
 	) {
 	}//end __construct()
 
