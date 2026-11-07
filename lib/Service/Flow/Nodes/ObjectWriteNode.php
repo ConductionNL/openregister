@@ -142,7 +142,6 @@ use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
@@ -155,7 +154,9 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One branch per named configuration key and one per operation; collapsing it hides the guards.
  * @SuppressWarnings(PHPMD.TooManyMethods)           One small, named method per guard and per operation; merging them would bury the delete guards.
  */
-class ObjectWriteNode implements IFlowNode, ObjectWriteNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview {
+class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNodeInterface,
+	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview
+{
 
 	/**
 	 * Insert a new object; never look for an existing one.
@@ -309,23 +310,6 @@ class ObjectWriteNode implements IFlowNode, ObjectWriteNodeInterface, IFlowNodeC
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/edit.svg');
 	}//end getIcon()
-
-	/**
-	 * Offered in both scopes.
-	 *
-	 * The node grants no privilege of its own — every write it performs is
-	 * bounded by the run owner's own permissions — so restricting it by scope
-	 * would restrict AUTHORING, not access.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * What this write would do, without writing (flow dry-run).
@@ -1202,28 +1186,4 @@ class ObjectWriteNode implements IFlowNode, ObjectWriteNodeInterface, IFlowNodeC
 	private function validator(): ObjectWriteConfigValidator {
 		return new ObjectWriteConfigValidator(l10n: $this->l10n);
 	}//end validator()
-
-	/**
-	 * What kind of step this is. Calls the register to write.
-	 *
-	 * @return string The BPMN kind.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
-
-	}//end getCategory()
 }//end class
