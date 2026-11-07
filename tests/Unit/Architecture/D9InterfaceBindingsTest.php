@@ -22,9 +22,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\AppHost\AppHostRegistrar;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -55,10 +62,27 @@ final class D9InterfaceBindingsTest extends TestCase {
 				'lib/Service/Object/SaveObject.php',
 			],
 		],
+		ScheduleFlowStore::class => [
+			ScheduleFlowStoreInterface::class,
+			AppHostRegistrar::class,
+			[],
+		],
+		ScheduleManifestLoader::class => [
+			ScheduleManifestLoaderInterface::class,
+			AppHostRegistrar::class,
+			[],
+		],
 		TimeseriesRequestValidator::class => [
 			TimeseriesRequestValidatorInterface::class,
 			SearchRegistrar::class,
 			[],
+		],
+		UniqueHintAnnotationValidator::class => [
+			UniqueHintAnnotationValidatorInterface::class,
+			SearchRegistrar::class,
+			[
+				'lib/Db/SchemaMapper/RecordAnnotationRefusals.php',
+			],
 		],
 	];
 
