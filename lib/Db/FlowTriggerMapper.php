@@ -35,7 +35,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
  */
-class FlowTriggerMapper {
+class FlowTriggerMapper implements FlowTriggerMapperInterface {
 
 	/**
 	 * The table holding the derived trigger set.

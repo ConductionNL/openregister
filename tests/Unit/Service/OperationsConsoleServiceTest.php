@@ -343,9 +343,31 @@ final class OperationsConsoleServiceTest extends TestCase {
 		$arguments = [];
 
 		foreach ($constructor->getParameters() as $parameter) {
-			$arguments[] = $this->createMock((string)$parameter->getType()?->getName());
+			$arguments[] = $this->double((string)$parameter->getType()?->getName());
 		}
 
 		return new $class(...$arguments);
+	}
+
+	/**
+	 * A double of one constructor argument; a final bundle cannot be mocked,
+	 * so it is built from doubles of its own arguments.
+	 *
+	 * @param class-string $type The argument type.
+	 *
+	 * @return object The double.
+	 */
+	private function double(string $type): object {
+		$reflection = new \ReflectionClass($type);
+		if ($reflection->isFinal() === false) {
+			return $this->createMock($type);
+		}
+
+		$arguments = [];
+		foreach ($reflection->getConstructor()?->getParameters() ?? [] as $parameter) {
+			$arguments[] = $this->double((string)$parameter->getType()?->getName());
+		}
+
+		return $reflection->newInstanceArgs($arguments);
 	}
 }

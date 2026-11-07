@@ -64,27 +64,67 @@ use Psr\Log\LoggerInterface;
  */
 final class NotificationQueueFlushJob extends TimedJob {
 	/**
+	 * Durable queue mapper.
+	 *
+	 * @var QueuedNotificationMapper
+	 */
+	private readonly QueuedNotificationMapper $queuedMapper;
+
+	/**
+	 * Schema lookup mapper (rule digest config).
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Notification dispatcher (flush entry point).
+	 *
+	 * @var AnnotationNotificationDispatcher
+	 */
+	private readonly AnnotationNotificationDispatcher $dispatcher;
+
+	/**
+	 * Delivery-window resolver + evaluator.
+	 *
+	 * @var NotificationDeliveryWindowService
+	 */
+	private readonly NotificationDeliveryWindowService $windowService;
+
+	/**
+	 * Live digest-schedule evaluator.
+	 *
+	 * @var DigestScheduleEvaluator
+	 */
+	private readonly DigestScheduleEvaluator $digestEvaluator;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Wire collaborators and configure the timed-job interval.
 	 *
-	 * @param ITimeFactory $time Nextcloud time factory.
-	 * @param QueuedNotificationMapper $queuedMapper Durable queue mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper (rule digest config).
-	 * @param AnnotationNotificationDispatcher $dispatcher Notification dispatcher (flush entry point).
-	 * @param NotificationDeliveryWindowService $windowService Delivery-window resolver + evaluator.
-	 * @param DigestScheduleEvaluator $digestEvaluator Live digest-schedule evaluator.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ITimeFactory       $time     Nextcloud time factory.
+	 * @param QueueFlushTiming   $timing   Digest config, delivery window and digest schedule.
+	 * @param QueueFlushDelivery $delivery The durable queue, the dispatcher and the logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly QueuedNotificationMapper $queuedMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
-		private readonly NotificationDeliveryWindowService $windowService,
-		private readonly DigestScheduleEvaluator $digestEvaluator,
-		private readonly LoggerInterface $logger,
+		QueueFlushTiming $timing,
+		QueueFlushDelivery $delivery,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: 60);
+		$this->queuedMapper = $delivery->queuedMapper;
+		$this->schemaMapper = $timing->schemaMapper;
+		$this->dispatcher = $delivery->dispatcher;
+		$this->windowService = $timing->windowService;
+		$this->digestEvaluator = $timing->digestEvaluator;
+		$this->logger = $delivery->logger;
 
 	}//end __construct()
 
