@@ -1,6 +1,6 @@
 <?php
 
-/**
+	/**
  * FilesController
  *
  * Controller for file operations in the OpenRegister application.
@@ -72,7 +72,7 @@ use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\IUserSession;
 
-/**
+	/**
  * FilesController handles file operations for objects in registers
  *
  * Provides REST API endpoints for managing files associated with objects.
@@ -740,39 +740,53 @@ class FilesController extends Controller {
 	 * The audit row names the file, so a history can say which document was
 	 * looked at ("Inzage medisch verslag") rather than a bare file id.
 	 *
-	 * @param int $fileId The Nextcloud filecache fileid being downloaded.
-	 * @param \OCA\OpenRegister\Db\ObjectEntity|null $object Parent object whose folder hosts the file.
-	 * @param string $fileName The file's name, '' when unknown.
+	 * @param File $file The file being downloaded.
+	 * @param ObjectEntity|null $object Parent object whose folder hosts the file.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
 	 */
-	private function recordDownloadEvent(int $fileId, ?\OCA\OpenRegister\Db\ObjectEntity $object = null, string $fileName = ''): void {
-		if ($this->fileMapper !== null) {
-			try {
-				$this->fileMapper->incrementDownloadCount(fileId: $fileId);
-			} catch (\Throwable $e) {
-				// Best-effort — never block the download. Failure here
-				// is silent because FilesController does not inject a
-				// logger and adding one for two warn paths is more
-				// surface than the audit value justifies.
-			}
+	private function recordDownloadEvent(File $file, ?ObjectEntity $object = null): void {
+		$this->countDownload(fileId: (int)$file->getId());
+		if ($object !== null) {
+			$this->auditDownload(file: $file, object: $object);
 		}
-
-		if ($this->fileAuditHandler !== null && $object !== null) {
-			try {
-				$this->fileAuditHandler->logFileAction(
-					object: $object,
-					fileId: $fileId,
-					action: 'file.downloaded',
-					data: ['fileId' => $fileId, 'fileName' => $fileName]
-				);
-			} catch (\Throwable $e) {
-				// Same best-effort policy as above.
-			}
-		}//end if
 	}//end recordDownloadEvent()
+
+	/**
+	 * Bump the download counter. Best-effort: a failure never blocks the download.
+	 *
+	 * @param int $fileId The file.
+	 *
+	 * @return void
+	 */
+	private function countDownload(int $fileId): void {
+		try {
+			$this->fileMapper?->incrementDownloadCount(fileId: $fileId);
+		} catch (\Throwable) {
+			// This controller has no logger; the download goes on.
+		}
+	}//end countDownload()
+
+	/**
+	 * Write the download's audit row. Best-effort: a failure never blocks the download.
+	 *
+	 * @param File         $file   The file.
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return void
+	 */
+	private function auditDownload(File $file, ObjectEntity $object): void {
+		$fileId = (int)$file->getId();
+		$row = ['fileId' => $fileId, 'fileName' => (string)$file->getName()];
+
+		try {
+			$this->fileAuditHandler?->logFileAction(object: $object, fileId: $fileId, action: 'file.downloaded', data: $row);
+		} catch (\Throwable) {
+			// Same best-effort policy as the counter.
+		}
+	}//end auditDownload()
 
 	/**
 	 * Get all files associated with a specific object
@@ -793,58 +807,63 @@ class FilesController extends Controller {
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function index(
-		string $register,
-		string $schema,
-		string $id,
-	): JSONResponse {
+	public function index(string $register, string $schema, string $id): JSONResponse {
 		// Note: $register and $schema are route parameters for API consistency.
-		// They are part of the URL structure (/api/objects/{register}/{schema}/{id}/files)
-		// But only $id is used to fetch files.
 		try {
-			// SECURITY (H6): anonymous callers see only published (shared) files.
-			$isAnonymous = $this->isAnonymousRequest();
-
 			// A person sees the list only when they may read the object. Every
 			// file sits in the openregister account's home, so without this
 			// check any signed-in user could list any object's files.
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$object = $this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forAnyone()->forReading());
-
-			// An anonymous caller has no read check to resolve the object; it is looked
-			// up within this register and schema all the same. Publication still decides
-			// what it sees (shared files only).
-			if ($object === null && $isAnonymous === true) {
-				$object = $this->objectInScope(register: $register, schema: $schema, id: $id);
-			}
-
-			// List the files of the object resolved within this register and schema: a
-			// slug names THIS schema's object (#4037). The raw identifier would be looked
-			// up across every table, where another schema's object with the same slug
-			// could win; only the legacy wiring without the access guard still passes it.
-			$files = $this->fileService->getFiles(object: ($object ?? $id), sharedFilesOnly: $isAnonymous);
-			if ($this->fileRestrictions !== null) {
-				$files = $this->fileRestrictions->readableNodes(nodes: $files);
-			}
-
-			// Format the files with pagination using request parameters.
-			$formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
-
-			return new JSONResponse(data: $formattedFiles);
-		} catch (NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: ['error' => $this->translate(text: 'Object not found')],
-				statusCode: 404
-			);
-		} catch (NotFoundException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'Files folder not found')], statusCode: 404);
+			return new JSONResponse(data: $this->listedFiles(route: $route, object: $object));
 		} catch (\Exception $e) {
-			// SEC-CTRL-7: do not leak internal exception detail on 500.
-			return $this->errorResponse(e: $e);
-		}//end try
+			return $this->indexFailed(e: $e);
+		}
 	}//end index()
+
+	/**
+	 * The files of an object, as far as the caller may see them.
+	 *
+	 * @param ObjectLinkRoute   $route  The object, as the route names it.
+	 * @param ObjectEntity|null $object The object the access check resolved.
+	 *
+	 * @return array<string, mixed> The formatted page of files.
+	 */
+	private function listedFiles(ObjectLinkRoute $route, ?ObjectEntity $object): array {
+		// SECURITY (H6): anonymous callers see only published (shared) files.
+		$isAnonymous = $this->isAnonymousRequest();
+
+		// An anonymous caller has no read check to resolve the object; it is looked
+		// up within this register and schema all the same.
+		if ($object === null && $isAnonymous === true) {
+			$object = $this->objectInScope(route: $route);
+		}
+
+		// A slug names THIS schema's object (#4037). The raw identifier would be looked
+		// up across every table; only the legacy wiring without the access guard passes it.
+		$files = $this->fileService->getFiles(object: ($object ?? $route->id), sharedFilesOnly: $isAnonymous);
+		if ($this->fileRestrictions !== null) {
+			$files = $this->fileRestrictions->readableNodes(nodes: $files);
+		}
+
+		return $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
+	}//end listedFiles()
+
+	/**
+	 * Answer a failed listing; anything unforeseen answers 500 without its detail (SEC-CTRL-7).
+	 *
+	 * @param \Exception $e The failure.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function indexFailed(\Exception $e): JSONResponse {
+		return match (true) {
+			$e instanceof NotAuthorizedException => $this->accessDenied(e: $e),
+			$e instanceof DoesNotExistException => new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404),
+			$e instanceof NotFoundException => new JSONResponse(data: ['error' => $this->translate(text: 'Files folder not found')], statusCode: 404),
+			default => $this->errorResponse(e: $e),
+		};
+	}//end indexFailed()
 
 	/**
 	 * The object an identifier names within a register and schema, without a read check.
@@ -854,9 +873,7 @@ class FilesController extends Controller {
 	 * objects hold is answered as not found, the answer the files listing gives every
 	 * refused read (file-actions REQ-OFOA-002), and lists neither object's files.
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema   The schema slug or id.
-	 * @param string $id       The object's id, uuid or slug.
+	 * @param ObjectLinkRoute $route The object, as the route names it.
 	 *
 	 * @return ObjectEntity The object.
 	 *
@@ -866,10 +883,17 @@ class FilesController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function objectInScope(string $register, string $schema, string $id): ObjectEntity {
+	private function objectInScope(ObjectLinkRoute $route): ObjectEntity {
 		try {
 			$object = WriteCause::asLookup(
-				fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _audit: false)
+				fn () => $this->objectService->find(
+					id: $route->id,
+					register: $route->register,
+					schema: $route->schema,
+					_rbac: false,
+					_multitenancy: false,
+					_audit: false
+				)
 			);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
 			throw new DoesNotExistException('Object not found');
@@ -904,12 +928,7 @@ class FilesController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function show(
-		string $register,
-		string $schema,
-		string $id,
-		int $fileId,
-	): JSONResponse|StreamResponse {
+	public function show(string $register, string $schema, string $id, int $fileId): JSONResponse|StreamResponse {
 		// Set the schema and register to the object service (forces a check if they are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
 
@@ -919,67 +938,101 @@ class FilesController extends Controller {
 
 			// SEC-CTRL-5: the object read rule decides for authenticated callers
 			// (404 when they may not read it). Anonymous callers are gated
-			// separately by the published-file check below.
+			// separately on publication, in shownFile().
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forAnyone()->forReading()->onFile(fileId: $fileId));
 
-			$file = $this->fileService->getFile(object: $object, file: $fileId);
-
-			// Fall back to direct file ID lookup via known user contexts
-			// when the normal path fails (e.g. anonymous/public access to files
-			// uploaded by a different user whose folder is not accessible).
-			//
-			// Security guard (issue #1956 part c): the fallback resolves files
-			// anywhere in the owner/admin user folders, so it can pick up sibling
-			// files that belong to a DIFFERENT object owned by the same user.
-			// Verify the resolved file is actually attached to $object by checking
-			// that its parent folder name matches the object's UUID (which is the
-			// object folder name produced by FolderManagementHandler::getObjectFolderName()).
-			if ($file === null) {
-				$owner = $object->getOwner();
-				$fallback = $this->getFileViaKnownUsers(fileId: $fileId, owner: $owner);
-				if ($fallback !== null && $this->fileBelongsToObject(file: $fallback, object: $object) === true) {
-					$file = $fallback;
-				}
-			}
-
-			if ($file === null) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'File not found')],
-					statusCode: 404
-				);
-			}
-
-			// SECURITY (H5): gate anonymous callers on the file being published.
-			// Mirrors the same guard in downloadById() and preview().
-			$isAnonymous = $this->isAnonymousRequest();
-			if ($isAnonymous === true) {
-				if ($this->fileMapper === null || $this->fileMapper->isFilePublished((int)$file->getId()) === false) {
-					return new JSONResponse(
-						data: ['error' => $this->translate(text: 'File not available for anonymous access')],
-						statusCode: 403
-					);
-				}
-			}
-
-			// Stream the file inline so browsers display images/logos directly.
-			$response = new StreamResponse($file->fopen('r'));
-			$response->addHeader('Content-Type', $file->getMimeType());
-			$response->addHeader('Content-Disposition', $this->buildContentDisposition(disposition: 'inline', filename: $file->getName()));
-			$response->addHeader('Content-Length', (string)$file->getSize());
-
-			// Record download (counter + audit). Best-effort.
-			$this->recordDownloadEvent(fileId: (int)$file->getId(), object: $object, fileName: (string)$file->getName());
-
-			return $response;
+			return $this->streamInline(file: $this->shownFile(object: $object, fileId: $fileId), object: $object);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
+		} catch (NotAuthorizedException | FileActionRefusal $e) {
+			return $this->actionFailed(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+		}
 	}//end show()
+
+	/**
+	 * The file a show answers with, once the caller may have it.
+	 *
+	 * @param ObjectEntity|null $object The object.
+	 * @param int               $fileId The file id.
+	 *
+	 * @return File The file.
+	 *
+	 * @throws FileActionRefusal With 404 when there is no such file, 403 for an anonymous caller when it is not published.
+	 */
+	private function shownFile(?ObjectEntity $object, int $fileId): File {
+		$file = ($this->fileService->getFile(object: $object, file: $fileId) ?? $this->fileInObjectFolder(object: $object, fileId: $fileId));
+		if ($file === null) {
+			throw new FileActionRefusal(message: 'File not found', code: 404);
+		}
+
+		// SECURITY (H5): gate anonymous callers on the file being published.
+		if ($this->callerMayFetch(fileId: (int)$file->getId()) === false) {
+			throw new FileActionRefusal(message: 'File not available for anonymous access', code: 403);
+		}
+
+		return $file;
+	}//end shownFile()
+
+	/**
+	 * Look a file up through the known user folders, for when the normal path fails.
+	 *
+	 * That happens on anonymous/public access to files uploaded by a user whose
+	 * folder is not accessible. Security guard (issue #1956 part c): the lookup
+	 * reaches anywhere in the owner/admin folders, so it can pick up a sibling
+	 * file of a DIFFERENT object; the file only counts when it sits in this
+	 * object's folder.
+	 *
+	 * @param ObjectEntity|null $object The object.
+	 * @param int               $fileId The file id.
+	 *
+	 * @return File|null The file, or null.
+	 */
+	private function fileInObjectFolder(?ObjectEntity $object, int $fileId): ?File {
+		$fallback = $this->getFileViaKnownUsers(fileId: $fileId, owner: $object->getOwner());
+		if ($fallback !== null && $this->fileBelongsToObject(file: $fallback, object: $object) === true) {
+			return $fallback;
+		}
+
+		return null;
+	}//end fileInObjectFolder()
+
+	/**
+	 * Whether the caller may fetch a file: a signed-in caller yes, an anonymous one only a published file.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return bool True when publication does not stand in the way.
+	 */
+	private function callerMayFetch(int $fileId): bool {
+		if ($this->isAnonymousRequest() === false) {
+			return true;
+		}
+
+		return ($this->fileMapper !== null && $this->fileMapper->isFilePublished($fileId) === true);
+	}//end callerMayFetch()
+
+	/**
+	 * Stream a file inline, so browsers display images and logos directly, and record the download.
+	 *
+	 * @param File              $file   The file.
+	 * @param ObjectEntity|null $object The object.
+	 *
+	 * @return StreamResponse The stream.
+	 */
+	private function streamInline(File $file, ?ObjectEntity $object): StreamResponse {
+		$response = new StreamResponse($file->fopen('r'));
+		$response->addHeader('Content-Type', $file->getMimeType());
+		$response->addHeader('Content-Disposition', $this->buildContentDisposition(disposition: 'inline', filename: $file->getName()));
+		$response->addHeader('Content-Length', (string)$file->getSize());
+
+		// Record download (counter + audit). Best-effort.
+		$this->recordDownloadEvent(file: $file, object: $object);
+
+		return $response;
+	}//end streamInline()
 
 	/**
 	 * Retrieve a file by ID by searching known user folder contexts.
@@ -995,27 +1048,52 @@ class FilesController extends Controller {
 	 */
 	private function getFileViaKnownUsers(int $fileId, ?string $owner = null): ?File {
 		// Build list of user IDs to try: object owner first, then system user.
-		$userIds = array_filter(array_unique([$owner, 'OpenRegister', 'admin']));
-
-		foreach ($userIds as $userId) {
-			try {
-				$user = $this->userManager->get($userId);
-				if ($user === null) {
-					continue;
-				}
-
-				$userFolder = $this->rootFolder->getUserFolder($user->getUID());
-				$nodes = $userFolder->getById($fileId);
-				if (empty($nodes) === false && $nodes[0] instanceof File) {
-					return $nodes[0];
-				}
-			} catch (Exception $e) {
-				continue;
+		foreach (array_filter(array_unique([$owner, 'OpenRegister', 'admin'])) as $userId) {
+			$file = $this->fileInUserFolder(userId: $userId, fileId: $fileId);
+			if ($file !== null) {
+				return $file;
 			}
 		}
 
 		return null;
 	}//end getFileViaKnownUsers()
+
+	/**
+	 * A file by id in one user's folder.
+	 *
+	 * @param string $userId The user.
+	 * @param int    $fileId The file id.
+	 *
+	 * @return File|null The file, or null when the user or the file cannot be reached.
+	 */
+	private function fileInUserFolder(string $userId, int $fileId): ?File {
+		try {
+			$user = $this->userManager->get($userId);
+			if ($user === null) {
+				return null;
+			}
+
+			return $this->firstFile(nodes: $this->rootFolder->getUserFolder($user->getUID())->getById($fileId));
+		} catch (Exception $e) {
+			return null;
+		}
+	}//end fileInUserFolder()
+
+	/**
+	 * The first of a list of nodes, when it is a file.
+	 *
+	 * @param array<int, \OCP\Files\Node> $nodes The nodes.
+	 *
+	 * @return File|null The file, or null.
+	 */
+	private function firstFile(array $nodes): ?File {
+		$node = ($nodes[0] ?? null);
+		if ($node instanceof File) {
+			return $node;
+		}
+
+		return null;
+	}//end firstFile()
 
 	/**
 	 * Verify that a file is actually attached to a specific object.
@@ -1034,23 +1112,12 @@ class FilesController extends Controller {
 	 */
 	private function fileBelongsToObject(File $file, ObjectEntity $object): bool {
 		try {
-			$parent = $file->getParent();
-			$parentName = $parent->getName();
+			$parentName = $file->getParent()->getName();
 		} catch (\Throwable $e) {
 			return false;
 		}
 
-		$uuid = $object->getUuid();
-		if ($uuid !== null && $uuid !== '' && $parentName === $uuid) {
-			return true;
-		}
-
-		$id = $object->getId();
-		if ($id !== null && (string)$id !== '' && $parentName === (string)$id) {
-			return true;
-		}
-
-		return false;
+		return ($parentName !== '' && in_array($parentName, [(string)$object->getUuid(), (string)$object->getId()], true));
 	}//end fileBelongsToObject()
 
 	/**
@@ -1097,7 +1164,27 @@ class FilesController extends Controller {
 	 */
 	private function addPostedFile(ObjectEntity $object): JSONResponse {
 		$data = $this->request->getParams();
+		$file = $this->fileService->addFile(
+			objectEntity: $object,
+			fileName: $this->postedFileName(data: $data),
+			content: (string)$data['content'],
+			share: $this->parseBool(value: $data['share'] ?? false),
+			tags: $this->normalizeTags(tags: $data['tags'] ?? [])
+		);
 
+		return new JSONResponse(data: $this->fileService->formatFile($file));
+	}//end addPostedFile()
+
+	/**
+	 * The name of a posted file, once the request holds a name and content.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 *
+	 * @return string The file name.
+	 *
+	 * @throws FileActionRefusal With 400 when the name or the content is missing.
+	 */
+	private function postedFileName(array $data): string {
 		// Support both 'name' and 'filename' for compatibility.
 		$fileName = $data['name'] ?? $data['filename'] ?? null;
 		if (empty($fileName) === true) {
@@ -1108,16 +1195,8 @@ class FilesController extends Controller {
 			throw new FileActionRefusal(message: 'File content is required', code: 400);
 		}
 
-		$file = $this->fileService->addFile(
-			objectEntity: $object,
-			fileName: $fileName,
-			content: (string)$data['content'],
-			share: $this->parseBool(value: $data['share'] ?? false),
-			tags: $this->normalizeTags(tags: $data['tags'] ?? [])
-		);
-
-		return new JSONResponse(data: $this->fileService->formatFile($file));
-	}//end addPostedFile()
+		return $fileName;
+	}//end postedFileName()
 
 	/**
 	 * Save a file to an object (create new or update existing)
@@ -1169,14 +1248,7 @@ class FilesController extends Controller {
 	 */
 	private function savePostedFile(ObjectEntity $object): JSONResponse {
 		$data = $this->request->getParams();
-		if (empty($data['name']) === true) {
-			throw new FileActionRefusal(message: 'File name is required', code: 400);
-		}
-
-		if (empty($data['content']) === true) {
-			throw new FileActionRefusal(message: 'File content is required', code: 400);
-		}
-
+		$this->requireNameAndContent(data: $data);
 		$file = $this->fileService->saveFile(
 			objectEntity: $object,
 			fileName: $data['name'],
@@ -1187,6 +1259,25 @@ class FilesController extends Controller {
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end savePostedFile()
+
+	/**
+	 * Refuse a save without a name or without content.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 *
+	 * @return void
+	 *
+	 * @throws FileActionRefusal With 400 when either is empty.
+	 */
+	private function requireNameAndContent(array $data): void {
+		if (empty($data['name']) === true) {
+			throw new FileActionRefusal(message: 'File name is required', code: 400);
+		}
+
+		if (empty($data['content']) === true) {
+			throw new FileActionRefusal(message: 'File content is required', code: 400);
+		}
+	}//end requireNameAndContent()
 
 	/**
 	 * The tags of a save: comma-separated text is split, anything else stays as sent.
@@ -1487,37 +1578,38 @@ class FilesController extends Controller {
 		$rejected = [];
 
 		foreach ($uploadedFiles as $file) {
-			$fileName = (string)($file['name'] ?? 'unknown');
-
 			try {
-				// Validate file upload.
-				$this->validateUploadedFile(file: $file);
-
-				// Read file content.
-				$content = file_get_contents($file['tmp_name']);
-
-				if ($content === false) {
-					throw new Exception(
-						'Failed to read uploaded file content for: ' . $fileName
-					);
-				}
-
-				// Create file entity.
-				$stored[] = $this->fileService->addFile(
-					objectEntity: $object,
-					fileName: $fileName,
-					content: $content,
-					share: $file['share'],
-					tags: $file['tags']
-				);
+				$stored[] = $this->storeUpload(object: $object, file: $file);
 			} catch (\Throwable $e) {
-				// One bad file must not abort the batch — record it and continue.
-				$rejected[] = ['name' => $fileName, 'error' => $e->getMessage()];
-			}//end try
-		}//end foreach
+				// One bad file must not abort the batch: record it and continue.
+				$rejected[] = ['name' => (string)($file['name'] ?? 'unknown'), 'error' => $e->getMessage()];
+			}
+		}
 
 		return ['stored' => $stored, 'rejected' => $rejected];
 	}//end processUploadedFiles()
+
+	/**
+	 * Check one upload, read it and store it on the object.
+	 *
+	 * @param ObjectEntity         $object The object.
+	 * @param array<string, mixed> $file   The normalized upload.
+	 *
+	 * @return File The stored file.
+	 *
+	 * @throws Exception When the upload failed or cannot be read.
+	 */
+	private function storeUpload(ObjectEntity $object, array $file): File {
+		$fileName = (string)($file['name'] ?? 'unknown');
+		$this->validateUploadedFile(file: $file);
+
+		$content = file_get_contents($file['tmp_name']);
+		if ($content === false) {
+			throw new Exception('Failed to read uploaded file content for: ' . $fileName);
+		}
+
+		return $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags']);
+	}//end storeUpload()
 
 	/**
 	 * Validate uploaded file for errors and readability.
@@ -1575,21 +1667,32 @@ class FilesController extends Controller {
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 			$this->objectService->setObject($id);
-			$data = $this->request->getParams();
-
-			// Content is optional for metadata-only updates.
-			$result = $this->fileService->updateFile(
-				filePath: $fileId,
-				content: $data['content'] ?? null,
-				tags: $data['tags'] ?? [],
-				object: $this->objectService->getObject()
-			);
-
-			return new JSONResponse(data: $this->fileService->formatFile($result));
+			return $this->updateFromRequest(fileId: $fileId);
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
 		}
 	}//end update()
+
+	/**
+	 * Update the file from the request, on the object in context.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return JSONResponse The updated file.
+	 */
+	private function updateFromRequest(int $fileId): JSONResponse {
+		$data = $this->request->getParams();
+
+		// Content is optional for metadata-only updates.
+		$result = $this->fileService->updateFile(
+			filePath: $fileId,
+			content: $data['content'] ?? null,
+			tags: $data['tags'] ?? [],
+			object: $this->objectService->getObject()
+		);
+
+		return new JSONResponse(data: $this->fileService->formatFile($result));
+	}//end updateFromRequest()
 
 	/**
 	 * Delete a file from an object
@@ -1661,53 +1764,71 @@ class FilesController extends Controller {
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse {
 		// SECURITY (C1): gate anonymous callers on the file being published.
-		// Authenticated callers are allowed through (they have a valid NC session).
-		// This mirrors preview()'s isFilePublished guard (line 1782).
-		$isAnonymous = $this->isAnonymousRequest();
-		if ($isAnonymous === true) {
-			if ($this->fileMapper === null || $this->fileMapper->isFilePublished($fileId) === false) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'File not available for anonymous access')],
-					statusCode: 403
-				);
-			}
+		// Authenticated callers go on to the object rule for managed files.
+		if ($this->callerMayFetch(fileId: $fileId) === false) {
+			return new JSONResponse(
+				data: ['error' => $this->translate(text: 'File not available for anonymous access')],
+				statusCode: 403
+			);
 		}
 
 		try {
-			// Get the file using the file service.
-			$file = $this->fileService->getFileById($fileId);
-
-			if ($file === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
-			}
-
-			// A file in OpenRegister's managed tree is an object's file, and
-			// every such file sits in the openregister account's home. Nextcloud
-			// readability therefore says nothing about the caller: the object's
-			// read rule decides. A managed file whose object cannot be found is
-			// refused rather than served without a rule.
-			$parentObject = $this->managedFileObject(file: $file);
-			if ($this->refusesManagedFile(object: $parentObject, isAnonymous: $isAnonymous) === true
-				|| $this->fileRestrictions?->mayRead(fileId: (int)$file->getId()) === false
-			) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
-			}
-
-			// L2: for any other file, resolve the parent object for audit context (best-effort).
-			$parentObject = ($parentObject ?? $this->resolveParentObjectForFile(file: $file));
-
-			// Record download (counter + audit). Best-effort.
-			$this->recordDownloadEvent(fileId: (int)$file->getId(), object: $parentObject, fileName: (string)$file->getName());
-
-			// Stream the file content back to the client.
-			return $this->fileService->streamFile($file);
-		} catch (NotFoundException $e) {
+			return $this->streamById(fileId: $fileId);
+		} catch (FileActionRefusal | NotFoundException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
 		} catch (Exception $e) {
 			// SEC-CTRL-7: do not leak internal exception detail on 500.
 			return $this->errorResponse(e: $e);
-		}//end try
+		}
 	}//end downloadById()
+
+	/**
+	 * Stream a file by id, once its object rule and restriction allow the caller.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return \OCP\AppFramework\Http\StreamResponse The stream.
+	 *
+	 * @throws FileActionRefusal When there is no such file for this caller.
+	 */
+	private function streamById(int $fileId): \OCP\AppFramework\Http\StreamResponse {
+		$file = $this->fileService->getFileById($fileId);
+		if ($file === null) {
+			throw new FileActionRefusal(message: 'File not found', code: 404);
+		}
+
+		// Record download (counter + audit). Best-effort.
+		$this->recordDownloadEvent(file: $file, object: $this->downloadableFileObject(file: $file));
+
+		return $this->fileService->streamFile($file);
+	}//end streamById()
+
+	/**
+	 * The object of a file about to be downloaded by id, once the caller may have it.
+	 *
+	 * A file in OpenRegister's managed tree is an object's file, and every such
+	 * file sits in the openregister account's home. Nextcloud readability
+	 * therefore says nothing about the caller: the object's read rule decides.
+	 * A managed file whose object cannot be found is refused rather than served
+	 * without a rule.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return ObjectEntity|null The object; null for a file outside the managed tree.
+	 *
+	 * @throws FileActionRefusal When the caller may not have the file.
+	 */
+	private function downloadableFileObject(File $file): ?ObjectEntity {
+		$object = $this->managedFileObject(file: $file);
+		if ($object === false
+			|| $this->refusesManagedFile(object: $object) === true
+			|| $this->fileRestrictions?->mayRead(fileId: (int)$file->getId()) === false
+		) {
+			throw new FileActionRefusal(message: 'File not found', code: 404);
+		}
+
+		return $object;
+	}//end downloadableFileObject()
 
 	/**
 	 * The object an OpenRegister-managed file belongs to.
@@ -1727,17 +1848,12 @@ class FilesController extends Controller {
 	/**
 	 * Whether a download by id must be refused for a managed file.
 	 *
-	 * @param ObjectEntity|false|null $object      What managedFileObject() answered.
-	 * @param bool                    $isAnonymous Whether the caller is anonymous (already gated on publication).
+	 * @param ObjectEntity|null $object The object; null for a file outside the managed tree.
 	 *
 	 * @return bool True when no object owns the managed file, or a person may not read its object.
 	 */
-	private function refusesManagedFile(ObjectEntity|false|null $object, bool $isAnonymous): bool {
-		if ($object === false) {
-			return true;
-		}
-
-		if ($object === null || $isAnonymous === true) {
+	private function refusesManagedFile(?ObjectEntity $object): bool {
+		if ($object === null || $this->isAnonymousRequest() === true) {
 			return false;
 		}
 
@@ -1747,48 +1863,19 @@ class FilesController extends Controller {
 	/**
 	 * Whether the caller may read the object a managed file belongs to.
 	 *
-	 * @param ObjectEntity|null $object The object, or null when none owns the file.
+	 * @param ObjectEntity $object The object that owns the file.
 	 *
 	 * @return bool True only when an object was found and its read rule allows the caller.
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
 	 */
-	private function mayReadObject(?ObjectEntity $object): bool {
-		if ($object === null || $this->objectFileAccess === null) {
+	private function mayReadObject(ObjectEntity $object): bool {
+		if ($this->objectFileAccess === null) {
 			return false;
 		}
 
 		return $this->objectFileAccess->mayRead(object: $object);
 	}//end mayReadObject()
-
-	/**
-	 * Best-effort: resolve the parent ObjectEntity for a given file node by
-	 * checking the file's parent folder name against known OR object folders.
-	 *
-	 * Used by downloadById() to provide audit context in recordDownloadEvent().
-	 * Returns null when resolution fails — never blocks the download.
-	 *
-	 * @param File $file The resolved file node.
-	 *
-	 * @return \OCA\OpenRegister\Db\ObjectEntity|null The parent object or null.
-	 */
-	private function resolveParentObjectForFile(File $file): ?\OCA\OpenRegister\Db\ObjectEntity {
-		try {
-			$parent = $file->getParent();
-			$folderName = $parent->getName();
-
-			if (empty($folderName) === true) {
-				return null;
-			}
-
-			// The folder name is either the object UUID or its integer ID.
-			// Try ObjectService to resolve by setting UUID.
-			// This is best-effort — swallow any exception.
-			return null;
-		} catch (\Throwable $e) {
-			return null;
-		}
-	}//end resolveParentObjectForFile()
 
 	/**
 	 * Build an RFC 6266 compliant Content-Disposition header value.
@@ -2110,17 +2197,33 @@ class FilesController extends Controller {
 		}
 
 		// ADR-005 / gate-7: the caller must also have access to the target object.
-		$target = new ObjectLinkRoute(register: $transfer->targetRegister, schema: $transfer->targetSchema, id: $targetObjectId);
-		$this->ensureObjectAccess(check: new FileAccessCheck(route: $target));
-		$this->setObjectContext(register: $transfer->targetRegister, schema: $transfer->targetSchema);
-		$this->objectService->setObject($targetObjectId);
+		return $this->loadTransferTarget(
+			transfer: $transfer,
+			route: new ObjectLinkRoute(register: $transfer->targetRegister, schema: $transfer->targetSchema, id: $targetObjectId)
+		);
+	}//end resolveTransferTarget()
+
+	/**
+	 * Check the caller may change the target and load it.
+	 *
+	 * @param FileTransfer    $transfer The transfer.
+	 * @param ObjectLinkRoute $route    The target object.
+	 *
+	 * @return JSONResponse|null A 404 when the target is missing, else null.
+	 *
+	 * @throws DoesNotExistException When the target object does not exist; the public action answers 404.
+	 */
+	private function loadTransferTarget(FileTransfer $transfer, ObjectLinkRoute $route): ?JSONResponse {
+		$this->ensureObjectAccess(check: new FileAccessCheck(route: $route));
+		$this->setObjectContext(register: $route->register, schema: $route->schema);
+		$this->objectService->setObject($route->id);
 		$transfer->target = $this->objectService->getObject();
 		if ($transfer->target === null) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Target object not found')], statusCode: 404);
 		}
 
 		return null;
-	}//end resolveTransferTarget()
+	}//end loadTransferTarget()
 
 	/**
 	 * Copy or move the file, write the audit rows on both objects and announce it.
@@ -2175,22 +2278,15 @@ class FilesController extends Controller {
 	 */
 	private function auditTransfer(FileTransfer $transfer, File $file): void {
 		$auditHandler = $this->fileService->getAuditHandler();
-		$auditHandler->logFileAction(
-			object: $transfer->source,
-			fileId: $transfer->fileId,
-			action: $transfer->auditAction(),
-			data: [
-				'targetObjectUuid' => $transfer->target->getUuid(),
-				'targetRegister' => $transfer->targetRegister,
-				'targetSchema' => $transfer->targetSchema,
-			]
-		);
-		$auditHandler->logFileAction(
-			object: $transfer->target,
-			fileId: (int)$file->getId(),
-			action: $transfer->auditAction() . '_in',
-			data: ['sourceObjectUuid' => $transfer->source->getUuid(), 'sourceFileId' => $transfer->fileId]
-		);
+		$out = [
+			'targetObjectUuid' => $transfer->target->getUuid(),
+			'targetRegister' => $transfer->targetRegister,
+			'targetSchema' => $transfer->targetSchema,
+		];
+		$into = ['sourceObjectUuid' => $transfer->source->getUuid(), 'sourceFileId' => $transfer->fileId];
+
+		$auditHandler->logFileAction(object: $transfer->source, fileId: $transfer->fileId, action: $transfer->auditAction(), data: $out);
+		$auditHandler->logFileAction(object: $transfer->target, fileId: (int)$file->getId(), action: $transfer->auditAction() . '_in', data: $into);
 	}//end auditTransfer()
 
 	/**
@@ -2407,15 +2503,10 @@ class FilesController extends Controller {
 		$force = $this->parseBool(value: $this->request->getParams()['force'] ?? false);
 		$result = $this->fileService->getLockHandler()->unlockFile($target->fileId, $force);
 
-		$action = 'file.unlocked';
-		if ($force === true) {
-			$action = 'file.force_unlocked';
-		}
-
 		$this->fileService->getAuditHandler()->logFileAction(
 			object: $target->object,
 			fileId: $target->fileId,
-			action: $action,
+			action: $this->unlockAuditAction(force: $force),
 			data: ['force' => $force]
 		);
 		$this->eventDispatcher->dispatchTyped(
@@ -2424,6 +2515,21 @@ class FilesController extends Controller {
 
 		return new JSONResponse(data: $result);
 	}//end unlockTarget()
+
+	/**
+	 * The audit action of an unlock: a forced one is told apart.
+	 *
+	 * @param bool $force Whether the unlock is forced.
+	 *
+	 * @return string The audit action.
+	 */
+	private function unlockAuditAction(bool $force): string {
+		if ($force === true) {
+			return 'file.force_unlocked';
+		}
+
+		return 'file.unlocked';
+	}//end unlockAuditAction()
 
 	/**
 	 * The status of a failed unlock, read off the lock handler's message.
@@ -2518,65 +2624,49 @@ class FilesController extends Controller {
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function preview(string $register, string $schema, string $id, int $fileId): JSONResponse|StreamResponse {
 		try {
-			// The setObjectContext() call throws DoesNotExistException for an unknown
-			// register/schema slug. Keep it inside the try so anonymous/missing-
-			// resource probes return a clean 404, not a 500 HTML page. See the
-			// newman files-domain triage and openregister#1962 follow-up.
+			// Inside the try: an unknown register or schema slug throws
+			// DoesNotExistException, and a probe gets a clean 404, not a 500
+			// HTML page (newman files-domain triage, openregister#1962).
 			$this->setObjectContext(register: $register, schema: $schema);
 
-			// Gate anonymous callers on the file being publicly published.
-			// Authenticated callers fall through to the existing object-level
-			// RBAC path; anonymous callers MUST NOT be able to preview files
-			// that haven't been explicitly published with a public share link.
-			if ($this->isAnonymousRequest() === true) {
-				if ($this->fileMapper === null || $this->fileMapper->isFilePublished($fileId) === false) {
-					return new JSONResponse(
-						data: ['error' => $this->translate(text: 'Preview not available for unpublished files')],
-						statusCode: 403
-					);
-				}
+			// Anonymous callers MUST NOT preview files not published with a public share link.
+			if ($this->callerMayFetch(fileId: $fileId) === false) {
+				throw new FileActionRefusal(message: 'Preview not available for unpublished files', code: 403);
 			}
 
 			// ADR-005 / gate-7: authenticated callers must have object read access.
-			// Anonymous callers were already gated by the published-file check
-			// above, so preview opts out of the write/action anonymous-deny guard.
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forAnyone()->forReading()->onFile(fileId: $fileId));
 
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-			}
-
-			$file = $this->fileService->getFile(object: $object, file: $fileId);
-			if ($file === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
-			}
-
-			$size = new PreviewSize(
-				width: (int)($this->request->getParam('width') ?? 256),
-				height: (int)($this->request->getParam('height') ?? 256)
-			);
-
-			$preview = $this->fileService->getPreviewHandler()->getPreview(file: $file, size: $size);
-
-			$response = new StreamResponse($preview->read());
-			$response->addHeader('Content-Type', $preview->getMimeType());
-			$response->addHeader('Cache-Control', 'max-age=3600, public');
-			$response->addHeader('Content-Length', (string)$preview->getSize());
-
-			return $response;
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
+			return $this->previewOf(file: $this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId));
+		} catch (NotAuthorizedException | FileActionRefusal $e) {
+			return $this->actionFailed(e: $e);
 		} catch (Exception $e) {
-			$fallbackIcon = '/core/img/filetypes/file.svg';
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'fallbackIcon' => $fallbackIcon],
-				statusCode: 404
-			);
-		}//end try
+			return new JSONResponse(data: ['error' => $e->getMessage(), 'fallbackIcon' => '/core/img/filetypes/file.svg'], statusCode: 404);
+		}
 	}//end preview()
+
+	/**
+	 * Stream the preview of a file, in the size the request asks.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return StreamResponse The preview.
+	 */
+	private function previewOf(File $file): StreamResponse {
+		$size = new PreviewSize(
+			width: (int)($this->request->getParam('width') ?? 256),
+			height: (int)($this->request->getParam('height') ?? 256)
+		);
+		$preview = $this->fileService->getPreviewHandler()->getPreview(file: $file, size: $size);
+
+		$response = new StreamResponse($preview->read());
+		$response->addHeader('Content-Type', $preview->getMimeType());
+		$response->addHeader('Cache-Control', 'max-age=3600, public');
+		$response->addHeader('Content-Length', (string)$preview->getSize());
+
+		return $response;
+	}//end previewOf()
 
 	/**
 	 * Update a file's OpenRegister-side metadata: description, category, labels.
@@ -2796,8 +2886,8 @@ class FilesController extends Controller {
 	#[NoAdminRequired]
 	public function office(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		try {
-			$session = $this->openOfficeSession(register: $register, schema: $schema, id: $id, fileId: $fileId);
-			return new JSONResponse(data: $session->toArray());
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			return new JSONResponse(data: $this->openOfficeSession(route: $route, fileId: $fileId)->toArray());
 		} catch (NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
 		} catch (OfficeOpenRefusedException $e) {
@@ -2828,13 +2918,23 @@ class FilesController extends Controller {
 	#[NoCSRFRequired]
 	public function officePage(string $register, string $schema, string $id, int $fileId): TemplateResponse|JSONResponse {
 		try {
-			$session = $this->openOfficeSession(register: $register, schema: $schema, id: $id, fileId: $fileId);
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			return $this->officeFrame(session: $this->openOfficeSession(route: $route, fileId: $fileId));
 		} catch (NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
 		} catch (OfficeOpenRefusedException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: $e->getMessage())], statusCode: $e->getHttpStatus());
 		}
+	}//end officePage()
 
+	/**
+	 * The page that holds the Office frame.
+	 *
+	 * @param \OCA\OpenRegister\Files\Service\File\OfficeSession $session The session.
+	 *
+	 * @return TemplateResponse The Office page.
+	 */
+	private function officeFrame(\OCA\OpenRegister\Files\Service\File\OfficeSession $session): TemplateResponse {
 		return new TemplateResponse(
 			appName: 'openregister',
 			templateName: 'office',
@@ -2845,28 +2945,47 @@ class FilesController extends Controller {
 				'readOnly' => $session->readOnly,
 			]
 		);
-	}//end officePage()
+	}//end officeFrame()
 
 	/**
 	 * Apply the object rule and issue the Office session.
 	 *
-	 * @param string $register The register slug or identifier.
-	 * @param string $schema The schema slug or identifier.
-	 * @param string $id The object UUID or identifier.
-	 * @param int $fileId The file to open.
+	 * @param ObjectLinkRoute $route  The object, as the route names it.
+	 * @param int             $fileId The file id.
 	 *
 	 * @return \OCA\OpenRegister\Files\Service\File\OfficeSession The issued session.
 	 *
 	 * @throws NotAuthorizedException When the caller may not read the object (404).
 	 * @throws OfficeOpenRefusedException When Office cannot open the document.
 	 */
-	private function openOfficeSession(string $register, string $schema, string $id, int $fileId): \OCA\OpenRegister\Files\Service\File\OfficeSession {
+	private function openOfficeSession(ObjectLinkRoute $route, int $fileId): \OCA\OpenRegister\Files\Service\File\OfficeSession {
 		$user = $this->userSession?->getUser();
 		if ($user === null || $this->objectFileAccess === null) {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
 		}
 
-		$object = $this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
+		$object = $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
+		$file = $this->officeFile(object: $object, fileId: $fileId);
+
+		return $this->officeSessions()->open(
+			file: $file,
+			editorUid: $user->getUID(),
+			displayName: $user->getDisplayName(),
+			canWrite: $this->objectFileAccess->mayChangeFiles(object: $object)
+		);
+	}//end openOfficeSession()
+
+	/**
+	 * The file to open in Office, as far as the caller may have it.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param int          $fileId The file id.
+	 *
+	 * @return File The file.
+	 *
+	 * @throws ObjectFileAccessDeniedException With 404 for a restricted or missing file.
+	 */
+	private function officeFile(ObjectEntity $object, int $fileId): File {
 		$this->refuseRestrictedFile(fileId: $fileId);
 
 		$file = $this->fileService->getFile(object: $object, file: $fileId);
@@ -2874,6 +2993,17 @@ class FilesController extends Controller {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
 		}
 
+		return $file;
+	}//end officeFile()
+
+	/**
+	 * The Office session service, when this instance has one.
+	 *
+	 * @return OfficeSessionService The service.
+	 *
+	 * @throws OfficeOpenRefusedException When Nextcloud Office is not available.
+	 */
+	private function officeSessions(): OfficeSessionService {
 		if ($this->officeSessionService === null) {
 			throw new OfficeOpenRefusedException(
 				httpStatus: OfficeOpenRefusedException::UNAVAILABLE,
@@ -2881,13 +3011,8 @@ class FilesController extends Controller {
 			);
 		}
 
-		return $this->officeSessionService->open(
-			file: $file,
-			editorUid: $user->getUID(),
-			displayName: $user->getDisplayName(),
-			canWrite: $this->objectFileAccess->mayChangeFiles(object: $object)
-		);
-	}//end openOfficeSession()
+		return $this->officeSessionService;
+	}//end officeSessions()
 
 	/**
 	 * Render the Files page
