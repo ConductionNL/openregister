@@ -172,7 +172,7 @@ class TasksController extends Controller {
 			return new JSONResponse(data: ['error' => $refused->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
 		}
 
-		return $this->inboxPage(uid: $uid, window: $window, scope: $scope, states: $states);
+		return $this->inboxPage(uid: $uid, window: $window, filter: ['scope' => $scope, 'states' => $states]);
 	}//end allUserTasks()
 
 	/**
@@ -207,19 +207,18 @@ class TasksController extends Controller {
 	/**
 	 * Answer one inbox page for the caller.
 	 *
-	 * @param string                         $uid    The caller.
-	 * @param array{limit: int, offset: int} $window The page window.
-	 * @param string                         $scope  The requested scope.
-	 * @param array<int, string>             $states The state filter.
+	 * @param string                                          $uid    The caller.
+	 * @param array{limit: int, offset: int}                  $window The page window.
+	 * @param array{scope: string, states: array<int, string>} $filter The requested scope and states.
 	 *
 	 * @return JSONResponse The page, or 500 with the failure's message.
 	 */
-	private function inboxPage(string $uid, array $window, string $scope, array $states): JSONResponse {
+	private function inboxPage(string $uid, array $window, array $filter): JSONResponse {
 		$overdueAt = $this->overdueAt();
 		$sort = (string)($this->request->getParam('sort') ?? TaskInboxCriteria::SORT_DUE);
 
 		try {
-			$criteria = $this->criteria(uid: $uid, scope: $scope, states: $states, overdueAt: $overdueAt, sort: $sort);
+			$criteria = $this->criteria(uid: $uid, filter: $filter, overdueAt: $overdueAt, sort: $sort);
 
 			return new JSONResponse(
 				data: $this->inbox->inbox(criteria: $criteria, limit: $window['limit'], offset: $window['offset'])
@@ -235,21 +234,20 @@ class TasksController extends Controller {
 	/**
 	 * The inbox query for the caller, with the caller's groups and admin fact.
 	 *
-	 * @param string             $uid       The caller.
-	 * @param string             $scope     The requested scope.
-	 * @param array<int, string> $states    The state filter.
-	 * @param DateTime|null      $overdueAt The overdue cutoff, when filtered.
-	 * @param string             $sort      The sort key, `-` prefixed for descending.
+	 * @param string                                          $uid       The caller.
+	 * @param array{scope: string, states: array<int, string>} $filter    The requested scope and states.
+	 * @param DateTime|null                                   $overdueAt The overdue cutoff, when filtered.
+	 * @param string                                          $sort      The sort key, `-` prefixed for descending.
 	 *
 	 * @return TaskInboxCriteria The criteria.
 	 */
-	private function criteria(string $uid, string $scope, array $states, ?DateTime $overdueAt, string $sort): TaskInboxCriteria {
+	private function criteria(string $uid, array $filter, ?DateTime $overdueAt, string $sort): TaskInboxCriteria {
 		return new TaskInboxCriteria(
 			uid: $uid,
 			groupIds: $this->groupIds(),
 			isAdmin: $this->isAdmin(uid: $uid),
-			scope: $scope,
-			states: $states,
+			scope: $filter['scope'],
+			states: $filter['states'],
 			isTerminal: $this->requestedTerminal(),
 			overdueAt: $overdueAt,
 			sort: ltrim($sort, '-'),
