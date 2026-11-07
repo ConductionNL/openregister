@@ -222,6 +222,7 @@ final class ContractBindings {
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
+		ContactServiceInterface::class => ContactService::class,
 		CospendLinkServiceInterface::class => CospendLinkService::class,
 		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
 		DecisionTableNodeInterface::class => DecisionTableNode::class,
