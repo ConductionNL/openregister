@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -87,14 +87,14 @@ class SelectielijstController extends Controller {
 	 * @param string                     $appName         The app name.
 	 * @param IRequest                   $request         The request.
 	 * @param SelectielijstImportService $selectielijst   Imports, versions and diffs a list.
-	 * @param ObjectRetentionHandler     $settingsHandler Names the version in force.
+	 * @param ArchivalSettingsReaderInterface     $settingsHandler Names the version in force.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly SelectielijstImportService $selectielijst,
-		private readonly ObjectRetentionHandler $settingsHandler,
+		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);

@@ -121,7 +121,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @param FlowRunMapperInterface $mapper Persists runs.
 	 * @param FlowStateMapper $stateMapper Persists state that outlives a run.
 	 * @param FlowEngine $engine Walks the graph.
-	 * @param FlowNodeRegistry $registry Resolves step types.
+	 * @param FlowNodeRegistryInterface $registry Resolves step types.
 	 * @param LoggerInterface $logger The logger.
 	 * @param ContainerInterface $container Lazily resolves OrganisationService.
 	 * @param FlowRunStepMapper|null $steps Records one row per node execution.
@@ -145,7 +145,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		private readonly FlowRunMapperInterface $mapper,
 		FlowStateMapper $stateMapper,
 		private readonly FlowEngine $engine,
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeRegistryInterface $registry,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 		private readonly ?FlowRunStepMapper $steps = null,

@@ -48,8 +48,12 @@ use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
+use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilderInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
+use OCA\OpenRegister\Service\Calculation\OperatorCatalogue;
+use OCA\OpenRegister\Service\Calculation\OperatorCatalogueInterface;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
@@ -86,6 +90,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeCatalogueInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
@@ -157,6 +162,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
@@ -191,6 +198,10 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistryInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
@@ -228,8 +239,10 @@ use OCA\OpenRegister\Service\Operations\SupportBundleService;
 use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
+use OCA\OpenRegister\Service\Party\PartySchemaCatalogueInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
+use OCA\OpenRegister\Service\Party\TrustedPartyReaderInterface;
 use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
@@ -238,8 +251,12 @@ use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
+use OCA\OpenRegister\Service\Rules\AdministeredValidationEnforcer;
+use OCA\OpenRegister\Service\Rules\AdministeredValidationEnforcerInterface;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\ConditionTracerInterface;
+use OCA\OpenRegister\Service\Rules\DependentValueTable;
+use OCA\OpenRegister\Service\Rules\DependentValueTableInterface;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
 use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
@@ -266,6 +283,9 @@ use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
@@ -307,6 +327,7 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AdministeredValidationEnforcerInterface::class => AdministeredValidationEnforcer::class,
 		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
 		ActivityFilterServiceInterface::class => ActivityFilterService::class,
@@ -315,6 +336,7 @@ final class ContractBindings {
 		ApplicationServiceInterface::class => ApplicationService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		AppSettingsInterface::class => SettingsService::class,
+		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
 		FlowStateNodeInterface::class => FlowStateNode::class,
@@ -334,6 +356,7 @@ final class ContractBindings {
 		BulkJobReversalInterface::class => BulkJobReversal::class,
 		BulkJobServiceInterface::class => BulkJobService::class,
 		BulkTranslationServiceInterface::class => BulkTranslationService::class,
+		CalculationPayloadBuilderInterface::class => CalculationPayloadBuilder::class,
 		CalculationTrialServiceInterface::class => CalculationTrialService::class,
 		CalendarLinkServiceInterface::class => CalendarLinkService::class,
 		CaseAdvanceNodeInterface::class => CaseAdvanceNode::class,
@@ -357,6 +380,7 @@ final class ContractBindings {
 		DeckLinkServiceInterface::class => DeckLinkService::class,
 		DeepLinkRegistryServiceInterface::class => DeepLinkRegistryService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
+		DependentValueTableInterface::class => DependentValueTable::class,
 		\OCA\OpenRegister\Service\Object\DraftActivationInterface::class => \OCA\OpenRegister\Service\Object\DraftActivation::class,
 		\OCA\OpenRegister\Service\Object\DraftExpiryInterface::class => \OCA\OpenRegister\Service\Object\DraftExpiry::class,
 		EmailLinkServiceInterface::class => EmailLinkService::class,
@@ -375,6 +399,7 @@ final class ContractBindings {
 		FilterNodeInterface::class => FilterNode::class,
 		FlowLinkServiceInterface::class => FlowLinkService::class,
 		FlowLocatorInterface::class => FlowLocator::class,
+		FlowNodeCatalogueInterface::class => FlowNodeRegistry::class,
 		FlowNodePreflightInterface::class => FlowNodePreflight::class,
 		FlowNodeRegistryInterface::class => FlowNodeRegistry::class,
 		FlowRunMigrationServiceInterface::class => FlowRunMigrationService::class,
@@ -402,7 +427,9 @@ final class ContractBindings {
 		JsonLdSerializerInterface::class => JsonLdSerializer::class,
 		LanguageServiceInterface::class => LanguageService::class,
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
+		LifecycleGuardRegistryInterface::class => LifecycleGuardRegistry::class,
 		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
+		LifecycleTransitionResolverInterface::class => LifecycleTransitionResolver::class,
 		LinkedEntityServiceInterface::class => LinkedEntityService::class,
 		ManifestServiceInterface::class => ManifestService::class,
 		MapLinkServiceInterface::class => MapLinkService::class,
@@ -437,7 +464,9 @@ final class ContractBindings {
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
 		\OCA\OpenRegister\Service\Object\RenderObjectInterface::class => \OCA\OpenRegister\Service\Object\RenderObject::class,
 		OperationsJobsServiceInterface::class => OperationsJobsService::class,
+		OperatorCatalogueInterface::class => OperatorCatalogue::class,
 		PartyRoleServiceInterface::class => PartyRoleService::class,
+		PartySchemaCatalogueInterface::class => PartyService::class,
 		PartyServiceInterface::class => PartyService::class,
 		PersonLinkServiceInterface::class => PersonLinkService::class,
 		PhotoLinkServiceInterface::class => PhotoLinkService::class,
@@ -460,6 +489,7 @@ final class ContractBindings {
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
 		RegisterServiceInterface::class => RegisterService::class,
 		RelationGraphServiceInterface::class => RelationGraphService::class,
+		RetentionSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaApplicationMigratorInterface::class => SchemaApplicationMigrator::class,
 		SchemaCacheHandlerInterface::class => SchemaCacheHandler::class,
@@ -475,6 +505,7 @@ final class ContractBindings {
 		SequenceServiceInterface::class => SequenceService::class,
 		ShareableConfigTypeRegistryInterface::class => ShareableConfigTypeRegistry::class,
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
+		SlaCalculatorInterface::class => SlaCalculator::class,
 		SourceRecordResolverInterface::class => SourceRecordResolver::class,
 		SourceRowReaderInterface::class => SourceRowReader::class,
 		StateConditionEvaluatorInterface::class => StateConditionEvaluator::class,
@@ -493,6 +524,7 @@ final class ContractBindings {
 		TemporalCalculationSweepServiceInterface::class => TemporalCalculationSweepService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		TransitionNodeInterface::class => TransitionNode::class,
+		TrustedPartyReaderInterface::class => PartyService::class,
 		\OCA\OpenRegister\Service\Object\TranslationHandlerInterface::class => \OCA\OpenRegister\Service\Object\TranslationHandler::class,
 		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
 		TranslationStatusServiceInterface::class => TranslationStatusService::class,
