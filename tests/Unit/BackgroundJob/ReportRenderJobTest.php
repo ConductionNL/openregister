@@ -20,6 +20,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\Search\BackgroundJob\ReportRenderJob;
+use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderDelivery;
+use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderPlatform;
+use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderSources;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -163,13 +166,9 @@ class ReportRenderJobTest extends TestCase {
 
 		$job = new ReportRenderJob(
 			$this->createMock(ITimeFactory::class),
-			$appConfig,
-			$renderService,
-			$registerMapper,
-			$schemaMapper,
-			$objectMapper,
-			$this->createMock(IRootFolder::class),
-			$this->createMock(LoggerInterface::class)
+			new ReportRenderSources($registerMapper, $schemaMapper, $objectMapper),
+			new ReportRenderDelivery($renderService, $this->createMock(IRootFolder::class)),
+			new ReportRenderPlatform($appConfig, $this->createMock(LoggerInterface::class))
 		);
 
 		$run = new ReflectionMethod(ReportRenderJob::class, 'run');
