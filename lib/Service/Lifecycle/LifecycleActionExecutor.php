@@ -43,7 +43,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-class LifecycleActionExecutor {
+class LifecycleActionExecutor implements LifecycleActionExecutorInterface {
 	/**
 	 * Constructor.
 	 *
