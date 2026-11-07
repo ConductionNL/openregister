@@ -27,6 +27,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk;
@@ -81,14 +84,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->db = $this->createMock(IDBConnection::class);
 
 		$this->service = new ReferentialIntegrityService(
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->logger,
-			$this->db,
-			$this->createNullCacheFactory(),
-			$this->makeArchivalGuard()
+			index: new IntegrityRelationIndex(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, cacheFactory: $this->createNullCacheFactory()),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->db),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: $this->makeArchivalGuard()),
+			logger: $this->logger
 		);
 	}
 
