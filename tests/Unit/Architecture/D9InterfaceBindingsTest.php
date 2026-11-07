@@ -27,6 +27,9 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
+use OCA\OpenRegister\ContextChat\ContentProvider;
+use OCA\OpenRegister\ContextChat\ContentProviderInterface;
+use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
@@ -35,6 +38,8 @@ use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
+use OCA\OpenRegister\Search\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -56,6 +61,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: array<int, string>}>
 	 */
 	private const HIDDEN = [
+		ContentProvider::class => [
+			ContentProviderInterface::class,
+			ContextChatRegistrar::class,
+			[],
+		],
 		ScheduleFlowStore::class => [
 			ScheduleFlowStoreInterface::class,
 			AppHostRegistrar::class,
@@ -77,6 +87,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 			[
 				'lib/Db/SchemaMapper/RecordAnnotationRefusals.php',
 			],
+		],
+		VectorizationService::class => [
+			VectorizationServiceInterface::class,
+			SearchRegistrar::class,
+			[],
 		],
 		WebhookInterceptionCache::class => [
 			WebhookInterceptionCacheInterface::class,
