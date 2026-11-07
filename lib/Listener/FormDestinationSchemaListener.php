@@ -77,44 +77,79 @@ class FormDestinationSchemaListener implements IEventListener {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof SchemaUpdatedEvent === false) {
+		if ($event instanceof SchemaUpdatedEvent === false
+			|| $this->definitionChanged(new: $event->getNewSchema(), old: $event->getOldSchema()) === false
+		) {
 			return;
 		}
 
 		$schema = $event->getNewSchema();
-		if ($this->definitionChanged(new: $schema, old: $event->getOldSchema()) === false) {
+		try {
+			$this->recheck(schema: $schema);
+		} catch (Throwable $e) {
+			$this->traceFailedCheck(schema: $schema, error: $e);
+		}
+	}//end handle()
+
+	/**
+	 * Judge the dependent forms of a changed schema and unpublish the broken ones.
+	 *
+	 * A save the schema API claimed is left to it: it judges with a response to refuse.
+	 *
+	 * @param Schema $schema The schema after the write.
+	 *
+	 * @return void
+	 */
+	private function recheck(Schema $schema): void {
+		$check = $this->container->get(FormDependentsCheck::class);
+		if ($check instanceof FormDependentsCheck === false || $check->isClaimed(schemaId: (int)$schema->getId()) === true) {
 			return;
 		}
 
-		try {
-			$check = $this->container->get(FormDependentsCheck::class);
-			if ($check instanceof FormDependentsCheck === false || $check->isClaimed(schemaId: (int)$schema->getId()) === true) {
-				return;
-			}
-
-			$assessment = $check->assess(schema: $schema);
-			if ($assessment['affected'] === []) {
-				return;
-			}
-
-			if ($assessment['refused'] === true) {
-				$this->logger->warning(
-					message: '[FormDestinationSchemaListener] An owning app set formDestinationBreak to refuse, but this schema write '
-					. 'has no response to refuse; the broken forms are unpublished instead',
-					context: ['schema' => $assessment['schema'], 'forms' => count($assessment['affected'])]
-				);
-				$assessment['refused'] = false;
-			}
-
-			$check->apply(assessment: $assessment);
-		} catch (Throwable $e) {
-			// The write has happened. A check that fails must not undo it, but it must leave a trace.
-			$this->logger->warning(
-				message: '[FormDestinationSchemaListener] The published forms of a changed schema could not be re-checked',
-				context: ['schema' => (int)$schema->getId(), 'error' => $e->getMessage()]
-			);
+		$assessment = $check->assess(schema: $schema);
+		if ($assessment['affected'] === []) {
+			return;
 		}
-	}//end handle()
+
+		$check->apply(assessment: $this->withoutRefusal(assessment: $assessment));
+	}//end recheck()
+
+	/**
+	 * The assessment with a refusal turned into unpublishing, saying so when it was one.
+	 *
+	 * @param array<string, mixed> $assessment The assessment of the dependent forms.
+	 *
+	 * @return array<string, mixed> The assessment with `refused` false.
+	 */
+	private function withoutRefusal(array $assessment): array {
+		if ($assessment['refused'] === true) {
+			$this->logger->warning(
+				message: '[FormDestinationSchemaListener] An owning app set formDestinationBreak to refuse, but this schema write '
+				. 'has no response to refuse; the broken forms are unpublished instead',
+				context: ['schema' => $assessment['schema'], 'forms' => count($assessment['affected'])]
+			);
+			$assessment['refused'] = false;
+		}
+
+		return $assessment;
+	}//end withoutRefusal()
+
+	/**
+	 * Leave a trace of a re-check that failed.
+	 *
+	 * The write has happened. A check that fails must not undo it, but it must leave a trace.
+	 *
+	 * @param Schema    $schema The schema after the write.
+	 * @param Throwable $error  The failure.
+	 *
+	 * @return void
+	 */
+	private function traceFailedCheck(Schema $schema, Throwable $error): void {
+		$this->logger->warning(
+			message: '[FormDestinationSchemaListener] The published forms of a changed schema could not be re-checked',
+			context: ['schema' => (int)$schema->getId(), 'error' => $error->getMessage()]
+		);
+	}//end traceFailedCheck()
 
 	/**
 	 * Whether a write changed what a form is judged against: the properties or the required list.
@@ -128,9 +163,21 @@ class FormDestinationSchemaListener implements IEventListener {
 	 * @return bool True when properties or required differ.
 	 */
 	private function definitionChanged(Schema $new, Schema $old): bool {
-		return $this->canonical(value: ($new->getProperties() ?? [])) !== $this->canonical(value: ($old->getProperties() ?? []))
-			|| $this->canonical(value: ($new->getRequired() ?? [])) !== $this->canonical(value: ($old->getRequired() ?? []));
+		return $this->differs(new: $new->getProperties(), old: $old->getProperties())
+			|| $this->differs(new: $new->getRequired(), old: $old->getRequired());
 	}//end definitionChanged()
+
+	/**
+	 * Whether two values differ by content, ignoring the key order of maps.
+	 *
+	 * @param array<int|string, mixed> $new The value after the write.
+	 * @param array<int|string, mixed> $old The value before it.
+	 *
+	 * @return bool True when they differ.
+	 */
+	private function differs(array $new, array $old): bool {
+		return $this->canonical(value: $new) !== $this->canonical(value: $old);
+	}//end differs()
 
 	/**
 	 * A value with every map's keys in the same order, recursively.
