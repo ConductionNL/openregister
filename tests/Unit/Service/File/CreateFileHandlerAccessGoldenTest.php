@@ -34,7 +34,6 @@ use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\Folder;
-use OCP\Files\IRootFolder;
 use OCP\Files\NotPermittedException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -105,7 +104,6 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 
 	private function handler(): CreateFileHandler {
 		$handler = new CreateFileHandler(
-			$this->createMock(IRootFolder::class),
 			$this->folders,
 			$this->validation,
 			$this->ownership,
