@@ -41,6 +41,11 @@ use stdClass;
  * Compared with fixtures/view-presentation-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\ViewPresentationService
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Search\Db\View
+ * @uses   \OCA\OpenRegister\Service\Rbac\AggregateVisibility
+ * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class ViewPresentationServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/view-presentation-golden.json';
