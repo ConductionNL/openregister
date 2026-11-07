@@ -79,6 +79,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -295,7 +296,7 @@ class SaveObjects {
 		}
 
 		// Generate analysis and cache.
-		$analysis = $this->performComprehensiveSchemaAnalysis(schema: $schema);
+		$analysis = (new BulkSchemaAnalysis())->analyse(schema: $schema);
 		self::$schemaAnalysisCache[$schemaId] = $analysis;
 
 		return $analysis;
@@ -3169,119 +3170,6 @@ class SaveObjects {
 
 		$this->logger->debug('[SaveObjects] Using fallback object reconstruction');
 	}//end classifyLegacyResults()
-
-	/**
-	 * Perform comprehensive schema analysis for bulk operations
-	 *
-	 * PERFORMANCE OPTIMIZATION: This method analyzes schemas once and caches all needed information
-	 * for the entire bulk operation, including metadata field mapping, inverse relation properties,
-	 * validation requirements, and property configurations. This eliminates redundant schema analysis.
-	 *
-	 * @param Schema $schema Schema to analyze
-	 *
-	 * @return array Comprehensive analysis containing:
-	 *               - metadataFields: Array of metadata field mappings
-	 *               - inverseProperties: Array of properties with inverse relations
-	 *               - validationRequired: Whether hard validation is enabled
-	 *               - properties: Cached schema properties
-	 *               - configuration: Cached schema configuration
-	 *
-	 * @psalm-return   array<string, mixed>
-	 * @phpstan-return array<string, mixed>
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function performComprehensiveSchemaAnalysis(Schema $schema): array {
-		$config = $schema->getConfiguration();
-		$properties = $schema->getProperties();
-
-		$analysis = [
-			'metadataFields' => [],
-			'inverseProperties' => [],
-			'validationRequired' => $schema->getHardValidation(),
-			'properties' => $properties,
-			'configuration' => $config,
-		];
-
-		// PERFORMANCE OPTIMIZATION: Analyze metadata field mappings once.
-		// COMPREHENSIVE METADATA FIELD SUPPORT: Include all supported metadata fields.
-		$metadataFieldMap = [
-			'name' => $config['objectNameField'] ?? null,
-			'description' => $config['objectDescriptionField'] ?? null,
-			'summary' => $config['objectSummaryField'] ?? null,
-			'image' => $config['objectImageField'] ?? null,
-			'slug' => $config['objectSlugField'] ?? null,
-		];
-
-		$analysis['metadataFields'] = array_filter(
-			$metadataFieldMap,
-			function ($field) {
-				return !empty($field);
-			}
-		);
-
-		// PERFORMANCE OPTIMIZATION: Analyze inverse relation properties once.
-		foreach ($properties as $propertyName => $propertyConfig) {
-			$items = $propertyConfig['items'] ?? [];
-
-			// Check for inversedBy at property level (single object relations).
-			$inversedBy = $propertyConfig['inversedBy'] ?? null;
-			$rawWriteBack = $propertyConfig['writeBack'] ?? false;
-			$writeBack = $this->castToBoolean(value: $rawWriteBack);
-
-			// Schema analysis: process writeBack boolean casting.
-			// Check for inversedBy in array items (array of object relations).
-			// CRITICAL FIX: Preserve property-level writeBack if it's true.
-			if ($inversedBy === null && isset($items['inversedBy']) === true) {
-				$inversedBy = $items['inversedBy'];
-				$rawItemsWriteBack = $items['writeBack'] ?? false;
-				$itemsWriteBack = $this->castToBoolean(value: $rawItemsWriteBack);
-
-				// Use the higher value: if property writeBack is true, keep it.
-				$finalWriteBack = $writeBack || $itemsWriteBack;
-
-				// Items logic: combine property and items writeBack values.
-				$writeBack = $finalWriteBack;
-			}
-
-			if ($inversedBy !== null) {
-				$analysis['inverseProperties'][$propertyName] = [
-					'inversedBy' => $inversedBy,
-					'writeBack' => $writeBack,
-					'isArray' => $propertyConfig['type'] === 'array',
-				];
-			}
-		}//end foreach
-
-		return $analysis;
-	}//end performComprehensiveSchemaAnalysis()
-
-	/**
-	 * Cast mixed values to proper boolean
-	 *
-	 * Handles string "true"/"false", integers 1/0, and actual booleans
-	 *
-	 * @param mixed $value The value to cast to boolean
-	 *
-	 * @return bool The boolean value
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function castToBoolean($value): bool {
-		if (is_bool($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === true) {
-			return strtolower(trim($value)) === 'true';
-		}
-
-		if (is_numeric($value) === true) {
-			return (bool)$value;
-		}
-
-		return (bool)$value;
-	}//end castToBoolean()
 
 	/**
 	 * Handle bulk inverse relations using cached schema analysis
