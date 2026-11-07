@@ -70,7 +70,7 @@ class LockHandler {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for resolving manage rules
 	 * @param AdvisoryLockStore $advisory Pre-creation locks, for identifiers that do not resolve to a stored object
 	 * @param RunLockRegistry|null $runLocks Bookkeeping for run-held locks, so the terminal listener and the sweep can find them without reading objects
-	 * @param PermissionEnforcementInterface|null $permissionHandler RBAC, asked for update permission before a user takes a lock
+	 * @param PermissionHandlerInterface|null $permissionHandler RBAC, asked for update permission before a user takes a lock
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $magicMapper,
@@ -81,7 +81,7 @@ class LockHandler {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AdvisoryLockStore $advisory,
 		private readonly ?RunLockRegistry $runLocks = null,
-		private readonly ?PermissionEnforcementInterface $permissionHandler = null,
+		private readonly ?PermissionHandlerInterface $permissionHandler = null,
 	) {
 	}//end __construct()
 
