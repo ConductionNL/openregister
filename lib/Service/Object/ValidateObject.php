@@ -586,15 +586,11 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end transformObjectItem()
 
 	/**
-	 * Strip a relation `$ref` Opis would try to resolve as a URI: from a string property, and from an untyped one.
+	 * Strip a relation `$ref`, at any depth and on any type, so Opis does not try to resolve it as a URI.
 	 *
-	 * OpenRegister uses `$ref` to denote schema relationships (relation tracking, onDelete),
-	 * but Opis JSON Schema tries to resolve it as a URI. `{"$ref": "besluit"}` with no type
-	 * at all is the shape every other branch misses: the slug survived into Opis and every
-	 * object write of that schema failed with `Unresolved reference: schema:///besluit#`, a
-	 * message that names neither the property nor the schema. A ref that could genuinely be
-	 * a JSON Schema reference (a fragment or a URI) is left alone: dropping something that
-	 * resolves would change validation rather than restore it.
+	 * OpenRegister uses `$ref` to record a relation (e.g. for onDelete), not for validation. A property that
+	 * keeps one fails every write with `Unresolved reference: schema:///<slug>#`, which names neither the
+	 * property nor the schema.
 	 *
 	 * @param object $propertySchema The property schema to transform
 	 *
@@ -603,24 +599,35 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function stripRelationRefs(object $propertySchema): void {
-		$type = ($propertySchema->type ?? null);
-		$ref  = ($propertySchema->{'$ref'} ?? null);
+		$reference = ($propertySchema->{'$ref'} ?? null);
+		if ($reference === null) {
+			return;
+		}
 
-		if (($type === 'string' && $ref !== null) || ($type === null && self::isBareSlug(ref: $ref) === true)) {
+		if (($propertySchema->type ?? null) === 'string' || self::isRelationMarker(reference: $reference) === true) {
 			unset($propertySchema->{'$ref'});
 		}
 	}//end stripRelationRefs()
 
 	/**
-	 * Whether a `$ref` is a slug rather than a fragment or a URI.
+	 * Whether a `$ref` names a schema: a slug or `#/components/schemas/<slug>`, neither of which Opis can resolve.
 	 *
-	 * @param mixed $ref The reference.
+	 * Any other fragment or URI could be a genuine JSON Schema reference and stays.
 	 *
-	 * @return bool True for a non-empty string without `#` and `/`.
+	 * @param mixed $reference The `$ref` value
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private static function isBareSlug(mixed $ref): bool {
-		return is_string($ref) === true && $ref !== '' && str_contains($ref, '#') === false && str_contains($ref, '/') === false;
-	}//end isBareSlug()
+	private static function isRelationMarker(mixed $reference): bool {
+		if (is_string($reference) === false) {
+			return false;
+		}
+
+		return str_starts_with($reference, '#/components/schemas/') === true
+			|| (str_contains($reference, '#') === false && str_contains($reference, '/') === false);
+	}//end isRelationMarker()
 
 	/**
 	 * Apply transformPropertyForOpenRegister() to every property of an object schema.
