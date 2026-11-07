@@ -89,7 +89,7 @@ final class MoveObjectTest extends TestCase {
 		$this->audit = $this->createMock(AuditTrailMapper::class);
 		$this->audit->method('createAuditTrailEntry')->willReturn(new AuditTrail());
 
-		$this->objects->method('updateObjectEntity')->willReturnCallback(
+		$this->objects->method('update')->willReturnCallback(
 			function (ObjectEntity $entity): ObjectEntity {
 				$this->calls[] = 'write';
 				return $entity;
@@ -160,6 +160,68 @@ final class MoveObjectTest extends TestCase {
 	}
 
 	/**
+	 * The write hands the mapper the object as it was, source address included.
+	 *
+	 * The target table has no row yet, so a write left to read the old entity
+	 * from the target fails with "Object not found in magic table".
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function testTheWriteCarriesTheOldEntityFromTheSource(): void {
+		$seen = null;
+		$objects = $this->createMock(MagicMapper::class);
+		$objects->method('update')->willReturnCallback(
+			function (ObjectEntity $entity, Register $register, Schema $schema, ?ObjectEntity $old) use (&$seen): ObjectEntity {
+				$seen = $old;
+				return $entity;
+			}
+		);
+
+		$outcome = (new MoveObject($objects, $this->validator, $this->audit, new NullLogger()))->move(
+			object: $this->object(),
+			sourceRegister: $this->register(1),
+			sourceSchema: $this->schema(10),
+			targetRegister: $this->register(2),
+			targetSchema: $this->schema(20),
+			actor: 'anna',
+		);
+
+		self::assertTrue($outcome['moved']);
+		self::assertNotNull($seen);
+		self::assertSame(1, (int)$seen->getRegister());
+		self::assertSame(10, (int)$seen->getSchema());
+	}
+
+	/**
+	 * An object that lives elsewhere is refused: its row would stay and a second one appear.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function testAnObjectThatDoesNotLiveAtTheSourceIsRefused(): void {
+		foreach ([[3, 10], [1, 30]] as [$register, $schema]) {
+			$object = $this->object();
+			$object->setRegister($register);
+			$object->setSchema($schema);
+
+			$outcome = $this->service()->move(
+				object: $object,
+				sourceRegister: $this->register(1),
+				sourceSchema: $this->schema(10),
+				targetRegister: $this->register(2),
+				targetSchema: $this->schema(20),
+				actor: 'anna',
+			);
+
+			self::assertFalse($outcome['moved']);
+			self::assertSame([], $this->calls, 'nothing is written or removed');
+		}
+	}
+
+	/**
 	 * 🔴 The uuid and the minted number come along, untouched.
 	 *
 	 * @return void
@@ -203,7 +265,7 @@ final class MoveObjectTest extends TestCase {
 		$objects->expects(self::once())->method('slugForMove')
 			->with($object, self::callback(fn (Register $r) => (int)$r->getId() === 2), self::callback(fn (Schema $s) => (int)$s->getId() === 20))
 			->willReturn(null);
-		$objects->method('updateObjectEntity')->willReturnCallback(
+		$objects->method('update')->willReturnCallback(
 			function (ObjectEntity $entity) use (&$seen): ObjectEntity {
 				$seen = $entity->getSlug();
 				throw new \RuntimeException('disk full');
@@ -289,7 +351,7 @@ final class MoveObjectTest extends TestCase {
 	 */
 	public function testAFailedWriteRollsTheEntityBack(): void {
 		$objects = $this->createMock(MagicMapper::class);
-		$objects->method('updateObjectEntity')->willThrowException(new RuntimeException('target table is gone'));
+		$objects->method('update')->willThrowException(new RuntimeException('target table is gone'));
 		$objects->expects(self::never())->method('deleteObjectEntity');
 
 		$object = $this->object();
@@ -322,7 +384,7 @@ final class MoveObjectTest extends TestCase {
 	 */
 	public function testAFailedRemovalStillReportsTheMoveAndNamesTheStrandedRow(): void {
 		$objects = $this->createMock(MagicMapper::class);
-		$objects->method('updateObjectEntity')->willReturnArgument(0);
+		$objects->method('update')->willReturnArgument(0);
 		$objects->method('deleteObjectEntity')->willThrowException(new RuntimeException('source table is locked'));
 
 		$service = new MoveObject($objects, $this->validator, $this->audit, new NullLogger());
@@ -353,7 +415,7 @@ final class MoveObjectTest extends TestCase {
 	 */
 	public function testTheSourceRowIsHardDeletedWithNoEvents(): void {
 		$objects = $this->createMock(MagicMapper::class);
-		$objects->method('updateObjectEntity')->willReturnArgument(0);
+		$objects->method('update')->willReturnArgument(0);
 		$objects->expects(self::once())
 			->method('deleteObjectEntity')
 			->with(
