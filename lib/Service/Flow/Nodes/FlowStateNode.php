@@ -61,7 +61,7 @@ use OCP\WorkflowEngine\IManager;
  *
  * @link https://OpenRegister.app
  */
-class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class FlowStateNode implements IFlowNode, FlowStateNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * Read one key into the item.

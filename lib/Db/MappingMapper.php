@@ -67,7 +67,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * Else clauses improve readability in find and update methods
  */
-class MappingMapper extends QBMapper {
+class MappingMapper extends QBMapper implements MappingMapperInterface {
 	use MultiTenancyTrait;
 
 	/**

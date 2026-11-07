@@ -52,7 +52,7 @@ use Throwable;
  *   CalculationEvaluator, IUserSession, and LoggerInterface; each serves a distinct
  *   concern in the profile-lookup, calculation-evaluation, and manifest-enrichment pipeline.
  */
-class ManifestService {
+class ManifestService implements ManifestServiceInterface {
 	/**
 	 * Maximum accepted length of a manifest-supplied schema slug.
 	 *

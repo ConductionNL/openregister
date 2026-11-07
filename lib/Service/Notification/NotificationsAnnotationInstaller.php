@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Notification;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Webhook;
-use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCP\EventDispatcher\Event;
@@ -47,11 +47,11 @@ class NotificationsAnnotationInstaller implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param WebhookMapper $webhookMapper Mapper used to upsert Webhook rows.
+	 * @param WebhookMapperInterface $webhookMapper Mapper used to upsert Webhook rows.
 	 * @param LoggerInterface $logger Logger for installer diagnostics.
 	 */
 	public function __construct(
-		private readonly WebhookMapper $webhookMapper,
+		private readonly WebhookMapperInterface $webhookMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -62,7 +62,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
  */
-class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class LinkObjectNode implements IFlowNode, LinkObjectNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.
