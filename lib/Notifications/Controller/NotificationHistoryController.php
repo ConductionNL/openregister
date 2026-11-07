@@ -285,13 +285,27 @@ class NotificationHistoryController extends Controller {
 	 * @return string|null
 	 */
 	private function stringParam(string $name): ?string {
-		$value = $this->request->getParam($name);
-		if (is_string($value) === false || $value === '') {
-			return null;
+		return ($this->stringParams(names: [$name])[$name] ?? null);
+	}//end stringParam()
+
+	/**
+	 * The request parameters among `$names` that are non-empty strings, keyed by name.
+	 *
+	 * @param array<int, string> $names The parameter names, in the order they are read.
+	 *
+	 * @return array<string, string>
+	 */
+	private function stringParams(array $names): array {
+		$values = [];
+		foreach ($names as $name) {
+			$value = $this->request->getParam($name);
+			if (is_string($value) === true && $value !== '') {
+				$values[$name] = $value;
+			}
 		}
 
-		return $value;
-	}//end stringParam()
+		return $values;
+	}//end stringParams()
 
 	/**
 	 * A request parameter that is a non-negative integer, given as an int or a
@@ -320,15 +334,7 @@ class NotificationHistoryController extends Controller {
 	 * @return array<string, string|null> Filter map.
 	 */
 	private function extractFilters(): array {
-		$filters = [];
-		foreach (self::FILTER_KEYS as $key) {
-			$value = $this->stringParam(name: $key);
-			if ($value !== null) {
-				$filters[$key] = $value;
-			}
-		}
-
-		return $filters;
+		return $this->stringParams(names: self::FILTER_KEYS);
 	}//end extractFilters()
 
 	/**
