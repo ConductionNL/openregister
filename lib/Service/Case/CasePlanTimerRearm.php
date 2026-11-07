@@ -86,21 +86,32 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 		$moment = DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable());
 		$result = ['armed' => 0, 'enforced' => 0, 'dropped' => 0, 'failed' => 0];
 		foreach (array_keys($this->markers->all()) as $uuid) {
-			try {
-				$outcome = $this->rearm(itemUuid: (string)$uuid, now: $moment);
-			} catch (Throwable $failure) {
-				$outcome = 'failed';
-				$this->logger->error(
-					'[CasePlanTimerRearm] Plan item ' . $uuid . ' still lacks its statutory expiry timer: ' . $failure->getMessage(),
-					['item' => $uuid, 'exception' => $failure]
-				);
-			}
-
-			$result[$outcome]++;
+			$result[$this->settle(itemUuid: (string)$uuid, now: $moment)]++;
 		}
 
 		return $result;
 	}//end run()
+
+	/**
+	 * Settle one marked item; a failure is logged and counted, never rethrown into the pass.
+	 *
+	 * @param string $itemUuid The item.
+	 * @param DateTimeImmutable $now The clock.
+	 *
+	 * @return string `armed`, `enforced`, `dropped` or `failed`.
+	 */
+	private function settle(string $itemUuid, DateTimeImmutable $now): string {
+		try {
+			return $this->rearm(itemUuid: $itemUuid, now: $now);
+		} catch (Throwable $failure) {
+			$this->logger->error(
+				'[CasePlanTimerRearm] Plan item ' . $itemUuid . ' still lacks its statutory expiry timer: ' . $failure->getMessage(),
+				['item' => $itemUuid, 'exception' => $failure]
+			);
+
+			return 'failed';
+		}
+	}//end settle()
 
 	/**
 	 * Settle one marked item.
@@ -114,38 +125,32 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 		try {
 			$item = $this->items->findByUuid(uuid: $itemUuid);
 		} catch (DoesNotExistException) {
-			$this->markers->remove(itemUuid: $itemUuid);
-
-			return 'dropped';
+			return $this->drop(itemUuid: $itemUuid);
 		}
 
 		if ($item->getState() !== CaseItem::STATE_ACTIVE || $this->hasOpenExpiry(item: $item) === true) {
-			$this->markers->remove(itemUuid: $itemUuid);
-
-			return 'dropped';
+			return $this->drop(itemUuid: $itemUuid);
 		}
 
-		$outcome = $this->timers->rearmStatutoryExpiry(item: $item, now: $now);
+		return $this->conclude(itemUuid: $itemUuid, outcome: $this->timers->rearmStatutoryExpiry(item: $item, now: $now));
+	}//end rearm()
+
+	/**
+	 * What the arm attempt means for the marker: a failed arm keeps it, an
+	 * overdue term is enforced, anything else settles the item.
+	 *
+	 * @param string $itemUuid The item.
+	 * @param string $outcome One of the CasePlanItemTimers::REARM_* constants.
+	 *
+	 * @return string `armed`, `enforced`, `dropped` or `failed`.
+	 */
+	private function conclude(string $itemUuid, string $outcome): string {
 		if ($outcome === CasePlanItemTimers::REARM_FAILED) {
 			return 'failed';
 		}
 
 		if ($outcome === CasePlanItemTimers::REARM_OVERDUE) {
-			// The term ran out while nothing was watching it: end the item as the fired timer would have.
-			if ($this->plans->onTimerExpired(itemUuid: $itemUuid, timerUuid: self::CAUSE_REF) === true) {
-				$this->markers->remove(itemUuid: $itemUuid);
-
-				return 'enforced';
-			}
-
-			// False covers three cases: gone and already terminal need nothing, a transition that threw does.
-			if ($this->needsNothingMore(itemUuid: $itemUuid) === true) {
-				$this->markers->remove(itemUuid: $itemUuid);
-
-				return 'dropped';
-			}
-
-			return 'failed';
+			return $this->enforce(itemUuid: $itemUuid);
 		}
 
 		$this->markers->remove(itemUuid: $itemUuid);
@@ -154,7 +159,42 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 		}
 
 		return 'dropped';
-	}//end rearm()
+	}//end conclude()
+
+	/**
+	 * The term ran out while nothing was watching it: end the item as the fired timer would have.
+	 *
+	 * @param string $itemUuid The item.
+	 *
+	 * @return string `enforced`, `dropped` or `failed`.
+	 */
+	private function enforce(string $itemUuid): string {
+		if ($this->plans->onTimerExpired(itemUuid: $itemUuid, timerUuid: self::CAUSE_REF) === true) {
+			$this->markers->remove(itemUuid: $itemUuid);
+
+			return 'enforced';
+		}
+
+		// False covers three cases: gone and already terminal need nothing, a transition that threw does.
+		if ($this->needsNothingMore(itemUuid: $itemUuid) === true) {
+			return $this->drop(itemUuid: $itemUuid);
+		}
+
+		return 'failed';
+	}//end enforce()
+
+	/**
+	 * Forget the marker of an item that needs nothing more.
+	 *
+	 * @param string $itemUuid The item.
+	 *
+	 * @return string `dropped`.
+	 */
+	private function drop(string $itemUuid): string {
+		$this->markers->remove(itemUuid: $itemUuid);
+
+		return 'dropped';
+	}//end drop()
 
 	/**
 	 * Whether the item is gone or terminal, so a refused enforcement left nothing to retry.
