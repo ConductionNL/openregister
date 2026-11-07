@@ -1764,11 +1764,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// so each must over-fetch far enough that the merged set can serve the
 		// requested page. A batch that only fetched `limit` rows could not
 		// contribute row `offset + limit - 1` even when it owns it.
-		$batchQuery = $this->buildUnionBatchQuery(query: $query);
-
 		$rows = [];
 		foreach ($batches as $batch) {
-			foreach ($this->runUnionBatch(query: $batchQuery, registerSchemaPairs: $batch) as $row) {
+			foreach ($this->unionBatchRows(query: $query, registerSchemaPairs: $batch) as $row) {
 				$rows[] = $row;
 			}
 		}
@@ -1857,6 +1855,32 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $rows;
 	}//end runUnionBatch()
+
+	/**
+	 * The rows of one batch from its first row up to the end of the caller's page.
+	 *
+	 * Read in statements of at most MAX_PAGE_SIZE rows, so a page past that
+	 * bound still sees every row before it. A short statement ends the batch.
+	 *
+	 * @param array $query               Search parameters.
+	 * @param array $registerSchemaPairs Array of register+schema pairs, already bounded by the caller.
+	 *
+	 * @return array Raw result rows.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	private function unionBatchRows(array $query, array $registerSchemaPairs): array {
+		$rows = [];
+		foreach ($this->unionPage(query: $query)->batchSteps() as $step) {
+			$stepRows = $this->runUnionBatch(query: $step, registerSchemaPairs: $registerSchemaPairs);
+			$rows = array_merge($rows, $stepRows);
+			if (count($stepRows) < (int)($step['_limit'] ?? 0)) {
+				break;
+			}
+		}
+
+		return $rows;
+	}//end unionBatchRows()
 
 	/**
 	 * The property column superset every union arm projects, or null for a
