@@ -38,12 +38,16 @@ use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -69,8 +73,10 @@ final class D6InterfaceBindingsTest extends TestCase {
 		FlowNodePreflight::class => [FlowNodePreflightInterface::class, ContractBindings::class],
 		FlowScheduleService::class => [FlowScheduleServiceInterface::class, ContractBindings::class],
 		FlowStateNode::class => [FlowStateNodeInterface::class, ContractBindings::class],
+		FlowTimerSweep::class => [FlowTimerSweepInterface::class, ContractBindings::class],
 		LinkObjectNode::class => [LinkObjectNodeInterface::class, ContractBindings::class],
 		ObjectReadNode::class => [ObjectReadNodeInterface::class, ContractBindings::class],
+		ObjectWriteNode::class => [ObjectWriteNodeInterface::class, ContractBindings::class],
 		SetFieldsNode::class => [SetFieldsNodeInterface::class, ContractBindings::class],
 		SubFlowNode::class => [SubFlowNodeInterface::class, ContractBindings::class],
 		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],

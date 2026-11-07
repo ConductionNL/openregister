@@ -59,6 +59,8 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
@@ -80,6 +82,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
@@ -87,6 +91,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
@@ -101,6 +107,16 @@ use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutorInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -138,6 +154,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppSettingsInterface::class => SettingsService::class,
+		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		BulkJobReversalInterface::class => BulkJobReversal::class,
 		BulkJobServiceInterface::class => BulkJobService::class,
@@ -153,14 +170,18 @@ final class ContractBindings {
 		FlowScheduleServiceInterface::class => FlowScheduleService::class,
 		FlowStateNodeInterface::class => FlowStateNode::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
+		FlowTimerSweepInterface::class => FlowTimerSweep::class,
 		FormDefinitionResolverInterface::class => FormDefinitionResolver::class,
 		FormDestinationValidatorInterface::class => FormDestinationValidator::class,
 		FormIdempotencyStoreInterface::class => FormIdempotencyStore::class,
 		FormSubmitServiceInterface::class => FormSubmitService::class,
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
+		GitLabHandlerInterface::class => GitLabHandler::class,
 		HandoffServiceInterface::class => HandoffService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
+		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
+		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
 		LinkObjectNodeInterface::class => LinkObjectNode::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		MigrationPackServiceInterface::class => MigrationPackService::class,
@@ -179,18 +200,24 @@ final class ContractBindings {
 		ObjectReadNodeInterface::class => ObjectReadNode::class,
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
 		ObjectStreamingSaveInterface::class => ObjectService::class,
+		ObjectWriteNodeInterface::class => ObjectWriteNode::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
+		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
+		SearchTrailServiceInterface::class => SearchTrailService::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
 		SequenceServiceInterface::class => SequenceService::class,
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
 		SourceRecordResolverInterface::class => SourceRecordResolver::class,
+		StateConditionEvaluatorInterface::class => StateConditionEvaluator::class,
+		StateFieldRuleResolverInterface::class => StateFieldRuleResolver::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
 		SurvivorshipResolverInterface::class => SurvivorshipResolver::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
 		TaskSequenceServiceInterface::class => TaskSequenceService::class,
+		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
