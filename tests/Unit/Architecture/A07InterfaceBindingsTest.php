@@ -3,10 +3,11 @@
 /**
  * The A07 role interfaces are implemented, bound, and add up to the interface they split.
  *
- * PermissionHandlerInterface was split into role interfaces so a caller that needs one
- * role depends on that role, not on the whole handler. The original extends every role,
- * so its method set must stay exactly what it was; a role missing a binding is a runtime
- * 500 that no other unit test sees, so this test pins the bindings as well.
+ * PermissionHandlerInterface, CacheHandlerInterface and ValidateObjectInterface were split
+ * into role interfaces so a caller that needs one role depends on that role, not on the
+ * whole class. Each original extends every role, so its method set must stay exactly what
+ * it was; a role missing a binding is a runtime 500 that no other unit test sees, so this
+ * test pins the bindings as well.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Architecture
@@ -23,7 +24,14 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface;
+use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
+use OCA\OpenRegister\Service\Object\ObjectCacheInvalidationInterface;
+use OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface;
+use OCA\OpenRegister\Service\Object\ObjectEntityCacheInterface;
+use OCA\OpenRegister\Service\Object\ObjectNameWriterInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadersInterface;
+use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 use OCA\OpenRegister\Service\Object\PermissionCacheInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Object\PermissionEnforcementInterface;
@@ -31,7 +39,12 @@ use OCA\OpenRegister\Service\Object\PermissionExplanationInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\PermissionScopeInterface;
+use OCA\OpenRegister\Service\Object\SchemaUriResolverInterface;
 use OCA\OpenRegister\Service\Object\TransitionAuthorizationInterface;
+use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Service\Object\ValidationErrorResponseInterface;
+use OCA\OpenRegister\Service\Object\WriteConstraintValidatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -43,31 +56,58 @@ use ReflectionMethod;
 final class A07InterfaceBindingsTest extends TestCase {
 
 	/**
-	 * Every public method PermissionHandlerInterface declared before the split.
+	 * Every public method each split interface declared before the split.
 	 *
-	 * @var list<string>
+	 * @var array<class-string, list<string>>
 	 */
-	private const PERMISSION_HANDLER_METHODS = [
-		'checkPermission',
-		'clearInheritFromPublicCache',
-		'clearPermissionCache',
-		'denialFor',
-		'enforcedDenialFor',
-		'expandRoles',
-		'filterUuidsForPermissions',
-		'getActiveOrganisationForContext',
-		'getAuthorizedGroups',
-		'getReadableByUsers',
-		'hasGroupPermission',
-		'hasPermission',
-		'inheritFromPublicTenantDefault',
-		'isTransitionAuthorized',
-		'matrixRowsFromApps',
-		'permittedActionsFor',
-		'provenanceFor',
-		'resolveAuthorization',
-		'resolveDeclaredAuthorization',
-		'resolveInheritFromPublic',
+	private const SURFACES = [
+		CacheHandlerInterface::class => [
+			'clearAllCaches',
+			'clearCache',
+			'clearNameCache',
+			'clearSearchCache',
+			'getAllObjectNames',
+			'getDistributedNameCacheCount',
+			'getMultipleObjectNames',
+			'getObject',
+			'getSingleObjectName',
+			'getStats',
+			'invalidateForObjectChange',
+			'preloadObjects',
+			'setObjectName',
+			'warmupNameCache',
+		],
+		PermissionHandlerInterface::class => [
+			'checkPermission',
+			'clearInheritFromPublicCache',
+			'clearPermissionCache',
+			'denialFor',
+			'enforcedDenialFor',
+			'expandRoles',
+			'filterUuidsForPermissions',
+			'getActiveOrganisationForContext',
+			'getAuthorizedGroups',
+			'getReadableByUsers',
+			'hasGroupPermission',
+			'hasPermission',
+			'inheritFromPublicTenantDefault',
+			'isTransitionAuthorized',
+			'matrixRowsFromApps',
+			'permittedActionsFor',
+			'provenanceFor',
+			'resolveAuthorization',
+			'resolveDeclaredAuthorization',
+			'resolveInheritFromPublic',
+		],
+		ValidateObjectInterface::class => [
+			'generateErrorMessage',
+			'handleValidationException',
+			'resolveSchema',
+			'validateImmutableConstraints',
+			'validateObject',
+			'validateObjectWithPlannedUsers',
+			'validateReadOnlyConstraints',
+		],
 	];
 
 	/**
@@ -77,13 +117,21 @@ final class A07InterfaceBindingsTest extends TestCase {
 	 */
 	private const ROLES = [
 		AuthorizationResolutionInterface::class => [PermissionHandlerInterface::class, PermissionHandler::class],
+		ObjectCacheInvalidationInterface::class => [CacheHandlerInterface::class, CacheHandler::class],
+		ObjectCacheMaintenanceInterface::class => [CacheHandlerInterface::class, CacheHandler::class],
+		ObjectEntityCacheInterface::class => [CacheHandlerInterface::class, CacheHandler::class],
+		ObjectNameWriterInterface::class => [CacheHandlerInterface::class, CacheHandler::class],
 		ObjectReadersInterface::class => [PermissionHandlerInterface::class, PermissionHandler::class],
+		ObjectValidatorInterface::class => [ValidateObjectInterface::class, ValidateObject::class],
 		PermissionCacheInterface::class => [PermissionHandlerInterface::class, PermissionHandler::class],
 		PermissionCheckInterface::class => [PermissionHandlerInterface::class, PermissionHandler::class],
 		PermissionEnforcementInterface::class => [PermissionHandlerInterface::class, PermissionHandler::class],
 		PermissionExplanationInterface::class => [PermissionHandlerInterface::class, PermissionHandler::class],
 		PermissionScopeInterface::class => [PermissionHandlerInterface::class, PermissionHandler::class],
+		SchemaUriResolverInterface::class => [ValidateObjectInterface::class, ValidateObject::class],
 		TransitionAuthorizationInterface::class => [PermissionHandlerInterface::class, PermissionHandler::class],
+		ValidationErrorResponseInterface::class => [ValidateObjectInterface::class, ValidateObject::class],
+		WriteConstraintValidatorInterface::class => [ValidateObjectInterface::class, ValidateObject::class],
 	];
 
 	/**
@@ -101,19 +149,36 @@ final class A07InterfaceBindingsTest extends TestCase {
 	}//end roles()
 
 	/**
+	 * One case per split interface.
+	 *
+	 * @return array<string, array{class-string}>
+	 */
+	public static function surfaces(): array {
+		$cases = [];
+		foreach (array_keys(self::SURFACES) as $interface) {
+			$cases[$interface] = [$interface];
+		}
+
+		return $cases;
+	}//end surfaces()
+
+	/**
 	 * The split interface still declares exactly the methods it declared before.
+	 *
+	 * @param class-string $interface The split interface.
 	 *
 	 * @return void
 	 */
-	public function testThePermissionHandlerSurfaceIsUnchanged(): void {
+	#[DataProvider('surfaces')]
+	public function testTheSplitSurfaceIsUnchanged(string $interface): void {
 		$names = array_map(
 			callback: static fn (ReflectionMethod $method): string => $method->getName(),
-			array: (new ReflectionClass(PermissionHandlerInterface::class))->getMethods()
+			array: (new ReflectionClass($interface))->getMethods()
 		);
 		sort(array: $names);
 
-		$this->assertSame(self::PERMISSION_HANDLER_METHODS, $names);
-	}//end testThePermissionHandlerSurfaceIsUnchanged()
+		$this->assertSame(self::SURFACES[$interface], $names);
+	}//end testTheSplitSurfaceIsUnchanged()
 
 	/**
 	 * The role is part of the interface it was split from, the class implements it, and it is bound.
