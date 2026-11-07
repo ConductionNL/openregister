@@ -9970,7 +9970,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$relationsContains = $searchQuery['_relations_contains'] ?? null;
 		if ($unscoped === true && is_string($relationsContains) === true && empty($relationsContains) === false) {
 			$relResults = $this->findByRelationAcrossAllMagicTables(uuid: $relationsContains, includeDeleted: false);
-			return $this->searchTables(pairs: $this->tablesOfRows(rows: $relResults), request: $request);
+			return $this->searchTables(pairs: $this->purposeBoundTables()->readable(pairs: $this->tablesOfRows(rows: $relResults)), request: $request);
 		}
 
 		$searchTerm = $searchQuery['_search'] ?? null;
