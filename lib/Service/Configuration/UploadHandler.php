@@ -153,7 +153,7 @@ class UploadHandler {
 				break;
 		}
 
-		if ($phpArray === null || $phpArray === false) {
+		if (is_array($phpArray) === false) {
 			return null;
 		}
 
@@ -282,7 +282,7 @@ class UploadHandler {
 			$phpArray = json_decode($phpArray, associative: true);
 		}
 
-		if ($phpArray === null || $phpArray === false) {
+		if (is_array($phpArray) === false) {
 			return new JSONResponse(
 				data: ['error' => 'Failed to decode JSON input'],
 				statusCode: 400
