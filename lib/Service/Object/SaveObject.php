@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\CascadeItem;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRules;
 use OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\EmptyValues;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelations;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
@@ -66,6 +67,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
+use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard;
@@ -685,6 +687,29 @@ class SaveObject implements SaveObjectInterface {
 	}//end inverseWriteBack()
 
 	/**
+	 * What counts as empty for this save handler.
+	 *
+	 * @return EmptyValues
+	 */
+	private function emptyValues(): EmptyValues {
+		return new EmptyValues(urls: $this->urlGenerator);
+	}//end emptyValues()
+
+	/**
+	 * The outdated-translation check of this save handler.
+	 *
+	 * @return OutdatedTranslations
+	 */
+	private function outdatedTranslations(): OutdatedTranslations {
+		return new OutdatedTranslations(
+			translations: $this->translationHandler,
+			projection: $this->translationProjectionService,
+			status: $this->translationStatusService,
+			logger: $this->logger
+		);
+	}//end outdatedTranslations()
+
+	/**
 	 * The relation scanner of this save handler.
 	 *
 	 * @return RelationScanner
@@ -1150,7 +1175,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		// Skip if the object is effectively empty (only contains empty values).
-		if ($this->isEffectivelyEmptyObject(object: $objectData) === true) {
+		if ($this->emptyValues()->isEmptyObject(object: $objectData) === true) {
 			return;
 		}
 
@@ -1648,117 +1673,6 @@ class SaveObject implements SaveObjectInterface {
 
 		return $data;
 	}//end fillMissingSchemaPropertiesWithNull()
-
-	/**
-	 * Sanitizes empty strings and handles empty objects/arrays based on schema definitions.
-	 *
-	 * This method prevents empty strings from causing issues in downstream processing by converting
-	 * them to appropriate values for properties based on their schema definitions.
-	 *
-	 * For object properties:
-	 * - If not required: empty objects {} become null (allows clearing the field)
-	 * - If required: empty objects {} remain as {} but will fail validation with clear error
-	 *
-	 * For array properties:
-	 * - If no minItems constraint: empty arrays [] are allowed
-	 * - If minItems > 0: empty arrays [] will fail validation with clear error
-	 * - Empty strings become null for array properties
-	 *
-	 * @param array $data The object data to sanitize
-	 * @param Schema $schema The schema to check property definitions against
-	 *
-	 * @return array The sanitized data with appropriate handling of empty values
-	 *
-	 * @throws \Exception If schema processing fails
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex sanitization logic for multiple property types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple property types and required states
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function sanitizeEmptyStringsForObjectProperties(array $data, Schema $schema): array {
-		try {
-			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
-			$properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
-			$required = json_decode(json_encode($schemaObject), associative: true)['required'] ?? [];
-		} catch (Exception $e) {
-			return $data;
-		}
-
-		$sanitizedData = $data;
-
-		foreach ($properties as $propertyName => $propertyDefinition) {
-			if (isset($sanitizedData[$propertyName]) === false) {
-				continue;
-			}
-
-			$value = $sanitizedData[$propertyName];
-			$propertyType = $propertyDefinition['type'] ?? null;
-			$isRequired = in_array($propertyName, $required) || ($propertyDefinition['required'] ?? false);
-
-			// An empty required value stays, so validation reports it clearly.
-			if ($isRequired === false && self::isOptionalEmptyValue(value: $value, type: $propertyType) === true) {
-				$sanitizedData[$propertyName] = null;
-				continue;
-			}
-
-			$sanitizedData[$propertyName] = self::withoutEmptyStrings(value: $value, type: $propertyType);
-		}//end foreach
-
-		return $sanitizedData;
-	}//end sanitizeEmptyStringsForObjectProperties()
-
-	/**
-	 * Whether a value is empty in a way that clears an optional property: an empty object, or an
-	 * empty string for a scalar type.
-	 *
-	 * @param mixed $value The property value.
-	 * @param mixed $type  The property type.
-	 *
-	 * @return bool True when the value becomes null for an optional property.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isOptionalEmptyValue(mixed $value, mixed $type): bool {
-		if ($type === 'object') {
-			return is_array($value) === true && empty($value) === true;
-		}
-
-		return $value === '' && in_array($type, ['string', 'number', 'integer', 'boolean']) === true;
-	}//end isOptionalEmptyValue()
-
-	/**
-	 * An object or array property value with empty strings turned into null: the value itself,
-	 * or each item of a non-empty array.
-	 *
-	 * @param mixed $value The property value.
-	 * @param mixed $type  The property type.
-	 *
-	 * @return mixed The value.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function withoutEmptyStrings(mixed $value, mixed $type): mixed {
-		if ($type !== 'object' && $type !== 'array') {
-			return $value;
-		}
-
-		if ($value === '') {
-			return null;
-		}
-
-		if ($type === 'object' || is_array($value) === false) {
-			return $value;
-		}
-
-		foreach ($value as $index => $item) {
-			if ($item === '') {
-				$value[$index] = null;
-			}
-		}
-
-		return $value;
-	}//end withoutEmptyStrings()
 
 	/**
 	 * Saves an object.
@@ -4182,7 +4096,7 @@ class SaveObject implements SaveObjectInterface {
 		// Sanitize empty strings after validation but before cascading operations.
 		// This prevents empty values from causing issues in downstream processing.
 		try {
-			$data = $this->sanitizeEmptyStringsForObjectProperties(data: $data, schema: $schema);
+			$data = $this->emptyValues()->sanitize(data: $data, schema: $schema);
 		} catch (Exception $e) {
 			// CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
 			$part1 = 'Object data sanitization failed: ' . $e->getMessage();
@@ -4372,7 +4286,7 @@ class SaveObject implements SaveObjectInterface {
 		$run->schema = $schema;
 
 		$updatedEntity = $this->persistObjectUpdate(run: $run, existingObject: $existingObject);
-		$this->flagOutdatedAfterUpdate(run: $run, updatedEntity: $updatedEntity);
+		$this->outdatedTranslations()->flag(run: $run, updated: $updatedEntity);
 		$this->recordObjectUpdate(run: $run, updatedEntity: $updatedEntity);
 		$updatedEntity = $this->storeUpdatedFileProperties(run: $run, updatedEntity: $updatedEntity);
 
@@ -4453,34 +4367,6 @@ class SaveObject implements SaveObjectInterface {
 			return $preparedObject;
 		}
 	}//end recalculateArchiveDate()
-
-	/**
-	 * Flip derived translations to outdated when a translatable source value changed.
-	 *
-	 * I18n-source-of-truth: only a change of the source-language value
-	 * triggers it; per-language edits do not. A failure is logged, never thrown.
-	 *
-	 * @param ObjectUpdateRun $run           The update call.
-	 * @param ObjectEntity    $updatedEntity The updated entity.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function flagOutdatedAfterUpdate(ObjectUpdateRun $run, ObjectEntity $updatedEntity): void {
-		try {
-			$this->flagOutdatedDerivedTranslations(
-				schema: $run->schema,
-				register: $run->register,
-				oldObject: $run->oldObject,
-				newObject: $updatedEntity
-			);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				'[SaveObject] failed to flag outdated translations: ' . $e->getMessage()
-			);
-		}
-	}//end flagOutdatedAfterUpdate()
 
 	/**
 	 * Log the update and write its audit trail, unless silent or audit trails are off.
@@ -4564,197 +4450,6 @@ class SaveObject implements SaveObjectInterface {
 
 		return $this->objectEntityMapper->update(entity: $updatedEntity, register: $run->register, schema: $run->schema);
 	}//end storeUpdatedFileProperties()
-
-	/**
-	 * Compare old vs new object values for translatable properties and flip
-	 * derived-language translation rows to `outdated` when the resolved
-	 * source-language value changes.
-	 *
-	 * Conservative trigger: only fires when the source-language value
-	 * itself changed. Edits to other-language values do not flip status.
-	 *
-	 * @param Schema $schema The schema for the object.
-	 * @param Register $register The owning register (for default language fallback).
-	 * @param ObjectEntity $oldObject The pre-persist state.
-	 * @param ObjectEntity $newObject The post-persist state.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/i18n-source-of-truth/spec.md
-	 */
-	private function flagOutdatedDerivedTranslations(
-		Schema $schema,
-		Register $register,
-		ObjectEntity $oldObject,
-		ObjectEntity $newObject,
-	): void {
-		$uuid = $newObject->getUuid();
-		if ($uuid === null || $uuid === '') {
-			return;
-		}
-
-		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-		if (count($translatableProps) === 0) {
-			return;
-		}
-
-		$oldData = (array)($oldObject->getObject() ?? []);
-		$newData = (array)($newObject->getObject() ?? []);
-
-		$registerDefault = $register->getDefaultLanguage();
-		foreach ($translatableProps as $property) {
-			$sourceLanguage = $this->translationProjectionService->resolveSourceLanguage(
-				schema: $schema,
-				object: $newObject,
-				property: $property,
-				registerDefault: $registerDefault
-			);
-
-			$oldSource = $this->extractLanguageValue(
-				value: $oldData[$property] ?? null,
-				language: $sourceLanguage
-			);
-			$newSource = $this->extractLanguageValue(
-				value: $newData[$property] ?? null,
-				language: $sourceLanguage
-			);
-
-			if ($oldSource === null || $newSource === null) {
-				continue;
-			}
-
-			if ($oldSource === $newSource) {
-				continue;
-			}
-
-			$this->translationStatusService->markDerivedTranslationsOutdated(
-				objectUuid: (string)$uuid,
-				property: (string)$property,
-				sourceLanguage: $sourceLanguage
-			);
-		}//end foreach
-	}//end flagOutdatedDerivedTranslations()
-
-	/**
-	 * Extract the value for a given language out of a translatable property
-	 * payload. Accepts both language-keyed objects (`{nl: "x"}`) and scalar
-	 * values (interpreted as the source language).
-	 *
-	 * @param mixed $value The raw property value from the object body.
-	 * @param string $language The language tag to extract for.
-	 *
-	 * @return string|null The string value, or null when not present.
-	 *
-	 * @spec openspec/specs/i18n-source-of-truth/spec.md
-	 */
-	private function extractLanguageValue(mixed $value, string $language): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_string($value) === true) {
-			// Scalar bodies are treated as the source-language value.
-			return $value;
-		}
-
-		if (is_array($value) === true && isset($value[$language]) === true) {
-			$entry = $value[$language];
-			if (is_string($entry) === true) {
-				return $entry;
-			}
-
-			if (is_scalar($entry) === true) {
-				return (string)$entry;
-			}
-		}
-
-		return null;
-	}//end extractLanguageValue()
-
-	/**
-	 * Check if an object is effectively empty (contains only empty values)
-	 *
-	 * This method checks if an object contains only empty strings, empty arrays,
-	 * empty objects, or null values, which indicates it doesn't contain meaningful data
-	 * that should be cascaded.
-	 *
-	 * @param array $object The object data to check
-	 *
-	 * @return bool True if the object is effectively empty, false otherwise
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function isEffectivelyEmptyObject(array $object): bool {
-		// If the array is completely empty, it's effectively empty.
-		if (empty($object) === true) {
-			return true;
-		}
-
-		// Check each value in the object.
-		foreach ($object as $key => $value) {
-			// Skip metadata keys that don't represent actual data.
-			if (in_array($key, ['@self', 'id', '_id']) === true) {
-				continue;
-			}
-
-			// If we find any non-empty value, the object is not effectively empty.
-			if ($this->isValueNotEmpty(value: $value) === true) {
-				return false;
-			}
-		}
-
-		// All values are empty, so the object is effectively empty.
-		return true;
-	}//end isEffectivelyEmptyObject()
-
-	/**
-	 * Check if a value is not empty (contains meaningful data)
-	 *
-	 * @param mixed $value The value to check
-	 *
-	 * @return bool True if the value is not empty, false otherwise
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple value type checks required
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function isValueNotEmpty($value): bool {
-		// Null values are empty.
-		if ($value === null) {
-			return false;
-		}
-
-		// Empty strings are empty.
-		if (is_string($value) === true && trim($value) === '') {
-			return false;
-		}
-
-		// Empty arrays are empty.
-		if (is_array($value) === true && empty($value) === true) {
-			return false;
-		}
-
-		// For objects/arrays with content, check recursively. The empty-array
-		// case already returned above, so only the array-ness matters here.
-		if (is_array($value) === true) {
-			// If it's an associative array (object-like), check if it's effectively empty.
-			if (array_keys($value) !== range(0, count($value) - 1)) {
-				return $this->isEffectivelyEmptyObject(object: $value) === false;
-			}
-
-			// For indexed arrays, check if any element is not empty.
-			foreach ($value as $item) {
-				if ($this->isValueNotEmpty(value: $item) === true) {
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		// For all other values (numbers, booleans, etc.), they are not empty.
-		return true;
-	}//end isValueNotEmpty()
 
 	/**
 	 * Check if audit trails are enabled in the settings
