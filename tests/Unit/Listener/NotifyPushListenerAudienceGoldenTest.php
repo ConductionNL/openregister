@@ -29,8 +29,8 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Listener\Support\PushSlugResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
-use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -208,13 +208,11 @@ class NotifyPushListenerAudienceGoldenTest extends TestCase {
 		array $mappers
 	): NotifyPushListener {
 		return new NotifyPushListener(
-			$this->createMock(IAppManager::class),
 			$logger,
 			$container,
 			$permissions,
 			$appConfig,
-			$mappers[0],
-			$mappers[1]
+			new PushSlugResolver($mappers[0], $mappers[1])
 		);
 	}//end construct()
 
@@ -435,7 +433,7 @@ class NotifyPushListenerAudienceGoldenTest extends TestCase {
 	 */
 	public function testPresenceReachesOnlyReaders(): void {
 		$listener = $this->listener(readers: ['alice']);
-		$this->assertTrue($listener->pushPresence(object: $this->object(), present: ['k' => ['user' => 'bob']]));
+		$this->assertTrue($listener->pushPresence(object: $this->object(), present: [['user' => 'bob']]));
 
 		$this->assertSame(
 			[$this->push(user: 'alice', channel: 'or-object-obj-1', body: ['action' => 'presence', 'uuid' => 'obj-1', 'present' => [['user' => 'bob']]])],
