@@ -177,9 +177,6 @@ class FileFormattingHandlerLockGateGoldenTest extends TestCase {
 
 	private function handler(ILockManager $lockManager, IUserSession $session, AbstractLogger $logger): FileFormattingHandler {
 		return new FileFormattingHandler(
-			$this->createMock(\OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Files\Service\File\FileSharingHandler::class),
-			$this->createMock(\OCP\IURLGenerator::class),
 			$lockManager,
 			$session,
 			$logger
