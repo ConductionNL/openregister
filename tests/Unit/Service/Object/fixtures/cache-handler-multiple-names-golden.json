@@ -873,7 +873,7 @@
                 ]
             },
             {
-                "query": "oc_openregister_table_1_2",
+                "query": "*PREFIX*openregister_table_1_2",
                 "column": "_name"
             },
             {
@@ -996,7 +996,7 @@
                 "ttl": 86400
             },
             {
-                "query": "oc_openregister_table_1_2",
+                "query": "*PREFIX*openregister_table_1_2",
                 "column": "_name"
             },
             {
@@ -1064,7 +1064,7 @@
                 ]
             },
             {
-                "query": "oc_openregister_table_1_2",
+                "query": "*PREFIX*openregister_table_1_2",
                 "column": "_name"
             },
             {
@@ -1073,7 +1073,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_2",
+                "query": "*PREFIX*openregister_table_1_2",
                 "column": "naam"
             },
             {
@@ -1082,7 +1082,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_2",
+                "query": "*PREFIX*openregister_table_1_2",
                 "column": "name"
             },
             {
@@ -1091,7 +1091,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_2",
+                "query": "*PREFIX*openregister_table_1_2",
                 "column": "title"
             },
             {
@@ -1100,7 +1100,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_3",
+                "query": "*PREFIX*openregister_table_1_3",
                 "column": "_name"
             },
             {
@@ -1109,7 +1109,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_3",
+                "query": "*PREFIX*openregister_table_1_3",
                 "column": "naam"
             },
             {
@@ -1118,7 +1118,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_3",
+                "query": "*PREFIX*openregister_table_1_3",
                 "column": "name"
             },
             {
@@ -1127,7 +1127,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_3",
+                "query": "*PREFIX*openregister_table_1_3",
                 "column": "title"
             },
             {
@@ -1182,7 +1182,7 @@
                 ]
             },
             {
-                "query": "oc_openregister_table_1_2",
+                "query": "*PREFIX*openregister_table_1_2",
                 "column": "_name"
             },
             {
@@ -1192,7 +1192,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_2",
+                "query": "*PREFIX*openregister_table_1_2",
                 "column": "naam"
             },
             {
@@ -1202,7 +1202,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_2",
+                "query": "*PREFIX*openregister_table_1_2",
                 "column": "name"
             },
             {
@@ -1212,7 +1212,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_2",
+                "query": "*PREFIX*openregister_table_1_2",
                 "column": "title"
             },
             {
@@ -1222,7 +1222,7 @@
                 }
             },
             {
-                "query": "oc_openregister_table_1_3",
+                "query": "*PREFIX*openregister_table_1_3",
                 "column": "_name"
             },
             {
@@ -1694,7 +1694,7 @@
                 ]
             },
             {
-                "query": "oc_openregister_table__2",
+                "query": "*PREFIX*openregister_table__2",
                 "column": "_name"
             },
             {
