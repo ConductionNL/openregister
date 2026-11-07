@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCP\IUserSession;
 use UnexpectedValueException;
 
@@ -51,7 +51,7 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 	 *
 	 * @param FlowRunServiceInterface $runner Queues a flow run.
 	 * @param FlowRunMapperInterface $mapper Reads recent runs (for listing / status).
-	 * @param FlowService $flows Authors flows, with the organisation scoping.
+	 * @param FlowServiceInterface $flows Authors flows, with the organisation scoping.
 	 * @param FlowNodePreflightInterface $preflight Reports what a saved document is missing.
 	 * @param IUserSession $userSession The invoking session — an MCP tool call
 	 *                                  always arrives inside one, and its user is
@@ -60,7 +60,7 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 	public function __construct(
 		private readonly FlowRunServiceInterface $runner,
 		private readonly FlowRunMapperInterface $mapper,
-		private readonly FlowService $flows,
+		private readonly FlowServiceInterface $flows,
 		private readonly FlowNodePreflightInterface $preflight,
 		private readonly IUserSession $userSession,
 	) {
