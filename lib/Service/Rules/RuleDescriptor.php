@@ -102,7 +102,7 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getId(): string {
-		return ($this->kind . self::ID_SEPARATOR . $this->schemaSlug . self::ID_SEPARATOR . $this->key);
+		return self::idFor(kind: $this->kind, schemaSlug: $this->schemaSlug, key: $this->key);
 	}//end getId()
 
 	/**
@@ -211,19 +211,6 @@ final class RuleDescriptor implements JsonSerializable {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->getId(),
-			'kind' => $this->kind,
-			'schema' => $this->schemaSlug,
-			'key' => $this->key,
-			'label' => $this->label,
-			'source' => $this->source,
-			'enabled' => $this->enabled,
-			'actions' => $this->actions,
-			'condition' => $this->condition,
-			'maxObjects' => $this->maxObjects,
-			'scope' => $this->scope,
-			'order' => (new RuleVocabulary())->orderOf(kind: $this->kind),
-		];
+		return (new RuleDescriptorJson())->serialize(fields: get_object_vars($this));
 	}//end jsonSerialize()
 }//end class
