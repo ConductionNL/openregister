@@ -28,6 +28,7 @@ use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
+use OCA\OpenRegister\Files\Controller\Support\FileActionTarget;
 use OCA\OpenRegister\Files\Controller\Support\FileTransfer;
 use OCA\OpenRegister\Files\Controller\Support\FilesControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
@@ -657,6 +658,25 @@ class FilesController extends Controller {
 
 		return $object;
 	}//end routedObject()
+
+	/**
+	 * The file of the object the route names.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param int          $fileId The file id.
+	 *
+	 * @return File The file.
+	 *
+	 * @throws FileActionRefusal With 404 when the object has no such file.
+	 */
+	private function routedFile(ObjectEntity $object, int $fileId): File {
+		$file = $this->fileService->getFile(object: $object, file: $fileId);
+		if ($file === null) {
+			throw new FileActionRefusal(message: 'File not found', code: 404);
+		}
+
+		return $file;
+	}//end routedFile()
 
 	/**
 	 * The answer to a refusal, which keeps its own status whatever the action does with other failures.
@@ -1914,52 +1934,48 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-			}
-
-			$data = $this->request->getParams();
-			$newName = $data['name'] ?? '';
-
-			$file = $this->fileService->renameFile(object: $object, fileId: $fileId, newName: $newName);
-
-			// Audit trail entry (best-effort -- handler swallows failures).
-			$this->fileService->getAuditHandler()->logFileAction(
-				object: $object,
-				fileId: $fileId,
-				action: 'file.renamed',
-				data: ['oldName' => $data['oldName'] ?? '', 'newName' => $newName]
-			);
-
-			// Dispatch event.
-			$this->eventDispatcher->dispatchTyped(
-				new FileRenamedEvent(
-					objectUuid: $object->getUuid(),
-					fileId: $fileId,
-					data: ['oldName' => $data['oldName'] ?? '', 'newName' => $newName]
-				)
-			);
-
-			return new JSONResponse(data: $this->fileService->formatFile($file));
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			return $this->renameTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
 		} catch (Exception $e) {
-			$statusCode = match (true) {
-				str_contains($e->getMessage(), 'already exists') => 409,
-				str_contains($e->getMessage(), 'invalid characters') => 400,
-				str_contains($e->getMessage(), 'required') => 400,
-				str_contains($e->getMessage(), 'locked') => 423,
-				default => 400,
-			};
-
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $statusCode);
-		}//end try
+			return $this->actionFailed(e: $e, status: $this->renameFailureStatus(e: $e));
+		}
 	}//end rename()
+
+	/**
+	 * Rename the file to the name the request posts, with its audit row and event.
+	 *
+	 * @param FileActionTarget $target The file.
+	 *
+	 * @return JSONResponse The renamed file.
+	 */
+	private function renameTarget(FileActionTarget $target): JSONResponse {
+		$data = $this->request->getParams();
+		$newName = $data['name'] ?? '';
+		$names = ['oldName' => $data['oldName'] ?? '', 'newName' => $newName];
+		$file = $this->fileService->renameFile(object: $target->object, fileId: $target->fileId, newName: $newName);
+
+		// Audit trail entry (best-effort -- handler swallows failures).
+		$this->fileService->getAuditHandler()->logFileAction(object: $target->object, fileId: $target->fileId, action: 'file.renamed', data: $names);
+		$this->eventDispatcher->dispatchTyped(new FileRenamedEvent(objectUuid: $target->object->getUuid(), fileId: $target->fileId, data: $names));
+
+		return new JSONResponse(data: $this->fileService->formatFile($file));
+	}//end renameTarget()
+
+	/**
+	 * The status of a failed rename, read off the file service's message.
+	 *
+	 * @param Exception $e The failure.
+	 *
+	 * @return int The HTTP status.
+	 */
+	private function renameFailureStatus(Exception $e): int {
+		return match (true) {
+			str_contains($e->getMessage(), 'already exists') => 409,
+			str_contains($e->getMessage(), 'invalid characters') => 400,
+			str_contains($e->getMessage(), 'required') => 400,
+			str_contains($e->getMessage(), 'locked') => 423,
+			default => 400,
+		};
+	}//end renameFailureStatus()
 
 	/**
 	 * Copy a file to another object
@@ -2202,26 +2218,14 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: object read access required to list versions.
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forReading()->onFile(fileId: $fileId));
+			$file = $this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
 
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-			}
-
-			$file = $this->fileService->getFile(object: $object, file: $fileId);
-			if ($file === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
-			}
-
-			$result = $this->fileService->getVersioningHandler()->listVersions($file);
-
-			return new JSONResponse(data: $result);
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
+			return new JSONResponse(data: $this->fileService->getVersioningHandler()->listVersions($file));
+		} catch (NotAuthorizedException | FileActionRefusal $e) {
+			return $this->actionFailed(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+		}
 	}//end listVersions()
 
 	/**
@@ -2243,63 +2247,60 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function restoreVersion(
-		string $register,
-		string $schema,
-		string $id,
-		int $fileId,
-		string $versionId,
-	): JSONResponse {
+	public function restoreVersion(string $register, string $schema, string $id, int $fileId, string $versionId): JSONResponse {
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before restoring.
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-			}
-
-			$file = $this->fileService->getFile(object: $object, file: $fileId);
-			if ($file === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
-			}
-
-			$this->fileService->getVersioningHandler()->restoreVersion($file, $versionId);
-
-			// Audit trail entry (best-effort -- handler swallows failures).
-			$this->fileService->getAuditHandler()->logFileAction(
-				object: $object,
-				fileId: $fileId,
-				action: 'file.version_restored',
-				data: ['versionId' => $versionId]
-			);
-
-			$this->eventDispatcher->dispatchTyped(
-				new FileVersionRestoredEvent(
-					objectUuid: $object->getUuid(),
-					fileId: $fileId,
-					data: ['versionId' => $versionId]
-				)
-			);
-
-			return new JSONResponse(data: $this->fileService->formatFile($file));
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			return $this->restoreTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId), versionId: $versionId);
 		} catch (Exception $e) {
-			$statusCode = 400;
-			if (str_contains($e->getMessage(), 'not found') === true) {
-				$statusCode = 404;
-			}
-
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $statusCode);
-		}//end try
+			return $this->actionFailed(e: $e, status: $this->restoreFailureStatus(e: $e));
+		}
 	}//end restoreVersion()
+
+	/**
+	 * Restore a version of the file, with its audit row and event.
+	 *
+	 * @param FileActionTarget $target    The file.
+	 * @param string           $versionId The version.
+	 *
+	 * @return JSONResponse The restored file.
+	 */
+	private function restoreTarget(FileActionTarget $target, string $versionId): JSONResponse {
+		$file = $this->routedFile(object: $target->object, fileId: $target->fileId);
+		$this->fileService->getVersioningHandler()->restoreVersion($file, $versionId);
+		$version = ['versionId' => $versionId];
+
+		// Audit trail entry (best-effort -- handler swallows failures).
+		$this->fileService->getAuditHandler()->logFileAction(
+			object: $target->object,
+			fileId: $target->fileId,
+			action: 'file.version_restored',
+			data: $version
+		);
+		$this->eventDispatcher->dispatchTyped(
+			new FileVersionRestoredEvent(objectUuid: $target->object->getUuid(), fileId: $target->fileId, data: $version)
+		);
+
+		return new JSONResponse(data: $this->fileService->formatFile($file));
+	}//end restoreTarget()
+
+	/**
+	 * The status of a failed restore, read off the versioning handler's message.
+	 *
+	 * @param Exception $e The failure.
+	 *
+	 * @return int The HTTP status.
+	 */
+	private function restoreFailureStatus(Exception $e): int {
+		if (str_contains($e->getMessage(), 'not found') === true) {
+			return 404;
+		}
+
+		return 400;
+	}//end restoreFailureStatus()
 
 	/**
 	 * Lock a file
@@ -2326,45 +2327,43 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before locking.
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-			}
-
-			$result = $this->fileService->getLockHandler()->lockFile($fileId);
-
-			// Audit trail entry (best-effort -- handler swallows failures).
-			$this->fileService->getAuditHandler()->logFileAction(
-				object: $object,
-				fileId: $fileId,
-				action: 'file.locked',
-				data: $result
-			);
-
-			$this->eventDispatcher->dispatchTyped(
-				new FileLockedEvent(
-					objectUuid: $object->getUuid(),
-					fileId: $fileId,
-					data: $result
-				)
-			);
-
-			return new JSONResponse(data: $result);
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			return $this->lockTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
 		} catch (Exception $e) {
-			$statusCode = 400;
-			if (str_contains($e->getMessage(), 'locked') === true) {
-				$statusCode = 423;
-			}
-
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $statusCode);
-		}//end try
+			return $this->actionFailed(e: $e, status: $this->lockFailureStatus(e: $e));
+		}
 	}//end lock()
+
+	/**
+	 * Lock the file, with its audit row and event.
+	 *
+	 * @param FileActionTarget $target The file.
+	 *
+	 * @return JSONResponse The lock.
+	 */
+	private function lockTarget(FileActionTarget $target): JSONResponse {
+		$result = $this->fileService->getLockHandler()->lockFile($target->fileId);
+
+		// Audit trail entry (best-effort -- handler swallows failures).
+		$this->fileService->getAuditHandler()->logFileAction(object: $target->object, fileId: $target->fileId, action: 'file.locked', data: $result);
+		$this->eventDispatcher->dispatchTyped(new FileLockedEvent(objectUuid: $target->object->getUuid(), fileId: $target->fileId, data: $result));
+
+		return new JSONResponse(data: $result);
+	}//end lockTarget()
+
+	/**
+	 * The status of a failed lock, read off the lock handler's message.
+	 *
+	 * @param Exception $e The failure.
+	 *
+	 * @return int The HTTP status.
+	 */
+	private function lockFailureStatus(Exception $e): int {
+		if (str_contains($e->getMessage(), 'locked') === true) {
+			return 423;
+		}
+
+		return 400;
+	}//end lockFailureStatus()
 
 	/**
 	 * Unlock a file
@@ -2391,54 +2390,55 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before unlocking.
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-			}
-
-			$data = $this->request->getParams();
-			$force = $this->parseBool(value: $data['force'] ?? false);
-
-			$result = $this->fileService->getLockHandler()->unlockFile($fileId, $force);
-
-			// Audit trail entry: distinguish force-unlock from regular unlock.
-			$unlockAction = 'file.unlocked';
-			if ($force === true) {
-				$unlockAction = 'file.force_unlocked';
-			}
-
-			$this->fileService->getAuditHandler()->logFileAction(
-				object: $object,
-				fileId: $fileId,
-				action: $unlockAction,
-				data: ['force' => $force]
-			);
-
-			$this->eventDispatcher->dispatchTyped(
-				new FileUnlockedEvent(
-					objectUuid: $object->getUuid(),
-					fileId: $fileId,
-					data: ['force' => $force]
-				)
-			);
-
-			return new JSONResponse(data: $result);
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			return $this->unlockTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
 		} catch (Exception $e) {
-			$statusCode = match (true) {
-				str_contains($e->getMessage(), 'Only the lock owner') => 403,
-				str_contains($e->getMessage(), 'administrators') => 403,
-				default => 400,
-			};
-
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $statusCode);
-		}//end try
+			return $this->actionFailed(e: $e, status: $this->unlockFailureStatus(e: $e));
+		}
 	}//end unlock()
+
+	/**
+	 * Unlock the file, with its audit row and event; a forced unlock has an audit action of its own.
+	 *
+	 * @param FileActionTarget $target The file.
+	 *
+	 * @return JSONResponse The lock state.
+	 */
+	private function unlockTarget(FileActionTarget $target): JSONResponse {
+		$force = $this->parseBool(value: $this->request->getParams()['force'] ?? false);
+		$result = $this->fileService->getLockHandler()->unlockFile($target->fileId, $force);
+
+		$action = 'file.unlocked';
+		if ($force === true) {
+			$action = 'file.force_unlocked';
+		}
+
+		$this->fileService->getAuditHandler()->logFileAction(
+			object: $target->object,
+			fileId: $target->fileId,
+			action: $action,
+			data: ['force' => $force]
+		);
+		$this->eventDispatcher->dispatchTyped(
+			new FileUnlockedEvent(objectUuid: $target->object->getUuid(), fileId: $target->fileId, data: ['force' => $force])
+		);
+
+		return new JSONResponse(data: $result);
+	}//end unlockTarget()
+
+	/**
+	 * The status of a failed unlock, read off the lock handler's message.
+	 *
+	 * @param Exception $e The failure.
+	 *
+	 * @return int The HTTP status.
+	 */
+	private function unlockFailureStatus(Exception $e): int {
+		return match (true) {
+			str_contains($e->getMessage(), 'Only the lock owner') => 403,
+			str_contains($e->getMessage(), 'administrators') => 403,
+			default => 400,
+		};
+	}//end unlockFailureStatus()
 
 	/**
 	 * Execute batch file operations
@@ -2461,51 +2461,43 @@ class FilesController extends Controller {
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
-			$data = $this->request->getParams();
-			$action = $data['action'] ?? '';
-
 			// ADR-005 / gate-7: enforce object-level RBAC before batch mutation.
 			$check = new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
-			if ($action === 'delete') {
+			if (($this->request->getParams()['action'] ?? '') === 'delete') {
 				$check->forRemoving();
 			}
 
 			$this->ensureObjectAccess(check: $check);
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-			}
-
-			$fileIds = $data['fileIds'] ?? [];
-			$params = $data;
-			foreach ((array)$fileIds as $batchFileId) {
-				$this->refuseRestrictedFile(fileId: (int)$batchFileId);
-			}
-
-			$result = $this->fileService->getBatchHandler()->executeBatch(
-				object: $object,
-				action: $action,
-				fileIds: $fileIds,
-				params: $params
-			);
-
-			// Return 207 if there were partial failures.
-			$statusCode = 200;
-			if ($result['summary']['failed'] > 0) {
-				$statusCode = 207;
-			}
-
-			return new JSONResponse(data: $result, statusCode: $statusCode);
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			return $this->runPostedBatch(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+			return $this->actionFailed(e: $e);
+		}
 	}//end batch()
+
+	/**
+	 * Run the batch the request posts; a restricted file in it refuses the whole batch.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The results, with 207 when some failed.
+	 */
+	private function runPostedBatch(ObjectEntity $object): JSONResponse {
+		$data = $this->request->getParams();
+		$fileIds = $data['fileIds'] ?? [];
+		foreach ((array)$fileIds as $batchFileId) {
+			$this->refuseRestrictedFile(fileId: (int)$batchFileId);
+		}
+
+		$handler = $this->fileService->getBatchHandler();
+		$result = $handler->executeBatch(object: $object, action: $data['action'] ?? '', fileIds: $fileIds, params: $data);
+
+		$statusCode = 200;
+		if ($result['summary']['failed'] > 0) {
+			$statusCode = 207;
+		}
+
+		return new JSONResponse(data: $result, statusCode: $statusCode);
+	}//end runPostedBatch()
 
 	/**
 	 * Get file preview/thumbnail
@@ -2618,55 +2610,59 @@ class FilesController extends Controller {
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
-			// ADR-005 / gate-7: the same object-level RBAC updateLabels applies.
-			// Metadata is no less a mutation for being descriptive.
+			// ADR-005 / gate-7: the same object-level RBAC updateLabels applies; metadata is no less a mutation for being descriptive.
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-
-			$this->objectService->setObject($id);
-			if ($this->objectService->getObject() === null) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'Object not found')],
-					statusCode: 404
-				);
-			}
-
-			$data = $this->request->getParams();
-
-			// Presence, not truthiness: the handler treats null as "leave alone"
-			// and '' as "clear", so `??` would make an empty description
-			// impossible to send — array_key_exists keeps the two distinct.
-			$description = null;
-			if (array_key_exists('description', $data) === true) {
-				$description = (string)$data['description'];
-			}
-
-			$category = null;
-			if (array_key_exists('category', $data) === true) {
-				$category = (string)$data['category'];
-			}
-
-			$labels = null;
-			if (array_key_exists('labels', $data) === true) {
-				$labels = (array)$data['labels'];
-			}
-
-			$entity = $this->fileService->updateFileMetadata(
-				fileId: $fileId,
-				description: $description,
-				category: $category,
-				labels: $labels
-			);
-
-			return new JSONResponse(data: $entity->jsonSerialize());
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			$this->routedObject(id: $id);
+			return $this->updatePostedMetadata(fileId: $fileId);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+			return $this->actionFailed(e: $e);
+		}
 	}//end updateMetadata()
+
+	/**
+	 * Update the metadata fields the request posts.
+	 *
+	 * Presence, not truthiness: the handler treats null as "leave alone" and ''
+	 * as "clear", so `??` would make an empty description impossible to send.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return JSONResponse The updated metadata.
+	 */
+	private function updatePostedMetadata(int $fileId): JSONResponse {
+		$data = $this->request->getParams();
+
+		$labels = null;
+		if (array_key_exists('labels', $data) === true) {
+			$labels = (array)$data['labels'];
+		}
+
+		$entity = $this->fileService->updateFileMetadata(
+			fileId: $fileId,
+			description: $this->postedText(data: $data, key: 'description'),
+			category: $this->postedText(data: $data, key: 'category'),
+			labels: $labels
+		);
+
+		return new JSONResponse(data: $entity->jsonSerialize());
+	}//end updatePostedMetadata()
+
+	/**
+	 * A text field of a request, or null when the request leaves it out.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 * @param string               $key  The field.
+	 *
+	 * @return string|null The text.
+	 */
+	private function postedText(array $data, string $key): ?string {
+		if (array_key_exists($key, $data) === true) {
+			return (string)$data[$key];
+		}
+
+		return null;
+	}//end postedText()
 
 	/**
 	 * Save every file's name and description on one object in one act.
@@ -2702,38 +2698,34 @@ class FilesController extends Controller {
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
-			// ADR-005 / gate-7: the same object-level RBAC the per-file
-			// endpoints apply. Editing six files at once is six mutations.
-			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'Object not found')],
-					statusCode: 404
-				);
-			}
-
-			$entries = $this->request->getParam('files');
-			if (is_array($entries) === false) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: "Send the rows under 'files'.")],
-					statusCode: 400
-				);
-			}
-
-			$handler = new FileMetadataFormHandler(fileService: $this->fileService);
-
-			return new JSONResponse(data: $handler->save(object: $object, entries: $entries));
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			// ADR-005 / gate-7: the same object-level RBAC the per-file endpoints apply. Editing six files at once is six mutations.
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: $route));
+			return $this->savePostedForm(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+			return $this->actionFailed(e: $e);
+		}
 	}//end saveMetadataForm()
+
+	/**
+	 * Save the rows the request posts under `files`.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse What changed, what did not, and what was refused.
+	 *
+	 * @throws FileActionRefusal With 400 when the rows are not a list.
+	 */
+	private function savePostedForm(ObjectEntity $object): JSONResponse {
+		$entries = $this->request->getParam('files');
+		if (is_array($entries) === false) {
+			throw new FileActionRefusal(message: "Send the rows under 'files'.", code: 400);
+		}
+
+		$handler = new FileMetadataFormHandler(fileService: $this->fileService);
+
+		return new JSONResponse(data: $handler->save(object: $object, entries: $entries));
+	}//end savePostedForm()
 
 	/**
 	 * Update file labels
@@ -2760,37 +2752,29 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating labels.
 			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-			}
-
-			$data = $this->request->getParams();
-			$labels = $data['labels'] ?? [];
-
-			// Ensure labels is an array.
-			if (is_array($labels) === false) {
-				$labels = [];
-			}
-
-			$result = $this->fileService->updateFile(
-				filePath: $fileId,
-				content: null,
-				tags: $labels,
-				object: $object
-			);
-
-			return new JSONResponse(data: $this->fileService->formatFile($result));
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			return $this->labelTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+			return $this->actionFailed(e: $e);
+		}
 	}//end updateLabels()
+
+	/**
+	 * Give the file the labels the request posts; anything but a list clears them.
+	 *
+	 * @param FileActionTarget $target The file.
+	 *
+	 * @return JSONResponse The labelled file.
+	 */
+	private function labelTarget(FileActionTarget $target): JSONResponse {
+		$labels = ($this->request->getParams()['labels'] ?? []);
+		if (is_array($labels) === false) {
+			$labels = [];
+		}
+
+		$file = $this->fileService->updateFile(filePath: $target->fileId, content: null, tags: $labels, object: $target->object);
+
+		return new JSONResponse(data: $this->fileService->formatFile($file));
+	}//end labelTarget()
 
 	/**
 	 * Open an object's document in Nextcloud Office.
