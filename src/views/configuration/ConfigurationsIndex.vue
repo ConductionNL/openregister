@@ -310,6 +310,7 @@ import {
 	refreshAction,
 	viewAction,
 } from '../../services/menuActions.js'
+import { localPagination } from '../localPagination.js'
 
 export default {
 	name: 'ConfigurationsIndex',
@@ -333,14 +334,12 @@ export default {
 		PaginationComponent,
 	},
 
+	mixins: [localPagination],
+
 	data() {
 		return {
 			viewMode: 'cards',
 			selectedConfigurations: [],
-			pagination: {
-				page: 1,
-				limit: 20,
-			},
 		}
 	},
 
@@ -528,29 +527,6 @@ export default {
 					(id) => id !== configurationId,
 				)
 			}
-		},
-
-		/**
-		 * Handle a page change from the paginator.
-		 *
-		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
-		 * @param {number} page - new page number
-		 * @return {void}
-		 */
-		onPageChanged(page) {
-			this.pagination.page = page
-		},
-
-		/**
-		 * Handle a page-size change from the paginator.
-		 *
-		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
-		 * @param {number} pageSize - new page size
-		 * @return {void}
-		 */
-		onPageSizeChanged(pageSize) {
-			this.pagination.page = 1
-			this.pagination.limit = pageSize
 		},
 
 		/**
