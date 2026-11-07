@@ -29,7 +29,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Controller\Support\ConfigurationControllerServices;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
@@ -63,9 +63,9 @@ class ConfigurationController extends Controller {
 	/**
 	 * Configuration mapper instance.
 	 *
-	 * @var ConfigurationMapper The configuration mapper instance.
+	 * @var ConfigurationMapperInterface The configuration mapper instance.
 	 */
-	private ConfigurationMapper $configurationMapper;
+	private ConfigurationMapperInterface $configurationMapper;
 
 	/**
 	 * Configuration service instance.

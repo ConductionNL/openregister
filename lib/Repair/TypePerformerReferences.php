@@ -45,7 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCP\Migration\IOutput;
@@ -119,7 +119,7 @@ class TypePerformerReferences implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$flows = $this->container->get(FlowMapper::class);
+			$flows = $this->container->get(FlowMapperInterface::class);
 			$principals = $this->container->get(PrincipalResolverRegistry::class);
 		} catch (Throwable $e) {
 			// The tables may not exist yet on a fresh install. Nothing to
@@ -195,13 +195,13 @@ class TypePerformerReferences implements IRepairStep {
 	 * 🔴 `findAllFlows()` DEFAULTS TO 100. A single call would silently type
 	 * the first hundred flows and leave the rest, reporting success.
 	 *
-	 * @param FlowMapper $flows The mapper.
+	 * @param FlowMapperInterface $flows The mapper.
 	 *
 	 * @return array<int, Flow> Every flow.
 	 *
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md#requirement-stored-assignee-strings-are-migrated-once-and-what-cannot-be-migrated-is-reported
 	 */
-	private function everyFlow(FlowMapper $flows): array {
+	private function everyFlow(FlowMapperInterface $flows): array {
 		$page = 500;
 		$offset = 0;
 		$all = [];
@@ -223,7 +223,7 @@ class TypePerformerReferences implements IRepairStep {
 	 * Type one flow's performer strings, in place.
 	 *
 	 * @param Flow                      $flow         The flow.
-	 * @param FlowMapper                $flows        The mapper, to store the result.
+	 * @param FlowMapperInterface                $flows        The mapper, to store the result.
 	 * @param PrincipalResolverRegistry $principals   Resolves a candidate type.
 	 * @param array<int, string>        $ambiguous    Collects what named more than one kind.
 	 * @param array<int, string>        $unresolvable Collects what named nothing.
@@ -234,7 +234,7 @@ class TypePerformerReferences implements IRepairStep {
 	 */
 	private function typeOneFlow(
 		Flow $flow,
-		FlowMapper $flows,
+		FlowMapperInterface $flows,
 		PrincipalResolverRegistry $principals,
 		array &$ambiguous,
 		array &$unresolvable

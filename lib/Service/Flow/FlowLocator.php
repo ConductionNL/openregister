@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -64,14 +64,14 @@ class FlowLocator implements FlowLocatorInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $mapper Reads flow definitions.
+	 * @param FlowMapperInterface $mapper Reads flow definitions.
 	 * @param FlowTriggerMapperInterface $triggerMapper The node-derived trigger index.
 	 * @param ObjectOperationsInterface $objectService Loads the object a run is about.
 	 * @param LoggerInterface $logger Records refusals and failures.
 	 * @param FlowVersionMapper $versions Answers whether a fallback-matched flow has a published version.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
+		private readonly FlowMapperInterface $mapper,
 		private readonly FlowTriggerMapperInterface $triggerMapper,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,

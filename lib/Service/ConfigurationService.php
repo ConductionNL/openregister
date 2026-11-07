@@ -30,7 +30,7 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -78,9 +78,9 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	/**
 	 * Configuration mapper instance for handling configuration operations.
 	 *
-	 * @var ConfigurationMapper The configuration mapper instance.
+	 * @var ConfigurationMapperInterface The configuration mapper instance.
 	 */
-	private ConfigurationMapper $configurationMapper;
+	private ConfigurationMapperInterface $configurationMapper;
 
 	/**
 	 * App manager for checking installed apps
@@ -173,7 +173,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 *
 	 * Initializes service with required dependencies for configuration operations.
 	 *
-	 * @param ConfigurationMapper           $configurationMapper Configuration mapper for configuration operations
+	 * @param ConfigurationMapperInterface           $configurationMapper Configuration mapper for configuration operations
 	 * @param ConfigurationServicePlatform  $platform            App manager, container, app config and logger
 	 * @param ConfigurationGitHosts         $gitHosts            The GitHub and GitLab handlers
 	 * @param ConfigurationTransferHandlers $transfer            The cache, preview, export and upload handlers
@@ -181,7 +181,7 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		ConfigurationMapper $configurationMapper,
+		ConfigurationMapperInterface $configurationMapper,
 		ConfigurationServicePlatform $platform,
 		ConfigurationGitHosts $gitHosts,
 		// NOTE: ImportHandler is lazy-loaded via getImportHandler() to prevent circular dependency.

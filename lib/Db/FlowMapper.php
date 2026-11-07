@@ -38,7 +38,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
-class FlowMapper extends QBMapper {
+class FlowMapper extends QBMapper implements FlowMapperInterface {
 	/**
 	 * Constructor.
 	 *

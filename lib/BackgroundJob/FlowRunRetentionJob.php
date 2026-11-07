@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -76,7 +76,7 @@ class FlowRunRetentionJob extends TimedJob {
 	 * @param ITimeFactory $time The clock.
 	 * @param FlowRunMapperInterface $runs Deletes expired runs.
 	 * @param FlowRunStepMapper $steps Deletes those runs' step rows.
-	 * @param FlowMapper $flows Finds the flows declaring an override.
+	 * @param FlowMapperInterface $flows Finds the flows declaring an override.
 	 * @param IAppConfig $config Reads the retention period.
 	 * @param LoggerInterface $logger Records what was swept.
 	 */
@@ -84,7 +84,7 @@ class FlowRunRetentionJob extends TimedJob {
 		ITimeFactory $time,
 		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunStepMapper $steps,
-		private readonly FlowMapper $flows,
+		private readonly FlowMapperInterface $flows,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
 	) {

@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
@@ -50,13 +50,13 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper $mapper The flow table.
+	 * @param FlowMapperInterface $mapper The flow table.
 	 * @param FlowVersionServiceInterface $versions Publishes a flow's head.
 	 * @param FlowServiceInterface $flows Deletes a flow with its runs and versions.
 	 * @param FlowTriggerValidatorInterface $validator Validates the trigger under the publisher's session.
 	 */
 	public function __construct(
-		private readonly FlowMapper $mapper,
+		private readonly FlowMapperInterface $mapper,
 		private readonly FlowVersionServiceInterface $versions,
 		private readonly FlowServiceInterface $flows,
 		private readonly FlowTriggerValidatorInterface $validator,

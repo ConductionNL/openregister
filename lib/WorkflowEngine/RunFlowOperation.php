@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\WorkflowEngine;
 
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -60,14 +60,14 @@ class RunFlowOperation implements ISpecificOperation {
 	 *
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urlGenerator Icon path resolver.
-	 * @param FlowMapper $flows Resolves a flow by the name the rule configured.
+	 * @param FlowMapperInterface $flows Resolves a flow by the name the rule configured.
 	 * @param FlowRunServiceInterface $runner Queues the run.
 	 * @param LoggerInterface $logger Logs skipped/failed invocations.
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly FlowMapper $flows,
+		private readonly FlowMapperInterface $flows,
 		private readonly FlowRunServiceInterface $runner,
 		private readonly LoggerInterface $logger,
 	) {

@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCP\IDBConnection;
@@ -71,7 +71,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 	 * Constructor.
 	 *
 	 * @param FlowVersionMapper  $versions The version rows.
-	 * @param FlowMapper         $flows    The flows whose head mirrors the versions.
+	 * @param FlowMapperInterface         $flows    The flows whose head mirrors the versions.
 	 * @param FlowDefinitionPin  $pin      Canonicalises and stores a graph by hash.
 	 * @param FlowLifecycleGuard $guard    The preconditions on every transition.
 	 * @param FlowTriggerIndex   $triggers The derived trigger rows.
@@ -81,7 +81,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 	 */
 	public function __construct(
 		private readonly FlowVersionMapper $versions,
-		private readonly FlowMapper $flows,
+		private readonly FlowMapperInterface $flows,
 		private readonly FlowDefinitionPin $pin,
 		private readonly FlowLifecycleGuard $guard,
 		private readonly FlowTriggerIndex $triggers,

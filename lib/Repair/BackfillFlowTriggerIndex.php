@@ -54,7 +54,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -112,7 +112,7 @@ class BackfillFlowTriggerIndex implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$mapper = $this->container->get(FlowMapper::class);
+			$mapper = $this->container->get(FlowMapperInterface::class);
 			$index = $this->container->get(FlowTriggerIndex::class);
 			// 🔴 PAGED. `findAllFlows()` defaults to a limit of 100, so this
 			// derived only the first page's trigger rows and reported success —

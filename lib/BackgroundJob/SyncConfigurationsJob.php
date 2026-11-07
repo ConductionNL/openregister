@@ -27,7 +27,7 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
@@ -57,7 +57,7 @@ class SyncConfigurationsJob extends TimedJob {
 	 * Constructor
 	 *
 	 * @param ITimeFactory                  $time                 Time factory for job scheduling
-	 * @param ConfigurationMapper           $configurationMapper  Configuration mapper
+	 * @param ConfigurationMapperInterface           $configurationMapper  Configuration mapper
 	 * @param ConfigurationServiceInterface $configurationService Configuration service
 	 * @param GitHubClientInterface         $githubService        GitHub service
 	 * @param GitLabHandlerInterface        $gitlabService        GitLab service
@@ -68,7 +68,7 @@ class SyncConfigurationsJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ConfigurationMapper $configurationMapper,
+		private readonly ConfigurationMapperInterface $configurationMapper,
 		private readonly ConfigurationServiceInterface $configurationService,
 		private readonly GitHubClientInterface $githubService,
 		private readonly GitLabHandlerInterface $gitlabService,

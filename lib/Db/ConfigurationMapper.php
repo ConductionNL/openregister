@@ -58,7 +58,7 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ConfigurationMapper extends QBMapper {
+class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterface {
 
 	use ColumnFiltersTrait;
 	use MultiTenancyTrait;

@@ -39,7 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
@@ -153,7 +153,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
 	private function everyFlow(): array {
-		$mapper = $this->container->get(FlowMapper::class);
+		$mapper = $this->container->get(FlowMapperInterface::class);
 		$page = 500;
 		$offset = 0;
 		$all = [];
@@ -257,7 +257,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 
 		$flow->setSemver($live->getSemver());
 		$flow->setSemverSource(FlowSemanticVersion::SOURCE_BACKFILL);
-		$this->container->get(FlowMapper::class)->update($flow);
+		$this->container->get(FlowMapperInterface::class)->update($flow);
 
 	}//end mirrorOntoFlow()
 }//end class

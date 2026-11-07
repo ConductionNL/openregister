@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Repair;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
@@ -187,7 +187,7 @@ class BackfillFlowVersions implements IRepairStep {
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function everyFlow(): array {
-		$mapper = $this->container->get(FlowMapper::class);
+		$mapper = $this->container->get(FlowMapperInterface::class);
 		$page = 500;
 		$offset = 0;
 		$all = [];
@@ -255,7 +255,7 @@ class BackfillFlowVersions implements IRepairStep {
 
 		$flow->setVersion(1);
 		$flow->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
-		$this->container->get(FlowMapper::class)->update($flow);
+		$this->container->get(FlowMapperInterface::class)->update($flow);
 
 		$pinned = $this->container->get(FlowRunMapperInterface::class)
 			->pinUnversionedActive(flowUuid: $flowId, version: 1);

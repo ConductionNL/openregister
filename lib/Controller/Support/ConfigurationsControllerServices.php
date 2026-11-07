@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCP\IUserSession;
@@ -36,7 +36,7 @@ final class ConfigurationsControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ConfigurationMapper  $configurationMapper  The configuration mapper instance
+	 * @param ConfigurationMapperInterface  $configurationMapper  The configuration mapper instance
 	 * @param ConfigurationServiceInterface $configurationService The configuration service instance
 	 * @param UploadServiceInterface        $uploadService        The upload service instance
 	 * @param IUserSession         $userSession          User session for admin checks
@@ -44,7 +44,7 @@ final class ConfigurationsControllerServices {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(
-		public readonly ConfigurationMapper $configurationMapper,
+		public readonly ConfigurationMapperInterface $configurationMapper,
 		public readonly ConfigurationServiceInterface $configurationService,
 		public readonly UploadServiceInterface $uploadService,
 		public readonly IUserSession $userSession,
