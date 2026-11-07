@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
@@ -115,6 +116,23 @@ use Symfony\Component\Uid\Uuid;
  * @spec openspec/specs/openapi-generation/spec.md
  */
 class SchemasController extends Controller {
+
+	/**
+	 * The exceptions that answer 422 with the errors of the declaration.
+	 *
+	 * @var array<int, class-string>
+	 */
+	private const DECLARATION_REFUSALS = [
+		UniqueHintException::class,
+		PropertyVocabularyException::class,
+		ReversibilityDeclarationException::class,
+		ReviewDeclarationException::class,
+		RelationDeclarationException::class,
+		CalculationDeclarationException::class,
+		ConsentDeclarationException::class,
+		DependentValueDeclarationException::class,
+		NotificationDeclarationException::class,
+	];
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 
 	/**
@@ -1101,19 +1119,13 @@ class SchemasController extends Controller {
 	 * @return JSONResponse|null The refusal with its errors, or null for any other exception
 	 */
 	private function declarationRefusal(Exception $e): ?JSONResponse {
-		if ($e instanceof UniqueHintException
-			|| $e instanceof PropertyVocabularyException
-			|| $e instanceof ReversibilityDeclarationException
-			|| $e instanceof ReviewDeclarationException
-			|| $e instanceof RelationDeclarationException
-			|| $e instanceof CalculationDeclarationException
-			|| $e instanceof ConsentDeclarationException
-			|| $e instanceof DependentValueDeclarationException
-		) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
+		foreach (self::DECLARATION_REFUSALS as $refusal) {
+			if ($e instanceof $refusal) {
+				return new JSONResponse(
+					data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+					statusCode: 422
+				);
+			}
 		}
 
 		return null;

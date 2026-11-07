@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
+use Closure;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -41,6 +42,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Service\Task\TaskState;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
@@ -81,13 +83,6 @@ use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
 class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInterface {
 
 	/**
-	 * The schemes a `url` action target may link to.
-	 *
-	 * @var array<int, string>
-	 */
-	private const LINKABLE_SCHEMES = ['http', 'https', 'mailto'];
-
-	/**
 	 * The nc-notification channel unit — injected, or lazily built.
 	 * Nullable-and-lazy keeps every existing constructor call site working:
 	 * the shared units are appended OPTIONAL constructor parameters, and a
@@ -125,6 +120,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @var NotificationTemplating|null
 	 */
 	private ?NotificationTemplating $lazyTemplating = null;
+
+	/**
+	 * The resolver of declared actions — lazily built.
+	 *
+	 * @var ActionLinkResolver|null
+	 */
+	private ?ActionLinkResolver $lazyActionLinks = null;
 
 	/**
 	 * The register's languages for the object being dispatched, default first.
@@ -296,6 +298,43 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return $this->lazyRecipientResolver;
 	}//end recipientResolver()
+
+	/**
+	 * The resolver of declared actions, built on first use.
+	 *
+	 * @return ActionLinkResolver
+	 */
+	private function actionLinks(): ActionLinkResolver {
+		$routes = new AppRouteBase(urlGenerator: $this->urlGenerator);
+		$this->lazyActionLinks ??= new ActionLinkResolver(
+			routes: $routes,
+			tasks: new TaskActionLinks(
+				isRejecting: static fn (string $outcome): bool => TaskState::isRejectingOutcome(outcome: $outcome),
+				urlGenerator: $this->urlGenerator
+			),
+			objects: new ObjectDetailLinks(
+				logger: $this->logger,
+				routes: $routes,
+				readObject: $this->objectReader(),
+				deepLinkRegistry: $this->deepLinkRegistry
+			)
+		);
+
+		return $this->lazyActionLinks;
+	}//end actionLinks()
+
+	/**
+	 * Reads an object for a relation link, with RBAC on; null without an object service.
+	 *
+	 * @return Closure|null
+	 */
+	private function objectReader(): ?Closure {
+		if ($this->objectService === null) {
+			return null;
+		}
+
+		return fn (string $lookup): ?ObjectEntity => WriteCause::asLookup(fn () => $this->objectService->find(id: $lookup, _rbac: true));
+	}//end objectReader()
 
 	/**
 	 * The dialect's placeholder evaluator — injected, or built from this
@@ -621,11 +660,9 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		$firing->originApp = $this->resolveOriginApp(spec: $firing->spec, object: $firing->object);
-		$firing->actions   = $this->resolveActions(
+		$firing->actions   = $this->actionLinks()->resolve(
 			spec: $firing->spec,
-			object: $firing->object,
-			data: $firing->data,
-			originApp: $firing->originApp
+			context: new ActionTargetContext(object: $firing->object, data: $firing->data, originApp: $firing->originApp)
 		);
 
 		$firing->broadcastMessage = $this->messages()->body(target: new MessageTarget(firing: $firing, locale: null));
@@ -1996,405 +2033,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return 'openregister';
 	}//end resolveOriginApp()
-
-	/**
-	 * Resolve declared `actions[]` to concrete, server-side deeplinks.
-	 *
-	 * Each returned action carries the i18n `label` map, the `primary` flag,
-	 * and a resolved absolute `url`. Targets that cannot be resolved (e.g. an
-	 * unreadable relation object) are dropped, never leaked.
-	 *
-	 * @param array<string, mixed> $spec The notification rule spec.
-	 * @param ObjectEntity $object The triggering object.
-	 * @param array<string, mixed> $data The triggering object's data.
-	 * @param string $originApp The resolved origin app id.
-	 *
-	 * @return array<int, array{label: array<string,string>, primary: bool, url: string, method: string}>
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
-	 */
-	private function resolveActions(array $spec, ObjectEntity $object, array $data, string $originApp): array {
-		$declared = ($spec['actions'] ?? null);
-		if (is_array($declared) === false || count($declared) === 0) {
-			return [];
-		}
-
-		$resolved = [];
-		foreach ($declared as $action) {
-			if (is_array($action) === false) {
-				continue;
-			}
-
-			$label = ($action['label'] ?? []);
-			if (is_array($label) === false) {
-				$label = [];
-			}
-
-			$url = $this->resolveActionTarget(
-				target: ($action['target'] ?? []),
-				object: $object,
-				data: $data,
-				originApp: $originApp
-			);
-			if ($url === null || $url === '') {
-				// Target unresolved (e.g. relation not readable) — drop the
-				// action rather than emit a dead or leaking button.
-				continue;
-			}
-
-			$resolved[] = [
-				'label' => $label,
-				'primary' => (bool)($action['primary'] ?? false),
-				'url' => $url,
-				// A `task-verb` target is a state-changing REQUEST and renders
-				// POST; every navigation kind keeps rendering GET.
-				'method' => $this->resolveActionMethod(target: ($action['target'] ?? [])),
-			];
-		}//end foreach
-
-		return $resolved;
-	}//end resolveActions()
-
-	/**
-	 * The HTTP method a resolved action is delivered with.
-	 *
-	 * Only a `task-verb` target is a state change. Even then, a verb whose
-	 * outcome requires a mandatory comment (a rejecting outcome) resolves to
-	 * the task form instead, which is a navigation and therefore GET.
-	 *
-	 * @param mixed $target The raw target spec.
-	 *
-	 * @return string `POST` or `GET`.
-	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
-	 */
-	private function resolveActionMethod(mixed $target): string {
-		if (is_array($target) === false || (string)($target['kind'] ?? '') !== 'task-verb') {
-			return 'GET';
-		}
-
-		if ($this->taskVerbNeedsForm(target: $target) === true) {
-			return 'GET';
-		}
-
-		return 'POST';
-	}//end resolveActionMethod()
-
-	/**
-	 * Whether a `task-verb` action must open the form rather than act directly.
-	 *
-	 * `flow-tasks` refuses a rejecting or returning outcome without a
-	 * comment, so a button for such an outcome cannot complete the task by
-	 * itself; it opens the surface that collects the comment.
-	 *
-	 * @param array<string, mixed> $target The task-verb target.
-	 *
-	 * @return bool True when the form must be opened.
-	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
-	 */
-	private function taskVerbNeedsForm(array $target): bool {
-		$outcome = ($target['outcome'] ?? null);
-		if (is_string($outcome) === false) {
-			return false;
-		}
-
-		return \OCA\OpenRegister\Service\Task\TaskState::isRejectingOutcome(outcome: $outcome);
-	}//end taskVerbNeedsForm()
-
-	/**
-	 * Resolve a `task-verb` target to the verb route, or to the task form
-	 * when the outcome needs a comment.
-	 *
-	 * The uuid comes from the adapter payload (`taskUuid`) or the entity
-	 * uuid; the verb is validated against the closed list by the validator,
-	 * and the route it lands on is authorized by TaskAuthorizationService
-	 * identically to any other caller. The notification is a transport,
-	 * never a bypass.
-	 *
-	 * @param array<string, mixed> $target The task-verb target.
-	 * @param ObjectEntity $object The triggering object.
-	 * @param array<string, mixed> $data The triggering object's data.
-	 *
-	 * @return string|null The absolute URL, or null when unresolvable (no url generator, no uuid).
-	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
-	 */
-	private function resolveTaskVerbTarget(array $target, ObjectEntity $object, array $data): ?string {
-		if ($this->urlGenerator === null) {
-			return null;
-		}
-
-		$uuid = (string)($data['taskUuid'] ?? ($object->getUuid() ?? ''));
-		$verb = (string)($target['verb'] ?? '');
-		if ($uuid === '' || $verb === '' || preg_match('/^[a-z]+$/', $verb) !== 1) {
-			return null;
-		}
-
-		try {
-			if ($this->taskVerbNeedsForm(target: $target) === true) {
-				return $this->urlGenerator->linkToRouteAbsolute('openregister.task.open', ['uuid' => $uuid]);
-			}
-
-			$url = $this->urlGenerator->linkToRouteAbsolute('openregister.task.' . $verb, ['uuid' => $uuid]);
-		} catch (\Throwable $e) {
-			return null;
-		}
-
-		$outcome = ($target['outcome'] ?? null);
-		if (is_string($outcome) === true && $outcome !== '') {
-			$url .= '?outcome=' . rawurlencode($outcome);
-		}
-
-		return $url;
-	}//end resolveTaskVerbTarget()
-
-	/**
-	 * Resolve a single action `target` to an absolute deeplink.
-	 *
-	 * Supported kinds:
-	 *  - object-detail: deeplink to the triggering object's detail page.
-	 *  - object-detail + { object: { kind: "relation", field } }: resolve the
-	 *    relation field on the triggering object to a related object's
-	 *    register/schema/uuid THROUGH OR RBAC ("Open client") — the related
-	 *    id is never trusted from the wire.
-	 *  - route: an originApp frontend route with {{prop}} interpolation (HTML-escaped).
-	 *  - url: an absolute URL, passed through verbatim.
-	 *  - task-verb: the task lifecycle verb route (POST), or the task form
-	 *    when the outcome requires a comment.
-	 *
-	 * @param mixed $target The raw target spec.
-	 * @param ObjectEntity $object The triggering object.
-	 * @param array<string, mixed> $data The triggering object's data.
-	 * @param string $originApp The resolved origin app id.
-	 *
-	 * @return string|null The resolved absolute URL, or null when unresolvable.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per target kind.
-	 * @SuppressWarnings(PHPMD.NPathComplexity) The fourth kind (task-verb)
-	 * adds one branch; each kind's resolution is a distinct contract.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function resolveActionTarget(mixed $target, ObjectEntity $object, array $data, string $originApp): ?string {
-		if (is_array($target) === false) {
-			return null;
-		}
-
-		$kind = (string)($target['kind'] ?? '');
-
-		if ($kind === 'task-verb') {
-			return $this->resolveTaskVerbTarget(target: $target, object: $object, data: $data);
-		}
-
-		if ($kind === 'url') {
-			return self::linkableUrl(href: (string)($target['href'] ?? ''));
-		}
-
-		if ($kind === 'route') {
-			$app = (string)($target['app'] ?? $originApp);
-			$route = (string)($target['route'] ?? '');
-			if ($route === '') {
-				return null;
-			}
-
-			// Interpolate {{prop}} tokens from the object data, HTML-escaped.
-			$interpolated = preg_replace_callback(
-				'/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/',
-				static function (array $m) use ($data): string {
-					$value = ($data[$m[1]] ?? '');
-					if (is_scalar($value) === false) {
-						return '';
-					}
-
-					return rawurlencode(htmlspecialchars((string)$value, (ENT_QUOTES | ENT_HTML5)));
-				},
-				$route
-			);
-
-			return $this->appRouteBase(app: $app) . ltrim((string)$interpolated, '/');
-		}//end if
-
-		if ($kind === 'object-detail') {
-			$relationSpec = ($target['object'] ?? null);
-			if (is_array($relationSpec) === true && (string)($relationSpec['kind'] ?? '') === 'relation') {
-				return $this->resolveRelationDeeplink(
-					field: (string)($relationSpec['field'] ?? ''),
-					data: $data
-				);
-			}
-
-			// Deeplink to the triggering object itself.
-			return $this->buildObjectDetailLink(
-				registerId: (string)($object->getRegister() ?? ''),
-				schemaId: (string)($object->getSchema() ?? ''),
-				objectUuid: (string)($object->getUuid() ?? '')
-			);
-		}//end if
-
-		return null;
-	}//end resolveActionTarget()
-
-	/**
-	 * An action's absolute URL, null unless it is a web or mail link.
-	 *
-	 * @param string $href The declared URL.
-	 *
-	 * @return string|null
-	 */
-	private static function linkableUrl(string $href): ?string {
-		$scheme = strtolower((string)parse_url($href, PHP_URL_SCHEME));
-		if (filter_var($href, FILTER_VALIDATE_URL) === false || in_array($scheme, self::LINKABLE_SCHEMES, true) === false) {
-			return null;
-		}
-
-		return $href;
-	}//end linkableUrl()
-
-	/**
-	 * Resolve a relation-field deeplink ("Open client") through OR RBAC.
-	 *
-	 * The field value on the triggering object is treated only as a lookup
-	 * key; the related object is re-resolved via ObjectService::find() with
-	 * RBAC enabled so a deeplink is built only for an object the current
-	 * context may read. The wire-supplied id is never trusted directly.
-	 *
-	 * @param string $field The relation field name.
-	 * @param array<string, mixed> $data The triggering object's data.
-	 *
-	 * @return string|null The deeplink, or null when the relation is empty/unreadable.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function resolveRelationDeeplink(string $field, array $data): ?string {
-		if ($field === '' || $this->objectService === null) {
-			return null;
-		}
-
-		$raw = ($data[$field] ?? null);
-		$lookup = null;
-		if (is_string($raw) === true && $raw !== '') {
-			$lookup = $raw;
-		} elseif (is_array($raw) === true) {
-			// Array relation: take the first id/uuid candidate.
-			$candidate = ($raw['id'] ?? ($raw['uuid'] ?? ($raw[0] ?? null)));
-			if (is_string($candidate) === true && $candidate !== '') {
-				$lookup = $candidate;
-			}
-		}
-
-		if ($lookup === null) {
-			return null;
-		}
-
-		try {
-			$related = WriteCause::asLookup(fn () => $this->objectService->find(id: $lookup, _rbac: true));
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf('[AnnotationNotificationDispatcher] relation deeplink resolve failed: %s', $e->getMessage())
-			);
-			return null;
-		}
-
-		if ($related === null) {
-			return null;
-		}
-
-		return $this->buildObjectDetailLink(
-			registerId: (string)($related->getRegister() ?? ''),
-			schemaId: (string)($related->getSchema() ?? ''),
-			objectUuid: (string)($related->getUuid() ?? '')
-		);
-	}//end resolveRelationDeeplink()
-
-	/**
-	 * Build an object-detail deeplink: the owning app's registered route, else
-	 * OpenRegister's object view.
-	 *
-	 * @param string $registerId The object's register id.
-	 * @param string $schemaId The object's schema id.
-	 * @param string $objectUuid The object's uuid.
-	 *
-	 * @return string|null The absolute deeplink, or null when ids are missing.
-	 *
-	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
-	 */
-	private function buildObjectDetailLink(string $registerId, string $schemaId, string $objectUuid): ?string {
-		if ($registerId === '' || $schemaId === '' || $objectUuid === '') {
-			return null;
-		}
-
-		// Prefer the canonical per-app deeplink registered via
-		// DeepLinkRegistrationEvent (e.g. pipelinq::client →
-		// /apps/pipelinq/clients/{uuid}). This is the app-correct route the
-		// rest of the platform uses; the openregister hash-route below is only
-		// a fallback for schemas no leaf app has registered a deeplink for.
-		if ($this->deepLinkRegistry !== null && is_numeric($registerId) === true && is_numeric($schemaId) === true) {
-			$registered = $this->deepLinkRegistry->resolveUrl(
-				registerId: (int)$registerId,
-				schemaId: (int)$schemaId,
-				objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
-			);
-			if ($registered !== null && $registered !== '') {
-				// Return a RELATIVE path so the Service Worker / browser resolves
-				// it against the real page origin (preserving a non-standard port
-				// such as :8080). Wrapping with getAbsoluteURL() injects
-				// overwrite.cli.url, which can drop the port (e.g. http://localhost
-				// instead of http://localhost:8080) and 404 the deeplink.
-				if (str_starts_with($registered, 'http') === true) {
-					$parts = parse_url($registered);
-					$path = ($parts['path'] ?? '/');
-					if (isset($parts['query']) === true) {
-						$path .= '?' . $parts['query'];
-					}
-
-					if (isset($parts['fragment']) === true) {
-						$path .= '#' . $parts['fragment'];
-					}
-
-					return $path;
-				}
-
-				return $registered;
-			}//end if
-		}//end if
-
-		// No app claimed the schema: open the object in OpenRegister's object
-		// view (history mode). The origin app's #/registers/... hash was never
-		// a route there, so pipelinq redirected it to its dashboard.
-		return $this->appRouteBase(app: 'openregister')
-			. sprintf('objects/%s/%s/%s', rawurlencode($registerId), rawurlencode($schemaId), rawurlencode($objectUuid));
-	}//end buildObjectDetailLink()
-
-	/**
-	 * Resolve the absolute frontend route base for an app id.
-	 *
-	 * Falls back to the openregister dashboard route when the app is not
-	 * installed or the URL generator is unavailable.
-	 *
-	 * @param string $app The app id.
-	 *
-	 * @return string The absolute route base (always ends without a trailing fragment).
-	 */
-	private function appRouteBase(string $app): string {
-		if ($this->urlGenerator === null) {
-			return '/index.php/apps/' . $app . '/';
-		}
-
-		$routeName = $app . '.dashboard.page';
-		if ($app === 'openregister') {
-			$routeName = 'openregister.dashboard.page';
-		}
-
-		try {
-			return $this->urlGenerator->linkToRouteAbsolute($routeName);
-		} catch (\Throwable $e) {
-			// App has no dashboard.page route — fall back to the app base path.
-			return $this->urlGenerator->getAbsoluteURL('/index.php/apps/' . $app . '/');
-		}//end try
-
-	}//end appRouteBase()
 
 	/**
 	 * Enqueue a background web-push dispatch job per recipient.

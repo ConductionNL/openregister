@@ -1,0 +1,507 @@
+{
+    "none declared": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "not a list": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "empty list": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "entry not an array": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "no target": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "target not an array": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "unknown kind": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "label not a map": {
+        "links": [
+            {
+                "label": [],
+                "primary": true,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/1/2/uuid-o",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "two actions, one dropped": {
+        "links": [
+            {
+                "label": [],
+                "primary": true,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/1/2/uuid-o",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "detail fallback": {
+        "links": [
+            {
+                "label": {
+                    "nl": "Open"
+                },
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/1/2/uuid-o",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "detail encoded ids": {
+        "links": [
+            {
+                "label": {
+                    "nl": "Open"
+                },
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/a%20b/c%2Fd/e%20f",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "detail no register": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "detail no schema": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "detail no uuid": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "detail registered absolute": {
+        "links": [
+            {
+                "label": {
+                    "nl": "Open"
+                },
+                "primary": false,
+                "url": "/apps/pipelinq/2/uuid-o?a=1#top",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "detail registered no path": {
+        "links": [
+            {
+                "label": {
+                    "nl": "Open"
+                },
+                "primary": false,
+                "url": "/",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "detail registered relative": {
+        "links": [
+            {
+                "label": {
+                    "nl": "Open"
+                },
+                "primary": false,
+                "url": "/apps/relative/uuid-o",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "detail registered empty": {
+        "links": [
+            {
+                "label": {
+                    "nl": "Open"
+                },
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/22/2/uuid-o",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "detail registry skips slugs": {
+        "links": [
+            {
+                "label": {
+                    "nl": "Open"
+                },
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/20/slug/uuid-o",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "relation string": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/5/6/uuid-r",
+                "method": "GET"
+            }
+        ],
+        "lookups": [
+            [
+                "readable",
+                [
+                    [],
+                    false,
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ]
+        ],
+        "debug": []
+    },
+    "relation by id": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/5/6/uuid-r",
+                "method": "GET"
+            }
+        ],
+        "lookups": [
+            [
+                "readable",
+                [
+                    [],
+                    false,
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ]
+        ],
+        "debug": []
+    },
+    "relation by uuid": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/5/6/uuid-r",
+                "method": "GET"
+            }
+        ],
+        "lookups": [
+            [
+                "readable",
+                [
+                    [],
+                    false,
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ]
+        ],
+        "debug": []
+    },
+    "relation first of list": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/5/6/uuid-r",
+                "method": "GET"
+            }
+        ],
+        "lookups": [
+            [
+                "readable",
+                [
+                    [],
+                    false,
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ]
+        ],
+        "debug": []
+    },
+    "relation empty string": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "relation number": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "relation list of numbers": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "relation unset": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "relation no field": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "relation denied": {
+        "links": [],
+        "lookups": [
+            [
+                "denied",
+                [
+                    [],
+                    false,
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ]
+        ],
+        "debug": [
+            "[AnnotationNotificationDispatcher] relation deeplink resolve failed: denied denied"
+        ]
+    },
+    "relation gone": {
+        "links": [],
+        "lookups": [
+            [
+                "gone",
+                [
+                    [],
+                    false,
+                    null,
+                    null,
+                    true,
+                    true,
+                    true,
+                    true
+                ]
+            ]
+        ],
+        "debug": []
+    },
+    "relation other object kind": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.dashboard.page//objects/1/2/uuid-o",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "route origin app": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/origin.dashboard.page//clients/a%20b",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "route named app": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/pipelinq.dashboard.page//x/7//",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "route app without dashboard": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/index.php/apps/missing/x",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "route empty": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "url web": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://example.test/a?b=c",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "url no href": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "verb from object": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.task.complete/uuid-o/",
+                "method": "POST"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "verb from payload with outcome": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.task.complete/task-1/?outcome=approved%20x",
+                "method": "POST"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "verb empty outcome": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.task.complete/uuid-o/",
+                "method": "POST"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "verb rejecting outcome": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.task.open/uuid-o/",
+                "method": "GET"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "verb numeric outcome": {
+        "links": [
+            {
+                "label": [],
+                "primary": false,
+                "url": "https://cloud.example.org/route/openregister.task.complete/uuid-o/",
+                "method": "POST"
+            }
+        ],
+        "lookups": [],
+        "debug": []
+    },
+    "verb no uuid": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "verb bad name": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "verb no name": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "verb route missing": {
+        "links": [],
+        "lookups": [],
+        "debug": []
+    },
+    "no collaborators": [
+        {
+            "label": [],
+            "primary": false,
+            "url": "/index.php/apps/openregister/objects/1/2/uuid-o",
+            "method": "GET"
+        },
+        {
+            "label": [],
+            "primary": false,
+            "url": "/index.php/apps/pipelinq/x",
+            "method": "GET"
+        }
+    ]
+}
