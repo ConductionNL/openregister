@@ -193,6 +193,11 @@ class MoveObject {
 			return $this->refusal(move: $move, error: 'This object does not live at the address it is being moved from.');
 		}
 
+		$kept = $this->keptReason(move: $move);
+		if ($kept !== null) {
+			return $this->refusal(move: $move, error: $kept);
+		}
+
 		$verdict = $this->fits(object: $object, target: $targetSchema);
 		if ($verdict['fits'] === false) {
 			return $move->answer(moved: false, errors: $verdict['errors']);
@@ -216,6 +221,23 @@ class MoveObject {
 
 		return $move->answer(moved: true, errors: $errors);
 	}//end move()
+
+	/**
+	 * Why the object has to stay where it is, or null when it may leave.
+	 *
+	 * The source row goes without delete events, so the delete guards never see it.
+	 *
+	 * @param ObjectMove $move The move.
+	 *
+	 * @return string|null The reason.
+	 */
+	private function keptReason(ObjectMove $move): ?string {
+		if ($move->object->isLockedBySomeoneElse(userId: $move->actor) === true) {
+			return 'This object is locked by someone else, so it was not moved.';
+		}
+
+		return (new FileWriteGuard())->refusalFor(object: $move->object)?->getMessage();
+	}//end keptReason()
 
 	/**
 	 * Whether the object lives at the source address, the only table its old row is removed from.

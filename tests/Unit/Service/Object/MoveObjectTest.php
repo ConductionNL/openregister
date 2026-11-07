@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -157,6 +158,66 @@ final class MoveObjectTest extends TestCase {
 		$object->setObject(['identifier' => '2026-0042', 'title' => 'Dakkapel Kerkstraat 12']);
 
 		return $object;
+	}
+
+	/**
+	 * States that keep an object where it is, for a caller who is not the lock holder.
+	 *
+	 * @return array<string, array{0: string, 1: array}>
+	 */
+	public static function keptStates(): array {
+		return [
+			'locked by someone else' => ['setLocked', ['user' => 'bert']],
+			'archived' => ['setArchived', ['date' => '2026-01-01']],
+			'frozen' => ['setFrozen', ['date' => '2026-01-01']],
+		];
+	}
+
+	/**
+	 * A kept object is refused before anything is written or removed.
+	 *
+	 * @param string $setter The state's setter.
+	 * @param array  $state  The state.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('keptStates')]
+	public function testAKeptObjectStaysWhereItIs(string $setter, array $state): void {
+		$object = $this->object();
+		$object->$setter($state);
+
+		$outcome = $this->service()->move(
+			object: $object,
+			sourceRegister: $this->register(1),
+			sourceSchema: $this->schema(10),
+			targetRegister: $this->register(2),
+			targetSchema: $this->schema(20),
+			actor: 'anna',
+		);
+
+		self::assertFalse($outcome['moved']);
+		self::assertSame([], $this->calls);
+	}
+
+	/**
+	 * The holder of a lock may move what they locked.
+	 *
+	 * @return void
+	 */
+	public function testTheLockHolderMovesTheObject(): void {
+		$object = $this->object();
+		$object->setLocked(['user' => 'anna']);
+
+		$outcome = $this->service()->move(
+			object: $object,
+			sourceRegister: $this->register(1),
+			sourceSchema: $this->schema(10),
+			targetRegister: $this->register(2),
+			targetSchema: $this->schema(20),
+			actor: 'anna',
+		);
+
+		self::assertTrue($outcome['moved']);
 	}
 
 	/**
