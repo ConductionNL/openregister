@@ -215,6 +215,13 @@ class ImportHandler {
 	private ShippedSchemaBaseline $shippedBaseline;
 
 	/**
+	 * Creates and updates the Configuration of an app import.
+	 *
+	 * @var AppConfigurationRecord
+	 */
+	private AppConfigurationRecord $appConfigurations;
+
+	/**
 	 * Mapping mapper instance for handling mapping operations.
 	 *
 	 * @var MappingMapper The mapping mapper instance.
@@ -384,6 +391,7 @@ class ImportHandler {
 		$this->relatedItems = new SeedRelatedItems(logger: $logger);
 		$this->duplicates = new ImportDuplicates(registerMapper: $registerMapper, schemaMapper: $schemaMapper, logger: $logger);
 		$this->shippedBaseline = new ShippedSchemaBaseline(guard: $shippedGuard, logger: $logger);
+		$this->appConfigurations = new AppConfigurationRecord(configurationMapper: $configurationMapper, logger: $logger);
 	}//end __construct()
 
 	/**
@@ -4228,7 +4236,7 @@ class ImportHandler {
 				force: $force
 			);
 
-			$configuration = ($this->findAppConfiguration(import: $import) ?? $this->createAppConfiguration(import: $import));
+			$configuration = ($this->findAppConfiguration(import: $import) ?? $this->appConfigurations->create(import: $import));
 
 			// Run under its own import job id so the objects it creates can be
 			// removed by job later (a setup wizard's "remove this example set").
@@ -4244,7 +4252,7 @@ class ImportHandler {
 
 			$update = new ImportedConfigurationUpdate(configuration: $configuration, result: $result);
 			if (count($result['registers']) > 0 || count($result['schemas']) > 0 || count($result['objects']) > 0) {
-				$this->trackAppImportResult(import: $import, update: $update);
+				$this->appConfigurations->track(import: $import, update: $update);
 			}
 
 			$this->finishAppImport(import: $import, update: $update);
@@ -4345,221 +4353,6 @@ class ImportHandler {
 
 		return $configuration;
 	}//end findAppConfigurationByApp()
-
-	/**
-	 * Create and insert the Configuration of a first app import.
-	 *
-	 * Title and description follow the OAS `info` block first, then the
-	 * `x-openregister` extension, then the top level. Instance-specific
-	 * settings (autoUpdate, notificationGroups, owner, organisation) are not
-	 * imported.
-	 *
-	 * @param AppImport $import The app import.
-	 *
-	 * @return Configuration
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function createAppConfiguration(AppImport $import): Configuration {
-		$appId = $import->appId;
-		$data  = $import->data;
-		$info  = $import->info();
-		$xOpenregister = $import->extension();
-
-		$configuration = new Configuration();
-		$configuration->setTitle($info['title'] ?? $xOpenregister['title'] ?? $data['title'] ?? "Configuration for {$appId}");
-		$configuration->setDescription(
-			$info['description'] ?? $xOpenregister['description'] ?? $data['description'] ?? "Configuration imported by application {$appId}"
-		);
-		$configuration->setType($xOpenregister['type'] ?? $data['type'] ?? 'app');
-		$configuration->setApp($appId);
-		$configuration->setVersion($import->version);
-
-		// A local configuration is maintained by the app.
-		$configuration->setIsLocal(true);
-		$configuration->setSyncEnabled(false);
-		$configuration->setSyncStatus('never');
-
-		if (($xOpenregister['openregister'] ?? null) !== null) {
-			$configuration->setOpenregister($xOpenregister['openregister']);
-		}
-
-		$this->applyConfigurationSource(configuration: $configuration, xOpenregister: $xOpenregister);
-
-		$configuration->setRegisters([]);
-		$configuration->setSchemas([]);
-		$configuration->setObjects([]);
-
-		$configuration = $this->configurationMapper->insert($configuration);
-
-		$this->logger->debug(
-			message: "[ImportHandler] Created new configuration for app {$appId}",
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'configurationId' => $configuration->getId(),
-				'version' => $import->version,
-			]
-		);
-
-		return $configuration;
-	}//end createAppConfiguration()
-
-	/**
-	 * Copy the source type, source url and GitHub location from the
-	 * `x-openregister` extension onto a Configuration.
-	 *
-	 * GitHub is read from the nested `github` object, or from the flat
-	 * `githubRepo` / `githubBranch` / `githubPath` keys when there is none.
-	 *
-	 * @param Configuration $configuration The configuration.
-	 * @param mixed         $xOpenregister The `x-openregister` extension block.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function applyConfigurationSource(Configuration $configuration, mixed $xOpenregister): void {
-		$source = $this->pickConfigurationKeys(
-			block: $xOpenregister,
-			keys: ['sourceType' => 'sourceType', 'sourceUrl' => 'sourceUrl']
-		) + $this->githubConfigurationSource(xOpenregister: $xOpenregister);
-
-		foreach ($source as $field => $value) {
-			if ($value !== null) {
-				$configuration->{'set' . ucfirst($field)}($value);
-			}
-		}
-	}//end applyConfigurationSource()
-
-	/**
-	 * The GitHub repo, branch and path an `x-openregister` extension names.
-	 *
-	 * Read from the nested `github` object, or from the flat `githubRepo` /
-	 * `githubBranch` / `githubPath` keys when there is none.
-	 *
-	 * @param mixed $xOpenregister The `x-openregister` extension block.
-	 *
-	 * @return array{githubRepo: mixed, githubBranch: mixed, githubPath: mixed}
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function githubConfigurationSource(mixed $xOpenregister): array {
-		$github = ($xOpenregister['github'] ?? null);
-		if (is_array($github) === true) {
-			return $this->pickConfigurationKeys(
-				block: $github,
-				keys: ['githubRepo' => 'repo', 'githubBranch' => 'branch', 'githubPath' => 'path']
-			);
-		}
-
-		return $this->pickConfigurationKeys(
-			block: $xOpenregister,
-			keys: ['githubRepo' => 'githubRepo', 'githubBranch' => 'githubBranch', 'githubPath' => 'githubPath']
-		);
-	}//end githubConfigurationSource()
-
-	/**
-	 * The values of an extension block under the given keys, null when absent.
-	 *
-	 * @param mixed                 $block The extension block.
-	 * @param array<string, string> $keys  The block key to read, by configuration field.
-	 *
-	 * @return array<string, mixed> The values, by configuration field.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function pickConfigurationKeys(mixed $block, array $keys): array {
-		$values = [];
-		foreach ($keys as $field => $key) {
-			$values[$field] = ($block[$key] ?? null);
-		}
-
-		return $values;
-	}//end pickConfigurationKeys()
-
-	/**
-	 * Record what an app import brought in on its Configuration: the ids of
-	 * the registers, schemas and objects, the version, and the current
-	 * title, description and source.
-	 *
-	 * @param AppImport                   $import The app import.
-	 * @param ImportedConfigurationUpdate $update The configuration and the import result.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function trackAppImportResult(AppImport $import, ImportedConfigurationUpdate $update): void {
-		$configuration = $update->configuration;
-		$result        = $update->result;
-
-		$registerIds = $this->appendNewEntityIds(
-			ids: ($configuration->getRegisters() ?? []),
-			entities: array_filter($result['registers'], static fn ($entity): bool => $entity instanceof Register)
-		);
-		$schemaIds   = $this->appendNewEntityIds(
-			ids: ($configuration->getSchemas() ?? []),
-			entities: array_filter($result['schemas'], static fn ($entity): bool => $entity instanceof Schema)
-		);
-		$objectIds   = $this->appendNewEntityIds(
-			ids: ($configuration->getObjects() ?? []),
-			entities: array_filter($result['objects'], static fn ($entity): bool => $entity instanceof ObjectEntity)
-		);
-
-		$configuration->setRegisters($registerIds);
-		$configuration->setSchemas($schemaIds);
-		$configuration->setObjects($objectIds);
-		$configuration->setVersion($import->version);
-
-		$info          = $import->info();
-		$xOpenregister = $import->extension();
-		$title         = ($info['title'] ?? $xOpenregister['title'] ?? null);
-		if ($title !== null) {
-			$configuration->setTitle($title);
-		}
-
-		$description = ($info['description'] ?? $xOpenregister['description'] ?? null);
-		if ($description !== null) {
-			$configuration->setDescription($description);
-		}
-
-		$this->applyConfigurationSource(configuration: $configuration, xOpenregister: $xOpenregister);
-
-		$this->configurationMapper->update($configuration);
-
-		$this->logger->debug(
-			message: "[ImportHandler] Updated configuration entity for app {$import->appId}",
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'configurationId' => $configuration->getId(),
-				'totalRegisters' => count($registerIds),
-				'totalSchemas' => count($schemaIds),
-				'totalObjects' => count($objectIds),
-			]
-		);
-	}//end trackAppImportResult()
-
-	/**
-	 * Append the ids of entities not yet in the list.
-	 *
-	 * @param array<int, mixed>               $ids      The ids already tracked.
-	 * @param array<int|string, \OCP\AppFramework\Db\Entity> $entities The imported entities.
-	 *
-	 * @return array<int, mixed>
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function appendNewEntityIds(array $ids, array $entities): array {
-		foreach ($entities as $entity) {
-			if (in_array($entity->getId(), $ids, true) === false) {
-				$ids[] = $entity->getId();
-			}
-		}
-
-		return $ids;
-	}//end appendNewEntityIds()
 
 	/**
 	 * The steps every app import ends with: an application register when the

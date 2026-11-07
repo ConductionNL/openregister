@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden test for ImportHandler::applyConfigurationSource().
+ * Golden test for AppConfigurationRecord::applySource().
  *
  * Records the source type, source url and GitHub location a Configuration
  * holds, and which of its fields were set, after applying `x-openregister`
@@ -24,13 +24,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\AppConfigurationRecord;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 
 /**
- * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
  * @uses   \OCA\OpenRegister\Db\Configuration
  */
 class ImportHandlerConfigurationSourceGoldenTest extends TestCase {
@@ -63,8 +63,8 @@ class ImportHandlerConfigurationSourceGoldenTest extends TestCase {
 	}//end blocks()
 
 	public function testConfigurationSourceMatchesGolden(): void {
-		$handler = (new ReflectionClass(ImportHandler::class))->newInstanceWithoutConstructor();
-		$method = new ReflectionMethod(ImportHandler::class, 'applyConfigurationSource');
+		$handler = (new ReflectionClass(AppConfigurationRecord::class))->newInstanceWithoutConstructor();
+		$method = new ReflectionMethod(AppConfigurationRecord::class, 'applySource');
 		$method->setAccessible(true);
 
 		$actual = [];
