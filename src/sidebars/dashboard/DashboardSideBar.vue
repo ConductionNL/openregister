@@ -73,105 +73,9 @@ import {
 					<span>{{ t('openregister', 'Loading statistics...') }}</span>
 				</div>
 				<div v-else-if="systemTotals" class="statsContainer">
-					<table class="statisticsTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Name') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Count') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Size') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Registers') }}
-								</th>
-								<td>{{ filteredRegisters.length }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Schemas') }}
-								</th>
-								<td>{{ totalSchemas }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Objects') }}
-								</th>
-								<td>
-									{{ systemTotals.stats?.objects?.total || 0 }}
-								</td>
-								<td>
-									{{
-										formatBytes(
-											systemTotals.stats?.objects?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Invalid') }}
-								</th>
-								<td>
-									{{ systemTotals.stats?.objects?.invalid || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Deleted') }}
-								</th>
-								<td>
-									{{ systemTotals.stats?.objects?.deleted || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Locked') }}
-								</th>
-								<td>
-									{{ systemTotals.stats?.objects?.locked || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Logs') }}
-								</th>
-								<td>{{ systemTotals.stats?.logs?.total || 0 }}</td>
-								<td>
-									{{
-										formatBytes(
-											systemTotals.stats?.logs?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Files') }}
-								</th>
-								<td>{{ systemTotals.stats?.files?.total || 0 }}</td>
-								<td>
-									{{
-										formatBytes(
-											systemTotals.stats?.files?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-						</tbody>
-					</table>
+					<StatisticsTotalsTable
+						:stats="systemTotals.stats"
+						:leadingRows="registerCountRows" />
 				</div>
 			</div>
 
@@ -185,91 +89,7 @@ import {
 					<span>{{ t('openregister', 'Loading statistics...') }}</span>
 				</div>
 				<div v-else-if="orphanedItems" class="statsContainer">
-					<table class="statisticsTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Name') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Count') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Size') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Objects') }}
-								</th>
-								<td>
-									{{ orphanedItems.stats?.objects?.total || 0 }}
-								</td>
-								<td>
-									{{
-										formatBytes(
-											orphanedItems.stats?.objects?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Invalid') }}
-								</th>
-								<td>
-									{{ orphanedItems.stats?.objects?.invalid || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Deleted') }}
-								</th>
-								<td>
-									{{ orphanedItems.stats?.objects?.deleted || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<th scope="row" class="indented">
-									{{ t('openregister', 'Locked') }}
-								</th>
-								<td>
-									{{ orphanedItems.stats?.objects?.locked || 0 }}
-								</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Logs') }}
-								</th>
-								<td>{{ orphanedItems.stats?.logs?.total || 0 }}</td>
-								<td>
-									{{
-										formatBytes(
-											orphanedItems.stats?.logs?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									{{ t('openregister', 'Files') }}
-								</th>
-								<td>{{ orphanedItems.stats?.files?.total || 0 }}</td>
-								<td>
-									{{
-										formatBytes(
-											orphanedItems.stats?.files?.size || 0,
-										)
-									}}
-								</td>
-							</tr>
-						</tbody>
-					</table>
+					<StatisticsTotalsTable :stats="orphanedItems.stats" />
 				</div>
 			</div>
 		</NcAppSidebarTab>
@@ -284,7 +104,7 @@ import {
 	NcSelect,
 } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
-import formatBytes from '../../services/formatBytes.js'
+import StatisticsTotalsTable from './StatisticsTotalsTable.vue'
 import { scopePickers } from '../../services/scopePickers.js'
 
 export default {
@@ -295,6 +115,7 @@ export default {
 		NcSelect,
 		NcLoadingIcon,
 		Magnify,
+		StatisticsTotalsTable,
 	},
 
 	mixins: [scopePickers],
@@ -363,6 +184,21 @@ export default {
 					register.title !== 'System Totals'
 					&& register.title !== 'Orphaned Items',
 			)
+		},
+
+		/**
+		 * The register and schema counts that open the system totals table.
+		 *
+		 * @return {Array<object>} The rows
+		 */
+		registerCountRows() {
+			return [
+				{
+					label: t('openregister', 'Registers'),
+					count: this.filteredRegisters.length,
+				},
+				{ label: t('openregister', 'Schemas'), count: this.totalSchemas },
+			]
 		},
 
 		/**
@@ -518,43 +354,6 @@ export default {
 
 .statsContainer {
 	padding: 0 16px;
-}
-
-.statisticsTable {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 0.9em;
-
-	td,
-	th {
-		padding: 4px 8px;
-		border-bottom: 1px solid var(--color-border);
-		text-align: left;
-
-		&:nth-child(2),
-		&:nth-child(3) {
-			text-align: right;
-		}
-	}
-
-	/* Row headers are labels, not emphasis — keep the original visual weight. */
-	tbody th {
-		font-weight: normal;
-	}
-
-	.subRow td,
-	.subRow th {
-		color: var(--color-text-maxcontrast);
-	}
-
-	.indented {
-		padding-left: 24px;
-	}
-
-	tr:last-child td,
-	tr:last-child th {
-		border-bottom: none;
-	}
 }
 
 @include filter-section-block;
