@@ -332,6 +332,96 @@
         "booking.confirmed": "FFFFFFFFFF",
         "(empty)": "FFFFFFFFFF"
     },
+    "calc-lt-boundary": {
+        "created": "FFFFFFFFFF",
+        "updated": "FFFFFFFFFF",
+        "transition": "FFFFFFFFFF",
+        "calculatedChange": "FFFFFFFFFF",
+        "deleted": "FFFFFFFFFF",
+        "booking.confirmed": "FFFFFFFFFF",
+        "(empty)": "FFFFFFFFFF"
+    },
+    "calc-lte-boundary": {
+        "created": "FFFFFFFFFF",
+        "updated": "FFFFFFFFFF",
+        "transition": "FFFFFFFFFF",
+        "calculatedChange": "FFFFFTFTFF",
+        "deleted": "FFFFFFFFFF",
+        "booking.confirmed": "FFFFFFFFFF",
+        "(empty)": "FFFFFFFFFF"
+    },
+    "calc-gt-boundary": {
+        "created": "FFFFFFFFFF",
+        "updated": "FFFFFFFFFF",
+        "transition": "FFFFFFFFFF",
+        "calculatedChange": "FFFFFFTFFF",
+        "deleted": "FFFFFFFFFF",
+        "booking.confirmed": "FFFFFFFFFF",
+        "(empty)": "FFFFFFFFFF"
+    },
+    "calc-gte-boundary": {
+        "created": "FFFFFFFFFF",
+        "updated": "FFFFFFFFFF",
+        "transition": "FFFFFFFFFF",
+        "calculatedChange": "FFFFFTTTFF",
+        "deleted": "FFFFFFFFFF",
+        "booking.confirmed": "FFFFFFFFFF",
+        "(empty)": "FFFFFFFFFF"
+    },
+    "calc-eq-numeric-text": {
+        "created": "FFFFFFFFFF",
+        "updated": "FFFFFFFFFF",
+        "transition": "FFFFFFFFFF",
+        "calculatedChange": "FFFFFTFTFF",
+        "deleted": "FFFFFFFFFF",
+        "booking.confirmed": "FFFFFFFFFF",
+        "(empty)": "FFFFFFFFFF"
+    },
+    "calc-ne-numeric-text": {
+        "created": "FFFFFFFFFF",
+        "updated": "FFFFFFFFFF",
+        "transition": "FFFFFFFFFF",
+        "calculatedChange": "FFFFFFTFFT",
+        "deleted": "FFFFFFFFFF",
+        "booking.confirmed": "FFFFFFFFFF",
+        "(empty)": "FFFFFFFFFF"
+    },
+    "calc-eq-word": {
+        "created": "FFFFFFFFFF",
+        "updated": "FFFFFFFFFF",
+        "transition": "FFFFFFFFFF",
+        "calculatedChange": "FFFFFFFFFT",
+        "deleted": "FFFFFFFFFF",
+        "booking.confirmed": "FFFFFFFFFF",
+        "(empty)": "FFFFFFFFFF"
+    },
+    "calc-gt-word": {
+        "created": "FFFFFFFFFF",
+        "updated": "FFFFFFFFFF",
+        "transition": "FFFFFFFFFF",
+        "calculatedChange": "FFFFFFFFFF",
+        "deleted": "FFFFFFFFFF",
+        "booking.confirmed": "FFFFFFFFFF",
+        "(empty)": "FFFFFFFFFF"
+    },
+    "calc-lt-word-value": {
+        "created": "FFFFFFFFFF",
+        "updated": "FFFFFFFFFF",
+        "transition": "FFFFFFFFFF",
+        "calculatedChange": "FFFFFTTTFF",
+        "deleted": "FFFFFFFFFF",
+        "booking.confirmed": "FFFFFFFFFF",
+        "(empty)": "FFFFFFFFFF"
+    },
+    "calc-unknown-operator": {
+        "created": "FFFFFFFFFF",
+        "updated": "FFFFFFFFFF",
+        "transition": "FFFFFFFFFF",
+        "calculatedChange": "FFFFFFFFFF",
+        "deleted": "FFFFFFFFFF",
+        "booking.confirmed": "FFFFFFFFFF",
+        "(empty)": "FFFFFFFFFF"
+    },
     "mixed-everything": {
         "created": "FFFTFFFFFF",
         "updated": "FFFFFFFFFF",

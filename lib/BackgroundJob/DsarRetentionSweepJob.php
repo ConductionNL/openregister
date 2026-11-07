@@ -35,42 +35,48 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepService;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
  * Daily DSAR-case retention sweep.
  */
-class DsarRetentionSweepJob extends TimedJob {
-
-	/**
-	 * Default interval — once per 24 hours.
-	 *
-	 * @var int
-	 */
-	private const RUN_INTERVAL_SECONDS = 86400;
+class DsarRetentionSweepJob extends AbstractRetentionJob {
 
 	/**
 	 * App-config key for the enable/disable toggle.
 	 *
 	 * @var string
 	 */
-	private const CONFIG_KEY_ENABLED = 'dsar_retention_sweep_enabled';
+	protected const CONFIG_KEY_ENABLED = 'dsar_retention_sweep_enabled';
 
 	/**
 	 * App-config key for the dry-run toggle.
 	 *
 	 * @var string
 	 */
-	private const CONFIG_KEY_DRY_RUN = 'dsar_retention_sweep_dry_run';
+	protected const CONFIG_KEY_DRY_RUN = 'dsar_retention_sweep_dry_run';
 
 	/**
-	 * App identifier for app-config lookups.
+	 * Log line of a job that is switched off.
 	 *
 	 * @var string
 	 */
-	private const APP_ID = 'openregister';
+	protected const LOG_DISABLED = '[DsarRetentionSweepJob] sweep disabled (dsar_retention_sweep_enabled=false), skipping';
+
+	/**
+	 * Log line of a finished pass.
+	 *
+	 * @var string
+	 */
+	protected const LOG_COMPLETE = '[DsarRetentionSweepJob] sweep complete';
+
+	/**
+	 * Log line of a failed pass, followed by the error.
+	 *
+	 * @var string
+	 */
+	protected const LOG_FAILED = '[DsarRetentionSweepJob] sweep failed: ';
 
 	/**
 	 * Constructor.
@@ -79,83 +85,40 @@ class DsarRetentionSweepJob extends TimedJob {
 	 * @param IAppConfig $appConfig App-config reader.
 	 * @param RetentionSweepService $sweepService Domain sweep service.
 	 * @param LoggerInterface $logger Logger.
-	 */
-	public function __construct(
-		ITimeFactory $time,
-		private readonly IAppConfig $appConfig,
-		private readonly RetentionSweepService $sweepService,
-		private readonly LoggerInterface $logger,
-	) {
-		parent::__construct(time: $time);
-		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
-
-	}//end __construct()
-
-	/**
-	 * Drive the retention sweep.
-	 *
-	 * @param mixed $argument Job arguments (unused for recurring jobs).
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
 	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
-	protected function run($argument): void {
-		$enabled = filter_var(
-			$this->appConfig->getValueString(
-				app: self::APP_ID,
-				key: self::CONFIG_KEY_ENABLED,
-				default: 'true'
-			),
-			FILTER_VALIDATE_BOOLEAN
-		);
+	public function __construct(
+		ITimeFactory $time,
+		IAppConfig $appConfig,
+		private readonly RetentionSweepService $sweepService,
+		LoggerInterface $logger,
+	) {
+		parent::__construct(time: $time, appConfig: $appConfig, logger: $logger);
+	}//end __construct()
 
-		if ($enabled === false) {
-			$this->logger->info(
-				message: '[DsarRetentionSweepJob] sweep disabled (dsar_retention_sweep_enabled=false), skipping',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return;
-		}
+	/**
+	 * Run the pass and report its counts.
+	 *
+	 * @param bool $dryRun Whether to report without erasing anything.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Dry run is the admin's own switch, passed on as it is.
+	 *
+	 * @spec openspec/specs/dsar-retention-sweep/spec.md
+	 */
+	protected function runPass(bool $dryRun): array {
+		$summary = $this->sweepService->runSweep(dryRun: $dryRun);
 
-		$dryRun = filter_var(
-			$this->appConfig->getValueString(
-				app: self::APP_ID,
-				key: self::CONFIG_KEY_DRY_RUN,
-				default: 'false'
-			),
-			FILTER_VALIDATE_BOOLEAN
-		);
-
-		try {
-			$summary = $this->sweepService->runSweep(dryRun: $dryRun);
-			$this->logger->info(
-				message: '[DsarRetentionSweepJob] sweep complete',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'dryRun' => $dryRun,
-					'evaluated' => $summary['evaluated'],
-					'purgedCount' => count($summary['purged']),
-					'skippedHeld' => count($summary['skippedHeld']),
-					'withinWindow' => $summary['withinWindow'],
-					// Cases the archival obligation kept. Without this the sweep
-					// log reads as if they simply were not due.
-					'withheldCount' => $summary['withheldCount'],
-				]
-			);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[DsarRetentionSweepJob] sweep failed: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-
-	}//end run()
+		return [
+			'evaluated' => $summary['evaluated'],
+			'purgedCount' => count($summary['purged']),
+			'skippedHeld' => count($summary['skippedHeld']),
+			'withinWindow' => $summary['withinWindow'],
+			// Cases the archival obligation kept. Without this the sweep log reads
+			// as if they simply were not due.
+			'withheldCount' => $summary['withheldCount'],
+		];
+	}//end runPass()
 }//end class

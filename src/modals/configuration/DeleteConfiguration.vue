@@ -3,7 +3,7 @@
 		v-if="navigationStore.dialog === 'deleteConfiguration'"
 		name="Delete Configuration"
 		size="small"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>

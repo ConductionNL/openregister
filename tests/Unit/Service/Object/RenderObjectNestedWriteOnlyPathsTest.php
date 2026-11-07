@@ -45,6 +45,7 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
  * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
  * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
@@ -184,7 +185,7 @@ class RenderObjectNestedWriteOnlyPathsTest extends TestCase {
 		);
 
 		return new RenderObject(
-			$this->createMock(\OCA\OpenRegister\Db\FileMapper::class),
+			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
 			$this->createMock(\OCA\OpenRegister\Db\MagicMapper::class),
 			$this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class),
 			$schemaMapper,

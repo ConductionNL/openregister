@@ -143,31 +143,83 @@ class TaskFormReader {
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
 	 */
 	public function fromRecord(array $record): TaskForm {
-		$requireChecklist = filter_var(($record['requireChecklist'] ?? false), FILTER_VALIDATE_BOOLEAN);
-
 		$kind = trim((string)($record['kind'] ?? ''));
 		if ($kind === '') {
 			$this->refuseOrphanedFormKeys(record: $record);
 
-			return new TaskForm(kind: null, requireChecklist: $requireChecklist);
+			return new TaskForm(kind: null, requireChecklist: self::requireChecklistOf(record: $record));
 		}
 
+		$this->refuseUnknownKind(kind: $kind);
+		if ($kind === TaskForm::KIND_EXTERNAL) {
+			return new TaskForm(kind: $kind, formId: $this->formIdOf(record: $record), requireChecklist: self::requireChecklistOf(record: $record));
+		}
+
+		return $this->nativeForm(record: $record);
+	}//end fromRecord()
+
+	/**
+	 * Whether a declaration requires every checklist item to be checked.
+	 *
+	 * @param array<string, mixed> $record The declaration.
+	 *
+	 * @return bool The checklist rule.
+	 */
+	private static function requireChecklistOf(array $record): bool {
+		return filter_var(($record['requireChecklist'] ?? false), FILTER_VALIDATE_BOOLEAN);
+	}//end requireChecklistOf()
+
+	/**
+	 * Refuse a kind that is neither of the two.
+	 *
+	 * @param string $kind The declared kind, trimmed.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the kind is unknown.
+	 */
+	private function refuseUnknownKind(string $kind): void {
 		if (in_array($kind, TaskForm::KINDS, true) === false) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Form kind "%1$s" is not one of %2$s.', [$kind, implode(', ', TaskForm::KINDS)])
 			);
 		}
+	}//end refuseUnknownKind()
 
-		if ($kind === TaskForm::KIND_EXTERNAL) {
-			return new TaskForm(
-				kind: $kind,
-				formId: $this->formIdOf(record: $record),
-				requireChecklist: $requireChecklist
-			);
-		}
-
+	/**
+	 * A field form: a lifecycle action to inherit its fields from, or an inline list.
+	 *
+	 * @param array<string, mixed> $record The declaration.
+	 *
+	 * @return TaskForm The declaration.
+	 *
+	 * @throws UnexpectedValueException When it names both or neither.
+	 */
+	private function nativeForm(array $record): TaskForm {
 		$action = $this->nullIfEmpty(value: trim((string)($record['action'] ?? '')));
 		$fields = $this->fieldsOf(value: ($record['fields'] ?? null));
+		$this->refuseActionAndFieldsMix(action: $action, fields: $fields);
+
+		return new TaskForm(
+			kind: TaskForm::KIND_FIELDS,
+			schema: trim((string)($record['schema'] ?? '')),
+			action: $action,
+			fields: $fields,
+			requireChecklist: self::requireChecklistOf(record: $record)
+		);
+	}//end nativeForm()
+
+	/**
+	 * Refuse a field form that names an action and lists fields, or does neither.
+	 *
+	 * @param string|null                                    $action The lifecycle action, or null.
+	 * @param array<int, array{field: string, required: bool}> $fields The inline list.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When it names both or neither.
+	 */
+	private function refuseActionAndFieldsMix(?string $action, array $fields): void {
 		if ($action !== null && $fields !== []) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Name a lifecycle action or list the fields, not both: the action already declares its fields.')
@@ -179,15 +231,7 @@ class TaskFormReader {
 				$this->l10n->t('A field form needs a lifecycle action to inherit its fields from, or a list of fields.')
 			);
 		}
-
-		return new TaskForm(
-			kind: $kind,
-			schema: trim((string)($record['schema'] ?? '')),
-			action: $action,
-			fields: $fields,
-			requireChecklist: $requireChecklist
-		);
-	}//end fromRecord()
+	}//end refuseActionAndFieldsMix()
 
 	/**
 	 * Refuse a declaration no performer could complete, naming what and why.
@@ -213,17 +257,28 @@ class TaskFormReader {
 
 		$schema = $this->schema(reference: $form->schema);
 		foreach ($this->declaredFields(form: $form, schema: $schema) as $field) {
-			$reason = $this->unrenderableReason(schema: $schema, field: $field['field']);
-			if ($reason !== null) {
-				throw new UnexpectedValueException(
-					$this->l10n->t(
-						'Field "%1$s" of schema "%2$s" cannot be asked for: %3$s',
-						[$field['field'], (string)$schema->getSlug(), $reason]
-					)
-				);
-			}
+			$this->refuseUnrenderable(schema: $schema, field: $field['field']);
 		}
 	}//end validate()
+
+	/**
+	 * Refuse a field this schema cannot render, naming why.
+	 *
+	 * @param Schema $schema The live subject schema.
+	 * @param string $field  The property name.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the field cannot be rendered.
+	 */
+	private function refuseUnrenderable(Schema $schema, string $field): void {
+		$reason = $this->unrenderableReason(schema: $schema, field: $field);
+		if ($reason !== null) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('Field "%1$s" of schema "%2$s" cannot be asked for: %3$s', [$field, (string)$schema->getSlug(), $reason])
+			);
+		}
+	}//end refuseUnrenderable()
 
 	/**
 	 * The fields a native form asks for: the action's declared inputs, or the inline list.
@@ -358,8 +413,32 @@ class TaskFormReader {
 	 * @throws UnexpectedValueException When an entry is malformed or duplicated.
 	 */
 	private function fieldsOf(mixed $value): array {
+		$fields = [];
+		foreach ($this->fieldEntries(value: $value) as $entry) {
+			$field = $this->fieldOf(entry: $entry);
+			if ($field === null) {
+				continue;
+			}
+
+			$this->refuseDuplicate(field: $field['field'], fields: $fields);
+			$fields[$field['field']] = $field;
+		}
+
+		return array_values($fields);
+	}//end fieldsOf()
+
+	/**
+	 * The configured field entries as a list: a comma-separated string split, null as none.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return array<mixed> The entries.
+	 *
+	 * @throws UnexpectedValueException When the value is neither a list nor a string.
+	 */
+	private function fieldEntries(mixed $value): array {
 		if (is_string($value) === true) {
-			$value = explode(',', $value);
+			return explode(',', $value);
 		}
 
 		if ($value === null) {
@@ -367,29 +446,27 @@ class TaskFormReader {
 		}
 
 		if (is_array($value) === false) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('Form fields must be a list of {field, required} entries.')
-			);
+			throw new UnexpectedValueException($this->l10n->t('Form fields must be a list of {field, required} entries.'));
 		}
 
-		$fields = [];
-		foreach ($value as $entry) {
-			$field = $this->fieldOf(entry: $entry);
-			if ($field === null) {
-				continue;
-			}
+		return $value;
+	}//end fieldEntries()
 
-			if (array_key_exists($field['field'], $fields) === true) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('Field "%1$s" is listed twice.', [$field['field']])
-				);
-			}
-
-			$fields[$field['field']] = $field;
+	/**
+	 * Refuse a field listed a second time.
+	 *
+	 * @param string                                             $field  The field name.
+	 * @param array<string, array{field: string, required: bool}> $fields The fields listed so far, by name.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the field is already listed.
+	 */
+	private function refuseDuplicate(string $field, array $fields): void {
+		if (array_key_exists($field, $fields) === true) {
+			throw new UnexpectedValueException($this->l10n->t('Field "%1$s" is listed twice.', [$field]));
 		}
-
-		return array_values($fields);
-	}//end fieldsOf()
+	}//end refuseDuplicate()
 
 	/**
 	 * One field entry, from an object or a name; null for a blank entry.
@@ -402,26 +479,42 @@ class TaskFormReader {
 	 */
 	private function fieldOf(mixed $entry): ?array {
 		if (is_array($entry) === true) {
-			$name = trim((string)($entry['field'] ?? ''));
-			if ($name === '') {
-				throw new UnexpectedValueException(
-					$this->l10n->t('Every form field entry must name its field.')
-				);
-			}
-
-			return [
-				'field' => $name,
-				'required' => filter_var(($entry['required'] ?? false), FILTER_VALIDATE_BOOLEAN),
-			];
+			return $this->objectField(entry: $entry);
 		}
 
 		if (is_scalar($entry) === false) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('Form fields must be a list of {field, required} entries.')
-			);
+			throw new UnexpectedValueException($this->l10n->t('Form fields must be a list of {field, required} entries.'));
 		}
 
-		$name = trim((string)$entry);
+		return self::namedField(name: trim((string)$entry));
+	}//end fieldOf()
+
+	/**
+	 * A `{field, required}` entry.
+	 *
+	 * @param array<string, mixed> $entry The configured entry.
+	 *
+	 * @return array{field: string, required: bool} The normalised entry.
+	 *
+	 * @throws UnexpectedValueException When the entry names no field.
+	 */
+	private function objectField(array $entry): array {
+		$name = trim((string)($entry['field'] ?? ''));
+		if ($name === '') {
+			throw new UnexpectedValueException($this->l10n->t('Every form field entry must name its field.'));
+		}
+
+		return ['field' => $name, 'required' => filter_var(($entry['required'] ?? false), FILTER_VALIDATE_BOOLEAN)];
+	}//end objectField()
+
+	/**
+	 * A property name, required when it ends in `*`; null for a blank name.
+	 *
+	 * @param string $name The trimmed name.
+	 *
+	 * @return array{field: string, required: bool}|null The normalised entry.
+	 */
+	private static function namedField(string $name): ?array {
 		if ($name === '') {
 			return null;
 		}
@@ -431,11 +524,8 @@ class TaskFormReader {
 			$name = rtrim(substr($name, 0, -1));
 		}
 
-		return [
-			'field' => $name,
-			'required' => $required,
-		];
-	}//end fieldOf()
+		return ['field' => $name, 'required' => $required];
+	}//end namedField()
 
 	/**
 	 * Refuse form keys given without a kind: they would look configured and do nothing.
