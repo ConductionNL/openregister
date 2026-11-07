@@ -1,0 +1,719 @@
+{
+    "list results envelope": {
+        "result": [
+            {
+                "reference": "Main.WebHome",
+                "space": "Main.Sub",
+                "page": "WebHome",
+                "title": "Home",
+                "url": "https://wiki/home",
+                "content": "<p>hi</p>",
+                "extra": "kept",
+                "id": "Main.WebHome",
+                "breadcrumb": [
+                    "Main",
+                    "Sub",
+                    "Home"
+                ]
+            },
+            {
+                "pageReference": "A.B",
+                "spaceName": "A",
+                "pageName": "B",
+                "link": "https://wiki/ab",
+                "renderedContent": "<b>x</b>",
+                "id": "A.B",
+                "reference": "A.B",
+                "title": "B",
+                "space": "A",
+                "page": "B",
+                "breadcrumb": [
+                    "A",
+                    "B"
+                ],
+                "url": "https://wiki/ab",
+                "content": "<b>x</b>"
+            },
+            {
+                "id": "C.D",
+                "name": "D",
+                "xwikiAbsoluteUrl": "https://wiki/cd",
+                "breadcrumb": [
+                    "C",
+                    "D"
+                ],
+                "reference": "C.D",
+                "title": "D",
+                "space": "",
+                "page": "D",
+                "url": "https://wiki/cd",
+                "content": null
+            },
+            {
+                "id": "Only.Ref",
+                "breadcrumb": [
+                    "Only.Ref"
+                ],
+                "reference": "Only.Ref",
+                "title": "Only.Ref",
+                "space": "",
+                "page": "",
+                "url": "",
+                "content": null
+            },
+            {
+                "reference": "Zero",
+                "space": "a.0.b",
+                "title": "Zero",
+                "id": "Zero",
+                "page": "",
+                "breadcrumb": [
+                    "a",
+                    "b",
+                    "Zero"
+                ],
+                "url": "",
+                "content": null
+            },
+            {
+                "reference": "L.Page",
+                "links": [
+                    "not-an-array",
+                    {
+                        "rel": "http://www.xwiki.org/rel/page"
+                    },
+                    {
+                        "rel": "http://www.xwiki.org/rel/space",
+                        "href": "https://wiki/space"
+                    },
+                    {
+                        "rel": "http://www.xwiki.org/rel/page",
+                        "href": "https://wiki/l/page"
+                    }
+                ],
+                "id": "L.Page",
+                "title": "L.Page",
+                "space": "",
+                "page": "",
+                "breadcrumb": [
+                    "L.Page"
+                ],
+                "url": "https://wiki/l/page",
+                "content": null
+            },
+            {
+                "reference": "L.Child",
+                "links": [
+                    {
+                        "rel": "http://www.xwiki.org/rel/pagechild",
+                        "href": "https://wiki/l/child"
+                    }
+                ],
+                "id": "L.Child",
+                "title": "L.Child",
+                "space": "",
+                "page": "",
+                "breadcrumb": [
+                    "L.Child"
+                ],
+                "url": "https://wiki/l/child",
+                "content": null
+            },
+            {
+                "reference": "L.None",
+                "links": "nope",
+                "id": "L.None",
+                "title": "L.None",
+                "space": "",
+                "page": "",
+                "breadcrumb": [
+                    "L.None"
+                ],
+                "url": "",
+                "content": null
+            },
+            {
+                "reference": "L.Miss",
+                "links": [
+                    {
+                        "href": "https://wiki/no-rel"
+                    }
+                ],
+                "id": "L.Miss",
+                "title": "L.Miss",
+                "space": "",
+                "page": "",
+                "breadcrumb": [
+                    "L.Miss"
+                ],
+                "url": "",
+                "content": null
+            },
+            {
+                "id": "",
+                "reference": "",
+                "title": "",
+                "space": "",
+                "page": "",
+                "breadcrumb": [],
+                "url": "",
+                "content": null
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "query": {
+                        "_search": "q",
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list items envelope": {
+        "result": [
+            {
+                "pageReference": "A.B",
+                "spaceName": "A",
+                "pageName": "B",
+                "link": "https://wiki/ab",
+                "renderedContent": "<b>x</b>",
+                "id": "A.B",
+                "reference": "A.B",
+                "title": "B",
+                "space": "A",
+                "page": "B",
+                "breadcrumb": [
+                    "A",
+                    "B"
+                ],
+                "url": "https://wiki/ab",
+                "content": "<b>x</b>"
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list pageSummaries envelope": {
+        "result": [
+            {
+                "reference": "L.Page",
+                "links": [
+                    "not-an-array",
+                    {
+                        "rel": "http://www.xwiki.org/rel/page"
+                    },
+                    {
+                        "rel": "http://www.xwiki.org/rel/space",
+                        "href": "https://wiki/space"
+                    },
+                    {
+                        "rel": "http://www.xwiki.org/rel/page",
+                        "href": "https://wiki/l/page"
+                    }
+                ],
+                "id": "L.Page",
+                "title": "L.Page",
+                "space": "",
+                "page": "",
+                "breadcrumb": [
+                    "L.Page"
+                ],
+                "url": "https://wiki/l/page",
+                "content": null
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list searchResults envelope": {
+        "result": [
+            {
+                "id": "C.D",
+                "name": "D",
+                "xwikiAbsoluteUrl": "https://wiki/cd",
+                "breadcrumb": [
+                    "C",
+                    "D"
+                ],
+                "reference": "C.D",
+                "title": "D",
+                "space": "",
+                "page": "D",
+                "url": "https://wiki/cd",
+                "content": null
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list non-array results falls through": {
+        "result": [
+            {
+                "id": "Only.Ref",
+                "breadcrumb": [
+                    "Only.Ref"
+                ],
+                "reference": "Only.Ref",
+                "title": "Only.Ref",
+                "space": "",
+                "page": "",
+                "url": "",
+                "content": null
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list bare list": {
+        "result": [
+            {
+                "reference": "Main.WebHome",
+                "space": "Main.Sub",
+                "page": "WebHome",
+                "title": "Home",
+                "url": "https://wiki/home",
+                "content": "<p>hi</p>",
+                "extra": "kept",
+                "id": "Main.WebHome",
+                "breadcrumb": [
+                    "Main",
+                    "Sub",
+                    "Home"
+                ]
+            },
+            {
+                "reference": "L.Child",
+                "links": [
+                    {
+                        "rel": "http://www.xwiki.org/rel/pagechild",
+                        "href": "https://wiki/l/child"
+                    }
+                ],
+                "id": "L.Child",
+                "title": "L.Child",
+                "space": "",
+                "page": "",
+                "breadcrumb": [
+                    "L.Child"
+                ],
+                "url": "https://wiki/l/child",
+                "content": null
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list unknown envelope": {
+        "result": [],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list empty results": {
+        "result": [],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list empty response": {
+        "result": [],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list with mapper but no object": {
+        "result": [
+            {
+                "reference": "Zero",
+                "space": "a.0.b",
+                "title": "Zero",
+                "id": "Zero",
+                "page": "",
+                "breadcrumb": [
+                    "a",
+                    "b",
+                    "Zero"
+                ],
+                "url": "",
+                "content": null
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "query": {
+                        "_limit": 5,
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": ""
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list linked pages enriched": {
+        "result": [
+            {
+                "id": "Main.WebHome",
+                "reference": "Main.WebHome",
+                "title": "Live home",
+                "space": "Main",
+                "url": "https://wiki/live",
+                "breadcrumb": [
+                    "Live home"
+                ]
+            },
+            {
+                "id": "Bare.Page",
+                "reference": "Bare.Page",
+                "title": "Page",
+                "space": "",
+                "url": "",
+                "breadcrumb": [
+                    "Page"
+                ],
+                "page": "Page"
+            },
+            {
+                "id": "Broken Page/1",
+                "reference": "Broken Page/1",
+                "title": "Broken",
+                "space": "X.Y",
+                "url": "",
+                "breadcrumb": [
+                    "X",
+                    "Y",
+                    "Broken"
+                ],
+                "page": "",
+                "content": null
+            }
+        ],
+        "calls": [
+            {
+                "mapper": "obj-1"
+            },
+            {
+                "method": "GET",
+                "path": "Main.WebHome",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            },
+            {
+                "method": "GET",
+                "path": "Bare.Page",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            },
+            {
+                "method": "GET",
+                "path": "Broken%20Page%2F1",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "list mapper with no links": {
+        "result": [],
+        "calls": [
+            {
+                "mapper": "obj-1"
+            }
+        ]
+    },
+    "get": {
+        "result": {
+            "pageReference": "A.B",
+            "spaceName": "A",
+            "pageName": "B",
+            "link": "https://wiki/ab",
+            "renderedContent": "<b>x</b>",
+            "id": "A.B",
+            "reference": "A.B",
+            "title": "B",
+            "space": "A",
+            "page": "B",
+            "breadcrumb": [
+                "A",
+                "B"
+            ],
+            "url": "https://wiki/ab",
+            "content": "<b>x</b>"
+        },
+        "calls": [
+            {
+                "method": "GET",
+                "path": "Main.Web%20Home",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "create": {
+        "result": {
+            "reference": "Main.WebHome",
+            "space": "Main.Sub",
+            "page": "WebHome",
+            "title": "Home",
+            "url": "https://wiki/home",
+            "content": "<p>hi</p>",
+            "extra": "kept",
+            "id": "Main.WebHome",
+            "breadcrumb": [
+                "Main",
+                "Sub",
+                "Home"
+            ]
+        },
+        "calls": [
+            {
+                "method": "POST",
+                "path": "",
+                "options": {
+                    "body": {
+                        "reference": "https://wiki/x",
+                        "object": "obj-1",
+                        "register": "reg",
+                        "schema": "sch"
+                    },
+                    "headers": {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "update": {
+        "result": {
+            "reference": "L.Child",
+            "links": [
+                {
+                    "rel": "http://www.xwiki.org/rel/pagechild",
+                    "href": "https://wiki/l/child"
+                }
+            ],
+            "id": "L.Child",
+            "title": "L.Child",
+            "space": "",
+            "page": "",
+            "breadcrumb": [
+                "L.Child"
+            ],
+            "url": "https://wiki/l/child",
+            "content": null
+        },
+        "calls": [
+            {
+                "method": "PUT",
+                "path": "A%2FB",
+                "options": {
+                    "body": {
+                        "title": "New",
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "delete": {
+        "result": null,
+        "calls": [
+            {
+                "method": "DELETE",
+                "path": "A%2FB",
+                "options": {
+                    "query": {
+                        "register": "reg",
+                        "schema": "sch",
+                        "object": "obj-1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "metadata": {
+        "result": [
+            "xwiki",
+            "T:Articles",
+            "FileDocumentMultiple",
+            {
+                "type": "external",
+                "configuredVia": "openconnector",
+                "source": "xwiki",
+                "supports": [
+                    "basic",
+                    "oauth2"
+                ]
+            },
+            "external",
+            "external",
+            "xwiki"
+        ],
+        "calls": []
+    }
+}

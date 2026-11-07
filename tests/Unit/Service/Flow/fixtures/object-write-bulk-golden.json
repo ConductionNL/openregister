@@ -1,0 +1,791 @@
+{
+    "bulk create": {
+        "out": [
+            {
+                "json": {
+                    "name": "a",
+                    "uuid": "uuid-0",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 3
+                }
+            },
+            {
+                "json": {
+                    "name": "b",
+                    "uuid": "uuid-1",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 5
+                }
+            },
+            {
+                "json": {
+                    "name": "c",
+                    "uuid": "uuid-2",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "saveObjects": [
+                    {
+                        "name": "a",
+                        "id": "uuid-0"
+                    },
+                    {
+                        "name": "b",
+                        "id": "uuid-1"
+                    },
+                    {
+                        "name": "c",
+                        "id": "uuid-2"
+                    }
+                ],
+                "validation": true,
+                "events": false
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 0
+                },
+                "updated": {
+                    "count": 0
+                },
+                "unchanged": {
+                    "count": 0
+                }
+            }
+        }
+    },
+    "bulk create with output": {
+        "out": [
+            {
+                "json": {
+                    "id": "u1",
+                    "name": "a",
+                    "row": {
+                        "name": "a",
+                        "uuid": "uuid-0",
+                        "register": "reg",
+                        "schema": "2"
+                    }
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 3
+                }
+            },
+            {
+                "json": {
+                    "id": "u2",
+                    "name": "b",
+                    "skip": true,
+                    "row": {
+                        "name": "b",
+                        "uuid": "uuid-1",
+                        "register": "reg",
+                        "schema": "2"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 5
+                }
+            },
+            {
+                "json": {
+                    "id": "u3",
+                    "name": "c",
+                    "row": {
+                        "name": "c",
+                        "uuid": "uuid-2",
+                        "register": "reg",
+                        "schema": "2"
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "saveObjects": [
+                    {
+                        "name": "a",
+                        "id": "uuid-0"
+                    },
+                    {
+                        "name": "b",
+                        "id": "uuid-1"
+                    },
+                    {
+                        "name": "c",
+                        "id": "uuid-2"
+                    }
+                ],
+                "validation": true,
+                "events": false
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 0
+                },
+                "updated": {
+                    "count": 0
+                },
+                "unchanged": {
+                    "count": 0
+                }
+            }
+        }
+    },
+    "bulk upsert answers": {
+        "out": [
+            {
+                "json": {
+                    "name": "stored",
+                    "uuid": "u1",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 3
+                }
+            },
+            {
+                "json": {
+                    "uuid": "u2",
+                    "name": "upd",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 5
+                }
+            },
+            {
+                "json": {
+                    "name": "same",
+                    "uuid": "u3",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "saveObjects": [
+                    {
+                        "name": "a",
+                        "id": "u1"
+                    },
+                    {
+                        "name": "b",
+                        "id": "u2"
+                    },
+                    {
+                        "name": "c",
+                        "id": "u3"
+                    }
+                ],
+                "validation": true,
+                "events": false
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 2
+                },
+                "updated": {
+                    "count": 1
+                },
+                "unchanged": {
+                    "count": 2
+                }
+            }
+        }
+    },
+    "bulk upsert skips one": {
+        "out": [
+            {
+                "json": {
+                    "name": "from store",
+                    "uuid": "u1",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 3
+                }
+            },
+            {
+                "json": {
+                    "id": "u2",
+                    "name": "b",
+                    "skip": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 5
+                }
+            },
+            {
+                "json": {
+                    "name": "c",
+                    "uuid": "u3",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "saveObjects": [
+                    {
+                        "name": "a",
+                        "id": "u1"
+                    },
+                    {
+                        "name": "c",
+                        "id": "u3"
+                    }
+                ],
+                "validation": true,
+                "events": false
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 1
+                },
+                "updated": {
+                    "count": 0
+                },
+                "unchanged": {
+                    "count": 0
+                }
+            }
+        }
+    },
+    "bulk skips all": {
+        "out": [
+            {
+                "json": {
+                    "id": "skip"
+                },
+                "binary": {
+                    "b": 2
+                },
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [],
+        "report": []
+    },
+    "bulk over the cap": {
+        "failure": "RuntimeException: This bulk write of 3 items exceeds the step's write cap of 2; nothing was written.",
+        "calls": [],
+        "report": []
+    },
+    "bulk at the cap": {
+        "out": [
+            {
+                "json": {
+                    "name": "a",
+                    "uuid": "u1",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 3
+                }
+            },
+            {
+                "json": {
+                    "name": "b",
+                    "uuid": "u2",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 5
+                }
+            },
+            {
+                "json": {
+                    "name": "c",
+                    "uuid": "u3",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "saveObjects": [
+                    {
+                        "name": "a",
+                        "id": "u1"
+                    },
+                    {
+                        "name": "b",
+                        "id": "u2"
+                    },
+                    {
+                        "name": "c",
+                        "id": "u3"
+                    }
+                ],
+                "validation": true,
+                "events": false
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 0
+                },
+                "updated": {
+                    "count": 0
+                },
+                "unchanged": {
+                    "count": 0
+                }
+            }
+        }
+    },
+    "bulk rejected, invalid larger": {
+        "failure": "RuntimeException: The bulk write rejected 3 of its rows (first reason: why); accepted rows were written and were not rolled back.",
+        "calls": [
+            {
+                "saveObjects": [
+                    {
+                        "name": "a",
+                        "id": "u1"
+                    }
+                ],
+                "validation": true,
+                "events": false
+            }
+        ],
+        "report": []
+    },
+    "bulk rejected, no reason": {
+        "failure": "RuntimeException: The bulk write rejected 1 of its rows (first reason: ); accepted rows were written and were not rolled back.",
+        "calls": [
+            {
+                "saveObjects": [
+                    {
+                        "name": "a",
+                        "id": "u1"
+                    }
+                ],
+                "validation": true,
+                "events": false
+            }
+        ],
+        "report": []
+    },
+    "bulk upsert id missing": {
+        "failure": "RuntimeException: The match value for \"uuid\" could not be resolved from the item; a match key is never omitted.",
+        "calls": [],
+        "report": []
+    },
+    "bulk upsert id not scalar": {
+        "failure": "RuntimeException: The match value for \"uuid\" could not be resolved from the item; a match key is never omitted.",
+        "calls": [],
+        "report": []
+    },
+    "bulk upsert id blank": {
+        "failure": "RuntimeException: The match value for \"@self.uuid\" could not be resolved from the item; a match key is never omitted.",
+        "calls": [],
+        "report": []
+    },
+    "bulk payloadFrom": {
+        "out": [
+            {
+                "json": {
+                    "a": 1,
+                    "uuid": "uuid-0",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "saveObjects": [
+                    {
+                        "a": 1,
+                        "id": "uuid-0"
+                    }
+                ],
+                "validation": true,
+                "events": false
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 0
+                },
+                "updated": {
+                    "count": 0
+                },
+                "unchanged": {
+                    "count": 0
+                }
+            }
+        }
+    },
+    "item create": {
+        "out": [
+            {
+                "json": {
+                    "id": "stored-uuid",
+                    "name": "a",
+                    "uuid": "stored-uuid",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 3
+                }
+            },
+            {
+                "json": {
+                    "id": "stored-uuid",
+                    "name": "b",
+                    "uuid": "stored-uuid",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 5
+                }
+            },
+            {
+                "json": {
+                    "id": "stored-uuid",
+                    "name": "c",
+                    "uuid": "stored-uuid",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "saveObject": {
+                    "name": "a"
+                },
+                "uuid": null,
+                "failIfExists": false
+            },
+            {
+                "saveObject": {
+                    "name": "b"
+                },
+                "uuid": null,
+                "failIfExists": false
+            },
+            {
+                "saveObject": {
+                    "name": "c"
+                },
+                "uuid": null,
+                "failIfExists": false
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 3
+                },
+                "updated": {
+                    "count": 0
+                },
+                "deleted": {
+                    "count": 0
+                }
+            }
+        }
+    },
+    "item upsert updates": {
+        "out": [
+            {
+                "json": {
+                    "id": "u1",
+                    "name": "a",
+                    "row": {
+                        "id": "stored-uuid",
+                        "name": "a",
+                        "uuid": "stored-uuid",
+                        "register": "reg",
+                        "schema": "2"
+                    }
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "patchObject": "stored-uuid",
+                "data": {
+                    "name": "a"
+                }
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 0
+                },
+                "updated": {
+                    "count": 1
+                },
+                "deleted": {
+                    "count": 0
+                }
+            }
+        }
+    },
+    "item upsert inserts": {
+        "out": [
+            {
+                "json": {
+                    "id": "stored-uuid",
+                    "name": "a",
+                    "uuid": "stored-uuid",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "saveObject": {
+                    "name": "a"
+                },
+                "uuid": null,
+                "failIfExists": false
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 1
+                },
+                "updated": {
+                    "count": 0
+                },
+                "deleted": {
+                    "count": 0
+                }
+            }
+        }
+    },
+    "item update replaces": {
+        "out": [
+            {
+                "json": {
+                    "id": "stored-uuid",
+                    "name": "a",
+                    "uuid": "stored-uuid",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "saveObject": {
+                    "name": "a"
+                },
+                "uuid": "stored-uuid",
+                "failIfExists": false
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 0
+                },
+                "updated": {
+                    "count": 1
+                },
+                "deleted": {
+                    "count": 0
+                }
+            }
+        }
+    },
+    "item update misses": {
+        "failure": "RuntimeException: An update matched no object; an update never silently inserts one.",
+        "calls": [],
+        "report": []
+    },
+    "item cap stops": {
+        "failure": "RuntimeException: Step exceeded its write cap of 1 writes; 1 writes were performed and were not rolled back.",
+        "calls": [
+            {
+                "saveObject": {
+                    "name": "a"
+                },
+                "uuid": null,
+                "failIfExists": false
+            }
+        ],
+        "report": []
+    },
+    "item delete": {
+        "out": [
+            {
+                "json": {
+                    "id": "u1",
+                    "name": "a",
+                    "gone": {
+                        "uuid": "stored-uuid",
+                        "register": "reg",
+                        "schema": "2",
+                        "deleted": true
+                    }
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "deleteObject": "stored-uuid"
+            }
+        ],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 0
+                },
+                "updated": {
+                    "count": 0
+                },
+                "deleted": {
+                    "count": 1
+                }
+            }
+        }
+    },
+    "item delete skips": {
+        "out": [
+            {
+                "json": {
+                    "id": "u1",
+                    "name": "a",
+                    "deleted": false
+                },
+                "binary": {
+                    "b": 1
+                },
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [],
+        "report": {
+            "write": {
+                "created": {
+                    "count": 0
+                },
+                "updated": {
+                    "count": 0
+                },
+                "deleted": {
+                    "count": 0
+                }
+            }
+        }
+    }
+}

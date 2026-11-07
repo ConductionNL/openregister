@@ -85,233 +85,76 @@ class McpAnnotationValidator {
 
 		$annotation = $schema['x-openregister-mcp'];
 		if (is_array($annotation) === false) {
-			return [
-				[
-					'code' => 'mcp-bad-annotation',
-					'message' => 'x-openregister-mcp must be an object.',
-				],
-			];
+			return [['code' => 'mcp-bad-annotation', 'message' => 'x-openregister-mcp must be an object.']];
 		}
 
-		$errors = [];
-		$this->validateEnabled(annotation: $annotation, errors: $errors);
+		$properties = $this->declaredProperties(schema: $schema);
+		return array_merge($this->enabledErrors(annotation: $annotation), $this->toolsErrors(annotation: $annotation, properties: $properties));
+	}//end validate()
 
+	/**
+	 * The schema's declared properties; none when `properties` is absent or not an object.
+	 *
+	 * @param array<string, mixed> $schema The schema shape to validate.
+	 *
+	 * @return array<string, mixed> The declared properties.
+	 */
+	private function declaredProperties(array $schema): array {
 		$properties = ($schema['properties'] ?? []);
 		if (is_array($properties) === false) {
-			$properties = [];
+			return [];
 		}
 
-		$this->validateTools(annotation: $annotation, properties: $properties, errors: $errors);
-
-		return $errors;
-	}//end validate()
+		return $properties;
+	}//end declaredProperties()
 
 	/**
 	 * Validate the required `enabled` boolean opt-in gate.
 	 *
 	 * @param array<string, mixed> $annotation The x-openregister-mcp block.
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
 	 *
-	 * @return void
+	 * @return array<int, array{code: string, message: string}> The errors of the gate.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Scenario: enabled must be boolean)
 	 */
-	private function validateEnabled(array $annotation, array &$errors): void {
+	private function enabledErrors(array $annotation): array {
 		if (array_key_exists('enabled', $annotation) === false) {
-			$errors[] = [
-				'code' => 'mcp-missing-enabled',
-				'message' => 'x-openregister-mcp requires an `enabled` boolean (the opt-in gate).',
-			];
-			return;
+			return [['code' => 'mcp-missing-enabled', 'message' => 'x-openregister-mcp requires an `enabled` boolean (the opt-in gate).']];
 		}
 
-		if (is_bool($annotation['enabled']) === false) {
-			$errors[] = [
-				'code' => 'mcp-bad-enabled',
-				'message' => sprintf(
-					'x-openregister-mcp `enabled` must be a boolean, got %s.',
-					get_debug_type($annotation['enabled'])
-				),
-			];
+		if (is_bool($annotation['enabled']) === true) {
+			return [];
 		}
-	}//end validateEnabled()
+
+		$type = get_debug_type($annotation['enabled']);
+		return [['code' => 'mcp-bad-enabled', 'message' => sprintf('x-openregister-mcp `enabled` must be a boolean, got %s.', $type)]];
+	}//end enabledErrors()
 
 	/**
 	 * Validate the optional `tools` object: closed verb-key set, per-verb shape.
 	 *
 	 * @param array<string, mixed> $annotation The x-openregister-mcp block.
 	 * @param array<string, mixed> $properties The schema's declared properties (for `filters` cross-checks).
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
 	 *
-	 * @return void
+	 * @return array<int, array{code: string, message: string}> The errors of the tools and their verbs.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Scenario: Unknown verb key is rejected; Scenario: The verb set is closed)
 	 */
-	private function validateTools(array $annotation, array $properties, array &$errors): void {
+	private function toolsErrors(array $annotation, array $properties): array {
 		if (array_key_exists('tools', $annotation) === false) {
-			return;
+			return [];
 		}
 
-		$tools = $annotation['tools'];
-		if (is_array($tools) === false) {
-			$errors[] = [
-				'code' => 'mcp-bad-tools',
-				'message' => 'x-openregister-mcp `tools` must be an object.',
-			];
-			return;
+		if (is_array($annotation['tools']) === false) {
+			return [['code' => 'mcp-bad-tools', 'message' => 'x-openregister-mcp `tools` must be an object.']];
+		}
+		$errors = [];
+		foreach ($annotation['tools'] as $verb => $config) {
+			$errors = array_merge($errors, (new McpVerbAnnotation(verb: (string)$verb, config: $config, properties: $properties))->errors());
 		}
 
-		foreach ($tools as $verb => $config) {
-			if (in_array((string)$verb, self::VERBS, true) === false) {
-				$errors[] = [
-					'code' => 'mcp-unknown-verb',
-					'message' => sprintf(
-						'x-openregister-mcp: unrecognised verb "%s". Allowed verbs: %s.',
-						(string)$verb,
-						implode(', ', self::VERBS)
-					),
-				];
-				continue;
-			}
-
-			if (is_array($config) === false) {
-				$errors[] = [
-					'code' => 'mcp-bad-verb-config',
-					'message' => sprintf('x-openregister-mcp: verb "%s" config must be an object.', (string)$verb),
-				];
-				continue;
-			}
-
-			$this->validateVerbConfig(verb: (string)$verb, config: $config, properties: $properties, errors: $errors);
-		}//end foreach
-	}//end validateTools()
-
-	/**
-	 * Validate a single verb's config object.
-	 *
-	 * @param string $verb The verb name (already known-valid).
-	 * @param array<string, mixed> $config The verb's config object.
-	 * @param array<string, mixed> $properties The schema's declared properties.
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Aggregating every per-verb shape rule in one pass is inherent.
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Requirement: REQ-DIALECT-002 — Save-time validation of the dialect shape)
-	 */
-	private function validateVerbConfig(string $verb, array $config, array $properties, array &$errors): void {
-		$knownKeys = array_merge(['description', 'scope', 'filters'], self::HINT_KEYS);
-
-		foreach (array_keys($config) as $key) {
-			if (in_array((string)$key, $knownKeys, true) === false) {
-				$errors[] = [
-					'code' => 'mcp-unknown-key',
-					'message' => sprintf(
-						'x-openregister-mcp: verb "%s" has an unrecognised key "%s".',
-						$verb,
-						(string)$key
-					),
-				];
-			}
-		}
-
-		if (array_key_exists('description', $config) === true && is_string($config['description']) === false) {
-			$errors[] = [
-				'code' => 'mcp-bad-description',
-				'message' => sprintf('x-openregister-mcp: verb "%s" `description` must be a string.', $verb),
-			];
-		}
-
-		if (array_key_exists('scope', $config) === true
-			&& in_array($config['scope'], self::SCOPES, true) === false
-		) {
-			$errors[] = [
-				'code' => 'mcp-bad-scope',
-				'message' => sprintf(
-					'x-openregister-mcp: verb "%s" `scope` must be one of [%s].',
-					$verb,
-					implode(', ', self::SCOPES)
-				),
-			];
-		}
-
-		foreach (self::HINT_KEYS as $hintKey) {
-			if (array_key_exists($hintKey, $config) === true && is_bool($config[$hintKey]) === false) {
-				$errors[] = [
-					'code' => 'mcp-bad-hint',
-					'message' => sprintf(
-						'x-openregister-mcp: verb "%s" `%s` must be a boolean.',
-						$verb,
-						$hintKey
-					),
-				];
-			}
-		}
-
-		$this->validateFilters(verb: $verb, config: $config, properties: $properties, errors: $errors);
-	}//end validateVerbConfig()
-
-	/**
-	 * Validate the `filters` key: permitted on `search` only, a list of
-	 * strings, each naming an existing schema property.
-	 *
-	 * @param string $verb The verb name.
-	 * @param array<string, mixed> $config The verb's config object.
-	 * @param array<string, mixed> $properties The schema's declared properties.
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Scenario: search filter must reference an existing property; Scenario: filters are permitted only on the search verb)
-	 */
-	private function validateFilters(string $verb, array $config, array $properties, array &$errors): void {
-		if (array_key_exists('filters', $config) === false) {
-			return;
-		}
-
-		if ($verb !== 'search') {
-			$errors[] = [
-				'code' => 'mcp-filters-not-search',
-				'message' => sprintf(
-					'x-openregister-mcp: `filters` is valid on the "search" verb only (found on "%s").',
-					$verb
-				),
-			];
-			return;
-		}
-
-		$filters = $config['filters'];
-		if (is_array($filters) === false) {
-			$errors[] = [
-				'code' => 'mcp-bad-filters',
-				'message' => 'x-openregister-mcp: `search.filters` must be a list of property names.',
-			];
-			return;
-		}
-
-		foreach ($filters as $filter) {
-			if (is_string($filter) === false) {
-				$errors[] = [
-					'code' => 'mcp-bad-filters',
-					'message' => 'x-openregister-mcp: `search.filters` entries must be strings.',
-				];
-				continue;
-			}
-
-			if (array_key_exists($filter, $properties) === false) {
-				$errors[] = [
-					'code' => 'mcp-unknown-filter-property',
-					'message' => sprintf(
-						'x-openregister-mcp: `search.filters` names "%s" which is not a property on this schema.',
-						$filter
-					),
-				];
-			}
-		}//end foreach
-	}//end validateFilters()
+		return $errors;
+	}//end toolsErrors()
 }//end class

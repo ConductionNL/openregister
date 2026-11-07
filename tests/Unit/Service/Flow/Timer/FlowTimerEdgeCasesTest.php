@@ -48,6 +48,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
  * @uses \OCA\OpenRegister\Service\Flow\Timer\EscalationRule
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
  */
 class FlowTimerEdgeCasesTest extends TestCase {
 

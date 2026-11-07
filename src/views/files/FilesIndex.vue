@@ -4,33 +4,26 @@
 			<!-- Header -->
 			<FilterToggleHeader
 				:title="t('openregister', 'Files')"
-				:description="t('openregister', 'Manage and monitor file text extraction status')"
+				:description="
+					t(
+						'openregister',
+						'Manage and monitor file text extraction status',
+					)
+				"
 				:sidebarOpen="sidebarOpen"
 				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span v-if="filesList.length" class="viewTotalCount">
-						{{
-							t('openregister', 'Showing {showing} of {total} files', {
+			<ListActionsBar
+				:summary="
+					filesList.length
+						? t('openregister', 'Showing {showing} of {total} files', {
 								showing: filesList.length,
 								total: totalFiles,
 							})
-						}}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcActions :forceName="true" :inline="1" menuName="Actions">
-						<NcActionButton closeAfterClick @click="refreshFiles">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						: ''
+				"
+				:actions="[refreshAction(refreshFiles)]" />
 
 			<!-- Files Table -->
 			<div class="tableContainer">
@@ -161,26 +154,7 @@
 								{{ formatDate(file.extractedAt) }}
 							</td>
 							<td class="column-actions">
-								<NcActions>
-									<NcActionButton
-										v-if="file.extractionStatus === 'failed'"
-										closeAfterClick
-										@click="retryExtraction(file.id)">
-										<template #icon>
-											<Refresh :size="20" />
-										</template>
-										{{ t('openregister', 'Retry') }}
-									</NcActionButton>
-									<NcActionButton
-										v-if="file.extractionError"
-										closeAfterClick
-										@click="showError(file)">
-										<template #icon>
-											<AlertCircleOutline :size="20" />
-										</template>
-										{{ t('openregister', 'View Error') }}
-									</NcActionButton>
-								</NcActions>
+								<ActionMenu :actions="fileActions(file)" />
 							</td>
 						</tr>
 					</tbody>
@@ -214,19 +188,16 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcActionButton,
-	NcActions,
-	NcAppContent,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
 import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import OffsetPager from '../../components/shared/OffsetPager.vue'
 import FilesSidebar from '../../components/FilesSidebar.vue'
+import { refreshAction } from '../../services/menuActions.js'
 import { offsetPaging } from '../offsetPaging.js'
 
 /**
@@ -235,16 +206,14 @@ import { offsetPaging } from '../offsetPaging.js'
 export default {
 	name: 'FilesIndex',
 	components: {
+		ActionMenu,
+		ListActionsBar,
 		OffsetPager,
 		FilterToggleHeader,
 		NcAppContent,
-		NcActions,
-		NcActionButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		FileDocumentOutline,
-		Refresh,
-		AlertCircleOutline,
 		FilesSidebar,
 	},
 
@@ -266,14 +235,39 @@ export default {
 		}
 	},
 
-	computed: {
-	},
+	computed: {},
 
 	mounted() {
 		this.loadFiles()
 	},
 
 	methods: {
+		refreshAction,
+
+		/**
+		 * The row menu of a file.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} file The file
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		fileActions(file) {
+			return [
+				{
+					label: t('openregister', 'Retry'),
+					icon: Refresh,
+					run: () => this.retryExtraction(file.id),
+					hidden: file.extractionStatus !== 'failed',
+				},
+				{
+					label: t('openregister', 'View Error'),
+					icon: AlertCircleOutline,
+					run: () => this.showError(file),
+					hidden: !file.extractionError,
+				},
+			]
+		},
+
 		t,
 
 		/**
@@ -519,15 +513,7 @@ export default {
 
 @include view-container-2;
 
-
-@include view-actions-bar;
-@include view-info;
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-@include view-actions-rules;
+@include table-container;
 
 .filesTable {
 	width: 100%;
@@ -676,5 +662,4 @@ export default {
 .column-actions {
 	width: 50px;
 }
-
 </style>

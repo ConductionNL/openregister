@@ -92,22 +92,11 @@ class PdfStructureInspector {
 			return false;
 		}
 
-		if (isset($catalog['StructTreeRoot']) === true
-			&& $this->resolveDict(doc: $doc, value: $catalog['StructTreeRoot']) !== null
-		) {
+		if ($this->resolveDict(doc: $doc, value: $catalog['StructTreeRoot'] ?? null) !== null) {
 			return true;
 		}
 
-		$markInfo = null;
-		if (isset($catalog['MarkInfo']) === true) {
-			$markInfo = $this->resolveDict(doc: $doc, value: $catalog['MarkInfo']);
-		}
-
-		if ($markInfo !== null && isset($markInfo['Marked']) === true) {
-			return (trim((string)$markInfo['Marked']->val()) === 'true');
-		}
-
-		return false;
+		return $this->isMarked(markInfo: $this->resolveDict(doc: $doc, value: $catalog['MarkInfo'] ?? null));
 	}//end isTagged()
 
 	/**
@@ -127,28 +116,29 @@ class PdfStructureInspector {
 	 */
 	public function countStructElements(PDFDoc $doc): int {
 		$count = 0;
-
-		// SAPP's own docblock for `get_object_iterator()` uses an informal
-		// "oid=>obj" pseudo-type that PHPStan misreads as a real class
-		// `ddn\sapp\oid` (tracked in phpstan-baseline.neon — a vendor
-		// docblock quirk, not a real type error).
-		foreach ($doc->get_object_iterator() as $object) {
-			if (($object instanceof PDFObject) === false) {
-				continue;
-			}
-
-			$value = $object->get_value();
-			if (($value instanceof PDFValueObject) === false || isset($value['Type']) === false) {
-				continue;
-			}
-
-			if ($value['Type']->val() === 'StructElem') {
+		foreach ($this->dictionaries(doc: $doc) as $dictionary) {
+			if ($this->typeOf(dictionary: $dictionary) === 'StructElem') {
 				$count++;
 			}
-		}//end foreach
+		}
 
 		return $count;
 	}//end countStructElements()
+
+	/**
+	 * Whether a resolved `/MarkInfo` dictionary says `/Marked true`.
+	 *
+	 * @param PDFValueObject|null $markInfo The resolved dictionary, or null.
+	 *
+	 * @return bool True when the document is marked.
+	 */
+	private function isMarked(?PDFValueObject $markInfo): bool {
+		if ($markInfo === null || isset($markInfo['Marked']) === false) {
+			return false;
+		}
+
+		return (trim((string) $markInfo['Marked']->val()) === 'true');
+	}//end isMarked()
 
 	/**
 	 * Find the document's Catalog object (`/Type /Catalog`) by walking the
@@ -160,17 +150,9 @@ class PdfStructureInspector {
 	 * @return PDFValueObject|null The Catalog dictionary, or null when absent.
 	 */
 	private function findCatalog(PDFDoc $doc): ?PDFValueObject {
-		foreach ($doc->get_object_iterator() as $object) {
-			if (($object instanceof PDFObject) === false) {
-				continue;
-			}
-
-			$value = $object->get_value();
-			if (($value instanceof PDFValueObject) === true
-				&& isset($value['Type']) === true
-				&& $value['Type']->val() === 'Catalog'
-			) {
-				return $value;
+		foreach ($this->dictionaries(doc: $doc) as $dictionary) {
+			if ($this->typeOf(dictionary: $dictionary) === 'Catalog') {
+				return $dictionary;
 			}
 		}
 
@@ -178,12 +160,68 @@ class PdfStructureInspector {
 	}//end findCatalog()
 
 	/**
+	 * Yield the dictionary value of every parsed object that carries one.
+	 *
+	 * SAPP's own docblock for `get_object_iterator()` uses an informal
+	 * "oid=>obj" pseudo-type that PHPStan misreads as a real class
+	 * `ddn\sapp\oid` (tracked in phpstan-baseline.neon — a vendor
+	 * docblock quirk, not a real type error).
+	 *
+	 * @param PDFDoc $doc The already-parsed SAPP document.
+	 *
+	 * @return \Generator<int, PDFValueObject> The object dictionaries.
+	 */
+	private function dictionaries(PDFDoc $doc): \Generator {
+		foreach ($doc->get_object_iterator() as $object) {
+			$value = $this->dictionaryOf(object: $object);
+			if ($value !== null) {
+				yield $value;
+			}
+		}
+	}//end dictionaries()
+
+	/**
+	 * The dictionary value of a parsed object, or null when it has none.
+	 *
+	 * @param mixed $object An entry from the object iterator or `get_object()`.
+	 *
+	 * @return PDFValueObject|null The dictionary, or null.
+	 */
+	private function dictionaryOf(mixed $object): ?PDFValueObject {
+		if (($object instanceof PDFObject) === false) {
+			return null;
+		}
+
+		$value = $object->get_value();
+		if (($value instanceof PDFValueObject) === false) {
+			return null;
+		}
+
+		return $value;
+	}//end dictionaryOf()
+
+	/**
+	 * The `/Type` name of a dictionary, or null when it has no `/Type`.
+	 *
+	 * @param PDFValueObject $dictionary The dictionary.
+	 *
+	 * @return mixed The `/Type` value, or null.
+	 */
+	private function typeOf(PDFValueObject $dictionary): mixed {
+		if (isset($dictionary['Type']) === false) {
+			return null;
+		}
+
+		return $dictionary['Type']->val();
+	}//end typeOf()
+
+	/**
 	 * Resolve a PDF value that may be a direct dictionary or an indirect
 	 * reference to one (both forms are legal for `/StructTreeRoot` and
 	 * `/MarkInfo`).
 	 *
-	 * @param PDFDoc $doc The already-parsed SAPP document (for indirect resolution).
-	 * @param mixed $value The catalog field's raw value.
+	 * @param PDFDoc $doc   The already-parsed SAPP document (for indirect resolution).
+	 * @param mixed  $value The catalog field's raw value, or null when absent.
 	 *
 	 * @return PDFValueObject|null The resolved dictionary, or null when unresolvable.
 	 */
@@ -192,19 +230,31 @@ class PdfStructureInspector {
 			return $value;
 		}
 
-		if (is_object($value) === true && method_exists($value, 'get_object_referenced') === true) {
-			$ref = $value->get_object_referenced();
-			if (is_int($ref) === true) {
-				$refObject = $doc->get_object($ref);
-				if ($refObject instanceof PDFObject) {
-					$refValue = $refObject->get_value();
-					if ($refValue instanceof PDFValueObject) {
-						return $refValue;
-					}
-				}
-			}
+		$ref = $this->referencedId(value: $value);
+		if ($ref === null) {
+			return null;
 		}
 
-		return null;
+		return $this->dictionaryOf(object: $doc->get_object($ref));
 	}//end resolveDict()
+
+	/**
+	 * The object id an indirect reference points at, or null.
+	 *
+	 * @param mixed $value The raw value.
+	 *
+	 * @return int|null The referenced object id, or null when not a reference.
+	 */
+	private function referencedId($value): ?int {
+		if (is_object($value) === false || method_exists($value, 'get_object_referenced') === false) {
+			return null;
+		}
+
+		$ref = $value->get_object_referenced();
+		if (is_int($ref) === false) {
+			return null;
+		}
+
+		return $ref;
+	}//end referencedId()
 }//end class

@@ -35,6 +35,7 @@ use ReflectionProperty;
  * Object field filters on the facet path, recorded per base query.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetFieldLabel
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TableTermsFacet
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema

@@ -821,6 +821,89 @@
             ]
         ]
     },
+    "keyword hits with gaps": {
+        "result": {
+            "text": "Source: Object #k3\n{\"id\":\"k3\"}\n\nSource: Object #k9\n{\"uuid\":\"k9\",\"_score\":0.1,\"title\":\"t9\"}\n\n",
+            "sources": [
+                {
+                    "id": "k3",
+                    "type": "object",
+                    "name": "Object #k3",
+                    "similarity": 1,
+                    "text": "{\"id\":\"k3\"}",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                },
+                {
+                    "id": "k9",
+                    "type": "object",
+                    "name": "Object #k9",
+                    "similarity": 0.1,
+                    "text": "{\"uuid\":\"k9\",\"_score\":0.1,\"title\":\"t9\"}",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 8
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 2,
+                    "fileSources": 0,
+                    "objectSources": 2,
+                    "contextLength": 92,
+                    "searchMode": "keyword",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 4,
+                    "numSourcesObjects": 4,
+                    "rawResultsCount": 2
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "k3",
+                        "type": "object",
+                        "name": "Object #k3",
+                        "similarity": 1,
+                        "text": "{\"id\":\"k3\"}",
+                        "uuid": null,
+                        "register": null,
+                        "schema": null,
+                        "uri": null
+                    }
+                }
+            ]
+        ]
+    },
     "keyword mode": {
         "result": {
             "text": "Source: Object #k1\n{\"id\":\"k1\",\"title\":\"x\"}\n\n",
@@ -1784,6 +1867,112 @@
             ]
         ]
     },
+    "scalar and odd metadata": {
+        "result": {
+            "text": "Source: Object #scalarme\n\n\nSource: n.txt\n\n\nSource: T7\n\n\nSource: A note\nchunk\n\n",
+            "sources": [
+                {
+                    "id": "scalarmeta1",
+                    "type": "object",
+                    "name": "Object #scalarme",
+                    "similarity": 1,
+                    "text": "",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": null
+                },
+                {
+                    "id": "filemeta22",
+                    "type": "file",
+                    "name": "n.txt",
+                    "similarity": 1,
+                    "text": "",
+                    "file_id": "filemeta22",
+                    "file_path": null,
+                    "mime_type": null
+                },
+                {
+                    "id": 7,
+                    "type": "object",
+                    "name": "T7",
+                    "similarity": 0.4,
+                    "text": "",
+                    "uuid": null,
+                    "register": null,
+                    "schema": null,
+                    "uri": "/7"
+                },
+                {
+                    "id": "notenote99",
+                    "type": "note",
+                    "name": "A note",
+                    "similarity": 1,
+                    "text": "chunk"
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": []
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 20
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                20,
+                []
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 4,
+                    "fileSources": 1,
+                    "objectSources": 2,
+                    "contextLength": 78,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 10,
+                    "numSourcesObjects": 10,
+                    "rawResultsCount": 4
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "scalarmeta1",
+                        "type": "object",
+                        "name": "Object #scalarme",
+                        "similarity": 1,
+                        "text": "",
+                        "uuid": null,
+                        "register": null,
+                        "schema": null,
+                        "uri": null
+                    }
+                }
+            ]
+        ]
+    },
     "semantic mode": {
         "result": {
             "text": "Source: Object one\ntext o1\n\nSource: a.pdf\nfile f1\n\nSource: Two\ntext o2\n\nSource: b.txt\nfile f2\n\n",
@@ -1869,6 +2058,108 @@
                     "includeObjects": true,
                     "includeFiles": true,
                     "numSourcesFiles": 2,
+                    "numSourcesObjects": 2,
+                    "rawResultsCount": 9
+                }
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] First source details",
+                {
+                    "source": {
+                        "id": "o1",
+                        "type": "object",
+                        "name": "Object one",
+                        "similarity": 0.9,
+                        "text": "text o1",
+                        "uuid": "u1",
+                        "register": 3,
+                        "schema": 4,
+                        "uri": "/o1"
+                    }
+                }
+            ]
+        ]
+    },
+    "semantic objects and files counted apart": {
+        "result": {
+            "text": "Source: Object one\ntext o1\n\nSource: a.pdf\nfile f1\n\nSource: Two\ntext o2\n\n",
+            "sources": [
+                {
+                    "id": "o1",
+                    "type": "object",
+                    "name": "Object one",
+                    "similarity": 0.9,
+                    "text": "text o1",
+                    "uuid": "u1",
+                    "register": 3,
+                    "schema": 4,
+                    "uri": "/o1"
+                },
+                {
+                    "id": "f1",
+                    "type": "file",
+                    "name": "a.pdf",
+                    "similarity": 0.8,
+                    "text": "file f1",
+                    "file_id": 11,
+                    "file_path": "/a.pdf",
+                    "mime_type": "application/pdf"
+                },
+                {
+                    "id": "o2",
+                    "type": "object",
+                    "name": "Two",
+                    "similarity": 1,
+                    "text": "text o2",
+                    "uuid": "u2",
+                    "register": 5,
+                    "schema": 6,
+                    "uri": null
+                }
+            ]
+        },
+        "calls": [
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Retrieving context",
+                {
+                    "query": "find the thing",
+                    "hasAgent": true,
+                    "ragSettings": {
+                        "numSourcesFiles": 1,
+                        "numSourcesObjects": 2
+                    }
+                }
+            ],
+            [
+                "keyword",
+                {
+                    "_search": "find the thing",
+                    "_limit": 4
+                }
+            ],
+            [
+                "semantic",
+                "find the thing",
+                4,
+                []
+            ],
+            [
+                "log",
+                "info",
+                "[ContextRetrievalHandler] Context retrieved",
+                {
+                    "numSources": 3,
+                    "fileSources": 1,
+                    "objectSources": 2,
+                    "contextLength": 72,
+                    "searchMode": "semantic",
+                    "includeObjects": true,
+                    "includeFiles": true,
+                    "numSourcesFiles": 1,
                     "numSourcesObjects": 2,
                     "rawResultsCount": 9
                 }

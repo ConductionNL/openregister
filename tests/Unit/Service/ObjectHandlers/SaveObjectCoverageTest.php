@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Tests\Unit\Service\Object\FilePropertyCalls;
+use OCA\OpenRegister\Tests\Unit\Service\Object\RelationCalls;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
@@ -224,6 +226,14 @@ class SaveObjectCoverageTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $method, array $args = []) {
+		if (in_array($method, FilePropertyCalls::METHODS, true) === true) {
+			return FilePropertyCalls::{$method}($this->saveObject, $args);
+		}
+
+		if (in_array($method, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$method}($this->saveObject, $args);
+		}
+
 		if ($method === 'validateReferences' || $method === 'validateReferenceExists') {
 			return ReferenceValidationCalls::{$method}($this->saveObject, $args);
 		}

@@ -21,6 +21,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -175,10 +178,23 @@ class SaveObjectsTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $method, array $args = []) {
-		$ref = new ReflectionClass($this->handler);
+		if ($method === 'scanForRelations') {
+			return (new BulkRelationScanner())->scan(data: $args[0], run: new BulkRelationRun(prefix: $args[1], schema: $args[2]));
+		}
+
+		if ($method === 'performComprehensiveSchemaAnalysis') {
+			return (new BulkSchemaAnalysis())->analyse($args[0]);
+		}
+
+		$target = $this->handler;
+		if ($method === 'isRecordableReference') {
+			$target = new BulkRelationScanner();
+		}
+
+		$ref = new ReflectionClass($target);
 		$m = $ref->getMethod($method);
 		$m->setAccessible(true);
-		return $m->invokeArgs($this->handler, $args);
+		return $m->invokeArgs($target, $args);
 	}
 
 	// =========================================================================
