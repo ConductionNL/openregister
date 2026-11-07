@@ -53,7 +53,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class EndpointService {
+class EndpointService implements EndpointServiceInterface {
 	/**
 	 * Target types that run no logic yet, with the name their placeholder response uses.
 	 */
