@@ -56,13 +56,7 @@ class UniqueHintAnnotationValidator {
 		}
 
 		if (is_array($annotation) === false) {
-			return [
-				[
-					'code' => 'unique-hint.not-list',
-					'property' => '',
-					'message' => 'x-openregister-unique-hint must be an array of property names.',
-				],
-			];
+			return [$this->error(code: 'unique-hint.not-list', message: 'x-openregister-unique-hint must be an array of property names.')];
 		}
 
 		$properties = ($schema['properties'] ?? []);
@@ -70,30 +64,55 @@ class UniqueHintAnnotationValidator {
 			$properties = [];
 		}
 
+		return $this->entryErrors(annotation: $annotation, properties: $properties);
+	}//end validate()
+
+	/**
+	 * One error per entry that is not a non-empty name, or names a property
+	 * the schema does not declare, in annotation order.
+	 *
+	 * @param array<mixed>         $annotation The annotation list.
+	 * @param array<string, mixed> $properties The declared properties.
+	 *
+	 * @return array<int, array{code: string, property: string, message: string}>
+	 */
+	private function entryErrors(array $annotation, array $properties): array {
 		$errors = [];
 		foreach ($annotation as $index => $name) {
-			if (is_string($name) === false || $name === '') {
-				$errors[] = [
-					'code' => 'unique-hint.not-a-name',
-					'property' => '',
-					'message' => sprintf('x-openregister-unique-hint entry #%d must be a non-empty property name.', (int)$index),
-				];
-				continue;
+			if ($this->isName(name: $name) === false) {
+				$message = sprintf('x-openregister-unique-hint entry #%d must be a non-empty property name.', (int)$index);
+				$errors[] = $this->error(code: 'unique-hint.not-a-name', message: $message);
+			} else if (array_key_exists($name, $properties) === false) {
+				$message = sprintf('x-openregister-unique-hint names "%s", which this schema does not declare.', $name);
+				$errors[] = array_replace($this->error(code: 'unique-hint.unknown-property', message: $message), ['property' => $name]);
 			}
-
-			if (array_key_exists($name, $properties) === true) {
-				continue;
-			}
-
-			$errors[] = [
-				'code' => 'unique-hint.unknown-property',
-				'property' => $name,
-				'message' => sprintf('x-openregister-unique-hint names "%s", which this schema does not declare.', $name),
-			];
-		}//end foreach
+		}
 
 		return $errors;
-	}//end validate()
+	}//end entryErrors()
+
+	/**
+	 * One validation error; `property` is '' unless the caller replaces it.
+	 *
+	 * @param string $code    The error code.
+	 * @param string $message The error message.
+	 *
+	 * @return array{code: string, property: string, message: string}
+	 */
+	private function error(string $code, string $message): array {
+		return ['code' => $code, 'property' => '', 'message' => $message];
+	}//end error()
+
+	/**
+	 * Whether an annotation entry is a non-empty string.
+	 *
+	 * @param mixed $name The entry.
+	 *
+	 * @return bool
+	 */
+	private function isName(mixed $name): bool {
+		return is_string($name) === true && $name !== '';
+	}//end isName()
 
 	/**
 	 * The property names a schema configuration nominates, cleaned.
@@ -115,13 +134,6 @@ class UniqueHintAnnotationValidator {
 			return [];
 		}
 
-		$names = [];
-		foreach ($annotation as $name) {
-			if (is_string($name) === true && $name !== '') {
-				$names[] = $name;
-			}
-		}
-
-		return array_values(array_unique($names));
+		return array_values(array_unique(array_filter($annotation, fn (mixed $name): bool => $this->isName(name: $name))));
 	}//end nominated()
 }//end class
