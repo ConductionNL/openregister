@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecision;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPlanning;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionQueue;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
@@ -123,22 +124,24 @@ class AutoTransitionRunnerTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 
 		$this->runner = new AutoTransitionRunner(
+			new AutoTransitionPlanning(
+				new AutoTransitionSelector(
+					new LifecycleConditionEvaluator(
+						$this->createMock(IUserSession::class),
+						$groupManager,
+						$l10n,
+						$this->logger,
+						$this->realConditionDialect()
+					),
+					$this->logger
+				),
+				// A REAL queue around the mocked deferral service, not a mocked queue:
+				// the dedupe key, the entry shape and the kill-switch rule are the
+				// behaviour these tests assert, and a double would assert nothing.
+				new AutoTransitionQueue($this->deferral, $this->logger)
+			),
 			$this->container,
 			$this->schemaMapper,
-			new AutoTransitionSelector(
-				new LifecycleConditionEvaluator(
-					$this->createMock(IUserSession::class),
-					$groupManager,
-					$l10n,
-					$this->logger,
-					$this->realConditionDialect()
-				),
-				$this->logger
-			),
-			// A REAL queue around the mocked deferral service, not a mocked queue:
-			// the dedupe key, the entry shape and the kill-switch rule are the
-			// behaviour these tests assert, and a double would assert nothing.
-			new AutoTransitionQueue($this->deferral, $this->logger),
 			$this->logger
 		);
 	}//end setUp()

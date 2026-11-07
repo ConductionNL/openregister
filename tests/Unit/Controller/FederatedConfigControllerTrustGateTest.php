@@ -31,6 +31,7 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\FederatedConfigController;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\Service\Config\FederatedConfigTransport;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -292,10 +293,12 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 			->method('setValueString')
 			->with('openregister', 'federated_config_allow_unverified_bundles', 'true');
 		$service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$this->createMock(\OCA\OpenRegister\Service\Credential\CredentialBrokerService::class),
+				$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
+				$this->createMock(\OCP\Http\Client\IClientService::class)
+			),
 			$this->createMock(\OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry::class),
-			$this->createMock(\OCA\OpenRegister\Service\Credential\CredentialBrokerService::class),
-			$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
-			$this->createMock(\OCP\Http\Client\IClientService::class),
 			$appConfig,
 			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);

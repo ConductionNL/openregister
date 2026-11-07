@@ -51,23 +51,37 @@ class AutoTransitionRunner {
 
 
 	/**
+	 * Picks the one eligible move, or none.
+	 *
+	 * @var AutoTransitionSelector
+	 */
+	private readonly AutoTransitionSelector $selector;
+
+	/**
+	 * Decides inline versus queued, and owns the job list.
+	 *
+	 * @var AutoTransitionQueue
+	 */
+	private readonly AutoTransitionQueue $queue;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container Resolves ObjectService and TransitionEngine lazily; see the class docblock.
-	 * @param SchemaMapperInterface $schemaMapper Reads the schema's lifecycle annotation.
-	 * @param AutoTransitionSelector $selector Picks the one eligible move, or none.
-	 * @param AutoTransitionQueue $queue Decides inline versus queued, and owns the job list.
-	 * @param LoggerInterface $logger Logs every refusal, so a move that never happens is visible.
+	 * @param AutoTransitionPlanning $planning     The selector and queue that decide and hold the automatic transitions to run.
+	 * @param ContainerInterface     $container    Resolves ObjectService and TransitionEngine lazily; see the class docblock.
+	 * @param SchemaMapperInterface  $schemaMapper Reads the schema's lifecycle annotation.
+	 * @param LoggerInterface        $logger       Logs every refusal, so a move that never happens is visible.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
+		AutoTransitionPlanning $planning,
 		private readonly ContainerInterface $container,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly AutoTransitionSelector $selector,
-		private readonly AutoTransitionQueue $queue,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->selector = $planning->selector;
+		$this->queue = $planning->queue;
 	}//end __construct()
 
 	/**
