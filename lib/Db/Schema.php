@@ -42,10 +42,10 @@ use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
-use OCA\OpenRegister\Db\Schema\SchemaFieldTypes;
-use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
 use OCP\IURLGenerator;
 use stdClass;
+use OCA\OpenRegister\Db\Schema\SchemaFieldTypes;
+use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
 
 /**
  * Class Schema
