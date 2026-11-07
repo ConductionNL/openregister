@@ -35,6 +35,7 @@ function emptyStatistics() {
  * Provides functionality for retrieving, filtering, and managing audit trail entries
  */
 let pendingRefresh = null
+let requestInFlight = null
 
 export const useAuditTrailStore = defineStore('auditTrail', {
 	state: () => ({
@@ -248,12 +249,37 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		refreshAuditTrailList() {
 			pendingRefresh ??= Promise.resolve().then(() => {
 				pendingRefresh = null
-				return this.fetchAuditTrails({
-					limit: this.auditTrailPagination.limit,
-					page: this.auditTrailPagination.page,
-				})
+				return this.sharedListRequest()
 			})
 			return pendingRefresh
+		},
+
+		/**
+		 * The list request for the current query: one already on its way is
+		 * shared, so a sidebar and a page that mount a moment apart ask once.
+		 *
+		 * @return {Promise} The request
+		 *
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-has
+		 */
+		sharedListRequest() {
+			const { limit, page } = this.auditTrailPagination
+			const key = JSON.stringify([
+				this.auditTrailFilters,
+				this.auditTrailSearch,
+				this.auditTrailSort,
+				limit,
+				page,
+			])
+			if (requestInFlight?.key === key) {
+				return requestInFlight.promise
+			}
+			const request = { key }
+			request.promise = this.fetchAuditTrails({ limit, page }).finally(() => {
+				if (requestInFlight === request) requestInFlight = null
+			})
+			requestInFlight = request
+			return request.promise
 		},
 
 		/**

@@ -138,6 +138,38 @@ describe('AuditTrail Store', () => {
 			expect(store.fetchAuditTrails).toHaveBeenCalledTimes(2)
 		})
 
+		it('shares a request still on its way with a later refresh of the same query', async () => {
+			let finish
+			store.fetchAuditTrails = jest.fn(
+				() =>
+					new Promise((resolve) => {
+						finish = resolve
+					}),
+			)
+			const first = store.refreshAuditTrailList()
+			await Promise.resolve()
+			const second = store.refreshAuditTrailList()
+			await Promise.resolve()
+			finish('done')
+			expect(await Promise.all([first, second])).toEqual(['done', 'done'])
+			expect(store.fetchAuditTrails).toHaveBeenCalledTimes(1)
+		})
+
+		it('sends a new request when the query changed while one is on its way', async () => {
+			const finish = []
+			store.fetchAuditTrails = jest.fn(
+				() => new Promise((resolve) => finish.push(resolve)),
+			)
+			const first = store.refreshAuditTrailList()
+			await Promise.resolve()
+			store.setAuditTrailFilters({ action: 'read' })
+			const second = store.refreshAuditTrailList()
+			await Promise.resolve()
+			expect(store.fetchAuditTrails).toHaveBeenCalledTimes(2)
+			finish.forEach((resolve) => resolve('done'))
+			await Promise.all([first, second])
+		})
+
 		it('passes a failed request on to every caller', async () => {
 			store.fetchAuditTrails = jest.fn(async () => {
 				throw new Error('down')

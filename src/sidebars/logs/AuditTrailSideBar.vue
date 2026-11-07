@@ -354,9 +354,6 @@ export default {
 			schemaStore.refreshSchemaList()
 		}
 
-		// Load initial audit trail data and ensure it's refreshed
-		this.loadAuditTrailData()
-
 		this.loadStatistics()
 		this.loadActionDistribution()
 		this.loadTopObjects()
@@ -378,22 +375,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Load audit trail data and update filtered count
-		 *
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async loadAuditTrailData() {
-			try {
-				await auditTrailStore.refreshAuditTrailList()
-				this.updateFilteredCount()
-			} catch {
-				// Handle error silently
-			}
-		},
-
 		/**
 		 * Clear filters (alias for clearAllFilters for template compatibility)
 		 *
@@ -586,7 +567,7 @@ export default {
 		},
 
 		/**
-		 * Build filters from state and push to store, then refresh list
+		 * Build filters from state and, when they changed, push them to the store and refresh the list
 		 *
 		 * @return {void}
 		 *
@@ -606,6 +587,13 @@ export default {
 				['object', this.objectFilter],
 			])
 			if (this.showOnlyWithChanges) filters.onlyWithChanges = true
+
+			// The index loads the list on mount; only a change of filters needs another load.
+			if (
+				JSON.stringify(filters)
+				=== JSON.stringify(auditTrailStore.auditTrailFilters)
+			)
+				return
 
 			auditTrailStore.setAuditTrailFilters(filters)
 			auditTrailStore.refreshAuditTrailList()
