@@ -55,6 +55,7 @@ use Throwable;
  * @covers \OCA\OpenRegister\Files\Controller\FilesController
  * @covers \OCA\OpenRegister\Files\Controller\Support\FileAccessCheck
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileActionRefusal
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileActionTarget
  * @uses \OCA\OpenRegister\Files\Controller\Support\FilesControllerServices
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileStore
  * @uses \OCA\OpenRegister\Files\Controller\Support\FilePlatform
