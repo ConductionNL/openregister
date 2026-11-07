@@ -92,6 +92,7 @@ final class ContractBindings {
 		ManifestServiceInterface::class => ManifestService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
+		OasServiceInterface::class => OasService::class,
 		ObjectCalendarEventsInterface::class => CalendarEventService::class,
 		ObjectCalendarTasksInterface::class => \OCA\OpenRegister\Service\TaskService::class,
 		ObjectExporterInterface::class => ExportService::class,

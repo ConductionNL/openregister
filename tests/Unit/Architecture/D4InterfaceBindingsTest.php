@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ManifestService;
 use OCA\OpenRegister\Service\ManifestServiceInterface;
+use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\OasServiceInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -46,6 +48,7 @@ final class D4InterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		ManifestService::class => [ManifestServiceInterface::class, ContractBindings::class],
+		OasService::class => [OasServiceInterface::class, ContractBindings::class],
 	];
 
 	/**

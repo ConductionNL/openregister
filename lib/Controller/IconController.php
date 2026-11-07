@@ -36,6 +36,8 @@ use OCP\IRequest;
 
 /**
  * Renders curated MDI glyphs as SVG images.
+ *
+ * @spec openspec/specs/unified-search-provider/spec.md
  */
 class IconController extends Controller {
 	/**
@@ -48,7 +50,6 @@ class IconController extends Controller {
 	 */
 	public function __construct(string $appName, IRequest $request) {
 		parent::__construct(appName: $appName, request: $request);
-
 	}//end __construct()
 
 	/**
@@ -73,17 +74,10 @@ class IconController extends Controller {
 	public function mdi(string $name): DataDisplayResponse {
 		$svg = MdiIconRenderer::svg(icon: $name);
 		if ($svg === null) {
-			return new DataDisplayResponse(
-				data: '',
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return new DataDisplayResponse(data: '', statusCode: Http::STATUS_NOT_FOUND);
 		}
 
-		$response = new DataDisplayResponse(
-			data: $svg,
-			statusCode: Http::STATUS_OK,
-			headers: ['Content-Type' => 'image/svg+xml']
-		);
+		$response = new DataDisplayResponse(data: $svg, statusCode: Http::STATUS_OK, headers: ['Content-Type' => 'image/svg+xml']);
 		// Glyph geometry is immutable for a given name — cache hard.
 		$response->cacheFor(86400, false, true);
 
