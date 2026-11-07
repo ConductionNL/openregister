@@ -20,6 +20,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
@@ -103,7 +105,13 @@ class TranslationControllerA24GoldenTest extends TestCase {
 	private function controller(array $params = []): TranslationController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
-			static fn (string $key, $default = null) => (array_key_exists($key, $params) === true ? $params[$key] : $default)
+			static function (string $key, $default = null) use ($params) {
+				if (array_key_exists(key: $key, array: $params) === true) {
+					return $params[$key];
+				}
+
+				return $default;
+			}
 		);
 		$request->method('getParams')->willReturn($params);
 
@@ -124,7 +132,15 @@ class TranslationControllerA24GoldenTest extends TestCase {
 	 */
 	private function recordSearch(string $method): void {
 		$this->status->method($method)->willReturnCallback(
-			static fn (?string $query, ?string $language, ?string $status, ?string $objectUuid, int $limit, ?string $sourceLanguage, bool $isOutOfDate): array => [
+			static fn (
+				?string $query,
+				?string $language,
+				?string $status,
+				?string $objectUuid,
+				int $limit,
+				?string $sourceLanguage,
+				bool $isOutOfDate
+			): array => [
 				[$method, $query, $language, $status, $objectUuid, $limit, $sourceLanguage, $isOutOfDate],
 			]
 		);
@@ -165,7 +181,15 @@ class TranslationControllerA24GoldenTest extends TestCase {
 	 */
 	public function testSearchPassesFiltersAndClampsTheLimit(): void {
 		$this->recordSearch('search');
-		$raw = ['query' => 'q', 'language' => 'nl', 'status' => 'draft', 'objectUuid' => 'u', 'limit' => '5000', 'sourceLanguage' => 'en', 'isOutOfDate' => ' Yes '];
+		$raw = [
+			'query' => 'q',
+			'language' => 'nl',
+			'status' => 'draft',
+			'objectUuid' => 'u',
+			'limit' => '5000',
+			'sourceLanguage' => 'en',
+			'isOutOfDate' => ' Yes '
+		];
 		$this->assertSame(
 			[['search', 'q', 'nl', 'draft', 'u', 1000, 'en', true]],
 			$this->search($raw, ['q', 'nl', 'draft', 'u', 5000, 'en', ' Yes '])['results']

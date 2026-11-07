@@ -20,6 +20,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RegisterDescriptorController;
@@ -60,7 +62,11 @@ class RegisterDescriptorControllerA24GoldenTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->descriptors = $this->createMock(RegisterDescriptorServiceInterface::class);
 		$this->descriptors->method('inventory')->willReturn([["state" => "absent"], ["state" => "current"]]);
-		$this->descriptors->method('reimport')->willReturnCallback(fn (string $appId, string $slug, string $via): array => ["outcome" => $slug, "via" => $via]);
+		$this->descriptors->method('reimport')->willReturnCallback(fn (
+			string $appId,
+			string $slug,
+			string $via
+		): array => ["outcome" => $slug, "via" => $via]);
 	}//end setUp()
 
 	/**
@@ -81,7 +87,13 @@ class RegisterDescriptorControllerA24GoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturnCallback(fn (string $checked): bool => ($checked === $uid && $admin));
-		return new RegisterDescriptorController("openregister", $this->createMock(IRequest::class), $this->descriptors, $session, $this->groupManager);
+		return new RegisterDescriptorController(
+			"openregister",
+			$this->createMock(IRequest::class),
+			$this->descriptors,
+			$session,
+			$this->groupManager
+		);
 	}//end controller()
 
 	/**
@@ -113,7 +125,10 @@ class RegisterDescriptorControllerA24GoldenTest extends TestCase {
 	public function testAllowed(): void {
 		$c = $this->controller("root", true);
 		$r = $c->index();
-		$this->assertSame([200, ["results" => [["state" => "absent"], ["state" => "current"]], "total" => 2, "absent" => 1, "behind" => 0]], [$r->getStatus(), $r->getData()]);
+		$this->assertSame(
+			[200, ["results" => [["state" => "absent"], ["state" => "current"]], "total" => 2, "absent" => 1, "behind" => 0]],
+			[$r->getStatus(), $r->getData()]
+		);
 		$r = $c->import("app", "reg");
 		$this->assertSame([200, ["outcome" => "reg", "via" => "admin settings: Register descriptors"]], [$r->getStatus(), $r->getData()]);
 		$r = $c->import("app", "failed");

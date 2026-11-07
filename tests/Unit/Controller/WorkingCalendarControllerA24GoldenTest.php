@@ -20,6 +20,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\WorkingCalendarController;
@@ -91,7 +93,11 @@ class WorkingCalendarControllerA24GoldenTest extends TestCase {
 
 		foreach ($cases as $name => $call) {
 			$r = $call($this->controller('alice', false));
-			$this->assertSame([403, ['error' => 'Forbidden: working calendars are administered by administrators']], [$r->getStatus(), $r->getData()], $name);
+			$this->assertSame(
+				[403, ['error' => 'Forbidden: working calendars are administered by administrators']],
+				[$r->getStatus(), $r->getData()],
+				$name
+			);
 		}
 	}
 

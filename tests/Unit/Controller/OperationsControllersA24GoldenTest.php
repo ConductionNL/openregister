@@ -20,6 +20,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\OperationsConsistencyController;
@@ -160,7 +162,14 @@ class OperationsControllersA24GoldenTest extends TestCase {
 	 * @return OperationsConsoleController
 	 */
 	private function consoleController(array $params, string $verb = 'GET', ?string $uid = 'admin'): OperationsConsoleController {
-		return new OperationsConsoleController('openregister', $this->request($params, $verb), $this->console, $this->jobs, $this->alerts, $this->session($uid));
+		return new OperationsConsoleController(
+			'openregister',
+			$this->request($params, $verb),
+			$this->console,
+			$this->jobs,
+			$this->alerts,
+			$this->session($uid)
+		);
 	}//end consoleController()
 
 	/**
@@ -172,7 +181,16 @@ class OperationsControllersA24GoldenTest extends TestCase {
 		return [
 			'console' => [
 				OperationsConsoleController::class,
-				['index' => true, 'jobs' => true, 'ruleRuns' => true, 'runs' => true, 'runNow' => false, 'schedule' => false, 'alerts' => true, 'administerAlerts' => false],
+				[
+					'index' => true,
+					'jobs' => true,
+					'ruleRuns' => true,
+					'runs' => true,
+					'runNow' => false,
+					'schedule' => false,
+					'alerts' => true,
+					'administerAlerts' => false
+				],
 			],
 			'consistency' => [
 				OperationsConsistencyController::class,
@@ -220,7 +238,10 @@ class OperationsControllersA24GoldenTest extends TestCase {
 	public function testConsoleReadsParseParams(): void {
 		$this->console->expects($this->exactly(2))->method('panes')->willReturnCallback(fn (int $windowHours): array => ['w' => $windowHours]);
 		$this->assertSame(['w' => 6], $this->consoleController(['hours' => '6'])->index()->getData());
-		$this->assertSame(['w' => OperationsConsoleServiceInterface::DEFAULT_WINDOW_HOURS], $this->consoleController(['hours' => 'x'])->index()->getData());
+		$this->assertSame(
+			['w' => OperationsConsoleServiceInterface::DEFAULT_WINDOW_HOURS],
+			$this->consoleController(['hours' => 'x'])->index()->getData()
+		);
 
 		$this->console->method('jobs')->willReturnCallback(fn (?string $state = null, int $limit = 50): array => [$state, $limit]);
 		$this->assertSame(['failed', 5], $this->consoleController(['state' => 'failed', 'limit' => '5'])->jobs()->getData());
@@ -237,9 +258,18 @@ class OperationsControllersA24GoldenTest extends TestCase {
 	 */
 	public function testRunsParsesFilters(): void {
 		$this->jobs->method('runs')->willReturnCallback(
-			fn (?string $jobClass, ?string $outcome, ?int $windowHours, int $limit, int $offset): array => [$jobClass, $outcome, $windowHours, $limit, $offset]
+			fn (
+				?string $jobClass,
+				?string $outcome,
+				?int $windowHours,
+				int $limit,
+				int $offset
+			): array => [$jobClass, $outcome, $windowHours, $limit, $offset]
 		);
-		$this->assertSame(['J', 'failed', 3, 10, 20], $this->consoleController(['job' => 'J', 'outcome' => 'failed', 'hours' => '3', 'limit' => '10', 'offset' => '20'])->runs()->getData());
+		$this->assertSame(
+			['J', 'failed', 3, 10, 20],
+			$this->consoleController(['job' => 'J', 'outcome' => 'failed', 'hours' => '3', 'limit' => '10', 'offset' => '20'])->runs()->getData()
+		);
 		$this->assertSame([null, null, null, 50, 0], $this->consoleController(['job' => '', 'hours' => 'abc'])->runs()->getData());
 	}
 
@@ -295,7 +325,10 @@ class OperationsControllersA24GoldenTest extends TestCase {
 		$this->jobs->expects($this->exactly(2))->method('administerSchedule')->willReturnCallback(
 			fn (string $jobClass, ?bool $enabled, ?int $intervalSeconds, ?int $windowStartHour, ?int $windowEndHour): array => func_get_args()
 		);
-		$r = $this->consoleController(['job' => 'J', 'enabled' => false, 'intervalSeconds' => '60', 'windowStartHour' => 1, 'windowEndHour' => 'x'], 'PUT')->schedule();
+		$r = $this->consoleController(
+			['job' => 'J', 'enabled' => false, 'intervalSeconds' => '60', 'windowStartHour' => 1, 'windowEndHour' => 'x'],
+			'PUT'
+		)->schedule();
 		$this->assertSame([200, ['J', false, 60, 1, null]], [$r->getStatus(), $r->getData()]);
 		$r = $this->consoleController(['job' => 'J', 'enabled' => 'true'], 'POST')->schedule();
 		$this->assertSame(['J', null, null, null, null], $r->getData());
@@ -320,13 +353,19 @@ class OperationsControllersA24GoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testConsistencyOutcomes(): void {
-		$this->check->method('check')->willReturnOnConsecutiveCalls(['ok' => 1], $this->throwException(new ConsistencyCheckWouldWriteException('wrote', 'probe-x')));
+		$this->check->method('check')->willReturnOnConsecutiveCalls(
+			['ok' => 1],
+			$this->throwException(new ConsistencyCheckWouldWriteException('wrote', 'probe-x'))
+		);
 		$c = new OperationsConsistencyController('openregister', $this->request([]), $this->check, $this->repair, $this->session('admin'));
 		$this->assertSame(['ok' => 1], $c->consistency()->getData());
 		$r = $c->consistency();
 		$this->assertSame([500, ['error' => 'would-write', 'probe' => 'probe-x', 'message' => 'wrote']], [$r->getStatus(), $r->getData()]);
 		$r = $c->repairPlan();
-		$this->assertSame([400, ['error' => 'no-check', 'message' => 'Name the check whose finding this repairs.']], [$r->getStatus(), $r->getData()]);
+		$this->assertSame(
+			[400, ['error' => 'no-check', 'message' => 'Name the check whose finding this repairs.']],
+			[$r->getStatus(), $r->getData()]
+		);
 		$r = $c->repair();
 		$this->assertSame(400, $r->getStatus());
 	}
@@ -345,9 +384,21 @@ class OperationsControllersA24GoldenTest extends TestCase {
 
 			return ['plan' => $slug];
 		});
-		$c = new OperationsConsistencyController('openregister', $this->request(['check' => 'orphans']), $this->check, $this->repair, $this->session('admin'));
+		$c = new OperationsConsistencyController(
+			'openregister',
+			$this->request(['check' => 'orphans']),
+			$this->check,
+			$this->repair,
+			$this->session('admin')
+		);
 		$this->assertSame([200, ['plan' => 'orphans']], [$c->repairPlan()->getStatus(), $c->repairPlan()->getData()]);
-		$c = new OperationsConsistencyController('openregister', $this->request(['check' => 'bad']), $this->check, $this->repair, $this->session('admin'));
+		$c = new OperationsConsistencyController(
+			'openregister',
+			$this->request(['check' => 'bad']),
+			$this->check,
+			$this->repair,
+			$this->session('admin')
+		);
 		$r = $c->repairPlan();
 		$this->assertSame([422, ['error' => 'refused', 'reason' => 'unknown-check', 'message' => 'cannot']], [$r->getStatus(), $r->getData()]);
 	}
@@ -366,11 +417,29 @@ class OperationsControllersA24GoldenTest extends TestCase {
 
 			return [$slug, $actor];
 		});
-		$c = new OperationsConsistencyController('openregister', $this->request(['check' => 'orphans'], 'POST'), $this->check, $this->repair, $this->session('root'));
+		$c = new OperationsConsistencyController(
+			'openregister',
+			$this->request(['check' => 'orphans'], 'POST'),
+			$this->check,
+			$this->repair,
+			$this->session('root')
+		);
 		$this->assertSame(['orphans', 'root'], $c->repair()->getData());
-		$c = new OperationsConsistencyController('openregister', $this->request(['check' => 'orphans'], 'POST'), $this->check, $this->repair, $this->session(null));
+		$c = new OperationsConsistencyController(
+			'openregister',
+			$this->request(['check' => 'orphans'], 'POST'),
+			$this->check,
+			$this->repair,
+			$this->session(null)
+		);
 		$this->assertSame(['orphans', ''], $c->repair()->getData());
-		$c = new OperationsConsistencyController('openregister', $this->request(['check' => 'bad'], 'POST'), $this->check, $this->repair, $this->session('root'));
+		$c = new OperationsConsistencyController(
+			'openregister',
+			$this->request(['check' => 'bad'], 'POST'),
+			$this->check,
+			$this->repair,
+			$this->session('root')
+		);
 		$r = $c->repair();
 		$this->assertSame([422, ['error' => 'refused', 'reason' => 'nothing-to-do', 'message' => 'cannot']], [$r->getStatus(), $r->getData()]);
 	}
@@ -383,10 +452,23 @@ class OperationsControllersA24GoldenTest extends TestCase {
 	public function testMaintenanceByVerb(): void {
 		$this->maintenance->method('state')->willReturn(['on' => false]);
 		$this->maintenance->method('leave')->willReturnCallback(fn (string $actor): array => ['left' => $actor]);
-		$this->maintenance->method('enter')->willReturnCallback(fn (string $actor, ?string $message = null): array => ['entered' => $actor, 'message' => $message]);
+		$this->maintenance->method('enter')->willReturnCallback(fn (
+			string $actor,
+			?string $message = null
+		): array => ['entered' => $actor, 'message' => $message]);
 		$this->bundle->method('build')->willReturn(['bundle' => 1]);
 		$this->bundle->method('facts')->willReturn(['facts' => 1]);
-		$m = fn (string $verb, array $params, ?string $uid) => new OperationsMaintenanceController('openregister', $this->request($params, $verb), $this->maintenance, $this->bundle, $this->session($uid));
+		$m = fn (
+			string $verb,
+			array $params,
+			?string $uid
+		) => new OperationsMaintenanceController(
+			'openregister',
+			$this->request($params, $verb),
+			$this->maintenance,
+			$this->bundle,
+			$this->session($uid)
+		);
 		$this->assertSame(['on' => false], $m('GET', [], 'a')->maintenance()->getData());
 		$this->assertSame(['left' => 'a'], $m('DELETE', [], 'a')->maintenance()->getData());
 		$this->assertSame(['entered' => 'a', 'message' => 'bye'], $m('POST', ['message' => 'bye'], 'a')->maintenance()->getData());

@@ -20,6 +20,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RecordTemplatesController;
@@ -75,7 +77,11 @@ class RecordTemplatesControllerA24GoldenTest extends TestCase {
 		$request->method('getParams')->willReturn([]);
 		$viewers = $this->createMock(ViewerReachResolver::class);
 		$viewers->method('currentUid')->willReturn($userId);
-		$viewers->method('reachOf')->willReturnCallback(static fn (string $userId): ViewerReach => new ViewerReach(userId: $userId, groups: [], isAdmin: false));
+		$viewers->method('reachOf')->willReturnCallback(static fn (string $userId): ViewerReach => new ViewerReach(
+			userId: $userId,
+			groups: [],
+			isAdmin: false
+		));
 		return new RecordTemplatesController('openregister', $request, $this->templates, $viewers, $this->logger);
 	}//end controller()
 
@@ -114,7 +120,10 @@ class RecordTemplatesControllerA24GoldenTest extends TestCase {
 	 */
 	public function testFailureBodyAndLog(): void {
 		$this->templates->method('get')->willThrowException(new RuntimeException('secret'));
-		$this->logger->expects($this->once())->method('error')->with('[RecordTemplatesController] Record template request failed', ['exception' => 'secret']);
+		$this->logger->expects($this->once())->method('error')->with(
+			'[RecordTemplatesController] Record template request failed',
+			['exception' => 'secret']
+		);
 		$r = $this->controller('anna')->show('t-1');
 		$this->assertSame([500, ['error' => 'The record template request failed.']], [$r->getStatus(), $r->getData()]);
 	}

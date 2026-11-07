@@ -20,6 +20,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SurvivorshipController;
@@ -91,7 +93,13 @@ class SurvivorshipControllerA24GoldenTest extends TestCase {
 	private function controller(array $params = []): SurvivorshipController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
-			static fn (string $key, $default = null) => (array_key_exists($key, $params) === true ? $params[$key] : $default)
+			static function (string $key, $default = null) use ($params) {
+				if (array_key_exists(key: $key, array: $params) === true) {
+					return $params[$key];
+				}
+
+				return $default;
+			}
 		);
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('steward');
@@ -126,7 +134,15 @@ class SurvivorshipControllerA24GoldenTest extends TestCase {
 	 */
 	private function findYields(mixed $result): void {
 		$this->objects->method('find')->willReturnCallback(
-			function (int|string $id, ?array $_extend = [], bool $files = false, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true) use ($result) {
+			function (
+				int|string $id,
+				?array $_extend = [],
+				bool $files = false,
+				$register = null,
+				$schema = null,
+				bool $_rbac = true,
+				bool $_multitenancy = true
+			) use ($result) {
 				$this->calls[] = 'find:' . $id;
 				$this->assertSame([[], false, null, null, true, true], [$_extend, $files, $register, $schema, $_rbac, $_multitenancy]);
 				if ($result instanceof \Throwable) {
