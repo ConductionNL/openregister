@@ -78,29 +78,81 @@ class ManualEntityService {
 	private const CHUNK_SOURCE_TYPE = 'file';
 
 	/**
+	 * Catalogue mapper.
+	 *
+	 * @var GdprEntityMapper
+	 */
+	private readonly GdprEntityMapper $gdprEntityMapper;
+
+	/**
+	 * Relation mapper.
+	 *
+	 * @var EntityRelationMapperInterface
+	 */
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * Chunk reader for the target file.
+	 *
+	 * @var ChunkMapper
+	 */
+	private readonly ChunkMapper $chunkMapper;
+
+	/**
+	 * Chunk-aware string-match utility.
+	 *
+	 * @var ChunkTextMatcher
+	 */
+	private readonly ChunkTextMatcher $matcher;
+
+	/**
+	 * Audit-trail persistence.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Nextcloud root folder (for file-write access check).
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Connection for explicit transaction control.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Structured log sink for write-access failures and forensic context on rollback paths.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param GdprEntityMapper $gdprEntityMapper Catalogue mapper.
-	 * @param EntityRelationMapperInterface $entityRelationMapper Relation mapper.
-	 * @param ChunkMapper $chunkMapper Chunk reader for the target file.
-	 * @param ChunkTextMatcher $matcher Chunk-aware string-match utility.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence.
-	 * @param IRootFolder $rootFolder Nextcloud root folder (for file-write access check).
-	 * @param IDBConnection $db Connection for explicit transaction control.
-	 * @param LoggerInterface $logger Structured log sink for write-access failures and
-	 *                                forensic context on rollback paths.
+	 * @param ManualEntityCatalogue $catalogue The entity catalogue, relation and chunk mappers and the chunk text matcher
+	 * @param ManualEntityRecording $recording The audit trail mapper, the root folder and the database connection
+	 * @param LoggerInterface       $logger    Structured log sink for write-access failures and forensic context on rollback paths.
 	 */
 	public function __construct(
-		private readonly GdprEntityMapper $gdprEntityMapper,
-		private readonly EntityRelationMapperInterface $entityRelationMapper,
-		private readonly ChunkMapper $chunkMapper,
-		private readonly ChunkTextMatcher $matcher,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly IRootFolder $rootFolder,
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
+		ManualEntityCatalogue $catalogue,
+		ManualEntityRecording $recording,
+		LoggerInterface $logger,
 	) {
-
+		$this->gdprEntityMapper = $catalogue->gdprEntityMapper;
+		$this->entityRelationMapper = $catalogue->entityRelationMapper;
+		$this->chunkMapper = $catalogue->chunkMapper;
+		$this->matcher = $catalogue->matcher;
+		$this->auditTrailMapper = $recording->auditTrailMapper;
+		$this->rootFolder = $recording->rootFolder;
+		$this->db = $recording->db;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**

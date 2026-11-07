@@ -29,6 +29,8 @@ use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Files\Service\File\ChunkTextMatcher;
+use OCA\OpenRegister\Files\Service\File\ManualEntityCatalogue;
+use OCA\OpenRegister\Files\Service\File\ManualEntityRecording;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCP\Files\File as NcFile;
 use OCP\Files\Folder;
@@ -119,13 +121,17 @@ class ManualEntityServiceTest extends TestCase {
 		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 
 		$this->service = new ManualEntityService(
-			gdprEntityMapper: $this->gdprMapper,
-			entityRelationMapper: $this->relationMapper,
-			chunkMapper: $this->chunkMapper,
-			matcher: new ChunkTextMatcher(),
-			auditTrailMapper: $this->auditMapper,
-			rootFolder: $this->rootFolder,
-			db: $this->db,
+			catalogue: new ManualEntityCatalogue(
+				gdprEntityMapper: $this->gdprMapper,
+				entityRelationMapper: $this->relationMapper,
+				chunkMapper: $this->chunkMapper,
+				matcher: new ChunkTextMatcher()
+			),
+			recording: new ManualEntityRecording(
+				auditTrailMapper: $this->auditMapper,
+				rootFolder: $this->rootFolder,
+				db: $this->db
+			),
 			logger: $this->logger
 		);
 
