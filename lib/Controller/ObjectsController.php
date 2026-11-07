@@ -32,6 +32,8 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
+use OCA\OpenRegister\Controller\Support\ObjectExport;
+use OCA\OpenRegister\Controller\Support\ObjectCountScope;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
 use OCA\OpenRegister\Controller\Support\ObjectCreate;
 use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
@@ -1921,8 +1923,8 @@ class ObjectsController extends Controller {
 		$params = $this->request->getParams();
 		$entries = ($params['counts'] ?? null);
 
-		// Missing counts key → empty success (spec: empty or missing → { results: [] }).
-		if ($entries === null) {
+		// Missing counts key or empty array → empty success (spec: empty or missing → { results: [] }).
+		if ($entries === null || $entries === []) {
 			return new JSONResponse(data: ['results' => []]);
 		}
 
@@ -1934,58 +1936,83 @@ class ObjectsController extends Controller {
 			);
 		}
 
-		// Empty array → empty success.
-		if ($entries === []) {
-			return new JSONResponse(data: ['results' => []]);
+		// Validate every entry up-front so a malformed batch is rejected
+		// wholesale rather than silently skipping entries.
+		$malformed = self::malformedCountEntry(entries: $entries);
+		if ($malformed !== null) {
+			return new JSONResponse(
+				data: [
+					'error' => 'Malformed counts entry at index ' . $malformed
+						. ': register and schema are required scalars and filter must be an object',
+				],
+				statusCode: 400
+			);
 		}
 
 		// Derive the RBAC + multitenancy posture from the caller's admin
 		// status — identical to the collection read (index() lines 1160-1162).
 		// Never honour request-supplied rbac/multi flags on a data endpoint.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = ($isAdmin === false);
-		$multi = ($isAdmin === false);
+		$scoped = ($this->isCurrentUserAdmin() === false);
+		$scope = new ObjectCountScope(rbac: $scoped, multi: $scoped, objectService: $objectService);
 
-		// Validate every entry up-front so a malformed batch is rejected
-		// wholesale rather than silently skipping entries.
+		return new JSONResponse(data: ['results' => $this->countResults(entries: $entries, scope: $scope)]);
+	}//end counts()
+
+	/**
+	 * The index of the first malformed counts entry.
+	 *
+	 * @param array $entries The counts entries.
+	 *
+	 * @return int|string|null The index, or null when every entry is well formed.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function malformedCountEntry(array $entries): int|string|null {
 		foreach ($entries as $index => $entry) {
-			if (is_array($entry) === false
-				|| isset($entry['register']) === false
-				|| isset($entry['schema']) === false
-				|| is_scalar($entry['register']) === false
-				|| is_scalar($entry['schema']) === false
-				|| (isset($entry['filter']) === true && is_array($entry['filter']) === false)
-			) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Malformed counts entry at index ' . $index
-							. ': register and schema are required scalars and filter must be an object',
-					],
-					statusCode: 400
-				);
+			if (self::isCountEntry(entry: $entry) === false) {
+				return $index;
 			}
 		}
 
-		// Dedupe identical (register, schema, filter) triples: run one
-		// aggregate per distinct triple, but return one result per input
-		// entry in request order (duplicates share the deduped count).
+		return null;
+	}//end malformedCountEntry()
+
+	/**
+	 * Whether a counts entry names a scalar register and schema, and an object as its filter.
+	 *
+	 * @param mixed $entry The counts entry.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function isCountEntry(mixed $entry): bool {
+		return is_array($entry) === true
+			&& is_scalar($entry['register'] ?? null) === true
+			&& is_scalar($entry['schema'] ?? null) === true
+			&& is_array($entry['filter'] ?? []) === true;
+	}//end isCountEntry()
+
+	/**
+	 * The count of every entry in request order.
+	 *
+	 * Runs one aggregate per distinct (register, schema, filter) triple;
+	 * duplicates share the deduped count.
+	 *
+	 * @param array            $entries The counts entries.
+	 * @param ObjectCountScope $scope   The scoping of the counts.
+	 *
+	 * @return array The results.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function countResults(array $entries, ObjectCountScope $scope): array {
 		$cache = [];
 		$results = [];
 		foreach ($entries as $entry) {
-			$register = (string)$entry['register'];
-			$schema = (string)$entry['schema'];
-			$filter = ($entry['filter'] ?? []);
-
-			$cacheKey = $register . '|' . $schema . '|' . json_encode($filter);
+			$cacheKey = $entry['register'] . '|' . $entry['schema'] . '|' . json_encode($entry['filter'] ?? []);
 			if (array_key_exists($cacheKey, $cache) === false) {
-				$cache[$cacheKey] = $this->countPairScoped(
-					register: $register,
-					schema: $schema,
-					filter: $filter,
-					rbac: $rbac,
-					multi: $multi,
-					objectService: $objectService
-				);
+				$cache[$cacheKey] = $this->countPairScoped(entry: $entry, scope: $scope);
 			}
 
 			$results[] = [
@@ -1993,10 +2020,10 @@ class ObjectsController extends Controller {
 				'schema' => $entry['schema'],
 				'count' => $cache[$cacheKey],
 			];
-		}//end foreach
+		}
 
-		return new JSONResponse(data: ['results' => $results]);
-	}//end counts()
+		return $results;
+	}//end countResults()
 
 	/**
 	 * Produce a single (register, schema, filter) object count with the exact
@@ -2016,84 +2043,119 @@ class ObjectsController extends Controller {
 	 * Returns null when the pair cannot be resolved, so a restricted or
 	 * unknown pair is withheld without disclosing which.
 	 *
-	 * @param string $register Register id or slug.
-	 * @param string $schema Schema id or slug.
-	 * @param array $filter Object-property filters for this entry.
-	 * @param bool $rbac Whether to apply RBAC (parity with the list read).
-	 * @param bool $multi Whether to apply multitenancy (parity with the list read).
-	 * @param ObjectOperationsInterface $objectService The object service (DI).
+	 * @param array            $entry The counts entry: register, schema and filter.
+	 * @param ObjectCountScope $scope The scoping of the count.
 	 *
 	 * @return int|null The scoped count, or null when the pair is withheld.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function countPairScoped(
-		string $register,
-		string $schema,
-		array $filter,
-		bool $rbac,
-		bool $multi,
-		ObjectOperationsInterface $objectService,
-	): ?int {
+	private function countPairScoped(array $entry, ObjectCountScope $scope): ?int {
 		try {
 			// Resolve slugs/ids to numeric ids + entities (same as index()).
 			$resolved = $this->resolveRegisterSchemaIds(
-				register: $register,
-				schema: $schema,
-				objectService: $objectService
+				register: (string)$entry['register'],
+				schema: (string)$entry['schema'],
+				objectService: $scope->objectService
 			);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			// Withhold: never disclose whether the pair is missing or restricted.
 			return null;
 		}
 
-		$registerEntity = ($resolved['registerEntity'] ?? null);
-		$schemaEntity = ($resolved['schemaEntity'] ?? null);
-
 		// Build the search query from the per-entry filter using the same
 		// builder index() uses, scoped to the resolved numeric ids.
-		$query = $objectService->buildSearchQuery(
-			requestParams: $filter,
+		$query = $scope->objectService->buildSearchQuery(
+			requestParams: ($entry['filter'] ?? []),
 			register: $resolved['register'],
 			schema: $resolved['schema']
 		);
 
-		// Magic-mapped parity: count via the magic table with RBAC /
-		// multitenancy threaded into the query (index() lines 1194-1198, 1279-1283).
-		if ($registerEntity !== null && $schemaEntity !== null) {
-			$isMagicMapped = $registerEntity->isMagicMappingEnabledForSchema(
-				schemaId: $schemaEntity->getId(),
-				schemaSlug: $schemaEntity->getSlug()
-			);
+		if ($this->countsInMagicTable(resolved: $resolved) === true) {
+			return $this->magicTableCount(query: self::scopedCountQuery(query: $query, scope: $scope), resolved: $resolved);
+		}
 
-			if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
-				$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
+		return self::paginatedCount(query: $query, scope: $scope);
+	}//end countPairScoped()
 
-				$countQuery = $query;
-				unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
-				$countQuery['_rbac'] = $rbac;
-				$countQuery['_multitenancy'] = $multi;
-				$countQuery['_multitenancy_explicit'] = false;
+	/**
+	 * Whether a resolved pair is counted through its magic table.
+	 *
+	 * @param array $resolved The resolved register and schema.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function countsInMagicTable(array $resolved): bool {
+		$register = ($resolved['registerEntity'] ?? null);
+		$schema = ($resolved['schemaEntity'] ?? null);
+		if ($register === null || $schema === null) {
+			return false;
+		}
 
-				return (int)$magicMapper->countObjectsInRegisterSchemaTable(
-					query: $countQuery,
-					register: $registerEntity,
-					schema: $schemaEntity
-				);
-			}
-		}//end if
+		return $register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true
+			&& $schema->getObjectSource() === null;
+	}//end countsInMagicTable()
 
-		// Database-backed parity: read the paginated total at _limit=1, which
-		// is produced by the same RBAC/multitenancy-scoped query the
-		// collection read runs (index() lines 1443-1448).
+	/**
+	 * A count query with RBAC and multitenancy threaded in, without paging (index() lines 1194-1198, 1279-1283).
+	 *
+	 * @param array            $query The search query.
+	 * @param ObjectCountScope $scope The scoping of the count.
+	 *
+	 * @return array The count query.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function scopedCountQuery(array $query, ObjectCountScope $scope): array {
+		unset($query['_limit'], $query['_offset'], $query['_page']);
+		$query['_rbac'] = $scope->rbac;
+		$query['_multitenancy'] = $scope->multi;
+		$query['_multitenancy_explicit'] = false;
+
+		return $query;
+	}//end scopedCountQuery()
+
+	/**
+	 * Count a pair through its magic table.
+	 *
+	 * @param array $query    The scoped count query.
+	 * @param array $resolved The resolved register and schema.
+	 *
+	 * @return int The count.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function magicTableCount(array $query, array $resolved): int {
+		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
+
+		return (int)$magicMapper->countObjectsInRegisterSchemaTable(
+			query: $query,
+			register: $resolved['registerEntity'],
+			schema: $resolved['schemaEntity']
+		);
+	}//end magicTableCount()
+
+	/**
+	 * The paginated total at _limit=1, produced by the same scoped query the collection read runs.
+	 *
+	 * @param array            $query The search query.
+	 * @param ObjectCountScope $scope The scoping of the count.
+	 *
+	 * @return int|null The total, or null when it is withheld.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private static function paginatedCount(array $query, ObjectCountScope $scope): ?int {
 		$query['_limit'] = 1;
 		unset($query['_offset'], $query['_page']);
 
 		try {
-			$result = $objectService->searchObjectsPaginated(
+			$result = $scope->objectService->searchObjectsPaginated(
 				query: $query,
-				_rbac: $rbac,
-				_multitenancy: $multi,
+				_rbac: $scope->rbac,
+				_multitenancy: $scope->multi,
 				deleted: false
 			);
 		} catch (NotAuthorizedException $exception) {
@@ -2102,13 +2164,12 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
-		$total = ($result['total'] ?? null);
-		if ($total === null) {
+		if (($result['total'] ?? null) === null) {
 			return null;
 		}
 
-		return (int)$total;
-	}//end countPairScoped()
+		return (int)$result['total'];
+	}//end paginatedCount()
 
 	/**
 	 * Geo-search endpoint — POST /api/objects/{register}/{schema}/geo-search.
@@ -4565,9 +4626,6 @@ class ObjectsController extends Controller {
 	 *     message?: 'Object does not belong to specified register/schema'|'Object not found'},
 	 *     array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
-	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function logs(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
@@ -4583,73 +4641,68 @@ class ObjectsController extends Controller {
 		$objectService->setRegister(register: $register);
 		$objectService->setSchema(schema: $schema);
 
-		// Try to fetch the object by ID/UUID only (no register/schema filter yet).
+		// Fetch the object by ID/UUID only (no register/schema filter yet).
+		$object = $this->historyObject(id: $id, objectService: $objectService);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		if (self::livesAt(object: $object, route: [$register, $schema]) === false) {
+			$msg = 'Object does not belong to specified register/schema';
+			return new JSONResponse(data: ['message' => $msg], statusCode: 404);
+		}
+
+		return $this->logsPage(id: $id, objectService: $objectService);
+	}//end logs()
+
+	/**
+	 * The object whose history an administrator asks for.
+	 *
+	 * @param string                    $id            The object ID or UUID.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the answer when it cannot be read.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function historyObject(string $id, ObjectOperationsInterface $objectService): ObjectEntity|JSONResponse {
 		try {
 			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
-			if ($object === null) {
-				return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
-			}
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $e) {
 			return $this->historyLookupFailureResponse(failure: $e);
 		}
 
-		// Normalize and compare register.
-		$objectRegister = $object->getRegister();
-		// Could be ID or slug.
-		$objectSchema = $object->getSchema();
-		// Could be ID, schema: slug, _extend: or array/object.
-		// Normalize requested register.
-		$requestedRegister = $register;
-		$requestedSchema = $schema;
+		return ($object ?? new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404));
+	}//end historyObject()
 
-		// If objectSchema is an array/object, files: get slug and id.
-		// Initialize before conditional assignment.
-		$objectSchemaId = '';
-		$objectSchemaSlug = null;
-		if (is_array($objectSchema) === true && (($objectSchema['id'] ?? null) !== null)) {
-			$objectSchemaId = (string)$objectSchema['id'];
-			$objectSchemaSlug = null;
-			if (isset($objectSchema['slug']) === true) {
-				$objectSchemaSlug = strtolower($objectSchema['slug']);
-			}
-		}
+	/**
+	 * Whether an object's stored register and schema are the ones on the route, ignoring case.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param array        $route  The register and schema on the route.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function livesAt(ObjectEntity $object, array $route): bool {
+		return strtolower((string)$object->getRegister()) === strtolower($route[0])
+			&& strtolower((string)$object->getSchema()) === strtolower($route[1]);
+	}//end livesAt()
 
-		if (is_object($objectSchema) === true && (($objectSchema->id ?? null) !== null)) {
-			$objectSchemaId = (string)$objectSchema->id;
-			$objectSchemaSlug = null;
-			if (isset($objectSchema->slug) === true) {
-				$objectSchemaSlug = strtolower($objectSchema->slug);
-			}
-		}
-
-		if (is_array($objectSchema) === false && is_object($objectSchema) === false) {
-			$objectSchemaId = (string)$objectSchema;
-		}
-
-		// Normalize requested schema.
-		$requestedSchemaNorm = strtolower($requestedSchema);
-		$objectSchemaIdNorm = strtolower((string)$objectSchemaId);
-		// $objectSchemaSlug is already lowercase from lines 1154/1157.
-		$objectSchemaSlugNorm = $objectSchemaSlug;
-
-		// Check schema match (by id or slug).
-		$schemaMatch = (
-			$requestedSchemaNorm === $objectSchemaIdNorm
-			|| ($objectSchemaSlugNorm && $requestedSchemaNorm === $objectSchemaSlugNorm)
-		);
-
-		// Register normalization (string compare).
-		$objectRegisterNorm = strtolower((string)$objectRegister);
-		$reqRegisterNorm = strtolower($requestedRegister);
-		$registerMatch = ($objectRegisterNorm === $reqRegisterNorm);
-
-		if ($schemaMatch === false || $registerMatch === false) {
-			$msg = 'Object does not belong to specified register/schema';
-			return new JSONResponse(data: ['message' => $msg], statusCode: 404);
-		}
-
+	/**
+	 * One page of an object's audit log, masked for explicit-reveal values.
+	 *
+	 * @param string                    $id            The object ID or UUID.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The page.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function logsPage(string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		// Get config and fetch logs.
 		$config = $this->getConfig();
 		$logs = $objectService->getLogs(uuid: $id, filters: $config['filters']);
@@ -4660,17 +4713,14 @@ class ObjectsController extends Controller {
 			$logs = $trailMasker->mask(entries: $logs);
 		}
 
-		// Get total count of logs.
-		$total = count($logs);
-
 		// Return paginated results.
 		return new JSONResponse(
 			data: $this->paginate(
 				results: $logs,
-				window: new ResultWindow(total: $total, limit: $config['limit'], offset: $config['offset'], page: $config['page'])
+				window: new ResultWindow(total: count($logs), limit: $config['limit'], offset: $config['offset'], page: $config['page'])
 			)
 		);
-	}//end logs()
+	}//end logsPage()
 
 	/**
 	 * One object's history for a non-admin, when they may read the object.
@@ -4741,29 +4791,7 @@ class ObjectsController extends Controller {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
 
-			$data = $this->request->getParams();
-			$process = ($data['process'] ?? null);
-			// Check if duration is set in the request data.
-			$duration = null;
-			if (($data['duration'] ?? null) !== null) {
-				$duration = (int)$data['duration'];
-			}
-
-			$lockResult = $this->objectService->lockObject(
-				identifier: $id,
-				process: $process,
-				duration: $duration
-			);
-
-			// 🔴 `locked` WAS THE LITERAL `true`, WHICH IS WHY THE STEP
-			// ASSERTING IT COULD NOT FAIL. `LockHandler` now reports whether
-			// the lock it took is actually held, read back off the entity, and
-			// that is what goes on the wire. The advisory (pre-creation) path
-			// has no entity to read, so it keeps the old answer.
-			$held = ($lockResult['held'] ?? true);
-			unset($lockResult['held']);
-
-			return new JSONResponse(data: array_merge($lockResult, ['locked' => $held]));
+			return $this->takeLock(id: $id);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $e) {
@@ -4775,6 +4803,52 @@ class ObjectsController extends Controller {
 			return $this->errorResponse(e: $e);
 		}//end try
 	}//end lock()
+
+	/**
+	 * Lock an object for the process and duration the request names.
+	 *
+	 * @param string $id The object ID or UUID.
+	 *
+	 * @return JSONResponse The lock, with whether it is held.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function takeLock(string $id): JSONResponse {
+		$data = $this->request->getParams();
+
+		$lockResult = $this->objectService->lockObject(
+			identifier: $id,
+			process: ($data['process'] ?? null),
+			duration: self::lockDuration(data: $data)
+		);
+
+		// 🔴 `locked` WAS THE LITERAL `true`, WHICH IS WHY THE STEP
+		// ASSERTING IT COULD NOT FAIL. `LockHandler` now reports whether
+		// the lock it took is actually held, read back off the entity, and
+		// that is what goes on the wire. The advisory (pre-creation) path
+		// has no entity to read, so it keeps the old answer.
+		$held = ($lockResult['held'] ?? true);
+		unset($lockResult['held']);
+
+		return new JSONResponse(data: array_merge($lockResult, ['locked' => $held]));
+	}//end takeLock()
+
+	/**
+	 * The lock duration a request names.
+	 *
+	 * @param array $data The request parameters.
+	 *
+	 * @return int|null The duration, or null when none is set.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function lockDuration(array $data): int|null {
+		if (($data['duration'] ?? null) !== null) {
+			return (int)$data['duration'];
+		}
+
+		return null;
+	}//end lockDuration()
 
 	/**
 	 * Unlock an object
@@ -4813,14 +4887,42 @@ class ObjectsController extends Controller {
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $e) {
-			$message = $e->getMessage();
-			if (str_contains($message, 'does not have permission to unlock') === true) {
-				return new JSONResponse(data: ['error' => $message], statusCode: 403);
-			}
-
-			return new JSONResponse(data: ['error' => $message], statusCode: 500);
+			return self::unlockFailureResponse(message: $e->getMessage());
 		}
 
+		return self::unlockResponse(released: $released, id: $id);
+	}//end unlock()
+
+	/**
+	 * The answer to a failed unlock: 403 for a permission error, else 500.
+	 *
+	 * @param string $message The failure message.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function unlockFailureResponse(string $message): JSONResponse {
+		if (str_contains($message, 'does not have permission to unlock') === true) {
+			return new JSONResponse(data: ['error' => $message], statusCode: 403);
+		}
+
+		return new JSONResponse(data: ['error' => $message], statusCode: 500);
+	}//end unlockFailureResponse()
+
+	/**
+	 * The answer to an unlock that ran.
+	 *
+	 * @param bool   $released Whether a lock was released.
+	 * @param string $id       The object ID or UUID.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the fact this response reports
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function unlockResponse(bool $released, string $id): JSONResponse {
 		// 🔴 404 MEANS THIS OBJECT WAS NOT LOCKED, AND IT IS A FACT RATHER THAN
 		// A MISSING ROUTE. A client that releases a lock when its editor closes
 		// has to be able to tell "I handed mine back" from "somebody had
@@ -4857,7 +4959,7 @@ class ObjectsController extends Controller {
 				'uuid' => $id,
 			]
 		);
-	}//end unlock()
+	}//end unlockResponse()
 
 	/**
 	 * Whether a row exists in other registers, and nothing about the row.
@@ -4942,8 +5044,7 @@ class ObjectsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function move(string $register, string $schema, string $id): JSONResponse {
-		$caller = $this->userSession->getUser();
-		if ($caller === null) {
+		if ($this->userSession->getUser() === null) {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
@@ -4957,6 +5058,20 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
 
+		return $this->moveToRequestedTarget(object: $object, source: [$register, $schema]);
+	}//end move()
+
+	/**
+	 * Move an object to the register and schema the request names.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param array        $source The register and schema it is in.
+	 *
+	 * @return JSONResponse The move's outcome, or the refusal.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function moveToRequestedTarget(ObjectEntity $object, array $source): JSONResponse {
 		$targetRegister = trim((string)$this->request->getParam('targetRegister', ''));
 		$targetSchema = trim((string)$this->request->getParam('targetSchema', ''));
 		if ($targetRegister === '' || $targetSchema === '') {
@@ -4966,28 +5081,56 @@ class ObjectsController extends Controller {
 			);
 		}
 
-		try {
-			$from = [
-				'register' => $this->services->store->registerMapper->find($register),
-				'schema' => $this->services->store->schemaMapper->find($schema),
-			];
-			$to = [
-				'register' => $this->services->store->registerMapper->find($targetRegister),
-				'schema' => $this->services->store->schemaMapper->find($targetSchema),
-			];
-		} catch (\Throwable $e) {
+		$ends = $this->moveEnds(source: $source, target: [$targetRegister, $targetSchema]);
+		if ($ends === null) {
 			return new JSONResponse(data: ['error' => 'No such register or schema'], statusCode: 404);
 		}
 
 		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObject::class)->move(
 			object: $object,
-			sourceRegister: $from['register'],
-			sourceSchema: $from['schema'],
-			targetRegister: $to['register'],
-			targetSchema: $to['schema'],
-			actor: $caller->getUID(),
+			sourceRegister: $ends['from']['register'],
+			sourceSchema: $ends['from']['schema'],
+			targetRegister: $ends['to']['register'],
+			targetSchema: $ends['to']['schema'],
+			actor: $this->userSession->getUser()->getUID(),
 		);
 
+		return self::moveResponse(outcome: $outcome);
+	}//end moveToRequestedTarget()
+
+	/**
+	 * The registers and schemas a move goes from and to.
+	 *
+	 * @param array $source The source register and schema references.
+	 * @param array $target The target register and schema references.
+	 *
+	 * @return array|null `from` and `to`, or null when one of them does not exist.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function moveEnds(array $source, array $target): array|null {
+		$registers = $this->services->store->registerMapper;
+		$schemas = $this->services->store->schemaMapper;
+		try {
+			return [
+				'from' => ['register' => $registers->find($source[0]), 'schema' => $schemas->find($source[1])],
+				'to' => ['register' => $registers->find($target[0]), 'schema' => $schemas->find($target[1])],
+			];
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end moveEnds()
+
+	/**
+	 * The answer to a move that ran.
+	 *
+	 * @param array $outcome The move's outcome.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private static function moveResponse(array $outcome): JSONResponse {
 		if ($outcome['moved'] === false) {
 			// 422, not 400: the request is well formed and the object does not
 			// fit where it was asked to go, which is the caller's to act on.
@@ -4995,7 +5138,7 @@ class ObjectsController extends Controller {
 		}
 
 		return new JSONResponse(data: $outcome);
-	}//end move()
+	}//end moveResponse()
 
 	/**
 	 * Note, and discard, a cause a request tried to name for itself.
@@ -5333,9 +5476,8 @@ class ObjectsController extends Controller {
 		$objectService->setSchema(schema: $schema);
 
 		// Get filters and type from request.
-		$filters = $this->request->getParams();
-		unset($filters['_route']);
-		$type = $this->request->getParam(key: 'format') ?? $this->request->getParam(key: 'type', default: 'excel');
+		$filters = $this->exportFilters();
+		$type = $this->exportFormat();
 
 		// Get register and schema entities.
 		//
@@ -5366,103 +5508,204 @@ class ObjectsController extends Controller {
 			return $refusal;
 		}
 
-		// Generate filename base.
-		$filenameBase = sprintf(
-			'%s_%s_%s',
-			$registerEntity->getSlug() ?? 'register',
-			$schemaEntity->getSlug() ?? 'schema',
-			(new DateTime())->format('Y-m-d_His')
-		);
-
-		// Call ExportService directly (bypassing ObjectService which has circular dependency issues).
-		if ($type === 'csv') {
-			$content = $this->services->transfer->exportService->exportToCsv(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				filters: $filters,
-				currentUser: $this->userSession->getUser()
-			);
-
-			$this->recordExportCompleted(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				format: 'csv',
-				rowCount: $this->countCsvExportRows(csv: $content)
-			);
-
-			return new DataDownloadResponse(
-				data: $content,
-				filename: "{$filenameBase}.csv",
-				contentType: 'text/csv'
-			);
-		}
-
-		if ($type === 'json') {
-			$content = $this->services->transfer->exportService->exportToJson(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				filters: $filters
-			);
-
-			$this->recordExportCompleted(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				format: 'json',
-				rowCount: $this->countJsonExportRows(json: $content)
-			);
-
-			return new DataDownloadResponse(
-				data: $content,
-				filename: "{$filenameBase}.json",
-				contentType: 'application/json'
-			);
-		}
-
-		if ($type === 'pdf') {
-			try {
-				$content = $this->services->transfer->exportService->exportToPdf(
-					register: $registerEntity,
-					schema: $schemaEntity,
-					filters: $filters,
-					currentUser: $this->userSession->getUser()
-				);
-			} catch (ExportTooLargeException $e) {
-				return new JSONResponse(
-					data: [
-						'error' => 'export_too_large',
-						'message' => $e->getMessage(),
-						'rowCount' => $e->getRowCount(),
-						'maxRows' => $e->getMaxRows(),
-					],
-					statusCode: ExportTooLargeException::HTTP_STATUS
-				);
-			} catch (OfficeServerRequiredException $e) {
-				return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
-			}
-
-			$this->recordExportCompleted(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				format: 'pdf',
-				rowCount: $this->services->transfer->exportService->countExportRows(
-					register: $registerEntity,
-					schema: $schemaEntity,
-					filters: $filters
-				)
-			);
-
-			return new DataDownloadResponse(
-				data: $content,
-				filename: "{$filenameBase}.pdf",
-				contentType: 'application/pdf'
-			);
-		}//end if
-
-		// Default to Excel.
-		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
+		$export = new ObjectExport(
 			register: $registerEntity,
 			schema: $schemaEntity,
 			filters: $filters,
+			filenameBase: self::exportFilenameBase(register: $registerEntity, schema: $schemaEntity)
+		);
+
+		// Call ExportService directly (bypassing ObjectService which has circular dependency issues).
+		return match ($type) {
+			'csv' => $this->csvExport(export: $export),
+			'json' => $this->jsonExport(export: $export),
+			'pdf' => $this->pdfExport(export: $export),
+			default => $this->excelExport(export: $export),
+		};
+	}//end export()
+
+	/**
+	 * The request parameters an export filters on.
+	 *
+	 * @return array The filters.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function exportFilters(): array {
+		$filters = $this->request->getParams();
+		unset($filters['_route']);
+
+		return $filters;
+	}//end exportFilters()
+
+	/**
+	 * The format an export asks for: `format`, else `type`, else excel.
+	 *
+	 * @return mixed The format.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function exportFormat(): mixed {
+		return $this->request->getParam(key: 'format') ?? $this->request->getParam(key: 'type', default: 'excel');
+	}//end exportFormat()
+
+	/**
+	 * The file name of an export, without extension.
+	 *
+	 * @param Register $register The register being exported.
+	 * @param Schema   $schema   The schema being exported.
+	 *
+	 * @return string The name.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private static function exportFilenameBase(Register $register, Schema $schema): string {
+		return sprintf(
+			'%s_%s_%s',
+			$register->getSlug() ?? 'register',
+			$schema->getSlug() ?? 'schema',
+			(new DateTime())->format('Y-m-d_His')
+		);
+	}//end exportFilenameBase()
+
+	/**
+	 * Export as CSV.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function csvExport(ObjectExport $export): DataDownloadResponse {
+		$content = $this->services->transfer->exportService->exportToCsv(
+			register: $export->register,
+			schema: $export->schema,
+			filters: $export->filters,
+			currentUser: $this->userSession->getUser()
+		);
+
+		$this->recordExportCompleted(
+			register: $export->register,
+			schema: $export->schema,
+			format: 'csv',
+			rowCount: $this->countCsvExportRows(csv: $content)
+		);
+
+		return $export->download(format: 'csv', content: $content);
+	}//end csvExport()
+
+	/**
+	 * Export as JSON.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function jsonExport(ObjectExport $export): DataDownloadResponse {
+		$content = $this->services->transfer->exportService->exportToJson(
+			register: $export->register,
+			schema: $export->schema,
+			filters: $export->filters
+		);
+
+		$this->recordExportCompleted(
+			register: $export->register,
+			schema: $export->schema,
+			format: 'json',
+			rowCount: $this->countJsonExportRows(json: $content)
+		);
+
+		return $export->download(format: 'json', content: $content);
+	}//end jsonExport()
+
+	/**
+	 * Export as PDF; an export over the row limit or without an office server is refused.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The file, or the refusal.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function pdfExport(ObjectExport $export): DataDownloadResponse|JSONResponse {
+		try {
+			$content = $this->services->transfer->exportService->exportToPdf(
+				register: $export->register,
+				schema: $export->schema,
+				filters: $export->filters,
+				currentUser: $this->userSession->getUser()
+			);
+		} catch (ExportTooLargeException $e) {
+			return self::exportTooLargeResponse(exception: $e);
+		} catch (OfficeServerRequiredException $e) {
+			return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
+		}
+
+		$this->recordPdfExport(export: $export);
+
+		return $export->download(format: 'pdf', content: $content);
+	}//end pdfExport()
+
+	/**
+	 * Record a finished PDF export, with the row count the export service answers.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function recordPdfExport(ObjectExport $export): void {
+		$this->recordExportCompleted(
+			register: $export->register,
+			schema: $export->schema,
+			format: 'pdf',
+			rowCount: $this->services->transfer->exportService->countExportRows(
+				register: $export->register,
+				schema: $export->schema,
+				filters: $export->filters
+			)
+		);
+	}//end recordPdfExport()
+
+	/**
+	 * The answer to a PDF export over the row limit.
+	 *
+	 * @param ExportTooLargeException $exception The refusal.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private static function exportTooLargeResponse(ExportTooLargeException $exception): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'export_too_large',
+				'message' => $exception->getMessage(),
+				'rowCount' => $exception->getRowCount(),
+				'maxRows' => $exception->getMaxRows(),
+			],
+			statusCode: ExportTooLargeException::HTTP_STATUS
+		);
+	}//end exportTooLargeResponse()
+
+	/**
+	 * Export as Excel.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function excelExport(ObjectExport $export): DataDownloadResponse {
+		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
+			register: $export->register,
+			schema: $export->schema,
+			filters: $export->filters,
 			currentUser: $this->userSession->getUser()
 		);
 
@@ -5473,18 +5716,14 @@ class ObjectsController extends Controller {
 		$content = ob_get_clean();
 
 		$this->recordExportCompleted(
-			register: $registerEntity,
-			schema: $schemaEntity,
+			register: $export->register,
+			schema: $export->schema,
 			format: 'excel',
 			rowCount: $this->countSpreadsheetExportRows(spreadsheet: $spreadsheet)
 		);
 
-		return new DataDownloadResponse(
-			data: $content,
-			filename: "{$filenameBase}.xlsx",
-			contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-		);
-	}//end export()
+		return $export->download(format: 'excel', content: $content);
+	}//end excelExport()
 
 	/**
 	 * The refusal for this caller's export, or null when they may take it.
@@ -5759,12 +5998,9 @@ class ObjectsController extends Controller {
 			$requestParams = $this->request->getParams();
 
 			// Validate required parameters.
-			if (isset($requestParams['target']) === false) {
-				return new JSONResponse(data: ['error' => 'Target object ID is required'], statusCode: 400);
-			}
-
-			if (($requestParams['object'] ?? null) === null || empty($requestParams['object']) === true) {
-				return new JSONResponse(data: ['error' => 'Object data is required'], statusCode: 400);
+			$refusal = self::mergeRefusal(params: $requestParams);
+			if ($refusal !== null) {
+				return new JSONResponse(data: ['error' => $refusal], statusCode: 400);
 			}
 
 			// Perform the merge operation with the new payload structure.
@@ -5785,6 +6021,27 @@ class ObjectsController extends Controller {
 	}//end merge()
 
 	/**
+	 * What a merge request is missing.
+	 *
+	 * @param array $params The request parameters.
+	 *
+	 * @return string|null The refusal, or null when the request is complete.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function mergeRefusal(array $params): string|null {
+		if (isset($params['target']) === false) {
+			return 'Target object ID is required';
+		}
+
+		if (empty($params['object']) === true) {
+			return 'Object data is required';
+		}
+
+		return null;
+	}//end mergeRefusal()
+
+	/**
 	 * Migrate objects between registers and/or schemas
 	 *
 	 * This method migrates multiple objects from one register/schema combination
@@ -5802,43 +6059,7 @@ class ObjectsController extends Controller {
 	 */
 	public function migrate(ObjectOperationsInterface $objectService): JSONResponse {
 		try {
-			// Get migration parameters from request.
-			$requestParams = $this->request->getParams();
-			$sourceRegister = $requestParams['sourceRegister'] ?? null;
-			$sourceSchema = $requestParams['sourceSchema'] ?? null;
-			$targetRegister = $requestParams['targetRegister'] ?? null;
-			$targetSchema = $requestParams['targetSchema'] ?? null;
-			$objectIds = $requestParams['objects'] ?? [];
-			$mapping = $requestParams['mapping'] ?? [];
-
-			// Validate required parameters.
-			if ($sourceRegister === null || $sourceSchema === null) {
-				return new JSONResponse(data: ['error' => 'Source register and schema are required'], statusCode: 400);
-			}
-
-			if ($targetRegister === null || $targetSchema === null) {
-				return new JSONResponse(data: ['error' => 'Target register and schema are required'], statusCode: 400);
-			}
-
-			if (empty($objectIds) === true) {
-				return new JSONResponse(data: ['error' => 'At least one object ID is required'], statusCode: 400);
-			}
-
-			if (empty($mapping) === true) {
-				return new JSONResponse(data: ['error' => 'Property mapping is required'], statusCode: 400);
-			}
-
-			// Perform the migration operation.
-			$migrationResult = $objectService->migrateObjects(
-				sourceRegister: $sourceRegister,
-				sourceSchema: $sourceSchema,
-				targetRegister: $targetRegister,
-				targetSchema: $targetSchema,
-				objectIds: $objectIds,
-				mapping: $mapping
-			);
-
-			return new JSONResponse(data: $migrationResult);
+			return $this->runMigration(params: $this->request->getParams(), objectService: $objectService);
 		} catch (NotAuthorizedException $exception) {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
 		} catch (DoesNotExistException $exception) {
@@ -5854,6 +6075,63 @@ class ObjectsController extends Controller {
 			);
 		}//end try
 	}//end migrate()
+
+	/**
+	 * Run the migration a request asks for, when it is complete.
+	 *
+	 * @param array                     $params        The request parameters.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The result, or the refusal.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function runMigration(array $params, ObjectOperationsInterface $objectService): JSONResponse {
+		$refusal = self::migrationRefusal(params: $params);
+		if ($refusal !== null) {
+			return new JSONResponse(data: ['error' => $refusal], statusCode: 400);
+		}
+
+		$migrationResult = $objectService->migrateObjects(
+			sourceRegister: $params['sourceRegister'],
+			sourceSchema: $params['sourceSchema'],
+			targetRegister: $params['targetRegister'],
+			targetSchema: $params['targetSchema'],
+			objectIds: $params['objects'],
+			mapping: $params['mapping']
+		);
+
+		return new JSONResponse(data: $migrationResult);
+	}//end runMigration()
+
+	/**
+	 * What a migration request is missing.
+	 *
+	 * @param array $params The request parameters.
+	 *
+	 * @return string|null The refusal, or null when the request is complete.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function migrationRefusal(array $params): string|null {
+		if (isset($params['sourceRegister'], $params['sourceSchema']) === false) {
+			return 'Source register and schema are required';
+		}
+
+		if (isset($params['targetRegister'], $params['targetSchema']) === false) {
+			return 'Target register and schema are required';
+		}
+
+		if (empty($params['objects']) === true) {
+			return 'At least one object ID is required';
+		}
+
+		if (empty($params['mapping']) === true) {
+			return 'Property mapping is required';
+		}
+
+		return null;
+	}//end migrationRefusal()
 
 	/**
 	 * Download all files of an object as a ZIP archive
@@ -5904,43 +6182,9 @@ class ObjectsController extends Controller {
 			// Create the ZIP archive.
 			$zipInfo = $fileService->createObjectFilesZip(object: $object, zipName: $customFilename);
 
-			// Read the ZIP file content.
-			$zipContent = file_get_contents($zipInfo['path']);
-			if ($zipContent === false) {
-				// Clean up temporary file.
-				if (file_exists($zipInfo['path']) === true) {
-					unlink($zipInfo['path']);
-				}
+			$zipContent = self::takeZipContent(path: $zipInfo['path']);
 
-				throw new RuntimeException('Failed to read ZIP file content');
-			}
-
-			// Clean up temporary file after reading.
-			if (file_exists($zipInfo['path']) === true) {
-				unlink($zipInfo['path']);
-			}
-
-			// Audit the bulk download as ONE entry tied to the parent object.
-			// Best-effort: an audit-trail failure must not break the download.
-			try {
-				$files = $fileService->getFiles($object);
-				$fileIds = [];
-				$fileNames = [];
-				foreach ($files as $f) {
-					$fileIds[] = $f->getId();
-					$fileNames[] = $f->getName();
-				}
-
-				$fileService->getAuditHandler()->logBulkDownload(
-					$object,
-					$fileIds,
-					$fileNames,
-					$zipInfo['filename'],
-					$zipInfo['size'] ?? null
-				);
-			} catch (\Throwable $auditError) {
-				// Silently swallow — audit-trail must never break the response.
-			}
+			$this->auditBulkDownload(object: $object, zipInfo: $zipInfo);
 
 			// Return the ZIP file as a download response.
 			return new DataDownloadResponse(
@@ -5961,6 +6205,58 @@ class ObjectsController extends Controller {
 			);
 		}//end try
 	}//end downloadFiles()
+
+	/**
+	 * Read a temporary ZIP file and remove it.
+	 *
+	 * @param string $path The file path.
+	 *
+	 * @return string The content.
+	 *
+	 * @throws RuntimeException When the file cannot be read.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function takeZipContent(string $path): string {
+		$zipContent = file_get_contents($path);
+		if (file_exists($path) === true) {
+			unlink($path);
+		}
+
+		if ($zipContent === false) {
+			throw new RuntimeException('Failed to read ZIP file content');
+		}
+
+		return $zipContent;
+	}//end takeZipContent()
+
+	/**
+	 * Audit a bulk download as ONE entry tied to the parent object.
+	 *
+	 * Best-effort: an audit-trail failure must not break the download.
+	 *
+	 * @param ObjectEntity $object  The object whose files were downloaded.
+	 * @param array        $zipInfo The ZIP file's name and size.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function auditBulkDownload(ObjectEntity $object, array $zipInfo): void {
+		try {
+			$fileService = $this->container->get(FileService::class);
+			$files = $fileService->getFiles($object);
+			$fileService->getAuditHandler()->logBulkDownload(
+				$object,
+				array_map(static fn ($file) => $file->getId(), $files),
+				array_map(static fn ($file) => $file->getName(), $files),
+				$zipInfo['filename'],
+				$zipInfo['size'] ?? null
+			);
+		} catch (\Throwable $auditError) {
+			// Silently swallow — audit-trail must never break the response.
+		}
+	}//end auditBulkDownload()
 
 	/**
 	 * Start batch vectorization of objects
