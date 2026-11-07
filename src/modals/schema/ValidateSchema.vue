@@ -257,6 +257,7 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import { schemaObjectCount } from './schemaObjectCount.js'
 
 export default {
 	name: 'ValidateSchema',
@@ -275,23 +276,18 @@ export default {
 		SchemaStatsBlock,
 	},
 
+	mixins: [schemaObjectCount],
+
 	data() {
 		return {
 			loading: false,
 			error: false,
 			validationResults: null,
 			showOnlyInvalid: false,
-			countLoading: true,
-			countFailed: false,
-			objectCount: 0,
-			objectStats: null,
 		}
 	},
 
 	computed: {
-		// A <script setup> binding is not on `this`, and a watch path reads `this`.
-		schemaStore: () => schemaStore,
-
 		/**
 		 * @spec exclude UI display helper — flattens/filters validation results for the table.
 		 */
@@ -316,52 +312,15 @@ export default {
 		},
 	},
 
-	watch: {
-		// Watch for changes in schemaItem and reload count if needed
-		'schemaStore.schemaItem': {
-			/**
-			 * @param {object|null} newSchemaItem
-			 * @spec exclude UI watcher — reloads the object count when the schema item changes.
-			 */
-			handler(newSchemaItem) {
-				if (newSchemaItem?.id && this.objectCount === 0) {
-					this.loadObjectCount()
-				}
-			},
-		},
-	},
-
-	/**
-	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
-	 */
-	async mounted() {
-		await this.loadObjectCount()
-	},
-
 	methods: {
 		/**
-		 * @spec exclude Modal data-load plumbing — fetches schema object-count stats.
+		 * Report a failed object count.
+		 *
+		 * @param {Error} err The failure
+		 * @spec exclude Modal data-load plumbing — logs a failed object count.
 		 */
-		async loadObjectCount() {
-			this.countLoading = true
-			this.countFailed = false
-			try {
-				if (schemaStore.schemaItem?.id) {
-					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(
-						schemaStore.schemaItem.id,
-					)
-					this.objectStats = stats.objects
-					this.objectCount = stats.objects?.total || 0
-				}
-			} catch (err) {
-				console.error('Error in loadObjectCount:', err)
-				this.objectCount = 0
-				this.countFailed = true
-				this.objectStats = null
-			} finally {
-				this.countLoading = false
-			}
+		logCountFailure(err) {
+			console.error('Error in loadObjectCount:', err)
 		},
 
 		/**

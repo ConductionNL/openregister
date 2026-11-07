@@ -163,6 +163,7 @@ import {
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+import { schemaObjectCount } from './schemaObjectCount.js'
 
 export default {
 	name: 'DeleteSchemaObjects',
@@ -178,71 +179,27 @@ export default {
 		SchemaStatsBlock,
 	},
 
+	mixins: [schemaObjectCount],
+
 	data() {
 		return {
 			loading: false,
 			error: false,
 			success: false,
 			deletionResult: null,
-			countLoading: true,
-			countFailed: false,
-			objectCount: 0,
-			objectStats: null,
 			hardDelete: [],
 		}
 	},
 
-	computed: {
-		// A <script setup> binding is not on `this`, and a watch path reads `this`.
-		schemaStore: () => schemaStore,
-	},
-
-	watch: {
-		// Watch for changes in schemaItem and reload count if needed
-		'schemaStore.schemaItem': {
-			/**
-			 * @param {object|null} newSchemaItem
-			 * @spec exclude watcher reloading object count on schema change
-			 */
-			handler(newSchemaItem) {
-				if (newSchemaItem?.id && this.objectCount === 0) {
-					this.loadObjectCount()
-				}
-			},
-		},
-	},
-
-	/**
-	 * @spec exclude Vue lifecycle hook loading object count
-	 */
-	async mounted() {
-		await this.loadObjectCount()
-	},
-
 	methods: {
 		/**
-		 * @spec exclude form-state loader for schema object count via schemaStore
+		 * Report a failed object count.
+		 *
+		 * @param {Error} err The failure
+		 * @spec exclude Modal data-load plumbing — logs a failed object count.
 		 */
-		async loadObjectCount() {
-			this.countLoading = true
-			this.countFailed = false
-			try {
-				if (schemaStore.schemaItem?.id) {
-					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(
-						schemaStore.schemaItem.id,
-					)
-					this.objectStats = stats.objects
-					this.objectCount = stats.objects?.total || 0
-				}
-			} catch (err) {
-				console.error('DeleteSchemaObjects error in loadObjectCount:', err)
-				this.objectCount = 0
-				this.countFailed = true
-				this.objectStats = null
-			} finally {
-				this.countLoading = false
-			}
+		logCountFailure(err) {
+			console.error('DeleteSchemaObjects error in loadObjectCount:', err)
 		},
 
 		/**
