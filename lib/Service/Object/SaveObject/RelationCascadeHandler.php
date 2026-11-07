@@ -108,7 +108,8 @@ class RelationCascadeHandler {
 	}//end resolveSchemaReference()
 
 	/**
-	 * The id of the entity a direct-id reference names, or null when it is no direct id or names nothing.
+	 * The id of the entity a direct-id reference (a numeric id or a UUID) names, or null when it is no direct id
+	 * or names nothing.
 	 *
 	 * @param string   $reference The reference without query parameters.
 	 * @param callable $find      Finds the entity by id; throws DoesNotExistException when there is none.
@@ -116,7 +117,9 @@ class RelationCascadeHandler {
 	 * @return string|null
 	 */
 	private function directIdMatch(string $reference, callable $find): ?string {
-		if ($this->isDirectId(reference: $reference) === false) {
+		if (is_numeric($reference) === false
+			&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $reference) !== 1
+		) {
 			return null;
 		}
 
@@ -128,7 +131,7 @@ class RelationCascadeHandler {
 	}//end directIdMatch()
 
 	/**
-	 * The id of the entity whose slug is the reference's last segment; a failing lookup is logged and yields null.
+	 * The id of the entity whose slug is the reference's last path segment (the whole reference without a `/`); a failing lookup is logged and yields null.
 	 *
 	 * @param string   $reference The reference without query parameters.
 	 * @param callable $findAll   Lists the candidate entities.
@@ -138,7 +141,7 @@ class RelationCascadeHandler {
 	 */
 	private function slugLookup(string $reference, callable $findAll, string $kind): ?string {
 		try {
-			return $this->slugMatch(entities: $findAll(), slug: $this->lastSegment(reference: $reference));
+			return $this->slugMatch(entities: $findAll(), slug: array_slice(explode('/', $reference), -1)[0]);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationCascadeHandler] Error finding ' . $kind . ' by slug: ' . $e->getMessage(),
@@ -161,33 +164,6 @@ class RelationCascadeHandler {
 	private function removeQueryParameters(string $reference): string {
 		return explode('?', $reference, 2)[0];
 	}//end removeQueryParameters()
-
-	/**
-	 * Whether a reference is first tried as a direct id: a numeric id or a UUID.
-	 *
-	 * @param string $reference The reference without query parameters.
-	 *
-	 * @return bool
-	 */
-	private function isDirectId(string $reference): bool {
-		return is_numeric($reference) === true
-			|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $reference) === 1;
-	}//end isDirectId()
-
-	/**
-	 * The last path segment of a reference, or the whole reference when it has no `/`.
-	 *
-	 * @param string $reference The reference without query parameters.
-	 *
-	 * @return string
-	 */
-	private function lastSegment(string $reference): string {
-		if (str_contains($reference, '/') === false) {
-			return $reference;
-		}
-
-		return substr($reference, strrpos($reference, '/') + 1);
-	}//end lastSegment()
 
 	/**
 	 * The id of the first entity whose slug equals the given slug, ignoring case.
@@ -253,43 +229,22 @@ class RelationCascadeHandler {
 	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
 		$relations = [];
 		foreach ($data as $key => $value) {
-			if ($this->isMetadataKey(key: $key) === true) {
+			// Special metadata fields are never relations.
+			if (in_array($key, ['_self', '_schema', '_register'], true) === true) {
 				continue;
 			}
 
-			$path = $this->childPath(prefix: $prefix, key: $key);
+			// A top-level key is its own path, so an integer key stays an integer.
+			$path = $key;
+			if ($prefix !== '') {
+				$path = "{$prefix}.{$key}";
+			}
+
 			$relations = array_merge($relations, $this->relationsAt(path: $path, value: $value, schema: $schema));
 		}
 
 		return $relations;
 	}//end scanForRelations()
-
-	/**
-	 * Whether a key is a special metadata field, which is never a relation.
-	 *
-	 * @param int|string $key The key.
-	 *
-	 * @return bool
-	 */
-	private function isMetadataKey(int|string $key): bool {
-		return in_array($key, ['_self', '_schema', '_register'], true);
-	}//end isMetadataKey()
-
-	/**
-	 * The path of a key under a prefix; a top-level key is its own path, so an integer key stays an integer.
-	 *
-	 * @param string     $prefix The current property path prefix.
-	 * @param int|string $key    The key.
-	 *
-	 * @return int|string
-	 */
-	private function childPath(string $prefix, int|string $key): int|string {
-		if ($prefix === '') {
-			return $key;
-		}
-
-		return "{$prefix}.{$key}";
-	}//end childPath()
 
 	/**
 	 * The relation paths one value contributes: itself, or those found inside it.
@@ -302,15 +257,16 @@ class RelationCascadeHandler {
 	 */
 	private function relationsAt(int|string $path, mixed $value, ?Schema $schema): array {
 		$hasRef = $this->declaresRef(schema: $schema, path: $path);
-		if (is_array($value) === true) {
-			return $this->arrayRelations(path: $path, value: $value, schema: $schema);
+		if (is_array($value) === false) {
+			return $this->singleRelation(path: $path, value: $value, hasRef: $hasRef);
 		}
 
-		if ($this->isSingleRelation(value: $value, hasRef: $hasRef) === true) {
+		// An array holding a reference is one relation; any other array is scanned for nested ones.
+		if ($this->isArrayOfReferences(array: $value) === true) {
 			return [$path];
 		}
 
-		return [];
+		return $this->scanForRelations(data: $value, prefix: $path, schema: $schema);
 	}//end relationsAt()
 
 	/**
@@ -332,35 +288,25 @@ class RelationCascadeHandler {
 	}//end declaresRef()
 
 	/**
-	 * An array holding a reference is one relation; any other array is scanned for nested ones.
+	 * The path of a scalar that is a relation (a reference that either has a `$ref` or looks like an object
+	 * reference), or nothing.
 	 *
-	 * @param int|string  $path   The array's path.
-	 * @param array       $value  The array.
-	 * @param null|Schema $schema The schema to scan against.
+	 * @param int|string $path   The value's path.
+	 * @param mixed      $value  The value.
+	 * @param bool       $hasRef Whether the schema declares a `$ref` for it.
 	 *
 	 * @return array
 	 */
-	private function arrayRelations(int|string $path, array $value, ?Schema $schema): array {
-		if ($this->isArrayOfReferences(array: $value) === true) {
+	private function singleRelation(int|string $path, mixed $value, bool $hasRef): array {
+		if (is_string($value) === true
+			&& $this->isReference(value: $value) === true
+			&& ($hasRef === true || $this->looksLikeObjectReference(value: $value) === true)
+		) {
 			return [$path];
 		}
 
-		return $this->scanForRelations(data: $value, prefix: $path, schema: $schema);
-	}//end arrayRelations()
-
-	/**
-	 * Whether a scalar is a relation: a reference that either has a `$ref` or looks like an object reference.
-	 *
-	 * @param mixed $value  The value.
-	 * @param bool  $hasRef Whether the schema declares a `$ref` for it.
-	 *
-	 * @return bool
-	 */
-	private function isSingleRelation(mixed $value, bool $hasRef): bool {
-		return is_string($value) === true
-			&& $this->isReference(value: $value) === true
-			&& ($hasRef === true || $this->looksLikeObjectReference(value: $value) === true);
-	}//end isSingleRelation()
+		return [];
+	}//end singleRelation()
 
 	/**
 	 * Gets a property definition from properties array by path.
@@ -460,30 +406,11 @@ class RelationCascadeHandler {
 			return true;
 		}
 
-		return $this->isUrlReference(value: $value) === true || $this->isPositiveNumericId(value: $value) === true;
+		// A URL pattern, or a numeric id above zero.
+		return str_contains($value, '/objects/') === true
+			|| str_contains($value, '/api/') === true
+			|| (is_numeric($value) === true && (int)$value > 0);
 	}//end isReference()
-
-	/**
-	 * Whether a value is a URL containing /objects/ or /api/.
-	 *
-	 * @param string $value The value to check.
-	 *
-	 * @return bool
-	 */
-	private function isUrlReference(string $value): bool {
-		return str_contains($value, '/objects/') === true || str_contains($value, '/api/') === true;
-	}//end isUrlReference()
-
-	/**
-	 * Whether a value is a numeric id above zero.
-	 *
-	 * @param string $value The value to check.
-	 *
-	 * @return bool
-	 */
-	private function isPositiveNumericId(string $value): bool {
-		return is_numeric($value) === true && (int)$value > 0;
-	}//end isPositiveNumericId()
 
 	/**
 	 * Updates object relations by resolving references to actual object UUIDs.
@@ -598,6 +525,8 @@ class RelationCascadeHandler {
 	 *
 	 * @return string|null The extracted UUID or null.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::isValid is standard Symfony UID pattern
+	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function extractUuidFromReference(string $reference): ?string {
@@ -609,7 +538,12 @@ class RelationCascadeHandler {
 			return $this->uuidOfObjectId(id: (int)$reference);
 		}
 
-		return $this->uuidFromObjectUrl(reference: $reference);
+		$tail = $this->objectUrlTail(reference: $reference);
+		if (Uuid::isValid($tail) === true) {
+			return $tail;
+		}
+
+		return null;
 	}//end extractUuidFromReference()
 
 	/**
@@ -628,25 +562,20 @@ class RelationCascadeHandler {
 	}//end uuidOfObjectId()
 
 	/**
-	 * The UUID after the single `/objects/` of a URL, or null when there is none or it is no valid UUID.
+	 * What follows the single `/objects/` of a URL, without surrounding slashes; '' when there is not exactly one.
 	 *
 	 * @param string $reference The reference string.
 	 *
-	 * @return string|null
+	 * @return string
 	 */
-	private function uuidFromObjectUrl(string $reference): ?string {
+	private function objectUrlTail(string $reference): string {
 		$parts = explode('/objects/', $reference);
 		if (count($parts) !== 2) {
-			return null;
+			return '';
 		}
 
-		$uuid = trim($parts[1], '/');
-		if (Uuid::isValid($uuid) === true) {
-			return $uuid;
-		}
-
-		return null;
-	}//end uuidFromObjectUrl()
+		return trim($parts[1], '/');
+	}//end objectUrlTail()
 
 	/**
 	 * Cascades object creation for inversedBy properties.
@@ -727,41 +656,47 @@ class RelationCascadeHandler {
 	 *
 	 * @psalm-return list<string>
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array {
 		$createdUuids = [];
 		foreach ($propData as $object) {
-			$uuid = $this->cascadedItem(objectEntity: $objectEntity, property: $property, object: $object);
-			if ($uuid !== null) {
-				$createdUuids[] = $uuid;
+			// An item that already is a UUID reference is kept.
+			if (is_string($object) === true && Uuid::isValid($object) === true) {
+				$createdUuids[] = $object;
+				continue;
 			}
+
+			$created = $this->createdFrom(objectEntity: $objectEntity, property: $property, object: $object);
+			$createdUuids = array_merge($createdUuids, $created);
 		}
 
 		return $createdUuids;
 	}//end cascadeMultipleObjects()
 
 	/**
-	 * The UUID one list item stands for: the object created from a nested object, an item that already is a
-	 * UUID, or null.
+	 * The UUID of the object created from a nested-object list item; nothing for any other item.
 	 *
 	 * @param ObjectEntity $objectEntity The parent object entity.
 	 * @param array        $property     The property definition.
 	 * @param mixed        $object       The list item.
 	 *
-	 * @return string|null
+	 * @return list<string>
 	 */
-	private function cascadedItem(ObjectEntity $objectEntity, array $property, mixed $object): ?string {
-		if ($this->isNestedObject(value: $object) === true) {
-			return $this->cascadeSingleObject(_objectEntity: $objectEntity, _definition: $property, _object: $object);
+	private function createdFrom(ObjectEntity $objectEntity, array $property, mixed $object): array {
+		if ($this->isNestedObject(value: $object) === false) {
+			return [];
 		}
 
-		if (is_string($object) === true && Uuid::isValid($object) === true) {
-			return $object;
+		$uuid = $this->cascadeSingleObject(_objectEntity: $objectEntity, _definition: $property, _object: $object);
+		if ($uuid !== null) {
+			return [$uuid];
 		}
 
-		return null;
-	}//end cascadedItem()
+		return [];
+	}//end createdFrom()
 
 	/**
 	 * Whether a value is a nested object: an array holding at least one array or object.
