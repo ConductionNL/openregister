@@ -397,8 +397,10 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
-        // Ensure object ID is always included in filters.
-        $filters['object'] = $object->getId();
+        // The uuid is the only identity an object keeps across a move: register,
+        // schema and numeric id all belong to the table it lives in now.
+        unset($filters['object'], $filters['register'], $filters['schema']);
+        $filters['object_uuid'] = $object->getUuid();
 
         // Get audit trails using all available options.
         return $this->auditTrailMapper->findAll(
