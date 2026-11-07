@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Search\Db;
 use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
-use OCA\OpenRegister\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\IsoTimestampsTrait;
 use OCA\OpenRegister\Db\Organisation;

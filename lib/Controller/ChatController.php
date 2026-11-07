@@ -30,13 +30,13 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\ChatControllerServices;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -75,18 +75,18 @@ class ChatController extends Controller {
 	 *
 	 * Handles AI chat logic and LLM interactions.
 	 *
-	 * @var ChatService Chat service instance
+	 * @var ChatServiceInterface Chat service instance
 	 */
-	private readonly ChatService $chatService;
+	private readonly ChatServiceInterface $chatService;
 
 	/**
 	 * Conversation mapper
 	 *
 	 * Handles database operations for conversation entities.
 	 *
-	 * @var ConversationMapper Conversation mapper instance
+	 * @var ConversationMapperInterface Conversation mapper instance
 	 */
-	private readonly ConversationMapper $conversationMapper;
+	private readonly ConversationMapperInterface $conversationMapper;
 
 	/**
 	 * Message mapper
@@ -111,9 +111,9 @@ class ChatController extends Controller {
 	 *
 	 * Handles database operations for agent entities.
 	 *
-	 * @var AgentMapper Agent mapper instance
+	 * @var AgentMapperInterface Agent mapper instance
 	 */
-	private readonly AgentMapper $agentMapper;
+	private readonly AgentMapperInterface $agentMapper;
 
 	/**
 	 * Database connection

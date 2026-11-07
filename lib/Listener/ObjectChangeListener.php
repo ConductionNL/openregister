@@ -28,7 +28,7 @@ use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -52,7 +52,7 @@ class ObjectChangeListener implements IEventListener {
 	/**
 	 * Constructor
 	 *
-	 * @param TextExtractionService $textExtractSvc Text extraction service
+	 * @param TextExtractionServiceInterface $textExtractSvc Text extraction service
 	 * @param AppSettingsInterface $settingsService Settings service
 	 * @param IJobList $jobList Job list for queuing background jobs
 	 * @param LoggerInterface $logger Logger
@@ -60,7 +60,7 @@ class ObjectChangeListener implements IEventListener {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function __construct(
-		private readonly TextExtractionService $textExtractSvc,
+		private readonly TextExtractionServiceInterface $textExtractSvc,
 		private readonly AppSettingsInterface $settingsService,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,

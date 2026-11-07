@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\AuthorizationService;
 use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Service\MappingService;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;

@@ -54,6 +54,7 @@ use Throwable;
  * Calendar (CalDAV / Meetings) integration provider.
  */
 class CalendarProvider extends AbstractIntegrationProvider {
+	use LinkTableAppDescriptor;
 
 	/**
 	 * NC app id that must be installed/enabled for this integration.
@@ -127,39 +128,6 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	}//end getGroup()
 
 	/**
-	 * Nextcloud app that must be installed for this integration.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	/**
-	 * Registry routing classification (not literal physical storage — see class docblock).
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	/**
-	 * Whether the required NC app is installed.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
-
-	/**
 	 * List VEVENTs linked to an OR object.
 	 *
 	 * Filters are accepted but currently ignored — CalendarEventService
@@ -202,17 +170,10 @@ class CalendarProvider extends AbstractIntegrationProvider {
 			// for link-table providers) but does NOT mandate silent
 			// failure: surface the cause so an empty Meetings tab can
 			// be diagnosed from nextcloud.log instead of guessing.
+			$scope = ['objectId' => $objectId, 'register' => $register, 'schema' => $schema, 'exception' => $e];
 			$this->logger->warning(
 				'CalendarProvider::list() failed; degrading to empty list',
-				[
-					'app' => 'openregister',
-					'provider' => self::class,
-					'method' => 'list',
-					'objectId' => $objectId,
-					'register' => $register,
-					'schema' => $schema,
-					'exception' => $e,
-				]
+				['app' => 'openregister', 'provider' => self::class, 'method' => 'list'] + $scope
 			);
 			return [];
 		}//end try

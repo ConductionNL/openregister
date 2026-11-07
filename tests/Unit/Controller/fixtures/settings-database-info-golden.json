@@ -19,7 +19,7 @@
                 "db.getDatabasePlatform": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -168,7 +168,7 @@
                 "db.getDatabasePlatform": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -265,7 +265,7 @@
                 "db.getDatabasePlatform": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -367,7 +367,7 @@
                 "result.fetchOne": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -469,7 +469,7 @@
                 "result.fetchOne": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -568,7 +568,7 @@
                 "statement.execute": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -670,7 +670,7 @@
                 "result.fetchOne": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -852,7 +852,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -1012,7 +1012,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -1187,7 +1187,7 @@
                 "result.closeCursor": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -1286,7 +1286,7 @@
                 "db.getDatabasePlatform": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -1375,7 +1375,7 @@
                 "db.getDatabasePlatform": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [
@@ -1464,7 +1464,7 @@
                 "db.getDatabasePlatform": []
             },
             {
-                "container.get": "OCA\\OpenRegister\\Db\\ChunkMapper"
+                "container.get": "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface"
             },
             {
                 "logger.debug": [

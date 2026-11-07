@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
-use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 
 /**
  * Save-time checks of the handoff and MCP declarations, whose faults refuse the save with their codes.

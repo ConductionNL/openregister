@@ -1,5 +1,27 @@
 {
     "inputs: inputs bad spec": [],
+    "inputs: inputs duplicate and missing target": [
+        {
+            "code": "lifecycle-input-hidden-in-target",
+            "message": "Transition \"a\" asks for input \"title\", which state \"\" hides."
+        },
+        {
+            "code": "lifecycle-input-hidden-in-target",
+            "message": "Transition \"a\" asks for input \"title\", which state \"\" hides."
+        },
+        {
+            "code": "lifecycle-input-hidden-in-target",
+            "message": "Transition \"b\" asks for input \"owner\", which state \"closed\" hides."
+        },
+        {
+            "code": "lifecycle-input-hidden-in-target",
+            "message": "Transition \"b\" asks for input \"owner\", which state \"closed\" hides."
+        },
+        {
+            "code": "lifecycle-input-hidden-in-target",
+            "message": "Transition \"b\" asks for input \"amount\", which state \"closed\" hides."
+        }
+    ],
     "inputs: inputs hidden scalar": [],
     "inputs: inputs no states": [],
     "inputs: inputs target block scalar": [],
@@ -259,6 +281,20 @@
             "message": "x-openregister-lifecycle.states must be a non-empty map of state names to blocks."
         }
     ],
+    "states: two states in order": [
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"closed\" entry reads property \"zip\", which is not declared in `properties`."
+        },
+        {
+            "code": "lifecycle-state-unknown",
+            "message": "x-openregister-lifecycle.states declares state \"gone\" which is not in the field's enum."
+        },
+        {
+            "code": "lifecycle-state-malformed",
+            "message": "x-openregister-lifecycle.states.\"open\" must be an object."
+        }
+    ],
     "states: unknown kind": [
         {
             "code": "lifecycle-state-fields-unknown-kind",
@@ -270,6 +306,26 @@
         {
             "code": "lifecycle-state-condition-malformed",
             "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition must be a non-empty condition object. A scalar is refused: it would evaluate as a literal and let every write through."
+        }
+    ],
+    "states: when list references": [
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition reads property \"ghost\", which is not declared in `properties`."
+        },
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition reads property \"other\", which is not declared in `properties`."
+        }
+    ],
+    "states: when namespace edges": [
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition reads property \"miss\", which is not declared in `properties`."
+        },
+        {
+            "code": "lifecycle-state-condition-property-missing",
+            "message": "x-openregister-lifecycle.states.\"open\" fields.\"hidden\" condition reads property \"objects\", which is not declared in `properties`."
         }
     ],
     "states: when scalar": [

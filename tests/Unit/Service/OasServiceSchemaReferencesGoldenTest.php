@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden record of OasService::validateSchemaReferences(): the repaired schema and the report it leaves.
+ * Golden record of OasReferenceRepair::repair(): the repaired schema and the report it leaves.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -14,16 +14,16 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Oas\OasReferenceRepair;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
-use OCA\OpenRegister\Service\OasService;
-use OCP\IURLGenerator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Service\OasService
+ * @covers \OCA\OpenRegister\Service\Oas\OasReferenceRepair
+ * @uses \OCA\OpenRegister\Service\Oas\OasNames
+ * @uses \OCA\OpenRegister\Service\Oas\OasPropertySanitizer
+ * @uses \OCA\OpenRegister\Service\Oas\OasReferenceRepair
  * @uses \OCA\OpenRegister\Service\Oas\OasValidationReport
  *
  * @spec openspec/specs/oas-validation/spec.md
@@ -75,18 +75,9 @@ class OasServiceSchemaReferencesGoldenTest extends TestCase {
 
 	#[DataProvider('cases')]
 	public function testValidateSchemaReferencesMatchesGolden(array $schema): void {
-		$service = new OasService(
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IURLGenerator::class)
-		);
 		$report = new OasValidationReport();
-		(new \ReflectionProperty($service, 'report'))->setValue($service, $report);
-		(new \ReflectionProperty($service, 'oas'))->setValue($service, ['components' => ['schemas' => ['Adres' => ['type' => 'object'], 'Persoon' => ['type' => 'object']]]]);
-
-		$method = new \ReflectionMethod($service, 'validateSchemaReferences');
-		$args = [&$schema, 'components.schemas.Test'];
-		$method->invokeArgs($service, $args);
+		$repair = new OasReferenceRepair(componentNames: ['Adres', 'Persoon'], report: $report);
+		$repair->repair(schema: $schema, context: 'components.schemas.Test');
 
 		$actual = json_decode((string)json_encode(['schema' => $schema, 'issues' => $report->getIssues()]), true);
 		$name = $this->dataName();

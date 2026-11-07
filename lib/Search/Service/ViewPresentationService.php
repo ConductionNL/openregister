@@ -228,6 +228,27 @@ class ViewPresentationService {
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
 	 */
 	public function getCalendarObjects(View $view, string $rangeStart, string $rangeEnd): array {
+		$calendar = $this->calendarSpec(view: $view);
+		$baseQuery = $this->calendarBaseQuery(query: ($view->getQuery() ?? []));
+		$calendar += ['rangeStart' => $rangeStart, 'rangeEnd' => $rangeEnd];
+
+		$objectsById = $this->mergeByIdentity(queries: $this->calendarQueries(baseQuery: $baseQuery, calendar: $calendar));
+
+		return ['viewType' => 'calendar'] + $calendar + ['objects' => array_values($objectsById), 'total' => count($objectsById)];
+	}//end getCalendarObjects()
+
+	/**
+	 * Read a calendar view's date fields, refusing a view that is not a usable calendar.
+	 *
+	 * An `endDateField` that is not a non-empty string reads as none.
+	 *
+	 * @param View $view The view.
+	 *
+	 * @return array{dateField: string, endDateField: string|null}
+	 *
+	 * @throws InvalidArgumentException If the view is not a calendar view or has no dateField.
+	 */
+	private function calendarSpec(View $view): array {
 		$presentation = $view->getPresentation();
 		$viewType = $presentation['viewType'] ?? 'table';
 		if ($viewType !== 'calendar') {
@@ -240,12 +261,34 @@ class ViewPresentationService {
 			throw new InvalidArgumentException('Calendar view is missing calendar.dateField');
 		}
 
-		$endDateField = $calendarConfig['endDateField'] ?? null;
-		if ($endDateField !== null && (is_string($endDateField) === false || $endDateField === '')) {
-			$endDateField = null;
+		return ['dateField' => $dateField, 'endDateField' => $this->nonEmptyStringOrNull(value: ($calendarConfig['endDateField'] ?? null))];
+	}//end calendarSpec()
+
+	/**
+	 * The value when it is a non-empty string, else null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null
+	 */
+	private function nonEmptyStringOrNull(mixed $value): ?string {
+		if (is_string($value) === true && $value !== '') {
+			return $value;
 		}
 
-		$query = $view->getQuery() ?? [];
+		return null;
+	}//end nonEmptyStringOrNull()
+
+	/**
+	 * Scope the object service to the calendar view's register and schema, and build its base query.
+	 *
+	 * @param array<string, mixed> $query The view's stored query.
+	 *
+	 * @return array<string, mixed> The base object query.
+	 *
+	 * @throws InvalidArgumentException If the query names no register or no schema.
+	 */
+	private function calendarBaseQuery(array $query): array {
 		$registerRef = $query['registers'][0] ?? null;
 		$schemaRef = $query['schemas'][0] ?? null;
 		if ($registerRef === null || $schemaRef === null) {
@@ -255,42 +298,50 @@ class ViewPresentationService {
 		$this->objectService->setRegister(register: $registerRef);
 		$this->objectService->setSchema(schema: $schemaRef);
 
-		$baseQuery = $this->buildBaseObjectQuery(query: $query);
+		return $this->buildBaseObjectQuery(query: $query);
+	}//end calendarBaseQuery()
 
-		// Objects that start within the visible range.
-		$startingQuery = $baseQuery;
-		$startingQuery[$dateField] = [
-			'gte' => $rangeStart,
-			'lte' => $rangeEnd,
-		];
-		$startingResult = $this->objectService->searchObjectsPaginated(query: $startingQuery);
-
-		$objectsById = [];
-		foreach (($startingResult['results'] ?? []) as $object) {
-			$objectsById[$this->objectIdentity(object: $object)] = $object;
+	/**
+	 * The calendar's object queries: those starting within the range and,
+	 * with an end field, those started at/before the range end and still open
+	 * at/after the range start.
+	 *
+	 * @param array<string, mixed> $baseQuery The base object query.
+	 * @param array<string, mixed> $calendar  Date fields and range.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function calendarQueries(array $baseQuery, array $calendar): array {
+		$starting = $baseQuery;
+		$starting[$calendar['dateField']] = ['gte' => $calendar['rangeStart'], 'lte' => $calendar['rangeEnd']];
+		if ($calendar['endDateField'] === null) {
+			return [$starting];
 		}
 
-		// Spanning objects: started at/before the range end and still open at/after the range start.
-		if ($endDateField !== null) {
-			$spanningQuery = $baseQuery;
-			$spanningQuery[$dateField] = ['lte' => $rangeEnd];
-			$spanningQuery[$endDateField] = ['gte' => $rangeStart];
-			$spanningResult = $this->objectService->searchObjectsPaginated(query: $spanningQuery);
-			foreach (($spanningResult['results'] ?? []) as $object) {
+		$spanning = $baseQuery;
+		$spanning[$calendar['dateField']] = ['lte' => $calendar['rangeEnd']];
+		$spanning[$calendar['endDateField']] = ['gte' => $calendar['rangeStart']];
+
+		return [$starting, $spanning];
+	}//end calendarQueries()
+
+	/**
+	 * Run the queries in order and key their results by object identity; a later result replaces an earlier one.
+	 *
+	 * @param array<int, array<string, mixed>> $queries The object queries.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function mergeByIdentity(array $queries): array {
+		$objectsById = [];
+		foreach ($queries as $query) {
+			foreach (($this->objectService->searchObjectsPaginated(query: $query)['results'] ?? []) as $object) {
 				$objectsById[$this->objectIdentity(object: $object)] = $object;
 			}
 		}
 
-		return [
-			'viewType' => 'calendar',
-			'dateField' => $dateField,
-			'endDateField' => $endDateField,
-			'rangeStart' => $rangeStart,
-			'rangeEnd' => $rangeEnd,
-			'objects' => array_values($objectsById),
-			'total' => count($objectsById),
-		];
-	}//end getCalendarObjects()
+		return $objectsById;
+	}//end mergeByIdentity()
 
 	/**
 	 * Derive the ordered list of kanban column values.
@@ -342,18 +393,23 @@ class ViewPresentationService {
 			return [];
 		}
 
-		$buckets = $facets['facets'][$groupByField]['data']['buckets'] ?? $facets['facets'][$groupByField]['buckets'] ?? [];
-
-		$values = [];
-		foreach ($buckets as $bucket) {
-			$value = $bucket['value'] ?? $bucket['key'] ?? null;
-			if ($value !== null) {
-				$values[] = $value;
-			}
-		}
-
-		return $values;
+		return $this->bucketValues(facets: $facets, groupByField: $groupByField);
 	}//end discoverDistinctValues()
+
+	/**
+	 * The non-null bucket values (or keys) of one field's terms facet.
+	 *
+	 * @param array<string, mixed> $facets       The facets answer.
+	 * @param string               $groupByField The faceted field.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function bucketValues(array $facets, string $groupByField): array {
+		$buckets = $facets['facets'][$groupByField]['data']['buckets'] ?? $facets['facets'][$groupByField]['buckets'] ?? [];
+		$values = array_map(static fn ($bucket) => $bucket['value'] ?? $bucket['key'] ?? null, $buckets);
+
+		return array_values(array_filter($values, static fn ($value) => $value !== null));
+	}//end bucketValues()
 
 	/**
 	 * Build the base object-query filters/sort from a view's stored query,
@@ -387,12 +443,7 @@ class ViewPresentationService {
 	 */
 	private function objectIdentity(mixed $object): string {
 		if (is_array($object) === true) {
-			$id = $object['id'] ?? $object['uuid'] ?? null;
-			if ($id !== null) {
-				return (string)$id;
-			}
-
-			return md5(serialize($object));
+			return $this->rowIdentity(row: $object);
 		}
 
 		// Nextcloud entities serve get*() through Entity::__call() and declare the
@@ -401,25 +452,58 @@ class ViewPresentationService {
 		// queries to spl_object_hash(), which is unique per PHP instance — so the
 		// same DB row, hydrated once by the "starting" query and once by the
 		// "spanning" query, produced TWO keys and rendered twice on the calendar.
-		//
-		// property_exists() is the membership test Entity::getter() itself uses.
-		// uuid is preferred over id so an entity row and an already-rendered array
-		// row of the SAME object collapse to one key: getObject()/jsonSerialize()
-		// publish the uuid under 'id', which is what the is_array() branch reads.
+		$identity = null;
 		if ($object instanceof Entity) {
-			if (property_exists($object, 'uuid') === true) {
-				// @phpstan-ignore-next-line Entity::getUuid() is dispatched via __call.
-				$uuid = $object->getUuid();
-				if ($uuid !== null && $uuid !== '') {
-					return (string)$uuid;
-				}
-			}
-
-			if ($object->getId() !== null) {
-				return (string)$object->getId();
-			}
+			$identity = $this->entityIdentity(entity: $object);
 		}
 
-		return spl_object_hash((object)$object);
+		return $identity ?? spl_object_hash((object)$object);
 	}//end objectIdentity()
+
+	/**
+	 * Identity of an array row: its id, else its uuid, else a hash of the row.
+	 *
+	 * @param array<mixed> $row The row.
+	 *
+	 * @return string
+	 */
+	private function rowIdentity(array $row): string {
+		$id = $row['id'] ?? $row['uuid'] ?? null;
+		if ($id !== null) {
+			return (string) $id;
+		}
+
+		return md5(serialize($row));
+	}//end rowIdentity()
+
+	/**
+	 * Identity of an entity: its uuid, else its id, else none.
+	 *
+	 * The uuid is read only when property_exists() says the entity has one: the
+	 * membership test Entity::getter() itself uses.
+	 * uuid is preferred over id so an entity row and an already-rendered array
+	 * row of the SAME object collapse to one key: getObject()/jsonSerialize()
+	 * publish the uuid under 'id', which is what rowIdentity() reads.
+	 *
+	 * @param Entity $entity The entity.
+	 *
+	 * @return string|null
+	 */
+	private function entityIdentity(Entity $entity): ?string {
+		$uuid = null;
+		if (property_exists($entity, 'uuid') === true) {
+			// A plain Entity declares getUuid() only through __call(); the callable dispatches as a direct call would.
+			$uuid = call_user_func([$entity, 'getUuid']);
+		}
+
+		if ($uuid !== null && $uuid !== '') {
+			return (string) $uuid;
+		}
+
+		if ($entity->getId() !== null) {
+			return (string) $entity->getId();
+		}
+
+		return null;
+	}//end entityIdentity()
 }//end class

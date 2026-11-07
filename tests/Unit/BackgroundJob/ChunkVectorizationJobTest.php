@@ -21,9 +21,9 @@ declare(strict_types=1);
 namespace Unit\BackgroundJob;
 
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
-use OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCP\AppFramework\Utility\ITimeFactory;
