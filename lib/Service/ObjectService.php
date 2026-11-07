@@ -5739,51 +5739,101 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     ): array {
         // A BULK SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         // Same contract as saveObject(); see restoreScopeContext().
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
+        $options = [
+            'register'       => $register,
+            'schema'         => $schema,
+            '_rbac'          => $_rbac,
+            '_multitenancy'  => $_multitenancy,
+            '_validation'    => $validation,
+            '_events'        => $events,
+            'deduplicateIds' => $deduplicateIds,
+            'enrich'         => $enrich,
+            '_audit'         => $_audit,
+        ];
 
-        try {
-            $this->discardPendingSchemaRef();
-
-            // Bound the folder-access revalidation cache to this bulk-save call
-            // (see saveObject) so mid-request folder mutations are re-validated.
-            $this->fileService->resetFolderAccessRevalidationCache();
-
-            // Set register and schema context if provided.
-            if ($register !== null) {
-                $this->setRegister(register: $register);
-            }
-
-            if ($schema !== null) {
-                $this->setSchema(schema: $schema);
-            }
-
-            // Delegate to SaveObjects handler for bulk save operations.
-            $bulkResult = $this->saveObjectsHandler->saveObjects(
-                objects: $objects,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                _validation: $validation,
-                _events: $events,
-                deduplicateIds: $deduplicateIds,
-                enrich: $enrich,
-                _audit: $_audit
-            );
-
-            $this->bulkCacheInvalidator()->afterBulkSave(
-                bulkResult: $bulkResult,
-                scope: new SavedScopeIds(
-                    registerId: $this->currentRegister?->getId(),
-                    schemaId: $this->currentSchema?->getId()
-                )
-            );
-            return $bulkResult;
-        } finally {
-            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
-        }
+        return $this->preservingScope(
+            operation: fn (): array => $this->saveBulkWithinScope(objects: $objects, options: $options)
+        );
     }//end saveObjects()
+
+    /**
+     * Runs one bulk save inside the context saveObjects() keeps.
+     *
+     * @param array $objects The objects to save.
+     * @param array $options The arguments of the saveObjects() call.
+     *
+     * @phpstan-param array<int, array<string, mixed>> $objects
+     * @phpstan-param array<string, mixed>             $options
+     * @psalm-param   array<int, array<string, mixed>> $objects
+     * @psalm-param   array<string, mixed>             $options
+     *
+     * @return array The bulk result of the SaveObjects handler.
+     *
+     * @spec exclude Private step of saveObjects(); write behaviour owned by the SaveObjects handler.
+     */
+    private function saveBulkWithinScope(array $objects, array $options): array
+    {
+        $this->openBulkSave(register: $options['register'], schema: $options['schema']);
+
+        $bulkResult = $this->saveObjectsHandler->saveObjects(
+            objects: $objects,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            _rbac: $options['_rbac'],
+            _multitenancy: $options['_multitenancy'],
+            _validation: $options['_validation'],
+            _events: $options['_events'],
+            deduplicateIds: $options['deduplicateIds'],
+            enrich: $options['enrich'],
+            _audit: $options['_audit']
+        );
+
+        $this->invalidateAfterBulkSave(bulkResult: $bulkResult);
+        return $bulkResult;
+    }//end saveBulkWithinScope()
+
+    /**
+     * Sets the context of one bulk save.
+     *
+     * The folder-access revalidation cache is bound to this bulk-save call (see saveObject)
+     * so mid-request folder mutations are re-validated.
+     *
+     * @param Register|string|int|null $register The register, when the call names one.
+     * @param Schema|string|int|null   $schema   The schema, when the call names one.
+     *
+     * @return void
+     *
+     * @spec exclude Private step of saveObjects(); write behaviour owned by the SaveObjects handler.
+     */
+    private function openBulkSave(Register | string | int | null $register, Schema | string | int | null $schema): void
+    {
+        $this->discardPendingSchemaRef();
+        $this->fileService->resetFolderAccessRevalidationCache();
+        $this->applyScope(register: $register, schema: $schema);
+    }//end openBulkSave()
+
+    /**
+     * Drops the caches a bulk save touched.
+     *
+     * @param array $bulkResult The bulk result of the SaveObjects handler.
+     *
+     * @phpstan-param array<string, mixed> $bulkResult
+     * @psalm-param   array<string, mixed> $bulkResult
+     *
+     * @return void
+     *
+     * @spec exclude Private step of saveObjects(); invalidation owned by BulkCacheInvalidator.
+     */
+    private function invalidateAfterBulkSave(array $bulkResult): void
+    {
+        $this->bulkCacheInvalidator()->afterBulkSave(
+            bulkResult: $bulkResult,
+            scope: new SavedScopeIds(
+                registerId: $this->currentRegister?->getId(),
+                schemaId: $this->currentSchema?->getId()
+            )
+        );
+    }//end invalidateAfterBulkSave()
 
     /**
      * Save many objects one row at a time, keeping reference checks O(1).
@@ -6239,51 +6289,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $this->discardPendingSchemaRef();
         if (empty($uuids) === true) {
-            return [
-                'deleted_uuids'   => [],
-                'skipped_uuids'   => [],
-                'skipped_reasons' => [],
-                'cascade_count'   => 0,
-            ];
+            return $this->bulkDeleteReport(run: ['deleted' => [], 'skipped' => [], 'skippedReasons' => [], 'cascadeCount' => 0]);
         }
 
-        // Apply RBAC and multi-organization filtering if enabled.
-        $filteredUuids = $uuids;
-        if ($_rbac === true || OrganisationContext::multitenancy(requested: $_multitenancy) === true) {
-            $filteredUuids = $this->permissionHandler->filterUuidsForPermissions(
-                uuids: $uuids,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
-        }
-
-        // EVERY REQUESTED UUID MUST LAND IN EXACTLY ONE OUTCOME BUCKET.
-        // A UUID the filter removes is a row the caller asked to delete and
-        // still believes it deleted: report it as skipped, with the reason,
-        // so `requested = deleted + skipped` holds.
-        $skippedReasons = [];
-        foreach (array_diff($uuids, $filteredUuids) as $refusedUuid) {
-            $skippedReasons[$refusedUuid] = [
-                'error'   => 'OBJECT_NOT_PERMITTED',
-                'message' => 'Object is not visible to this user, or does not exist.',
-            ];
-        }
-
-        // PERF: resolve the scope AND the entity of every UUID with ONE batched
-        // cross-table lookup instead of a full magic-table scan per UUID. The
-        // register and schema caches materialise each distinct pair at most once.
-        $run = [
-            '_rbac'          => $_rbac,
-            '_multitenancy'  => $_multitenancy,
-            'preResolved'    => $this->batchResolveDeleteScopes(uuids: $filteredUuids),
-            'registerCache'  => [],
-            'schemaCache'    => [],
-            'deleted'        => [],
-            'skipped'        => array_keys($skippedReasons),
-            'skippedReasons' => $skippedReasons,
-            'cascadeCount'   => 0,
-            'pairs'          => [],
-        ];
+        $flags         = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
+        $filteredUuids = $this->uuidsPermittedForDelete(uuids: $uuids, flags: $flags);
+        $run           = $this->openBulkDelete(uuids: $filteredUuids, flags: $flags);
+        $this->skipRefusedUuids(refused: array_diff($uuids, $filteredUuids), run: $run);
 
         // Each object goes through the delete handler on its own, so referential
         // integrity rules (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT) are enforced
@@ -6294,13 +6306,115 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $this->bulkCacheInvalidator()->afterBulkDelete(run: $run);
 
+        return $this->bulkDeleteReport(run: $run);
+    }//end deleteObjects()
+
+    /**
+     * Keeps the uuids this caller may delete, when RBAC or multi-organization filtering is on.
+     *
+     * @param array       $uuids The requested uuids.
+     * @param AccessFlags $flags The caller's RBAC and multitenancy switches.
+     *
+     * @phpstan-param array<int, mixed> $uuids
+     * @psalm-param   array<int, mixed> $uuids
+     *
+     * @return array The uuids that stay in the delete.
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function uuidsPermittedForDelete(array $uuids, AccessFlags $flags): array
+    {
+        if ($flags->rbac === false && OrganisationContext::multitenancy(requested: $flags->multitenancy) === false) {
+            return $uuids;
+        }
+
+        return $this->permissionHandler->filterUuidsForPermissions(
+            uuids: $uuids,
+            _rbac: $flags->rbac,
+            _multitenancy: $flags->multitenancy
+        );
+    }//end uuidsPermittedForDelete()
+
+    /**
+     * The state of one bulk delete.
+     *
+     * PERF: the scope AND the entity of every UUID resolve with ONE batched cross-table
+     * lookup instead of a full magic-table scan per UUID. The register and schema caches
+     * materialise each distinct pair at most once.
+     *
+     * @param array       $uuids The uuids the filter kept.
+     * @param AccessFlags $flags The caller's RBAC and multitenancy switches.
+     *
+     * @phpstan-param array<int, mixed> $uuids
+     * @psalm-param   array<int, mixed> $uuids
+     *
+     * @return array The run the delete steps share.
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function openBulkDelete(array $uuids, AccessFlags $flags): array
+    {
+        return [
+            '_rbac'          => $flags->rbac,
+            '_multitenancy'  => $flags->multitenancy,
+            'preResolved'    => $this->batchResolveDeleteScopes(uuids: $uuids),
+            'registerCache'  => [],
+            'schemaCache'    => [],
+            'deleted'        => [],
+            'skipped'        => [],
+            'skippedReasons' => [],
+            'cascadeCount'   => 0,
+            'pairs'          => [],
+        ];
+    }//end openBulkDelete()
+
+    /**
+     * Reports the uuids the filter removed as skipped.
+     *
+     * EVERY REQUESTED UUID MUST LAND IN EXACTLY ONE OUTCOME BUCKET. A UUID the filter
+     * removes is a row the caller asked to delete and still believes it deleted: it is
+     * reported with the reason, so `requested = deleted + skipped` holds.
+     *
+     * @param array $refused The uuids the filter removed.
+     * @param array $run     The run the delete steps share.
+     *
+     * @phpstan-param array<int, mixed> $refused
+     * @psalm-param   array<int, mixed> $refused
+     *
+     * @return void
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function skipRefusedUuids(array $refused, array &$run): void
+    {
+        foreach ($refused as $refusedUuid) {
+            $run['skippedReasons'][$refusedUuid] = [
+                'error'   => 'OBJECT_NOT_PERMITTED',
+                'message' => 'Object is not visible to this user, or does not exist.',
+            ];
+        }
+
+        $run['skipped'] = array_keys($run['skippedReasons']);
+    }//end skipRefusedUuids()
+
+    /**
+     * The answer of one bulk delete.
+     *
+     * @param array $run The run the delete steps share.
+     *
+     * @return array{deleted_uuids: array, skipped_uuids: array, skipped_reasons: array, cascade_count: int}
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function bulkDeleteReport(array $run): array
+    {
         return [
             'deleted_uuids'   => $run['deleted'],
             'skipped_uuids'   => $run['skipped'],
             'skipped_reasons' => $run['skippedReasons'],
             'cascade_count'   => $run['cascadeCount'],
         ];
-    }//end deleteObjects()
+    }//end bulkDeleteReport()
 
     /**
      * Delete one row of a bulk delete, recording it as deleted or skipped with a reason.
@@ -6334,38 +6448,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function bulkDeleteOutcome(mixed $uuid, array &$run): ?array
     {
         try {
-            $scope   = $this->resolveBulkDeleteScope(uuid: $uuid, run: $run);
-            $refusal = $this->bulkDeleteRefusal(scope: $scope, run: $run);
-            if ($refusal !== null) {
-                return $refusal;
-            }
-
-            $result = $this->deleteHandler->deleteObject(
-                register: $scope['register'],
-                schema: $scope['schema'],
-                uuid: $uuid,
-                originalObjectId: null,
-                _rbac: $run['_rbac'],
-                _multitenancy: $run['_multitenancy'],
-                preResolved: $scope['preResolved'],
-                permanent: $scope['draft']
-            );
-            if ($result === true) {
-                $this->recordBulkDeleted(scope: $scope, run: $run);
-                return null;
-            }
-
-            // The handler reports some refusals by RETURN VALUE rather than by
-            // throwing: a read-only object source declines this way, and so does
-            // its own catch when the inner delete fails.
-            $this->logger->warning(
-                message: '[ObjectService] Bulk delete handler refused object',
-                context: ['uuid' => $uuid]
-            );
-            return [
-                'error'   => 'DELETE_REFUSED',
-                'message' => 'The delete handler did not delete this object.',
-            ];
+            return $this->deleteBulkTarget(uuid: $uuid, run: $run);
         } catch (\OCA\OpenRegister\Exception\ReferentialIntegrityException $e) {
             // RESTRICT blocks should not abort the entire bulk operation.
             $this->logger->info(
@@ -6375,25 +6458,74 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                     'blockers' => count($e->getAnalysis()->blockers),
                 ]
             );
-            return [
-                'error'   => 'REFERENTIAL_INTEGRITY_RESTRICT',
-                'message' => $e->getMessage(),
-            ];
+            return ['error' => 'REFERENTIAL_INTEGRITY_RESTRICT', 'message' => $e->getMessage()];
         } catch (\Exception $e) {
             // Other failures (transaction rollback, etc.) are logged and skipped.
             $this->logger->warning(
                 message: '[ObjectService] Bulk delete failed for object',
-                context: [
-                    'uuid'  => $uuid,
-                    'error' => $e->getMessage(),
-                ]
+                context: ['uuid' => $uuid, 'error' => $e->getMessage()]
             );
-            return [
-                'error'   => 'DELETE_FAILED',
-                'message' => $e->getMessage(),
-            ];
+            return ['error' => 'DELETE_FAILED', 'message' => $e->getMessage()];
         }//end try
     }//end bulkDeleteOutcome()
+
+    /**
+     * Asks the refusals about one row, then deletes it.
+     *
+     * The handler reports some refusals by RETURN VALUE rather than by throwing: a
+     * read-only object source declines this way, and so does its own catch when the
+     * inner delete fails.
+     *
+     * @param mixed $uuid The uuid to delete.
+     * @param array $run  The run the delete steps share.
+     *
+     * @return array|null The reason this row was skipped, or null when it was deleted.
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function deleteBulkTarget(mixed $uuid, array &$run): ?array
+    {
+        $scope   = $this->resolveBulkDeleteScope(uuid: $uuid, run: $run);
+        $refusal = $this->bulkDeleteRefusal(scope: $scope, run: $run);
+        if ($refusal !== null) {
+            return $refusal;
+        }
+
+        if ($this->callDeleteHandler(scope: $scope, run: $run) === true) {
+            $this->recordBulkDeleted(scope: $scope, run: $run);
+            return null;
+        }
+
+        $this->logger->warning(
+            message: '[ObjectService] Bulk delete handler refused object',
+            context: ['uuid' => $uuid]
+        );
+        return ['error' => 'DELETE_REFUSED', 'message' => 'The delete handler did not delete this object.'];
+    }//end deleteBulkTarget()
+
+    /**
+     * Hands one row to the delete handler.
+     *
+     * @param array $scope The row and its register and schema.
+     * @param array $run   The run the delete steps share.
+     *
+     * @return bool Whether the handler deleted the row.
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function callDeleteHandler(array $scope, array $run): bool
+    {
+        return $this->deleteHandler->deleteObject(
+            register: $scope['register'],
+            schema: $scope['schema'],
+            uuid: $scope['uuid'],
+            originalObjectId: null,
+            _rbac: $run['_rbac'],
+            _multitenancy: $run['_multitenancy'],
+            preResolved: $scope['preResolved'],
+            permanent: $scope['draft']
+        ) === true;
+    }//end callDeleteHandler()
 
     /**
      * Resolve a bulk-delete row's register, schema and entity before deleting it.
@@ -6434,21 +6566,33 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         if (isset($run['preResolved'][$uuid]) === true) {
-            $scopeEntities = $this->loadDeleteScopeEntities(
-                registerId: $scope['registerId'],
-                schemaId: $scope['schemaId'],
-                registerCache: $run['registerCache'],
-                schemaCache: $run['schemaCache']
-            );
-            if ($scopeEntities !== null) {
-                [$scope['register'], $scope['schema']] = $scopeEntities;
-                $scope['preResolved'] = $scope['row'];
-            }
+            $scope = $this->anchorBulkDeleteScope(scope: $scope, run: $run);
         }
 
         $scope['draft'] = ($scope['row'] !== null && $scope['row']->isDraft() === true);
         return $scope;
     }//end resolveBulkDeleteScope()
+
+    /**
+     * Points a pre-resolved row at its own register and schema, when both load.
+     *
+     * @param array $scope The row and its register and schema.
+     * @param array $run   The run the delete steps share.
+     *
+     * @return array The scope.
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function anchorBulkDeleteScope(array $scope, array &$run): array
+    {
+        $scopeEntities = $this->loadDeleteScopeEntities(scope: $scope, run: $run);
+        if ($scopeEntities !== null) {
+            [$scope['register'], $scope['schema']] = $scopeEntities;
+            $scope['preResolved'] = $scope['row'];
+        }
+
+        return $scope;
+    }//end anchorBulkDeleteScope()
 
     /**
      * Find a bulk-delete row the batch resolution missed, with the caller's flags.
@@ -6505,11 +6649,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function bulkDeleteRefusal(array $scope, array &$run): ?array
     {
-        $gateSchema = $this->loadRowSchema(
-            schemaId: $scope['schemaId'],
-            schemaCache: $run['schemaCache']
-        );
-        if ($gateSchema === null) {
+        $scope['gateSchema'] = $this->loadRowSchema(schemaId: $scope['schemaId'], schemaCache: $run['schemaCache']);
+        if ($scope['gateSchema'] === null) {
             return [
                 'error'   => 'SCHEMA_UNRESOLVED',
                 'message' => 'The schema of this object could not be resolved, '
@@ -6517,8 +6658,26 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             ];
         }
 
+        return ($this->draftDeleteRefusal(scope: $scope, run: $run)
+            ?? $this->sharedDataDeleteRefusal(scope: $scope, run: $run)
+            ?? $this->bulkDeleteStateRefusal(row: $scope['row'], schema: $scope['gateSchema'])
+            ?? $this->archivalDeleteRefusal(scope: $scope));
+    }//end bulkDeleteRefusal()
+
+    /**
+     * Refuses a draft the caller may not see.
+     *
+     * @param array $scope The row, its schema and whether it is a draft.
+     * @param array $run   The run the delete steps share.
+     *
+     * @return array|null The refusal, or null.
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function draftDeleteRefusal(array $scope, array $run): ?array
+    {
         if ($scope['draft'] === true && $run['_rbac'] === true
-            && $this->draftKeptFromCaller(object: $scope['row'], schema: $gateSchema, user: $this->userSession->getUser()) === true
+            && $this->draftKeptFromCaller(object: $scope['row'], schema: $scope['gateSchema'], user: $this->userSession->getUser()) === true
         ) {
             return [
                 'error'   => 'OBJECT_NOT_PERMITTED',
@@ -6526,43 +6685,60 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             ];
         }
 
-        if ($this->deleteAnswersToOrganisation(rbac: $run['_rbac'], multitenancy: $run['_multitenancy']) === true) {
-            try {
-                $this->rejectSharedMasterDataDelete(
-                    registerId: ($this->rowRegisterId(row: $scope['row']) ?? $scope['register']?->getId()),
-                    schemaId: $gateSchema->getId()
-                );
-            } catch (SharedMasterDataWriteException $sharedRefusal) {
-                return ['error' => 'OBJECT_NOT_PERMITTED', 'message' => $sharedRefusal->getMessage()];
-            }
-        }
-
-        return ($this->bulkDeleteStateRefusal(row: $scope['row'], schema: $gateSchema)
-            ?? $this->bulkDeleteArchivalRefusal(scope: $scope, schema: $gateSchema));
-    }//end bulkDeleteRefusal()
+        return null;
+    }//end draftDeleteRefusal()
 
     /**
-     * The archival refusal of a bulk-delete row, or null; a draft is not an archival record.
+     * Refuses a row of shared master data this caller's organisation does not own.
      *
-     * @param array  $scope  The row's scope.
-     * @param Schema $schema The row's schema.
+     * @param array $scope The row, its schema and its register.
+     * @param array $run   The run the delete steps share.
      *
-     * @return array|null The skip reason, or null.
+     * @return array|null The refusal, or null.
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
      */
-    private function bulkDeleteArchivalRefusal(array $scope, Schema $schema): ?array
+    private function sharedDataDeleteRefusal(array $scope, array $run): ?array
+    {
+        if ($this->deleteAnswersToOrganisation(rbac: $run['_rbac'], multitenancy: $run['_multitenancy']) === false) {
+            return null;
+        }
+
+        try {
+            $this->rejectSharedMasterDataDelete(
+                registerId: ($this->rowRegisterId(row: $scope['row']) ?? $scope['register']?->getId()),
+                schemaId: $scope['gateSchema']->getId()
+            );
+        } catch (SharedMasterDataWriteException $sharedRefusal) {
+            return ['error' => 'OBJECT_NOT_PERMITTED', 'message' => $sharedRefusal->getMessage()];
+        }
+
+        return null;
+    }//end sharedDataDeleteRefusal()
+
+    /**
+     * Refuses a row the archival rules keep, unless it is a draft.
+     *
+     * @param array $scope The row, its schema and whether it is a draft.
+     *
+     * @return array|null The refusal, or null.
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function archivalDeleteRefusal(array $scope): ?array
     {
         if ($scope['draft'] === true) {
             return null;
         }
 
         try {
-            $this->rejectIfArchivalImmutable(schema: $schema, retentionSweep: false);
+            $this->rejectIfArchivalImmutable(schema: $scope['gateSchema'], retentionSweep: false);
         } catch (ArchivalImmutableException $archivalRefusal) {
             return $archivalRefusal->toResponseBody();
         }
 
         return null;
-    }//end bulkDeleteArchivalRefusal()
+    }//end archivalDeleteRefusal()
 
     /**
      * Why a bulk-delete row may not go whatever its draft status, or null.
@@ -6669,44 +6845,27 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * request-scoped caching underneath. Returns null when either entity
      * cannot be loaded — the caller then keeps the legacy delete call.
      *
-     * @param string|int|null $registerId    The register id from the resolved entity.
-     * @param string|int|null $schemaId      The schema id from the resolved entity.
-     * @param array           $registerCache Cache of Register entities keyed by int id.
-     * @param array           $schemaCache   Cache of Schema entities keyed by int id.
+     * @param array $scope The row, with the register and schema ids it names.
+     * @param array $run   The run the delete steps share, holding the caches.
      *
      * @return array{0: \OCA\OpenRegister\Db\Register, 1: \OCA\OpenRegister\Db\Schema}|null
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
-    private function loadDeleteScopeEntities(
-        string | int | null $registerId,
-        string | int | null $schemaId,
-        array &$registerCache,
-        array &$schemaCache
-    ): ?array {
-        if (is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+    private function loadDeleteScopeEntities(array $scope, array &$run): ?array
+    {
+        if (is_numeric($scope['registerId']) === false || is_numeric($scope['schemaId']) === false) {
             return null;
         }
 
-        $registerKey = (int) $registerId;
-        $schemaKey   = (int) $schemaId;
+        $registerKey = (int) $scope['registerId'];
+        $schemaKey   = (int) $scope['schemaId'];
 
         try {
-            if (isset($registerCache[$registerKey]) === false) {
-                $registerCache[$registerKey] = $this->registerMapper->find(
-                    $registerKey,
-                    _rbac: false,
-                    _multitenancy: false
-                );
-            }
-
-            if (isset($schemaCache[$schemaKey]) === false) {
-                $schemaCache[$schemaKey] = $this->schemaMapper->find(
-                    $schemaKey,
-                    _rbac: false,
-                    _multitenancy: false
-                );
-            }
+            return [
+                $this->cachedDeleteRegister(registerKey: $registerKey, registerCache: $run['registerCache']),
+                $this->cachedDeleteSchema(schemaKey: $schemaKey, schemaCache: $run['schemaCache']),
+            ];
         } catch (\Throwable $scopeError) {
             $this->logger->warning(
                 message: '[ObjectService] Bulk delete could not materialise scope entities',
@@ -6718,9 +6877,49 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             );
             return null;
         }//end try
-
-        return [$registerCache[$registerKey], $schemaCache[$schemaKey]];
     }//end loadDeleteScopeEntities()
+
+    /**
+     * The register of a key, read once per bulk delete.
+     *
+     * @param int   $registerKey   The register id.
+     * @param array $registerCache Cache of Register entities keyed by int id.
+     *
+     * @return Register The register.
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function cachedDeleteRegister(int $registerKey, array &$registerCache): Register
+    {
+        $registerCache[$registerKey] ??= $this->registerMapper->find(
+            $registerKey,
+            _rbac: false,
+            _multitenancy: false
+        );
+
+        return $registerCache[$registerKey];
+    }//end cachedDeleteRegister()
+
+    /**
+     * The schema of a key, read once per bulk delete.
+     *
+     * @param int   $schemaKey   The schema id.
+     * @param array $schemaCache Cache of Schema entities keyed by int id.
+     *
+     * @return Schema The schema.
+     *
+     * @spec exclude Private step of deleteObjects(); the delete rules live in the units it calls.
+     */
+    private function cachedDeleteSchema(int $schemaKey, array &$schemaCache): Schema
+    {
+        $schemaCache[$schemaKey] ??= $this->schemaMapper->find(
+            $schemaKey,
+            _rbac: false,
+            _multitenancy: false
+        );
+
+        return $schemaCache[$schemaKey];
+    }//end cachedDeleteSchema()
 
     /**
      * Materialise the Schema a bulk-delete candidate actually belongs to.
@@ -6749,16 +6948,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         $schemaKey = (int) $schemaId;
-        if (isset($schemaCache[$schemaKey]) === true) {
-            return $schemaCache[$schemaKey];
-        }
 
         try {
-            $schemaCache[$schemaKey] = $this->schemaMapper->find(
-                $schemaKey,
-                _rbac: false,
-                _multitenancy: false
-            );
+            return $this->cachedDeleteSchema(schemaKey: $schemaKey, schemaCache: $schemaCache);
         } catch (\Throwable $schemaError) {
             $this->logger->warning(
                 message: '[ObjectService] Bulk delete could not resolve the schema of a candidate row',
@@ -6769,8 +6961,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             );
             return null;
         }
-
-        return $schemaCache[$schemaKey];
     }//end loadRowSchema()
 
     /**

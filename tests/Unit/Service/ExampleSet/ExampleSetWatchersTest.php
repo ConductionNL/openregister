@@ -60,6 +60,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetWatchersTest extends ExampleSetTestCase {
 	/**

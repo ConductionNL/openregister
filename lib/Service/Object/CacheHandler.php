@@ -2336,7 +2336,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				}
 
 				$tableResults = $this->queryTableForNames(
-					tableName: 'oc_openregister_table_' . $register->getId() . '_' . $schemaId,
+					tableName: '*PREFIX*openregister_table_' . $register->getId() . '_' . $schemaId,
 					uuids: array_values($remainingUuids),
 					source: self::objectNameSource(register: $register->getId(), schema: $schemaId)
 				);
@@ -2372,7 +2372,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	/**
 	 * Query a single magic table for names by UUIDs.
 	 *
-	 * @param string $tableName The table name (with oc_ prefix).
+	 * @param string $tableName The table name, with the prefix or its `*PREFIX*` placeholder.
 	 * @param array $uuids Array of UUIDs to look up.
 	 * @param string|null $source The table's name source, "<registerId>:<schemaId>".
 	 *

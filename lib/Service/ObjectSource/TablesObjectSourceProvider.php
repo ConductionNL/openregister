@@ -61,7 +61,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	private const DEFAULT_LIMIT = 200;
 
 	/**
-	 * Row cap for the O(n) UUID-resolution scan in find() (bounded + logged).
+	 * Row cap for the O(n) scans of a UUID lookup and of a query applied in PHP (bounded + logged).
 	 *
 	 * @var int
 	 */
@@ -143,9 +143,9 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * Pushes `limit`/`offset` natively to Tables; any other filter/sort is applied
-	 * provider-side in PHP. A `config.viewId` binds a Tables View instead of the
-	 * raw `config.tableId`.
+	 * Pushes `limit`/`offset` natively to Tables. A query with filters, search, ids
+	 * or a sort is applied in PHP over a bounded scan, and paged after that. A
+	 * `config.viewId` binds a Tables View instead of the raw `config.tableId`.
 	 *
 	 * @param Register $register The register the schema belongs to.
 	 * @param Schema $schema The sourced schema.
@@ -162,15 +162,15 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 			return [];
 		}
 
-		$this->warnUnpushedFilters(query: $query);
-
 		$target = new TablesObjectTarget(register: $register, schema: $schema, scope: $scope);
+		$objectQuery = new TablesObjectQuery(query: $query);
+		if ($objectQuery->isNarrowing() === true) {
+			return $objectQuery->page(objects: $this->matching(target: $target, query: $objectQuery), defaultLimit: self::DEFAULT_LIMIT);
+		}
+
 		$page = $scope->withPage(limit: (int)($query['limit'] ?? self::DEFAULT_LIMIT), offset: (int)($query['offset'] ?? 0));
 
-		return array_map(
-			fn (array $row): ObjectEntity => $this->toObjectEntity(target: $target, row: $row),
-			$this->reader->findRows(scope: $page)
-		);
+		return $this->toObjects(target: $target, rows: $this->reader->findRows(scope: $page));
 	}//end findAll()
 
 	/**
@@ -183,14 +183,18 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @return int The number of matching virtual objects.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register/$schema unused; the count is source-side.
-	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
 		$scope = $this->scope(config: $config);
 		if ($scope === null || $scope->sourceId() === 0) {
 			return 0;
+		}
+
+		$objectQuery = new TablesObjectQuery(query: $query);
+		if ($objectQuery->isNarrowing() === true && $scope->tableId !== 0) {
+			$target = new TablesObjectTarget(register: $register, schema: $schema, scope: $scope);
+			return count($this->matching(target: $target, query: $objectQuery));
 		}
 
 		return $this->reader->countRows(scope: $scope);
@@ -264,24 +268,40 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	}//end findByUuid()
 
 	/**
-	 * Log a warning when a query carries filters/sort the provider cannot push
-	 * down (no silent truncation — per the interface contract).
+	 * The objects of a bounded scan that a query matches. A scan that reaches the cap
+	 * logs a warning, because rows past it were not considered.
 	 *
-	 * @param array<string, mixed> $query The query.
+	 * @param TablesObjectTarget $target The register, schema and read scope.
+	 * @param TablesObjectQuery $query The query.
 	 *
-	 * @return void
+	 * @return array<int, ObjectEntity> The matching objects.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function warnUnpushedFilters(array $query): void {
-		$pushable = ['limit', 'offset', '_limit', '_offset', 'page', '_page'];
-		$unpushed = array_diff(array_keys($query), $pushable);
-		if (empty($unpushed) === false) {
+	private function matching(TablesObjectTarget $target, TablesObjectQuery $query): array {
+		$rows = $this->reader->findRows(scope: $target->scope->withPage(limit: self::UUID_SCAN_CAP, offset: 0));
+		if (count($rows) >= self::UUID_SCAN_CAP) {
 			$this->logger->warning(
-				'[ObjectSource:tables] query operators applied provider-side (not pushed down): ' . implode(', ', $unpushed)
+				sprintf('[ObjectSource:tables] query applied to the first %d rows of table %d only', self::UUID_SCAN_CAP, $target->scope->tableId)
 			);
 		}
-	}//end warnUnpushedFilters()
+
+		return $query->matching(objects: $this->toObjects(target: $target, rows: $rows));
+	}//end matching()
+
+	/**
+	 * Map row descriptors onto virtual objects.
+	 *
+	 * @param TablesObjectTarget $target The register, schema and read scope.
+	 * @param array<int, array<string, mixed>> $rows The row descriptors.
+	 *
+	 * @return array<int, ObjectEntity> The virtual objects.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function toObjects(TablesObjectTarget $target, array $rows): array {
+		return array_map(fn (array $row): ObjectEntity => $this->toObjectEntity(target: $target, row: $row), $rows);
+	}//end toObjects()
 
 	/**
 	 * Map a Tables row descriptor onto a non-persisted virtual ObjectEntity.
@@ -300,7 +320,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 		$entity->setUuid($this->uuidDeriver->deriveObjectUuid(tableId: $target->scope->tableId, rowId: $rowId));
 		$entity->setRegister((string)$target->register->getId());
 		$entity->setSchema((string)$target->schema->getId());
-		$entity->setObject(array_merge(['id' => (string)$rowId], $this->projectedData(scope: $target->scope, row: $row)));
+		$entity->setObject(array_merge(['id' => (string)$rowId], $this->projectedData(target: $target, row: $row)));
 		$this->applyOwner(entity: $entity, row: $row);
 		$this->applyDates(entity: $entity, row: $row);
 
@@ -310,15 +330,16 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * Project a row onto the schema's properties through the table's columns.
 	 *
-	 * @param TablesReadScope $scope The bound table and the acting user.
+	 * @param TablesObjectTarget $target The register, schema and read scope.
 	 * @param array<string, mixed> $row The row descriptor.
 	 *
 	 * @return array<string, mixed> The projected properties.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function projectedData(TablesReadScope $scope, array $row): array {
-		$columns = $this->reader->listColumns(tableId: $scope->tableId, userId: $scope->userId);
+	private function projectedData(TablesObjectTarget $target, array $row): array {
+		$scope = $target->scope;
+		$columns = $target->columns(load: fn (): array => $this->reader->listColumns(tableId: $scope->tableId, userId: $scope->userId));
 
 		return $this->columnMapper->projectRow(
 			row: $row,

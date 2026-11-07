@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	/**

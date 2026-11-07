@@ -2831,28 +2831,39 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return void
 	 */
 	public function setConfiguration($configuration): void {
-		if ($configuration === null) {
-			$this->configuration = null;
-			$this->markFieldUpdated(attribute: 'configuration');
-			return;
+		$validated = null;
+		if ($configuration !== null) {
+			$validated = $this->validatedConfiguration(configuration: $configuration);
 		}
 
-		$parsedConfig = $this->parseConfigurationInput(configuration: $configuration);
-		if ($parsedConfig === null) {
-			$this->configuration = null;
-			$this->markFieldUpdated(attribute: 'configuration');
-			return;
-		}
-
-		$validatedConfig = $this->validateConfigurationArray(configuration: $parsedConfig);
-
-		$this->configuration = null;
-		if (empty($validatedConfig) === false) {
-			$this->configuration = $validatedConfig;
-		}
-
+		$this->configuration = $validated;
 		$this->markFieldUpdated(attribute: 'configuration');
 	}//end setConfiguration()
+
+	/**
+	 * Parse and validate a configuration input; null when it does not parse or nothing in it is kept.
+	 *
+	 * A validator that throws leaves the stored configuration as it was: the caller assigns only after this returns.
+	 *
+	 * @param mixed $configuration The configuration array or JSON string.
+	 *
+	 * @throws \InvalidArgumentException If a key that must fail the whole save is invalid
+	 *
+	 * @return array|null The validated configuration.
+	 */
+	private function validatedConfiguration(mixed $configuration): ?array {
+		$parsed = $this->parseConfigurationInput(configuration: $configuration);
+		if ($parsed === null) {
+			return null;
+		}
+
+		$validated = $this->validateConfigurationArray(configuration: $parsed);
+		if (empty($validated) === true) {
+			return null;
+		}
+
+		return $validated;
+	}//end validatedConfiguration()
 
 	/**
 	 * Parse configuration input into an array
@@ -3202,12 +3213,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	/**
 	 * Validate the tag, linked-type and mail-template keys, stored as given.
 	 *
-	 * @param string $key   Configuration key.
-	 * @param mixed  $value Raw value for the key.
+	 * @param string $key   The configuration key.
+	 * @param mixed  $value The value given for that key.
 	 *
-	 * @throws \InvalidArgumentException If the value is invalid for the key.
+	 * @throws \InvalidArgumentException If the tags, linked types or mail template are invalid.
 	 *
-	 * @return bool True when the key is one of these and its value passed.
+	 * @return bool Whether the key is one of these three (its value then passed).
 	 */
 	private function validatesShapedConfigurationValue(string $key, mixed $value): bool {
 		if ($key === 'allowedTags') {
@@ -3220,13 +3231,27 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			return true;
 		}
 
-		if ($key === 'mailObjectTemplate') {
-			$this->validateMailObjectTemplateValue(value: $value);
-			return true;
+		return $this->validatesMailTemplateConfigurationValue(key: $key, value: $value);
+	}//end validatesShapedConfigurationValue()
+
+	/**
+	 * Check `mailObjectTemplate`, which is stored as given once it passes.
+	 *
+	 * @param string $key   The key being validated.
+	 * @param mixed  $value What the configuration gives for it.
+	 *
+	 * @throws \InvalidArgumentException If the template is not a flat map of scalars.
+	 *
+	 * @return bool Whether the key was `mailObjectTemplate`.
+	 */
+	private function validatesMailTemplateConfigurationValue(string $key, mixed $value): bool {
+		if ($key !== 'mailObjectTemplate') {
+			return false;
 		}
 
-		return false;
-	}//end validatesShapedConfigurationValue()
+		$this->validateMailObjectTemplateValue(value: $value);
+		return true;
+	}//end validatesMailTemplateConfigurationValue()
 
 	/**
 	 * Validate a key whose value is normalised before it is stored.
@@ -3235,28 +3260,20 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * and acted on by DraftExpiryJob. Absent or null means the default of 30
 	 * days, so null is not stored.
 	 *
-	 * @param string $key   Configuration key.
-	 * @param mixed  $value Raw value for the key.
+	 * @param string $key   The configuration key.
+	 * @param mixed  $value The value given for that key.
 	 *
-	 * @throws \InvalidArgumentException If the value is invalid for the key.
+	 * @throws \InvalidArgumentException If the value cannot be normalised.
 	 *
-	 * @return array<int, mixed> The value to store as a one-element list; empty when the key is not stored.
+	 * @return array<int, mixed> The normalised value as a one-element list; empty when nothing is stored for the key.
 	 */
 	private function convertedConfigurationValue(string $key, mixed $value): array {
 		if ($key === 'draftLifetimeDays') {
-			if ($value === null) {
-				return [];
-			}
-
-			return [$this->validateDraftLifetimeValue(value: $value)];
+			return $this->draftLifetimeEntry(value: $value);
 		}
 
-		if ($key === 'linkRoles') {
-			return [$this->validateLinkRolesValue(value: $value)];
-		}
-
-		if ($key === 'partyKinds') {
-			return [$this->validatePartyKindsValue(value: $value)];
+		if ($key === 'linkRoles' || $key === 'partyKinds') {
+			return [$this->validateVocabularyValue(key: $key, value: $value)];
 		}
 
 		if ($key === self::WRITEONLY_PATHS_ANNOTATION) {
@@ -3265,6 +3282,41 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return $this->annotationConfigurationValue(key: $key, value: $value);
 	}//end convertedConfigurationValue()
+
+	/**
+	 * The `draftLifetimeDays` value to store, as a one-element list; empty for null, which means the default.
+	 *
+	 * @param mixed $value Raw value for the key.
+	 *
+	 * @throws \InvalidArgumentException If the value is invalid.
+	 *
+	 * @return array<int, int|false>
+	 */
+	private function draftLifetimeEntry(mixed $value): array {
+		if ($value === null) {
+			return [];
+		}
+
+		return [$this->validateDraftLifetimeValue(value: $value)];
+	}//end draftLifetimeEntry()
+
+	/**
+	 * Validate `linkRoles` or `partyKinds`.
+	 *
+	 * @param string $key   `linkRoles` or `partyKinds`.
+	 * @param mixed  $value Raw value for the key.
+	 *
+	 * @throws \InvalidArgumentException If the value is not a list of valid entries.
+	 *
+	 * @return array<int, array<string, mixed>> The normalised entries.
+	 */
+	private function validateVocabularyValue(string $key, mixed $value): array {
+		if ($key === 'linkRoles') {
+			return $this->validateLinkRolesValue(value: $value);
+		}
+
+		return $this->validatePartyKindsValue(value: $value);
+	}//end validateVocabularyValue()
 
 	/**
 	 * Keep a declared `x-openregister-*` annotation; record an unknown one.
@@ -3314,16 +3366,28 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			return false;
 		}
 
-		if (is_string($value) === true && preg_match('/^[1-9][0-9]*$/', $value) === 1) {
-			$value = (int)$value;
-		}
-
+		$value = $this->wholeDaysFromText(value: $value);
 		if (is_int($value) === false || $value < 1) {
 			throw new InvalidArgumentException('draftLifetimeDays must be a whole number of days, 1 or more, or false to keep drafts');
 		}
 
 		return $value;
 	}//end validateDraftLifetimeValue()
+
+	/**
+	 * A text of digits without a leading zero read as its number; any other value as it is.
+	 *
+	 * @param mixed $value The raw value.
+	 *
+	 * @return mixed
+	 */
+	private function wholeDaysFromText(mixed $value): mixed {
+		if (is_string($value) === true && preg_match('/^[1-9][0-9]*$/', $value) === 1) {
+			return (int)$value;
+		}
+
+		return $value;
+	}//end wholeDaysFromText()
 
 	/**
 	 * Dropped `x-openregister-*` annotation keys collected during the most
@@ -3384,16 +3448,10 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			return;
 		}
 
-		if (empty($config['dtstart']) === true) {
-			throw new InvalidArgumentException(
-				'calendarProvider.dtstart is required when calendar provider is enabled'
-			);
-		}
-
-		if (empty($config['titleTemplate']) === true) {
-			throw new InvalidArgumentException(
-				'calendarProvider.titleTemplate is required when calendar provider is enabled'
-			);
+		foreach (['dtstart', 'titleTemplate'] as $field) {
+			if (empty($config[$field]) === true) {
+				throw new InvalidArgumentException('calendarProvider.'.$field.' is required when calendar provider is enabled');
+			}
 		}
 	}//end validateCalendarProviderConfig()
 
@@ -3445,12 +3503,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return void
 	 */
 	private function validateAllowedTagsValue(mixed $value): void {
-		if ($value === null) {
+		if ($this->isAbsentConfig(value: $value, refusal: "Configuration 'allowedTags' must be an array or null") === true) {
 			return;
-		}
-
-		if (is_array($value) === false) {
-			throw new InvalidArgumentException("Configuration 'allowedTags' must be an array or null");
 		}
 
 		foreach ($value as $tag) {
@@ -3459,6 +3513,28 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			}
 		}
 	}//end validateAllowedTagsValue()
+
+	/**
+	 * Whether an optional configuration value is absent (null); a value that is neither null nor an array is refused.
+	 *
+	 * @param mixed  $value   The configured value.
+	 * @param string $refusal The message to refuse a value that is no array with.
+	 *
+	 * @throws \InvalidArgumentException If the value is neither null nor an array.
+	 *
+	 * @return bool True for null, false for an array.
+	 */
+	private function isAbsentConfig(mixed $value, string $refusal): bool {
+		if ($value === null) {
+			return true;
+		}
+
+		if (is_array($value) === false) {
+			throw new InvalidArgumentException($refusal);
+		}
+
+		return false;
+	}//end isAbsentConfig()
 
 	/**
 	 * Declared `x-openregister-*` annotation keys.
@@ -3714,28 +3790,88 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
 	 */
 	private function validateLinkRolesValue(mixed $value): array {
+		return $this->validateVocabulary(value: $value, vocabulary: ['config' => 'linkRoles', 'noun' => 'roles']);
+	}//end validateLinkRolesValue()
+
+	/**
+	 * Validate and normalise a list of vocabulary entries (`linkRoles`, `partyKinds`): each with a usable key, no key twice.
+	 *
+	 * @param mixed                                $value      The configured value.
+	 * @param array{config: string, noun: string} $vocabulary The configuration key, and the plural noun for its entries.
+	 *
+	 * @return array<int, array<string, mixed>> The normalised entries.
+	 *
+	 * @throws InvalidArgumentException When the value is not a list of valid entries.
+	 */
+	private function validateVocabulary(mixed $value, array $vocabulary): array {
 		if (is_array($value) === false || array_is_list($value) === false) {
-			throw new InvalidArgumentException("Configuration 'linkRoles' must be a list of roles");
+			throw new InvalidArgumentException("Configuration '" . $vocabulary['config'] . "' must be a list of " . $vocabulary['noun']);
 		}
 
 		$entries = [];
-		$seen = [];
 		foreach ($value as $entry) {
-			$normalised = self::normaliseLinkRole(entry: $entry);
-			if ($normalised === null) {
-				throw new InvalidArgumentException("Each 'linkRoles' entry needs a non-empty key of at most 64 characters");
-			}
-
-			if (isset($seen[$normalised['key']]) === true) {
-				throw new InvalidArgumentException("'linkRoles' names the key '" . $normalised['key'] . "' twice");
-			}
-
-			$seen[$normalised['key']] = true;
-			$entries[] = $normalised;
+			$entries[] = $this->vocabularyEntry(entry: $entry, vocabulary: $vocabulary + ['entries' => $entries]);
 		}
 
 		return $entries;
-	}//end validateLinkRolesValue()
+	}//end validateVocabulary()
+
+	/**
+	 * One vocabulary entry, normalised; refused when it has no usable key or repeats an earlier key.
+	 *
+	 * @param mixed                $entry      The configured entry.
+	 * @param array<string, mixed> $vocabulary The `config` key, and the `entries` accepted before this one.
+	 *
+	 * @return array<string, mixed> The normalised entry.
+	 *
+	 * @throws InvalidArgumentException When the entry has no usable key or repeats one.
+	 */
+	private function vocabularyEntry(mixed $entry, array $vocabulary): array {
+		$normalised = self::normaliseVocabularyEntry(config: $vocabulary['config'], entry: $entry);
+		if ($normalised === null) {
+			throw new InvalidArgumentException("Each '" . $vocabulary['config'] . "' entry needs a non-empty key of at most 64 characters");
+		}
+
+		if (in_array($normalised['key'], array_column($vocabulary['entries'], 'key'), true) === true) {
+			throw new InvalidArgumentException("'" . $vocabulary['config'] . "' names the key '" . $normalised['key'] . "' twice");
+		}
+
+		return $normalised;
+	}//end vocabularyEntry()
+
+	/**
+	 * One entry of a vocabulary, normalised as that vocabulary normalises it; null when it has no usable key.
+	 *
+	 * @param string $config `linkRoles` or `partyKinds`.
+	 * @param mixed  $entry  The configured entry.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private static function normaliseVocabularyEntry(string $config, mixed $entry): ?array {
+		if ($config === 'partyKinds') {
+			return self::normalisePartyKind(entry: $entry);
+		}
+
+		return self::normaliseLinkRole(entry: $entry);
+	}//end normaliseVocabularyEntry()
+
+	/**
+	 * The usable entries of a stored vocabulary, normalised; [] when the configuration holds no list for it.
+	 *
+	 * @param string $config `linkRoles` or `partyKinds`.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function configuredVocabulary(string $config): array {
+		$configured = $this->configuration[$config] ?? null;
+		if (is_array($configured) === false) {
+			return [];
+		}
+
+		$entries = array_map(static fn (mixed $entry): ?array => self::normaliseVocabularyEntry(config: $config, entry: $entry), $configured);
+
+		return array_values(array_filter($entries, static fn (?array $entry): bool => $entry !== null));
+	}//end configuredVocabulary()
 
 	/**
 	 * One `linkRoles` entry as `{key, label, description?}`, or null when it has no usable key.
@@ -3749,6 +3885,22 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			$entry = ['key' => $entry, 'label' => $entry];
 		}
 
+		$key = self::entryKey(entry: $entry);
+		if ($key === null) {
+			return null;
+		}
+
+		return self::withDescription(normalised: ['key' => $key, 'label' => self::entryLabel(entry: $entry, key: $key)], entry: $entry);
+	}//end normaliseLinkRole()
+
+	/**
+	 * The trimmed key of a vocabulary entry, or null when the entry is no array or its key is empty or over 64 characters.
+	 *
+	 * @param mixed $entry The entry.
+	 *
+	 * @return string|null
+	 */
+	private static function entryKey(mixed $entry): ?string {
 		if (is_array($entry) === false) {
 			return null;
 		}
@@ -3758,19 +3910,42 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			return null;
 		}
 
+		return $key;
+	}//end entryKey()
+
+	/**
+	 * The trimmed label of a vocabulary entry, its key when it has none.
+	 *
+	 * @param array<string, mixed> $entry The entry.
+	 * @param string               $key   The entry's key.
+	 *
+	 * @return string
+	 */
+	private static function entryLabel(array $entry, string $key): string {
 		$label = trim((string)($entry['label'] ?? ''));
 		if ($label === '') {
-			$label = $key;
+			return $key;
 		}
 
-		$normalised = ['key' => $key, 'label' => $label];
+		return $label;
+	}//end entryLabel()
+
+	/**
+	 * A normalised entry with the entry's trimmed description, when it has one.
+	 *
+	 * @param array<string, string> $normalised The normalised key and label.
+	 * @param array<string, mixed>  $entry      The entry.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function withDescription(array $normalised, array $entry): array {
 		$description = trim((string)($entry['description'] ?? ''));
 		if ($description !== '') {
 			$normalised['description'] = $description;
 		}
 
 		return $normalised;
-	}//end normaliseLinkRole()
+	}//end withDescription()
 
 	/**
 	 * The roles a person can hold on an object of this schema, [] when the schema declares none.
@@ -3780,20 +3955,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
 	 */
 	public function getLinkRoles(): array {
-		$configured = $this->configuration['linkRoles'] ?? null;
-		if (is_array($configured) === false) {
-			return [];
-		}
-
-		$entries = [];
-		foreach ($configured as $entry) {
-			$normalised = self::normaliseLinkRole(entry: $entry);
-			if ($normalised !== null) {
-				$entries[] = $normalised;
-			}
-		}
-
-		return $entries;
+		return $this->configuredVocabulary(config: 'linkRoles');
 	}//end getLinkRoles()
 
 	/**
@@ -3820,27 +3982,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	private function validatePartyKindsValue(mixed $value): array {
-		if (is_array($value) === false || array_is_list($value) === false) {
-			throw new InvalidArgumentException("Configuration 'partyKinds' must be a list of party kinds");
-		}
-
-		$entries = [];
-		$seen = [];
-		foreach ($value as $entry) {
-			$normalised = self::normalisePartyKind(entry: $entry);
-			if ($normalised === null) {
-				throw new InvalidArgumentException("Each 'partyKinds' entry needs a non-empty key of at most 64 characters");
-			}
-
-			if (isset($seen[$normalised['key']]) === true) {
-				throw new InvalidArgumentException("'partyKinds' names the key '" . $normalised['key'] . "' twice");
-			}
-
-			$seen[$normalised['key']] = true;
-			$entries[] = $normalised;
-		}
-
-		return $entries;
+		return $this->validateVocabulary(value: $value, vocabulary: ['config' => 'partyKinds', 'noun' => 'party kinds']);
 	}//end validatePartyKindsValue()
 
 	/**
@@ -3901,20 +4043,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function getPartyKinds(): array {
-		$configured = $this->configuration['partyKinds'] ?? null;
-		if (is_array($configured) === false) {
-			return [];
-		}
-
-		$entries = [];
-		foreach ($configured as $entry) {
-			$normalised = self::normalisePartyKind(entry: $entry);
-			if ($normalised !== null) {
-				$entries[] = $normalised;
-			}
-		}
-
-		return $entries;
+		return $this->configuredVocabulary(config: 'partyKinds');
 	}//end getPartyKinds()
 
 	/**
@@ -3961,34 +4090,39 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
 	 */
 	private function validateLinkedTypesValue(mixed $value): void {
-		if ($value === null) {
+		if ($this->isAbsentConfig(value: $value, refusal: "Configuration 'linkedTypes' must be an array or null") === true) {
 			return;
 		}
 
-		if (is_array($value) === false) {
-			throw new InvalidArgumentException("Configuration 'linkedTypes' must be an array or null");
-		}
-
-		$registryIds = $this->resolveIntegrationRegistryIds();
-		$legacyIds = self::legacyLinkedTypeIds();
-
+		$known = ['registry' => $this->resolveIntegrationRegistryIds(), 'legacy' => self::legacyLinkedTypeIds()];
 		foreach ($value as $type) {
-			if (is_string($type) === false) {
-				throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
-			}
-
-			$valid = in_array($type, $legacyIds, true)
-				|| in_array($type, $registryIds, true);
-
-			if ($valid === false) {
-				$combined = array_unique(array_merge($legacyIds, $registryIds));
-				sort($combined);
-				throw new InvalidArgumentException(
-					"Invalid linked type '$type'. Valid values: " . implode(', ', $combined)
-				);
-			}
+			$this->assertLinkedType(type: $type, known: $known);
 		}
 	}//end validateLinkedTypesValue()
+
+	/**
+	 * Refuse a linked type that is no string, or that neither the legacy allow-list nor the registry knows.
+	 *
+	 * @param mixed                                                      $type  One configured linked type.
+	 * @param array{registry: array<int, string>, legacy: array<int, string>} $known The registry ids and the legacy ids.
+	 *
+	 * @throws InvalidArgumentException If the type is not valid.
+	 *
+	 * @return void
+	 */
+	private function assertLinkedType(mixed $type, array $known): void {
+		if (is_string($type) === false) {
+			throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
+		}
+
+		if (in_array($type, $known['legacy'], true) === true || in_array($type, $known['registry'], true) === true) {
+			return;
+		}
+
+		$combined = array_unique(array_merge($known['legacy'], $known['registry']));
+		sort($combined);
+		throw new InvalidArgumentException("Invalid linked type '$type'. Valid values: " . implode(', ', $combined));
+	}//end assertLinkedType()
 
 	/**
 	 * Validate the mailObjectTemplate configuration value
@@ -4005,24 +4139,34 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return void
 	 */
 	private function validateMailObjectTemplateValue(mixed $value): void {
-		if ($value === null) {
+		if ($this->isAbsentConfig(value: $value, refusal: "Configuration 'mailObjectTemplate' must be an object or null") === true) {
 			return;
 		}
 
-		if (is_array($value) === false) {
-			throw new InvalidArgumentException("Configuration 'mailObjectTemplate' must be an object or null");
-		}
-
 		foreach ($value as $field => $template) {
-			if (is_string($field) === false || $field === '') {
-				throw new InvalidArgumentException("All keys in 'mailObjectTemplate' must be non-empty property names");
-			}
-
-			if (is_scalar($template) === false) {
-				throw new InvalidArgumentException("Value for '$field' in 'mailObjectTemplate' must be a scalar");
-			}
+			$this->assertMailTemplateField(field: $field, template: $template);
 		}
 	}//end validateMailObjectTemplateValue()
+
+	/**
+	 * Refuse a mail-template field that is no property name, or whose value is no scalar.
+	 *
+	 * @param int|string $field    The template's key.
+	 * @param mixed      $template The template's value.
+	 *
+	 * @throws InvalidArgumentException If the field or its value is not valid.
+	 *
+	 * @return void
+	 */
+	private function assertMailTemplateField(int|string $field, mixed $template): void {
+		if (is_string($field) === false || $field === '') {
+			throw new InvalidArgumentException("All keys in 'mailObjectTemplate' must be non-empty property names");
+		}
+
+		if (is_scalar($template) === false) {
+			throw new InvalidArgumentException("Value for '$field' in 'mailObjectTemplate' must be a scalar");
+		}
+	}//end assertMailTemplateField()
 
 	/**
 	 * Legacy linked-type id allow-list — internal implementation detail.

@@ -96,6 +96,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 	/** @var array<string, string> Registers on the fake instance, slug to version. */

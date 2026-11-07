@@ -113,50 +113,7 @@ import {
 
 			<!-- Custom row actions for table view -->
 			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton
-						:title="
-							isManagedByExternalConfig(row)
-								? 'Cannot edit: This schema is managed by external configuration '
-									+ (getManagingConfiguration(row)?.title || '')
-								: ''
-						"
-						closeAfterClick
-						:disabled="isManagedByExternalConfig(row)"
-						@click="
-							() => {
-								schemaStore.setSchemaItem(row)
-								navigationStore.setModal('editSchema')
-							}
-						">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						Edit
-					</NcActionButton>
-					<NcActionButton
-						:title="
-							row.stats?.objects?.total > 0
-								? 'Cannot delete: objects are still attached'
-								: ''
-						"
-						closeAfterClick
-						:disabled="row.stats?.objects?.total > 0"
-						@click="
-							() => {
-								schemaStore.setSchemaItem(row)
-								navigationStore.setDialog('deleteSchema')
-							}
-						">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						Delete
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="schemaActions(row)" />
 			</template>
 		</CnIndexPage>
 	</NcAppContent>
@@ -166,12 +123,11 @@ import {
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
 import { applyFilterChange, filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
+import { deleteAction, editAction } from '../../services/menuActions.js'
 
 /**
  * The value a schema row is filtered on: the properties column shows a count.
@@ -190,13 +146,9 @@ function schemaFilterValue(schema, field) {
 export default {
 	name: 'SchemasIndex',
 	components: {
+		ActionMenu,
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
-		NcActionButton,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
 		CogOutline,
 		RegisterSchemaCard,
 	},
@@ -343,6 +295,45 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The row menu of a schema.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The schema
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		schemaActions(row) {
+			const managed = this.isManagedByExternalConfig(row)
+			const attached = row.stats?.objects?.total > 0
+			return [
+				editAction(
+					() => {
+						schemaStore.setSchemaItem(row)
+						navigationStore.setModal('editSchema')
+					},
+					{
+						disabled: managed,
+						title: managed
+							? 'Cannot edit: This schema is managed by external configuration '
+								+ (this.getManagingConfiguration(row)?.title || '')
+							: '',
+					},
+				),
+				deleteAction(
+					() => {
+						schemaStore.setSchemaItem(row)
+						navigationStore.setDialog('deleteSchema')
+					},
+					{
+						disabled: attached,
+						title: attached
+							? 'Cannot delete: objects are still attached'
+							: '',
+					},
+				),
+			]
+		},
+
 		/**
 		 * Sort by a clicked header. The list is loaded whole, so it is sorted
 		 * here, and paging goes back to page 1 so the top of the new order shows.

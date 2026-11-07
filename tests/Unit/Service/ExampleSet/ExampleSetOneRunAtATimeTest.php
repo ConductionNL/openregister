@@ -63,6 +63,7 @@ use OCP\Lock\ILockingProvider;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetOneRunAtATimeTest extends ExampleSetTestCase {
 	protected function setUp(): void {

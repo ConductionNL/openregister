@@ -107,6 +107,9 @@ import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
+import selectedObjectsDialog, {
+	refreshObjectLists,
+} from './selectedObjectsDialog.js'
 
 export default {
 	name: 'MassDeleteObject',
@@ -121,6 +124,8 @@ export default {
 		Cancel,
 	},
 
+	mixins: [selectedObjectsDialog],
+
 	data() {
 		return {
 			success: null,
@@ -128,7 +133,6 @@ export default {
 			error: false,
 			result: null,
 			closeModalTimeout: null,
-			selectedObjects: [],
 		}
 	},
 
@@ -137,62 +141,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * @spec openspec/specs/entity-management-modals/spec.md
-		 */
-		initializeSelection() {
-			// `objectStore.selectedObjects` holds plain ID STRINGS — that is the
-			// contract the table binding relies on (SearchIndex's
-			// `selectedIdsForPage` does `list.map(String)`), so it must NOT be
-			// changed to objects. This dialog, however, renders objects
-			// (`obj['@self']?.name`, `obj.id`) and submits `map(obj => obj.id)`.
-			// Resolve ids to their rows here, keeping the store as-is. Anything that
-			// cannot be resolved still yields `{ id }` so the delete itself works
-			// even when the row is not in the loaded page.
-			const selection = objectStore.selectedObjects || []
-			const pool = Array.isArray(objectStore.searchCollection)
-				? objectStore.searchCollection
-				: []
-			const byId = new Map()
-			for (const row of pool) {
-				const rowId = row?.['@self']?.id ?? row?.id
-				if (rowId) byId.set(String(rowId), row)
-			}
-
-			this.selectedObjects = selection
-				.map((entry) => {
-					if (entry && typeof entry === 'object') {
-						return { ...entry, id: entry['@self']?.id ?? entry.id }
-					}
-					const row = byId.get(String(entry))
-					return row
-						? { ...row, id: row['@self']?.id ?? row.id }
-						: { id: String(entry) }
-				})
-				.filter((obj) => obj.id)
-
-			if (this.selectedObjects.length === 0) {
-				this.closeDialog()
-			}
-		},
-
-		/**
-		 * @param {string|number} objectId
-		 * @spec exclude form-state helper to deselect an object from the list
-		 */
-		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(
-				(obj) => obj.id !== objectId,
-			)
-			// Write IDs back, never objects — the table's `selectedIdsForPage`
-			// stringifies whatever is here, and objects would serialise to
-			// "[object Object]" and silently clear the visible selection.
-			objectStore.selectedObjects = this.selectedObjects.map((obj) => obj.id)
-			if (this.selectedObjects.length === 0) {
-				this.closeDialog()
-			}
-		},
-
 		/**
 		 * @spec exclude modal close UI handler
 		 */
@@ -225,25 +173,7 @@ export default {
 					this.success = result.successfulIds.length > 0
 					this.error = result.failedIds.length > 0
 					if (result.successfulIds.length > 0) {
-						// Clear selected objects and refresh whichever list is on screen.
-						//
-						// `refreshObjectList()` alone was not enough: it refetches the
-						// register/schema collection derived from registerStore/
-						// schemaStore, but the search view renders
-						// `objectStore.searchCollection`, which is only refilled by
-						// `refetchSearchCollection()`. Deleting from the search view
-						// therefore left the deleted rows on screen.
-						objectStore.selectedObjects = []
-						if (
-							typeof objectStore.refetchSearchCollection === 'function'
-						) {
-							objectStore.refetchSearchCollection()
-						}
-						objectStore.refreshObjectList().catch(() => {
-							// The register/schema pair is unavailable on views that do not
-							// set it (e.g. global search). The search refetch above is the
-							// authoritative refresh there, so this is not an error.
-						})
+						refreshObjectLists()
 
 						// Close immediately rather than after a 2s delay. The selection is
 						// already empty at this point, so leaving the dialog mounted let the

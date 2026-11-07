@@ -33,6 +33,13 @@ use OCA\OpenRegister\Db\Schema;
 final class TablesObjectTarget {
 
 	/**
+	 * The bound table's columns, read once per target.
+	 *
+	 * @var array<int, array<string, mixed>>|null
+	 */
+	private ?array $columns = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Register $register The register the schema belongs to.
@@ -47,4 +54,19 @@ final class TablesObjectTarget {
 		public readonly TablesReadScope $scope,
 	) {
 	}//end __construct()
+
+	/**
+	 * The bound table's columns, loaded on first use.
+	 *
+	 * @param callable(): array<int, array<string, mixed>> $load Reads the columns.
+	 *
+	 * @return array<int, array<string, mixed>> The column descriptors.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	public function columns(callable $load): array {
+		$this->columns ??= $load();
+
+		return $this->columns;
+	}//end columns()
 }//end class
