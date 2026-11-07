@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Schemas;
 /**
  * Reads and evaluates a schema's uniqueness constraints.
  */
-class UniqueConstraintEvaluator {
+class UniqueConstraintEvaluator implements UniqueConstraintEvaluatorInterface {
 
 	/**
 	 * The schema configuration key holding the named constraints.
@@ -55,13 +55,6 @@ class UniqueConstraintEvaluator {
 	 * @var string
 	 */
 	public const LEGACY_CONFIG_KEY = 'unique';
-
-	/**
-	 * Refuse the save on a breach.
-	 *
-	 * @var string
-	 */
-	public const ACTION_REFUSE = 'refuse';
 
 	/**
 	 * Let the save through and record the breach.

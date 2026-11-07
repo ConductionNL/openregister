@@ -68,6 +68,18 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
 use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
@@ -107,6 +119,8 @@ final class D12InterfaceBindingsTest extends TestCase {
 		CasePlanService::class => [CasePlanServiceInterface::class, ContractBindings::class],
 		CasePlanTimerRearm::class => [CasePlanTimerRearmInterface::class, ContractBindings::class],
 		EndNode::class => [EndNodeInterface::class, ContractBindings::class],
+		ExtendingFormDeclaration::class => [ExtendingFormDeclarationInterface::class, ContractBindings::class],
+		FacetResultCacheClearer::class => [FacetResultCacheClearerInterface::class, ContractBindings::class],
 		FlowLocator::class => [FlowLocatorInterface::class, ContractBindings::class],
 		FlowNodeRegistry::class => [FlowNodeRegistryInterface::class, ContractBindings::class],
 		FlowRunMigrationService::class => [FlowRunMigrationServiceInterface::class, ContractBindings::class],
@@ -118,6 +132,9 @@ final class D12InterfaceBindingsTest extends TestCase {
 		ObjectActionDefinitions::class => [ObjectActionDefinitionsInterface::class, ContractBindings::class],
 		ObjectActionList::class => [ObjectActionListInterface::class, ContractBindings::class],
 		ObjectActionRunner::class => [ObjectActionRunnerInterface::class, ContractBindings::class],
+		PropertyVocabulary::class => [PropertyVocabularyInterface::class, ContractBindings::class],
+		SchemaCacheHandler::class => [SchemaCacheHandlerInterface::class, ContractBindings::class],
+		SemanticRoleHandler::class => [SemanticRoleHandlerInterface::class, ContractBindings::class],
 		SendEmailNode::class => [SendEmailNodeInterface::class, ContractBindings::class],
 		SendNotificationNode::class => [SendNotificationNodeInterface::class, ContractBindings::class],
 		SendTalkMessageNode::class => [SendTalkMessageNodeInterface::class, ContractBindings::class],
@@ -127,15 +144,23 @@ final class D12InterfaceBindingsTest extends TestCase {
 		TaskSubjectLocator::class => [TaskSubjectLocatorInterface::class, ContractBindings::class],
 		TaskVtodoWriteBackGate::class => [TaskVtodoWriteBackGateInterface::class, ContractBindings::class],
 		TriggerManualNode::class => [TriggerManualNodeInterface::class, ContractBindings::class],
+		UniqueConstraintEvaluator::class => [UniqueConstraintEvaluatorInterface::class, ContractBindings::class],
 		ZaaktypeCaseSkeletonMapper::class => [ZaaktypeCaseSkeletonMapperInterface::class, ContractBindings::class],
 	];
 
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
+	 * Both are Db code that constructs the class with `new` (the schema entity
+	 * and a schema-mapper refusal helper are not container-built); they are
+	 * left as they are.
+	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [];
+	private const KEPT_CALLERS = [
+		ExtendingFormDeclaration::class => ['Db/SchemaMapper/PropertyDeclarationRefusals.php'],
+		UniqueConstraintEvaluator::class => ['Db/Schema.php'],
+	];
 
 	/**
 	 * The class, its interface and its registrar, one case per class.

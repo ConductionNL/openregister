@@ -228,8 +228,20 @@ use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
 use OCA\OpenRegister\Service\Schema\PropertyConversionService;
 use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
@@ -323,7 +335,9 @@ final class ContractBindings {
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
 		ExplodeNodeInterface::class => ExplodeNode::class,
+		ExtendingFormDeclarationInterface::class => ExtendingFormDeclaration::class,
 		\OCA\OpenRegister\Service\Object\FacetCacheVersionInterface::class => \OCA\OpenRegister\Service\Object\FacetCacheVersion::class,
+		FacetResultCacheClearerInterface::class => FacetResultCacheClearer::class,
 		FavouriteServiceInterface::class => FavouriteService::class,
 		FederatedConfigServiceInterface::class => FederatedConfigService::class,
 		FilterNodeInterface::class => FilterNode::class,
@@ -400,6 +414,7 @@ final class ContractBindings {
 		PortalTaskNodeInterface::class => PortalTaskNode::class,
 		PropertyConversionServiceInterface::class => PropertyConversionService::class,
 		PropertyValidatorHandlerInterface::class => PropertyValidatorHandler::class,
+		PropertyVocabularyInterface::class => PropertyVocabulary::class,
 		QualityScorerInterface::class => QualityScorer::class,
 		QualityStatisticsServiceInterface::class => QualityStatisticsService::class,
 		ReferencedCalculationRefresherInterface::class => ReferencedCalculationRefresher::class,
@@ -411,10 +426,12 @@ final class ContractBindings {
 		RelationGraphServiceInterface::class => RelationGraphService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaApplicationMigratorInterface::class => SchemaApplicationMigrator::class,
+		SchemaCacheHandlerInterface::class => SchemaCacheHandler::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		SchemaTypeConverterInterface::class => SchemaTypeConverter::class,
 		SchemaShareableConfigScannerInterface::class => SchemaShareableConfigScanner::class,
 		SearchTrailServiceInterface::class => SearchTrailService::class,
+		SemanticRoleHandlerInterface::class => SemanticRoleHandler::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
 		SendEmailNodeInterface::class => SendEmailNode::class,
 		SendNotificationNodeInterface::class => SendNotificationNode::class,
@@ -445,6 +462,7 @@ final class ContractBindings {
 		TriggerManualNodeInterface::class => TriggerManualNode::class,
 		TriggerObjectNodeInterface::class => TriggerObjectNode::class,
 		TriggerScheduleNodeInterface::class => TriggerScheduleNode::class,
+		UniqueConstraintEvaluatorInterface::class => UniqueConstraintEvaluator::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		WatcherServiceInterface::class => WatcherService::class,
