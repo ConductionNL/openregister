@@ -42,7 +42,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatch
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 
 /**
  * Evaluates threshold-typed notifications declared on a schema.
@@ -64,7 +64,7 @@ class ThresholdEvaluationService {
 	/**
 	 * Wire collaborators and prepare the state cache.
 	 *
-	 * @param AggregationRunner $aggregationRunner Runner that computes aggregation values.
+	 * @param AggregationRunnerInterface $aggregationRunner Runner that computes aggregation values.
 	 * @param NotificationRuleDispatcherInterface $dispatcher Notification dispatcher.
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory.
@@ -72,7 +72,7 @@ class ThresholdEvaluationService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AggregationRunner $aggregationRunner,
+		private readonly AggregationRunnerInterface $aggregationRunner,
 		private readonly NotificationRuleDispatcherInterface $dispatcher,
 		private readonly LoggerInterface $logger,
 		ICacheFactory $cacheFactory,
