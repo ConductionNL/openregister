@@ -62,10 +62,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  */
 class ExampleSetCatalogueTest extends ExampleSetTestCase {
 	public function testGathersEnabledAppsInOrderAndNamesTheAbsentOnes(): void {

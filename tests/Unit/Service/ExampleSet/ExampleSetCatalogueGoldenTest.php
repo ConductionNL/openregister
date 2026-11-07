@@ -31,10 +31,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
