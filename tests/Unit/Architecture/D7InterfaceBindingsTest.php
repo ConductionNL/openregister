@@ -56,6 +56,10 @@ use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializerInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
@@ -98,6 +102,8 @@ final class D7InterfaceBindingsTest extends TestCase {
 		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
 		GitLabHandler::class => [GitLabHandlerInterface::class, ContractBindings::class],
 		HandoffService::class => [HandoffServiceInterface::class, ContractBindings::class],
+		JsonLdContextService::class => [JsonLdContextServiceInterface::class, ContractBindings::class],
+		JsonLdSerializer::class => [JsonLdSerializerInterface::class, ContractBindings::class],
 		LifecycleActionExecutor::class => [LifecycleActionExecutorInterface::class, ContractBindings::class],
 		LifecycleConditionEvaluator::class => [LifecycleConditionEvaluatorInterface::class, ContractBindings::class],
 		StateConditionEvaluator::class => [StateConditionEvaluatorInterface::class, ContractBindings::class],
