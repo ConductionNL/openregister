@@ -22,7 +22,7 @@ use GraphQL\Error\Error;
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use RuntimeException;
 
@@ -40,11 +40,11 @@ final class ListAggregations {
 	 * Constructor.
 	 *
 	 * @param AggregationRunner          $runner    The aggregation dispatcher.
-	 * @param TimeseriesRequestValidator $validator The validator the REST endpoint uses too.
+	 * @param TimeseriesRequestValidatorInterface $validator The validator the REST endpoint uses too.
 	 */
 	public function __construct(
 		private readonly AggregationRunner $runner,
-		private readonly TimeseriesRequestValidator $validator,
+		private readonly TimeseriesRequestValidatorInterface $validator,
 	) {
 	}//end __construct()
 
