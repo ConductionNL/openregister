@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCP\IAppConfig;
-use Psr\Log\LoggerInterface;
 
 /**
  * Services of the edepot settings API.
@@ -37,14 +36,12 @@ final class EdepotSettingsPlatform {
 	 *
 	 * @param ConnectionReporter $connectionReporter Reports connection test outcomes to integriq's connection registry.
 	 * @param IAppConfig         $appConfig          The app configuration.
-	 * @param LoggerInterface    $logger             Logger.
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
 	 */
 	public function __construct(
 		public readonly ConnectionReporter $connectionReporter,
 		public readonly IAppConfig $appConfig,
-		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class
