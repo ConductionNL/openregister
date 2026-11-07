@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
@@ -65,30 +66,70 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectIntegrationsController extends Controller {
 	/**
+	 * Integration registry.
+	 *
+	 * @var IntegrationRegistry
+	 */
+	private IntegrationRegistry $registry;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * OpenRegister object service (RBAC boundary).
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private ObjectOperationsInterface $objectService;
+
+	/**
+	 * Schema loader (external-source detection).
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Internal/public filter for the timeline leaves.
+	 *
+	 * @var TimelineVisibilityServiceInterface
+	 */
+	private TimelineVisibilityServiceInterface $visibility;
+
+	/**
+	 * Answers the object update right for integration writes.
+	 *
+	 * @var PermissionHandler
+	 */
+	private PermissionHandler $permissions;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
-	 * @param IRequest $request Current request.
-	 * @param IntegrationRegistry $registry Integration registry.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ObjectOperationsInterface $objectService OpenRegister object service (RBAC boundary).
-	 * @param SchemaMapperInterface $schemaMapper Schema loader (external-source detection).
-	 * @param TimelineVisibilityServiceInterface $visibility Internal/public filter for the timeline leaves.
-	 * @param PermissionHandler $permissions Answers the object update right for integration writes.
+	 * @param string                               $appName  App name (injected by NC).
+	 * @param IRequest                             $request  Current request.
+	 * @param ObjectIntegrationsControllerServices $services The registry, object services, access checks and logger.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-19
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private IntegrationRegistry $registry,
-		private LoggerInterface $logger,
-		private ObjectOperationsInterface $objectService,
-		private SchemaMapperInterface $schemaMapper,
-		private TimelineVisibilityServiceInterface $visibility,
-		private PermissionHandler $permissions,
+		ObjectIntegrationsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->registry = $services->domain->registry;
+		$this->objectService = $services->domain->objectService;
+		$this->schemaMapper = $services->domain->schemaMapper;
+		$this->visibility = $services->access->visibility;
+		$this->permissions = $services->access->permissions;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
