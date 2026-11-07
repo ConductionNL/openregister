@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetProofGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/example-set-proof-golden.json';

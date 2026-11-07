@@ -25,7 +25,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetProofTest extends TestCase {
 
