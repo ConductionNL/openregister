@@ -34,6 +34,9 @@ use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IRootFolder;
 use PHPUnit\Framework\TestCase;
@@ -50,19 +53,25 @@ final class ExportRunRecorderRecordGoldenTest extends TestCase {
 
 	public function testAFullRunWritesEveryColumn(): void {
 		$run = $this->recorder()->record(
-			source: 'scheduled-report',
-			actor: 'alice',
-			format: 'csv',
-			rowCount: 12,
-			profile: 'weekly-cases',
-			filename: 'weekly-cases.csv',
-			registerName: 'cases',
-			schemaName: 'case',
-			fileId: 4242,
-			filePath: 'Reports/weekly-cases.csv',
-			retentionSeconds: 3600,
-			downloadCount: 2,
-			status: ExportRun::STATUS_EXPIRED
+			origin: new ExportRunOrigin(
+				source: 'scheduled-report',
+				actor: 'alice',
+				profile: 'weekly-cases',
+				status: ExportRun::STATUS_EXPIRED
+			),
+			content: new ExportRunContent(
+				format: 'csv',
+				rowCount: 12,
+				registerName: 'cases',
+				schemaName: 'case'
+			),
+			file: new ExportRunFile(
+				filename: 'weekly-cases.csv',
+				fileId: 4242,
+				filePath: 'Reports/weekly-cases.csv',
+				downloadCount: 2
+			),
+			retentionSeconds: 3600
 		);
 
 		$this->assertSame(
@@ -89,7 +98,16 @@ final class ExportRunRecorderRecordGoldenTest extends TestCase {
 	}
 
 	public function testAMinimalRunTakesTheDefaults(): void {
-		$run = $this->recorder()->record(source: 'api', actor: 'bob', format: 'json', rowCount: 0);
+		$run = $this->recorder()->record(
+			origin: new ExportRunOrigin(
+				source: 'api',
+				actor: 'bob'
+			),
+			content: new ExportRunContent(
+				format: 'json',
+				rowCount: 0
+			)
+		);
 
 		$this->assertSame(
 			[
@@ -114,14 +132,34 @@ final class ExportRunRecorderRecordGoldenTest extends TestCase {
 	}
 
 	public function testATooShortRetentionIsRaisedToOneMinute(): void {
-		$run = $this->recorder()->record(source: 'api', actor: 'bob', format: 'csv', rowCount: 1, retentionSeconds: 5);
+		$run = $this->recorder()->record(
+			origin: new ExportRunOrigin(
+				source: 'api',
+				actor: 'bob'
+			),
+			content: new ExportRunContent(
+				format: 'csv',
+				rowCount: 1
+			),
+			retentionSeconds: 5
+		);
 
 		$this->assertSame(60, $run->getRetentionSeconds());
 		$this->assertSame(self::NOW + 60, $run->getExpiresAt()?->getTimestamp());
 	}
 
 	public function testATooLongRetentionIsCappedAtTheMaximum(): void {
-		$run = $this->recorder()->record(source: 'api', actor: 'bob', format: 'csv', rowCount: 1, retentionSeconds: 100000000);
+		$run = $this->recorder()->record(
+			origin: new ExportRunOrigin(
+				source: 'api',
+				actor: 'bob'
+			),
+			content: new ExportRunContent(
+				format: 'csv',
+				rowCount: 1
+			),
+			retentionSeconds: 100000000
+		);
 
 		$this->assertSame(ExportRunRecorder::MAX_RETENTION_SECONDS, $run->getRetentionSeconds());
 		$this->assertSame(self::NOW + ExportRunRecorder::MAX_RETENTION_SECONDS, $run->getExpiresAt()?->getTimestamp());
@@ -129,15 +167,21 @@ final class ExportRunRecorderRecordGoldenTest extends TestCase {
 
 	public function testANullRetentionKeepsTheFileWithoutADeadline(): void {
 		$run = $this->recorder()->record(
-			source: 'api',
-			actor: 'bob',
-			format: 'csv',
-			rowCount: 3,
-			profile: 'ad-hoc',
-			registerName: 'cases',
-			schemaName: 'case',
-			retentionSeconds: null,
-			downloadCount: 1
+			origin: new ExportRunOrigin(
+				source: 'api',
+				actor: 'bob',
+				profile: 'ad-hoc'
+			),
+			content: new ExportRunContent(
+				format: 'csv',
+				rowCount: 3,
+				registerName: 'cases',
+				schemaName: 'case'
+			),
+			file: new ExportRunFile(
+				downloadCount: 1
+			),
+			retentionSeconds: null
 		);
 
 		$this->assertNull($run->getRetentionSeconds());
