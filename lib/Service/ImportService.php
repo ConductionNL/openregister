@@ -1625,20 +1625,52 @@ class ImportService implements ObjectImporterInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function withSaveOutcome(array $summary, array $saveResult): array {
-		$idOf = fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null;
-		$summary['created'] = array_map($idOf, $saveResult['saved'] ?? []);
-		$summary['updated'] = array_map($idOf, $saveResult['updated'] ?? []);
-		$summary['unchanged'] = array_map($idOf, $saveResult['unchanged'] ?? []);
+		$summary['created'] = $this->savedObjectIds(objects: ($saveResult['saved'] ?? []));
+		$summary['updated'] = $this->savedObjectIds(objects: ($saveResult['updated'] ?? []));
+		$summary['unchanged'] = $this->savedObjectIds(objects: ($saveResult['unchanged'] ?? []));
 
-		$unchangedCount = count($summary['unchanged']);
-		$totalProcessed = count($summary['created']) + count($summary['updated']) + $unchangedCount;
-		if ($totalProcessed > 0 && $unchangedCount > 0) {
-			$efficiency = round(($unchangedCount / $totalProcessed) * 100, 1);
-			$summary['deduplication_efficiency'] = $efficiency . '% operations avoided';
+		$efficiency = $this->deduplicationEfficiency(summary: $summary);
+		if ($efficiency !== null) {
+			$summary['deduplication_efficiency'] = $efficiency;
 		}
 
 		return $summary;
 	}//end withSaveOutcome()
+
+	/**
+	 * The ids of saved objects: @self.id, else uuid, else id, else null.
+	 *
+	 * @param array $objects The ObjectEntity->jsonSerialize() arrays of a bulk save result
+	 *
+	 * @return array The ids, keyed like the objects
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function savedObjectIds(array $objects): array {
+		return array_map(
+			static fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+			$objects
+		);
+	}//end savedObjectIds()
+
+	/**
+	 * The share of processed objects a bulk save left unchanged, when any were.
+	 *
+	 * @param array $summary The import summary with the created, updated and unchanged ids
+	 *
+	 * @return string|null The efficiency, e.g. "33.3% operations avoided", or null when nothing was unchanged
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function deduplicationEfficiency(array $summary): ?string {
+		$unchangedCount = count($summary['unchanged']);
+		if ($unchangedCount === 0) {
+			return null;
+		}
+
+		$totalProcessed = count($summary['created']) + count($summary['updated']) + $unchangedCount;
+		return round(($unchangedCount / $totalProcessed) * 100, 1) . '% operations avoided';
+	}//end deduplicationEfficiency()
 
 	/**
 	 * Timing and speed metrics for an import, like SaveObjects reports.
