@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
-use OCA\OpenRegister\Service\Calculation\OperatorCatalogue;
+use OCA\OpenRegister\Service\Calculation\OperatorCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -47,9 +47,9 @@ class CalculationsController extends Controller {
 	/**
 	 * The published operator catalogue.
 	 *
-	 * @var OperatorCatalogue
+	 * @var OperatorCatalogueInterface
 	 */
-	private readonly OperatorCatalogue $catalogue;
+	private readonly OperatorCatalogueInterface $catalogue;
 
 	/**
 	 * Dry-run evaluation of an unsaved declaration.
