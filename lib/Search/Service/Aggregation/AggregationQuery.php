@@ -174,13 +174,8 @@ class AggregationQuery {
 		self::assertCumulativeIsTimeBucketed(cumulative: $cumulative, timeBucketed: $dateBucket !== null);
 
 		return new self(
-			metric: $metric,
-			field: $field,
-			filter: $filter,
-			groupBy: $groupBy,
-			dateBucket: $dateBucket,
-			metrics: $metrics,
-			cumulative: $cumulative
+			metric: $metric, field: $field, filter: $filter, groupBy: $groupBy,
+			dateBucket: $dateBucket, metrics: $metrics, cumulative: $cumulative
 		);
 	}//end create()
 
@@ -197,20 +192,26 @@ class AggregationQuery {
 	private static function assertValidMetric(string $metric, ?string $field): void {
 		if (in_array($metric, self::METRICS, true) === false) {
 			throw new InvalidArgumentException(
-				sprintf(
-					'aggregation metric MUST be one of: %s (got: %s)',
-					implode(', ', self::METRICS),
-					$metric
-				)
+				sprintf('aggregation metric MUST be one of: %s (got: %s)', implode(', ', self::METRICS), $metric)
 			);
 		}
 
-		if ($metric !== self::METRIC_COUNT && ($field === null || $field === '')) {
-			throw new InvalidArgumentException(
-				sprintf('aggregation metric "%s" MUST specify a field', $metric)
-			);
+		if (self::lacksRequiredField(metric: $metric, field: $field) === true) {
+			throw new InvalidArgumentException(sprintf('aggregation metric "%s" MUST specify a field', $metric));
 		}
 	}//end assertValidMetric()
+
+	/**
+	 * Whether a metric other than count is missing its field.
+	 *
+	 * @param string $metric The metric.
+	 * @param mixed  $field  The field it runs over.
+	 *
+	 * @return bool
+	 */
+	private static function lacksRequiredField(string $metric, mixed $field): bool {
+		return $metric !== self::METRIC_COUNT && ($field === null || $field === '');
+	}//end lacksRequiredField()
 
 	/**
 	 * A `metrics` list, when supplied, is non-empty, holds valid entries and
@@ -232,14 +233,10 @@ class AggregationQuery {
 			throw new InvalidArgumentException('metrics list, when supplied, MUST NOT be empty');
 		}
 
-		foreach ($metrics as $metricEntry) {
-			self::assertValidMetricsEntry(metricEntry: $metricEntry);
-		}
+		array_walk($metrics, static fn (mixed $metricEntry) => self::assertValidMetricsEntry(metricEntry: $metricEntry));
 
 		if ($timeBucketed === true) {
-			throw new InvalidArgumentException(
-				'a multi-metric `metrics` list MUST NOT be combined with dateBucket (time-bucket) aggregation'
-			);
+			throw new InvalidArgumentException('a multi-metric `metrics` list MUST NOT be combined with dateBucket (time-bucket) aggregation');
 		}
 	}//end assertValidMetricsList()
 
@@ -261,19 +258,12 @@ class AggregationQuery {
 		$entryMetric = (string) $metricEntry['metric'];
 		if (in_array($entryMetric, self::METRICS, true) === false) {
 			throw new InvalidArgumentException(
-				sprintf(
-					'metrics entry has an invalid metric "%s" (MUST be one of: %s)',
-					$entryMetric,
-					implode(', ', self::METRICS)
-				)
+				sprintf('metrics entry has an invalid metric "%s" (MUST be one of: %s)', $entryMetric, implode(', ', self::METRICS))
 			);
 		}
 
-		$entryField = ($metricEntry['field'] ?? null);
-		if ($entryMetric !== self::METRIC_COUNT && ($entryField === null || $entryField === '')) {
-			throw new InvalidArgumentException(
-				sprintf('metrics entry "%s" MUST specify a field', $entryMetric)
-			);
+		if (self::lacksRequiredField(metric: $entryMetric, field: ($metricEntry['field'] ?? null)) === true) {
+			throw new InvalidArgumentException(sprintf('metrics entry "%s" MUST specify a field', $entryMetric));
 		}
 	}//end assertValidMetricsEntry()
 
@@ -292,24 +282,33 @@ class AggregationQuery {
 		}
 
 		$groupFields = self::normaliseGroupByFields(groupBy: $groupBy);
-		foreach ($groupFields as $groupField) {
-			if (is_string($groupField) === false || $groupField === '') {
-				throw new InvalidArgumentException(
-					'groupBy MUST include a non-empty `field`; every group field MUST be a non-empty string'
-				);
-			}
-		}
+		array_walk($groupFields, static fn (mixed $groupField) => self::assertValidGroupField(groupField: $groupField));
 
 		if (count($groupFields) === 0) {
-			throw new InvalidArgumentException(
-				'groupBy MUST include a non-empty `field` or a non-empty `fields` list'
-			);
+			throw new InvalidArgumentException('groupBy MUST include a non-empty `field` or a non-empty `fields` list');
 		}
 
 		if (count($groupFields) !== count(array_unique($groupFields))) {
 			throw new InvalidArgumentException('groupBy fields MUST be distinct (duplicate field in groupBy list)');
 		}
 	}//end assertValidGroupBy()
+
+	/**
+	 * One group field is a non-empty string.
+	 *
+	 * @param mixed $groupField The group field.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not.
+	 */
+	private static function assertValidGroupField(mixed $groupField): void {
+		if (is_string($groupField) === false || $groupField === '') {
+			throw new InvalidArgumentException(
+				'groupBy MUST include a non-empty `field`; every group field MUST be a non-empty string'
+			);
+		}
+	}//end assertValidGroupField()
 
 	/**
 	 * A dateBucket, when supplied, is well formed and is the only bucketing.
@@ -364,19 +363,13 @@ class AggregationQuery {
 	private static function assertValidDateBucket(array $spec): void {
 		foreach (['field', 'start', 'end', 'gap'] as $required) {
 			if (isset($spec[$required]) === false || $spec[$required] === '') {
-				throw new InvalidArgumentException(
-					'dateBucket MUST include non-empty `field`, `start`, `end`, `gap`'
-				);
+				throw new InvalidArgumentException('dateBucket MUST include non-empty `field`, `start`, `end`, `gap`');
 			}
 		}
 
 		if (in_array($spec['gap'], self::DATE_BUCKET_GAPS, true) === false) {
 			throw new InvalidArgumentException(
-				sprintf(
-					'dateBucket gap MUST be one of: %s (got: %s)',
-					implode(', ', self::DATE_BUCKET_GAPS),
-					(string)$spec['gap']
-				)
+				sprintf('dateBucket gap MUST be one of: %s (got: %s)', implode(', ', self::DATE_BUCKET_GAPS), (string) $spec['gap'])
 			);
 		}
 
@@ -481,7 +474,7 @@ class AggregationQuery {
 		}
 
 		// Multi-field cross-tab shape: `{fields: ['a', 'b']}`.
-		if (isset($groupBy['fields']) === true && is_array($groupBy['fields']) === true) {
+		if (is_array($groupBy['fields'] ?? null) === true) {
 			return array_values($groupBy['fields']);
 		}
 
@@ -529,44 +522,56 @@ class AggregationQuery {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public function getMetrics(): array {
-		if ($this->metrics !== null && count($this->metrics) > 0) {
-			$out = [];
-			foreach ($this->metrics as $entry) {
-				$entryField = ($entry['field'] ?? null);
-				if ($entryField === '') {
-					$entryField = null;
-				}
-
-				$normalised = [
-					'metric' => (string)$entry['metric'],
-					'field' => $entryField,
-				];
-
-				// Carry `condition` and `as` through.
-				//
-				// This method used to rebuild each entry as exactly
-				// {metric, field}, which silently DROPPED both before the
-				// runner ever saw them: a conditional metric came back as the
-				// unconditioned figure, and two aliased entries collided on one
-				// derived key. Neither failed — they just answered wrongly.
-				$condition = ($entry['condition'] ?? null);
-				if (is_array($condition) === true && $condition !== []) {
-					$normalised['condition'] = $condition;
-				}
-
-				$alias = ($entry['as'] ?? null);
-				if (is_string($alias) === true && $alias !== '') {
-					$normalised['as'] = $alias;
-				}
-
-				$out[] = $normalised;
-			}
-
-			return $out;
+		if ($this->metrics === null || count($this->metrics) === 0) {
+			return [['metric' => $this->metric, 'field' => $this->field]];
 		}
 
-		return [['metric' => $this->metric, 'field' => $this->field]];
+		return array_values(array_map(static fn (array $entry): array => self::normaliseMetricEntry(entry: $entry), $this->metrics));
 	}//end getMetrics()
+
+	/**
+	 * Normalise one `metrics` entry to `{metric, field}` plus its `condition` and `as`.
+	 *
+	 * Carry `condition` and `as` through. getMetrics() used to rebuild each
+	 * entry as exactly {metric, field}, which silently DROPPED both before the
+	 * runner ever saw them: a conditional metric came back as the
+	 * unconditioned figure, and two aliased entries collided on one derived
+	 * key. Neither failed — they just answered wrongly.
+	 *
+	 * @param array<string, mixed> $entry The entry.
+	 *
+	 * @return array{metric: string, field: ?string, condition?: array<mixed>, as?: string}
+	 */
+	private static function normaliseMetricEntry(array $entry): array {
+		$normalised = ['metric' => (string) $entry['metric'], 'field' => self::fieldOrNull(field: ($entry['field'] ?? null))];
+
+		$condition = ($entry['condition'] ?? null);
+		if (is_array($condition) === true && $condition !== []) {
+			$normalised['condition'] = $condition;
+		}
+
+		$alias = ($entry['as'] ?? null);
+		if (is_string($alias) === true && $alias !== '') {
+			$normalised['as'] = $alias;
+		}
+
+		return $normalised;
+	}//end normaliseMetricEntry()
+
+	/**
+	 * An empty-string field reads as no field.
+	 *
+	 * @param mixed $field The entry's field.
+	 *
+	 * @return mixed
+	 */
+	private static function fieldOrNull(mixed $field): mixed {
+		if ($field === '') {
+			return null;
+		}
+
+		return $field;
+	}//end fieldOrNull()
 
 	/**
 	 * Test whether this is a multi-metric request (more than one metric

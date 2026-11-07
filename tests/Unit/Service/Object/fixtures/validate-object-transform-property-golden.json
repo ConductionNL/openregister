@@ -125,7 +125,6 @@
     },
     "object property": {
         "type": "object",
-        "$ref": "address",
         "properties": {
             "street": {
                 "type": "string"
@@ -154,9 +153,8 @@
     "uri ref kept": {
         "$ref": "https://example.org/schema"
     },
-    "typed number ref kept": {
-        "type": "number",
-        "$ref": "measure"
+    "typed number ref": {
+        "type": "number"
     },
     "nested properties": {
         "type": "object",

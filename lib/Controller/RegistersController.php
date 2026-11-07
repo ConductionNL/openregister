@@ -1647,56 +1647,66 @@ class RegistersController extends Controller {
 	public function rollbackImport(): JSONResponse {
 		$importJobId = $this->request->getParam('importJobId');
 		if (is_string($importJobId) === false || $importJobId === '') {
-			return new JSONResponse(
-				data: ['error' => 'importJobId is required'],
-				statusCode: 422
-			);
+			return new JSONResponse(data: ['error' => 'importJobId is required'], statusCode: 422);
 		}
 
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Authentication required'],
-				statusCode: 401
-			);
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		// An app's example data leaves through the app or through occ, never
-		// through this route: it spans archival and append-only schemas, and
-		// archival schemas refuse HTTP deletes.
+		$refusal = ($this->appImportRefusal(importJobId: $importJobId) ?? $this->rollbackRightsRefusal(importJobId: $importJobId, user: $user));
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->softDeleteImport(importJobId: $importJobId);
+	}//end rollbackImport()
+
+	/**
+	 * Refuse a job that loaded an app's example data.
+	 *
+	 * That data leaves through the app or through occ, never through this route:
+	 * it spans archival and append-only schemas, and archival schemas refuse HTTP
+	 * deletes.
+	 *
+	 * @param string $importJobId The import job.
+	 *
+	 * @return JSONResponse|null The refusal, or null when no app owns the job.
+	 */
+	private function appImportRefusal(string $importJobId): ?JSONResponse {
 		$owningApp = $this->container->get(\OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class)
 			->appForJob(importJobId: $importJobId);
-		if ($owningApp !== null) {
-			return new JSONResponse(
-				data: [
-					'error' => sprintf(
-						'This import job loaded data for app %s. Remove it through that app, or with occ openregister:objects:purge --import-job %s.',
-						$owningApp,
-						$importJobId
-					),
-					'importJobId' => $importJobId,
-					'app' => $owningApp,
-				],
-				statusCode: 409
-			);
+		if ($owningApp === null) {
+			return null;
 		}
 
-		// SECURITY: rollback wipes every object created by an import job.
-		// The only safety net was that `deleteObject` runs RBAC, which is
-		// much weaker than it sounds — any user with broad delete rights
-		// on the affected schemas could otherwise wipe a *different*
-		// user's import (and across tenants, since the audit lookup
-		// doesn't filter by organisation). Require the caller to be
-		// either the original importer or a member of the admin group.
-		$auditSample = $this->auditTrailMapper->findByImportJobId(
-			importJobId: $importJobId,
-			action: 'create'
+		$error = 'This import job loaded data for app %s. Remove it through that app, or with occ openregister:objects:purge --import-job %s.';
+		return new JSONResponse(
+			data: ['error' => sprintf($error, $owningApp, $importJobId), 'importJobId' => $importJobId, 'app' => $owningApp],
+			statusCode: 409
 		);
+	}//end appImportRefusal()
+
+	/**
+	 * Refuse a caller who may not roll this job back, or a job that does not exist.
+	 *
+	 * SECURITY: rollback wipes every object created by an import job. The only
+	 * safety net was that `deleteObject` runs RBAC, which is much weaker than it
+	 * sounds — any user with broad delete rights on the affected schemas could
+	 * otherwise wipe a *different* user's import (and across tenants, since the
+	 * audit lookup doesn't filter by organisation). Require the caller to be
+	 * either the original importer or a member of the admin group.
+	 *
+	 * @param string     $importJobId The import job.
+	 * @param \OCP\IUser $user        The authenticated user.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the caller may go on.
+	 */
+	private function rollbackRightsRefusal(string $importJobId, \OCP\IUser $user): ?JSONResponse {
+		$auditSample = $this->auditTrailMapper->findByImportJobId(importJobId: $importJobId, action: 'create');
 		if (count($auditSample) === 0) {
-			return new JSONResponse(
-				data: ['error' => 'Import job not found', 'importJobId' => $importJobId],
-				statusCode: 404
-			);
+			return new JSONResponse(data: ['error' => 'Import job not found', 'importJobId' => $importJobId], statusCode: 404);
 		}
 
 		$importerUid = null;
@@ -1704,23 +1714,29 @@ class RegistersController extends Controller {
 			$importerUid = $auditSample[0]->getUser();
 		}
 
-		if ($this->canRollbackImport(user: $user, importerUid: $importerUid) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: only the user who initiated the import or an admin may roll it back'],
-				statusCode: 403
-			);
+		if ($this->canRollbackImport(user: $user, importerUid: $importerUid) === true) {
+			return null;
 		}
 
+		$error = 'Forbidden: only the user who initiated the import or an admin may roll it back';
+		return new JSONResponse(data: ['error' => $error], statusCode: 403);
+	}//end rollbackRightsRefusal()
+
+	/**
+	 * Soft-delete what the import job created and report it.
+	 *
+	 * @param string $importJobId The import job.
+	 *
+	 * @return JSONResponse The report, or the error.
+	 */
+	private function softDeleteImport(string $importJobId): JSONResponse {
 		try {
 			$report = $this->importService->softDeleteByImportJobId(importJobId: $importJobId);
 			return new JSONResponse(data: $report, statusCode: 200);
 		} catch (\Throwable $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: 500
-			);
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
-	}//end rollbackImport()
+	}//end softDeleteImport()
 
 	/**
 	 * Get statistics for a specific register

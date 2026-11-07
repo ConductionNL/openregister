@@ -64,9 +64,10 @@ use Throwable;
  * {@see self::rejectIfArchivalImmutable()} for why the audit trail is not a substitute
  * for the record.
  *
- * KEPT ROWS: a frozen, archived or locked row refuses every whole-table delete. The
- * cascade reads the magic tables first and refuses before any row is touched, unless
- * an operator forces it from the CLI, and a forced teardown leaves its own audit entry.
+ * KEPT ROWS: a frozen, archived or locked row refuses every whole-table delete. Every
+ * entry point checks inside its transaction, with the rows held by a row lock until it
+ * ends, and refuses before any row is touched. Only the cascade can be forced, from the
+ * CLI, and a forced teardown leaves its own audit entry.
  *
  * KNOWN LIMIT: the cascade is synchronous, and its audit writes are inherently
  * sequential (hash-chained, ADR-003). A schema with far more than ~10k objects will
@@ -140,7 +141,8 @@ class SchemaDeletionService {
 	 * Backs `POST /api/bulk/{register}/{schema}/delete-objects` (and its legacy
 	 * twin `/delete-schema`). Each object is snapshotted to the audit trail before
 	 * its row is touched, because `MagicMapper::deleteObjectsBySchema()` returns
-	 * only a count and cannot tell us afterwards what it removed.
+	 * only a count and cannot tell us afterwards what it removed. The check, the audit
+	 * and the delete share one transaction.
 	 *
 	 * ARCHIVAL SCHEMAS ARE REFUSED OUTRIGHT. Both callers are HTTP routes, and the
 	 * spec's answer for an HTTP caller is the same at every door: an archival record
@@ -173,11 +175,10 @@ class SchemaDeletionService {
 		$schema = $this->schemaMapper->find(id: $schemaId);
 
 		$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
-		$this->teardownGuard()->rows->assertNoneKept(register: $register, schema: $schema);
 
-		$result = $this->deleteObjectsOfPair(
+		$result = $this->deleteInOneTransaction(
 			register: $register,
-			schema: $schema,
+			schemas: [$schema],
 			hardDelete: $hardDelete,
 			triggeredBy: $triggeredBy
 		);
@@ -268,46 +269,18 @@ class SchemaDeletionService {
 
 		foreach ($schemas as $schema) {
 			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
-			$this->teardownGuard()->rows->assertNoneKept(register: $register, schema: $schema);
 		}
 
-		$deletedCount = 0;
-		$deletedUuids = [];
-
-		$this->db->beginTransaction();
-		try {
-			foreach ($schemas as $schema) {
-				$result = $this->deleteObjectsOfPair(
-					register: $register,
-					schema: $schema,
-					hardDelete: $hardDelete,
-					triggeredBy: $triggeredBy
-				);
-
-				$deletedCount += $result['deleted_count'];
-				$deletedUuids = array_merge($deletedUuids, $result['deleted_uuids']);
-			}
-
-			$this->db->commit();
-		} catch (Throwable $e) {
-			$this->db->rollBack();
-
-			$this->logger->error(
-				message: '[SchemaDeletionService] Register-wide delete rolled back',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => (int)$register->getId(),
-					'error' => $e->getMessage(),
-				]
-			);
-
-			throw $e;
-		}//end try
+		$result = $this->deleteInOneTransaction(
+			register: $register,
+			schemas: $schemas,
+			hardDelete: $hardDelete,
+			triggeredBy: $triggeredBy
+		);
 
 		return [
-			'deleted_count' => $deletedCount,
-			'deleted_uuids' => $deletedUuids,
+			'deleted_count' => $result['deleted_count'],
+			'deleted_uuids' => $result['deleted_uuids'],
 			'register_id' => (int)$register->getId(),
 		];
 
@@ -362,14 +335,13 @@ class SchemaDeletionService {
 			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
 		}
 
-		$forcedRows = $this->keptRowsLifted(schema: $schema, override: $override);
-
 		$schemaId = (int)$schema->getId();
 		$tables = $this->resolveMagicTablesForSchema(schema: $schema);
 
 		// ---- Phase 1: one transaction. ----
 		$this->db->beginTransaction();
 		try {
+			$forcedRows = $this->keptRowsLifted(schema: $schema, override: $override);
 			$this->teardownGuard()->recordForced(schema: $schema, keptRows: $forcedRows);
 
 			$removed = $this->deleteObjectsOfTables(schema: $schema, tables: $tables);
@@ -666,6 +638,62 @@ class SchemaDeletionService {
 	private function teardownGuard(): SchemaTeardownGuard {
 		return new SchemaTeardownGuard(mapper: $this->magicMapper, db: $this->db, audit: $this->auditTrailMapper);
 	}//end teardownGuard()
+
+	/**
+	 * Check, audit and delete schemas of one register in one transaction.
+	 *
+	 * Any failure rolls the whole thing back: a committed audit entry always implies a
+	 * deleted object, and a row that refuses the delete leaves every row in place.
+	 *
+	 * @param Register $register The register context.
+	 * @param array<Schema> $schemas The schemas to empty.
+	 * @param bool $hardDelete True to remove the rows, false to soft-delete them.
+	 * @param string $triggeredBy Audit trigger context.
+	 *
+	 * @return array{deleted_count: int, deleted_uuids: array<int, string>} The deletion result.
+	 *
+	 * @throws Throwable If a row refuses the delete, or the deletion fails.
+	 */
+	private function deleteInOneTransaction(Register $register, array $schemas, bool $hardDelete, string $triggeredBy): array {
+		$removed = ['deleted_count' => 0, 'deleted_uuids' => []];
+
+		$this->db->beginTransaction();
+		try {
+			foreach ($schemas as $schema) {
+				$this->teardownGuard()->rows->assertNoneKept(register: $register, schema: $schema);
+			}
+
+			foreach ($schemas as $schema) {
+				$result = $this->deleteObjectsOfPair(
+					register: $register,
+					schema: $schema,
+					hardDelete: $hardDelete,
+					triggeredBy: $triggeredBy
+				);
+
+				$removed['deleted_count'] += $result['deleted_count'];
+				$removed['deleted_uuids'] = array_merge($removed['deleted_uuids'], $result['deleted_uuids']);
+			}
+
+			$this->db->commit();
+		} catch (Throwable $e) {
+			$this->db->rollBack();
+
+			$this->logger->error(
+				message: '[SchemaDeletionService] Whole-table delete rolled back',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registerId' => (int)$register->getId(),
+					'error' => $e->getMessage(),
+				]
+			);
+
+			throw $e;
+		}//end try
+
+		return $removed;
+	}//end deleteInOneTransaction()
 
 	/**
 	 * Audit and delete every object of one register/schema magic table.

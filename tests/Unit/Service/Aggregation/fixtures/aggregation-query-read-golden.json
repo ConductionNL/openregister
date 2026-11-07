@@ -1,0 +1,237 @@
+{
+    "cumulative date bucket": {
+        "metrics": [
+            {
+                "metric": "count",
+                "field": null
+            }
+        ],
+        "multiMetric": false,
+        "grouped": false,
+        "groupByField": null,
+        "groupByFields": [],
+        "multiField": false,
+        "dateBucket": true,
+        "cumulative": true,
+        "array": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "d",
+                "start": "a",
+                "end": "b",
+                "gap": "day"
+            },
+            "metrics": null,
+            "cumulative": true
+        }
+    },
+    "legacy single metric, nested filter": {
+        "metrics": [
+            {
+                "metric": "sum",
+                "field": "amount"
+            }
+        ],
+        "multiMetric": false,
+        "grouped": false,
+        "groupByField": null,
+        "groupByFields": [],
+        "multiField": false,
+        "dateBucket": false,
+        "cumulative": false,
+        "array": {
+            "metric": "sum",
+            "field": "amount",
+            "filter": {
+                "a": 1,
+                "b": {
+                    "gt": 5,
+                    "lte": 10
+                },
+                "c": [
+                    {
+                        "z": 1,
+                        "a": 2
+                    }
+                ]
+            },
+            "groupBy": null,
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "metricResponseKey": [
+        "count",
+        "sum",
+        "sum",
+        "sum_price"
+    ],
+    "metrics list with condition and alias": {
+        "metrics": [
+            {
+                "metric": "count",
+                "field": null
+            },
+            {
+                "metric": "sum",
+                "field": "amount",
+                "condition": {
+                    "status": "open"
+                },
+                "as": "openSum"
+            },
+            {
+                "metric": "count",
+                "field": null
+            },
+            {
+                "metric": "avg",
+                "field": "x"
+            }
+        ],
+        "multiMetric": true,
+        "grouped": true,
+        "groupByField": "status",
+        "groupByFields": [
+            "status",
+            "kind"
+        ],
+        "multiField": true,
+        "dateBucket": false,
+        "cumulative": false,
+        "array": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "fields": {
+                    "x": "status",
+                    "y": "kind"
+                }
+            },
+            "dateBucket": null,
+            "metrics": [
+                {
+                    "metric": "count"
+                },
+                {
+                    "metric": "sum",
+                    "field": "amount",
+                    "condition": {
+                        "status": "open"
+                    },
+                    "as": "openSum"
+                },
+                {
+                    "metric": "count",
+                    "field": "",
+                    "condition": [],
+                    "as": ""
+                },
+                {
+                    "metric": "avg",
+                    "field": "x",
+                    "as": 5,
+                    "condition": "str"
+                }
+            ],
+            "cumulative": false
+        }
+    },
+    "normaliseGroupByFields": [
+        [],
+        [],
+        [],
+        [],
+        [
+            "a",
+            "b"
+        ],
+        [
+            "a",
+            "b"
+        ],
+        [
+            "b"
+        ],
+        [
+            "a"
+        ],
+        [
+            null
+        ],
+        [],
+        [],
+        [
+            "c"
+        ]
+    ],
+    "one metric in list, list groupBy": {
+        "metrics": [
+            {
+                "metric": "max",
+                "field": "n"
+            }
+        ],
+        "multiMetric": false,
+        "grouped": true,
+        "groupByField": "status",
+        "groupByFields": [
+            "status",
+            "kind"
+        ],
+        "multiField": true,
+        "dateBucket": false,
+        "cumulative": false,
+        "array": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": [
+                "status",
+                "kind"
+            ],
+            "dateBucket": null,
+            "metrics": [
+                {
+                    "metric": "max",
+                    "field": "n",
+                    "extra": 1
+                }
+            ],
+            "cumulative": false
+        }
+    },
+    "single field groupBy": {
+        "metrics": [
+            {
+                "metric": "min",
+                "field": "n"
+            }
+        ],
+        "multiMetric": false,
+        "grouped": true,
+        "groupByField": "status",
+        "groupByFields": [
+            "status"
+        ],
+        "multiField": false,
+        "dateBucket": false,
+        "cumulative": false,
+        "array": {
+            "metric": "min",
+            "field": "n",
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    }
+}

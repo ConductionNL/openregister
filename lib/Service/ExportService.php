@@ -873,12 +873,12 @@ class ExportService implements ObjectExporterInterface {
 		}
 
 		// Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
-		// Set a very high limit to get all objects (export needs all data).
+		// An export needs every row, so it asks for no limit: a number would be
+		// cut at the page bound on the multi-schema paths.
 		// The export's own keys come first, so no property filter can replace them.
 		$query = [
 			'@self' => $objectFilters,
-			'_limit' => 999999,
-			// Very high limit to get all objects.
+			'_limit' => false,
 			'_includeDeleted' => false,
 			'_multitenancy_explicit' => $multiExplicitlySet,
 		] + $propertyFilters;

@@ -1983,21 +1983,15 @@ class FilesControllerTest extends TestCase {
 		$this->assertEquals('doc.pdf', $result[0]['name']);
 	}
 
-	// -- validateAndGetObject --
+	// -- fileBelongsToObject --
 
-	public function testValidateAndGetObjectReturnsObject(): void {
-		$object = $this->createMock(ObjectEntity::class);
-		$this->setupObjectServiceMocks($object);
+	public function testAFileInAFolderWithoutANameBelongsToNoObjectWithoutIds(): void {
+		$parent = $this->createMock(\OCP\Files\Folder::class);
+		$parent->method('getName')->willReturn('');
+		$file = $this->createMock(\OCP\Files\File::class);
+		$file->method('getParent')->willReturn($parent);
 
-		$result = $this->invokePrivateMethod('validateAndGetObject', ['reg1', 'schema1', 'obj1']);
-		$this->assertSame($object, $result);
-	}
-
-	public function testValidateAndGetObjectReturnsNull(): void {
-		$this->setupObjectServiceMocks(null);
-
-		$result = $this->invokePrivateMethod('validateAndGetObject', ['reg1', 'schema1', 'obj1']);
-		$this->assertNull($result);
+		$this->assertFalse($this->invokePrivateMethod('fileBelongsToObject', [$file, new ObjectEntity()]));
 	}
 
 	// -- processUploadedFiles --

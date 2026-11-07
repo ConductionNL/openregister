@@ -104,7 +104,7 @@ class FlowEngineBranchPruningTest extends TestCase {
 			->method('placesPruned')
 			->with($this->anything(), ['lo'], 's');
 
-		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), null, null, null, null, $mootness);
+		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), mootness: $mootness);
 
 		$state = new FlowResumeState();
 		$state->forNode(nodeId: 'lo')->set(key: 'taskUuid', value: 't-lo');
@@ -122,7 +122,7 @@ class FlowEngineBranchPruningTest extends TestCase {
 		$mootness = $this->createMock(FlowTaskMootness::class);
 		$mootness->expects($this->never())->method('placesPruned');
 
-		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), null, null, null, null, $mootness);
+		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), mootness: $mootness);
 
 		$this->walk($engine, new PruningDispatcher(), [], $this->linearFlow());
 	}//end testALinearFlowReportsNoPruning()

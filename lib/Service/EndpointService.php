@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
 use OCA\OpenRegister\Db\EndpointLogMapper;
@@ -118,14 +118,14 @@ class EndpointService {
 	 * @param LoggerInterface   $logger            Logger.
 	 * @param IUserSession      $userSession       Current user context.
 	 * @param IGroupManager     $groupManager      Group membership lookups.
-	 * @param AgentMapper       $agentMapper       Agent lookups for agent-type endpoints.
+	 * @param AgentMapperInterface       $agentMapper       Agent lookups for agent-type endpoints.
 	 */
 	public function __construct(
 		EndpointLogMapper $endpointLogMapper,
 		LoggerInterface $logger,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
-		private readonly AgentMapper $agentMapper,
+		private readonly AgentMapperInterface $agentMapper,
 	) {
 		$this->endpointLogMapper = $endpointLogMapper;
 		$this->logger = $logger;
