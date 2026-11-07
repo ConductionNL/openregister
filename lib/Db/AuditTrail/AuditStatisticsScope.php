@@ -31,11 +31,18 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 final class AuditStatisticsScope {
 
 	/**
+	 * The look-back when the caller gives none.
+	 *
+	 * @var integer
+	 */
+	private const DEFAULT_HOURS = 24;
+
+	/**
 	 * The number of hours to look back.
 	 *
 	 * @var integer|null
 	 */
-	public ?int $hours = 24;
+	public ?int $hours = self::DEFAULT_HOURS;
 
 	/**
 	 * The maximum number of results.
@@ -94,14 +101,15 @@ final class AuditStatisticsScope {
 	}//end narrow()
 
 	/**
-	 * The condition that a row was created within the last $hours hours.
+	 * The condition that a row was created within the last $hours hours, by default 24.
 	 *
 	 * @param IQueryBuilder $qb The query the condition is for.
 	 *
 	 * @return string The condition.
 	 */
 	public function createdInWindow(IQueryBuilder $qb): string {
-		$since = (new DateTime())->modify("-{$this->hours} hours")->format('Y-m-d H:i:s');
+		$hours = ($this->hours ?? self::DEFAULT_HOURS);
+		$since = (new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s');
 
 		return $qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_STR));
 	}//end createdInWindow()
