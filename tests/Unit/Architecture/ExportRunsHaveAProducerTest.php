@@ -144,6 +144,19 @@ class ExportRunsHaveAProducerTest extends TestCase {
 	}//end testRunningAnExportProfileWritesARun()
 
 	/**
+	 * The whole-set extract grows a run per file, and the container hands it the recorder.
+	 *
+	 * @return void
+	 */
+	public function testTheWholeSetExtractWritesARun(): void {
+		$source = $this->read('lib/BulkAction/ExportWholeSetAction.php');
+
+		$this->assertStringContainsString('runs->recordAppended(', $source, 'The whole-set extract writes files nobody can account for.');
+		$this->assertStringContainsString('$this->recordRow(profile:', $source, 'recordRow() is defined and nothing calls it.');
+		$this->assertStringContainsString('?ExportRunRecorder $runs', $source, 'The recorder must be a constructor dependency the container can resolve.');
+	}//end testTheWholeSetExtractWritesARun()
+
+	/**
 	 * The sweep job is declared, so the expiry is acted on.
 	 *
 	 * @return void

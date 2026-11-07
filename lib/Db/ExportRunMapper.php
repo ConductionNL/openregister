@@ -187,4 +187,31 @@ class ExportRunMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findDueForSweep()
+
+	/**
+	 * The run that still owns a file, if one does.
+	 *
+	 * Only an available run carries a file id: the sweep clears it when the
+	 * file is deleted. So this answers "which run is this file", never an
+	 * expired one.
+	 *
+	 * @param int $fileId The Nextcloud file id.
+	 *
+	 * @return ExportRun|null The newest available run on that file, or null.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-a-produced-export-is-recorded-as-a-run
+	 */
+	public function findOpenForFile(int $fileId): ?ExportRun {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::TABLE)
+			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(ExportRun::STATUS_AVAILABLE)))
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
+
+		$runs = $this->findEntities(query: $qb);
+
+		return ($runs[0] ?? null);
+	}//end findOpenForFile()
 }//end class
