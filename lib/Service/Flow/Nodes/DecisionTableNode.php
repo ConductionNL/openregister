@@ -60,7 +60,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
  */
-class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class DecisionTableNode implements IFlowNode, DecisionTableNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.
