@@ -52,8 +52,18 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
@@ -105,9 +115,11 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppSettingsInterface::class => SettingsService::class,
+		CalculationTrialServiceInterface::class => CalculationTrialService::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
@@ -135,11 +147,14 @@ final class ContractBindings {
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
+		ReferencedCalculationRefresherInterface::class => ReferencedCalculationRefresher::class,
+		ReferenceResolverInterface::class => ReferenceResolver::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		SequenceServiceInterface::class => SequenceService::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
+		TemporalCalculationSweepServiceInterface::class => TemporalCalculationSweepService::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,

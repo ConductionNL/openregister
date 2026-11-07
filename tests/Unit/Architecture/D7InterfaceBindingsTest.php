@@ -27,6 +27,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
@@ -61,6 +71,8 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		AggregateReferenceResolver::class => [AggregateReferenceResolverInterface::class, ContractBindings::class],
+		CalculationTrialService::class => [CalculationTrialServiceInterface::class, ContractBindings::class],
 		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
 		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
 		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
@@ -68,6 +80,9 @@ final class D7InterfaceBindingsTest extends TestCase {
 		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],
 		FormSubmitService::class => [FormSubmitServiceInterface::class, ContractBindings::class],
 		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
+		ReferencedCalculationRefresher::class => [ReferencedCalculationRefresherInterface::class, ContractBindings::class],
+		ReferenceResolver::class => [ReferenceResolverInterface::class, ContractBindings::class],
+		TemporalCalculationSweepService::class => [TemporalCalculationSweepServiceInterface::class, ContractBindings::class],
 	];
 
 	/**
