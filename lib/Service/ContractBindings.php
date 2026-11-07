@@ -66,6 +66,10 @@ use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
+use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
+use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
+use OCA\OpenRegister\Service\Vocabulary\ConceptRepositoryInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -85,6 +89,8 @@ final class ContractBindings {
 	public const BINDINGS = [
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppSettingsInterface::class => SettingsService::class,
+		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
+		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
