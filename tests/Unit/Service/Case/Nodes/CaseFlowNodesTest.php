@@ -30,6 +30,10 @@ use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
+use OCA\OpenRegister\Service\Case\CasePlanAnchorAccess;
+use OCA\OpenRegister\Service\Case\CasePlanBringOver;
+use OCA\OpenRegister\Service\Case\CasePlanMechanics;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
@@ -103,17 +107,24 @@ class CaseFlowNodesTest extends TestCase {
 		$machine = new CasePlanStateMachine(items: $this->items, audits: $this->audits, table: new CasePlanTransitions(), realiser: $realiser, writer: $writer, db: $db, logger: new NullLogger());
 
 		return new CasePlanService(
-			items: $this->items,
-			audits: $this->audits,
-			machine: $machine,
-			cascade: new CasePlanCascade(items: $this->items, machine: $machine, sentries: $sentries, realiser: $realiser, anchor: $anchor, db: $db, logger: new NullLogger()),
-			sentries: $sentries,
-			authorization: new CasePlanAuthorizationService(groupManager: $groups),
-			anchor: $anchor,
-			writer: $writer,
-			definitions: new CasePlanDefinition(sentries: $sentries),
-			db: $db,
-			logger: new NullLogger()
+			store: new CasePlanStore(
+				items: $this->items,
+				audits: $this->audits,
+				db: $db,
+				logger: new NullLogger()
+			),
+			mechanics: new CasePlanMechanics(
+				machine: $machine,
+				cascade: new CasePlanCascade(items: $this->items, machine: $machine, sentries: $sentries, realiser: $realiser, anchor: $anchor, db: $db, logger: new NullLogger()),
+				sentries: $sentries,
+				definitions: new CasePlanDefinition(sentries: $sentries)
+			),
+			anchorAccess: new CasePlanAnchorAccess(
+				authorization: new CasePlanAuthorizationService(groupManager: $groups),
+				anchor: $anchor,
+				writer: $writer
+			),
+			bringOver: new CasePlanBringOver()
 		);
 	}//end plans()
 
