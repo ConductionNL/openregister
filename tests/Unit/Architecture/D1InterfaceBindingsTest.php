@@ -15,6 +15,10 @@ use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -37,13 +41,29 @@ final class D1InterfaceBindingsTest extends TestCase {
 	private const LIB = __DIR__ . '/../../../lib';
 
 	/**
-	 * Hidden class => [the interface its outside callers use, the registrar that binds it, its component].
+	 * Class => [the interface its outside callers use, the registrar that binds it, its component].
 	 *
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: string}>
 	 */
 	private const HIDDEN = [
 		EntityRelationMapper::class => [EntityRelationMapperInterface::class, DbRegistrar::class, 'Db'],
 		FlowRunMapper::class => [FlowRunMapperInterface::class, DbRegistrar::class, 'Db'],
+		RegisterMapper::class => [RegisterMapperInterface::class, DbRegistrar::class, 'Db'],
+		SchemaMapper::class => [SchemaMapperInterface::class, DbRegistrar::class, 'Db'],
+	];
+
+	/**
+	 * Hidden class => the outside callers deliberately left naming it, relative to lib/.
+	 *
+	 * ObjectActionElevationEntries resolves the ids a permission elevation is
+	 * checked against; permission code is out of scope for this refactor, so
+	 * it keeps its concrete RegisterMapper and SchemaMapper.
+	 *
+	 * @var array<class-string, list<string>>
+	 */
+	private const LEFT = [
+		RegisterMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
+		SchemaMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
 	];
 
 	/**
@@ -100,12 +120,15 @@ final class D1InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('hiddenClasses')]
 	public function testNoOtherComponentNamesTheClass(string $class, string $interface, string $registrar, string $component): void {
+		$lib    = realpath(self::LIB) . '/';
 		$naming = array_filter(
 			$this->filesOutside(component: $component),
 			fn (string $path): bool => in_array($class, $this->namesIn(path: $path), true)
 		);
+		$naming = array_map(static fn (string $path): string => substr($path, strlen($lib)), array_values($naming));
+		sort($naming);
 
-		$this->assertSame([], array_values($naming), $class . ' is named outside lib/' . $component . '; type the caller against ' . $interface);
+		$this->assertSame(self::LEFT[$class] ?? [], $naming, $class . ' is named outside lib/' . $component . '; type the caller against ' . $interface);
 	}//end testNoOtherComponentNamesTheClass()
 
 	/**
