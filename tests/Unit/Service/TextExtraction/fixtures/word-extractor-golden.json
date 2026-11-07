@@ -1,0 +1,135 @@
+{
+    "doc-by-extension-no-target": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "legacyDocTarget()"
+        ],
+        "log": [
+            "info: [WordExtractor] Legacy binary .doc is not supported; no text extracted {\"fileId\":7}"
+        ]
+    },
+    "doc-content-refused": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "legacyDocTarget()",
+            "legacyDocTarget()"
+        ],
+        "log": [
+            "error: [WordExtractor] Word extraction failed; returning null {\"fileId\":7,\"mimeType\":\"application\\/msword\",\"reader\":\"MsDoc\",\"exception\":\"OCP\\\\Files\\\\NotPermittedException\"}",
+            "warning: [WordExtractor] Word extraction returned empty text {\"fileId\":7,\"reader\":\"MsDoc\"}"
+        ]
+    },
+    "doc-convert-fails": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "legacyDocTarget()",
+            "legacyDocTarget()",
+            "convertLegacyDoc(doc-bytes, txt)"
+        ],
+        "log": [
+            "error: [WordExtractor] Word extraction failed; returning null {\"fileId\":7,\"mimeType\":\"application\\/msword\",\"reader\":\"MsDoc\",\"exception\":\"RuntimeException\"}",
+            "warning: [WordExtractor] Word extraction returned empty text {\"fileId\":7,\"reader\":\"MsDoc\"}"
+        ]
+    },
+    "doc-converter-no-target": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "legacyDocTarget()"
+        ],
+        "log": [
+            "info: [WordExtractor] Legacy binary .doc is not supported; no text extracted {\"fileId\":7}"
+        ]
+    },
+    "doc-to-blank-text": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "legacyDocTarget()",
+            "legacyDocTarget()",
+            "convertLegacyDoc(doc-bytes, txt)"
+        ],
+        "log": [
+            "warning: [WordExtractor] Word extraction returned empty text {\"fileId\":7,\"reader\":\"MsDoc\"}"
+        ]
+    },
+    "doc-to-text": {
+        "result": {
+            "returned": "Converted text"
+        },
+        "calls": [
+            "legacyDocTarget()",
+            "legacyDocTarget()",
+            "convertLegacyDoc(doc-bytes, txt)"
+        ],
+        "log": []
+    },
+    "doc-to-zero": {
+        "result": {
+            "returned": "0"
+        },
+        "calls": [
+            "legacyDocTarget()",
+            "legacyDocTarget()",
+            "convertLegacyDoc(doc-bytes, txt)"
+        ],
+        "log": []
+    },
+    "doc-without-converter": {
+        "result": {
+            "returned": null
+        },
+        "calls": [],
+        "log": [
+            "info: [WordExtractor] Legacy binary .doc is not supported; no text extracted {\"fileId\":7}"
+        ]
+    },
+    "docx-content-refused": {
+        "result": {
+            "returned": null
+        },
+        "calls": [],
+        "log": [
+            "error: [WordExtractor] Word extraction failed; returning null {\"fileId\":7,\"mimeType\":\"application\\/vnd.openxmlformats-officedocument.wordprocessingml.document\",\"reader\":\"Word2007\",\"exception\":\"OCP\\\\Files\\\\NotPermittedException\"}",
+            "warning: [WordExtractor] Word extraction returned empty text {\"fileId\":7,\"reader\":\"Word2007\"}"
+        ]
+    },
+    "odt-content-refused": {
+        "result": {
+            "returned": null
+        },
+        "calls": [],
+        "log": [
+            "error: [WordExtractor] Word extraction failed; returning null {\"fileId\":7,\"mimeType\":\"application\\/vnd.oasis.opendocument.text\",\"reader\":\"ODText\",\"exception\":\"OCP\\\\Files\\\\NotPermittedException\"}",
+            "warning: [WordExtractor] Word extraction returned empty text {\"fileId\":7,\"reader\":\"ODText\"}"
+        ]
+    },
+    "resolve": {
+        "result": {
+            "returned": [
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document | a.bin => Word2007",
+                "application/msword | a.docx => MsDoc",
+                "application/vnd.oasis.opendocument.text | a.doc => ODText",
+                "APPLICATION/MSWORD | a.txt => Word2007",
+                "application/octet-stream | report.DOCX => Word2007",
+                "application/octet-stream | report.Doc => MsDoc",
+                "application/octet-stream | report.odt => ODText",
+                "application/octet-stream | report.tar.odt => ODText",
+                "application/octet-stream | report.pdf => Word2007",
+                " |  => Word2007",
+                " | .doc => MsDoc",
+                "text/plain | noextension => Word2007"
+            ]
+        },
+        "calls": [],
+        "log": []
+    }
+}
