@@ -28,8 +28,12 @@ use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\MetricsService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
@@ -59,6 +63,8 @@ final class SearchRegistrar {
 		EmbeddingGeneratorInterface::class => VectorEmbeddings::class,
 		MetricsRetentionInterface::class => MetricsService::class,
 		DuplicateDetectionServiceInterface::class => DuplicateDetectionService::class,
+		UniqueHintAnnotationValidatorInterface::class => UniqueHintAnnotationValidator::class,
+		TimeseriesRequestValidatorInterface::class => TimeseriesRequestValidator::class,
 		VectorizationServiceInterface::class => VectorizationService::class,
 		VectorStorageHandlerInterface::class => VectorStorageHandler::class,
 		AggregationCacheInterface::class => AggregationCache::class,
