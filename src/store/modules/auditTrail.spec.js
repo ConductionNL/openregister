@@ -110,6 +110,48 @@ describe('AuditTrail Store', () => {
 		})
 	})
 
+	describe('refreshAuditTrailList', () => {
+		it('sends one request for the refreshes of one tick, with the filters set last', async () => {
+			const seen = []
+			store.fetchAuditTrails = jest.fn(async (options) => {
+				seen.push({ ...options, filters: store.auditTrailFilters })
+				return 'done'
+			})
+			const first = store.refreshAuditTrailList()
+			const second = store.refreshAuditTrailList()
+			store.setAuditTrailFilters({ action: 'read' })
+			const third = store.refreshAuditTrailList()
+			expect(await Promise.all([first, second, third])).toEqual([
+				'done',
+				'done',
+				'done',
+			])
+			expect(seen).toEqual([
+				{ limit: 50, page: 1, filters: { action: 'read' } },
+			])
+		})
+
+		it('sends a new request for a refresh after that tick', async () => {
+			store.fetchAuditTrails = jest.fn(async () => 'done')
+			await store.refreshAuditTrailList()
+			await store.refreshAuditTrailList()
+			expect(store.fetchAuditTrails).toHaveBeenCalledTimes(2)
+		})
+
+		it('passes a failed request on to every caller', async () => {
+			store.fetchAuditTrails = jest.fn(async () => {
+				throw new Error('down')
+			})
+			const calls = [
+				store.refreshAuditTrailList(),
+				store.refreshAuditTrailList(),
+			]
+			await expect(calls[0]).rejects.toThrow('down')
+			await expect(calls[1]).rejects.toThrow('down')
+			expect(store.fetchAuditTrails).toHaveBeenCalledTimes(1)
+		})
+	})
+
 	describe('getActionDistribution', () => {
 		it('aggregates by action across the list', async () => {
 			store.setAuditTrailList([
