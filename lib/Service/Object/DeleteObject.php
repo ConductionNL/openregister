@@ -1111,7 +1111,7 @@ class DeleteObject {
 		// Resolve every level-one cascade target in one batched lookup.
 		$targets = [];
 		try {
-			$targets = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
+			$targets = $this->objectEntityMapper->findStoredAcrossAllMagicTables(
 				uuids: $cascadeIds,
 				includeDeleted: true
 			);
@@ -1134,7 +1134,11 @@ class DeleteObject {
 			}
 		}
 
-		$handledIds = $this->batchCascadeSoftDelete(targets: $targets);
+		$alreadyDeleted = array_filter($targets, static fn (ObjectEntity $target): bool => $target->isSoftDeleted());
+		$handledIds = $this->batchCascadeSoftDelete(targets: array_diff_key($targets, $alreadyDeleted));
+		foreach ($alreadyDeleted as $target) {
+			$handledIds[(string)$target->getUuid()] = true;
+		}
 
 		// Legacy per-id pipeline for ids the batch lookup did not resolve.
 		foreach ($cascadeIds as $cascadeId) {
