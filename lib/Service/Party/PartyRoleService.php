@@ -66,7 +66,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 *
 	 * @param ContactLinkMapper $links The link rows.
 	 * @param PartyLinkWriter $writer Writes one party link.
-	 * @param PartyService $parties The party records.
+	 * @param TrustedPartyReaderInterface $parties The party records.
 	 * @param SchemaMapperInterface $schemas The schemas, for the accepted kinds and roles.
 	 * @param AuditTrailMapperInterface $audit The audit trail.
 	 * @param PersonLinkEvents $events Announces what happened to a link.
@@ -74,7 +74,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	public function __construct(
 		private readonly ContactLinkMapper $links,
 		private readonly PartyLinkWriter $writer,
-		private readonly PartyService $parties,
+		private readonly TrustedPartyReaderInterface $parties,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly AuditTrailMapperInterface $audit,
 		private readonly PersonLinkEvents $events,

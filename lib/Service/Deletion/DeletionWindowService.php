@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Deletion;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -67,13 +67,13 @@ class DeletionWindowService {
 	/**
 	 * Wire the retention settings reader.
 	 *
-	 * @param ObjectRetentionHandler $retentionHandler Reads `objectDeleteRetention`.
+	 * @param RetentionSettingsReaderInterface $retentionHandler Reads `objectDeleteRetention`.
 	 * @param LoggerInterface        $logger           PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectRetentionHandler $retentionHandler,
+		private readonly RetentionSettingsReaderInterface $retentionHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

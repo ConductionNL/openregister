@@ -388,10 +388,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		// Convert snake_case to camelCase for PSR compliance.
-		$methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-
-		// Call the method directly (LLPhant-compatible).
-		return $this->$methodName(...array_values($parameters));
+		return $this->invokeFunction(functionName: $functionName, parameters: $parameters);
 	}//end executeFunction()
 }//end class

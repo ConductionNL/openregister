@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -53,14 +53,14 @@ class DestructionListCreator {
 	 * @param RetentionServiceInterface       $retention       Judges each object and builds the list.
 	 * @param MagicMapperInterface            $objectMapper    Loads the named objects.
 	 * @param SaveObjectInterface             $saveObject      Stores the list as the sweep does.
-	 * @param ObjectRetentionHandler $settingsHandler Names the destruction-list register and schema.
+	 * @param ArchivalSettingsReaderInterface $settingsHandler Names the destruction-list register and schema.
 	 * @param LoggerInterface        $logger          Records who asked for a list.
 	 */
 	public function __construct(
 		private readonly RetentionServiceInterface $retention,
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly SaveObjectInterface $saveObject,
-		private readonly ObjectRetentionHandler $settingsHandler,
+		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

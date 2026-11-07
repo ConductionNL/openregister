@@ -144,56 +144,51 @@ class ObjectsTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		$this->log(functionName: $functionName, parameters: $parameters);
-
-		if ($this->hasUserContext(explicitUserId: $userId) === false) {
-			return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
-		}
-
-		try {
-			// Convert snake_case to camelCase for PSR compliance.
-			$methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-
-			// Call the method directly (LLPhant-compatible).
-			//
-			// 🔴 Spread by NAME, not by position. `array_values()` threw away the
-			// keys and passed whatever the model happened to list first into
-			// whatever parameter happens to be declared first — and
-			// `searchObjects()` declares `int $limit` first. So an agent sending
-			// the obvious `{query: "..."}` called `searchObjects("...")` and got
-			//
-			//   Argument #1 ($limit) must be of type int, string given
-			//
-			// on EVERY call. Measured 2026-08-17: an agent retried four ways (with
-			// and without a query, with and without register+schema) and every one
-			// failed identically, because the argument it varied was never the one
-			// being mis-bound. `search_objects` was unusable for any caller that
-			// did not, by luck, order its keys exactly as the signature.
-			//
-			// Named spread also makes defaults work: an omitted `limit` now IS the
-			// declared default instead of shifting every later argument left.
-			//
-			// Unknown keys are dropped rather than passed, because a named spread
-			// throws on a parameter the method does not declare, and a model
-			// volunteering an extra hint should not be a fatal.
-			$named = $parameters;
-			if ($parameters !== [] && array_is_list($parameters) === false) {
-				$known = [];
-				foreach ((new ReflectionMethod($this, $methodName))->getParameters() as $parameter) {
-					$known[$parameter->getName()] = true;
-				}
-
-				$named = array_intersect_key($parameters, $known);
-
-				return $this->$methodName(...$named);
-			}
-
-			return $this->$methodName(...array_values($named));
-		} catch (\Exception $e) {
-			$this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
-			return $this->formatError(message: $e->getMessage());
-		}
+		return $this->executeWithUser(functionName: $functionName, parameters: $parameters, userId: $userId);
 	}//end executeFunction()
+
+	/**
+	 * Call the function's method, by parameter name when the model sent
+	 * named arguments.
+	 *
+	 * @param string       $functionName The snake_case function name
+	 * @param array<mixed> $parameters   The parameters the model sent
+	 *
+	 * @return array The method's result
+	 */
+	protected function invokeFunction(string $functionName, array $parameters): array {
+		if ($parameters === [] || array_is_list($parameters) === true) {
+			return parent::invokeFunction(functionName: $functionName, parameters: $parameters);
+		}
+
+		// 🔴 Spread by NAME, not by position. `array_values()` threw away the
+		// keys and passed whatever the model happened to list first into
+		// whatever parameter happens to be declared first — and
+		// `searchObjects()` declares `int $limit` first. So an agent sending
+		// the obvious `{query: "..."}` called `searchObjects("...")` and got
+		//
+		//   Argument #1 ($limit) must be of type int, string given
+		//
+		// on EVERY call. Measured 2026-08-17: an agent retried four ways (with
+		// and without a query, with and without register+schema) and every one
+		// failed identically, because the argument it varied was never the one
+		// being mis-bound. `search_objects` was unusable for any caller that
+		// did not, by luck, order its keys exactly as the signature.
+		//
+		// Named spread also makes defaults work: an omitted `limit` now IS the
+		// declared default instead of shifting every later argument left.
+		//
+		// Unknown keys are dropped rather than passed, because a named spread
+		// throws on a parameter the method does not declare, and a model
+		// volunteering an extra hint should not be a fatal.
+		$methodName = $this->functionMethod(functionName: $functionName);
+		$known      = [];
+		foreach ((new ReflectionMethod($this, $methodName))->getParameters() as $parameter) {
+			$known[$parameter->getName()] = true;
+		}
+
+		return $this->$methodName(...array_intersect_key($parameters, $known));
+	}//end invokeFunction()
 
 	/**
 	 * Search for objects

@@ -115,6 +115,59 @@ abstract class AbstractTool implements ToolInterface {
 	}//end getFunctions()
 
 	/**
+	 * Run a function for a tool that refuses a call without a user context.
+	 *
+	 * The user context is checked before the function runs; a failure of the
+	 * function is logged and returned as an error result.
+	 *
+	 * @param string       $functionName The snake_case function name
+	 * @param array<mixed> $parameters   The parameters the model sent
+	 * @param string|null  $userId       Explicit user id, if any
+	 *
+	 * @return array The function result, or an error result
+	 */
+	protected function executeWithUser(string $functionName, array $parameters, ?string $userId): array {
+		$this->log(functionName: $functionName, parameters: $parameters);
+
+		if ($this->hasUserContext(explicitUserId: $userId) === false) {
+			return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
+		}
+
+		try {
+			return $this->invokeFunction(functionName: $functionName, parameters: $parameters);
+		} catch (\Exception $e) {
+			$this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
+			return $this->formatError(message: $e->getMessage());
+		}
+	}//end executeWithUser()
+
+	/**
+	 * Call the function's camelCase method with the parameters by position
+	 * (LLPhant-compatible).
+	 *
+	 * @param string       $functionName The snake_case function name
+	 * @param array<mixed> $parameters   The parameters the model sent
+	 *
+	 * @return array The method's result
+	 */
+	protected function invokeFunction(string $functionName, array $parameters): array {
+		$methodName = $this->functionMethod(functionName: $functionName);
+
+		return $this->$methodName(...array_values($parameters));
+	}//end invokeFunction()
+
+	/**
+	 * The camelCase method of a snake_case function name, for PSR compliance.
+	 *
+	 * @param string $functionName The snake_case function name
+	 *
+	 * @return string The method name
+	 */
+	protected function functionMethod(string $functionName): string {
+		return lcfirst(str_replace('_', '', ucwords($functionName, '_')));
+	}//end functionMethod()
+
+	/**
 	 * Get the current user ID
 	 *
 	 * Returns user ID from:

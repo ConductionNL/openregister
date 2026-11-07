@@ -126,13 +126,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	public function migrate(
-		string $runUuid,
-		int $targetVersion,
-		string $reason,
-		string $actor,
-		array $mapping = [],
-	): array {
+	public function migrate(string $runUuid, int $targetVersion, string $reason, string $actor, array $mapping = []): array {
 		return $this->perform(
 			migration: (new FlowRunMigration(runUuid: $runUuid, targetVersion: $targetVersion, reason: trim($reason), actor: $actor))
 				->withPlan(mapping: $mapping, dryRun: false)
@@ -160,13 +154,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	public function preview(
-		string $runUuid,
-		int $targetVersion,
-		string $reason,
-		string $actor,
-		array $mapping = [],
-	): array {
+	public function preview(string $runUuid, int $targetVersion, string $reason, string $actor, array $mapping = []): array {
 		return $this->perform(
 			migration: (new FlowRunMigration(runUuid: $runUuid, targetVersion: $targetVersion, reason: trim($reason), actor: $actor))
 				->withPlan(mapping: $mapping, dryRun: true)

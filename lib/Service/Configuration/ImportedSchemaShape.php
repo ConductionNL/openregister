@@ -120,7 +120,7 @@ final class ImportedSchemaShape
 		}
 
 		$message = $this->missingSlugMessage(data: $data);
-		$this->logger->error(message: '[ImportHandler] ' . $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+		$this->logger->error(message: ImportLogTag::PREFIX.$message, context: ['file' => __FILE__, 'line' => __LINE__]);
 		throw new RuntimeException($message);
 	}//end assertSlug()
 
