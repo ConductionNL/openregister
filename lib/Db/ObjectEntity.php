@@ -523,15 +523,6 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	private ?string $source = null;
 
 	/**
-	 * Whether this entity holds only part of its stored row (name, register, schema and data).
-	 *
-	 * Not a column. Such an entity may be read, never written back: a write replaces the whole row.
-	 *
-	 * @var boolean
-	 */
-	private bool $partialRead = false;
-
-	/**
 	 * Name of the object.
 	 *
 	 * This field is automatically populated via schema metadata mapping configuration.
@@ -2147,30 +2138,6 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		return ((($retention['legalHold'] ?? [])['active'] ?? false) === true);
 	}//end hasActiveLegalHold()
-
-	/**
-	 * Mark this entity as holding only part of its stored row.
-	 *
-	 * @return static This entity.
-	 *
-	 * @spec openspec/specs/magic-table-reads/spec.md
-	 */
-	public function markPartialRead(): static {
-		$this->partialRead = true;
-
-		return $this;
-	}//end markPartialRead()
-
-	/**
-	 * Whether this entity holds only part of its stored row.
-	 *
-	 * @return bool True when it must not be written back.
-	 *
-	 * @spec openspec/specs/magic-table-reads/spec.md
-	 */
-	public function isPartialRead(): bool {
-		return $this->partialRead;
-	}//end isPartialRead()
 
 	/**
 	 * Whether this object is in the trash.

@@ -6350,7 +6350,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
 	private function refusePartialRead(ObjectEntity $entity): void {
-		if ($entity->isPartialRead() === true) {
+		if ($entity instanceof PartialObjectEntity) {
 			throw new Exception('Cannot write object ' . $entity->getUuid() . ' back: it was read without its metadata.');
 		}
 	}//end refusePartialRead()
@@ -7772,13 +7772,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return null;
 		}
 
-		$entity = new ObjectEntity();
+		$entity = new PartialObjectEntity();
 		$entity->setUuid($row['_uuid']);
 
 		$this->applyRowMetadata(entity: $entity, row: $row);
 		$entity->setObject($this->rowObjectData(row: $row, columnToPropertyMap: $this->rowColumnToPropertyMap(row: $row)));
 
-		return $entity->markPartialRead();
+		return $entity;
 	}//end rowToObjectEntity()
 
 	/**

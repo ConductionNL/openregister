@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\PartialObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -36,7 +37,8 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
- * @covers \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\PartialObjectEntity
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -60,18 +62,10 @@ class MagicMapperPartialReadWriteTest extends TestCase {
 		return (new ReflectionClass(MagicMapper::class))->getMethod('rowToObjectEntity')->invoke($this->mapper(), $row);
 	}//end partial()
 
-	public function testTheCrossTableConversionMarksItsEntity(): void {
-		$this->assertTrue($this->partial()->isPartialRead());
-		$this->assertTrue((clone $this->partial())->isPartialRead());
-	}//end testTheCrossTableConversionMarksItsEntity()
-
-	public function testAnEntityIsWholeUntilMarked(): void {
-		$this->assertFalse((new ObjectEntity())->isPartialRead());
-	}//end testAnEntityIsWholeUntilMarked()
-
-	public function testTheMarkIsNotPartOfTheSerializedObject(): void {
-		$this->assertStringNotContainsString('partialRead', (string)json_encode($this->partial()->jsonSerialize()));
-	}//end testTheMarkIsNotPartOfTheSerializedObject()
+	public function testTheCrossTableConversionGivesAPartialEntity(): void {
+		$this->assertInstanceOf(PartialObjectEntity::class, $this->partial());
+		$this->assertInstanceOf(PartialObjectEntity::class, clone $this->partial());
+	}//end testTheCrossTableConversionGivesAPartialEntity()
 
 	public function testAnUpdateRefusesItBeforeAnyHookOrWrite(): void {
 		$events = $this->createMock(IEventDispatcher::class);
