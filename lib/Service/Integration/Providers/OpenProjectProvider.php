@@ -146,14 +146,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 
 		// Fallback: query the external source through OpenConnector.
 		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $filters);
-		$response = $this->router->call(
-			provider: $this,
-			method: 'GET',
-			path: '',
-			options: ['query' => $query, 'headers' => $this->requestHeaders()]
-		);
-
-		return $this->normalizeList(response: $response);
+		return $this->listFromSource(query: $query);
 	}//end list()
 
 	/**
@@ -220,6 +213,9 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 	 * @param array<string,mixed> $response Decoded source response.
 	 *
 	 * @return array<int,array<string,mixed>>
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedPrivateMethod) Called from
+	 *     ConnectorEntityCallsTrait::listFromSource(), which PHPMD does not follow.
 	 */
 	private function normalizeList(array $response): array {
 		$rows = array_filter($this->extractRowsFromEnvelope(response: $response), 'is_array');
