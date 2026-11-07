@@ -76,28 +76,35 @@ class TablesColumnMapper {
 				continue;
 			}
 
-			$name = $this->propertyName(column: $column);
-
-			if (isset($seen[$name]) === true) {
-				$disambiguated = $name . '_' . $columnId;
-				$this->logger->warning(
-					sprintf(
-						'[ObjectSource:tables] column %d slug "%s" collides with column %d; using "%s"',
-						$columnId,
-						$name,
-						$seen[$name],
-						$disambiguated
-					)
-				);
-				$name = $disambiguated;
-			}
-
+			$name = $this->uniqueName(name: $this->propertyName(column: $column), columnId: $columnId, seen: $seen);
 			$seen[$name] = $columnId;
 			$map[$columnId] = $name;
-		}//end foreach
+		}
 
 		return $map;
 	}//end buildColumnMap()
+
+	/**
+	 * The property name, suffixed with the column id when an earlier column took it.
+	 *
+	 * @param string             $name     The slugged name.
+	 * @param int                $columnId The column id.
+	 * @param array<string, int> $seen     Names taken so far => the column that took them.
+	 *
+	 * @return string The unique name.
+	 */
+	private function uniqueName(string $name, int $columnId, array $seen): string {
+		if (isset($seen[$name]) === false) {
+			return $name;
+		}
+
+		$disambiguated = $name . '_' . $columnId;
+		$this->logger->warning(
+			sprintf('[ObjectSource:tables] column %d slug "%s" collides with column %d; using "%s"', $columnId, $name, $seen[$name], $disambiguated)
+		);
+
+		return $disambiguated;
+	}//end uniqueName()
 
 	/**
 	 * Project a single row's cells onto a property-keyed object payload.
@@ -119,31 +126,56 @@ class TablesColumnMapper {
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	public function projectRow(array $row, array $columns, array $columnMap, callable $targetSchemaExists): array {
+		$byId = $this->columnsById(columns: $columns);
+		$data = [];
+		foreach (($row['cells'] ?? []) as $cell) {
+			$columnId = (int)($cell['columnId'] ?? 0);
+			if ($this->isMapped(row: $row, columnId: $columnId, columnMap: $columnMap) === false) {
+				continue;
+			}
+
+			$column = ($byId[$columnId] ?? []);
+			$data[$columnMap[$columnId]] = $this->coerceCell(value: ($cell['value'] ?? null), column: $column, targetSchemaExists: $targetSchemaExists);
+		}
+
+		return $data;
+	}//end projectRow()
+
+	/**
+	 * Whether the cell's column is in the column map; an unmapped column is logged as drift.
+	 *
+	 * @param array<string, mixed> $row       The raw row (for its id in the log line).
+	 * @param int                  $columnId  The cell's column id.
+	 * @param array<int, string>   $columnMap Column id => property name.
+	 *
+	 * @return bool
+	 */
+	private function isMapped(array $row, int $columnId, array $columnMap): bool {
+		if (isset($columnMap[$columnId]) === true) {
+			return true;
+		}
+
+		$this->logger->warning(
+			sprintf('[ObjectSource:tables] row %s references unknown column %d — skipped (drift)', (string)($row['id'] ?? '?'), $columnId)
+		);
+		return false;
+	}//end isMapped()
+
+	/**
+	 * The column descriptors keyed by column id.
+	 *
+	 * @param array<int, array<string, mixed>> $columns The column descriptors.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function columnsById(array $columns): array {
 		$byId = [];
 		foreach ($columns as $column) {
 			$byId[(int)($column['id'] ?? 0)] = $column;
 		}
 
-		$data = [];
-		foreach (($row['cells'] ?? []) as $cell) {
-			$columnId = (int)($cell['columnId'] ?? 0);
-			if (isset($columnMap[$columnId]) === false) {
-				$this->logger->warning(
-					sprintf('[ObjectSource:tables] row %s references unknown column %d — skipped (drift)', (string)($row['id'] ?? '?'), $columnId)
-				);
-				continue;
-			}
-
-			$column = ($byId[$columnId] ?? []);
-			$data[$columnMap[$columnId]] = $this->coerceCell(
-				value: ($cell['value'] ?? null),
-				column: $column,
-				targetSchemaExists: $targetSchemaExists
-			);
-		}//end foreach
-
-		return $data;
-	}//end projectRow()
+		return $byId;
+	}//end columnsById()
 
 	/**
 	 * Build the virtual schema `properties` + `required` blocks for a table.
@@ -156,25 +188,20 @@ class TablesColumnMapper {
 	 */
 	public function buildSchemaProperties(array $columns): array {
 		$columnMap = $this->buildColumnMap(columns: $columns);
-		$properties = [];
-		$required = [];
+		$schema    = ['properties' => [], 'required' => []];
 		foreach ($columns as $column) {
-			$columnId = (int)($column['id'] ?? 0);
-			if (isset($columnMap[$columnId]) === false) {
+			$name = ($columnMap[(int)($column['id'] ?? 0)] ?? null);
+			if ($name === null) {
 				continue;
 			}
 
-			$name = $columnMap[$columnId];
-			$properties[$name] = $this->columnToProperty(column: $column);
+			$schema['properties'][$name] = $this->columnToProperty(column: $column);
 			if (($column['mandatory'] ?? false) === true) {
-				$required[] = $name;
+				$schema['required'][] = $name;
 			}
 		}
 
-		return [
-			'properties' => $properties,
-			'required' => $required,
-		];
+		return $schema;
 	}//end buildSchemaProperties()
 
 	/**
@@ -190,28 +217,32 @@ class TablesColumnMapper {
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	public function columnToProperty(array $column): array {
-		$type = (string)($column['type'] ?? 'text');
 		$subtype = (string)($column['subtype'] ?? '');
 
-		switch ($type) {
-			case 'number':
-				return $this->numberProperty(column: $column, subtype: $subtype);
-			case 'datetime':
-				return ['type' => 'string', 'format' => $this->dateFormat(subtype: $subtype)];
-			case 'selection':
-				return $this->selectionProperty(column: $column, subtype: $subtype);
-			case 'usergroup':
-				return ['type' => 'array', 'items' => ['type' => 'object']];
-			case 'relation':
-				return ['type' => 'string', 'format' => 'uuid'];
-			case 'text':
-			default:
-				if ($subtype === 'link') {
-					return ['type' => 'string', 'format' => 'uri'];
-				}
-				return ['type' => 'string'];
-		}//end switch
+		return match ((string)($column['type'] ?? 'text')) {
+			'number' => $this->numberProperty(column: $column, subtype: $subtype),
+			'datetime' => ['type' => 'string', 'format' => $this->dateFormat(subtype: $subtype)],
+			'selection' => $this->selectionProperty(column: $column, subtype: $subtype),
+			'usergroup' => ['type' => 'array', 'items' => ['type' => 'object']],
+			'relation' => ['type' => 'string', 'format' => 'uuid'],
+			default => $this->textProperty(subtype: $subtype),
+		};
 	}//end columnToProperty()
+
+	/**
+	 * The property of a text (or unknown) column: a URI for the link subtype.
+	 *
+	 * @param string $subtype The column subtype.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function textProperty(string $subtype): array {
+		if ($subtype === 'link') {
+			return ['type' => 'string', 'format' => 'uri'];
+		}
+
+		return ['type' => 'string'];
+	}//end textProperty()
 
 	/**
 	 * Resolve a column's property name (technicalName, else slug of title).
@@ -266,43 +297,70 @@ class TablesColumnMapper {
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	private function coerceCell(mixed $value, array $column, callable $targetSchemaExists): mixed {
-		$type = (string)($column['type'] ?? 'text');
-		$subtype = (string)($column['subtype'] ?? '');
-
 		if ($value === null) {
 			return null;
 		}
 
-		switch ($type) {
-			case 'number':
-				if ($subtype === 'progress' || $subtype === 'stars' || $this->isIntegral(column: $column) === true) {
-					return (int)$value;
-				}
-				return (float)$value;
-			case 'selection':
-				if ($subtype === 'check') {
-					// Tables stores check cells as the strings 'true'/'false';
-					// a plain (bool) cast would turn 'false' into true.
-					return filter_var($value, FILTER_VALIDATE_BOOLEAN);
-				}
-
-				if ($subtype === 'multi') {
-					return (array)$value;
-				}
-				return (string)$value;
-			case 'usergroup':
-				return (array)$value;
-			case 'relation':
-				return $this->relationValue(value: $value, column: $column, targetSchemaExists: $targetSchemaExists);
-			case 'datetime':
-			case 'text':
-			default:
-				if (is_array($value) === true) {
-					return $value;
-				}
-				return (string)$value;
-		}//end switch
+		$subtype = (string)($column['subtype'] ?? '');
+		return match ((string)($column['type'] ?? 'text')) {
+			'number' => $this->coerceNumber(value: $value, column: $column, subtype: $subtype),
+			'selection' => $this->coerceSelection(value: $value, subtype: $subtype),
+			'usergroup' => (array)$value,
+			'relation' => $this->relationValue(value: $value, column: $column, targetSchemaExists: $targetSchemaExists),
+			default => $this->coerceText(value: $value),
+		};
 	}//end coerceCell()
+
+	/**
+	 * A number cell: an int for progress, stars and zero-decimal columns, else a float.
+	 *
+	 * @param mixed                $value   The raw value.
+	 * @param array<string, mixed> $column  The column descriptor.
+	 * @param string               $subtype The column subtype.
+	 *
+	 * @return int|float
+	 */
+	private function coerceNumber(mixed $value, array $column, string $subtype): int|float {
+		if ($subtype === 'progress' || $subtype === 'stars' || $this->isIntegral(column: $column) === true) {
+			return (int)$value;
+		}
+
+		return (float)$value;
+	}//end coerceNumber()
+
+	/**
+	 * A selection cell: a bool for check, a list for multi, else a string.
+	 *
+	 * Tables stores check cells as the strings 'true'/'false'; a plain (bool)
+	 * cast would turn 'false' into true.
+	 *
+	 * @param mixed  $value   The raw value.
+	 * @param string $subtype The column subtype.
+	 *
+	 * @return mixed
+	 */
+	private function coerceSelection(mixed $value, string $subtype): mixed {
+		return match ($subtype) {
+			'check' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+			'multi' => (array)$value,
+			default => (string)$value,
+		};
+	}//end coerceSelection()
+
+	/**
+	 * A text, datetime or unknown cell: an array stays as is, anything else becomes a string.
+	 *
+	 * @param mixed $value The raw value.
+	 *
+	 * @return mixed
+	 */
+	private function coerceText(mixed $value): mixed {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return (string)$value;
+	}//end coerceText()
 
 	/**
 	 * Map a relation cell to the referenced virtual object's uuid, or fall back.
@@ -316,9 +374,7 @@ class TablesColumnMapper {
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	private function relationValue(mixed $value, array $column, callable $targetSchemaExists): string|int {
-		$targetTableId = (int)($column['relationTargetTableId'] ?? 0);
-		$rowId = (int)$value;
-
+		[$targetTableId, $rowId] = [(int)($column['relationTargetTableId'] ?? 0), (int)$value];
 		if ($targetTableId !== 0 && $targetSchemaExists($targetTableId) === true) {
 			return $this->uuidDeriver->deriveObjectUuid(tableId: $targetTableId, rowId: $rowId);
 		}
@@ -331,7 +387,6 @@ class TablesColumnMapper {
 				$rowId
 			)
 		);
-
 		return $rowId;
 	}//end relationValue()
 
@@ -354,12 +409,23 @@ class TablesColumnMapper {
 			return ['type' => 'integer', 'minimum' => 0, 'maximum' => 5];
 		}
 
-		$numberType = 'number';
+		$property = ['type' => 'number'];
 		if ($this->isIntegral(column: $column) === true) {
-			$numberType = 'integer';
+			$property['type'] = 'integer';
 		}
 
-		$property = ['type' => $numberType];
+		return $this->withBounds(property: $property, column: $column);
+	}//end numberProperty()
+
+	/**
+	 * Add the column's numberMin / numberMax as minimum / maximum, when set.
+	 *
+	 * @param array<string, mixed> $property The property so far.
+	 * @param array<string, mixed> $column   The column descriptor.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function withBounds(array $property, array $column): array {
 		if (array_key_exists('numberMin', $column) === true && $column['numberMin'] !== null) {
 			$property['minimum'] = $column['numberMin'] + 0;
 		}
@@ -369,7 +435,7 @@ class TablesColumnMapper {
 		}
 
 		return $property;
-	}//end numberProperty()
+	}//end withBounds()
 
 	/**
 	 * Build the JSON-schema fragment for a `selection` column (design D5).

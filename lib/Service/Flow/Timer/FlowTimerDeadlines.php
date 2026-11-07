@@ -41,11 +41,11 @@ final class FlowTimerDeadlines {
 	/**
 	 * Constructor.
 	 *
-	 * @param SlaCalculator           $calculator Business-time arithmetic.
+	 * @param SlaCalculatorInterface           $calculator Business-time arithmetic.
 	 * @param EscalationLadderService $ladder     Rung resolution.
 	 */
 	public function __construct(
-		private readonly SlaCalculator $calculator,
+		private readonly SlaCalculatorInterface $calculator,
 		private readonly EscalationLadderService $ladder,
 	) {
 		$this->values = new FlowTimerValues();
@@ -157,7 +157,7 @@ final class FlowTimerDeadlines {
 		$timer = $scope->timer;
 		$rolled = $this->calculator->roll(
 			moment: $this->landed(scope: $scope),
-			roll: (string)($timer->getRollToWorkingDay() ?? SlaCalculator::ROLL_NONE),
+			roll: (string)($timer->getRollToWorkingDay() ?? SlaCalculatorInterface::ROLL_NONE),
 			calendar: $scope->calendar
 		);
 		$timer->setFireAt($this->values->mutable(value: $rolled['at']));

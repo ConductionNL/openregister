@@ -22,14 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
-use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -61,7 +61,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 	 * @param ViewMapperInterface      $viewMapper     Reads the backing view.
 	 * @param RegisterMapperInterface  $registerMapper Resolves the source register.
 	 * @param SchemaMapperInterface    $schemaMapper   Resolves the source schema.
-	 * @param MagicMapperInterface     $magicMapper    Searches the source table.
+	 * @param MagicTableRowReaderInterface     $magicMapper    Searches the source table.
 	 * @param LoggerInterface $logger         Logs a view that cannot back a type.
 	 *
 	 * @return void
@@ -70,7 +70,7 @@ class ViewObjectSourceProvider implements ObjectSourceProvider {
 		private readonly ViewMapperInterface $viewMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $magicMapper,
+		private readonly MagicTableRowReaderInterface $magicMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

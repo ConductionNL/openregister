@@ -55,7 +55,7 @@ use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -116,7 +116,7 @@ class RetentionService implements RetentionServiceInterface {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for lookups
 	 * @param RegisterMapperInterface $registerMapper Register mapper for lookups
 	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper
-	 * @param ObjectRetentionHandler $settingsHandler Retention settings handler
+	 * @param ArchivalSettingsReaderInterface $settingsHandler Retention settings handler
 	 * @param IUserSession $userSession Current user session
 	 * @param LoggerInterface $logger Logger
 	 * @param RetentionRowScanner $rowScanner Walks every table a retention decision can live in
@@ -133,7 +133,7 @@ class RetentionService implements RetentionServiceInterface {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly AuditTrailMapperInterface $auditMapper,
-		private readonly ObjectRetentionHandler $settingsHandler,
+		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly RetentionRowScanner $rowScanner,

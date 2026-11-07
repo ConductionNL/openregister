@@ -3996,21 +3996,6 @@ parameters:
 			path: lib/Service/File/FileFormattingHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$fileSharingHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileFormattingHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$taggingHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileFormattingHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$urlGenerator is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileFormattingHandler.php
-
-		-
 			message: "#^Result of && is always false\\.$#"
 			count: 1
 			path: lib/Service/File/FileFormattingHandler.php

@@ -110,29 +110,12 @@ class MigrationService implements MigrationServiceInterface {
 			schema: $schema
 		);
 
-		$magicCount = 0;
-		if ($magicTableExists === true) {
-			$magicCount = $this->magicMapper->countObjectsInRegisterSchemaTable(
-				query: [],
-				register: $register,
-				schema: $schema
-			);
-		}
-
 		return [
-			'register' => [
-				'id' => $register->getId(),
-				'name' => $register->getTitle(),
-				'slug' => $register->getSlug(),
-			],
-			'schema' => [
-				'id' => $schema->getId(),
-				'name' => $schema->getTitle(),
-				'slug' => $schema->getSlug(),
-			],
+			'register' => $this->identity(entity: $register),
+			'schema' => $this->identity(entity: $schema),
 			'magicTable' => [
 				'exists' => $magicTableExists,
-				'count' => $magicCount,
+				'count' => $this->magicCount(exists: $magicTableExists, register: $register, schema: $schema),
 			],
 		];
 	}//end getStorageStatus()
@@ -161,16 +144,8 @@ class MigrationService implements MigrationServiceInterface {
 		int $batchSize = 100,
 		bool $dryRun = false,
 	): array {
-		return [
-			'direction' => 'to-magic',
-			'dryRun' => $dryRun,
-			'total' => 0,
-			'migrated' => 0,
-			'skipped' => 0,
-			'failed' => 0,
-			'errors' => [],
-			'message' => 'Blob storage mapper has been removed. Use BlobMigrationJob background job instead.',
-		];
+		$message = 'Blob storage mapper has been removed. Use BlobMigrationJob background job instead.';
+		return $this->retiredReport(direction: 'to-magic', dryRun: $dryRun, message: $message);
 	}//end migrateToMagicTable()
 
 	/**
@@ -196,15 +171,65 @@ class MigrationService implements MigrationServiceInterface {
 		int $batchSize = 100,
 		bool $dryRun = false,
 	): array {
+		$message = 'Blob storage mapper has been removed. Reverse migration is no longer supported.';
+		return $this->retiredReport(direction: 'to-blob', dryRun: $dryRun, message: $message);
+	}//end migrateToBlobStorage()
+
+	/**
+	 * The id, name and slug a status report gives a register or a schema.
+	 *
+	 * @param Register|Schema $entity The register or schema.
+	 *
+	 * @return array{id: int|null, name: string|null, slug: string|null}
+	 */
+	private function identity(Register|Schema $entity): array {
 		return [
-			'direction' => 'to-blob',
+			'id' => $entity->getId(),
+			'name' => $entity->getTitle(),
+			'slug' => $entity->getSlug(),
+		];
+	}//end identity()
+
+	/**
+	 * The number of objects in the magic table, or 0 when it does not exist.
+	 *
+	 * @param bool     $exists   Whether the magic table exists.
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return int The object count.
+	 */
+	private function magicCount(bool $exists, Register $register, Schema $schema): int {
+		if ($exists === false) {
+			return 0;
+		}
+
+		return $this->magicMapper->countObjectsInRegisterSchemaTable(
+			query: [],
+			register: $register,
+			schema: $schema
+		);
+	}//end magicCount()
+
+	/**
+	 * The report of a migration that the removal of blob storage made impossible.
+	 *
+	 * @param string $direction The migration direction.
+	 * @param bool   $dryRun    Whether the caller asked for a dry run.
+	 * @param string $message   Why the migration did not run.
+	 *
+	 * @return array The migration report.
+	 */
+	private function retiredReport(string $direction, bool $dryRun, string $message): array {
+		return [
+			'direction' => $direction,
 			'dryRun' => $dryRun,
 			'total' => 0,
 			'migrated' => 0,
 			'skipped' => 0,
 			'failed' => 0,
 			'errors' => [],
-			'message' => 'Blob storage mapper has been removed. Reverse migration is no longer supported.',
+			'message' => $message,
 		];
-	}//end migrateToBlobStorage()
+	}//end retiredReport()
 }//end class
