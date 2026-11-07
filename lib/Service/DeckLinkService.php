@@ -64,7 +64,7 @@ use Throwable;
  *     score; splitting into helper classes would scatter the leaf-row
  *     contract.
  */
-class DeckLinkService {
+class DeckLinkService implements DeckLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
