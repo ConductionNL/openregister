@@ -106,6 +106,7 @@ final class ContractBindings {
 		FormSubmitServiceInterface::class => FormSubmitService::class,
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
+		MappingServiceInterface::class => MappingService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		MigrationServiceInterface::class => MigrationService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
