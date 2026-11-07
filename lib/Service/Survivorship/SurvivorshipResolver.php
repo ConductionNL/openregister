@@ -110,15 +110,19 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 		$anchorField = (string)($config['freshnessAnchorField'] ?? '');
 
 		$candidates = $this->collectCandidates(
-			entityType: $entityType,
 			sourceRecords: $sourceRecords,
-			tierOrder: $tierOrder,
-			defaultTier: $defaultTier,
-			discardTier: $discardTier,
-			anchorField: $anchorField,
-			trustRows: $trustRows,
-			trustResolver: $trustResolver,
-			asOf: $asOf
+			policy: new SurvivorshipPolicy(
+				tierOrder: $tierOrder,
+				defaultTier: $defaultTier,
+				discardTier: $discardTier,
+				anchorField: $anchorField
+			),
+			trust: new SurvivorshipTrust(
+				entityType: $entityType,
+				trustRows: $trustRows,
+				trustResolver: $trustResolver,
+				asOf: $asOf
+			)
 		);
 
 		$overrideMap = $this->normaliseOverrides(overrides: $overrides);
@@ -242,17 +246,11 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	 * Collect, per attribute, the competing candidate values across all
 	 * non-withdrawn source records with a non-empty value for that attribute.
 	 *
-	 * @param string $entityType Entity type.
 	 * @param array<int, mixed> $sourceRecords Linked source records; entries are
 	 *                                         untrusted external data and are
 	 *                                         re-validated as arrays below.
-	 * @param array<int, string> $tierOrder Ordered tier names, weakest first.
-	 * @param string $defaultTier Fallback tier for an unmatched tuple.
-	 * @param string $discardTier Tier excluded from competing.
-	 * @param string $anchorField Field holding the freshness anchor date.
-	 * @param array<int, array<string, mixed>> $trustRows Candidate trust-configuration rows.
-	 * @param TrustTierResolver $trustResolver Trust lookup + decay engine.
-	 * @param DateTimeImmutable $asOf Reference instant.
+	 * @param SurvivorshipPolicy $policy Tier order, default and discard tier, freshness anchor field.
+	 * @param SurvivorshipTrust  $trust  Entity type, trust rows, trust resolver and reference instant.
 	 *
 	 * @return array<string, array<int, array<string, mixed>>> Attribute => list of candidate options.
 	 *
@@ -262,17 +260,19 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — flat sequential guards.
 	 */
 	private function collectCandidates(
-		string $entityType,
 		array $sourceRecords,
-		array $tierOrder,
-		string $defaultTier,
-		string $discardTier,
-		string $anchorField,
-		array $trustRows,
-		TrustTierResolver $trustResolver,
-		DateTimeImmutable $asOf,
+		SurvivorshipPolicy $policy,
+		SurvivorshipTrust $trust,
 	): array {
-		$candidates = [];
+		$entityType    = $trust->entityType;
+		$trustRows     = $trust->trustRows;
+		$trustResolver = $trust->trustResolver;
+		$asOf          = $trust->asOf;
+		$tierOrder     = $policy->tierOrder;
+		$defaultTier   = $policy->defaultTier;
+		$discardTier   = $policy->discardTier;
+		$anchorField   = $policy->anchorField;
+		$candidates    = [];
 
 		foreach ($sourceRecords as $record) {
 			try {
