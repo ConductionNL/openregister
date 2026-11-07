@@ -981,6 +981,7 @@ class MigrationPacksControllerTest extends TestCase {
 			'lib/Service/MigrationPack/MigrationPackRequestReader.php',
 			'lib/Service/MigrationPack/PackDefinitionValidator.php',
 			'lib/Service/MigrationPack/MappingEngine.php',
+			'lib/Service/MigrationPack/MappingTransformer.php',
 		] as $file) {
 			$source .= file_get_contents(__DIR__ . '/../../../' . $file);
 		}
