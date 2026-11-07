@@ -57,15 +57,16 @@ final class LifecycleStateValidator {
 	private const FIELD_RULE_KINDS = ['hidden', 'readOnly', 'required'];
 
 	/**
-	 * The roots of a condition reference that name something other than a property.
+	 * Constructor.
 	 *
-	 * `object` is in the list because `object.bedrag` and a bare `bedrag` are
-	 * the same reference written two ways; the rest name the evaluation
-	 * document's other branches, which no schema property backs.
+	 * @param StateConditionValidator $conditions Validates the state and field rule conditions.
 	 *
-	 * @var array<int, string>
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private const CONDITION_NAMESPACES = ['object', 'previous', 'user', 'state', 'transition'];
+	public function __construct(
+		private readonly StateConditionValidator $conditions = new StateConditionValidator(),
+	) {
+	}//end __construct()
 
 	/**
 	 * Validate `x-openregister-lifecycle.states`.
@@ -86,126 +87,193 @@ final class LifecycleStateValidator {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function validateStates(array $annotation, array $schema, ?array $enumSet): array {
-		if (isset($annotation['states']) === false) {
-			return [];
+		$states      = ($annotation['states'] ?? null);
+		$shapeErrors = self::statesShapeErrors(states: $states);
+		if ($shapeErrors !== null) {
+			return $shapeErrors;
 		}
 
-		$states = $annotation['states'];
-		if (is_array($states) === false || $states === []) {
-			return [
-				[
-					'code' => 'lifecycle-states-malformed',
-					'message' => 'x-openregister-lifecycle.states must be a non-empty map of state names to blocks.',
-				],
-			];
-		}
-
-		$properties = ($schema['properties'] ?? []);
-		if (is_array($properties) === false) {
-			$properties = [];
-		}
-
-		$errors = [];
+		$properties = self::declaredProperties(schema: $schema);
+		$errors     = [];
 		foreach ($states as $state => $block) {
-			$state = (string)$state;
-			if ($enumSet !== null && isset($enumSet[$state]) === false) {
-				$errors[] = [
-					'code' => 'lifecycle-state-unknown',
-					'message' => sprintf(
-						'x-openregister-lifecycle.states declares state "%s" which is not in the field\'s enum.',
-						$state
-					),
-				];
-				continue;
-			}
-
-			if (is_array($block) === false) {
-				$errors[] = [
-					'code' => 'lifecycle-state-malformed',
-					'message' => sprintf('x-openregister-lifecycle.states."%s" must be an object.', $state),
-				];
-				continue;
-			}
-
-			$errors = array_merge(
-				$errors,
-				$this->validateStateFields(block: $block, state: $state, properties: $properties),
-				$this->validateStateConditions(block: $block, state: $state, properties: $properties)
-			);
-		}//end foreach
+			$site        = new StateConditionSite(state: (string)$state, label: '', properties: $properties);
+			$stateErrors = self::unknownStateErrors(state: $site->state, enumSet: $enumSet);
+			$errors      = array_merge($errors, ($stateErrors ?? $this->validateStateBlock(block: $block, site: $site)));
+		}
 
 		return $errors;
 	}//end validateStates()
 
 	/**
-	 * Validate one state's `fields` block.
+	 * No errors for an absent `states` block, the refusal for a malformed one, or null for a usable map.
 	 *
-	 * @param array<string, mixed> $block The state block.
-	 * @param string $state The state name.
-	 * @param array<string, mixed> $properties The schema's declared properties.
+	 * @param mixed $states The declared `states` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>|null The errors, or null to go on validating.
+	 */
+	private static function statesShapeErrors(mixed $states): ?array {
+		if ($states === null) {
+			return [];
+		}
+
+		if (is_array($states) === false || $states === []) {
+			$message = 'x-openregister-lifecycle.states must be a non-empty map of state names to blocks.';
+			return [self::error(code: 'lifecycle-states-malformed', message: $message)];
+		}
+
+		return null;
+	}//end statesShapeErrors()
+
+	/**
+	 * The schema's declared properties, or an empty map when it declares none.
+	 *
+	 * @param array<string, mixed> $schema Full schema definition.
+	 *
+	 * @return array<string, mixed> The declared properties.
+	 */
+	private static function declaredProperties(array $schema): array {
+		$properties = ($schema['properties'] ?? []);
+		if (is_array($properties) === false) {
+			return [];
+		}
+
+		return $properties;
+	}//end declaredProperties()
+
+	/**
+	 * The refusal for a state the field's enum does not declare, or null.
+	 *
+	 * @param string                  $state   The state name.
+	 * @param array<string, int>|null $enumSet The declared states, or null when the mode does not publish them.
+	 *
+	 * @return array<int, array{code: string, message: string}>|null The refusal, or null when the state is known.
+	 */
+	private static function unknownStateErrors(string $state, ?array $enumSet): ?array {
+		if ($enumSet === null || isset($enumSet[$state]) === true) {
+			return null;
+		}
+
+		$message = sprintf(
+			'x-openregister-lifecycle.states declares state "%s" which is not in the field\'s enum.',
+			$state
+		);
+		return [self::error(code: 'lifecycle-state-unknown', message: $message)];
+	}//end unknownStateErrors()
+
+	/**
+	 * Validate one declared state's block: its field rules, then its conditions.
+	 *
+	 * @param mixed              $block The state block.
+	 * @param StateConditionSite $site  The state and properties the block sits in.
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function validateStateFields(array $block, string $state, array $properties): array {
-		if (isset($block['fields']) === false) {
+	private function validateStateBlock(mixed $block, StateConditionSite $site): array {
+		if (is_array($block) === false) {
+			$message = sprintf('x-openregister-lifecycle.states."%s" must be an object.', $site->state);
+			return [self::error(code: 'lifecycle-state-malformed', message: $message)];
+		}
+
+		return array_merge(
+			$this->validateStateFields(block: $block, site: $site),
+			$this->conditions->validateBlock(block: $block, site: $site)
+		);
+	}//end validateStateBlock()
+
+	/**
+	 * Validate one state's `fields` block.
+	 *
+	 * @param array<string, mixed> $block The state block.
+	 * @param StateConditionSite   $site  The state and properties the block sits in.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function validateStateFields(array $block, StateConditionSite $site): array {
+		$fields = ($block['fields'] ?? null);
+		if ($fields === null) {
 			return [];
 		}
 
-		$fields = $block['fields'];
 		if (is_array($fields) === false || $fields === []) {
-			return [
-				[
-					'code' => 'lifecycle-state-fields-malformed',
-					'message' => sprintf(
-						'x-openregister-lifecycle.states."%s".fields must be a non-empty object of '
-						. '"hidden", "readOnly" and/or "required" lists.',
-						$state
-					),
-				],
-			];
+			return [self::fieldsMalformedError(state: $site->state)];
 		}
 
 		$errors = [];
 		foreach ($fields as $kind => $entries) {
-			$kind = (string)$kind;
-			if (in_array($kind, self::FIELD_RULE_KINDS, true) === false) {
-				$errors[] = [
-					'code' => 'lifecycle-state-fields-unknown-kind',
-					'message' => sprintf(
-						'x-openregister-lifecycle.states."%s".fields declares "%s"; only %s are rule kinds.',
-						$state,
-						$kind,
-						implode(', ', self::FIELD_RULE_KINDS)
-					),
-				];
-				continue;
-			}
-
-			if (is_array($entries) === false || $entries === []) {
-				$errors[] = [
-					'code' => 'lifecycle-state-fields-malformed',
-					'message' => sprintf(
-						'x-openregister-lifecycle.states."%s".fields."%s" must be a non-empty list of entries.',
-						$state,
-						$kind
-					),
-				];
-				continue;
-			}
-
-			$scope = new StateFieldRuleScope(state: $state, kind: $kind, properties: $properties);
-			foreach ($entries as $entry) {
-				$errors = array_merge(
-					$errors,
-					$this->validateFieldRuleEntry(entry: $entry, scope: $scope)
-				);
-			}
-		}//end foreach
+			$scope  = new StateFieldRuleScope(state: $site->state, kind: (string)$kind, properties: $site->properties);
+			$errors = array_merge($errors, $this->validateFieldRuleKind(entries: $entries, scope: $scope));
+		}
 
 		return $errors;
 	}//end validateStateFields()
+
+	/**
+	 * The refusal for a `fields` block that is not a non-empty object.
+	 *
+	 * @param string $state The state name.
+	 *
+	 * @return array{code: string, message: string} The error.
+	 */
+	private static function fieldsMalformedError(string $state): array {
+		$message = sprintf(
+			'x-openregister-lifecycle.states."%s".fields must be a non-empty object of '
+			. '"hidden", "readOnly" and/or "required" lists.',
+			$state
+		);
+		return self::error(code: 'lifecycle-state-fields-malformed', message: $message);
+	}//end fieldsMalformedError()
+
+	/**
+	 * Validate the entries one rule kind of a `fields` block declares.
+	 *
+	 * @param mixed               $entries The entries declared under the kind.
+	 * @param StateFieldRuleScope $scope   The state, rule kind and properties the entries sit in.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function validateFieldRuleKind(mixed $entries, StateFieldRuleScope $scope): array {
+		$kindError = self::fieldRuleKindError(entries: $entries, scope: $scope);
+		if ($kindError !== null) {
+			return [$kindError];
+		}
+
+		$errors = [];
+		foreach ($entries as $entry) {
+			$errors = array_merge($errors, $this->validateFieldRuleEntry(entry: $entry, scope: $scope));
+		}
+
+		return $errors;
+	}//end validateFieldRuleKind()
+
+	/**
+	 * The error for an unknown rule kind or a kind with no entries, or null.
+	 *
+	 * @param mixed               $entries The entries declared under the kind.
+	 * @param StateFieldRuleScope $scope   The state, rule kind and properties the entries sit in.
+	 *
+	 * @return array{code: string, message: string}|null The error, or null.
+	 */
+	private static function fieldRuleKindError(mixed $entries, StateFieldRuleScope $scope): ?array {
+		$prefix = sprintf('x-openregister-lifecycle.states."%s".fields', $scope->state);
+		if (in_array($scope->kind, self::FIELD_RULE_KINDS, true) === false) {
+			$allowed = implode(', ', self::FIELD_RULE_KINDS);
+			$message = sprintf('%s declares "%s"; only %s are rule kinds.', $prefix, $scope->kind, $allowed);
+			return self::error(code: 'lifecycle-state-fields-unknown-kind', message: $message);
+		}
+
+		if (is_array($entries) === false || $entries === []) {
+			$message = sprintf('%s."%s" must be a non-empty list of entries.', $prefix, $scope->kind);
+			return self::error(code: 'lifecycle-state-fields-malformed', message: $message);
+		}
+
+		return null;
+	}//end fieldRuleKindError()
 
 	/**
 	 * Validate one `{fields, groups, when}` entry.
@@ -230,21 +298,32 @@ final class LifecycleStateValidator {
 			$errors[] = $groupError;
 		}
 
+		return array_merge($errors, $this->validateFieldRuleCondition(entry: $entry, scope: $scope));
+	}//end validateFieldRuleEntry()
+
+	/**
+	 * Validate an entry's optional `when` (or `condition`) clause.
+	 *
+	 * @param array<string, mixed> $entry The declared entry.
+	 * @param StateFieldRuleScope  $scope The state, rule kind and properties the entry sits in.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function validateFieldRuleCondition(array $entry, StateFieldRuleScope $scope): array {
 		$when = ($entry['when'] ?? ($entry['condition'] ?? null));
-		if ($when !== null) {
-			$errors = array_merge(
-				$errors,
-				$this->validateStateCondition(
-					condition: $when,
-					state: $scope->state,
-					label: sprintf('fields."%s" condition', $scope->kind),
-					properties: $scope->properties
-				)
-			);
+		if ($when === null) {
+			return [];
 		}
 
-		return $errors;
-	}//end validateFieldRuleEntry()
+		$site = new StateConditionSite(
+			state: $scope->state,
+			label: sprintf('fields."%s" condition', $scope->kind),
+			properties: $scope->properties
+		);
+		return $this->conditions->validate(condition: $when, site: $site);
+	}//end validateFieldRuleCondition()
 
 	/**
 	 * The error for an entry that is not an object or names no field, or null.
@@ -307,28 +386,36 @@ final class LifecycleStateValidator {
 	private function validateFieldRuleNames(array $names, StateFieldRuleScope $scope): array {
 		$errors = [];
 		foreach ($names as $name) {
-			if (is_string($name) === false || $name === '') {
-				$errors[] = [
-					'code' => 'lifecycle-state-field-entry-malformed',
-					'message' => $scope->path() . ' names a field that is not a string.',
-				];
-				continue;
-			}
-
-			if (isset($scope->properties[$name]) === false) {
-				$errors[] = [
-					'code' => 'lifecycle-state-field-missing',
-					'message' => sprintf(
-						'%s names field "%s", which is not declared in `properties`.',
-						$scope->path(),
-						$name
-					),
-				];
+			$error = self::fieldRuleNameError(name: $name, scope: $scope);
+			if ($error !== null) {
+				$errors[] = $error;
 			}
 		}
 
 		return $errors;
 	}//end validateFieldRuleNames()
+
+	/**
+	 * The error for a declared name that is not a string or not a declared property, or null.
+	 *
+	 * @param mixed               $name  The declared name.
+	 * @param StateFieldRuleScope $scope The state, rule kind and properties the entry sits in.
+	 *
+	 * @return array{code: string, message: string}|null The error, or null.
+	 */
+	private static function fieldRuleNameError(mixed $name, StateFieldRuleScope $scope): ?array {
+		if (is_string($name) === false || $name === '') {
+			$message = $scope->path() . ' names a field that is not a string.';
+			return self::error(code: 'lifecycle-state-field-entry-malformed', message: $message);
+		}
+
+		if (isset($scope->properties[$name]) === true) {
+			return null;
+		}
+
+		$message = sprintf('%s names field "%s", which is not declared in `properties`.', $scope->path(), $name);
+		return self::error(code: 'lifecycle-state-field-missing', message: $message);
+	}//end fieldRuleNameError()
 
 	/**
 	 * Validate an entry's optional `groups` clause.
@@ -341,122 +428,38 @@ final class LifecycleStateValidator {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateFieldRuleGroups(array $entry, StateFieldRuleScope $scope): ?array {
-		if (isset($entry['groups']) === false) {
-			return null;
-		}
-
-		$groups = $entry['groups'];
-		if (is_string($groups) === true) {
+		$groups = ($entry['groups'] ?? null);
+		if ($groups === null || is_string($groups) === true) {
 			return null;
 		}
 
 		if (is_array($groups) === false || $groups === []) {
-			return [
-				'code' => 'lifecycle-state-field-groups-malformed',
-				'message' => $scope->path() . ' declares `groups` that is neither '
-					. 'a group id nor a non-empty list of them. Omit `groups` to apply the rule to everyone.',
-			];
+			$message = $scope->path() . ' declares `groups` that is neither '
+				. 'a group id nor a non-empty list of them. Omit `groups` to apply the rule to everyone.';
+			return self::error(code: 'lifecycle-state-field-groups-malformed', message: $message);
 		}
 
+		return self::groupMemberError(groups: $groups, scope: $scope);
+	}//end validateFieldRuleGroups()
+
+	/**
+	 * The error for the first listed group that is not a non-empty string, or null.
+	 *
+	 * @param array<mixed>        $groups The listed groups.
+	 * @param StateFieldRuleScope $scope  The state, rule kind and properties the entry sits in.
+	 *
+	 * @return array{code: string, message: string}|null The error, or null.
+	 */
+	private static function groupMemberError(array $groups, StateFieldRuleScope $scope): ?array {
 		foreach ($groups as $group) {
 			if (is_string($group) === false || $group === '') {
-				return [
-					'code' => 'lifecycle-state-field-groups-malformed',
-					'message' => $scope->path() . ' lists a group that is not a non-empty string.',
-				];
+				$message = $scope->path() . ' lists a group that is not a non-empty string.';
+				return self::error(code: 'lifecycle-state-field-groups-malformed', message: $message);
 			}
 		}
 
 		return null;
-	}//end validateFieldRuleGroups()
-
-	/**
-	 * Validate a state's `entry` and `exit` conditions.
-	 *
-	 * @param array<string, mixed> $block The state block.
-	 * @param string $state The state name.
-	 * @param array<string, mixed> $properties The schema's declared properties.
-	 *
-	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function validateStateConditions(array $block, string $state, array $properties): array {
-		$errors = [];
-		foreach (['entry', 'exit', 'condition'] as $key) {
-			if (isset($block[$key]) === false) {
-				continue;
-			}
-
-			$declared = $block[$key];
-			if (is_array($declared) === true) {
-				$nested = ($declared['condition'] ?? ($declared['when'] ?? null));
-				if (is_array($nested) === true && $nested !== []) {
-					$declared = $nested;
-				}
-			}
-
-			$errors = array_merge(
-				$errors,
-				$this->validateStateCondition(
-					condition: $declared,
-					state: $state,
-					label: $key,
-					properties: $properties
-				)
-			);
-		}
-
-		return $errors;
-	}//end validateStateConditions()
-
-	/**
-	 * Shape-check one condition and check every property it names.
-	 *
-	 * @param mixed $condition The declared condition node.
-	 * @param string $state The state name.
-	 * @param string $label Where the condition sits, for the message.
-	 * @param array<string, mixed> $properties The schema's declared properties.
-	 *
-	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function validateStateCondition(mixed $condition, string $state, string $label, array $properties): array {
-		if (is_array($condition) === false || $condition === []) {
-			return [
-				[
-					'code' => 'lifecycle-state-condition-malformed',
-					'message' => sprintf(
-						'x-openregister-lifecycle.states."%s" %s must be a non-empty condition object. '
-						. 'A scalar is refused: it would evaluate as a literal and let every write through.',
-						$state,
-						$label
-					),
-				],
-			];
-		}
-
-		$errors = [];
-		foreach (self::propertyReferences(node: $condition) as $reference) {
-			if (isset($properties[$reference]) === true) {
-				continue;
-			}
-
-			$errors[] = [
-				'code' => 'lifecycle-state-condition-property-missing',
-				'message' => sprintf(
-					'x-openregister-lifecycle.states."%s" %s reads property "%s", '
-					. 'which is not declared in `properties`.',
-					$state,
-					$label,
-					$reference
-				),
-			];
-		}
-
-		return $errors;
-	}//end validateStateCondition()
+	}//end groupMemberError()
 
 	/**
 	 * A transition may not ask for a field the state it leads to hides.
@@ -472,10 +475,6 @@ final class LifecycleStateValidator {
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two declarations are cross-checked,
-	 *   each in either of its accepted spellings, so the branches are the product.
-	 * @SuppressWarnings(PHPMD.NPathComplexity) Same reason.
 	 */
 	public function validateInputsAgainstHiddenFields(array $annotation, mixed $transitions): array {
 		$states = ($annotation['states'] ?? null);
@@ -485,42 +484,76 @@ final class LifecycleStateValidator {
 
 		$errors = [];
 		foreach ($transitions as $action => $spec) {
-			if (is_array($spec) === false || is_array(($spec['inputs'] ?? null)) === false) {
-				continue;
+			foreach (self::hiddenInputHits(spec: $spec, states: $states) as $hit) {
+				$errors[] = self::hiddenInputError(action: (string)$action, hit: $hit);
 			}
-
-			$target = (string)($spec['to'] ?? '');
-			$hidden = self::hiddenFieldsOf(block: ($states[$target] ?? null));
-			if ($hidden === []) {
-				continue;
-			}
-
-			foreach ($spec['inputs'] as $input) {
-				$field = null;
-				if (is_string($input) === true) {
-					$field = $input;
-				} elseif (is_array($input) === true && is_string(($input['field'] ?? null)) === true) {
-					$field = $input['field'];
-				}
-
-				if ($field === null || in_array($field, $hidden, true) === false) {
-					continue;
-				}
-
-				$errors[] = [
-					'code' => 'lifecycle-input-hidden-in-target',
-					'message' => sprintf(
-						'Transition "%s" asks for input "%s", which state "%s" hides.',
-						(string)$action,
-						$field,
-						$target
-					),
-				];
-			}
-		}//end foreach
+		}
 
 		return $errors;
 	}//end validateInputsAgainstHiddenFields()
+
+	/**
+	 * The refusal for a transition asking for an input its target state hides.
+	 *
+	 * @param string                               $action The transition's action name.
+	 * @param array{field: string, target: string} $hit    The hidden input and the state hiding it.
+	 *
+	 * @return array{code: string, message: string} The error.
+	 */
+	private static function hiddenInputError(string $action, array $hit): array {
+		$message = sprintf(
+			'Transition "%s" asks for input "%s", which state "%s" hides.',
+			$action,
+			$hit['field'],
+			$hit['target']
+		);
+		return self::error(code: 'lifecycle-input-hidden-in-target', message: $message);
+	}//end hiddenInputError()
+
+	/**
+	 * Every input a transition asks for that its target state hides, in declaration order.
+	 *
+	 * @param mixed                $spec   The declared transition.
+	 * @param array<string, mixed> $states The declared state blocks.
+	 *
+	 * @return array<int, array{field: string, target: string}> The hidden inputs and the state hiding them.
+	 */
+	private static function hiddenInputHits(mixed $spec, array $states): array {
+		if (is_array($spec) === false || is_array(($spec['inputs'] ?? null)) === false) {
+			return [];
+		}
+
+		$target = (string)($spec['to'] ?? '');
+		$hidden = self::hiddenFieldsOf(block: ($states[$target] ?? null));
+		$hits   = [];
+		foreach ($spec['inputs'] as $input) {
+			$field = self::inputFieldName(input: $input);
+			if (in_array($field, $hidden, true) === true) {
+				$hits[] = ['field' => $field, 'target' => $target];
+			}
+		}
+
+		return $hits;
+	}//end hiddenInputHits()
+
+	/**
+	 * The field a declared input asks for, as a bare name or under `field`, or null.
+	 *
+	 * @param mixed $input The declared input.
+	 *
+	 * @return string|null The field name.
+	 */
+	private static function inputFieldName(mixed $input): ?string {
+		if (is_string($input) === true) {
+			return $input;
+		}
+
+		if (is_array($input) === true && is_string(($input['field'] ?? null)) === true) {
+			return $input['field'];
+		}
+
+		return null;
+	}//end inputFieldName()
 
 	/**
 	 * Every field name a state block hides, whatever the rule's conditions.
@@ -528,131 +561,60 @@ final class LifecycleStateValidator {
 	 * The check this feeds is a contradiction between two declarations, not a
 	 * runtime decision, so a conditionally hidden field counts: the transition
 	 * would ask for a field that sometimes vanishes, which is the same mistake.
+	 * A malformed entry is skipped rather than thrown on, because this feeds a
+	 * cross-check and the shape itself is refused elsewhere.
 	 *
 	 * @param mixed $block The state block.
 	 *
 	 * @return array<int, string> The hidden field names.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Every branch is one tolerated shape of
-	 *   the declaration; a malformed one is skipped rather than thrown on, because this
-	 *   feeds a cross-check and the shape itself is refused elsewhere.
 	 */
 	private static function hiddenFieldsOf(mixed $block): array {
-		if (is_array($block) === false) {
-			return [];
+		$entries = null;
+		if (is_array($block) === true) {
+			$entries = ($block['fields']['hidden'] ?? null);
 		}
 
-		$entries = ($block['fields']['hidden'] ?? null);
 		if (is_array($entries) === false) {
 			return [];
 		}
 
 		$hidden = [];
 		foreach ($entries as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			foreach (self::fieldRuleNames(entry: $entry) as $name) {
-				if (is_string($name) === true && $name !== '') {
-					$hidden[] = $name;
-				}
-			}
+			$hidden = array_merge($hidden, self::namedFieldsOf(entry: $entry));
 		}
 
 		return $hidden;
 	}//end hiddenFieldsOf()
 
 	/**
-	 * Every object property a condition reads, by name.
+	 * The non-empty string field names one hidden entry declares.
 	 *
-	 * Both dialects are walked because a state condition may be written in
-	 * either: JSONLogic spells a reference `var`, the JSON AST spells it
-	 * `prop`. A reference into `user`, `state`, `transition`, `previous` or an
-	 * `@`-prefixed namespace is a built-in and names no property, so it is
-	 * skipped rather than reported as missing.
+	 * @param mixed $entry The declared entry.
 	 *
-	 * @param mixed $node The condition node.
-	 *
-	 * @return array<int, string> The property names, de-duplicated.
+	 * @return array<int, string> The field names, in declaration order.
 	 */
-	private static function propertyReferences(mixed $node): array {
-		$found = [];
-		self::collectReferences(node: $node, found: $found);
-		return array_values(array_unique($found));
-	}//end propertyReferences()
+	private static function namedFieldsOf(mixed $entry): array {
+		if (is_array($entry) === false) {
+			return [];
+		}
+
+		return array_values(
+			array_filter(
+				self::fieldRuleNames(entry: $entry),
+				static fn (mixed $name): bool => is_string($name) === true && $name !== ''
+			)
+		);
+	}//end namedFieldsOf()
 
 	/**
-	 * Walk a condition node, collecting the property names it reads.
+	 * One validation error.
 	 *
-	 * @param mixed $node The condition node.
-	 * @param array<int, string> $found The names collected so far.
+	 * @param string $code    The error code.
+	 * @param string $message The message a schema author reads.
 	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two dialects, each with a scalar and a
-	 *   list spelling of a reference, plus the recursive descent.
+	 * @return array{code: string, message: string} The error.
 	 */
-	private static function collectReferences(mixed $node, array &$found): void {
-		if (is_array($node) === false) {
-			return;
-		}
-
-		foreach ($node as $key => $value) {
-			if (($key === 'var' || $key === 'prop') && is_string($value) === true) {
-				$name = self::propertyNameOf(reference: $value);
-				if ($name !== null) {
-					$found[] = $name;
-				}
-
-				continue;
-			}
-
-			if (($key === 'var' || $key === 'prop') && is_array($value) === true
-				&& is_string(($value[0] ?? null)) === true
-			) {
-				$name = self::propertyNameOf(reference: $value[0]);
-				if ($name !== null) {
-					$found[] = $name;
-				}
-
-				continue;
-			}
-
-			self::collectReferences(node: $value, found: $found);
-		}
-	}//end collectReferences()
-
-	/**
-	 * The schema property a reference path names, or null when it names none.
-	 *
-	 * @param string $reference The reference path as declared.
-	 *
-	 * @return string|null The property name.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each branch rejects one class of
-	 *   reference that names no schema property; merging them would hide which.
-	 */
-	private static function propertyNameOf(string $reference): ?string {
-		$path = trim($reference);
-		if ($path === '' || str_starts_with($path, '@') === true || str_starts_with($path, '_') === true) {
-			return null;
-		}
-
-		$segments = explode('.', $path);
-		$root = array_shift($segments);
-		if (in_array($root, self::CONDITION_NAMESPACES, true) === true) {
-			if ($root !== 'object' || $segments === []) {
-				return null;
-			}
-
-			$root = array_shift($segments);
-		}
-
-		if ($root === '' || str_starts_with($root, '@') === true || str_starts_with($root, '_') === true) {
-			return null;
-		}
-
-		return $root;
-	}//end propertyNameOf()
+	private static function error(string $code, string $message): array {
+		return ['code' => $code, 'message' => $message];
+	}//end error()
 }//end class

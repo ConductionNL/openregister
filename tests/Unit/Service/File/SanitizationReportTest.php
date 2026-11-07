@@ -3,7 +3,7 @@
 /**
  * SanitizationReportTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\SanitizationReport}
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\SanitizationReport}
  * covering the ordered jsonSerialize() key set.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
-use OCA\OpenRegister\Service\File\SanitizationReport;
+use OCA\OpenRegister\Files\Service\File\SanitizationReport;
 use PHPUnit\Framework\TestCase;
 
 /**

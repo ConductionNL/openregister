@@ -48,8 +48,8 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
@@ -441,11 +441,11 @@ class ImportHandler {
 	/**
 	 * Inject the NoteService used by seed-related-items to attach comments.
 	 *
-	 * @param NoteService|null $noteService Optional note service.
+	 * @param NoteServiceInterface|null $noteService Optional note service.
 	 *
 	 * @return void
 	 */
-	public function setNoteService(?NoteService $noteService): void {
+	public function setNoteService(?NoteServiceInterface $noteService): void {
 		$this->relatedItems->useNoteService($noteService);
 	}//end setNoteService()
 

@@ -9,7 +9,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'validateSchema'"
 		name="Validate Schema Objects"
 		size="large"
-		:canClose="false">
+		noClose>
 		<!-- Loading State -->
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
@@ -39,7 +39,8 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 				<SchemaStatsBlock
 					:objectCount="objectCount"
 					:objectStats="objectStats"
-					:loading="objectCount === 0"
+					:loading="countLoading"
+					:failed="countFailed"
 					:title="t('openregister', 'Objects to be validated')" />
 			</div>
 
@@ -280,6 +281,8 @@ export default {
 			error: false,
 			validationResults: null,
 			showOnlyInvalid: false,
+			countLoading: true,
+			countFailed: false,
 			objectCount: 0,
 			objectStats: null,
 		}
@@ -340,6 +343,8 @@ export default {
 		 * @spec exclude Modal data-load plumbing — fetches schema object-count stats.
 		 */
 		async loadObjectCount() {
+			this.countLoading = true
+			this.countFailed = false
 			try {
 				if (schemaStore.schemaItem?.id) {
 					// Use the upgraded stats endpoint to get detailed object counts
@@ -352,7 +357,10 @@ export default {
 			} catch (err) {
 				console.error('Error in loadObjectCount:', err)
 				this.objectCount = 0
+				this.countFailed = true
 				this.objectStats = null
+			} finally {
+				this.countLoading = false
 			}
 		},
 
