@@ -107,7 +107,7 @@
       <code><![CDATA[$vevent->{'X-OPENREGISTER-SCHEMA'}]]></code>
     </UndefinedPropertyFetch>
   </file>
-  <file src="lib/Service/Chat/ResponseGenerationHandler.php">
+  <file src="lib/Mcp/Service/Chat/ResponseGenerationHandler.php">
     <UnusedMethodCall>
       <code><![CDATA[setAccessible]]></code>
     </UnusedMethodCall>
@@ -158,11 +158,6 @@
       <code><![CDATA[self::$schemaCache]]></code>
     </ImplicitToStringCast>
   </file>
-  <file src="lib/Service/Object/SchemaTypeConverter.php">
-    <UnusedParam>
-      <code><![CDATA[$schemaType]]></code>
-    </UnusedParam>
-  </file>
   <file src="lib/Service/ObjectSource/DbalObjectSourceProvider.php">
     <TooManyArguments>
       <code><![CDATA[select]]></code>
@@ -194,7 +189,7 @@
       <code><![CDATA[$vtodo->{'X-OPENREGISTER-DATA'}]]></code>
     </UndefinedPropertyFetch>
   </file>
-  <file src="lib/Service/TextExtraction/SpreadsheetExtractor.php">
+  <file src="lib/Files/Service/TextExtraction/SpreadsheetExtractor.php">
     <StringIncrement>
       <code><![CDATA[$col]]></code>
     </StringIncrement>

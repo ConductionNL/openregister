@@ -10,7 +10,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 <template>
 	<NcDialog
 		:name="`Validate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
-		:canClose="false"
+		noClose
 		size="normal">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="validate-step">
@@ -30,43 +30,15 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				enrichment processes against the current schema.
 			</NcNoteCard>
 
-			<div class="selected-objects-container">
-				<h4>Selected Objects ({{ selectedObjects.length }})</h4>
-
-				<div v-if="selectedObjects.length" class="selected-objects-list">
-					<div
-						v-for="obj in selectedObjects"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{
-								obj['@self']?.name
-								|| obj.name
-								|| obj.title
-								|| obj['@self']?.title
-								|| 'Unnamed Object'
-							}}</strong>
-							<p class="object-id">
-								ID: {{ obj.id || obj['@self']?.id }}
-							</p>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
-							@click="removeObject(obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent v-else name="No objects selected">
-					<template #description>
-						No objects are currently selected for validation.
-					</template>
-				</NcEmptyContent>
-			</div>
+			<SelectedObjectsList
+				:objects="selectedObjects"
+				:emptyDescription="
+					t(
+						'openregister',
+						'No objects are currently selected for validation.',
+					)
+				"
+				@remove="removeObject" />
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
@@ -102,29 +74,22 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
-import Close from 'vue-material-design-icons/Close.vue'
+import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
 
 export default {
 	name: 'MassValidateObjects',
 	components: {
+		SelectedObjectsList,
 		NcDialog,
 		NcButton,
-		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
 		// Icons
 		CheckCircle,
 		Cancel,
-		Close,
 	},
 
 	data() {
@@ -253,16 +218,4 @@ export default {
 }
 
 @include step-title;
-
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-@include selected-objects-list-rules;
-
-.selected-object-item:last-child {
-	border-bottom: none;
-}
-
-@include object-info-strong-rules;
 </style>

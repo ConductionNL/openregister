@@ -19,8 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Tool;
 
-use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
-use OCA\OpenRegister\Tool\StreamingToolInstanceWrapper;
+use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Mcp\Tool\StreamingToolInstanceWrapper;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 

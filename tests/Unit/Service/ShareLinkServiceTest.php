@@ -46,7 +46,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use Exception;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\ShareLinkService;
 use OCA\OpenRegister\Service\ShareDraft;
 use OCP\Files\FileInfo;
@@ -56,6 +61,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -69,6 +75,9 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ShareLinkServiceTest extends TestCase {
+
+	private GrantChangeAuditor&MockObject $auditor;
+
 	private function buildLogger(): LoggerInterface {
 		return $this->createMock(LoggerInterface::class);
 	}//end buildLogger()
@@ -253,14 +262,13 @@ class ShareLinkServiceTest extends TestCase {
 		$manager = $this->createMock(IManager::class);
 		$manager->method('newShare')->willReturn($newShare);
 		$manager->expects($this->once())->method('createShare')->with($newShare)->willReturn($newShare);
+		$newShare->expects($this->once())->method('setSharedBy')->with('openregister');
 
 		$container = $this->buildContainer(
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->buildUserSession('alice'),
-				'OCA\\OpenRegister\\Service\\FileService' => $this->buildFolderHandler($folder),
-				'OCA\\OpenRegister\\Db\\MagicMapper' => $this->buildObjectMapper(),
-			]
+			] + $this->managedShareServices(folder: $folder, mayUpdate: true)
 		);
 
 		$service = new ShareLinkService( $this->buildLogger(), $container);
@@ -268,6 +276,131 @@ class ShareLinkServiceTest extends TestCase {
 
 		$this->assertSame('s99', $result->getId());
 	}//end testCreateShareHappyPath()
+
+	/**
+	 * The services a share of the app's account needs, with a real object.
+	 *
+	 * @param Folder $folder    The object's folder.
+	 * @param bool   $mayUpdate What the update right answers.
+	 *
+	 * @return array<string, object>
+	 */
+	private function managedShareServices(Folder $folder, bool $mayUpdate): array {
+		$account = $this->createMock(IUser::class);
+		$account->method('getUID')->willReturn('openregister');
+		$files = new class($folder, $account) {
+			public function __construct(private Folder $folder, private IUser $account) {
+			}
+
+			public function getObjectFolder(mixed $objectEntityOrId): ?Folder {
+				return $this->folder;
+			}
+
+			public function getUser(): IUser {
+				return $this->account;
+			}
+		};
+
+		$entity = new ObjectEntity();
+		$entity->setUuid('uuid-1');
+		$entity->setSchema('3');
+		$mapper = new class($entity) {
+			public function __construct(private ObjectEntity $entity) {
+			}
+
+			public function find(string $uuid): ObjectEntity {
+				return $this->entity;
+			}
+		};
+
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturn(new Schema());
+		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturnCallback(
+			function (Schema $schema, string $action) use ($mayUpdate): bool {
+				$this->assertSame('update', $action);
+				return $mayUpdate;
+			}
+		);
+		$this->auditor = $this->createMock(GrantChangeAuditor::class);
+
+		return [
+			'OCA\\OpenRegister\\Service\\FileService' => $files,
+			'OCA\\OpenRegister\\Db\\MagicMapper' => $mapper,
+			'OCA\\OpenRegister\\Db\\SchemaMapper' => $schemas,
+			'OCA\\OpenRegister\\Service\\Object\\PermissionHandler' => $permissions,
+			'OCA\\OpenRegister\\Service\\Rbac\\GrantChangeAuditor' => $this->auditor,
+		];
+	}//end managedShareServices()
+
+	public function testCreateShareNeedsTheObjectUpdateRight(): void {
+		$node = $this->buildNode(10, 'doc.txt');
+		$manager = $this->createMock(IManager::class);
+		$manager->expects($this->never())->method('createShare');
+
+		$container = $this->buildContainer(
+			[
+				'OCP\\Share\\IManager' => $manager,
+				'OCP\\IUserSession' => $this->buildUserSession('alice'),
+			] + $this->managedShareServices(folder: $this->buildFolder([$node]), mayUpdate: false)
+		);
+
+		$service = new ShareLinkService($this->buildLogger(), $container);
+
+		$this->expectExceptionCode(403);
+		$service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
+	}//end testCreateShareNeedsTheObjectUpdateRight()
+
+	public function testCreateShareIsOnTheAuditTrail(): void {
+		$node = $this->buildNode(10, 'doc.txt');
+		$newShare = $this->createMock(IShare::class);
+		$newShare->method('getId')->willReturn('s99');
+		$manager = $this->createMock(IManager::class);
+		$manager->method('newShare')->willReturn($newShare);
+		$manager->method('createShare')->willReturn($newShare);
+
+		$services = $this->managedShareServices(folder: $this->buildFolder([$node]), mayUpdate: true);
+		$this->auditor->expects($this->once())->method('recordGrant');
+		$container = $this->buildContainer(
+			['OCP\\Share\\IManager' => $manager, 'OCP\\IUserSession' => $this->buildUserSession('alice')] + $services
+		);
+
+		$service = new ShareLinkService($this->buildLogger(), $container);
+		$service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
+	}//end testCreateShareIsOnTheAuditTrail()
+
+	/**
+	 * Revoke a share the app's account made, as alice.
+	 *
+	 * @param bool $mayUpdate What the update right answers.
+	 *
+	 * @param int  $deletes   How many deletes to expect.
+	 *
+	 * @return void
+	 */
+	private function revokeManagedShare(bool $mayUpdate, int $deletes): void {
+		$node = $this->buildNode(10, 'doc.txt');
+		$share = $this->buildShare('s5', IShare::TYPE_USER, 'bob', 1, 'openregister', $node);
+		$manager = $this->createMock(IManager::class);
+		$manager->method('getShareById')->willReturn($share);
+		$manager->expects($this->exactly($deletes))->method('deleteShare');
+
+		$container = $this->buildContainer(
+			['OCP\\Share\\IManager' => $manager, 'OCP\\IUserSession' => $this->buildUserSession('alice')]
+			+ $this->managedShareServices(folder: $this->buildFolder([$node]), mayUpdate: $mayUpdate)
+		);
+
+		(new ShareLinkService($this->buildLogger(), $container))->revokeShare('uuid-1', 's5');
+	}//end revokeManagedShare()
+
+	public function testAShareOfTheAppAccountIsRevokedWithTheUpdateRight(): void {
+		$this->revokeManagedShare(mayUpdate: true, deletes: 1);
+	}//end testAShareOfTheAppAccountIsRevokedWithTheUpdateRight()
+
+	public function testAShareOfTheAppAccountIsNotRevokedWithoutTheUpdateRight(): void {
+		$this->expectExceptionCode(404);
+		$this->revokeManagedShare(mayUpdate: false, deletes: 0);
+	}//end testAShareOfTheAppAccountIsNotRevokedWithoutTheUpdateRight()
 
 	public function testCreateShareFileNotInFolderThrows404(): void {
 		$node = $this->buildNode(10, 'doc.txt');
