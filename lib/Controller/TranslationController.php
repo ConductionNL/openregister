@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\BulkTranslationService;
-use OCA\OpenRegister\Service\TranslationStatusService;
+use OCA\OpenRegister\Service\TranslationStatusServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -53,9 +53,9 @@ class TranslationController extends Controller {
 	/**
 	 * The translation status service.
 	 *
-	 * @var TranslationStatusService
+	 * @var TranslationStatusServiceInterface
 	 */
-	private readonly TranslationStatusService $statusService;
+	private readonly TranslationStatusServiceInterface $statusService;
 
 	/**
 	 * The translation mapper.

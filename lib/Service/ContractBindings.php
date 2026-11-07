@@ -140,6 +140,8 @@ final class ContractBindings {
 		SequenceServiceInterface::class => SequenceService::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
+		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
+		TranslationStatusServiceInterface::class => TranslationStatusService::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
