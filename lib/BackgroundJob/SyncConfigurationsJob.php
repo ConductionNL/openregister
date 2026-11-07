@@ -29,7 +29,7 @@ use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
-use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -56,13 +56,13 @@ class SyncConfigurationsJob extends TimedJob {
 	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory $time Time factory for job scheduling
-	 * @param ConfigurationMapper $configurationMapper Configuration mapper
+	 * @param ITimeFactory                  $time                 Time factory for job scheduling
+	 * @param ConfigurationMapper           $configurationMapper  Configuration mapper
 	 * @param ConfigurationServiceInterface $configurationService Configuration service
-	 * @param GitHubClientInterface $githubService GitHub service
-	 * @param GitLabHandler $gitlabService GitLab service
-	 * @param Client $httpClient HTTP client
-	 * @param LoggerInterface $logger Logger
+	 * @param GitHubClientInterface         $githubService        GitHub service
+	 * @param GitLabHandlerInterface        $gitlabService        GitLab service
+	 * @param Client                        $httpClient           HTTP client
+	 * @param LoggerInterface               $logger               Logger
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
@@ -71,7 +71,7 @@ class SyncConfigurationsJob extends TimedJob {
 		private readonly ConfigurationMapper $configurationMapper,
 		private readonly ConfigurationServiceInterface $configurationService,
 		private readonly GitHubClientInterface $githubService,
-		private readonly GitLabHandler $gitlabService,
+		private readonly GitLabHandlerInterface $gitlabService,
 		private readonly Client $httpClient,
 		private readonly LoggerInterface $logger,
 	) {

@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
-use OCA\OpenRegister\Service\Task\TaskSequenceService;
+use OCA\OpenRegister\Service\Task\TaskSequenceServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -59,17 +59,17 @@ class ApprovalChainGateListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param LifecycleEditReader $edits Reads the edit and the transition it amounts to.
-	 * @param TaskSequenceMapper $sequenceMapper Reads the anchor's sequences.
-	 * @param TaskSequenceService $sequenceService Provisions a sequence on the first attempt.
-	 * @param ApprovalChainAnnotationInstaller $installer Compiles the declared chain into a task template.
-	 * @param IUserSession $userSession Current user session (requester identity).
-	 * @param LoggerInterface $logger Logger for gate diagnostics.
+	 * @param LifecycleEditReader              $edits           Reads the edit and the transition it amounts to.
+	 * @param TaskSequenceMapper               $sequenceMapper  Reads the anchor's sequences.
+	 * @param TaskSequenceServiceInterface     $sequenceService Provisions a sequence on the first attempt.
+	 * @param ApprovalChainAnnotationInstaller $installer       Compiles the declared chain into a task template.
+	 * @param IUserSession                     $userSession     Current user session (requester identity).
+	 * @param LoggerInterface                  $logger          Logger for gate diagnostics.
 	 */
 	public function __construct(
 		private readonly LifecycleEditReader $edits,
 		private readonly TaskSequenceMapper $sequenceMapper,
-		private readonly TaskSequenceService $sequenceService,
+		private readonly TaskSequenceServiceInterface $sequenceService,
 		private readonly ApprovalChainAnnotationInstaller $installer,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

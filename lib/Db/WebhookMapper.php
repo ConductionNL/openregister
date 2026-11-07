@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -115,9 +115,9 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 * Nullable so the mapper stays constructible without a cache backend
 	 * (unit tests, degraded environments); invalidation is skipped then.
 	 *
-	 * @var WebhookInterceptionCache|null Interception cache instance
+	 * @var WebhookInterceptionCacheInterface|null Interception cache instance
 	 */
-	private readonly ?WebhookInterceptionCache $interceptionCache;
+	private readonly ?WebhookInterceptionCacheInterface $interceptionCache;
 
 	/**
 	 * Constructor
@@ -130,7 +130,7 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 	 * @param IUserSession $userSession User session
 	 * @param IGroupManager $groupManager Group manager
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
-	 * @param WebhookInterceptionCache|null $interceptionCache Interception-flag cache invalidated on webhook CRUD
+	 * @param WebhookInterceptionCacheInterface|null $interceptionCache Interception-flag cache invalidated on webhook CRUD
 	 *
 	 * @return void
 	 */
@@ -140,7 +140,7 @@ class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		IAppConfig $appConfig,
-		?WebhookInterceptionCache $interceptionCache = null,
+		?WebhookInterceptionCacheInterface $interceptionCache = null,
 	) {
 		// Call parent constructor to initialize base mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_webhooks', entityClass: Webhook::class);

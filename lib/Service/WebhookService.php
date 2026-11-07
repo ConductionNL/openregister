@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
-use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
@@ -139,9 +139,9 @@ class WebhookService {
 	 * (unit tests, degraded environments); the fast path then falls back to
 	 * the direct lookup.
 	 *
-	 * @var WebhookInterceptionCache|null
+	 * @var WebhookInterceptionCacheInterface|null
 	 */
-	private ?WebhookInterceptionCache $interceptionCache;
+	private ?WebhookInterceptionCacheInterface $interceptionCache;
 
 	/**
 	 * Constructor
@@ -153,7 +153,7 @@ class WebhookService {
 	 * @param MappingMapper $mappingMapper Mapping mapper
 	 * @param IJobList $jobList Background job list for async delivery
 	 * @param CloudEventFormatterInterface|null $cloudEventFormatter CloudEvent formatter (optional)
-	 * @param WebhookInterceptionCache|null $interceptionCache Interception-flag cache (optional)
+	 * @param WebhookInterceptionCacheInterface|null $interceptionCache Interception-flag cache (optional)
 	 *
 	 * @return void
 	 */
@@ -165,7 +165,7 @@ class WebhookService {
 		MappingMapper $mappingMapper,
 		IJobList $jobList,
 		?CloudEventFormatterInterface $cloudEventFormatter = null,
-		?WebhookInterceptionCache $interceptionCache = null,
+		?WebhookInterceptionCacheInterface $interceptionCache = null,
 	) {
 		$this->webhookMapper = $webhookMapper;
 		$this->logger = $logger;
