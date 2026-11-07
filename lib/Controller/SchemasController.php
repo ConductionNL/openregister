@@ -70,7 +70,7 @@ use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
-use OCA\OpenRegister\Service\SemanticTypeResolver;
+use OCA\OpenRegister\Service\SemanticTypeResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -263,9 +263,9 @@ class SchemasController extends Controller {
 	/**
 	 * The semantic type resolver.
 	 *
-	 * @var ?SemanticTypeResolver
+	 * @var ?SemanticTypeResolverInterface
 	 */
-	private readonly ?SemanticTypeResolver $semanticTypeResolver;
+	private readonly ?SemanticTypeResolverInterface $semanticTypeResolver;
 
 	/**
 	 * The semantic roles.

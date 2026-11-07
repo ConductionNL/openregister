@@ -32,7 +32,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
+use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
-use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
@@ -87,7 +87,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param SubFlowNodeInterface $subFlow The built-in "Run a flow" node.
 	 * @param RouterNode $router The built-in "Route items" node.
 	 * @param ObjectWriteNode $objectWrite The built-in "Write an object" node.
-	 * @param ObjectReadNode $objectRead The built-in "Read objects" node.
+	 * @param ObjectReadNodeInterface $objectRead The built-in "Read objects" node.
 	 * @param FlowStateNodeInterface $flowState The built-in "Flow state" node.
 	 * @param MapNode $map The built-in "Map" node.
 	 * @param IterateNode $iterate The built-in "Repeat until done" node.
@@ -99,7 +99,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
 	 * @param UserTaskNodeInterface $userTask The built-in "Ask a person" node.
 	 * @param PortalTaskNode $portalTask The built-in "Ask a party outside the organisation" node.
-	 * @param DecisionTableNode $decisionTable The built-in "Evaluate a decision table" node.
+	 * @param DecisionTableNodeInterface $decisionTable The built-in "Evaluate a decision table" node.
 	 * @param CaseOpenNode $caseOpen The built-in "Open a case" node.
 	 * @param CaseAdvanceNode $caseAdvance The built-in "Advance a case" node.
 	 * @param ActionInputsNode $actionInputs The built-in step that makes an action's inputs readable.
@@ -121,7 +121,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly SubFlowNodeInterface $subFlow,
 		private readonly RouterNode $router,
 		private readonly ObjectWriteNode $objectWrite,
-		private readonly ObjectReadNode $objectRead,
+		private readonly ObjectReadNodeInterface $objectRead,
 		private readonly FlowStateNodeInterface $flowState,
 		private readonly MapNode $map,
 		private readonly IterateNode $iterate,
@@ -133,7 +133,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly TriggerManualNode $triggerManual,
 		private readonly UserTaskNodeInterface $userTask,
 		private readonly PortalTaskNode $portalTask,
-		private readonly DecisionTableNode $decisionTable,
+		private readonly DecisionTableNodeInterface $decisionTable,
 		private readonly CaseOpenNode $caseOpen,
 		private readonly CaseAdvanceNode $caseAdvance,
 		private readonly ActionInputsNode $actionInputs,
