@@ -53,15 +53,7 @@ use Psr\Log\LoggerInterface;
  * via `IAppConfig` key `openregister.urn_instance` so federated instances
  * can advertise a stable identifier independent of their public URL.
  */
-class UrnService {
-
-	/**
-	 * Default URN namespace identifier (NID).
-	 *
-	 * Informal NID per RFC 8141 §5.1. Replace with a registered NID when
-	 * formal IANA registration lands.
-	 */
-	public const DEFAULT_NID = 'nl-or';
+class UrnService implements UrnServiceInterface {
 
 	/**
 	 * Per-app config key for the URN instance identifier.

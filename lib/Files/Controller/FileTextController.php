@@ -32,7 +32,7 @@ use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -73,9 +73,9 @@ class FileTextController extends Controller {
 	/**
 	 * File service for file operations
 	 *
-	 * @var FileService
+	 * @var FileServiceInterface
 	 */
-	private readonly FileService $fileService;
+	private readonly FileServiceInterface $fileService;
 
 	/**
 	 * Entity relation mapper

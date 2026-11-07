@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCP\ContextChat\IContentProvider;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
@@ -63,7 +63,7 @@ class ContentProvider implements IContentProvider, ContentProviderInterface {
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
 	 * @param MagicMapperInterface $magicMapper Object lookup/walk mapper.
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for `getItemUrl`.
+	 * @param DeepLinkRegistryServiceInterface $deepLinkRegistry Deep link registry for `getItemUrl`.
 	 * @param IURLGenerator $urlGenerator URL generator for the fallback route.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -76,7 +76,7 @@ class ContentProvider implements IContentProvider, ContentProviderInterface {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly MagicMapperInterface $magicMapper,
-		private readonly DeepLinkRegistryService $deepLinkRegistry,
+		private readonly DeepLinkRegistryServiceInterface $deepLinkRegistry,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly LoggerInterface $logger,
 	) {
@@ -107,7 +107,7 @@ class ContentProvider implements IContentProvider, ContentProviderInterface {
 	/**
 	 * Resolve the absolute URL a user would reach this content item at.
 	 *
-	 * Resolves via {@see DeepLinkRegistryService::resolveUrl()} — the same
+	 * Resolves via {@see DeepLinkRegistryServiceInterface::resolveUrl()} — the same
 	 * mechanism `ObjectsProvider` already uses for unified-search result
 	 * URLs — and falls back to the `openregister.objects.show` route when no
 	 * app has claimed a deep link for the object's (register, schema) pair.

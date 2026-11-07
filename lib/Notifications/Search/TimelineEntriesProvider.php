@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Notifications\Search;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -82,7 +82,7 @@ class TimelineEntriesProvider implements IFilteringProvider {
 	 * @param IL10N                      $l10n      Localisation.
 	 * @param TimelineEntrySearchService $entries   The search, with its two filters.
 	 * @param IURLGenerator              $urls      Builds the fallback link.
-	 * @param DeepLinkRegistryService    $deepLinks Sends a hit to the app that owns the case, when one claimed it.
+	 * @param DeepLinkRegistryServiceInterface    $deepLinks Sends a hit to the app that owns the case, when one claimed it.
 	 *
 	 * @return void
 	 *
@@ -92,7 +92,7 @@ class TimelineEntriesProvider implements IFilteringProvider {
 		private readonly IL10N $l10n,
 		private readonly TimelineEntrySearchService $entries,
 		private readonly IURLGenerator $urls,
-		private readonly DeepLinkRegistryService $deepLinks,
+		private readonly DeepLinkRegistryServiceInterface $deepLinks,
 	) {
 	}//end __construct()
 

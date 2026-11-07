@@ -61,7 +61,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/register-resolver-service/spec.md
  */
-final class RegisterResolverService {
+final class RegisterResolverService implements RegisterResolverServiceInterface {
 
 	/**
 	 * Request-scoped cache for resolved Register entities.

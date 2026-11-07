@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service;
  *
  * @package OCA\OpenRegister\Service
  */
-class LanguageService {
+class LanguageService implements LanguageServiceInterface {
 
 	/**
 	 * The preferred language code resolved from the request.
