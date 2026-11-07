@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Search\Service\Quality;
  *
  * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
  */
-class UniqueHintAnnotationValidator {
+class UniqueHintAnnotationValidator implements UniqueHintAnnotationValidatorInterface {
 
 	/**
 	 * Validate the `x-openregister-unique-hint` annotation against the
