@@ -3,115 +3,400 @@
         "full": [
             "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Conf\\\"])\"]",
             "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"2.0\\\",\\\"Conf\\\",\\\"1.0\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
             "notification.createAction []",
-            "action3.setLabel [\"t(View|[])\"]",
+            "action3.setParsedLabel [\"t(View|[])\"]",
             "action3.setPrimary [true]",
             "action3.setLink [\"abs:openregister.dashboard.page[]#/configurations/42\",\"GET\"]",
-            "notification.addAction []"
+            "notification.addParsedAction []"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Configuration\\\"])\"]",
             "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"unknown\\\",\\\"Configuration\\\",\\\"unknown\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Configuration\\\"])\"]",
             "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"unknown\\\",\\\"Configuration\\\",\\\"unknown\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Configuration\\\"])\"]",
+            "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"unknown\\\",\\\"Configuration\\\",\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(View|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:openregister.dashboard.page[]#/configurations/0\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Configuration\\\"])\"]",
+            "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"unknown\\\",\\\"Configuration\\\",\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Configuration\\\"])\"]",
+            "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"unknown\\\",\\\"Configuration\\\",\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Conf\\\"])\"]",
+            "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"2.0\\\",\\\"Conf\\\",\\\"1.0\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(View|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:openregister.dashboard.page[]#/configurations/42\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Configuration\\\"])\"]",
+            "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"unknown\\\",\\\"Configuration\\\",\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Configuration\\\"])\"]",
+            "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"unknown\\\",\\\"Configuration\\\",\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Configuration\\\"])\"]",
+            "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"unknown\\\",\\\"Configuration\\\",\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(Configuration update available: %s|[\\\"Configuration\\\"])\"]",
+            "notification.setParsedMessage [\"t(A new version (%s) of configuration \\\"%s\\\" is available. Current version: %s|[\\\"unknown\\\",\\\"Configuration\\\",\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "handoff_drain_failed": {
         "full": [
             "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"handoff\\\"])\"]",
             "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"\\\",\\\"t(The target schema rejected the converted object.|[])\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"handoff\\\"])\"]",
             "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"\\\",\\\"t(The target schema rejected the converted object.|[])\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"handoff\\\"])\"]",
             "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"\\\",\\\"t(The target schema rejected the converted object.|[])\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"h-1\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"kind\\\",\\\"t(You no longer have permission to create objects in the providing schema.|[])\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"handoff\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"\\\",\\\"t(The target schema rejected the converted object.|[])\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"handoff\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"\\\",\\\"t(The target schema rejected the converted object.|[])\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"handoff\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"\\\",\\\"t(The target schema rejected the converted object.|[])\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"handoff\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"\\\",\\\"t(The target schema rejected the converted object.|[])\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"handoff\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"\\\",\\\"t(The target schema rejected the converted object.|[])\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"handoff\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"\\\",\\\"t(The target schema rejected the converted object.|[])\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(Queued handoff \\\"%s\\\" could not be executed|[\\\"handoff\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your queued handoff to \\\"%s\\\" was attempted when a provider became available, but failed: %s|[\\\"\\\",\\\"t(The target schema rejected the converted object.|[])\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "scheduled_report_delivered": {
         "full": [
             "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Rep\\\"])\"]",
             "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran, was saved to %s%s, and emailed to its recipients.|[\\\"Rep\\\",\\\"\\\\/Reports\\\\/x\\\\/\\\",\\\"r.csv\\\"]) t(Note: email delivery failed (%s).|[\\\"smtp\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
             "notification.createAction []",
-            "action3.setLabel [\"t(Open Files|[])\"]",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
             "action3.setPrimary [true]",
             "action3.setLink [\"abs:files.view.index[]?dir=%2FReports%2Fx\",\"GET\"]",
-            "notification.addAction []"
+            "notification.addParsedAction []"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Scheduled report\\\"])\"]",
             "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran and was saved to %s%s|[\\\"Scheduled report\\\",\\\"Reports\\\\/\\\",\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
             "notification.createAction []",
-            "action3.setLabel [\"t(Open Files|[])\"]",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
             "action3.setPrimary [true]",
             "action3.setLink [\"abs:files.view.index[]?dir=%2FReports\",\"GET\"]",
-            "notification.addAction []"
+            "notification.addParsedAction []"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Scheduled report\\\"])\"]",
             "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran and was emailed to its recipients.|[\\\"Scheduled report\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Rep\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran and was emailed to its recipients.|[\\\"Rep\\\"]) t(Note: email delivery failed (%s).|[\\\"smtp\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran and was saved to %s%s|[\\\"Scheduled report\\\",\\\"Reports\\\\/\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FReports\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran and was saved to %s%s|[\\\"Scheduled report\\\",\\\"R\\\",\\\"r.csv\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FR\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Rep\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran, was saved to %s%s, and emailed to its recipients.|[\\\"Rep\\\",\\\"\\\\/Reports\\\\/x\\\\/\\\",\\\"r.csv\\\"]) t(Note: email delivery failed (%s).|[\\\"smtp\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FReports%2Fx\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran and was saved to %s%s|[\\\"Scheduled report\\\",\\\"Reports\\\\/\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FReports\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran and was saved to %s%s|[\\\"Scheduled report\\\",\\\"Reports\\\\/\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FReports\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran and was saved to %s%s|[\\\"Scheduled report\\\",\\\"Reports\\\\/\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FReports\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" delivered|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" ran and was saved to %s%s|[\\\"Scheduled report\\\",\\\"Reports\\\\/\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FReports\",\"GET\"]",
+            "notification.addParsedAction []"
         ]
     },
     "scheduled_report_failed": {
         "full": [
             "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Rep\\\"])\"]",
             "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Rep\\\",\\\"R\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Scheduled report\\\"])\"]",
             "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Scheduled report\\\",\\\"Unknown error\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Scheduled report\\\"])\"]",
             "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Scheduled report\\\",\\\"Unknown error\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Rep\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Rep\\\",\\\"Unknown error\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Scheduled report\\\",\\\"Unknown error\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Scheduled report\\\",\\\"Why\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Rep\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Rep\\\",\\\"R\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Scheduled report\\\",\\\"Unknown error\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Scheduled report\\\",\\\"Unknown error\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Scheduled report\\\",\\\"Unknown error\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(Scheduled report \\\"%s\\\" failed|[\\\"Scheduled report\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your scheduled report \\\"%s\\\" could not be generated: %s|[\\\"Scheduled report\\\",\\\"Unknown error\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "audit_export_ready": {
         "full": [
             "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
             "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"0\\\",\\\"\\\\/Reports\\\\/x\\\\/\\\",\\\"r.csv\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
             "notification.createAction []",
-            "action3.setLabel [\"t(Open Files|[])\"]",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
             "action3.setPrimary [true]",
             "action3.setLink [\"abs:files.view.index[]?dir=%2FReports%2Fx\",\"GET\"]",
-            "notification.addAction []"
+            "notification.addParsedAction []"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
             "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"0\\\",\\\"Audit exports\\\\/\\\",\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
             "notification.createAction []",
-            "action3.setLabel [\"t(Open Files|[])\"]",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
             "action3.setPrimary [true]",
             "action3.setLink [\"abs:files.view.index[]?dir=%2FAudit%20exports\",\"GET\"]",
-            "notification.addAction []"
+            "notification.addParsedAction []"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
             "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"0\\\",\\\"Audit exports\\\\/\\\",\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
             "notification.createAction []",
-            "action3.setLabel [\"t(Open Files|[])\"]",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
             "action3.setPrimary [true]",
             "action3.setLink [\"abs:files.view.index[]?dir=%2FAudit%20exports\",\"GET\"]",
-            "notification.addAction []"
+            "notification.addParsedAction []"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
+            "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"12\\\",\\\"Audit exports\\\\/x\\\\/\\\",\\\"a.csv\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FAudit%20exports%2Fx\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
+            "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"0\\\",\\\"Audit exports\\\\/\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FAudit%20exports\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
+            "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"0\\\",\\\"R\\\",\\\"r.csv\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FR\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
+            "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"0\\\",\\\"\\\\/Reports\\\\/x\\\\/\\\",\\\"r.csv\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FReports%2Fx\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
+            "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"0\\\",\\\"Audit exports\\\\/\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FAudit%20exports\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
+            "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"0\\\",\\\"Audit exports\\\\/\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FAudit%20exports\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
+            "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"0\\\",\\\"Audit exports\\\\/\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FAudit%20exports\",\"GET\"]",
+            "notification.addParsedAction []"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(Audit trail export ready|[])\"]",
+            "notification.setParsedMessage [\"t(Your audit trail export of %1$s entries was saved to %2$s%3$s.|[\\\"0\\\",\\\"Audit exports\\\\/\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]",
+            "notification.createAction []",
+            "action3.setParsedLabel [\"t(Open Files|[])\"]",
+            "action3.setPrimary [true]",
+            "action3.setLink [\"abs:files.view.index[]?dir=%2FAudit%20exports\",\"GET\"]",
+            "notification.addParsedAction []"
         ]
     },
     "delegation_consent_requested": {
@@ -125,14 +410,14 @@
             "action4.setParsedLabel [\"t(Allow|[])\"]",
             "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"g-1\\\"}?allow=1\",\"POST\"]",
             "action4.setPrimary [true]",
-            "notification.addAction []",
+            "notification.addParsedAction []",
             "notification.createAction []",
             "action10.setLabel [\"deny\"]",
             "action10.setParsedLabel [\"t(Deny|[])\"]",
             "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"g-1\\\"}?allow=0\",\"POST\"]",
             "action10.setPrimary [false]",
-            "notification.addAction []",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setRichSubject [\"t({requester} asks to act on your behalf|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"\",\"name\":\"\"}}]",
@@ -144,14 +429,14 @@
             "action4.setParsedLabel [\"t(Allow|[])\"]",
             "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=1\",\"POST\"]",
             "action4.setPrimary [true]",
-            "notification.addAction []",
+            "notification.addParsedAction []",
             "notification.createAction []",
             "action10.setLabel [\"deny\"]",
             "action10.setParsedLabel [\"t(Deny|[])\"]",
             "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=0\",\"POST\"]",
             "action10.setPrimary [false]",
-            "notification.addAction []",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setRichSubject [\"t({requester} asks to act on your behalf|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"\",\"name\":\"\"}}]",
@@ -163,14 +448,166 @@
             "action4.setParsedLabel [\"t(Allow|[])\"]",
             "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=1\",\"POST\"]",
             "action4.setPrimary [true]",
-            "notification.addAction []",
+            "notification.addParsedAction []",
             "notification.createAction []",
             "action10.setLabel [\"deny\"]",
             "action10.setParsedLabel [\"t(Deny|[])\"]",
             "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=0\",\"POST\"]",
             "action10.setPrimary [false]",
-            "notification.addAction []",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setRichSubject [\"t({requester} asks to act on your behalf|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"\",\"name\":\"\"}}]",
+            "notification.setParsedSubject [\"t(%s asks to act on your behalf|[\\\"\\\"])\"]",
+            "notification.setRichMessage [\"t(If you allow this, {requester} may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"\",\"name\":\"\"}}]",
+            "notification.setParsedMessage [\"t(If you allow this, %s may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[\\\"\\\"])\"]",
+            "notification.createAction []",
+            "action4.setLabel [\"allow\"]",
+            "action4.setParsedLabel [\"t(Allow|[])\"]",
+            "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=1\",\"POST\"]",
+            "action4.setPrimary [true]",
+            "notification.addParsedAction []",
+            "notification.createAction []",
+            "action10.setLabel [\"deny\"]",
+            "action10.setParsedLabel [\"t(Deny|[])\"]",
+            "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=0\",\"POST\"]",
+            "action10.setPrimary [false]",
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setRichSubject [\"t({requester} asks to act on your behalf|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"\",\"name\":\"\"}}]",
+            "notification.setParsedSubject [\"t(%s asks to act on your behalf|[\\\"\\\"])\"]",
+            "notification.setRichMessage [\"t(If you allow this, {requester} may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"\",\"name\":\"\"}}]",
+            "notification.setParsedMessage [\"t(If you allow this, %s may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[\\\"\\\"])\"]",
+            "notification.createAction []",
+            "action4.setLabel [\"allow\"]",
+            "action4.setParsedLabel [\"t(Allow|[])\"]",
+            "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=1\",\"POST\"]",
+            "action4.setPrimary [true]",
+            "notification.addParsedAction []",
+            "notification.createAction []",
+            "action10.setLabel [\"deny\"]",
+            "action10.setParsedLabel [\"t(Deny|[])\"]",
+            "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=0\",\"POST\"]",
+            "action10.setPrimary [false]",
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setRichSubject [\"t({requester} asks to act on your behalf|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"\",\"name\":\"\"}}]",
+            "notification.setParsedSubject [\"t(%s asks to act on your behalf|[\\\"\\\"])\"]",
+            "notification.setRichMessage [\"t(If you allow this, {requester} may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"\",\"name\":\"\"}}]",
+            "notification.setParsedMessage [\"t(If you allow this, %s may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[\\\"\\\"])\"]",
+            "notification.createAction []",
+            "action4.setLabel [\"allow\"]",
+            "action4.setParsedLabel [\"t(Allow|[])\"]",
+            "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=1\",\"POST\"]",
+            "action4.setPrimary [true]",
+            "notification.addParsedAction []",
+            "notification.createAction []",
+            "action10.setLabel [\"deny\"]",
+            "action10.setParsedLabel [\"t(Deny|[])\"]",
+            "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=0\",\"POST\"]",
+            "action10.setPrimary [false]",
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setRichSubject [\"t({requester} asks to act on your behalf|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"eve\",\"name\":\"eve\"}}]",
+            "notification.setParsedSubject [\"t(%s asks to act on your behalf|[\\\"eve\\\"])\"]",
+            "notification.setRichMessage [\"t(If you allow this, {requester} may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"eve\",\"name\":\"eve\"}}]",
+            "notification.setParsedMessage [\"t(If you allow this, %s may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[\\\"eve\\\"])\"]",
+            "notification.createAction []",
+            "action4.setLabel [\"allow\"]",
+            "action4.setParsedLabel [\"t(Allow|[])\"]",
+            "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"g-1\\\"}?allow=1\",\"POST\"]",
+            "action4.setPrimary [true]",
+            "notification.addParsedAction []",
+            "notification.createAction []",
+            "action10.setLabel [\"deny\"]",
+            "action10.setParsedLabel [\"t(Deny|[])\"]",
+            "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"g-1\\\"}?allow=0\",\"POST\"]",
+            "action10.setPrimary [false]",
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "notification.setRichSubject [\"t({requester} asks to act on your behalf|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"eve\",\"name\":\"eve\"}}]",
+            "notification.setParsedSubject [\"t(%s asks to act on your behalf|[\\\"eve\\\"])\"]",
+            "notification.setRichMessage [\"t(If you allow this, {requester} may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"eve\",\"name\":\"eve\"}}]",
+            "notification.setParsedMessage [\"t(If you allow this, %s may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[\\\"eve\\\"])\"]",
+            "notification.createAction []",
+            "action4.setLabel [\"allow\"]",
+            "action4.setParsedLabel [\"t(Allow|[])\"]",
+            "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=1\",\"POST\"]",
+            "action4.setPrimary [true]",
+            "notification.addParsedAction []",
+            "notification.createAction []",
+            "action10.setLabel [\"deny\"]",
+            "action10.setParsedLabel [\"t(Deny|[])\"]",
+            "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=0\",\"POST\"]",
+            "action10.setPrimary [false]",
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setRichSubject [\"t({requester} asks to act on your behalf|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"bob\",\"name\":\"Bob Jansen\"}}]",
+            "notification.setParsedSubject [\"t(%s asks to act on your behalf|[\\\"Bob Jansen\\\"])\"]",
+            "notification.setRichMessage [\"t(If you allow this, {requester} may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"bob\",\"name\":\"Bob Jansen\"}}]",
+            "notification.setParsedMessage [\"t(If you allow this, %s may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[\\\"Bob Jansen\\\"])\"]",
+            "notification.createAction []",
+            "action4.setLabel [\"allow\"]",
+            "action4.setParsedLabel [\"t(Allow|[])\"]",
+            "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=1\",\"POST\"]",
+            "action4.setPrimary [true]",
+            "notification.addParsedAction []",
+            "notification.createAction []",
+            "action10.setLabel [\"deny\"]",
+            "action10.setParsedLabel [\"t(Deny|[])\"]",
+            "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=0\",\"POST\"]",
+            "action10.setPrimary [false]",
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setRichSubject [\"t({requester} asks to act on your behalf|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"\",\"name\":\"\"}}]",
+            "notification.setParsedSubject [\"t(%s asks to act on your behalf|[\\\"\\\"])\"]",
+            "notification.setRichMessage [\"t(If you allow this, {requester} may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"\",\"name\":\"\"}}]",
+            "notification.setParsedMessage [\"t(If you allow this, %s may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[\\\"\\\"])\"]",
+            "notification.createAction []",
+            "action4.setLabel [\"allow\"]",
+            "action4.setParsedLabel [\"t(Allow|[])\"]",
+            "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=1\",\"POST\"]",
+            "action4.setPrimary [true]",
+            "notification.addParsedAction []",
+            "notification.createAction []",
+            "action10.setLabel [\"deny\"]",
+            "action10.setParsedLabel [\"t(Deny|[])\"]",
+            "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=0\",\"POST\"]",
+            "action10.setPrimary [false]",
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setRichSubject [\"t({requester} asks to act on your behalf|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"zed\",\"name\":\"zed\"}}]",
+            "notification.setParsedSubject [\"t(%s asks to act on your behalf|[\\\"zed\\\"])\"]",
+            "notification.setRichMessage [\"t(If you allow this, {requester} may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[])\",{\"requester\":{\"type\":\"user\",\"id\":\"zed\",\"name\":\"zed\"}}]",
+            "notification.setParsedMessage [\"t(If you allow this, %s may perform work using your permissions until the grant expires or you withdraw it. Anything they do will be recorded as done on your behalf. You can withdraw the grant at any time.|[\\\"zed\\\"])\"]",
+            "notification.createAction []",
+            "action4.setLabel [\"allow\"]",
+            "action4.setParsedLabel [\"t(Allow|[])\"]",
+            "action4.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=1\",\"POST\"]",
+            "action4.setPrimary [true]",
+            "notification.addParsedAction []",
+            "notification.createAction []",
+            "action10.setLabel [\"deny\"]",
+            "action10.setParsedLabel [\"t(Deny|[])\"]",
+            "action10.setLink [\"abs:openregister.delegation.answer{\\\"uuid\\\":\\\"\\\"}?allow=0\",\"POST\"]",
+            "action10.setPrimary [false]",
+            "notification.addParsedAction []",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "credential_relink_needed": {
@@ -178,159 +615,595 @@
             "notification.setParsedSubject [\"t(Reconnect your %s account|[\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(The connection to %s is no longer accepted by the provider, so anything using it has stopped. This cannot be repaired automatically: open Connected accounts in your user settings and reconnect the account.|[\\\"\\\"])\"]",
             "notification.setLink [\"abs:openregister.dashboard.page[]#user-settings\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(Reconnect your %s account|[\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(The connection to %s is no longer accepted by the provider, so anything using it has stopped. This cannot be repaired automatically: open Connected accounts in your user settings and reconnect the account.|[\\\"\\\"])\"]",
             "notification.setLink [\"abs:openregister.dashboard.page[]#user-settings\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(Reconnect your %s account|[\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(The connection to %s is no longer accepted by the provider, so anything using it has stopped. This cannot be repaired automatically: open Connected accounts in your user settings and reconnect the account.|[\\\"\\\"])\"]",
             "notification.setLink [\"abs:openregister.dashboard.page[]#user-settings\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Reconnect your %s account|[\\\"Prov\\\"])\"]",
+            "notification.setParsedMessage [\"t(The connection to %s is no longer accepted by the provider, so anything using it has stopped. This cannot be repaired automatically: open Connected accounts in your user settings and reconnect the account.|[\\\"Prov\\\"])\"]",
+            "notification.setLink [\"abs:openregister.dashboard.page[]#user-settings\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Reconnect your %s account|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(The connection to %s is no longer accepted by the provider, so anything using it has stopped. This cannot be repaired automatically: open Connected accounts in your user settings and reconnect the account.|[\\\"\\\"])\"]",
+            "notification.setLink [\"abs:openregister.dashboard.page[]#user-settings\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Reconnect your %s account|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(The connection to %s is no longer accepted by the provider, so anything using it has stopped. This cannot be repaired automatically: open Connected accounts in your user settings and reconnect the account.|[\\\"\\\"])\"]",
+            "notification.setLink [\"abs:openregister.dashboard.page[]#user-settings\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "templates.render [\"credential_relink_needed\",\"en\",{\"configurationId\":42,\"configurationTitle\":\"Conf\",\"currentVersion\":\"1.0\",\"newVersion\":\"2.0\",\"objectUuid\":\"u-1\",\"objectTitle\":\"Obj\",\"skippedCount\":2,\"schemaSlug\":\"s\",\"listUuid\":\"l-1\",\"author\":\"ann\",\"newOwner\":\"bob\",\"previousOwner\":\"cy\",\"label\":\"Lbl\",\"actor\":\"dee\",\"oldValue\":\"o\",\"newValue\":\"n\",\"secret\":false,\"mode\":\"both\",\"reportName\":\"Rep\",\"folder\":\"/Reports/x/\",\"filename\":\"r.csv\",\"emailFailureReason\":\"smtp\",\"error\":\"E\",\"principal\":\"eve\",\"grantUuid\":\"g-1\",\"credentialId\":\"c-1\",\"viewName\":\"V\",\"threshold\":3,\"count\":4,\"formTitle\":\"F\",\"formUuid\":\"f-1\",\"exportUuid\":\"x-1\",\"reason\":\"R\"}]",
+            "notification.setParsedSubject [\"Edited subject\"]",
+            "notification.setParsedMessage [\"Edited body\"]",
+            "notification.setIcon [\"abs:img:openregister/app-dark.svg\"]"
+        ],
+        "blank name": [
+            "templates.render [\"credential_relink_needed\",\"en\",{\"principal\":\"eve\",\"newOwner\":\"eve\"}]",
+            "notification.setParsedSubject [\"Edited subject\"]",
+            "notification.setParsedMessage [\"Edited body\"]",
+            "notification.setIcon [\"abs:img:openregister/app-dark.svg\"]"
+        ],
+        "known user": [
+            "templates.render [\"credential_relink_needed\",\"en\",{\"principal\":\"bob\",\"newOwner\":\"bob\"}]",
+            "notification.setParsedSubject [\"Edited subject\"]",
+            "notification.setParsedMessage [\"Edited body\"]",
+            "notification.setIcon [\"abs:img:openregister/app-dark.svg\"]"
+        ],
+        "no user": [
+            "templates.render [\"credential_relink_needed\",\"en\",{\"principal\":\"\",\"newOwner\":\"\"}]",
+            "notification.setParsedSubject [\"Edited subject\"]",
+            "notification.setParsedMessage [\"Edited body\"]",
+            "notification.setIcon [\"abs:img:openregister/app-dark.svg\"]"
+        ],
+        "unknown user": [
+            "templates.render [\"credential_relink_needed\",\"en\",{\"principal\":\"zed\",\"newOwner\":\"zed\"}]",
+            "notification.setParsedSubject [\"Edited subject\"]",
+            "notification.setParsedMessage [\"Edited body\"]",
+            "notification.setIcon [\"abs:img:openregister/app-dark.svg\"]"
         ]
     },
     "retention_holds_skipped": {
         "full": [
             "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
-            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|2|[2,\\\"s\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|2|[2,\\\"s\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
-            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|0|[0,\\\"unknown\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
-            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|0|[0,\\\"unknown\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|1|[1,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|2|[2,\\\"s\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(Retention sweep kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(The retention sweep on \\\"%2$s\\\" reached %1$d record past its retention period and left it in place, because a legal hold is on it. Release the hold when the case it belongs to is closed, and the next sweep will destroy it.|The retention sweep on \\\"%2$s\\\" reached %1$d records past their retention period and left them in place, because a legal hold is on them. Release the holds when the cases they belong to are closed, and the next sweep will destroy them.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "destruction_holds_skipped": {
         "full": [
             "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
-            "notification.setParsedMessage [\"n(%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|2|[2,\\\"l-1\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|2|[2,\\\"l-1\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
-            "notification.setParsedMessage [\"n(%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|0|[0,\\\"unknown\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
-            "notification.setParsedMessage [\"n(%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|0|[0,\\\"unknown\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|1|[1,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|2|[2,\\\"l-1\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(Destruction list kept records that are under a legal hold|[])\"]",
+            "notification.setParsedMessage [\"n(%1$d record on destruction list %2$s was not destroyed, because a legal hold is on it. Release the hold and run the list again, or take the record off the list.|%1$d records on destruction list %2$s were not destroyed, because a legal hold is on them. Release the holds and run the list again, or take the records off the list.|0|[0,\\\"unknown\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "destruction_review_pending": {
         "full": [
             "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
-            "notification.setParsedMessage [\"n(%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
-            "notification.setParsedMessage [\"n(%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
-            "notification.setParsedMessage [\"n(%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|3|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|1|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(Records are waiting on your archiving decision|[])\"]",
+            "notification.setParsedMessage [\"n(%n record on a destruction list is assigned to you and has not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|%n records on destruction lists are assigned to you and have not been answered yet. Each one is destroyed, kept for longer, or transferred to an e-Depot, and the answer is recorded against your name.|0|[])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "timeline_mention": {
         "full": [
             "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
             "notification.setParsedMessage [\"t(%1$s named you in a note on \\\"%2$s\\\". You now follow it, so you will hear about what happens next.|[\\\"ann\\\",\\\"Obj\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
-            "notification.setParsedMessage [\"t(%1$s named you in a note on \\\"%2$s\\\". You now follow it, so you will hear about what happens next.|[\\\"\\\",\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(A note on \\\"%1$s\\\" names you. You now follow it, so you will hear about what happens next.|[\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
-            "notification.setParsedMessage [\"t(%1$s named you in a note on \\\"%2$s\\\". You now follow it, so you will hear about what happens next.|[\\\"\\\",\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(A note on \\\"%1$s\\\" names you. You now follow it, so you will hear about what happens next.|[\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
+            "notification.setParsedMessage [\"t(A note on \\\"%1$s\\\" names you. You now follow it, so you will hear about what happens next.|[\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
+            "notification.setParsedMessage [\"t(A note on \\\"%1$s\\\" names you. You now follow it, so you will hear about what happens next.|[\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
+            "notification.setParsedMessage [\"t(%1$s named you in a note on \\\"%2$s\\\". You now follow it, so you will hear about what happens next.|[\\\"ann\\\",\\\"Obj\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
+            "notification.setParsedMessage [\"t(%1$s named you in a note on \\\"%2$s\\\". You now follow it, so you will hear about what happens next.|[\\\"ann\\\",\\\"Obj\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
+            "notification.setParsedMessage [\"t(A note on \\\"%1$s\\\" names you. You now follow it, so you will hear about what happens next.|[\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
+            "notification.setParsedMessage [\"t(A note on \\\"%1$s\\\" names you. You now follow it, so you will hear about what happens next.|[\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
+            "notification.setParsedMessage [\"t(A note on \\\"%1$s\\\" names you. You now follow it, so you will hear about what happens next.|[\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(You were named in a note|[])\"]",
+            "notification.setParsedMessage [\"t(A note on \\\"%1$s\\\" names you. You now follow it, so you will hear about what happens next.|[\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "object_ownership_changed": {
         "full": [
             "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
             "notification.setParsedMessage [\"t(%1$s is now the owner of \\\"%2$s\\\". You are no longer answerable for it. Ask them if that was not the plan.|[\\\"bob\\\",\\\"Obj\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
-            "notification.setParsedMessage [\"t(%1$s is now the owner of \\\"%2$s\\\". You are no longer answerable for it. Ask them if that was not the plan.|[\\\"\\\",\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(\\\"%1$s\\\" has a new owner. You are no longer answerable for it.|[\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
-            "notification.setParsedMessage [\"t(%1$s is now the owner of \\\"%2$s\\\". You are no longer answerable for it. Ask them if that was not the plan.|[\\\"\\\",\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(\\\"%1$s\\\" has a new owner. You are no longer answerable for it.|[\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
+            "notification.setParsedMessage [\"t(\\\"%1$s\\\" has a new owner. You are no longer answerable for it.|[\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
+            "notification.setParsedMessage [\"t(\\\"%1$s\\\" has a new owner. You are no longer answerable for it.|[\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
+            "notification.setParsedMessage [\"t(%1$s is now the owner of \\\"%2$s\\\". You are no longer answerable for it. Ask them if that was not the plan.|[\\\"nobody\\\",\\\"Obj\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
+            "notification.setParsedMessage [\"t(%1$s is now the owner of \\\"%2$s\\\". You are no longer answerable for it. Ask them if that was not the plan.|[\\\"Bob Jansen\\\",\\\"Obj\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
+            "notification.setParsedMessage [\"t(%1$s is now the owner of \\\"%2$s\\\". You are no longer answerable for it. Ask them if that was not the plan.|[\\\"eve\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
+            "notification.setParsedMessage [\"t(%1$s is now the owner of \\\"%2$s\\\". You are no longer answerable for it. Ask them if that was not the plan.|[\\\"Bob Jansen\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
+            "notification.setParsedMessage [\"t(\\\"%1$s\\\" has a new owner. You are no longer answerable for it.|[\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(A record you owned changed hands|[])\"]",
+            "notification.setParsedMessage [\"t(%1$s is now the owner of \\\"%2$s\\\". You are no longer answerable for it. Ask them if that was not the plan.|[\\\"zed\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "security_setting_changed": {
         "full": [
             "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"Lbl\\\"])\"]",
             "notification.setParsedMessage [\"t(%1$s changed %2$s from \\\"%3$s\\\" to \\\"%4$s\\\". Open the settings and put it back if nobody planned this.|[\\\"dee\\\",\\\"Lbl\\\",\\\"o\\\",\\\"n\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(%1$s changed %2$s from \\\"%3$s\\\" to \\\"%4$s\\\". Open the settings and put it back if nobody planned this.|[\\\"\\\",\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(%1$s changed %2$s. It holds a secret, so neither value is shown here. Open the settings and put it back if nobody planned this.|[\\\"\\\",\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"Set\\\"])\"]",
+            "notification.setParsedMessage [\"t(%1$s changed %2$s. It holds a secret, so neither value is shown here. Open the settings and put it back if nobody planned this.|[\\\"dee\\\",\\\"Set\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(%1$s changed %2$s from \\\"%3$s\\\" to \\\"%4$s\\\". Open the settings and put it back if nobody planned this.|[\\\"\\\",\\\"\\\",\\\"a\\\",\\\"b\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"Set\\\"])\"]",
+            "notification.setParsedMessage [\"t(%1$s changed %2$s from \\\"%3$s\\\" to \\\"%4$s\\\". Open the settings and put it back if nobody planned this.|[\\\"\\\",\\\"Set\\\",\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"Lbl\\\"])\"]",
+            "notification.setParsedMessage [\"t(%1$s changed %2$s from \\\"%3$s\\\" to \\\"%4$s\\\". Open the settings and put it back if nobody planned this.|[\\\"dee\\\",\\\"Lbl\\\",\\\"o\\\",\\\"n\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(%1$s changed %2$s from \\\"%3$s\\\" to \\\"%4$s\\\". Open the settings and put it back if nobody planned this.|[\\\"\\\",\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(%1$s changed %2$s from \\\"%3$s\\\" to \\\"%4$s\\\". Open the settings and put it back if nobody planned this.|[\\\"\\\",\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(%1$s changed %2$s from \\\"%3$s\\\" to \\\"%4$s\\\". Open the settings and put it back if nobody planned this.|[\\\"\\\",\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(A security setting changed: %1$s|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(%1$s changed %2$s from \\\"%3$s\\\" to \\\"%4$s\\\". Open the settings and put it back if nobody planned this.|[\\\"\\\",\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "view_alert_crossed": {
         "full": [
             "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"\\\",\\\"4\\\"])\"]",
             "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or below its threshold of %3$s.|[\\\"\\\",\\\"4\\\",\\\"3\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"\\\",\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or below its threshold of %3$s.|[\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"\\\",\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or below its threshold of %3$s.|[\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"Vw\\\",\\\"9\\\"])\"]",
+            "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or above its threshold of %3$s.|[\\\"Vw\\\",\\\"9\\\",\\\"3\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or below its threshold of %3$s.|[\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"Vw\\\",\\\"1\\\"])\"]",
+            "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or below its threshold of %3$s.|[\\\"Vw\\\",\\\"1\\\",\\\"3\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "templates.render [\"view_alert_crossed\",\"en\",{\"configurationId\":42,\"configurationTitle\":\"Conf\",\"currentVersion\":\"1.0\",\"newVersion\":\"2.0\",\"objectUuid\":\"u-1\",\"objectTitle\":\"Obj\",\"skippedCount\":2,\"schemaSlug\":\"s\",\"listUuid\":\"l-1\",\"author\":\"ann\",\"newOwner\":\"bob\",\"previousOwner\":\"cy\",\"label\":\"Lbl\",\"actor\":\"dee\",\"oldValue\":\"o\",\"newValue\":\"n\",\"secret\":false,\"mode\":\"both\",\"reportName\":\"Rep\",\"folder\":\"/Reports/x/\",\"filename\":\"r.csv\",\"emailFailureReason\":\"smtp\",\"error\":\"E\",\"principal\":\"eve\",\"grantUuid\":\"g-1\",\"credentialId\":\"c-1\",\"viewName\":\"V\",\"threshold\":3,\"count\":4,\"formTitle\":\"F\",\"formUuid\":\"f-1\",\"exportUuid\":\"x-1\",\"reason\":\"R\"}]",
+            "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"\\\",\\\"4\\\"])\"]",
+            "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or below its threshold of %3$s.|[\\\"\\\",\\\"4\\\",\\\"3\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "templates.render [\"view_alert_crossed\",\"en\",{\"principal\":\"eve\",\"newOwner\":\"eve\"}]",
+            "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or below its threshold of %3$s.|[\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "templates.render [\"view_alert_crossed\",\"en\",{\"principal\":\"bob\",\"newOwner\":\"bob\"}]",
+            "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or below its threshold of %3$s.|[\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "templates.render [\"view_alert_crossed\",\"en\",{\"principal\":\"\",\"newOwner\":\"\"}]",
+            "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or below its threshold of %3$s.|[\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "templates.render [\"view_alert_crossed\",\"en\",{\"principal\":\"zed\",\"newOwner\":\"zed\"}]",
+            "notification.setParsedSubject [\"t(%1$s is at %2$s|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(The view %1$s counts %2$s, at or below its threshold of %3$s.|[\\\"\\\",\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ]
     },
     "form_unpublished": {
         "full": [
             "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"F\\\"])\"]",
             "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"\\\",\\\"4\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "bare": [
             "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"\\\",\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
         ],
         "blank": [
             "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"\\\"])\"]",
             "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"\\\",\\\"\\\"])\"]",
-            "notification.setIcon [\"img:openregister/app.svg\"]"
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"Sch\\\",\\\"9\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"\\\",\\\"1\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "templates.render [\"form_unpublished\",\"en\",{\"configurationId\":42,\"configurationTitle\":\"Conf\",\"currentVersion\":\"1.0\",\"newVersion\":\"2.0\",\"objectUuid\":\"u-1\",\"objectTitle\":\"Obj\",\"skippedCount\":2,\"schemaSlug\":\"s\",\"listUuid\":\"l-1\",\"author\":\"ann\",\"newOwner\":\"bob\",\"previousOwner\":\"cy\",\"label\":\"Lbl\",\"actor\":\"dee\",\"oldValue\":\"o\",\"newValue\":\"n\",\"secret\":false,\"mode\":\"both\",\"reportName\":\"Rep\",\"folder\":\"/Reports/x/\",\"filename\":\"r.csv\",\"emailFailureReason\":\"smtp\",\"error\":\"E\",\"principal\":\"eve\",\"grantUuid\":\"g-1\",\"credentialId\":\"c-1\",\"viewName\":\"V\",\"threshold\":3,\"count\":4,\"formTitle\":\"F\",\"formUuid\":\"f-1\",\"exportUuid\":\"x-1\",\"reason\":\"R\"}]",
+            "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"F\\\"])\"]",
+            "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"\\\",\\\"4\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "templates.render [\"form_unpublished\",\"en\",{\"principal\":\"eve\",\"newOwner\":\"eve\"}]",
+            "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "templates.render [\"form_unpublished\",\"en\",{\"principal\":\"bob\",\"newOwner\":\"bob\"}]",
+            "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "templates.render [\"form_unpublished\",\"en\",{\"principal\":\"\",\"newOwner\":\"\"}]",
+            "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "templates.render [\"form_unpublished\",\"en\",{\"principal\":\"zed\",\"newOwner\":\"zed\"}]",
+            "notification.setParsedSubject [\"t(Your form \\\"%1$s\\\" was taken offline|[\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(A change to \\\"%1$s\\\" left %2$s problems in the form. Fix them and publish the form again.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ]
+    },
+    "external_grant_lapsing": {
+        "full": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "bare": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "other": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"Sch\\\",\\\"5\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"read\\\",\\\"2031-01-02\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "text flag": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "plain": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "collaborators": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "blank name": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "known user": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "no user": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ],
+        "unknown user": [
+            "notification.setParsedSubject [\"t(Your access to \\\"%1$s\\\" ends in %2$s days|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setParsedMessage [\"t(Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.|[\\\"\\\",\\\"\\\"])\"]",
+            "notification.setIcon [\"abs:img:openregister/app.svg\"]"
+        ]
+    },
+    "unknown_subject": {
+        "full": [
+            "threw OCP\\Notification\\UnknownNotificationException: Unknown subject"
         ]
     }
 }

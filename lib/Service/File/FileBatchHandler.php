@@ -24,6 +24,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 
 /**
  * Handles batch file operations.
@@ -66,13 +67,13 @@ class FileBatchHandler {
 	 *
 	 * @param FilePublishingHandler $publishingHandler Publishing handler for publish/depublish.
 	 * @param DeleteFileHandler $deleteHandler Delete handler for file deletion.
-	 * @param TaggingHandler $taggingHandler Tagging handler for label operations.
+	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for label operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 */
 	public function __construct(
 		private readonly FilePublishingHandler $publishingHandler,
 		private readonly DeleteFileHandler $deleteHandler,
-		private readonly TaggingHandler $taggingHandler,
+		private readonly TaggingHandlerInterface $taggingHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -4589,7 +4589,7 @@
         ],
         "status": 200,
         "data": {
-            "message": "Import successful",
+            "message": "Import finished with errors",
             "summary": {
                 "Sheet": {
                     "errors": [

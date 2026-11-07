@@ -69,30 +69,10 @@ class EmailLinkMapper extends QBMapper {
 			return $this->tableExistsCache;
 		}
 
-		// Doctrine's createSchema() can miss tables created outside the
-		// migration framework. Fall back to a direct information_schema
-		// query so manual CREATEs (e.g. recovery, dev sandboxes) are
-		// honoured.
 		try {
-			$schema = $this->db->createSchema();
-			$this->tableExistsCache = $schema->hasTable('*PREFIX*' . $this->getTableName())
-				|| $schema->hasTable($this->getTableName());
+			$this->tableExistsCache = $this->db->tableExists($this->getTableName());
 		} catch (\Throwable $e) {
 			$this->tableExistsCache = false;
-		}
-
-		if ($this->tableExistsCache === false) {
-			try {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select($qb->func()->count('*'))
-					->from('information_schema.tables')
-					->where($qb->expr()->eq('table_name', $qb->createNamedParameter('oc_' . $this->getTableName())));
-				$result = $qb->executeQuery();
-				$row = $result->fetch();
-				$this->tableExistsCache = $row !== false && (int)reset($row) > 0;
-			} catch (\Throwable $e) {
-				$this->tableExistsCache = false;
-			}
 		}
 
 		return $this->tableExistsCache;

@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use DateTime;
 use LogicException;
@@ -848,8 +849,6 @@ class MagicFacetHandler {
 	 */
 	private function labelTermsBuckets(TermsFacetUnion $facet, array $normalizedBuckets): array {
 		$labelMap = $this->termsUnionLabelMap(facet: $facet, normalizedBuckets: $normalizedBuckets);
-		$tableConfigs = $facet->tableConfigs;
-		$firstConfig = reset($tableConfigs);
 
 		$buckets = [];
 		foreach ($normalizedBuckets as $bucket) {
@@ -857,13 +856,7 @@ class MagicFacetHandler {
 			// For metadata facets, use getFieldLabel to resolve IDs to names.
 			$label = $labelMap[$key] ?? (string)$key;
 			if ($facet->isMetadata === true) {
-				$label = $this->getFieldLabel(
-					field: $facet->field,
-					value: $key,
-					isMetadata: true,
-					register: $firstConfig['register'],
-					schema: $firstConfig['schema']
-				);
+				$label = $this->getFieldLabel(field: $facet->field, value: $key);
 			}
 
 			$buckets[] = [
@@ -1506,10 +1499,7 @@ class MagicFacetHandler {
 					key: $key,
 					labelMap: $labelMap,
 					batchResolved: is_string($key) === true && isset($batchKeys[$key]) === true,
-					field: $facet->field,
-					isMetadata: $facet->isMetadata,
-					register: $facet->register,
-					schema: $facet->schema
+					field: $facet->field
 				);
 			}
 
@@ -1535,7 +1525,7 @@ class MagicFacetHandler {
 		foreach ($buckets as $bucket) {
 			$key = $bucket['key'];
 			if (is_string($key) === true
-				&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
+				&& UuidFormat::isCanonical(value: $key) === true
 			) {
 				$uuids[] = $key;
 			}
@@ -1609,9 +1599,6 @@ class MagicFacetHandler {
 	 * @param array<string, string> $labelMap      Labels from batchResolveUuidLabels().
 	 * @param bool                  $batchResolved Whether the batch lookup already asked about this key.
 	 * @param string                $field         The facet field.
-	 * @param bool                  $isMetadata    Whether this is a metadata field.
-	 * @param Register              $register      The register context.
-	 * @param Schema                $schema        The schema context.
 	 *
 	 * @return string The bucket label.
 	 *
@@ -1624,9 +1611,6 @@ class MagicFacetHandler {
 		array $labelMap,
 		bool $batchResolved,
 		string $field,
-		bool $isMetadata,
-		Register $register,
-		Schema $schema,
 	): string {
 		if (is_string($key) === true && isset($labelMap[$key]) === true) {
 			return $labelMap[$key];
@@ -1636,13 +1620,7 @@ class MagicFacetHandler {
 			return substr((string)$key, 0, 8) . '...';
 		}
 
-		return $this->getFieldLabel(
-			field: $field,
-			value: $key,
-			isMetadata: $isMetadata,
-			register: $register,
-			schema: $schema
-		);
+		return $this->getFieldLabel(field: $field, value: $key);
 	}//end resolveBucketLabel()
 
 	/**
@@ -2451,108 +2429,15 @@ class MagicFacetHandler {
 	 * Get human-readable label for a field value.
 	 *
 	 * @param string $field The field name.
-	 * @param mixed $value The field value.
-	 * @param bool $isMetadata Whether this is a metadata field.
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param mixed  $value The field value.
 	 *
 	 * @return string Human-readable label.
 	 *
-	 * @psalm-suppress UnusedParam Parameters reserved for future label lookup from related entities.
+	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
-	private function getFieldLabel(
-		string $field,
-		mixed $value,
-		bool $isMetadata,
-		Register $register,
-		Schema $schema,
-	): string {
+	private function getFieldLabel(string $field, mixed $value): string {
 		$this->resolveLazyDependencies();
 
-		// For register field, try to get the register title.
-		if ($field === self::METADATA_PREFIX . 'register' && is_numeric($value) === true) {
-			try {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select('title')
-					->from('openregister_registers')
-					->where($qb->expr()->eq('id', $qb->createNamedParameter((int)$value)));
-				$result = $qb->executeQuery();
-				$title = $result->fetchOne();
-				if ($title !== false) {
-					return (string)$title;
-				}
-			} catch (\Exception $e) {
-				// Fall through to default.
-			}
-
-			return "Register $value";
-		}
-
-		// For schema field, try to get the schema title.
-		if ($field === self::METADATA_PREFIX . 'schema' && is_numeric($value) === true) {
-			try {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select('title')
-					->from('openregister_schemas')
-					->where($qb->expr()->eq('id', $qb->createNamedParameter((int)$value)));
-				$result = $qb->executeQuery();
-				$title = $result->fetchOne();
-				if ($title !== false) {
-					return (string)$title;
-				}
-			} catch (\Exception $e) {
-				// Fall through to default.
-			}
-
-			return "Schema $value";
-		}
-
-		// For organisation field, try to get the organisation name.
-		if ($field === self::METADATA_PREFIX . 'organisation' && is_string($value) === true && $value !== '') {
-			// First try system organisations table.
-			try {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select('name')
-					->from('openregister_organisations')
-					->where($qb->expr()->eq('uuid', $qb->createNamedParameter($value)));
-				$result = $qb->executeQuery();
-				$name = $result->fetchOne();
-				if ($name !== false && $name !== null) {
-					return (string)$name;
-				}
-			} catch (\Exception $e) {
-				// Fall through to CacheHandler lookup.
-			}
-
-			// Try CacheHandler for dynamic object name lookup.
-			if ($this->cacheHandler !== null) {
-				$names = $this->cacheHandler->getMultipleObjectNames([$value]);
-				if (isset($names[$value]) === true) {
-					return $names[$value];
-				}
-			}
-
-			// Return shortened UUID if name not found.
-			return substr($value, 0, 8) . '...';
-		}//end if
-
-		// For object fields containing UUIDs, try to resolve to object names.
-		// Note: Using relaxed UUID pattern to match non-standard UUIDs (e.g., version 1 time-based).
-		if (is_string($value) === true
-			&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1
-		) {
-			// Use CacheHandler for dynamic object name lookup.
-			if ($this->cacheHandler !== null) {
-				$names = $this->cacheHandler->getMultipleObjectNames([$value]);
-				if (isset($names[$value]) === true) {
-					return $names[$value];
-				}
-			}
-
-			// Return shortened UUID if name not found.
-			return substr($value, 0, 8) . '...';
-		}
-
-		return (string)$value;
+		return (new MagicFacetFieldLabel(db: $this->db, names: $this->cacheHandler))->labelOf(field: $field, value: $value);
 	}//end getFieldLabel()
 }//end class

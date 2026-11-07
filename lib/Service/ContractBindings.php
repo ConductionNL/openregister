@@ -24,9 +24,7 @@ use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -112,7 +110,6 @@ final class ContractBindings {
 		OrganisationServiceInterface::class => OrganisationService::class,
 		TaskServiceInterface::class => TaskService::class,
 		FlowRunServiceInterface::class => FlowRunService::class,
-		FileMapperInterface::class => FileMapper::class,
 		OrganisationMapperInterface::class => OrganisationMapper::class,
 		ConfigurationServiceInterface::class => ConfigurationService::class,
 		RetentionServiceInterface::class => RetentionService::class,
