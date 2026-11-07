@@ -60,7 +60,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
-class SchemaFlowImportListener implements IEventListener {
+class SchemaFlowImportListener implements IEventListener, SchemaFlowImportListenerInterface {
 	/**
 	 * The configuration key carrying declared flows.
 	 *

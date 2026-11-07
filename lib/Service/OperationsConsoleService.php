@@ -57,7 +57,7 @@ use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
-use OCA\OpenRegister\Db\RuleRunSummaryMapper;
+use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
@@ -178,9 +178,9 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	/**
 	 * One row per rule, with its last error.
 	 *
-	 * @var RuleRunSummaryMapper
+	 * @var RuleRunSummaryMapperInterface
 	 */
-	private readonly RuleRunSummaryMapper $ruleSummaries;
+	private readonly RuleRunSummaryMapperInterface $ruleSummaries;
 
 	/**
 	 * Constructor.

@@ -60,7 +60,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<EndpointLog>
  */
-class EndpointLogMapper extends QBMapper {
+class EndpointLogMapper extends QBMapper implements EndpointLogMapperInterface {
 	use FindAllNewestFirstTrait;
 
 	/**

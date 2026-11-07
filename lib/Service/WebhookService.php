@@ -34,7 +34,7 @@ use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\Webhook;
-use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
@@ -100,9 +100,9 @@ class WebhookService {
 	/**
 	 * Webhook log mapper
 	 *
-	 * @var WebhookLogMapper
+	 * @var WebhookLogMapperInterface
 	 */
-	private WebhookLogMapper $webhookLogMapper;
+	private WebhookLogMapperInterface $webhookLogMapper;
 
 	/**
 	 * CloudEvent formatter
@@ -148,7 +148,7 @@ class WebhookService {
 	 *
 	 * @param WebhookMapperInterface $webhookMapper Webhook mapper
 	 * @param LoggerInterface $logger Logger
-	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
+	 * @param WebhookLogMapperInterface $webhookLogMapper Webhook log mapper
 	 * @param MappingService $mappingService Mapping service
 	 * @param MappingMapperInterface $mappingMapper Mapping mapper
 	 * @param IJobList $jobList Background job list for async delivery
@@ -160,7 +160,7 @@ class WebhookService {
 	public function __construct(
 		WebhookMapperInterface $webhookMapper,
 		LoggerInterface $logger,
-		WebhookLogMapper $webhookLogMapper,
+		WebhookLogMapperInterface $webhookLogMapper,
 		MappingService $mappingService,
 		MappingMapperInterface $mappingMapper,
 		IJobList $jobList,
