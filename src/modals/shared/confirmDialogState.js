@@ -38,3 +38,31 @@ export function confirmDialogState(unanswered) {
 		},
 	}
 }
+
+/**
+ * Show the outcome of a confirm dialog's request: success, or the error
+ * message (or `failure` without one), and close two seconds after success.
+ * `loading` ends either way.
+ *
+ * @param {object} dialog The dialog component (`success`, `error`, `loading`, `closeModalTimeout`, `closeDialog`)
+ * @param {Promise<{response: Response}>} request The store request
+ * @param {string} failure The message shown when the error carries none
+ * @return {Promise<void>} Settles once the outcome is shown
+ */
+export function settleConfirmRequest(dialog, request, failure) {
+	return request
+		.then(({ response }) => {
+			dialog.success = response.ok
+			dialog.error = false
+			if (response.ok) {
+				dialog.closeModalTimeout = setTimeout(dialog.closeDialog, 2000)
+			}
+		})
+		.catch((error) => {
+			dialog.success = false
+			dialog.error = error.message || failure
+		})
+		.finally(() => {
+			dialog.loading = false
+		})
+}

@@ -70,7 +70,7 @@ use OCP\ICacheFactory;
  *
  * @link https://www.OpenRegister.app
  */
-class WebhookInterceptionCache {
+class WebhookInterceptionCache implements WebhookInterceptionCacheInterface {
 	/**
 	 * Cache TTL for the has-interception-webhooks flag, in seconds.
 	 *
