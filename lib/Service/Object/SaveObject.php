@@ -527,6 +527,32 @@ class SaveObject implements SaveObjectInterface {
 	}//end recordSharedMasterDataRefusal()
 
 	/**
+	 * A service from the injected app container, or null when there is no container,
+	 * it cannot provide the service (logged at debug), or it answers something else.
+	 *
+	 * @param class-string<T> $id    The class or interface to ask for.
+	 * @param string          $label The name the debug line gives the service.
+	 *
+	 * @return T|null
+	 *
+	 * @template T of object
+	 */
+	private function containerService(string $id, string $label): ?object {
+		try {
+			$service = $this->container?->get($id);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] ' . $label . ' not available: ' . $e->getMessage());
+			return null;
+		}
+
+		if ($service instanceof $id) {
+			return $service;
+		}
+
+		return null;
+	}//end containerService()
+
+	/**
 	 * Resolve the shared master data service from the app container, or null.
 	 *
 	 * Lazily, through the INJECTED container and never the global server, for
@@ -536,22 +562,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @return SharedMasterDataService|null The resolver, or null when unavailable.
 	 */
 	private function resolveSharedMasterDataService(): ?SharedMasterDataService {
-		if ($this->container === null) {
-			return null;
-		}
-
-		try {
-			$service = $this->container->get(SharedMasterDataService::class);
-		} catch (\Throwable $e) {
-			$this->logger->debug('[SaveObject] SharedMasterDataService not available: ' . $e->getMessage());
-			return null;
-		}
-
-		if ($service instanceof SharedMasterDataService) {
-			return $service;
-		}
-
-		return null;
+		return $this->containerService(id: SharedMasterDataService::class, label: 'SharedMasterDataService');
 	}//end resolveSharedMasterDataService()
 
 	/**
@@ -571,22 +582,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 */
 	private function resolveRetentionService(): ?\OCA\OpenRegister\Service\RetentionServiceInterface {
-		if ($this->container === null) {
-			return null;
-		}
-
-		try {
-			$service = $this->container->get(\OCA\OpenRegister\Service\RetentionServiceInterface::class);
-		} catch (\Throwable $e) {
-			$this->logger->debug('[SaveObject] RetentionService not available: ' . $e->getMessage());
-			return null;
-		}
-
-		if ($service instanceof \OCA\OpenRegister\Service\RetentionServiceInterface) {
-			return $service;
-		}
-
-		return null;
+		return $this->containerService(id: \OCA\OpenRegister\Service\RetentionServiceInterface::class, label: 'RetentionService');
 	}//end resolveRetentionService()
 
 	/**
@@ -2197,22 +2193,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	private function resolveUniqueHintChecker(): ?UniqueHintChecker {
-		if ($this->container === null) {
-			return null;
-		}
-
-		try {
-			$checker = $this->container->get(UniqueHintChecker::class);
-		} catch (\Throwable $e) {
-			$this->logger->debug('[SaveObject] UniqueHintChecker not available: ' . $e->getMessage());
-			return null;
-		}
-
-		if ($checker instanceof UniqueHintChecker) {
-			return $checker;
-		}
-
-		return null;
+		return $this->containerService(id: UniqueHintChecker::class, label: 'UniqueHintChecker');
 	}//end resolveUniqueHintChecker()
 
 	/**
@@ -2233,22 +2214,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	private function resolveDedupCreatePolicy(): ?DedupCreatePolicy {
-		if ($this->container === null) {
-			return null;
-		}
-
-		try {
-			$policy = $this->container->get(DedupCreatePolicy::class);
-		} catch (\Throwable $e) {
-			$this->logger->debug('[SaveObject] DedupCreatePolicy not available: ' . $e->getMessage());
-			return null;
-		}
-
-		if ($policy instanceof DedupCreatePolicy) {
-			return $policy;
-		}
-
-		return null;
+		return $this->containerService(id: DedupCreatePolicy::class, label: 'DedupCreatePolicy');
 	}//end resolveDedupCreatePolicy()
 
 	/**
