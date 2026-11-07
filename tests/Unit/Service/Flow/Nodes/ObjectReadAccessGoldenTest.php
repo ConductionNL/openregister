@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -230,6 +231,11 @@ final class ObjectReadAccessGoldenTest extends TestCase {
 			}
 		);
 
-		return new ObjectReadNode($objects, $registers, $schemas, $users, $l10n, $this->createMock(IURLGenerator::class));
+		return new ObjectReadNode(
+			sources: new ObjectNodeSources(objects: $objects, registers: $registers, schemas: $schemas),
+			userManager: $users,
+			l10n: $l10n,
+			urls: $this->createMock(IURLGenerator::class)
+		);
 	}//end node()
 }//end class
