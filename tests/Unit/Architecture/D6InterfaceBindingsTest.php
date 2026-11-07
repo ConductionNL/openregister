@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -47,6 +49,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 	 */
 	private const HIDDEN = [
 		ObjectReadNode::class => [ObjectReadNodeInterface::class, ContractBindings::class],
+		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
 	];
 
 	/**
