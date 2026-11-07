@@ -34,7 +34,7 @@ use PHPUnit\Framework\TestCase;
  * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
  */
 class TranslationMapperGoldenTest extends TestCase {
-	use RecordingQueryBuilderTrait;
+	use SqlLogQueryBuilderTrait;
 
 	private const FIXTURE = __DIR__ . '/fixtures/translation-mapper-golden.json';
 
