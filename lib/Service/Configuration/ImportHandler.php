@@ -1825,32 +1825,46 @@ class ImportHandler {
 			$property = (array)$property;
 		}
 
-		if (isset($property['title']) === false || empty($property['title']) === true) {
+		if (empty($property['title']) === true) {
 			$property['title'] = $key;
 		}
 
-		$property = $this->withObjectTypedEmptyConfigurations(definition: $property);
-		if (($property['items'] ?? null) !== null) {
-			if (is_object($property['items']) === true) {
-				$property['items'] = (array)$property['items'];
-			}
+		$property['type'] = ($property['type'] ?? 'string');
+		$property = $this->normaliseDefinitionShape(definition: $property);
+		return $this->withNormalisedItemsShape(property: $property);
+	}//end normaliseImportedPropertyShape()
 
-			if (is_array($property['items']) === true) {
-				$property['items'] = $this->withObjectTypedEmptyConfigurations(definition: $property['items']);
-			}
+	/**
+	 * Normalise a property's `items` definition when it is an object or an array.
+	 *
+	 * An object is turned into an array first.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return array The property.
+	 */
+	private function withNormalisedItemsShape(array $property): array {
+		if (is_object($property['items'] ?? null) === true) {
+			$property['items'] = (array)$property['items'];
 		}
 
-		if (isset($property['type']) === false) {
-			$property['type'] = 'string';
-		}
-
-		$property = $this->withoutBinaryFormat(definition: $property);
 		if (is_array($property['items'] ?? null) === true) {
-			$property['items'] = $this->withoutBinaryFormat(definition: $property['items']);
+			$property['items'] = $this->normaliseDefinitionShape(definition: $property['items']);
 		}
 
 		return $property;
-	}//end normaliseImportedPropertyShape()
+	}//end withNormalisedItemsShape()
+
+	/**
+	 * Give a property or items definition object-typed empty configurations and no binary-ish format.
+	 *
+	 * @param array $definition A property or items definition.
+	 *
+	 * @return array The definition.
+	 */
+	private function normaliseDefinitionShape(array $definition): array {
+		return $this->withoutBinaryFormat(definition: $this->withObjectTypedEmptyConfigurations(definition: $definition));
+	}//end normaliseDefinitionShape()
 
 	/**
 	 * Turn empty `objectConfiguration` and `fileConfiguration` arrays into objects.
