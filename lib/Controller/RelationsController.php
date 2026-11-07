@@ -119,7 +119,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedEntries',
 		],
 		'timetracker' => [
-			'class' => \OCA\OpenRegister\Service\TimeTrackerLinkService::class,
+			'class' => \OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface::class,
 			'available' => 'isTimeManagerAvailable',
 			'method' => 'getLinkedEntries',
 		],

@@ -41,6 +41,8 @@ use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
@@ -58,6 +60,16 @@ use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutorInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -78,6 +90,7 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 */
 	private const HIDDEN = [
 		AggregateReferenceResolver::class => [AggregateReferenceResolverInterface::class, ContractBindings::class],
+		AutoTransitionSelector::class => [AutoTransitionSelectorInterface::class, ContractBindings::class],
 		BulkJobReversal::class => [BulkJobReversalInterface::class, ContractBindings::class],
 		BulkJobService::class => [BulkJobServiceInterface::class, ContractBindings::class],
 		CalculationTrialService::class => [CalculationTrialServiceInterface::class, ContractBindings::class],
@@ -88,9 +101,14 @@ final class D7InterfaceBindingsTest extends TestCase {
 		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],
 		FormSubmitService::class => [FormSubmitServiceInterface::class, ContractBindings::class],
 		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
+		GitLabHandler::class => [GitLabHandlerInterface::class, ContractBindings::class],
 		HandoffService::class => [HandoffServiceInterface::class, ContractBindings::class],
+		LifecycleActionExecutor::class => [LifecycleActionExecutorInterface::class, ContractBindings::class],
+		LifecycleConditionEvaluator::class => [LifecycleConditionEvaluatorInterface::class, ContractBindings::class],
 		ReferencedCalculationRefresher::class => [ReferencedCalculationRefresherInterface::class, ContractBindings::class],
 		ReferenceResolver::class => [ReferenceResolverInterface::class, ContractBindings::class],
+		StateConditionEvaluator::class => [StateConditionEvaluatorInterface::class, ContractBindings::class],
+		StateFieldRuleResolver::class => [StateFieldRuleResolverInterface::class, ContractBindings::class],
 		TemporalCalculationSweepService::class => [TemporalCalculationSweepServiceInterface::class, ContractBindings::class],
 	];
 
