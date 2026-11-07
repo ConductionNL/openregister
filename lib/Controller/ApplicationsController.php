@@ -275,9 +275,8 @@ class ApplicationsController extends Controller {
 		try {
 			$data = $this->request->getParams();
 			unset($data['_route'], $data['id'], $data['organisation'], $data['owner'], $data['created']);
-			$application = $this->applicationService->update(id: $id, data: $data);
 
-			return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
+			return new JSONResponse(data: $this->applicationService->update(id: $id, data: $data), statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
 			$this->logFailure(
 				message: '[ApplicationsController] Failed to update application',
