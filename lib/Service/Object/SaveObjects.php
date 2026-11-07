@@ -3517,18 +3517,8 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function generateObjectIdentifiers(array $selfData, array $object): array {
-		// Auto-wire @self metadata with proper UUID validation and generation.
-		// Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
-		// Default: generate new UUID.
-		$providedId = $object['id'] ?? $selfData['id'] ?? null;
-		$selfData['uuid'] = Uuid::v4()->toRfc4122();
-		$selfData['id'] = $selfData['uuid'];
-
-		// Override: accept any non-empty string as identifier.
-		if ($providedId !== null && empty(trim($providedId)) === false) {
-			$selfData['uuid'] = $providedId;
-			$selfData['id'] = $providedId;
-		}
+		// The same id rule as the single-schema preparation: CSV 'id' column first, then @self.id.
+		$selfData = $this->withBulkObjectId(selfData: $selfData, object: $object);
 
 		// CRITICAL FIX: Use register and schema from method parameters if not provided in object data.
 		$selfData['register'] = $selfData['register'] ?? $object['register'] ?? null;
