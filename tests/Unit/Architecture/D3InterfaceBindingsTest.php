@@ -102,7 +102,7 @@ final class D3InterfaceBindingsTest extends TestCase {
 	#[DataProvider('cases')]
 	public function testNoOtherComponentNamesTheClass(string $class, array $case): void {
 		$offenders = [];
-		foreach ($this->filesOutside($case[2]) as $file) {
+		foreach ($this->filesOutside(component: $case[2]) as $file) {
 			if ($this->namesClass(file: $file, class: $class) === true) {
 				$offenders[] = substr($file, strlen(self::LIB) + 1);
 			}
@@ -141,7 +141,7 @@ final class D3InterfaceBindingsTest extends TestCase {
 	 * @return bool
 	 */
 	private function namesClass(string $file, string $class): bool {
-		$code      = $this->codeOf($file);
+		$code      = $this->codeOf(file: $file);
 		$namespace = substr($class, 0, (int) strrpos($class, '\\'));
 		$short     = substr($class, strlen($namespace) + 1);
 		if (preg_match('/(?<![\w\\\\])\\\\?' . preg_quote($class, '/') . '(?![\w\\\\])/', $code) === 1) {
@@ -162,9 +162,13 @@ final class D3InterfaceBindingsTest extends TestCase {
 	private function codeOf(string $file): string {
 		$code = '';
 		foreach (token_get_all((string) file_get_contents($file)) as $token) {
-			$isComment = is_array($token) === true && in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true) === true;
-			if ($isComment === false) {
-				$code .= is_array($token) === true ? $token[1] : $token;
+			if (is_array($token) === false) {
+				$code .= $token;
+				continue;
+			}
+
+			if (in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true) === false) {
+				$code .= $token[1];
 			}
 		}
 
