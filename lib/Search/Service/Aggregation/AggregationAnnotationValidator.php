@@ -27,8 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Aggregation;
 
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-
 /**
  * Validates the `x-openregister-aggregations` schema annotation shape.
  *
@@ -385,7 +383,7 @@ final class AggregationAnnotationValidator {
 	 * Accepts all three spellings the runner accepts — `{field}`,
 	 * `{fields: [...]}` and a plain ordered list — by delegating the shape
 	 * question to {@see AggregationQuery::normaliseGroupByFields()}, the
-	 * SAME canonicaliser {@see AggregationRunner::resolveGroupFields()}
+	 * SAME canonicaliser {@see \OCA\OpenRegister\Service\Aggregation\AggregationRunner::resolveGroupFields()}
 	 * uses. Sharing the canonicaliser is deliberate: a validator that owns
 	 * its own copy of the grammar accepts specs the executor then reads
 	 * differently, and the disagreement is silent in both directions.
