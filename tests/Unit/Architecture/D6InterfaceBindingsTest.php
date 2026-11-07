@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\FlowScheduleService;
+use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
@@ -58,6 +60,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 	private const HIDDEN = [
 		ExplodeNode::class => [ExplodeNodeInterface::class, ContractBindings::class],
 		FilterNode::class => [FilterNodeInterface::class, ContractBindings::class],
+		FlowScheduleService::class => [FlowScheduleServiceInterface::class, ContractBindings::class],
 		TransitionNode::class => [TransitionNodeInterface::class, ContractBindings::class],
 		TriggerObjectNode::class => [TriggerObjectNodeInterface::class, ContractBindings::class],
 		TriggerScheduleNode::class => [TriggerScheduleNodeInterface::class, ContractBindings::class],
