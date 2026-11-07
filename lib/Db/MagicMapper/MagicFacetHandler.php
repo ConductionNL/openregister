@@ -120,6 +120,14 @@ class MagicFacetHandler {
 	private const MAX_FACET_BUCKETS = 10000;
 
 	/**
+	 * Suffixes that turn a year or day bucket key into its from/to dates.
+	 */
+	private const DATE_KEY_SUFFIXES = [
+		'year' => ['-01-01', '-12-31'],
+		'day' => ['', ''],
+	];
+
+	/**
 	 * PostgreSQL TO_CHAR pattern of each date histogram interval.
 	 */
 	private const PG_DATE_FORMATS = [
@@ -1867,66 +1875,88 @@ class MagicFacetHandler {
 	 * @return array{from: string, to: string}|null The bounds or null.
 	 */
 	private function getDateBoundsForBucket(string $dateKey, string $interval): ?array {
-		switch ($interval) {
-			case 'year':
-				return [
-					'from' => $dateKey . '-01-01',
-					'to' => $dateKey . '-12-31',
-				];
-			case 'quarter':
-				if (preg_match('/^(\d{4})-Q(\d)$/', $dateKey, $matches) === 1) {
-					$year = (int)$matches[1];
-					$quarter = (int)$matches[2];
-					$startMonth = (($quarter - 1) * 3) + 1;
-					$endMonth = $startMonth + 2;
-					$lastDay = cal_days_in_month(0, $endMonth, $year);
+		if (isset(self::DATE_KEY_SUFFIXES[$interval]) === true) {
+			[$fromSuffix, $toSuffix] = self::DATE_KEY_SUFFIXES[$interval];
+			return ['from' => $dateKey . $fromSuffix, 'to' => $dateKey . $toSuffix];
+		}
 
-					return [
-						'from' => sprintf('%04d-%02d-01', $year, $startMonth),
-						'to' => sprintf('%04d-%02d-%02d', $year, $endMonth, $lastDay),
-					];
-				}
-				return null;
-			case 'month':
-				$timestamp = strtotime($dateKey . '-01');
-				if ($timestamp === false) {
-					return null;
-				}
-				return [
-					'from' => date('Y-m-01', $timestamp),
-					'to' => date('Y-m-t', $timestamp),
-				];
-			case 'week':
-				// ISO 8601 week buckets are keyed as `<iso-year>-<iso-week>`
-				// (e.g. `2025-12`). PHP's strtotime() parses that string as
-				// "December 2025", not "ISO week 12 of 2025"; we must use
-				// DateTime::setISODate() to get the correct Monday/Sunday
-				// bounds. Matches the implementation in MariaDbFacetHandler
-				// and MetaDataFacetHandler.
-				if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) !== 1) {
-					return null;
-				}
-
-				$isoYear = (int)$matches[1];
-				$isoWeek = (int)$matches[2];
-				$date = new DateTime();
-				$date->setISODate($isoYear, $isoWeek, 1);
-				$from = $date->format('Y-m-d');
-				$date->setISODate($isoYear, $isoWeek, 7);
-				$to = $date->format('Y-m-d');
-				return [
-					'from' => $from,
-					'to' => $to,
-				];
-			case 'day':
-				return [
-					'from' => $dateKey,
-					'to' => $dateKey,
-				];
-			default:
-				return null;
-		}//end switch
+		return match ($interval) {
+			'quarter' => $this->quarterBounds(dateKey: $dateKey),
+			'month' => $this->monthBounds(dateKey: $dateKey),
+			'week' => $this->isoWeekBounds(dateKey: $dateKey),
+			default => null,
+		};
 	}//end getDateBoundsForBucket()
+
+	/**
+	 * From/to dates of a quarter bucket keyed `<year>-Q<quarter>`.
+	 *
+	 * @param string $dateKey The bucket key (e.g. "2025-Q2").
+	 *
+	 * @return array{from: string, to: string}|null The bounds, or null for another key shape.
+	 */
+	private function quarterBounds(string $dateKey): ?array {
+		if (preg_match('/^(\d{4})-Q(\d)$/', $dateKey, $matches) !== 1) {
+			return null;
+		}
+
+		$year = (int)$matches[1];
+		$startMonth = (((int)$matches[2] - 1) * 3) + 1;
+		$endMonth = $startMonth + 2;
+		if (checkdate($endMonth, 1, $year) === false) {
+			throw new \ValueError('Invalid date');
+		}
+
+		return [
+			'from' => sprintf('%04d-%02d-01', $year, $startMonth),
+			'to' => (new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $endMonth)))->format('Y-m-t'),
+		];
+	}//end quarterBounds()
+
+	/**
+	 * From/to dates of a month bucket keyed `<year>-<month>`.
+	 *
+	 * @param string $dateKey The bucket key (e.g. "2025-02").
+	 *
+	 * @return array{from: string, to: string}|null The bounds, or null when the key is no date.
+	 */
+	private function monthBounds(string $dateKey): ?array {
+		$timestamp = strtotime($dateKey . '-01');
+		if ($timestamp === false) {
+			return null;
+		}
+
+		return [
+			'from' => date('Y-m-01', $timestamp),
+			'to' => date('Y-m-t', $timestamp),
+		];
+	}//end monthBounds()
+
+	/**
+	 * Monday/Sunday dates of an ISO 8601 week bucket keyed `<iso-year>-<iso-week>`.
+	 *
+	 * PHP's strtotime() parses a key like `2025-12` as "December 2025", not
+	 * "ISO week 12 of 2025", so the bounds come from DateTime::setISODate().
+	 * Matches the implementation in MariaDbFacetHandler and MetaDataFacetHandler.
+	 *
+	 * @param string $dateKey The bucket key (e.g. "2025-12").
+	 *
+	 * @return array{from: string, to: string}|null The bounds, or null for another key shape.
+	 */
+	private function isoWeekBounds(string $dateKey): ?array {
+		if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) !== 1) {
+			return null;
+		}
+
+		$date = new DateTime();
+		$date->setISODate((int)$matches[1], (int)$matches[2], 1);
+		$from = $date->format('Y-m-d');
+		$date->setISODate((int)$matches[1], (int)$matches[2], 7);
+		return [
+			'from' => $from,
+			'to' => $date->format('Y-m-d'),
+		];
+	}//end isoWeekBounds()
 
 	/**
 	 * Check if a column exists in the table.
