@@ -72,31 +72,18 @@ class NestedPathFilter {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
 	public function split(array $filters, array $properties): array {
-		$plain = [];
+		$plain  = [];
 		$nested = [];
 		foreach ($filters as $key => $value) {
-			$key = (string)$key;
+			$key      = (string)$key;
 			$segments = explode('.', $key);
-			$root = array_shift($segments);
-
-			if ($segments !== [] && self::isObjectProperty(properties: $properties, name: $root) === true) {
-				self::collect(root: $root, path: $segments, value: $value, into: $nested);
-				continue;
-			}
-
-			if ($segments === []
-				&& self::isObjectProperty(properties: $properties, name: $root) === true
-				&& self::isPathMap(value: $value) === true
-			) {
-				foreach ($value as $segment => $inner) {
-					self::collect(root: $root, path: [(string)$segment], value: $inner, into: $nested);
-				}
-
+			if (self::isObjectProperty(properties: $properties, name: $segments[0]) === true && self::descends(segments: $segments, value: $value) === true) {
+				array_push($nested, ...self::collect(path: $segments, value: $value));
 				continue;
 			}
 
 			$plain[$key] = $value;
-		}//end foreach
+		}
 
 		return [$plain, $nested];
 	}//end split()
@@ -113,14 +100,8 @@ class NestedPathFilter {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
 	public function expression(string $column, array $path, bool $isPostgres): ?string {
-		if ($path === []) {
+		if (self::isPlainPath(path: $path) === false) {
 			return null;
-		}
-
-		foreach ($path as $segment) {
-			if (preg_match(self::SEGMENT, $segment) !== 1) {
-				return null;
-			}
 		}
 
 		if ($isPostgres === true) {
@@ -261,26 +242,58 @@ class NestedPathFilter {
 	}//end presenceConditions()
 
 	/**
-	 * Add one path filter, descending into a nested map that is not an operator bag.
+	 * The path filters below one path, descending into a nested map that is not an operator bag.
 	 *
-	 * @param string                                                         $root  The object property.
-	 * @param list<string>                                                   $path  The segments so far.
-	 * @param mixed                                                          $value The value at that path.
-	 * @param list<array{root: string, path: list<string>, value: mixed}> $into  The collected path filters.
+	 * @param list<string> $path  The root property, then the segments so far.
+	 * @param mixed        $value The value at that path.
 	 *
-	 * @return void
+	 * @return list<array{root: string, path: list<string>, value: mixed}> The path filters, in order.
 	 */
-	private static function collect(string $root, array $path, mixed $value, array &$into): void {
-		if (self::isPathMap(value: $value) === true) {
-			foreach ($value as $segment => $inner) {
-				self::collect(root: $root, path: [...$path, (string)$segment], value: $inner, into: $into);
-			}
-
-			return;
+	private static function collect(array $path, mixed $value): array {
+		if (self::isPathMap(value: $value) === false) {
+			return [['root' => $path[0], 'path' => array_slice($path, 1), 'value' => $value]];
 		}
 
-		$into[] = ['root' => $root, 'path' => $path, 'value' => $value];
+		$collected = [];
+		foreach ($value as $segment => $inner) {
+			array_push($collected, ...self::collect(path: [...$path, (string)$segment], value: $inner));
+		}
+
+		return $collected;
 	}//end collect()
+
+	/**
+	 * Whether a path is non-empty and every segment is a plain name.
+	 *
+	 * @param list<string> $path The segments below the column.
+	 *
+	 * @return bool True when the path can be written into a JSON path literal.
+	 */
+	private static function isPlainPath(array $path): bool {
+		if ($path === []) {
+			return false;
+		}
+
+		foreach ($path as $segment) {
+			if (preg_match(self::SEGMENT, $segment) !== 1) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end isPlainPath()
+
+	/**
+	 * Whether a filter on an object property reads inside it: a dotted key, or a map of field names.
+	 *
+	 * @param list<string> $segments The key split on dots.
+	 * @param mixed        $value    The filter value.
+	 *
+	 * @return bool True when the filter names a path below the root.
+	 */
+	private static function descends(array $segments, mixed $value): bool {
+		return count($segments) > 1 || self::isPathMap(value: $value) === true;
+	}//end descends()
 
 	/**
 	 * Whether a property is declared with type object.
