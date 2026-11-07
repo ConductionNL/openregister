@@ -135,7 +135,9 @@
 						"
 						@update:modelValue="handleRegisterChange">
 						<template #option="{ title, description }">
-							<SelectOption :title="title" :description="description" />
+							<SelectOption
+								:title="title"
+								:description="description" />
 						</template>
 					</NcSelect>
 					<p class="field-hint">
@@ -161,7 +163,9 @@
 						"
 						@update:modelValue="handleSchemaChange">
 						<template #option="{ title, description }">
-							<SelectOption :title="title" :description="description" />
+							<SelectOption
+								:title="title"
+								:description="description" />
 						</template>
 					</NcSelect>
 					<p class="field-hint">
