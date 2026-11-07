@@ -23,6 +23,7 @@ use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\OwnSettingsChangeRecorder;
+use OCA\OpenRegister\Service\Settings\SettingsAuditTrail;
 use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -122,10 +123,8 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 	private function recorder(?SecuritySettingAnnouncer $announcer = null): OwnSettingsChangeRecorder {
 		return new OwnSettingsChangeRecorder(
 			$this->appConfig,
-			$this->auditor,
-			new SecuritySettingRegistry($this->appConfig),
-			$this->createMock(LoggerInterface::class),
-			$announcer
+			new SettingsAuditTrail($this->auditor, new SecuritySettingRegistry($this->appConfig), $announcer),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end recorder()
 
@@ -298,8 +297,7 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 		$auditor->method('recordUpdate')->willThrowException(new \RuntimeException('database gone'));
 		$recorder = new OwnSettingsChangeRecorder(
 			$this->appConfig,
-			$auditor,
-			new SecuritySettingRegistry($this->appConfig),
+			new SettingsAuditTrail($auditor, new SecuritySettingRegistry($this->appConfig)),
 			$this->createMock(LoggerInterface::class)
 		);
 

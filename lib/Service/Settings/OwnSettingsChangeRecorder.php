@@ -84,21 +84,41 @@ class OwnSettingsChangeRecorder {
 	];
 
 	/**
+	 * Writes the audit rows.
+	 *
+	 * @var SettingsChangeAuditor
+	 */
+	private readonly SettingsChangeAuditor $auditor;
+
+	/**
+	 * Knows which keys are secret.
+	 *
+	 * @var SecuritySettingRegistry
+	 */
+	private readonly SecuritySettingRegistry $registry;
+
+	/**
+	 * Tells the administrators, when wired.
+	 *
+	 * @var SecuritySettingAnnouncer|null
+	 */
+	private readonly ?SecuritySettingAnnouncer $announcer;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig                    $appConfig The stored settings.
-	 * @param SettingsChangeAuditor         $auditor   Writes the audit rows.
-	 * @param SecuritySettingRegistry       $registry  Knows which keys are secret.
-	 * @param LoggerInterface               $logger    Reports a failed snapshot.
-	 * @param SecuritySettingAnnouncer|null $announcer Tells the administrators.
+	 * @param IAppConfig         $appConfig  The stored settings.
+	 * @param SettingsAuditTrail $auditTrail The auditor, the secret registry and the announcer.
+	 * @param LoggerInterface    $logger     Reports a failed snapshot.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly SettingsChangeAuditor $auditor,
-		private readonly SecuritySettingRegistry $registry,
+		SettingsAuditTrail $auditTrail,
 		private readonly LoggerInterface $logger,
-		private readonly ?SecuritySettingAnnouncer $announcer = null,
 	) {
+		$this->auditor = $auditTrail->auditor;
+		$this->registry = $auditTrail->registry;
+		$this->announcer = $auditTrail->announcer;
 	}//end __construct()
 
 	/**

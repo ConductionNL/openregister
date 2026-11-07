@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
 use OCA\OpenRegister\Service\Audit\SecuritySettingRegistry;
 use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
 use OCA\OpenRegister\Service\Settings\OwnSettingsChangeRecorder;
+use OCA\OpenRegister\Service\Settings\SettingsAuditTrail;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -86,10 +87,8 @@ class OwnSettingsChangeRecorderAccessGoldenTest extends TestCase {
 
 		return new OwnSettingsChangeRecorder(
 			$appConfig,
-			$auditor,
-			new SecuritySettingRegistry($appConfig),
-			$logger,
-			$announcer
+			new SettingsAuditTrail($auditor, new SecuritySettingRegistry($appConfig), $announcer),
+			$logger
 		);
 	}//end recorder()
 
