@@ -135,6 +135,7 @@ final class ContractBindings {
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
+		RegisterServiceInterface::class => RegisterService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		SequenceServiceInterface::class => SequenceService::class,
