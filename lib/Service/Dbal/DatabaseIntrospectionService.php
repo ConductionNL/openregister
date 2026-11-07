@@ -55,7 +55,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Depends on the DBAL schema value
  *   objects plus the OR mapper/diff seams the design names explicitly.
  */
-class DatabaseIntrospectionService {
+class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterface {
 	/**
 	 * The object-source provider id every introspected schema is bound to.
 	 *
