@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -30,6 +31,8 @@ use ReflectionMethod;
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder
+ * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder
+ * @covers \OCA\OpenRegister\Db\MagicMapper\MagicUnionPage
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Support\OrderParameter
  * @uses   \OCA\OpenRegister\Support\QueryLimit
@@ -80,9 +83,9 @@ class MagicMapperUnionOrderKeysTest extends TestCase {
 	}//end testADigitOnlyFieldIsAColumn()
 
 	public function testASequentialSearchReadsTheFieldsOfEveryForm(): void {
-		$fields = $this->call('orderedPropertyFields', ['query' => ['_order' => '[{"field":"firstName","direction":"DESC"}]']]);
+		$order = new MagicSequentialOrder(query: ['_order' => '[{"field":"firstName","direction":"DESC"}]']);
 
-		$this->assertSame(['first_name' => 'firstName'], $fields);
+		$this->assertSame(['firstName' => 'DESC', '@self.uuid' => 'ASC'], $order->tableOrder());
 	}//end testASequentialSearchReadsTheFieldsOfEveryForm()
 
 	private function orderable(mixed $order, array $columns): array {

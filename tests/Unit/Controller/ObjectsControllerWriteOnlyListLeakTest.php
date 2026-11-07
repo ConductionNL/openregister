@@ -240,7 +240,7 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		);
 
 		return new RenderObject(
-			$this->createMock(\OCA\OpenRegister\Db\FileMapper::class),
+			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
 			$this->createMock(MagicMapper::class),
 			$this->createMock(RegisterMapper::class),
 			$schemaMapper,

@@ -26,9 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Service\File\FileOwnershipHandler;
-use OCA\OpenRegister\Service\File\ObjectFileMigration;
-use OCA\OpenRegister\Service\File\ObjectFileShareReowner;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\ObjectFileMigration;
+use OCA\OpenRegister\Files\Service\File\ObjectFileShareReowner;
 use OCP\Encryption\IManager as IEncryptionManager;
 use OCP\Files\File;
 use OCP\Files\Folder;
