@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\TemporalSweep\SweepTarget;
@@ -65,11 +66,13 @@ class TemporalCalculationSweepService implements TemporalCalculationSweepService
 	 * @param TemporalSchemaScan $scan Schema and register enumeration (system scope).
 	 * @param TemporalCalculations $calculations Materialised and `now`-dependent calculation detection.
 	 * @param TemporalSchemaSweeper $sweeper Sweeps the objects of one temporal schema.
+	 * @param MagicTableRowReaderInterface $objectMapper Raw per-table object enumeration.
 	 */
 	public function __construct(
 		private readonly TemporalSchemaScan $scan,
 		private readonly TemporalCalculations $calculations,
 		private readonly TemporalSchemaSweeper $sweeper,
+		private readonly MagicTableRowReaderInterface $objectMapper,
 	) {
 
 	}//end __construct()
@@ -114,7 +117,7 @@ class TemporalCalculationSweepService implements TemporalCalculationSweepService
 			}
 
 			$summary['temporalSchemas']++;
-			$this->sweeper->sweep(target: $target, summary: $summary);
+			$this->sweeper->sweep(target: $target, rows: $this->objectMapper, summary: $summary);
 		}
 	}//end sweepAll()
 

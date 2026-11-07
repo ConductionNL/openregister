@@ -126,7 +126,7 @@ final class ForeignSeedSchema
 	 */
 	private function logSkip(Register $register, Schema $schema): void {
 		$this->logger->warning(
-			message: '[ImportHandler] Skipping seed object: its schema belongs to another app and is not in its register',
+			message: ImportLogTag::PREFIX.'Skipping seed object: its schema belongs to another app and is not in its register',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,

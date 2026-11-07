@@ -128,7 +128,6 @@ class TemporalCalculationSweepServiceGoldenTest extends TestCase {
 			scan: new TemporalSchemaScan(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, logger: $logger),
 			calculations: new TemporalCalculations(),
 			sweeper: new TemporalSchemaSweeper(
-				objectMapper: $this->objectMapper,
 				terminals: new LifecycleTerminals(),
 				refresher: new TemporalObjectRefresher(
 					recomputer: new CalculationRecomputer(evaluator: $this->evaluator, payloadBuilder: $payloadBuilder, logger: $logger),
@@ -137,6 +136,7 @@ class TemporalCalculationSweepServiceGoldenTest extends TestCase {
 				),
 				logger: $logger
 			),
+			objectMapper: $this->objectMapper,
 		);
 
 	}//end setUp()

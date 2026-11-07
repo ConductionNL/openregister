@@ -140,7 +140,7 @@ final class SeedRelatedItems
 	private function logStart(SeedRelatedTarget $target, array $counts): void
 	{
 		$this->logger->debug(
-			message: '[ImportHandler] Processing related items for seed object',
+			message: ImportLogTag::PREFIX.'Processing related items for seed object',
 			context: [
 				'file'        => __FILE__,
 				'line'        => __LINE__,
@@ -163,7 +163,7 @@ final class SeedRelatedItems
 	private function logDone(SeedRelatedTarget $target, array $counts): void
 	{
 		$this->logger->debug(
-			message: '[ImportHandler] Related items processed for seed object',
+			message: ImportLogTag::PREFIX.'Related items processed for seed object',
 			context: [
 				'file'          => __FILE__,
 				'line'          => __LINE__,
@@ -260,7 +260,7 @@ final class SeedRelatedItems
 		$decoded = base64_decode(substr((string) $spec['content'], 7), strict: true);
 		if ($decoded === false) {
 			$context = ['object_uuid' => $target->object->getUuid(), 'name' => (string) $spec['name']];
-			$this->warn(message: '[ImportHandler] Seed file base64 decode failed - skipping', context: $context);
+			$this->warn(message: ImportLogTag::PREFIX.'Seed file base64 decode failed - skipping', context: $context);
 			return null;
 		}
 
@@ -398,7 +398,7 @@ final class SeedRelatedItems
 	 */
 	private function warnNoUser(string $kind, array $context): void
 	{
-		$this->warn(message: "[ImportHandler] Skipping seed {$kind} - no user session available", context: $context);
+		$this->warn(message: ImportLogTag::PREFIX."Skipping seed {$kind} - no user session available", context: $context);
 	}//end warnNoUser()
 
 	/**
@@ -413,7 +413,7 @@ final class SeedRelatedItems
 	{
 		$kind = $detail['kind'];
 		unset($detail['kind']);
-		$this->warn(message: "[ImportHandler] Seed {$kind} creation failed", context: (['object_uuid' => $target->object->getUuid()] + $detail));
+		$this->warn(message: ImportLogTag::PREFIX."Seed {$kind} creation failed", context: (['object_uuid' => $target->object->getUuid()] + $detail));
 	}//end failed()
 
 	/**

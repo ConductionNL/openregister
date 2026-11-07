@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation\TemporalSweep;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 
@@ -39,9 +39,8 @@ use Psr\Log\LoggerInterface;
 final class TemporalSchemaSweeper {
 
 	/**
-	 * Wire the object enumeration, the lifecycle reader, the refresher and the logger.
+	 * Wire the lifecycle reader, the refresher and the logger.
 	 *
-	 * @param MagicMapperInterface $objectMapper Raw per-table object enumeration.
 	 * @param LifecycleTerminals $terminals Lifecycle field + terminal states.
 	 * @param TemporalObjectRefresher $refresher Recomputes and re-saves one object.
 	 * @param LoggerInterface $logger Structured logging.
@@ -49,7 +48,6 @@ final class TemporalSchemaSweeper {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
 		private readonly LifecycleTerminals $terminals,
 		private readonly TemporalObjectRefresher $refresher,
 		private readonly LoggerInterface $logger,
@@ -62,6 +60,7 @@ final class TemporalSchemaSweeper {
 	 * values changed.
 	 *
 	 * @param SweepTarget $target The register, schema and calculations.
+	 * @param MagicTableRowReaderInterface $rows Raw per-table object enumeration.
 	 * @param array<string, int> $summary Running summary counters (by reference).
 	 *
 	 * @return void
@@ -69,8 +68,8 @@ final class TemporalSchemaSweeper {
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
 	 *   (Scenario: Tier crossing notifies exactly once)
 	 */
-	public function sweep(SweepTarget $target, array &$summary): void {
-		$objects = $this->objects(target: $target);
+	public function sweep(SweepTarget $target, MagicTableRowReaderInterface $rows, array &$summary): void {
+		$objects = $this->objects(target: $target, rows: $rows);
 		if ($objects === null) {
 			$summary['errors']++;
 			return;
@@ -109,12 +108,13 @@ final class TemporalSchemaSweeper {
 	 * The target's objects, or null after logging a failed enumeration.
 	 *
 	 * @param SweepTarget $target The register and schema.
+	 * @param MagicTableRowReaderInterface $rows Raw per-table object enumeration.
 	 *
 	 * @return array<int, ObjectEntity>|null The objects.
 	 */
-	private function objects(SweepTarget $target): ?array {
+	private function objects(SweepTarget $target, MagicTableRowReaderInterface $rows): ?array {
 		try {
-			return $this->objectMapper->findAllInRegisterSchemaTable(register: $target->register, schema: $target->schema);
+			return $rows->findAllInRegisterSchemaTable(register: $target->register, schema: $target->schema);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[TemporalCalculationSweep] object enumeration failed for schema ' . (string)$target->schema->getSlug() . ': ' . $e->getMessage(),
