@@ -60,6 +60,37 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 final class AggregationJoinAnnotationValidator {
 
 	/**
+	 * Error code and message format per failure, keyed by a short name.
+	 *
+	 * @var array<string, array{0: string, 1: string}>
+	 */
+	private const FAILURES = [
+		'malformed' => ['aggregation-join-malformed', 'Aggregation "%s" join must be an object {through, on, filter?, select}.'],
+		'through-empty' => ['aggregation-join-through-empty', 'Aggregation "%s" join must have a non-empty `through` schema ref.'],
+		'on-field-unknown' => [
+			'aggregation-join-on-field-unknown',
+			'Aggregation "%s" join.on parent field "%s" is not declared in the schema properties.',
+		],
+		'on-malformed' => [
+			'aggregation-join-on-malformed',
+			'Aggregation "%s" join.on must be a "Schema.column" string or a {parentField: joinedField} map.',
+		],
+		'select-empty' => [
+			'aggregation-join-select-empty',
+			'Aggregation "%s" join must declare a non-empty `select` list of joined-schema fields.',
+		],
+		'select-malformed' => [
+			'aggregation-join-select-malformed',
+			'Aggregation "%s" join.select entries must be "Field" strings or {field, metric?} objects.',
+		],
+		'filter-malformed' => ['aggregation-join-filter-malformed', 'Aggregation "%s" join filter/where must be a map.'],
+		'requires-groupby' => [
+			'aggregation-join-requires-groupby',
+			'Aggregation "%s" declares a join but no groupBy — joined values attach per group.',
+		],
+	];
+
+	/**
 	 * Validate the `join` clause of one aggregation spec.
 	 *
 	 * @param string $name Aggregation name (for error messages).
@@ -77,48 +108,45 @@ final class AggregationJoinAnnotationValidator {
 		}
 
 		if (is_array($join) === false || array_is_list($join) === true) {
-			return [
-				[
-					'code' => 'aggregation-join-malformed',
-					'message' => sprintf(
-						'Aggregation "%s" join must be an object {through, on, filter?, select}.',
-						$name
-					),
-				],
-			];
+			return [$this->failed(key: 'malformed', args: [$name])];
 		}
 
-		return array_merge(
-			$this->validateThrough(name: $name, join: $join),
-			$this->validateOn(name: $name, join: $join, propKeys: $propKeys),
-			$this->validateSelect(name: $name, join: $join),
-			$this->validateFilter(name: $name, join: $join),
-			$this->validateGroupByPresence(name: $name, spec: $spec)
-		);
+		return $this->clauseErrors(clause: new JoinClause(name: $name, join: $join, spec: $spec, propKeys: $propKeys));
 	}//end validate()
+
+	/**
+	 * Every check on a well-formed join object, in reporting order.
+	 *
+	 * @param JoinClause $clause The join under validation.
+	 *
+	 * @return array<int, array{code: string, message: string}> Error list (empty = valid).
+	 */
+	private function clauseErrors(JoinClause $clause): array {
+		return array_merge(
+			$this->validateThrough(clause: $clause),
+			$this->validateOn(clause: $clause),
+			$this->validateSelect(clause: $clause),
+			$this->validateFilter(clause: $clause),
+			$this->validateGroupByPresence(clause: $clause)
+		);
+	}//end clauseErrors()
 
 	/**
 	 * The joined schema ref must be a non-empty string.
 	 *
-	 * @param string $name Aggregation name (for error messages).
-	 * @param array<string, mixed> $join The raw join spec.
+	 * @param JoinClause $clause The join under validation.
 	 *
 	 * @return array<int, array{code: string, message: string}> Error list (empty = valid).
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function validateThrough(string $name, array $join): array {
-		$through = ($join['through'] ?? null);
+	private function validateThrough(JoinClause $clause): array {
+		$through = ($clause->join['through'] ?? null);
 		if (is_string($through) === true && $through !== '') {
 			return [];
 		}
 
-		return [
-			[
-				'code' => 'aggregation-join-through-empty',
-				'message' => sprintf('Aggregation "%s" join must have a non-empty `through` schema ref.', $name),
-			],
-		];
+		return [$this->failed(key: 'through-empty', args: [$clause->name])];
 	}//end validateThrough()
 
 	/**
@@ -126,97 +154,77 @@ final class AggregationJoinAnnotationValidator {
 	 * `{parentField: joinedField}` map whose parent-side halves must be
 	 * declared host-schema properties.
 	 *
-	 * @param string $name Aggregation name (for error messages).
-	 * @param array<string, mixed> $join The raw join spec.
-	 * @param array<int, mixed> $propKeys Declared host-schema property names.
+	 * @param JoinClause $clause The join under validation.
 	 *
 	 * @return array<int, array{code: string, message: string}> Error list (empty = valid).
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function validateOn(string $name, array $join, array $propKeys): array {
-		$onClause = ($join['on'] ?? null);
-
+	private function validateOn(JoinClause $clause): array {
+		$onClause = ($clause->join['on'] ?? null);
 		if (is_string($onClause) === true && $onClause !== '') {
 			return [];
 		}
 
-		if (is_array($onClause) === true && count($onClause) > 0 && array_is_list($onClause) === false) {
-			$errors = [];
-			foreach (array_keys($onClause) as $parentField) {
-				if (in_array((string)$parentField, $propKeys, true) === true) {
-					continue;
-				}
+		if ($this->isFieldMap(onClause: $onClause) === false) {
+			return [$this->failed(key: 'on-malformed', args: [$clause->name])];
+		}
 
-				$errors[] = [
-					'code' => 'aggregation-join-on-field-unknown',
-					'message' => sprintf(
-						'Aggregation "%s" join.on parent field "%s" is not declared in the schema properties.',
-						$name,
-						(string)$parentField
-					),
-				];
-			}
-
-			return $errors;
-		}//end if
-
-		return [
-			[
-				'code' => 'aggregation-join-on-malformed',
-				'message' => sprintf(
-					'Aggregation "%s" join.on must be a "Schema.column" string or a {parentField: joinedField} map.',
-					$name
-				),
-			],
-		];
+		return array_map(
+			fn (string $field): array => $this->failed(key: 'on-field-unknown', args: [$clause->name, $field]),
+			$this->unknownFields(fields: array_keys($onClause), propKeys: $clause->propKeys)
+		);
 	}//end validateOn()
 
 	/**
-	 * Validate the `select` list — non-empty, every entry a "Field" string
-	 * or a `{field, metric?}` object.
+	 * Whether an `on` clause is a non-empty `{parentField: joinedField}` map.
 	 *
-	 * @param string $name Aggregation name (for error messages).
-	 * @param array<string, mixed> $join The raw join spec.
+	 * @param mixed $onClause The raw `on` value.
+	 *
+	 * @return bool
+	 */
+	private function isFieldMap(mixed $onClause): bool {
+		return is_array($onClause) === true && count($onClause) > 0 && array_is_list($onClause) === false;
+	}//end isFieldMap()
+
+	/**
+	 * The given field names, cast to string, that the host schema does not declare.
+	 *
+	 * @param array<int, int|string> $fields   Field names to check.
+	 * @param array<int, mixed>      $propKeys Declared host-schema property names.
+	 *
+	 * @return array<int, string> The undeclared names, in input order.
+	 */
+	private function unknownFields(array $fields, array $propKeys): array {
+		$names = array_map(static fn (int|string $field): string => (string) $field, $fields);
+		return array_values(
+			array_filter($names, static fn (string $field): bool => in_array($field, $propKeys, true) === false)
+		);
+	}//end unknownFields()
+
+	/**
+	 * Validate the `select` list — non-empty, every entry a "Field" string
+	 * or a `{field, metric?}` object. One error per unusable entry.
+	 *
+	 * @param JoinClause $clause The join under validation.
 	 *
 	 * @return array<int, array{code: string, message: string}> Error list (empty = valid).
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function validateSelect(string $name, array $join): array {
-		$select = ($join['select'] ?? null);
+	private function validateSelect(JoinClause $clause): array {
+		$select = ($clause->join['select'] ?? null);
 		if (is_array($select) === false || count($select) === 0) {
-			return [
-				[
-					'code' => 'aggregation-join-select-empty',
-					'message' => sprintf(
-						'Aggregation "%s" join must declare a non-empty `select` list of joined-schema fields.',
-						$name
-					),
-				],
-			];
+			return [$this->failed(key: 'select-empty', args: [$clause->name])];
 		}
 
-		$errors = [];
-		foreach ($select as $entry) {
-			if ($this->isUsableSelectEntry(entry: $entry) === true) {
-				continue;
-			}
-
-			$errors[] = [
-				'code' => 'aggregation-join-select-malformed',
-				'message' => sprintf(
-					'Aggregation "%s" join.select entries must be "Field" strings or {field, metric?} objects.',
-					$name
-				),
-			];
-		}
-
-		return $errors;
+		$unusable = array_filter($select, fn (mixed $entry): bool => $this->isUsableSelectEntry(entry: $entry) === false);
+		return array_fill(0, count($unusable), $this->failed(key: 'select-malformed', args: [$clause->name]));
 	}//end validateSelect()
 
 	/**
-	 * Test whether one `select` entry carries a usable field reference.
+	 * Test whether one `select` entry carries a usable field reference: a
+	 * non-empty string, or an object whose `field` is one.
 	 *
 	 * @param mixed $entry The raw select entry.
 	 *
@@ -225,41 +233,30 @@ final class AggregationJoinAnnotationValidator {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function isUsableSelectEntry(mixed $entry): bool {
-		if (is_string($entry) === true && $entry !== '') {
-			return true;
+		$field = $entry;
+		if (is_array($entry) === true) {
+			$field = ($entry['field'] ?? null);
 		}
 
-		if (is_array($entry) === false) {
-			return false;
-		}
-
-		return (isset($entry['field']) === true
-			&& is_string($entry['field']) === true
-			&& $entry['field'] !== '');
+		return is_string($field) === true && $field !== '';
 	}//end isUsableSelectEntry()
 
 	/**
 	 * The joined-side filter must be a map when present.
 	 *
-	 * @param string $name Aggregation name (for error messages).
-	 * @param array<string, mixed> $join The raw join spec.
+	 * @param JoinClause $clause The join under validation.
 	 *
 	 * @return array<int, array{code: string, message: string}> Error list (empty = valid).
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function validateFilter(string $name, array $join): array {
-		$filter = ($join['filter'] ?? $join['where'] ?? null);
+	private function validateFilter(JoinClause $clause): array {
+		$filter = ($clause->join['filter'] ?? $clause->join['where'] ?? null);
 		if ($filter === null || is_array($filter) === true) {
 			return [];
 		}
 
-		return [
-			[
-				'code' => 'aggregation-join-filter-malformed',
-				'message' => sprintf('Aggregation "%s" join filter/where must be a map.', $name),
-			],
-		];
+		return [$this->failed(key: 'filter-malformed', args: [$clause->name])];
 	}//end validateFilter()
 
 	/**
@@ -267,8 +264,7 @@ final class AggregationJoinAnnotationValidator {
 	 * attach them to. Refused at save time rather than left to throw on
 	 * every call.
 	 *
-	 * @param string $name Aggregation name (for error messages).
-	 * @param array<string, mixed> $spec The raw aggregation spec.
+	 * @param JoinClause $clause The join under validation.
 	 *
 	 * @return array<int, array{code: string, message: string}> Error list (empty = valid).
 	 *
@@ -280,20 +276,25 @@ final class AggregationJoinAnnotationValidator {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function validateGroupByPresence(string $name, array $spec): array {
-		$groupFields = AggregationQuery::normaliseGroupByFields(groupBy: ($spec['groupBy'] ?? null));
+	private function validateGroupByPresence(JoinClause $clause): array {
+		$groupFields = AggregationQuery::normaliseGroupByFields(groupBy: ($clause->spec['groupBy'] ?? null));
 		if (count($groupFields) > 0) {
 			return [];
 		}
 
-		return [
-			[
-				'code' => 'aggregation-join-requires-groupby',
-				'message' => sprintf(
-					'Aggregation "%s" declares a join but no groupBy — joined values attach per group.',
-					$name
-				),
-			],
-		];
+		return [$this->failed(key: 'requires-groupby', args: [$clause->name])];
 	}//end validateGroupByPresence()
+
+	/**
+	 * One validation error from the FAILURES table.
+	 *
+	 * @param string            $key  The FAILURES key.
+	 * @param array<int, mixed> $args The sprintf arguments for its message.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function failed(string $key, array $args): array {
+		$failure = self::FAILURES[$key];
+		return ['code' => $failure[0], 'message' => sprintf($failure[1], ...$args)];
+	}//end failed()
 }//end class
