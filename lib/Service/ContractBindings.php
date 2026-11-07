@@ -341,6 +341,8 @@ final class ContractBindings {
 		DeckCardServiceInterface::class => DeckCardService::class,
 		DeckLinkServiceInterface::class => DeckLinkService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
+		\OCA\OpenRegister\Service\Object\DraftActivationInterface::class => \OCA\OpenRegister\Service\Object\DraftActivation::class,
+		\OCA\OpenRegister\Service\Object\DraftExpiryInterface::class => \OCA\OpenRegister\Service\Object\DraftExpiry::class,
 		EmailLinkServiceInterface::class => EmailLinkService::class,
 		EndNodeInterface::class => EndNode::class,
 		EndpointServiceInterface::class => EndpointService::class,
