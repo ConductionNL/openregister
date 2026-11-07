@@ -35,6 +35,8 @@ use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -56,6 +58,13 @@ final class D9InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: array<int, string>}>
 	 */
 	private const HIDDEN = [
+		PlaceholderResolver::class => [
+			PlaceholderResolverInterface::class,
+			SearchRegistrar::class,
+			[
+				'lib/Service/Object/SaveObject.php',
+			],
+		],
 		ScheduleFlowStore::class => [
 			ScheduleFlowStoreInterface::class,
 			AppHostRegistrar::class,
