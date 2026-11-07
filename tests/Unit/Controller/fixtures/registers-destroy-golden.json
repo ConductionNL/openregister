@@ -1,0 +1,741 @@
+{
+    "admin, empty register": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "delete",
+                7
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 200,
+        "data": []
+    },
+    "anonymous": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "User does not have permission to manage this register"
+        }
+    },
+    "cache fails": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "delete",
+                7
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 500,
+        "data": {
+            "error": "cache failed"
+        }
+    },
+    "count as text": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "register-has-objects",
+            "objectCount": 4
+        }
+    },
+    "count fails": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ]
+        ],
+        "status": 500,
+        "data": {
+            "error": "count failed"
+        }
+    },
+    "delete fails": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "delete",
+                7
+            ]
+        ],
+        "status": 500,
+        "data": {
+            "error": "delete failed"
+        }
+    },
+    "delete still has objects": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "delete",
+                7
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "objects attached"
+        }
+    },
+    "find fails": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ]
+        ],
+        "status": 500,
+        "data": {
+            "error": "find failed"
+        }
+    },
+    "force as a boolean": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "warning",
+                "[RegistersController] Force-deleting register with attached objects",
+                {
+                    "registerId": 7,
+                    "registerSlug": "seven",
+                    "objectCount": 3
+                }
+            ],
+            [
+                "delete",
+                7
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 200,
+        "data": []
+    },
+    "force as one": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "warning",
+                "[RegistersController] Force-deleting register with attached objects",
+                {
+                    "registerId": 7,
+                    "registerSlug": "seven",
+                    "objectCount": 3
+                }
+            ],
+            [
+                "delete",
+                7
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 200,
+        "data": []
+    },
+    "force as text": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "warning",
+                "[RegistersController] Force-deleting register with attached objects",
+                {
+                    "registerId": 7,
+                    "registerSlug": "seven",
+                    "objectCount": 3
+                }
+            ],
+            [
+                "delete",
+                7
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 200,
+        "data": []
+    },
+    "force as the number one": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "register-has-objects",
+            "objectCount": 3
+        }
+    },
+    "force false as text": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "register-has-objects",
+            "objectCount": 3
+        }
+    },
+    "force on an empty register": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "delete",
+                7
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 200,
+        "data": []
+    },
+    "force yes is no force": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "register-has-objects",
+            "objectCount": 3
+        }
+    },
+    "manager, empty register": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "member"
+            ],
+            [
+                "getUserGroupIds",
+                "member"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "delete",
+                7
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 200,
+        "data": []
+    },
+    "objects with a manager": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "member"
+            ],
+            [
+                "getUserGroupIds",
+                "member"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "register-has-objects",
+            "objectCount": 3
+        }
+    },
+    "objects without force": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getStatistics",
+                [
+                    7,
+                    null
+                ]
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "register-has-objects",
+            "objectCount": 3
+        }
+    },
+    "rights fail": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "User does not have permission to manage this register"
+        }
+    },
+    "somebody else": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "other"
+            ],
+            [
+                "getUserGroupIds",
+                "other"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "User does not have permission to manage this register"
+        }
+    },
+    "somebody else with force": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "other"
+            ],
+            [
+                "getUserGroupIds",
+                "other"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "User does not have permission to manage this register"
+        }
+    },
+    "unknown register": {
+        "calls": [
+            [
+                "getParam",
+                "force",
+                null
+            ],
+            [
+                "find",
+                7
+            ]
+        ],
+        "status": 404,
+        "data": {
+            "error": "Register not found"
+        }
+    }
+}
