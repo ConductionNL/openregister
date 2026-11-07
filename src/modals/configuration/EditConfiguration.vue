@@ -17,7 +17,6 @@ import {
 				: t('openregister', 'New Configuration')
 		"
 		size="large"
-		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="error" type="error">
@@ -1575,53 +1574,14 @@ export default {
 }
 </script>
 
-<style scoped>
-.tabContainer {
-	width: 100%;
-}
-
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-	padding: 1rem 0;
-}
-
-.selectField {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.selectField label {
-	font-weight: 500;
-	color: var(--color-text-maxcontrast);
-}
-
-.checkboxField {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.field-hint {
-	font-size: 0.875rem;
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
+<style lang="scss" scoped>
+@use '../../styles/modals.scss' as *;
+@include tab-container-column;
 </style>
 
-<style>
-/* Tab styling - must be unscoped to affect Bootstrap Vue components */
-.nav-tabs .nav-link {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.5rem;
-}
+<style lang="scss">
+@use '../../styles/modals.scss' as *;
 
-.nav-tabs .nav-link span {
-	display: inline-flex;
-	align-items: center;
-}
+/* Tab styling - must be unscoped to affect Bootstrap Vue components */
+@include nav-tabs-link;
 </style>

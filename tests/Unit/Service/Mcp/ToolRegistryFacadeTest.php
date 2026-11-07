@@ -21,9 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Mcp;
 
-use OCA\OpenRegister\Service\Mcp\ToolRegistryFacade;
-use OCA\OpenRegister\Service\ToolRegistry;
-use OCA\OpenRegister\Tool\ToolInterface;
+use OCA\OpenRegister\Mcp\Service\Mcp\ToolRegistryFacade;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

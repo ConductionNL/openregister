@@ -81,21 +81,6 @@
     ],
     [
         "debug",
-        "[FileService] About to call documentProcessingHandler->setFileService.",
-        []
-    ],
-    [
-        "setFileService",
-        "docProcHandler",
-        true
-    ],
-    [
-        "debug",
-        "[FileService] Called documentProcessingHandler->setFileService.",
-        []
-    ],
-    [
-        "debug",
         "[FileService] About to call filePublishingHandler->setFileService.",
         []
     ],

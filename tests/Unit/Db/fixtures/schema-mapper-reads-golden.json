@@ -1,0 +1,197 @@
+{
+    "application slug hit": {
+        "outcome": "schema 7",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
+            "#1 param :p2 = app, 2",
+            "#1 expr.eq(application, :p2, NULL)",
+            "#1 andWhere(eq(application, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "application slug miss": {
+        "outcome": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
+            "#1 param :p2 = app, 2",
+            "#1 expr.eq(application, :p2, NULL)",
+            "#1 andWhere(eq(application, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "all application slug two": {
+        "outcome": [
+            "schema 7",
+            "schema 9"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
+            "#1 param :p2 = app, 2",
+            "#1 expr.eq(application, :p2, NULL)",
+            "#1 andWhere(eq(application, :p2, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "all application slug none": {
+        "outcome": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
+            "#1 param :p2 = app, 2",
+            "#1 expr.eq(application, :p2, NULL)",
+            "#1 andWhere(eq(application, :p2, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "slug in ids hit": {
+        "outcome": "schema 7",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
+            "#1 param :p2 = [7,9,1], 101",
+            "#1 expr.in(id, :p2, NULL)",
+            "#1 andWhere(in(id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "slug in ids miss": {
+        "outcome": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
+            "#1 param :p2 = [7,9,1], 101",
+            "#1 expr.in(id, :p2, NULL)",
+            "#1 andWhere(in(id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "slug in ids empty set": {
+        "outcome": null,
+        "queries": []
+    },
+    "count by slug": {
+        "outcome": 3,
+        "queries": [
+            "#1 func.count(*, slug_count)",
+            "#1 select(count(*, slug_count))",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count by slug no row": {
+        "outcome": 0,
+        "queries": [
+            "#1 func.count(*, slug_count)",
+            "#1 select(count(*, slug_count))",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "optimized empty": {
+        "outcome": [],
+        "queries": []
+    },
+    "optimized one chunk": {
+        "outcome": {
+            "7": "schema 7",
+            "9": "schema 9"
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = [7,9], 101",
+            "#1 expr.in(id, :p1, NULL)",
+            "#1 where(in(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "optimized two chunks": {
+        "outcome": {
+            "7": "schema 7",
+            "9": "schema 9"
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,2 ... 3914",
+            "#1 expr.in(id, :p1, NULL)",
+            "#1 where(in(id, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_schemas, NULL)",
+            "#2 param :p2 = [1001], 101",
+            "#2 expr.in(id, :p2, NULL)",
+            "#2 where(in(id, :p2, NULL))",
+            "#2 executeQuery()"
+        ]
+    },
+    "register counts": {
+        "outcome": {
+            "7": 2,
+            "9": 1
+        },
+        "queries": [
+            "#1 select(id, schemas)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "attached objects": {
+        "outcome": 5,
+        "queries": [
+            "#1 select(id, schemas)",
+            "#1 from(openregister_registers, NULL)",
+            "#1 executeQuery()",
+            "#2 func.count(*, )",
+            "#2 select(count(*, ))",
+            "#2 from(openregister_table_1_7, NULL)",
+            "#2 expr.isNull(_deleted)",
+            "#2 where(isNull(_deleted))",
+            "#2 executeQuery()"
+        ]
+    },
+    "read trace": [
+        "countBySlug x2 frames 4 first OCA\\OpenRegister\\Tests\\Unit\\Db\\SchemaMapperReadsGoldenTest->readTrace"
+    ]
+}

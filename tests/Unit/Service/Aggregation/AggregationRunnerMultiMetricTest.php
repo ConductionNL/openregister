@@ -335,7 +335,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$db->method('getDatabasePlatform')->willReturn($this->createMock(SqlitePlatform::class));
 		$db->method('prepare')->willReturnCallback(
 			function (string $sql) use ($pdo): IPreparedStatement {
-				$pdoStmt = $pdo->prepare($sql);
+				$pdoStmt = $pdo->prepare(str_replace('*PREFIX*', 'oc_', $sql));
 				$stmt = $this->createMock(IPreparedStatement::class);
 				$stmt->method('execute')->willReturnCallback(
 					function ($bindings = []) use ($pdoStmt): IResult {

@@ -27,6 +27,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Tests\Unit\Service\Object\ReferenceValidationCalls;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -38,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Tests\Unit\Service\Object\RelationCalls;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
@@ -57,6 +59,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * Testable Schema subclass to avoid mocking Entity __call magic methods.
@@ -222,6 +225,14 @@ class SaveObjectCoverageTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $method, array $args = []) {
+		if (in_array($method, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$method}($this->saveObject, $args);
+		}
+
+		if ($method === 'validateReferences' || $method === 'validateReferenceExists') {
+			return ReferenceValidationCalls::{$method}($this->saveObject, $args);
+		}
+
 		$m = $this->reflection->getMethod($method);
 		$m->setAccessible(true);
 		return $m->invokeArgs($this->saveObject, $args);
@@ -236,6 +247,11 @@ class SaveObjectCoverageTest extends TestCase {
 	 * @return void
 	 */
 	private function setPrivateProperty(string $property, $value): void {
+		if (in_array($property, SaveLookupsAccess::CACHES, true) === true) {
+			SaveLookupsAccess::set($this->saveObject, $property, $value);
+			return;
+		}
+
 		$p = $this->reflection->getProperty($property);
 		$p->setAccessible(true);
 		$p->setValue($this->saveObject, $value);
@@ -1274,7 +1290,7 @@ class SaveObjectCoverageTest extends TestCase {
 			->with('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
 			->willReturn($register);
 
-		$result = $this->invokePrivate('resolveRegisterReference', ['aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee']);
+		$result = SaveLookupsAccess::of($this->saveObject)->registerId(reference: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 
 		$this->assertSame('5', $result);
 	}
@@ -1299,7 +1315,7 @@ class SaveObjectCoverageTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$register]);
 
-		$result = $this->invokePrivate('resolveRegisterReference', ['myregister']);
+		$result = SaveLookupsAccess::of($this->saveObject)->registerId(reference: 'myregister');
 
 		$this->assertSame('5', $result);
 	}

@@ -734,31 +734,6 @@
         ],
         "result": false
     },
-    "sftp: without phpseclib": {
-        "calls": [
-            {
-                "log": "info",
-                "message": "[SftpTransport] Starting SFTP transfer",
-                "context": {
-                    "host": "sftp.example.com"
-                }
-            },
-            {
-                "log": "error",
-                "message": "[SftpTransport] SFTP transfer failed",
-                "context": {
-                    "error": "phpseclib3 is not installed. Install phpseclib/phpseclib to enable SFTP transport."
-                }
-            }
-        ],
-        "result": {
-            "success": false,
-            "objectResults": [],
-            "errorMessage": "phpseclib3 is not installed. Install phpseclib/phpseclib to enable SFTP transport.",
-            "transferReference": null,
-            "partial": false
-        }
-    },
     "sftp: missing file": {
         "calls": [
             {
@@ -808,15 +783,5 @@
             "transferReference": null,
             "partial": false
         }
-    },
-    "sftp: connection test without phpseclib": {
-        "calls": [
-            {
-                "log": "warning",
-                "message": "[SftpTransport] phpseclib3 not available for connection test",
-                "context": []
-            }
-        ],
-        "result": false
     }
 }

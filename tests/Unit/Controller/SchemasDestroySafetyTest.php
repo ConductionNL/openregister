@@ -37,16 +37,19 @@ use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -466,6 +469,60 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->assertSame('delete', $data['operation']);
 
 	}//end testCascadeOnAnArchivalSchemaIsRefusedWith403()
+
+	/**
+	 * The HTTP cascade answers a frozen row with the state's own 409.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	public function testCascadeOnAFrozenRowIsRefusedWith409(): void {
+		$object = new ObjectEntity();
+		$object->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00']);
+		$this->stubRefusedCascade(ObjectStateWriteException::frozen($object));
+
+		$response = $this->controller->destroy(42);
+
+		$this->assertSame(ObjectStateWriteException::HTTP_STATUS, $response->getStatus());
+		$this->assertSame('frozen', $response->getData()['state']);
+
+	}//end testCascadeOnAFrozenRowIsRefusedWith409()
+
+	/**
+	 * The HTTP cascade answers a locked row with 423.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	public function testCascadeOnALockedRowIsRefusedWith423(): void {
+		$object = new ObjectEntity();
+		$object->setLocked(['kind' => ObjectEntity::LOCK_KIND_USER, 'user' => 'alice']);
+		$this->stubRefusedCascade(LockedException::forObject($object));
+
+		$response = $this->controller->destroy(42);
+
+		$this->assertSame(LockedException::HTTP_STATUS, $response->getStatus());
+		$this->assertArrayHasKey('error', $response->getData());
+
+	}//end testCascadeOnALockedRowIsRefusedWith423()
+
+	/**
+	 * Make the cascade refuse with the given exception.
+	 *
+	 * @param \Exception $refusal The refusal.
+	 *
+	 * @return void
+	 */
+	private function stubRefusedCascade(\Exception $refusal): void {
+		$this->schemaMapper->method('find')->willReturn($this->makeSchema(42, 'held-case'));
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 2]);
+		$this->stubFlags(deleteObjects: 'true');
+		$this->schemaDeletionService->method('cascadeDeleteSchema')->willThrowException($refusal);
+		$this->schemaMapper->expects($this->never())->method('delete');
+
+	}//end stubRefusedCascade()
 
 	/**
 	 * REQ + SCENARIO: "Cascade succeeds but the table drop fails".

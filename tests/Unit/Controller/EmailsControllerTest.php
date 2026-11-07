@@ -149,6 +149,17 @@ class EmailsControllerTest extends TestCase {
 		$this->assertSame(['success' => true], $response->getData());
 	}
 
+	public function testCreateRefusesAnAccountOfSomebodyElse(): void {
+		$this->setupObjectService();
+		$this->emailService->method('isMailAvailable')->willReturn(true);
+		$this->request->method('getParams')->willReturn(['mailAccountId' => 9, 'mailMessageId' => 2]);
+		$this->emailLinkService->expects($this->once())->method('assertAccountOwnership')->with(9)
+			->willThrowException(new \Exception('Mail account not accessible to this user', 403));
+		$this->emailService->expects($this->never())->method('linkEmail');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->create('reg', 'sch', 'abc-123')->getStatus());
+	}
+
 	public function testCreateNeedsTheObjectUpdateRight(): void {
 		$this->setupObjectService();
 		$this->emailService->method('isMailAvailable')->willReturn(true);

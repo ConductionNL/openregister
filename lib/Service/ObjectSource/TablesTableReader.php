@@ -252,36 +252,29 @@ class TablesTableReader {
 	}//end listColumns()
 
 	/**
-	 * Fetch a page of rows for a table, as plain descriptors.
+	 * Fetch the rows of a scope, through its View when one is bound, as plain descriptors.
 	 *
-	 * @param int $tableId The table id.
-	 * @param string $userId The acting user id.
-	 * @param int|null $limit Optional native row limit.
-	 * @param int|null $offset Optional native row offset.
+	 * @param TablesReadScope $scope The table or View, the acting user and the page.
 	 *
 	 * @return array<int, array<string, mixed>> The row descriptors.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function findRowsByTable(int $tableId, string $userId, ?int $limit = null, ?int $offset = null): array {
-		return $this->rows(getter: 'findAllByTable', id: $tableId, userId: $userId, limit: $limit, offset: $offset);
-	}//end findRowsByTable()
+	public function findRows(TablesReadScope $scope): array {
+		$service = $this->resolveService(class: self::ROW_SERVICE);
+		if ($service === null) {
+			return [];
+		}
 
-	/**
-	 * Fetch a page of rows for a View, as plain descriptors.
-	 *
-	 * @param int $viewId The view id.
-	 * @param string $userId The acting user id.
-	 * @param int|null $limit Optional native row limit.
-	 * @param int|null $offset Optional native row offset.
-	 *
-	 * @return array<int, array<string, mixed>> The row descriptors.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	public function findRowsByView(int $viewId, string $userId, ?int $limit = null, ?int $offset = null): array {
-		return $this->rows(getter: 'findAllByView', id: $viewId, userId: $userId, limit: $limit, offset: $offset);
-	}//end findRowsByView()
+		try {
+			$rows = $this->readRows(service: $service, scope: $scope);
+		} catch (Throwable $e) {
+			$this->logger->warning('[ObjectSource:tables] could not read rows for ' . $scope->sourceId() . ': ' . $e->getMessage());
+			return [];
+		}
+
+		return array_map(fn (object $row): array => $this->rowDescriptor(row: $row), $this->entities(list: $rows));
+	}//end findRows()
 
 	/**
 	 * Fetch a single row of the bound table by id, as a plain descriptor.
@@ -289,41 +282,24 @@ class TablesTableReader {
 	 * RowService::find() takes only the row id and checks read access for
 	 * the user Tables captured from the session, and it serves a row of ANY
 	 * table that user can read. So this method asks Tables, before reading,
-	 * whether $userId may read rows of $tableId, and refuses a row that
-	 * belongs to another table. A row the asking user may not read, and a
-	 * row of a table this schema is not bound to, both come back as null.
+	 * whether the scope's user may read rows of the bound table, and refuses a
+	 * row that belongs to another table. A row the asking user may not read, and
+	 * a row of a table this schema is not bound to, both come back as null.
 	 *
 	 * @param int $rowId The Tables row id.
-	 * @param int $tableId The table the schema is bound to.
-	 * @param string $userId The acting user id.
+	 * @param TablesReadScope $scope The bound table and the acting user.
 	 *
 	 * @return array<string, mixed>|null The row descriptor, or null when absent/denied.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function findRow(int $rowId, int $tableId, string $userId): ?array {
-		$service = $this->resolveService(class: self::ROW_SERVICE);
-		$permissions = $this->resolveService(class: self::PERMISSIONS_SERVICE);
-		if ($service === null || $permissions === null) {
-			return null;
-		}
-
-		try {
-			if ($permissions->canReadRowsByElementId($tableId, 'table', $userId) !== true) {
-				return null;
-			}
-
-			$row = $service->find($rowId);
-		} catch (Throwable $e) {
-			$this->logger->warning('[ObjectSource:tables] could not read row ' . $rowId . ': ' . $e->getMessage());
-			return null;
-		}
-
+	public function findRow(int $rowId, TablesReadScope $scope): ?array {
+		$row = $this->readableRow(rowId: $rowId, scope: $scope);
 		if (is_object($row) === false) {
 			return null;
 		}
 
-		if ($this->intGetter(entity: $row, getter: 'getTableId') !== $tableId) {
+		if ($this->intGetter(entity: $row, getter: 'getTableId') !== $scope->tableId) {
 			return null;
 		}
 
@@ -331,73 +307,119 @@ class TablesTableReader {
 	}//end findRow()
 
 	/**
-	 * Count the rows of a table (or View) the acting user may read.
+	 * Read a row once Tables confirms the scope's user may read the bound table.
 	 *
-	 * @param int $id The table id (or the view id when $isView).
-	 * @param string $userId The acting user id.
-	 * @param bool $isView Whether $id is a view id.
+	 * @param int $rowId The Tables row id.
+	 * @param TablesReadScope $scope The bound table and the acting user.
 	 *
-	 * @return int The row count (0 when unavailable/denied).
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the table-vs-View binding in the schema config.
+	 * @return mixed The Tables reply, or null when refused or failed.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function countRows(int $id, string $userId, bool $isView = false): int {
+	private function readableRow(int $rowId, TablesReadScope $scope): mixed {
+		$service = $this->resolveService(class: self::ROW_SERVICE);
+		if ($service === null) {
+			return null;
+		}
+
+		try {
+			if ($this->mayReadRows(scope: $scope) === false) {
+				return null;
+			}
+
+			return $service->find($rowId);
+		} catch (Throwable $e) {
+			$this->logger->warning('[ObjectSource:tables] could not read row ' . $rowId . ': ' . $e->getMessage());
+			return null;
+		}
+	}//end readableRow()
+
+	/**
+	 * Whether Tables says the scope's user may read rows of the bound table.
+	 *
+	 * @param TablesReadScope $scope The bound table and the acting user.
+	 *
+	 * @return bool True only on an explicit yes; false without the permission service.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function mayReadRows(TablesReadScope $scope): bool {
+		$permissions = $this->resolveService(class: self::PERMISSIONS_SERVICE);
+		if ($permissions === null) {
+			return false;
+		}
+
+		return $permissions->canReadRowsByElementId($scope->tableId, 'table', $scope->userId) === true;
+	}//end mayReadRows()
+
+	/**
+	 * Count the rows of a scope the acting user may read, through its View when one is bound.
+	 *
+	 * @param TablesReadScope $scope The table or View and the acting user.
+	 *
+	 * @return int The row count (0 when unavailable/denied).
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	public function countRows(TablesReadScope $scope): int {
 		$service = $this->resolveService(class: self::ROW_SERVICE);
 		if ($service === null) {
 			return 0;
 		}
 
 		try {
-			if ($isView === true) {
-				// The getViewRowsCount() call needs the View entity, not the view id.
-				$viewService = $this->resolveService(class: self::VIEW_SERVICE);
-				if ($viewService === null) {
-					return 0;
-				}
-
-				$view = $viewService->find($id, true, $userId);
-				return (int)$service->getViewRowsCount($view, $userId);
-			}
-
-			// The getRowsCount() call takes only the table id; Tables checks read
-			// access against the session user internally.
-			return (int)$service->getRowsCount($id);
+			return $this->readCount(service: $service, scope: $scope);
 		} catch (Throwable $e) {
-			$this->logger->warning('[ObjectSource:tables] could not count rows for ' . $id . ': ' . $e->getMessage());
+			$this->logger->warning('[ObjectSource:tables] could not count rows for ' . $scope->sourceId() . ': ' . $e->getMessage());
 			return 0;
 		}
 	}//end countRows()
 
 	/**
-	 * Shared row-fetch for table/view getters.
+	 * Ask the row service for a page of rows.
 	 *
-	 * @param string $getter The RowService method name.
-	 * @param int $id The table or view id.
-	 * @param string $userId The acting user id.
-	 * @param int|null $limit Optional native row limit.
-	 * @param int|null $offset Optional native row offset.
+	 * @param object $service The Tables row service.
+	 * @param TablesReadScope $scope The table or View, the acting user and the page.
 	 *
-	 * @return array<int, array<string, mixed>> The row descriptors.
+	 * @return mixed The Tables reply.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function rows(string $getter, int $id, string $userId, ?int $limit, ?int $offset): array {
-		$service = $this->resolveService(class: self::ROW_SERVICE);
-		if ($service === null) {
-			return [];
+	private function readRows(object $service, TablesReadScope $scope): mixed {
+		$getter = 'findAllByTable';
+		if ($scope->isView() === true) {
+			$getter = 'findAllByView';
 		}
 
-		try {
-			$rows = $service->$getter($id, $userId, $limit, $offset);
-		} catch (Throwable $e) {
-			$this->logger->warning('[ObjectSource:tables] could not read rows for ' . $id . ': ' . $e->getMessage());
-			return [];
+		return $service->$getter($scope->sourceId(), $scope->userId, $scope->limit(), $scope->offset());
+	}//end readRows()
+
+	/**
+	 * Ask the row service for a row count.
+	 *
+	 * @param object $service The Tables row service.
+	 * @param TablesReadScope $scope The table or View and the acting user.
+	 *
+	 * @return int The row count.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function readCount(object $service, TablesReadScope $scope): int {
+		if ($scope->isView() === false) {
+			// The getRowsCount() call takes only the table id; Tables checks read
+			// access against the session user internally.
+			return (int)$service->getRowsCount($scope->tableId);
 		}
 
-		return array_map(fn (object $row): array => $this->rowDescriptor(row: $row), $this->entities(list: $rows));
-	}//end rows()
+		// The getViewRowsCount() call needs the View entity, not the view id.
+		$viewService = $this->resolveService(class: self::VIEW_SERVICE);
+		if ($viewService === null) {
+			return 0;
+		}
+
+		$view = $viewService->find($scope->sourceId(), true, $scope->userId);
+		return (int)$service->getViewRowsCount($view, $scope->userId);
+	}//end readCount()
 
 	/**
 	 * The entities in a Tables reply, skipping anything that is not an object.

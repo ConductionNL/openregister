@@ -15,7 +15,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				|| 'Object')
 		"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="success" type="success">
 			<p>Object successfully downloaded</p>
 		</NcNoteCard>
@@ -154,17 +154,7 @@ export default {
 
 @include code-mirror-container-deep-cm-content;
 
-.codeMirrorContainer :deep(.cm-editor) {
-	outline: none !important;
-}
-
-.codeMirrorContainer.light > .vue-codemirror {
-	border: 1px dotted silver;
-}
-
-.codeMirrorContainer.dark > .vue-codemirror {
-	border: 1px dotted grey;
-}
+@include code-mirror-editor;
 
 @include code-mirror-theme;
 </style>

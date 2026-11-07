@@ -291,7 +291,7 @@ Each integrity action MUST produce an audit trail entry via `ReferentialIntegrit
 - **AND** expired entries SHALL be eligible for cleanup per the deletion-audit-trail spec
 
 ### Requirement 11: API _extend parameter MUST support lazy and eager reference resolution
-The API MUST support an `_extend` query parameter that controls whether referenced objects are resolved inline (eager) or returned as UUIDs (lazy, default). `RelationHandler::extractAllRelationshipIds()` and `bulkLoadRelationshipsBatched()` handle bulk resolution.
+The API MUST support an `_extend` query parameter that controls whether referenced objects are resolved inline (eager) or returned as UUIDs (lazy, default). `RelationHandler::bulkLoadRelationshipsBatched()` handles bulk resolution.
 
 #### Scenario: Lazy resolution (default)
 - **GIVEN** an order object with `assignee: "person-uuid"`
@@ -307,9 +307,8 @@ The API MUST support an `_extend` query parameter that controls whether referenc
 #### Scenario: Performance circuit breaker on relationship loading
 - **GIVEN** an object with 500 relationship IDs across multiple properties
 - **WHEN** `_extend` is requested
-- **THEN** `extractAllRelationshipIds()` MUST cap extraction at `$maxIds = 200`
+- **THEN** `bulkLoadRelationshipsBatched()` MUST cap the load at 200 relationship ids, logging a warning
 - **AND** `bulkLoadRelationshipsBatched()` MUST process in batches of 50
-- **AND** array relationships per object MUST be limited to 10 entries
 
 #### Scenario: _extend across registers
 - **GIVEN** an order with `customer` referencing a person in a different register
@@ -465,8 +464,7 @@ A schema property whose values cite rows of another schema by a key property (a 
 - `lib/Service/Object/RelationHandler.php` -- Relation graph traversal:
   - `getUses()` -- outgoing references with cross-register magic table search
   - `getUsedBy()` -- incoming references via `_relations_contains` search
-  - `extractAllRelationshipIds()` with circuit breaker (200 max IDs)
-  - `bulkLoadRelationshipsBatched()` with 50-object batch size
+  - `bulkLoadRelationshipsBatched()` with a 200-id cap and 50-object batch size
   - `filterByRbac()` for RBAC-filtered relation results
 - `lib/Db/Schema.php` -- Schema property `onDelete`, `validateReference`, `inversedBy`, `writeBack`, `cascade` configuration
 - Schema property `onDelete` configuration supported and validated
