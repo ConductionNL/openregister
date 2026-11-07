@@ -196,16 +196,31 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 			return [];
 		}
 
-		$token = $this->comparator->blockingToken(data: $candidate, keys: $run->getBlockingKeys());
-		if ($token === '' && count($run->getBlockingKeys()) > 0) {
+		$run = $this->candidateRun(run: $run, candidate: $candidate);
+		if ($run === null) {
 			return [];
 		}
 
-		$run = $run->withObjects(objects: $this->loadCandidates(run: $run));
-		$run = $run->withObjects(objects: $this->inBucket(token: $token, run: $run));
-
 		return $this->byScoreDescending(rows: $this->candidateMatches(candidate: $candidate, run: $run));
 	}//end checkCandidate()
+
+	/**
+	 * The run narrowed to the stored objects in the candidate's blocking bucket.
+	 *
+	 * @param DedupRun             $run       The resolved run.
+	 * @param array<string, mixed> $candidate The candidate's data.
+	 *
+	 * @return DedupRun|null The narrowed run, or null when blocking keys are declared and the candidate has no token.
+	 */
+	private function candidateRun(DedupRun $run, array $candidate): ?DedupRun {
+		$token = $this->comparator->blockingToken(data: $candidate, keys: $run->getBlockingKeys());
+		if ($token === '' && count($run->getBlockingKeys()) > 0) {
+			return null;
+		}
+
+		$run = $run->withObjects(objects: $this->loadCandidates(run: $run));
+		return $run->withObjects(objects: $this->inBucket(token: $token, run: $run));
+	}//end candidateRun()
 
 	/**
 	 * The objects that share the candidate's blocking token; all of them when nothing blocks.
@@ -378,11 +393,6 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * @return array<int, array<string, mixed>> The pairs still worth offering.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) `DismissedPairStore::key()` is a pure
-	 *   function of two uuids with nothing to inject, and it has to be the SAME
-	 *   function the store writes with: a second implementation of the canonical
-	 *   order is a dismissal looked up under a key nothing ever stored it at.
 	 */
 	private function withoutDismissedPairs(array $pairs, DedupRun $run): array {
 		$dismissals = $this->activeDismissals(pairs: $pairs, run: $run);
@@ -390,17 +400,37 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 			return $pairs;
 		}
 
-		$kept = [];
-		foreach ($pairs as $pair) {
-			$dismissal = ($dismissals[DismissedPairStore::key(first: (string) $pair['objectA'], second: (string) $pair['objectB'])] ?? null);
-			// A pair whose values moved since the judgement is a new question, and is offered again.
-			if ($dismissal === null || $this->currentFingerprint(pair: $pair, run: $run) !== (string) ($dismissal['fingerprint'] ?? '')) {
-				$kept[] = $pair;
-			}
+		$offered = function (array $pair) use ($dismissals, $run): bool {
+			$print = $this->dismissedFingerprint(pair: $pair, dismissals: $dismissals);
+			return $print === null || $this->currentFingerprint(pair: $pair, run: $run) !== $print;
+		};
+
+		return array_values(array_filter($pairs, $offered));
+	}//end withoutDismissedPairs()
+
+	/**
+	 * The fingerprint a pair was dismissed with, or null when it was not dismissed.
+	 *
+	 * A pair whose values moved since the judgement is a new question, and is offered again.
+	 *
+	 * @param array<string, mixed>                $pair       The scored pair.
+	 * @param array<string, array<string, mixed>> $dismissals Dismissal rows by pair key.
+	 *
+	 * @return string|null
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `DismissedPairStore::key()` is a pure
+	 *   function of two uuids with nothing to inject, and it has to be the SAME
+	 *   function the store writes with: a second implementation of the canonical
+	 *   order is a dismissal looked up under a key nothing ever stored it at.
+	 */
+	private function dismissedFingerprint(array $pair, array $dismissals): ?string {
+		$dismissal = ($dismissals[DismissedPairStore::key(first: (string) $pair['objectA'], second: (string) $pair['objectB'])] ?? null);
+		if ($dismissal === null) {
+			return null;
 		}
 
-		return $kept;
-	}//end withoutDismissedPairs()
+		return (string) ($dismissal['fingerprint'] ?? '');
+	}//end dismissedFingerprint()
 
 	/**
 	 * The active dismissals of the run's register/schema; none are looked up when there are no pairs.
@@ -474,19 +504,32 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 			return ['*' => $objects];
 		}
 
+		// Drop singleton buckets — a bucket of one has no pair to compare.
+		return array_filter(
+			$this->bucketsOf(objects: $objects, blockingKeys: $blockingKeys),
+			static fn (array $bucket) => count($bucket) > 1
+		);
+	}//end partition()
+
+	/**
+	 * Group objects by their blocking-key token, leaving out those with an empty token.
+	 *
+	 * @param array<int, ObjectEntity> $objects      Candidate objects.
+	 * @param array<int, string>       $blockingKeys Field names to block on.
+	 *
+	 * @return array<string, array<int, ObjectEntity>>
+	 */
+	private function bucketsOf(array $objects, array $blockingKeys): array {
 		$buckets = [];
 		foreach ($objects as $object) {
 			$token = $this->comparator->blockingToken(data: ($object->getObject() ?? []), keys: $blockingKeys);
-			if ($token === '') {
-				continue;
+			if ($token !== '') {
+				$buckets[$token][] = $object;
 			}
-
-			$buckets[$token][] = $object;
 		}
 
-		// Drop singleton buckets — a bucket of one has no pair to compare.
-		return array_filter($buckets, static fn (array $bucket) => count($bucket) > 1);
-	}//end partition()
+		return $buckets;
+	}//end bucketsOf()
 
 	/**
 	 * Score every pair within each blocking bucket of the run.
