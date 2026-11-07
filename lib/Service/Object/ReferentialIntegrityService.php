@@ -2028,7 +2028,7 @@ class ReferentialIntegrityService {
 	private function resolveCascadeTargets(array $cascadeTargets): array {
 		$uuids = array_values(array_unique(array_map(static fn (array $target): string => (string) $target['objectUuid'], $cascadeTargets)));
 		try {
-			return $this->objectEntityMapper->findMultipleAcrossAllMagicTables(uuids: $uuids, includeDeleted: false);
+			return $this->objectEntityMapper->findStoredAcrossAllMagicTables(uuids: $uuids, includeDeleted: false);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Batched cascade lookup failed; falling back to per-object deletes',
