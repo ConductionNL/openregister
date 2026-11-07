@@ -208,14 +208,7 @@ class AggregationController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
 
-		$response = new JSONResponse($result);
-		$cacheHeader = 'miss';
-		if (($result['cached'] ?? false) === true) {
-			$cacheHeader = 'hit';
-		}
-
-		$response->addHeader('X-OR-Cache', $cacheHeader);
-		return $response;
+		return $this->withCacheHeader(result: $result);
 	}//end aggregate()
 
 	/**
@@ -245,48 +238,13 @@ class AggregationController extends Controller {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public function value(string $register, string $schema): JSONResponse {
-		$metric = (string)$this->request->getParam('metric', 'count');
-		$field = $this->request->getParam('field');
-		$metrics = $this->parseMetricsParam();
-
 		try {
 			$filter = $this->resolveFilter(action: 'value', register: $register, schema: $schema);
 		} catch (RuntimeException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
 
-		$resolvedField = $field;
-		if ($field === '') {
-			$resolvedField = null;
-		}
-
-		$primaryMetric = $metric;
-		$primaryField = $resolvedField;
-		if ($metrics !== null) {
-			$primaryMetric = $metrics[0]['metric'];
-			$primaryField = $metrics[0]['field'];
-		}
-
-		try {
-			$query = AggregationQuery::create(
-				metric: $primaryMetric,
-				field: $primaryField,
-				filter: $filter,
-				metrics: $metrics
-			);
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		}
-
-		try {
-			$result = $this->runner->runAdhocByRef(registerRef: $register, schemaRef: $schema, query: $query);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-		}
-
-		return $this->withCacheHeader(result: $result);
+		return $this->runAdhocQuery(register: $register, schema: $schema, filter: $filter, groupBy: null);
 	}//end value()
 
 	/**
@@ -381,10 +339,6 @@ class AggregationController extends Controller {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public function grouped(string $register, string $schema): JSONResponse {
-		$metric = (string)$this->request->getParam('metric', 'count');
-		$field = $this->request->getParam('field');
-		$metrics = $this->parseMetricsParam();
-
 		$groupFields = $this->parseGroupByParam();
 		if (count($groupFields) === 0) {
 			return new JSONResponse(['error' => 'groupBy is required'], Http::STATUS_BAD_REQUEST);
@@ -396,11 +350,105 @@ class AggregationController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
 
-		// A single field keeps the pre-existing `{field: ...}` shape
-		// (byte-identical response for existing single-field callers);
-		// more than one field switches to the multi-field `{fields: [...]}`
-		// cross-tab shape (REQ-AGG-101) — AggregationQuery/AggregationRunner
-		// already support both natively.
+		return $this->runAdhocQuery(
+			register: $register,
+			schema: $schema,
+			filter: $filter,
+			groupBy: $this->groupSpec(groupFields: $groupFields)
+		);
+	}//end grouped()
+
+	/**
+	 * Build the ad-hoc query from the request's metric params and run it.
+	 *
+	 * An input AggregationQuery::create() refuses is a 400 and never runs.
+	 *
+	 * @param string                    $register Register reference.
+	 * @param string                    $schema   Schema reference.
+	 * @param array<string, mixed>      $filter   The resolved filter map.
+	 * @param array<string, mixed>|null $groupBy  The groupBy spec, or null.
+	 *
+	 * @return JSONResponse The runner's envelope, or the refusal.
+	 */
+	private function runAdhocQuery(string $register, string $schema, array $filter, ?array $groupBy): JSONResponse {
+		$metrics = $this->parseMetricsParam();
+		$primary = $this->primaryMetric(metrics: $metrics);
+
+		try {
+			$query = AggregationQuery::create(
+				metric: $primary['metric'],
+				field: $primary['field'],
+				filter: $filter,
+				groupBy: $groupBy,
+				metrics: $metrics
+			);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->runAndRespond(register: $register, schema: $schema, query: $query);
+	}//end runAdhocQuery()
+
+	/**
+	 * The primary metric and field: the first metrics entry when a list was
+	 * sent, else the `metric` (default count) and `field` params, an empty
+	 * field meaning none.
+	 *
+	 * @param array<int, array{metric: string, field: ?string}>|null $metrics The parsed metrics list.
+	 *
+	 * @return array{metric: string, field: mixed} The primary pair.
+	 */
+	private function primaryMetric(?array $metrics): array {
+		if ($metrics !== null) {
+			return ['metric' => $metrics[0]['metric'], 'field' => $metrics[0]['field']];
+		}
+
+		$field = $this->request->getParam('field');
+		if ($field === '') {
+			$field = null;
+		}
+
+		return ['metric' => (string)$this->request->getParam('metric', 'count'), 'field' => $field];
+	}//end primaryMetric()
+
+	/**
+	 * Run an ad-hoc query; the runner decides access.
+	 *
+	 * A refusal is a 403 and an unknown register or schema a 404, each
+	 * carrying the runner's message.
+	 *
+	 * @param string           $register Register reference.
+	 * @param string           $schema   Schema reference.
+	 * @param AggregationQuery $query    The validated query.
+	 *
+	 * @return JSONResponse The envelope with its cache header, or the refusal.
+	 */
+	private function runAndRespond(string $register, string $schema, AggregationQuery $query): JSONResponse {
+		try {
+			$result = $this->runner->runAdhocByRef(registerRef: $register, schemaRef: $schema, query: $query);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		return $this->withCacheHeader(result: $result);
+	}//end runAndRespond()
+
+	/**
+	 * The groupBy spec of a grouped request.
+	 *
+	 * A single field keeps the pre-existing `{field: ...}` shape
+	 * (byte-identical response for existing single-field callers);
+	 * more than one field switches to the multi-field `{fields: [...]}`
+	 * cross-tab shape (REQ-AGG-101). `sort` (asc|desc) and a positive
+	 * `limit` are carried when sent.
+	 *
+	 * @param array<int, string> $groupFields The non-empty group fields.
+	 *
+	 * @return array<string, mixed> The groupBy spec.
+	 */
+	private function groupSpec(array $groupFields): array {
 		$groupSpec = ['field' => $groupFields[0]];
 		if (count($groupFields) > 1) {
 			$groupSpec = ['fields' => $groupFields];
@@ -416,40 +464,8 @@ class AggregationController extends Controller {
 			$groupSpec['limit'] = (int)$limit;
 		}
 
-		$resolvedField = $field;
-		if ($field === '') {
-			$resolvedField = null;
-		}
-
-		$primaryMetric = $metric;
-		$primaryField = $resolvedField;
-		if ($metrics !== null) {
-			$primaryMetric = $metrics[0]['metric'];
-			$primaryField = $metrics[0]['field'];
-		}
-
-		try {
-			$query = AggregationQuery::create(
-				metric: $primaryMetric,
-				field: $primaryField,
-				filter: $filter,
-				groupBy: $groupSpec,
-				metrics: $metrics
-			);
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		}
-
-		try {
-			$result = $this->runner->runAdhocByRef(registerRef: $register, schemaRef: $schema, query: $query);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-		}
-
-		return $this->withCacheHeader(result: $result);
-	}//end grouped()
+		return $groupSpec;
+	}//end groupSpec()
 
 	/**
 	 * Parse the `groupBy` request param into an ordered list of field
@@ -565,18 +581,6 @@ class AggregationController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
-		try {
-			$result = $this->runner->runAdhocByRef(
-				registerRef: $register,
-				schemaRef: $schema,
-				query: $query
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-		}
-
-		return $this->withCacheHeader(result: $result);
+		return $this->runAndRespond(register: $register, schema: $schema, query: $query);
 	}//end timeseries()
 }//end class

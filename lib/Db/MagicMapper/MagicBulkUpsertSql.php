@@ -97,19 +97,11 @@ class MagicBulkUpsertSql {
 	 */
 	public static function updateClause(string $column, bool $isPostgres, string $fullTableName, bool $freezeSlug): string {
 		if ($column === '_updated') {
-			if ($isPostgres === true) {
-				return '"_updated" = NOW()';
-			}
-
-			return '`_updated` = NOW()';
+			return self::touchClause(isPostgres: $isPostgres);
 		}
 
 		if ($column === '_slug' && $freezeSlug === true) {
-			if ($isPostgres === true) {
-				return "\"_slug\" = COALESCE(NULLIF(\"{$fullTableName}\".\"_slug\", ''), EXCLUDED.\"_slug\")";
-			}
-
-			return '`_slug` = COALESCE(NULLIF(`_slug`, \'\'), VALUES(`_slug`))';
+			return self::frozenSlugClause(isPostgres: $isPostgres, fullTableName: $fullTableName);
 		}
 
 		if ($isPostgres === true) {
@@ -118,4 +110,35 @@ class MagicBulkUpsertSql {
 
 		return "`{$column}` = VALUES(`{$column}`)";
 	}//end updateClause()
+
+	/**
+	 * The assignment that stamps `_updated` with the time of the write.
+	 *
+	 * @param bool $isPostgres True for `ON CONFLICT`, false for MySQL/MariaDB.
+	 *
+	 * @return string The assignment.
+	 */
+	private static function touchClause(bool $isPostgres): string {
+		if ($isPostgres === true) {
+			return '"_updated" = NOW()';
+		}
+
+		return '`_updated` = NOW()';
+	}//end touchClause()
+
+	/**
+	 * The `_slug` assignment that keeps a stored slug and only fills an empty one.
+	 *
+	 * @param bool   $isPostgres    True for `ON CONFLICT`, false for MySQL/MariaDB.
+	 * @param string $fullTableName The table name, qualifying the stored value on PostgreSQL.
+	 *
+	 * @return string The assignment.
+	 */
+	private static function frozenSlugClause(bool $isPostgres, string $fullTableName): string {
+		if ($isPostgres === true) {
+			return "\"_slug\" = COALESCE(NULLIF(\"{$fullTableName}\".\"_slug\", ''), EXCLUDED.\"_slug\")";
+		}
+
+		return '`_slug` = COALESCE(NULLIF(`_slug`, \'\'), VALUES(`_slug`))';
+	}//end frozenSlugClause()
 }//end class

@@ -1,0 +1,555 @@
+[
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SendEmailNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodePreview",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SendEmailNodeInterface"
+        ],
+        "id": "openregister.send-email",
+        "name": "Send an email",
+        "description": "Send an email to people, at this point in the flow.",
+        "icon": "core:actions/mail.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "sendTask"
+        },
+        "getCategory": {
+            "returned": "messaging"
+        },
+        "configKeys": {
+            "returned": [
+                "recipients",
+                "subject",
+                "body",
+                "externalRecipients",
+                "messageCategory"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "recipients",
+                    "label": "Who to mail",
+                    "type": "text",
+                    "help": "User or group ids, email addresses, or a field such as {{ assignee }}. Groups are expanded; addresses need external recipients.",
+                    "required": true
+                },
+                {
+                    "key": "externalRecipients",
+                    "label": "External recipients",
+                    "type": "text",
+                    "help": "Set to none to refuse email addresses, object to mail only addresses on the item, or any to mail every valid address."
+                },
+                {
+                    "key": "messageCategory",
+                    "label": "Message category",
+                    "type": "select",
+                    "options": [
+                        {
+                            "value": "service",
+                            "label": "Service message (default)"
+                        },
+                        {
+                            "value": "case-update",
+                            "label": "Case update"
+                        },
+                        {
+                            "value": "reminder",
+                            "label": "Reminder"
+                        },
+                        {
+                            "value": "marketing",
+                            "label": "Marketing, such as a newsletter"
+                        },
+                        {
+                            "value": "besluit",
+                            "label": "Decision (besluit), always sent"
+                        },
+                        {
+                            "value": "statutory",
+                            "label": "Statutory notice, always sent"
+                        },
+                        {
+                            "value": "account",
+                            "label": "Account message, always sent"
+                        },
+                        {
+                            "value": "security",
+                            "label": "Security message, always sent"
+                        }
+                    ],
+                    "help": "Decisions, statutory notices, account and security mail always arrive. Other mail stops after an opt-out. Empty means service."
+                },
+                {
+                    "key": "subject",
+                    "label": "Subject",
+                    "type": "text",
+                    "help": "Placeholders such as {{ name }} read fields from the item, the same syntax a schema notification uses."
+                },
+                {
+                    "key": "body",
+                    "label": "Body",
+                    "type": "textarea",
+                    "help": "What the email says. Placeholders read fields from the item.",
+                    "required": true
+                }
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "An email needs a body."
+            },
+            "blank-body": {
+                "threw": "UnexpectedValueException",
+                "message": "An email needs a body."
+            },
+            "string-recipient": {
+                "returned": null
+            },
+            "blank-recipients": {
+                "threw": "UnexpectedValueException",
+                "message": "An email needs at least one recipient."
+            },
+            "no-conversation": {
+                "returned": null
+            },
+            "bad-external": {
+                "threw": "UnexpectedValueException",
+                "message": "External recipients must be none, object or any, not \"%s\". [\"Some\"]"
+            },
+            "good-external": {
+                "returned": null
+            },
+            "bad-category": {
+                "threw": "UnexpectedValueException",
+                "message": "messageCategory must be one of %1$s, not \"%2$s\". [\"besluit, statutory, account, security, case-update, reminder, service, marketing\",\"spam\"]"
+            },
+            "array-category": {
+                "threw": "UnexpectedValueException",
+                "message": "messageCategory must be one of %1$s, not \"%2$s\". [\"besluit, statutory, account, security, case-update, reminder, service, marketing\",\"\"]"
+            },
+            "good-category": {
+                "returned": null
+            }
+        },
+        "preview": {
+            "summary": "Send an email would send 2 message(s)",
+            "messages": [
+                {
+                    "to": "bob"
+                },
+                {
+                    "to": "eve"
+                }
+            ]
+        },
+        "execute": [
+            {
+                "json": {
+                    "name": "a"
+                }
+            },
+            {
+                "json": {
+                    "name": "b"
+                }
+            }
+        ],
+        "calls": [
+            [
+                "previewMessages",
+                "email",
+                {
+                    "recipients": [
+                        "bob"
+                    ],
+                    "message": "hi"
+                },
+                [
+                    {
+                        "json": {
+                            "name": "a"
+                        }
+                    },
+                    {
+                        "json": {
+                            "name": "b"
+                        }
+                    }
+                ],
+                {
+                    "runId": 7
+                }
+            ],
+            [
+                "sendEmail",
+                {
+                    "recipients": [
+                        "bob"
+                    ],
+                    "message": "hi"
+                },
+                [
+                    {
+                        "json": {
+                            "name": "a"
+                        }
+                    },
+                    {
+                        "json": {
+                            "name": "b"
+                        }
+                    }
+                ],
+                {
+                    "runId": 7
+                },
+                "openregister.send-email"
+            ]
+        ]
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SendNotificationNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodePreview",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SendNotificationNodeInterface"
+        ],
+        "id": "openregister.send-notification",
+        "name": "Send a notification",
+        "description": "Send an in-app notification to people, at this point in the flow.",
+        "icon": "core:actions/sound.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "sendTask"
+        },
+        "getCategory": {
+            "returned": "messaging"
+        },
+        "configKeys": {
+            "returned": [
+                "recipients",
+                "title",
+                "message"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "recipients",
+                    "label": "Who to tell",
+                    "type": "text",
+                    "help": "User or group ids, or a field on the item such as {{ assignee }}. Groups are expanded.",
+                    "required": true
+                },
+                {
+                    "key": "title",
+                    "label": "Title",
+                    "type": "text",
+                    "help": "Placeholders such as {{ name }} read fields from the item, the same syntax a schema notification uses."
+                },
+                {
+                    "key": "message",
+                    "label": "Message",
+                    "type": "textarea",
+                    "help": "What the notification says. Placeholders read fields from the item.",
+                    "required": true
+                }
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "A notification needs a message."
+            },
+            "blank-body": {
+                "threw": "UnexpectedValueException",
+                "message": "A notification needs a message."
+            },
+            "string-recipient": {
+                "returned": null
+            },
+            "blank-recipients": {
+                "threw": "UnexpectedValueException",
+                "message": "A notification needs at least one recipient."
+            },
+            "no-conversation": {
+                "returned": null
+            },
+            "bad-external": {
+                "returned": null
+            },
+            "good-external": {
+                "returned": null
+            },
+            "bad-category": {
+                "returned": null
+            },
+            "array-category": {
+                "returned": null
+            },
+            "good-category": {
+                "returned": null
+            }
+        },
+        "preview": {
+            "summary": "Send a notification would send 2 message(s)",
+            "messages": [
+                {
+                    "to": "bob"
+                },
+                {
+                    "to": "eve"
+                }
+            ]
+        },
+        "execute": [
+            {
+                "json": {
+                    "name": "a"
+                }
+            },
+            {
+                "json": {
+                    "name": "b"
+                }
+            }
+        ],
+        "calls": [
+            [
+                "previewMessages",
+                "notification",
+                {
+                    "recipients": [
+                        "bob"
+                    ],
+                    "message": "hi"
+                },
+                [
+                    {
+                        "json": {
+                            "name": "a"
+                        }
+                    },
+                    {
+                        "json": {
+                            "name": "b"
+                        }
+                    }
+                ],
+                {
+                    "runId": 7
+                }
+            ],
+            [
+                "sendNotification",
+                {
+                    "recipients": [
+                        "bob"
+                    ],
+                    "message": "hi"
+                },
+                [
+                    {
+                        "json": {
+                            "name": "a"
+                        }
+                    },
+                    {
+                        "json": {
+                            "name": "b"
+                        }
+                    }
+                ],
+                {
+                    "runId": 7
+                },
+                "openregister.send-notification"
+            ]
+        ]
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SendTalkMessageNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodePreview",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\SendTalkMessageNodeInterface"
+        ],
+        "id": "openregister.send-talk-message",
+        "name": "Send a Talk message",
+        "description": "Post a chat message to a Talk conversation, as the user this flow runs as.",
+        "icon": "core:actions/comment.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "sendTask"
+        },
+        "getCategory": {
+            "returned": "messaging"
+        },
+        "configKeys": {
+            "returned": [
+                "conversation",
+                "message"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "conversation",
+                    "label": "Conversation",
+                    "type": "text",
+                    "help": "A conversation token, or a field on the item such as {{ conversationToken }}. The acting user must be a participant.",
+                    "required": true
+                },
+                {
+                    "key": "message",
+                    "label": "Message",
+                    "type": "textarea",
+                    "help": "What the message says. Placeholders such as {{ name }} read fields from the item.",
+                    "required": true
+                }
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "A Talk message needs a message."
+            },
+            "blank-body": {
+                "threw": "UnexpectedValueException",
+                "message": "A Talk message needs a message."
+            },
+            "string-recipient": {
+                "returned": null
+            },
+            "blank-recipients": {
+                "returned": null
+            },
+            "no-conversation": {
+                "threw": "UnexpectedValueException",
+                "message": "A Talk message needs a conversation token, or a field on the item that holds one."
+            },
+            "bad-external": {
+                "threw": "UnexpectedValueException",
+                "message": "A Talk message needs a conversation token, or a field on the item that holds one."
+            },
+            "good-external": {
+                "threw": "UnexpectedValueException",
+                "message": "A Talk message needs a conversation token, or a field on the item that holds one."
+            },
+            "bad-category": {
+                "threw": "UnexpectedValueException",
+                "message": "A Talk message needs a conversation token, or a field on the item that holds one."
+            },
+            "array-category": {
+                "threw": "UnexpectedValueException",
+                "message": "A Talk message needs a conversation token, or a field on the item that holds one."
+            },
+            "good-category": {
+                "threw": "UnexpectedValueException",
+                "message": "A Talk message needs a conversation token, or a field on the item that holds one."
+            }
+        },
+        "preview": {
+            "summary": "Send a Talk message would send 2 message(s)",
+            "messages": [
+                {
+                    "to": "bob"
+                },
+                {
+                    "to": "eve"
+                }
+            ]
+        },
+        "execute": [
+            {
+                "json": {
+                    "name": "a"
+                }
+            },
+            {
+                "json": {
+                    "name": "b"
+                }
+            }
+        ],
+        "calls": [
+            [
+                "previewMessages",
+                "talk",
+                {
+                    "recipients": [
+                        "bob"
+                    ],
+                    "message": "hi"
+                },
+                [
+                    {
+                        "json": {
+                            "name": "a"
+                        }
+                    },
+                    {
+                        "json": {
+                            "name": "b"
+                        }
+                    }
+                ],
+                {
+                    "runId": 7
+                }
+            ],
+            [
+                "sendTalkMessage",
+                {
+                    "recipients": [
+                        "bob"
+                    ],
+                    "message": "hi"
+                },
+                [
+                    {
+                        "json": {
+                            "name": "a"
+                        }
+                    },
+                    {
+                        "json": {
+                            "name": "b"
+                        }
+                    }
+                ],
+                {
+                    "runId": 7
+                },
+                "openregister.send-talk-message"
+            ]
+        ]
+    }
+]

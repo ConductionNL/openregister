@@ -94,14 +94,14 @@ class CalendarRecompute {
 	 *
 	 * @param CalendarDependency     $dependency The one dependency question.
 	 * @param WorkingCalendarService $calendars  The resolver.
-	 * @param SlaCalculator          $calculator The engine.
+	 * @param SlaCalculatorInterface          $calculator The engine.
 	 * @param IAppConfig             $appConfig  Where the idempotency mark lives.
 	 * @param LoggerInterface        $logger     The logger.
 	 */
 	public function __construct(
 		private readonly CalendarDependency $dependency,
 		private readonly WorkingCalendarService $calendars,
-		private readonly SlaCalculator $calculator,
+		private readonly SlaCalculatorInterface $calculator,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {

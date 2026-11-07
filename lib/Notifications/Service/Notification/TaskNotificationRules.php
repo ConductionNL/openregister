@@ -94,6 +94,33 @@ class TaskNotificationRules implements TaskNotificationRulesInterface {
 	];
 
 	/**
+	 * The one action most task notices carry: open the task.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const OPEN_ACTIONS = [
+		[
+			'label' => ['en' => 'Open', 'nl' => 'Openen'],
+			'primary' => true,
+			'target' => ['kind' => 'route', 'app' => 'openregister', 'route' => self::OPEN_ROUTE],
+		],
+	];
+
+	/**
+	 * Task notices are delivered in-app.
+	 *
+	 * @var array<int, string>
+	 */
+	private const IN_APP = ['nc-notification'];
+
+	/**
+	 * Addressed to the task's assignee.
+	 *
+	 * @var array<int, array<string, string>>
+	 */
+	private const TO_ASSIGNEE = [['kind' => 'field', 'field' => 'assignee']];
+
+	/**
 	 * The rules. Text is per locale, sentence case, English primary.
 	 *
 	 * @var array<string, array<string, mixed>>
@@ -109,7 +136,7 @@ class TaskNotificationRules implements TaskNotificationRulesInterface {
 			],
 			'enabled' => true,
 			'channels' => ['nc-notification', 'web-push'],
-			'recipients' => [['kind' => 'field', 'field' => 'assignee']],
+			'recipients' => self::TO_ASSIGNEE,
 			'subject' => [
 				'en' => 'Assigned to you: {{title}}',
 				'nl' => 'Aan jou toegewezen: {{title}}',
@@ -136,25 +163,19 @@ class TaskNotificationRules implements TaskNotificationRulesInterface {
 		'taskOfferedToPool' => [
 			'trigger' => ['type' => 'transition', 'action' => 'offer'],
 			'enabled' => true,
-			'channels' => ['nc-notification'],
+			'channels' => self::IN_APP,
 			'recipients' => [['kind' => 'expression', 'resolver' => TaskPoolRecipientResolver::class]],
 			'subject' => [
 				'en' => 'New task for your group: {{title}}',
 				'nl' => 'Nieuwe taak voor je groep: {{title}}',
 			],
-			'actions' => [
-				[
-					'label' => ['en' => 'Open', 'nl' => 'Openen'],
-					'primary' => true,
-					'target' => ['kind' => 'route', 'app' => 'openregister', 'route' => self::OPEN_ROUTE],
-				],
-			],
+			'actions' => self::OPEN_ACTIONS,
 		],
 		// 3. Reassigned away from you.
 		'taskReassignedAway' => [
 			'trigger' => ['type' => 'transition', 'action' => ['reassign', 'delegate']],
 			'enabled' => true,
-			'channels' => ['nc-notification'],
+			'channels' => self::IN_APP,
 			'recipients' => [['kind' => 'field', 'field' => 'previousAssignee']],
 			'subject' => [
 				'en' => 'No longer yours: {{title}}',
@@ -166,25 +187,19 @@ class TaskNotificationRules implements TaskNotificationRulesInterface {
 		'taskDueSoon' => [
 			'trigger' => ['type' => 'transition', 'action' => 'due-soon'],
 			'enabled' => true,
-			'channels' => ['nc-notification'],
-			'recipients' => [['kind' => 'field', 'field' => 'assignee']],
+			'channels' => self::IN_APP,
+			'recipients' => self::TO_ASSIGNEE,
 			'subject' => [
 				'en' => 'Due soon: {{title}}',
 				'nl' => 'Bijna over tijd: {{title}}',
 			],
-			'actions' => [
-				[
-					'label' => ['en' => 'Open', 'nl' => 'Openen'],
-					'primary' => true,
-					'target' => ['kind' => 'route', 'app' => 'openregister', 'route' => self::OPEN_ROUTE],
-				],
-			],
+			'actions' => self::OPEN_ACTIONS,
 		],
 		// 5. Escalated: assignee and requester both hear it.
 		'taskEscalated' => [
 			'trigger' => ['type' => 'transition', 'action' => 'escalate'],
 			'enabled' => true,
-			'channels' => ['nc-notification'],
+			'channels' => self::IN_APP,
 			'recipients' => [
 				['kind' => 'field', 'field' => 'assignee'],
 				['kind' => 'field', 'field' => 'requester'],
@@ -209,26 +224,20 @@ class TaskNotificationRules implements TaskNotificationRulesInterface {
 				'dedupeFields' => ['taskUuid'],
 			],
 			'enabled' => true,
-			'channels' => ['nc-notification'],
-			'recipients' => [['kind' => 'field', 'field' => 'assignee']],
+			'channels' => self::IN_APP,
+			'recipients' => self::TO_ASSIGNEE,
 			'subject' => [
 				'en' => 'Task overdue: {{title}}',
 				'nl' => 'Taak over tijd: {{title}}',
 			],
-			'actions' => [
-				[
-					'label' => ['en' => 'Open', 'nl' => 'Openen'],
-					'primary' => true,
-					'target' => ['kind' => 'route', 'app' => 'openregister', 'route' => self::OPEN_ROUTE],
-				],
-			],
+			'actions' => self::OPEN_ACTIONS,
 		],
 		// 7. Cancelled, by a person or by propagation from a stopped run.
 		'taskCancelled' => [
 			'trigger' => ['type' => 'transition', 'action' => ['cancel', 'terminate']],
 			'enabled' => true,
-			'channels' => ['nc-notification'],
-			'recipients' => [['kind' => 'field', 'field' => 'assignee']],
+			'channels' => self::IN_APP,
+			'recipients' => self::TO_ASSIGNEE,
 			'subject' => [
 				'en' => 'Task withdrawn: {{title}}',
 				'nl' => 'Taak ingetrokken: {{title}}',
@@ -240,7 +249,7 @@ class TaskNotificationRules implements TaskNotificationRulesInterface {
 		'taskWriteBackRefused' => [
 			'trigger' => ['type' => 'transition', 'action' => self::ACTION_WRITE_BACK_REFUSED],
 			'enabled' => true,
-			'channels' => ['nc-notification'],
+			'channels' => self::IN_APP,
 			'recipients' => [['kind' => 'field', 'field' => 'writeBackActor']],
 			'subject' => [
 				'en' => 'Change not applied: {{title}}',

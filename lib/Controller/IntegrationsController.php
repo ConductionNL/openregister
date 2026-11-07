@@ -39,7 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -58,7 +58,7 @@ class IntegrationsController extends Controller {
 	 *
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
-	 * @param IntegrationRegistry $registry Integration registry.
+	 * @param IntegrationCatalogueInterface $registry Integration registry.
 	 * @param IUserSession $userSession Current user session.
 	 * @param IGroupManager $groupManager Group manager (admin check).
 	 * @param LoggerInterface $logger Logger.
@@ -68,7 +68,7 @@ class IntegrationsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private IntegrationRegistry $registry,
+		private IntegrationCatalogueInterface $registry,
 		private IUserSession $userSession,
 		private IGroupManager $groupManager,
 		private LoggerInterface $logger,

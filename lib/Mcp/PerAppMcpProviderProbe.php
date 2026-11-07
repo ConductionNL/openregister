@@ -24,6 +24,7 @@ use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Appends the IMcpToolProvider implementations that installed apps register
@@ -118,7 +119,7 @@ class PerAppMcpProviderProbe {
 	 * this method's caching behaviour.
 	 *
 	 * @param ContainerInterface $container The DI container.
-	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
+	 * @param LoggerInterface $logger PSR logger.
 	 * @param array<IMcpToolProvider> $providers Providers array (modified in place by reference).
 	 *
 	 * @return void
@@ -127,76 +128,108 @@ class PerAppMcpProviderProbe {
 	 */
 	public function collectPerAppMcpProviders(
 		ContainerInterface $container,
-		\Psr\Log\LoggerInterface $logger,
+		LoggerInterface $logger,
 		array &$providers,
 	): void {
 		try {
-			$appManager = $container->get('OCP\App\IAppManager');
-			$appIds = $appManager->getInstalledApps();
-
-			$cache = $this->getMcpDiscoveryCache(container: $container, logger: $logger);
-			$cacheKey = $this->buildMcpDiscoveryCacheKey(appIds: $appIds);
-			$map = $this->readMcpDiscoveryMap(cache: $cache, cacheKey: $cacheKey);
-
-			if ($map !== null) {
-				// WARM — resolve only the known winners; no info.xml reads, no
-				// class_exists() misses, no throwing container lookups.
-				$this->materialiseMcpProvidersFromMap(
-					container: $container,
-					logger: $logger,
-					map: $map,
-					providers: $providers
-				);
-				return;
-			}
-
-			// COLD — run the full probe once and record the outcome per app.
-			$map = [];
-			foreach ($appIds as $appId) {
-				$map[$appId] = null;
-				$candidates = $this->buildMcpProviderCandidates(
-					appId: $appId,
-					appManager: $appManager
-				);
-
-				foreach ($candidates as $key) {
-					$resolved = $this->tryResolveMcpProviderCandidate(
-						container: $container,
-						logger: $logger,
-						appId: $appId,
-						key: $key
-					);
-					if ($resolved !== null) {
-						$providers[] = $resolved;
-						$map[$appId] = $key;
-						break;
-					}
-				}//end foreach
-			}//end foreach
-
-			$this->writeMcpDiscoveryMap(
-				container: $container,
-				cache: $cache,
-				cacheKey: $cacheKey,
-				map: $map
-			);
-
-			// One summary line per REBUILD replaces the ~2-3 debug lines per
-			// missing app the raw probe used to emit on every single request.
-			$logger->debug(
-				'[Application] Per-app MCP provider discovery rebuilt',
-				[
-					'appsProbed' => count($map),
-					'discovered' => array_keys(array_filter($map, static fn ($key) => $key !== null)),
-					'cached' => ($cache !== null),
-				]
-			);
+			$this->collect(container: $container, logger: $logger, providers: $providers);
 		} catch (\Throwable $e) {
-			$logger->warning(
-				'[Application] Per-app provider enumeration failed: ' . $e->getMessage()
-			);
-		}//end try
+			$logger->warning('[Application] Per-app provider enumeration failed: ' . $e->getMessage());
+		}
 	}//end collectPerAppMcpProviders()
+
+	/**
+	 * Collect from the cached discovery map when warm, else probe every app and cache the outcome.
+	 *
+	 * @param ContainerInterface       $container The DI container.
+	 * @param LoggerInterface $logger    PSR logger.
+	 * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
+	 *
+	 * @return void
+	 */
+	private function collect(ContainerInterface $container, LoggerInterface $logger, array &$providers): void {
+		$appManager = $container->get('OCP\App\IAppManager');
+		$appIds     = $appManager->getInstalledApps();
+		$cache      = $this->getMcpDiscoveryCache(container: $container, logger: $logger);
+		$cacheKey   = $this->buildMcpDiscoveryCacheKey(appIds: $appIds);
+
+		$map = $this->readMcpDiscoveryMap(cache: $cache, cacheKey: $cacheKey);
+		if ($map !== null) {
+			// WARM — resolve only the known winners; no info.xml reads, no
+			// class_exists() misses, no throwing container lookups.
+			$this->materialiseMcpProvidersFromMap(container: $container, logger: $logger, map: $map, providers: $providers);
+			return;
+		}
+
+		// COLD — run the full probe once and record the outcome per app.
+		$map = $this->probeApps(container: $container, logger: $logger, appManager: $appManager, appIds: $appIds, providers: $providers);
+		$this->writeMcpDiscoveryMap(container: $container, cache: $cache, cacheKey: $cacheKey, map: $map);
+		$this->logRebuild(logger: $logger, map: $map, cached: ($cache !== null));
+	}//end collect()
+
+	/**
+	 * Probe every installed app, appending each app's first resolving provider.
+	 *
+	 * @param ContainerInterface       $container  The DI container.
+	 * @param LoggerInterface $logger     PSR logger.
+	 * @param mixed                    $appManager The IAppManager instance.
+	 * @param string[]                 $appIds     The installed app ids.
+	 * @param array<IMcpToolProvider>  $providers  Providers array (modified in place by reference).
+	 *
+	 * @return array<string, string|null> appId => winning candidate key, or null for none.
+	 */
+	private function probeApps(ContainerInterface $container, LoggerInterface $logger, $appManager, array $appIds, array &$providers): array {
+		$map = [];
+		foreach ($appIds as $appId) {
+			$hit         = $this->probeApp(container: $container, logger: $logger, appManager: $appManager, appId: $appId);
+			$map[$appId] = array_key_first($hit);
+			$providers   = [...$providers, ...array_values($hit)];
+		}
+
+		return $map;
+	}//end probeApps()
+
+	/**
+	 * The first candidate of an app that resolves to a provider.
+	 *
+	 * @param ContainerInterface       $container  The DI container.
+	 * @param LoggerInterface $logger     PSR logger.
+	 * @param mixed                    $appManager The IAppManager instance.
+	 * @param string                   $appId      The app id.
+	 *
+	 * @return array<string, IMcpToolProvider> The winning key => provider, or empty.
+	 */
+	private function probeApp(ContainerInterface $container, LoggerInterface $logger, $appManager, string $appId): array {
+		foreach ($this->buildMcpProviderCandidates(appId: $appId, appManager: $appManager) as $key) {
+			$resolved = $this->tryResolveMcpProviderCandidate(container: $container, logger: $logger, appId: $appId, key: $key);
+			if ($resolved !== null) {
+				return [$key => $resolved];
+			}
+		}
+
+		return [];
+	}//end probeApp()
+
+	/**
+	 * One summary line per REBUILD replaces the ~2-3 debug lines per
+	 * missing app the raw probe used to emit on every single request.
+	 *
+	 * @param LoggerInterface   $logger PSR logger.
+	 * @param array<string, string|null> $map    The rebuilt map.
+	 * @param bool                       $cached Whether a cache was written.
+	 *
+	 * @return void
+	 */
+	private function logRebuild(LoggerInterface $logger, array $map, bool $cached): void {
+		$logger->debug(
+			'[Application] Per-app MCP provider discovery rebuilt',
+			[
+				'appsProbed' => count($map),
+				'discovered' => array_keys(array_filter($map, static fn ($key) => $key !== null)),
+				'cached' => $cached,
+			]
+		);
+	}//end logRebuild()
 
 	/**
 	 * Append providers for a cached discovery map's winning candidate keys.
@@ -206,18 +239,13 @@ class PerAppMcpProviderProbe {
 	 * failure simply yields no provider for that app.
 	 *
 	 * @param ContainerInterface $container The DI container.
-	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
+	 * @param LoggerInterface $logger PSR logger.
 	 * @param array<string, string|null> $map Cached appId => winning key|null map.
 	 * @param array<IMcpToolProvider> $providers Providers array (modified in place by reference).
 	 *
 	 * @return void
 	 */
-	private function materialiseMcpProvidersFromMap(
-		ContainerInterface $container,
-		\Psr\Log\LoggerInterface $logger,
-		array $map,
-		array &$providers,
-	): void {
+	private function materialiseMcpProvidersFromMap(ContainerInterface $container, LoggerInterface $logger, array $map, array &$providers): void {
 		foreach ($map as $appId => $key) {
 			if ($key === null) {
 				// Cached negative result — the app was probed on a previous
@@ -225,16 +253,11 @@ class PerAppMcpProviderProbe {
 				continue;
 			}
 
-			$resolved = $this->tryResolveMcpProviderCandidate(
-				container: $container,
-				logger: $logger,
-				appId: (string)$appId,
-				key: $key
-			);
+			$resolved = $this->tryResolveMcpProviderCandidate(container: $container, logger: $logger, appId: (string)$appId, key: $key);
 			if ($resolved !== null) {
 				$providers[] = $resolved;
 			}
-		}//end foreach
+		}
 	}//end materialiseMcpProvidersFromMap()
 
 	/**
@@ -246,14 +269,11 @@ class PerAppMcpProviderProbe {
 	 * restores the exact pre-cache behaviour (constraint: fail open).
 	 *
 	 * @param ContainerInterface $container The DI container.
-	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
+	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return ICache|null The cache, or null when no distributed backend exists.
 	 */
-	private function getMcpDiscoveryCache(
-		ContainerInterface $container,
-		\Psr\Log\LoggerInterface $logger,
-	): ?ICache {
+	private function getMcpDiscoveryCache(ContainerInterface $container, LoggerInterface $logger): ?ICache {
 		try {
 			$cacheFactory = $container->get(ICacheFactory::class);
 			if ($cacheFactory instanceof ICacheFactory === false || $cacheFactory->isAvailable() === false) {
@@ -262,11 +282,9 @@ class PerAppMcpProviderProbe {
 
 			return $cacheFactory->createDistributed(prefix: self::MCP_PROBE_CACHE_PREFIX);
 		} catch (\Throwable $e) {
-			$logger->debug(
-				'[Application] MCP discovery cache unavailable: ' . $e->getMessage()
-			);
+			$logger->debug('[Application] MCP discovery cache unavailable: ' . $e->getMessage());
 			return null;
-		}//end try
+		}
 	}//end getMcpDiscoveryCache()
 
 	/**
@@ -304,6 +322,18 @@ class PerAppMcpProviderProbe {
 			return null;
 		}
 
+		return $this->decodeMcpDiscoveryMap(blob: $blob);
+	}//end readMcpDiscoveryMap()
+
+	/**
+	 * Decode a cached discovery map; a corrupt entry discards the whole blob
+	 * rather than trust it.
+	 *
+	 * @param string $blob The cached JSON.
+	 *
+	 * @return array<string, string|null>|null The map, or null when corrupt.
+	 */
+	private function decodeMcpDiscoveryMap(string $blob): ?array {
 		$data = json_decode($blob, true);
 		if (is_array($data) === false) {
 			return null;
@@ -311,21 +341,26 @@ class PerAppMcpProviderProbe {
 
 		$map = [];
 		foreach ($data as $appId => $key) {
-			if ($key === null) {
-				$map[(string)$appId] = null;
-				continue;
-			}
-
-			if (is_string($key) === false || $key === '') {
-				// Corrupt entry — discard the whole blob rather than trust it.
+			if ($this->isMapKey(key: $key) === false) {
 				return null;
 			}
 
 			$map[(string)$appId] = $key;
-		}//end foreach
+		}
 
 		return $map;
-	}//end readMcpDiscoveryMap()
+	}//end decodeMcpDiscoveryMap()
+
+	/**
+	 * Whether a cached map value is null (no provider) or a non-empty key.
+	 *
+	 * @param mixed $key The cached value.
+	 *
+	 * @return bool
+	 */
+	private function isMapKey(mixed $key): bool {
+		return $key === null || (is_string($key) === true && $key !== '');
+	}//end isMapKey()
 
 	/**
 	 * Write the discovery map to the cache with the clamped TTL.
@@ -405,33 +440,75 @@ class PerAppMcpProviderProbe {
 		];
 
 		// Third candidate: trust <namespace> from info.xml when the app declares
-		// one that differs from ucfirst($appId). NC's bootstrap nulls libxml's
-		// external-entity resolver for XXE-hardening, which makes
-		// simplexml_load_file() return false on well-formed files; read first,
-		// then parse the string.
-		try {
-			$infoPath = $appManager->getAppPath($appId) . '/appinfo/info.xml';
-			if (is_file($infoPath) === true) {
-				$body = file_get_contents($infoPath);
-				if ($body !== false && $body !== '') {
-					$useErrors = libxml_use_internal_errors(true);
-					$xml = simplexml_load_string($body);
-					libxml_use_internal_errors($useErrors);
-					if ($xml !== false && isset($xml->namespace) === true) {
-						$namespace = (string)$xml->namespace;
-						if ($namespace !== '' && $namespace !== ucfirst($appId)) {
-							$candidates[] = 'OCA\\' . $namespace . '\\Mcp\\' . $namespace . 'ToolProvider';
-						}
-					}
-				}
-			}
-		} catch (\Throwable $e) {
-			// Path-resolution failures are benign; the other two
-			// candidates already cover the common case.
+		// one that differs from ucfirst($appId).
+		$namespace = $this->declaredNamespace(appId: $appId, appManager: $appManager);
+		if ($namespace !== '' && $namespace !== ucfirst($appId)) {
+			$candidates[] = 'OCA\\' . $namespace . '\\Mcp\\' . $namespace . 'ToolProvider';
 		}
 
 		return $candidates;
 	}//end buildMcpProviderCandidates()
+
+	/**
+	 * The `<namespace>` an app declares in its info.xml, or '' when none can be read.
+	 *
+	 * @param string $appId      The Nextcloud app id.
+	 * @param mixed  $appManager The IAppManager instance.
+	 *
+	 * @return string The declared namespace.
+	 */
+	private function declaredNamespace(string $appId, $appManager): string {
+		try {
+			return $this->namespaceIn(infoPath: $appManager->getAppPath($appId) . '/appinfo/info.xml');
+		} catch (\Throwable $e) {
+			// Path-resolution failures are benign; the other two
+			// candidates already cover the common case.
+			return '';
+		}
+	}//end declaredNamespace()
+
+	/**
+	 * The `<namespace>` of an info.xml file, or ''.
+	 *
+	 * NC's bootstrap nulls libxml's external-entity resolver for
+	 * XXE-hardening, which makes simplexml_load_file() return false on
+	 * well-formed files; read first, then parse the string.
+	 *
+	 * @param string $infoPath The info.xml path.
+	 *
+	 * @return string The namespace, or '' when the file is missing, empty, malformed or declares none.
+	 */
+	private function namespaceIn(string $infoPath): string {
+		$body = '';
+		if (is_file($infoPath) === true) {
+			$body = (string)file_get_contents($infoPath);
+		}
+
+		if ($body === '') {
+			return '';
+		}
+
+		return $this->parseNamespace(body: $body);
+	}//end namespaceIn()
+
+	/**
+	 * The `<namespace>` of an info.xml body, or '' when it is malformed or declares none.
+	 *
+	 * @param string $body The info.xml body.
+	 *
+	 * @return string The namespace.
+	 */
+	private function parseNamespace(string $body): string {
+		$useErrors = libxml_use_internal_errors(true);
+		$xml       = simplexml_load_string($body);
+		libxml_use_internal_errors($useErrors);
+
+		if ($xml === false || isset($xml->namespace) === false) {
+			return '';
+		}
+
+		return (string)$xml->namespace;
+	}//end parseNamespace()
 
 	/**
 	 * Try to resolve a single MCP provider candidate key from the container.
@@ -444,7 +521,7 @@ class PerAppMcpProviderProbe {
 	 * count how many candidate resolutions a request actually performs.
 	 *
 	 * @param ContainerInterface $container The DI container.
-	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
+	 * @param LoggerInterface $logger PSR logger.
 	 * @param string $appId The Nextcloud app id (for logging).
 	 * @param string $key The candidate lookup key.
 	 *
@@ -454,53 +531,67 @@ class PerAppMcpProviderProbe {
 	 */
 	protected function tryResolveMcpProviderCandidate(
 		ContainerInterface $container,
-		\Psr\Log\LoggerInterface $logger,
+		LoggerInterface $logger,
 		string $appId,
 		string $key,
 	): ?IMcpToolProvider {
 		try {
-			if (str_contains($key, '\\') === true && str_contains($key, '::') === false) {
-				// FQCN — only try if the class actually exists; calling get() on a
-				// non-existent class would throw NotFoundExceptionInterface for every
-				// installed app (noisy).
-				if (class_exists($key) === false) {
-					// Expected for every installed app that ships no MCP tool
-					// provider — i.e. almost all of them. Deliberately silent:
-					// this fired ~2 lines per installed app per request (#308).
-					// The single summary line in collectPerAppMcpProviders()
-					// carries the same information at 1/143rd the volume.
-					return null;
-				}
-			}
-
-			$appProvider = $container->get($key);
-			if ($appProvider instanceof IMcpToolProvider) {
-				$logger->info(
-					'[Application] Discovered per-app tool provider',
-					['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]
-				);
-				return $appProvider;
-			}
-
-			// Get_debug_type() returns the FQCN for objects and the type name for scalars.
-			$logger->warning(
-				'[Application] Resolved but not IMcpToolProvider',
-				['appId' => $appId, 'via' => $key, 'class' => get_debug_type($appProvider)]
-			);
+			return $this->resolveCandidate(container: $container, logger: $logger, appId: $appId, key: $key);
 		} catch (\Psr\Container\NotFoundExceptionInterface $e) {
 			// Alias key not registered — the expected case for every app
 			// without an MCP provider, i.e. almost all of them. Deliberately
-			// silent; see the class_exists() branch above (#308).
+			// silent; see isMissingClass() (#308).
 			return null;
 		} catch (\Throwable $e) {
 			// A genuine misconfiguration (the alias IS registered but its
 			// factory blew up) — this one is worth hearing about.
-			$logger->warning(
-				'[Application] Resolve failed',
-				['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
-			);
-		}//end try
-
-		return null;
+			$logger->warning('[Application] Resolve failed', ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]);
+			return null;
+		}
 	}//end tryResolveMcpProviderCandidate()
+
+	/**
+	 * Whether a candidate is a FQCN whose class does not exist.
+	 *
+	 * Only a FQCN that exists is tried; calling get() on a non-existent class
+	 * would throw NotFoundExceptionInterface for every installed app (noisy).
+	 * A miss is expected for every installed app that ships no MCP tool
+	 * provider — i.e. almost all of them — and deliberately silent: it fired
+	 * ~2 lines per installed app per request (#308). The single summary line
+	 * of a rebuild carries the same information at 1/143rd the volume.
+	 *
+	 * @param string $key The candidate lookup key.
+	 *
+	 * @return bool
+	 */
+	private function isMissingClass(string $key): bool {
+		return str_contains($key, '\\') === true && str_contains($key, '::') === false && class_exists($key) === false;
+	}//end isMissingClass()
+
+	/**
+	 * Resolve a candidate and keep it only when it is a provider; a FQCN
+	 * whose class does not exist is skipped without a lookup.
+	 *
+	 * @param ContainerInterface       $container The DI container.
+	 * @param LoggerInterface $logger    PSR logger.
+	 * @param string                   $appId     The Nextcloud app id (for logging).
+	 * @param string                   $key       The candidate lookup key.
+	 *
+	 * @return IMcpToolProvider|null The provider, or null.
+	 */
+	private function resolveCandidate(ContainerInterface $container, LoggerInterface $logger, string $appId, string $key): ?IMcpToolProvider {
+		if ($this->isMissingClass(key: $key) === true) {
+			return null;
+		}
+
+		$appProvider = $container->get($key);
+		if ($appProvider instanceof IMcpToolProvider) {
+			$logger->info('[Application] Discovered per-app tool provider', ['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]);
+			return $appProvider;
+		}
+
+		// Get_debug_type() returns the FQCN for objects and the type name for scalars.
+		$logger->warning('[Application] Resolved but not IMcpToolProvider', ['appId' => $appId, 'via' => $key, 'class' => get_debug_type($appProvider)]);
+		return null;
+	}//end resolveCandidate()
 }//end class

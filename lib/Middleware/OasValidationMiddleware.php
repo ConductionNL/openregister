@@ -74,15 +74,7 @@ class OasValidationMiddleware extends Middleware {
 	 * @throws OasValidationFailureException When the body fails validation.
 	 */
 	public function beforeController(mixed $controller, string $methodName): void {
-		// Only validate write methods.
-		$verb = strtoupper((string)$this->request->getMethod());
-		if (in_array($verb, ['POST', 'PUT', 'PATCH'], true) === false) {
-			return;
-		}
-
-		// Opt-in: respect the `?_validate=true` query parameter.
-		$optIn = (string)($this->request->getParam('_validate') ?? '');
-		if (in_array(strtolower($optIn), ['true', '1', 'yes', 'on'], true) === false) {
+		if ($this->isOptedInWrite() === false) {
 			return;
 		}
 
@@ -123,6 +115,34 @@ class OasValidationMiddleware extends Middleware {
 			throw $exception;
 		}
 
+		return $this->failureResponse(exception: $exception);
+	}//end afterException()
+
+	/**
+	 * Whether this is a write request (POST, PUT or PATCH) that opted in with `?_validate`.
+	 *
+	 * @return bool True when the body should be validated.
+	 */
+	private function isOptedInWrite(): bool {
+		// Only validate write methods.
+		$verb = strtoupper((string)$this->request->getMethod());
+		if (in_array($verb, ['POST', 'PUT', 'PATCH'], true) === false) {
+			return false;
+		}
+
+		// Opt-in: respect the `?_validate=true` query parameter.
+		$optIn = (string)($this->request->getParam('_validate') ?? '');
+		return in_array(strtolower($optIn), ['true', '1', 'yes', 'on'], true);
+	}//end isOptedInWrite()
+
+	/**
+	 * The RFC 7807 422 response for a body that failed validation.
+	 *
+	 * @param OasValidationFailureException $exception The failure.
+	 *
+	 * @return JSONResponse The problem details, as application/problem+json.
+	 */
+	private function failureResponse(OasValidationFailureException $exception): JSONResponse {
 		$problem = $this->problems->validationFailed(
 			errors: $exception->getErrors(),
 			detail: 'Request body failed OAS schema validation',
@@ -131,7 +151,7 @@ class OasValidationMiddleware extends Middleware {
 		$response = new JSONResponse(data: $problem, statusCode: 422);
 		$response->addHeader('Content-Type', ProblemDetailsBuilder::CONTENT_TYPE);
 		return $response;
-	}//end afterException()
+	}//end failureResponse()
 
 	/**
 	 * Resolve the JSON-Schema used to validate this operation.

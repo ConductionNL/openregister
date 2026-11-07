@@ -44,7 +44,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AnalyticsSeries;
 use OCA\OpenRegister\Db\AnalyticsSeriesMapper;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -74,7 +74,7 @@ class AnalyticsSeriesService {
 	 * Constructor.
 	 *
 	 * @param AnalyticsSeriesMapper $mapper Series persistence.
-	 * @param IntegrationRegistry $registry Registry for the page-widget surface.
+	 * @param PageWidgetRegistryInterface $registry Registry for the page-widget surface.
 	 * @param IUserSession $userSession Current user.
 	 * @param IGroupManager $groupManager Group / admin checks.
 	 *
@@ -82,7 +82,7 @@ class AnalyticsSeriesService {
 	 */
 	public function __construct(
 		private AnalyticsSeriesMapper $mapper,
-		private IntegrationRegistry $registry,
+		private PageWidgetRegistryInterface $registry,
 		private IUserSession $userSession,
 		private IGroupManager $groupManager,
 	) {
