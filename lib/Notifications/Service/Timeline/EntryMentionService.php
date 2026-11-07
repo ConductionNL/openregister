@@ -35,7 +35,7 @@ use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -80,20 +80,20 @@ class EntryMentionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param WatcherService        $watchers      Subscribes the named principal.
-	 * @param IUserManager          $userManager   Resolves a token to a real principal.
-	 * @param IUserSession          $userSession   The caller, who is never notified of their own mention.
-	 * @param SchemaMapperInterface          $schemaMapper  Resolves the object's schema for the read check.
-	 * @param PermissionHandler     $permissions   The one RBAC evaluator.
-	 * @param INotificationManager  $notifications Sends the notification.
-	 * @param LoggerInterface       $logger        Logger for the fail-closed paths.
-	 * @param DeepLinkRegistryService $deepLinks   Finds the app page that owns the object.
-	 * @param IURLGenerator         $urls          Builds Open Register's own object page as the fallback link.
+	 * @param WatcherServiceInterface $watchers      Subscribes the named principal.
+	 * @param IUserManager            $userManager   Resolves a token to a real principal.
+	 * @param IUserSession            $userSession   The caller, who is never notified of their own mention.
+	 * @param SchemaMapperInterface   $schemaMapper  Resolves the object's schema for the read check.
+	 * @param PermissionHandler       $permissions   The one RBAC evaluator.
+	 * @param INotificationManager    $notifications Sends the notification.
+	 * @param LoggerInterface         $logger        Logger for the fail-closed paths.
+	 * @param DeepLinkRegistryService $deepLinks     Finds the app page that owns the object.
+	 * @param IURLGenerator           $urls          Builds Open Register's own object page as the fallback link.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly WatcherService $watchers,
+		private readonly WatcherServiceInterface $watchers,
 		private readonly IUserManager $userManager,
 		private readonly IUserSession $userSession,
 		private readonly SchemaMapperInterface $schemaMapper,

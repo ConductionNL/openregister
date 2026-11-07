@@ -61,6 +61,12 @@ use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\Interaction\FavouriteService;
+use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -87,6 +93,7 @@ final class ContractBindings {
 		AppSettingsInterface::class => SettingsService::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
+		FavouriteServiceInterface::class => FavouriteService::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
@@ -100,8 +107,10 @@ final class ContractBindings {
 		ObjectOperationsInterface::class => ObjectService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
+		SubstantiveChangeEvaluatorInterface::class => SubstantiveChangeEvaluator::class,
 		TaskManagerInterface::class => TaskService::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
+		WatcherServiceInterface::class => WatcherService::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
 		SettingsServiceInterface::class => SettingsService::class,
 		ExternalIntegrationRouterInterface::class => ExternalIntegrationRouter::class,
