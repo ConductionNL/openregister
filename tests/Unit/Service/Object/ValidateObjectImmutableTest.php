@@ -23,6 +23,8 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -42,12 +44,9 @@ final class ValidateObjectImmutableTest extends TestCase {
 	 */
 	private function validator(): ValidateObject {
 		return new ValidateObject(
-			$this->createMock(originalClassName: IAppConfig::class),
-			$this->createMock(originalClassName: MagicMapper::class),
-			$this->createMock(originalClassName: SchemaMapper::class),
-			$this->createMock(originalClassName: IURLGenerator::class),
-			$this->createMock(originalClassName: LoggerInterface::class),
-			$this->createMock(originalClassName: IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->createMock(originalClassName: IAppConfig::class), schemaMapper: $this->createMock(originalClassName: SchemaMapper::class), urlGenerator: $this->createMock(originalClassName: IURLGenerator::class)),
+			lookups: new ValidationLookups(objectMapper: $this->createMock(originalClassName: MagicMapper::class), userManager: $this->createMock(originalClassName: IUserManager::class)),
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 	}//end validator()
 
