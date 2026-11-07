@@ -45,7 +45,6 @@ class TenantLifecycleServiceTest extends TestCase {
 			$this->organisationMapper,
 			$this->groupManager,
 			$this->userManager,
-			$this->eventDispatcher,
 			$this->logger
 		);
 	}

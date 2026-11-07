@@ -68,6 +68,17 @@ class MagicBulkHandler {
 	use MagicColumnNameTrait;
 
 	/**
+	 * What the update half of an upsert leaves as stored.
+	 *
+	 * A bulk row carries the writer as owner and the writer's organisation, which
+	 * says who created a new row and nothing about an existing one. An owner only
+	 * changes through the ownership endpoint.
+	 *
+	 * @var array<int, string>
+	 */
+	private const COLUMNS_KEPT_ON_UPDATE = ['_uuid', '_created', '_version', '_owner', '_organisation'];
+
+	/**
 	 * Maximum packet size buffer percentage (0.1 = 10%, 0.5 = 50%)
 	 * Lower values = more conservative chunk sizes
 	 *
@@ -766,9 +777,9 @@ class MagicBulkHandler {
 	/**
 	 * The SET clauses of the upsert's update half.
 	 *
-	 * `_uuid`, `_created` and `_version` are never updated: an existing row
-	 * keeps the version it reached, so a re-import does not walk it back to
-	 * the starting version the INSERT half stamps on a new row.
+	 * COLUMNS_KEPT_ON_UPDATE are never updated: an existing row keeps the version
+	 * it reached, so a re-import does not walk it back to the starting version the
+	 * INSERT half stamps on a new row, and it keeps its owner and organisation.
 	 *
 	 * @param MagicUpsertChunkRun $run The chunk being upserted.
 	 *
@@ -781,7 +792,7 @@ class MagicBulkHandler {
 	private function buildUpsertUpdateClauses(MagicUpsertChunkRun $run): array {
 		$updateClauses = [];
 		foreach ($run->columns as $column) {
-			if (in_array($column, ['_uuid', '_created', '_version'], true) === true) {
+			if (in_array($column, self::COLUMNS_KEPT_ON_UPDATE, true) === true) {
 				continue;
 			}
 

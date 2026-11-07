@@ -24,7 +24,7 @@ use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\App\IAppManager;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -47,6 +47,9 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Controller\RegistersController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterDownloads
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterGitHubPublisher
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterStatistics
  * @uses \OCA\OpenRegister\Controller\Support\RegistersControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\RegisterMappers
  * @uses \OCA\OpenRegister\Controller\Support\RegisterServices

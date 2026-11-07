@@ -130,8 +130,8 @@
 						<template v-if="lastRun">
 							<p class="flowCard__value flowCard__value--row">
 								<CnStatusBadge
-									:label="statusLabel(lastRun.status)"
-									:variant="statusVariant(lastRun.status)"
+									:label="statusLabel(shownStatus(lastRun))"
+									:variant="statusVariant(shownStatus(lastRun))"
 									size="small" />
 								<router-link :to="runRoute(lastRun)">
 									{{ formatDateTime(lastRun.created) }}
@@ -434,8 +434,8 @@
 								<tr v-for="run in pagedRuns" :key="run.uuid">
 									<td>
 										<CnStatusBadge
-											:label="statusLabel(run.status)"
-											:variant="statusVariant(run.status)"
+											:label="statusLabel(shownStatus(run))"
+											:variant="statusVariant(shownStatus(run))"
 											size="small" />
 									</td>
 									<td>
@@ -507,6 +507,7 @@ import {
 	runCounts,
 	runDuration,
 	shortUuid,
+	shownStatus,
 	statusLabel,
 	statusVariant,
 	triggerLabel,
@@ -643,6 +644,7 @@ export default {
 		nodeLabel,
 		runDuration,
 		shortUuid,
+		shownStatus,
 		statusLabel,
 		statusVariant,
 		triggerLabel,

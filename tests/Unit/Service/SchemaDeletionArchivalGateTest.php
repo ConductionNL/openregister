@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -116,6 +117,8 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 		parent::setUp();
 
 		$this->db = $this->createMock(IDBConnection::class);
+
+		$this->db->method('getDatabaseProvider')->willReturn(IDBConnection::PLATFORM_SQLITE);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
@@ -326,7 +329,10 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 		$this->magicMapper->expects($this->once())->method('dropTable');
 		$this->schemaMapper->expects($this->once())->method('delete');
 
-		$result = $this->service->cascadeDeleteSchema(schema: $schema, archivalOverride: true);
+		$result = $this->service->cascadeDeleteSchema(
+			schema: $schema,
+			override: new SchemaTeardownOverride(archivalSchema: true)
+		);
 
 		$this->assertSame(1, $result['deletedCount']);
 		$this->assertTrue($result['tableDropped']);
@@ -345,9 +351,10 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 		$reflection = new ReflectionClass(SchemaDeletionService::class);
 		$parameters = $reflection->getMethod('cascadeDeleteSchema')->getParameters();
 
-		$this->assertSame('archivalOverride', $parameters[1]->getName());
+		$this->assertSame('override', $parameters[1]->getName());
 		$this->assertTrue($parameters[1]->isDefaultValueAvailable());
-		$this->assertFalse($parameters[1]->getDefaultValue());
+		$this->assertFalse($parameters[1]->getDefaultValue()->archivalSchema);
+		$this->assertFalse($parameters[1]->getDefaultValue()->keptRows);
 
 	}//end testTheArchivalOverrideIsOffByDefault()
 
@@ -366,7 +373,7 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 			$reflection->getMethod('deleteObjectsBySchema')->getParameters()
 		);
 
-		$this->assertNotContains('archivalOverride', $names);
+		$this->assertNotContains('override', $names);
 
 	}//end testTheBulkPathExposesNoArchivalOverride()
 

@@ -29,75 +29,33 @@ use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema;
 use GraphQL\Type\SchemaConfig;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Search\Service\GraphQL\Scalar\DateTimeType;
-use OCA\OpenRegister\Search\Service\GraphQL\Scalar\EmailType;
-use OCA\OpenRegister\Search\Service\GraphQL\Scalar\JsonType;
-use OCA\OpenRegister\Search\Service\GraphQL\Scalar\UriType;
-use OCA\OpenRegister\Search\Service\GraphQL\Scalar\UuidType;
-use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\CompositionHandler;
-use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\TypeMapperHandler;
-use OCP\IUserSession;
+use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectTypes;
+use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaCaller;
+use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntryFields;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCP\IUserSession;
 
 /**
  * Generates a GraphQL schema from OpenRegister register/schema definitions.
  *
- * Reads all registers and schemas, maps JSON Schema properties to GraphQL types,
- * and produces a complete executable schema with queries, mutations, filters,
- * and connection types.
- *
- * Complexity reduced from 167 to 60 by extracting TypeMapperHandler and
- * CompositionHandler. Remaining complexity is due to the inherent orchestration
- * of query/mutation/type construction that cannot be further decomposed without
- * fragmenting the schema generation flow.
+ * Reads all schemas, maps JSON Schema properties to GraphQL types, and produces
+ * a complete executable schema with queries, mutations, filters and connection types.
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.StaticAccess)
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.StaticAccess) webonyx exposes its built-in types statically
  */
 class SchemaGenerator {
 
 	/**
-	 * Cached object types by schema ID.
+	 * The object types of the last generated schema.
 	 *
-	 * @var array<int, ObjectType>
+	 * @var ObjectTypes|null
 	 */
-	private array $objectTypes = [];
-
-	/**
-	 * Custom scalar type instances.
-	 *
-	 * @var array<string, Type>
-	 */
-	private array $scalars = [];
-
-	/**
-	 * Loaded schemas indexed by ID.
-	 *
-	 * @var array<int, RegisterSchema>
-	 */
-	private array $schemasById = [];
-
-	/**
-	 * Loaded registers indexed by ID.
-	 *
-	 * @var array<int, Register>
-	 */
-	private array $registersById = [];
-
-	/**
-	 * Used type names to detect collisions.
-	 *
-	 * @var array<string, int>
-	 */
-	private array $usedTypeNames = [];
+	private ?ObjectTypes $objectTypes = null;
 
 	/**
 	 * Resolver instance for wiring real resolvers.
@@ -107,30 +65,16 @@ class SchemaGenerator {
 	private ?GraphQLResolver $resolver = null;
 
 	/**
-	 * Handler for type mapping and input type generation.
-	 *
-	 * @var TypeMapperHandler|null
-	 */
-	private ?TypeMapperHandler $typeMapper = null;
-
-	/**
-	 * Handler for allOf/oneOf/anyOf composition logic.
-	 *
-	 * @var CompositionHandler|null
-	 */
-	private ?CompositionHandler $compositionHandler = null;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register mapper
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param IUserSession $userSession The session that says who is asking
+	 * @param PropertyRbacHandler $propertyRbac Decides which properties that caller may read
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IUserSession $userSession,
+		private readonly PropertyRbacHandler $propertyRbac,
 	) {
 	}//end __construct()
 
@@ -153,270 +97,29 @@ class SchemaGenerator {
 	 *
 	 * @return Schema The executable GraphQL schema
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema generation inherently branches per register+schema
-	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
 	 */
 	public function generate(): Schema {
-		// Reset all caches including shared types.
-		$this->objectTypes = [];
-		$this->usedTypeNames = [];
-		$this->schemasById = [];
-		$this->registersById = [];
-		$this->initScalars();
-		$this->initHandlers();
+		$schemas = $this->loadSchemas();
+		$this->objectTypes = new ObjectTypes(schemas: $schemas, caller: $this->caller());
 
-		// Load all registers and schemas. Bypass RBAC + multi-tenancy for
-		// type generation: the GraphQL schema is system-scoped (per-request,
-		// APCu-cached), and per-user authorisation happens at resolve time
-		// on each query. Filtering schemas by the caller's organisation here
-		// produces a different GraphQL schema per org, which silently hides
-		// every cross-org schema from the type system even though those
-		// schemas are readable via REST under the same session. Same
-		// rationale as PermissionHandler::resolveSchemaSlug (#1454).
-		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
-		foreach ($registers as $register) {
-			$this->registersById[$register->getId()] = $register;
-		}
-
-		$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+		$entryFields = new SchemaEntryFields(typeMapper: $this->objectTypes->typeMapper(), resolver: $this->resolver);
 		foreach ($schemas as $schema) {
-			$this->schemasById[$schema->getId()] = $schema;
+			$entryFields->add(entry: $this->objectTypes->entryFor(schema: $schema));
 		}
 
-		// Build query and mutation fields from schemas.
-		$queryFields = [];
-		$mutationFields = [];
+		$queryFields = $entryFields->queryFields();
+		$queryFields['register'] = $this->registerField();
 
-		foreach ($schemas as $schema) {
-			$this->buildSchemaFields(schema: $schema, queryFields: $queryFields, mutationFields: $mutationFields);
-		}
-
-		// Add register-scoped query.
-		$queryFields['register'] = [
-			'type' => $this->scalars['JSON'],
-			'args' => ['id' => Type::nonNull(Type::id())],
-			'resolve' => fn () => null,
-			'description' => 'Query within a specific register scope',
-		];
-
-		$queryType = new ObjectType(['name' => 'Query', 'fields' => $queryFields]);
-		$mutationType = new ObjectType(['name' => 'Mutation', 'fields' => $mutationFields]);
-
+		// Types are auto-discovered from query/mutation fields. Do not pass explicit
+		// setTypes(): it can cause duplicate type errors when allOf composition
+		// creates overlapping type references.
 		return new Schema(
 			config: SchemaConfig::create()
-				->setQuery($queryType)
-				->setMutation($mutationType)
-			// Types are auto-discovered from query/mutation fields.
-			// Do not pass explicit setTypes() — it can cause duplicate type errors
-			// when allOf composition creates overlapping type references.
+				->setQuery(new ObjectType(['name' => 'Query', 'fields' => $queryFields]))
+				->setMutation(new ObjectType(['name' => 'Mutation', 'fields' => $entryFields->mutationFields()]))
 		);
-
 	}//end generate()
-
-	/**
-	 * Build query and mutation fields for a single schema.
-	 *
-	 * @param RegisterSchema $schema The register schema
-	 * @param array<string, mixed> $queryFields Query fields accumulator
-	 * @param array<string, mixed> $mutationFields Mutation fields accumulator
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function buildSchemaFields(
-		RegisterSchema $schema,
-		array &$queryFields,
-		array &$mutationFields,
-	): void {
-		$schemaSlug = $schema->getSlug();
-		if ($schemaSlug === null || $schemaSlug === '') {
-			$schemaSlug = 'schema_' . $schema->getId();
-		}
-
-		// Sanitize slug for GraphQL field names (must match [_a-zA-Z][_a-zA-Z0-9]*).
-		$slug = $this->toFieldName(slug: $schemaSlug);
-		$singular = $this->toFieldName(slug: $this->singularize(plural: $schemaSlug));
-		$plural = $slug;
-
-		$objectType = $this->getObjectType(schema: $schema);
-		$connectionType = $this->typeMapper->getConnectionType(schema: $schema, objectType: $objectType);
-
-		$this->buildQueryFields(
-			schema: $schema,
-			singular: $singular,
-			plural: $plural,
-			objectType: $objectType,
-			connectionType: $connectionType,
-			queryFields: $queryFields
-		);
-
-		$this->buildMutationFields(
-			schema: $schema,
-			singular: $singular,
-			objectType: $objectType,
-			mutationFields: $mutationFields
-		);
-
-	}//end buildSchemaFields()
-
-	/**
-	 * Build query fields (single + list) for a schema.
-	 *
-	 * @param RegisterSchema $schema The register schema
-	 * @param string $singular Singular field name
-	 * @param string $plural Plural field name
-	 * @param ObjectType $objectType The object type
-	 * @param ObjectType $connectionType The connection type
-	 * @param array<string, mixed> $queryFields Query fields accumulator
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
-	 */
-	private function buildQueryFields(
-		RegisterSchema $schema,
-		string $singular,
-		string $plural,
-		ObjectType $objectType,
-		ObjectType $connectionType,
-		array &$queryFields,
-	): void {
-		$schemaTitle = ($schema->getTitle() ?? '');
-		if ($schemaTitle === '') {
-			$schemaTitle = $singular;
-		}
-
-		$queryFields[$singular] = [
-			'type' => $objectType,
-			'args' => [
-				'id' => Type::nonNull(Type::id()),
-			],
-			'resolve' => $this->createSingleResolverPlaceholder(schema: $schema),
-			'description' => 'Fetch a single ' . $schemaTitle,
-		];
-
-		$listTitle = ($schema->getTitle() ?? '');
-		if ($listTitle === '') {
-			$listTitle = $plural;
-		}
-
-		$queryFields[$plural] = [
-			'type' => $connectionType,
-			'args' => $this->typeMapper->getListArgs(schema: $schema),
-			'resolve' => $this->createListResolverPlaceholder(schema: $schema),
-			'description' => 'List ' . $listTitle . ' with pagination and filtering',
-		];
-
-	}//end buildQueryFields()
-
-	/**
-	 * Build mutation fields (create, update, delete) for a schema.
-	 *
-	 * @param RegisterSchema $schema The register schema
-	 * @param string $singular Singular field name
-	 * @param ObjectType $objectType The object type
-	 * @param array<string, mixed> $mutationFields Mutation fields accumulator
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function buildMutationFields(
-		RegisterSchema $schema,
-		string $singular,
-		ObjectType $objectType,
-		array &$mutationFields,
-	): void {
-		$createInput = $this->typeMapper->getCreateInputType(schema: $schema);
-		$updateInput = $this->typeMapper->getUpdateInputType(schema: $schema);
-
-		$title = ($schema->getTitle() ?? '');
-		if ($title === '') {
-			$title = $singular;
-		}
-
-		$mutationFields['create' . ucfirst(string: $singular)] = [
-			'type' => $objectType,
-			'args' => [
-				'input' => Type::nonNull($createInput),
-			],
-			'resolve' => $this->createMutationResolverPlaceholder(schema: $schema, action: 'create'),
-			'description' => 'Create a new ' . $title,
-		];
-
-		$mutationFields['update' . ucfirst(string: $singular)] = [
-			'type' => $objectType,
-			'args' => [
-				'id' => Type::nonNull(Type::id()),
-				'input' => Type::nonNull($updateInput),
-			],
-			'resolve' => $this->createMutationResolverPlaceholder(schema: $schema, action: 'update'),
-			'description' => 'Update an existing ' . $title,
-		];
-
-		$mutationFields['delete' . ucfirst(string: $singular)] = [
-			'type' => Type::boolean(),
-			'args' => [
-				'id' => Type::nonNull(Type::id()),
-			],
-			'resolve' => $this->createMutationResolverPlaceholder(schema: $schema, action: 'delete'),
-			'description' => 'Delete a ' . $title,
-		];
-
-	}//end buildMutationFields()
-
-	/**
-	 * Initialize custom scalar types.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function initScalars(): void {
-		$this->scalars = [
-			'DateTime' => new DateTimeType(),
-			'UUID' => new UuidType(),
-			'Email' => new EmailType(),
-			'URI' => new UriType(),
-			'JSON' => new JsonType(),
-		];
-
-	}//end initScalars()
-
-	/**
-	 * Initialize handler classes with callback dependencies.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function initHandlers(): void {
-		$refResolver = fn (string $ref): ?RegisterSchema => $this->resolveRef(ref: $ref);
-		$objectTypeFactory = fn (RegisterSchema $schema): ObjectType => $this->getObjectType(schema: $schema);
-		$fieldNameConverter = fn (string $slug): string => $this->toFieldName(slug: $slug);
-		$typeNameConverter = fn (string $slug, ?int $schemaId = null): string => $this->toTypeName(
-			slug: $slug,
-			schemaId: $schemaId
-		);
-
-		$this->typeMapper = new TypeMapperHandler(
-			scalars: $this->scalars,
-			refResolver: $refResolver,
-			objectTypeFactory: $objectTypeFactory,
-			fieldNameConverter: $fieldNameConverter,
-			typeNameConverter: $typeNameConverter,
-		);
-
-		$this->compositionHandler = new CompositionHandler(
-			refResolver: $refResolver,
-			objectTypeFactory: $objectTypeFactory,
-			fieldBuilder: fn (RegisterSchema $schema): array => $this->buildObjectFields(schema: $schema),
-			typeNameConverter: $typeNameConverter,
-		);
-
-	}//end initHandlers()
 
 	/**
 	 * Get or create an object type for a register schema.
@@ -428,359 +131,53 @@ class SchemaGenerator {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	public function getObjectType(RegisterSchema $schema): ObjectType {
-		$schemaId = $schema->getId();
+		$this->objectTypes ??= new ObjectTypes(schemas: [], caller: $this->caller());
 
-		if (isset($this->objectTypes[$schemaId]) === true) {
-			return $this->objectTypes[$schemaId];
-		}
-
-		$schemaSlug = $schema->getSlug();
-		if ($schemaSlug === null || $schemaSlug === '') {
-			$schemaSlug = 'Schema' . $schemaId;
-		}
-
-		$typeName = $this->toTypeName(slug: $schemaSlug, schemaId: $schemaId);
-
-		// Create type with lazy field resolution to handle circular references.
-		$schemaDesc = $schema->getDescription();
-		if ($schemaDesc === null || $schemaDesc === '') {
-			$schemaDesc = $schema->getSummary();
-		}
-
-		$type = new ObjectType(
-			[
-				'name' => $typeName,
-				'description' => $schemaDesc,
-				'fields' => fn () => $this->buildObjectFields(schema: $schema),
-			]
-		);
-
-		$this->objectTypes[$schemaId] = $type;
-		return $type;
+		return $this->objectTypes->forSchema(schema: $schema);
 	}//end getObjectType()
 
 	/**
-	 * Build fields for an object type from schema properties.
+	 * Who the generated schema is for.
 	 *
-	 * @param RegisterSchema $schema The register schema
+	 * @return SchemaCaller The caller
 	 *
-	 * @return array<string, array<string, mixed>> The field configuration
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) JSON Schema composition (allOf/oneOf/anyOf) requires deep branching
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Composition + property mapping creates high path count
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
 	 */
-	private function buildObjectFields(RegisterSchema $schema): array {
-		$fields = [];
-
-		// Metadata fields.
-		$fields['_uuid'] = ['type' => $this->scalars['UUID'], 'description' => 'Object UUID'];
-		$fields['_register'] = ['type' => Type::int(), 'description' => 'Register ID'];
-		$fields['_schema'] = ['type' => Type::int(), 'description' => 'Schema ID'];
-		$fields['_created'] = ['type' => $this->scalars['DateTime'], 'description' => 'Creation timestamp'];
-		$fields['_updated'] = ['type' => $this->scalars['DateTime'], 'description' => 'Last update timestamp'];
-		$fields['_owner'] = [
-			'type' => Type::string(),
-			'description' => 'Object owner user ID, null for an anonymous caller',
-			'resolve' => fn (array $row): ?string => $this->ownerForCaller(row: $row),
-		];
-
-		// Audit trail field. It answers null: an object's entries may only be
-		// given out through ObjectHistoryForReaders, and the explicit resolver
-		// keeps the default one from reading an `_auditTrail` key off the object.
-		$fields['_auditTrail'] = [
-			'type' => Type::listOf($this->typeMapper->getAuditTrailType()),
-			'description' => 'Audit trail entries for this object',
-			'args' => [
-				'last' => [
-					'type' => Type::int(),
-					'defaultValue' => 10,
-					'description' => 'Number of most recent entries to return',
-				],
-			],
-			'resolve' => static fn (): ?array => null,
-		];
-
-		// Schema property fields.
-		$properties = $schema->getProperties() ?? [];
-		$authInfo = $this->typeMapper->getPropertyAuthDescriptions(schema: $schema);
-
-		foreach ($properties as $name => $property) {
-			if (is_array(value: $property) === false) {
-				continue;
-			}
-
-			// Sanitize property name for GraphQL field compatibility.
-			$fieldName = $this->toFieldName(slug: $name);
-
-			$fieldType = $this->typeMapper->mapPropertyToGraphQLType(property: $property);
-			$description = ($property['description'] ?? '');
-			if ($description === '') {
-				$description = null;
-			}
-
-			// Annotate authorization requirements in description. Nest the
-			// null test rather than repeating isset() in an elseif: the two
-			// branches differ only in whether there is an existing description
-			// to append to, and a property with no description must NOT come
-			// out as ". Requires ...".
-			if (isset($authInfo[$name]) === true) {
-				$prefix = '';
-				if ($description !== null) {
-					$prefix = $description . '. ';
-				}
-
-				$description = $prefix . $authInfo[$name];
-			}
-
-			$fields[$fieldName] = [
-				'type' => $fieldType,
-				'description' => $description,
-			];
-		}//end foreach
-
-		// Delegate allOf/oneOf/anyOf composition to handler.
-		$this->compositionHandler->applyComposition(schema: $schema, fields: $fields);
-
-		// _usedBy field for reverse relationship traversal.
-		$fields['_usedBy'] = [
-			'type' => $this->scalars['JSON'],
-			'description' => 'Objects that reference this object (reverse relationships)',
-		];
-
-		return $fields;
-	}//end buildObjectFields()
+	private function caller(): SchemaCaller {
+		return new SchemaCaller(session: $this->userSession, propertyRbac: $this->propertyRbac);
+	}//end caller()
 
 	/**
-	 * Resolve a $ref to a schema entity.
+	 * Load all schemas of the graph.
 	 *
-	 * @param string $ref The reference string (slug, ID, or URI)
+	 * Bypasses RBAC and multi-tenancy for type generation: the GraphQL schema is
+	 * system-scoped (per-request, APCu-cached), and per-user authorisation happens at
+	 * resolve time on each query. Filtering schemas by the caller's organisation here
+	 * produces a different GraphQL schema per org, which silently hides every cross-org
+	 * schema from the type system even though those schemas are readable via REST under
+	 * the same session. Same rationale as PermissionHandler::resolveSchemaSlug (#1454).
 	 *
-	 * @return RegisterSchema|null The resolved schema or null
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function resolveRef(string $ref): ?RegisterSchema {
-		// Try by slug.
-		foreach ($this->schemasById as $schema) {
-			if ($schema->getSlug() === $ref || $schema->getUri() === $ref) {
-				return $schema;
-			}
-		}
-
-		// Try by ID.
-		if (is_numeric(value: $ref) === true && isset($this->schemasById[(int)$ref]) === true) {
-			return $this->schemasById[(int)$ref];
-		}
-
-		return null;
-	}//end resolveRef()
-
-	/**
-	 * Convert a slug to a PascalCase GraphQL type name.
-	 *
-	 * @param string $slug The kebab-case or camelCase slug
-	 * @param int|null $schemaId Schema ID for deduplication (optional)
-	 *
-	 * @return string The PascalCase type name
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function toTypeName(string $slug, ?int $schemaId = null): string {
-		$name = str_replace(search: ['-', '_'], replace: ' ', subject: $slug);
-		$name = ucwords(string: $name);
-		$name = str_replace(search: ' ', replace: '', subject: $name);
-
-		// Ensure starts with letter.
-		if (preg_match(pattern: '/^[A-Za-z]/', subject: $name) !== 1) {
-			$name = 'Type' . $name;
-		}
-
-		// Disambiguate if the base name collides with another schema's type.
-		if ($schemaId !== null
-			&& isset($this->usedTypeNames[$name]) === true
-			&& $this->usedTypeNames[$name] !== $schemaId
-		) {
-			$name = $name . $schemaId;
-		}
-
-		if ($schemaId !== null) {
-			$this->usedTypeNames[$name] = $schemaId;
-		}
-
-		return $name;
-	}//end toTypeName()
-
-	/**
-	 * Convert a slug to a valid GraphQL field name (camelCase).
-	 *
-	 * GraphQL names must match [_a-zA-Z][_a-zA-Z0-9]*.
-	 * Converts kebab-case and snake_case to camelCase.
-	 *
-	 * @param string $slug The slug to convert
-	 *
-	 * @return string A valid GraphQL field name
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function toFieldName(string $slug): string {
-		// Replace hyphens/underscores with spaces, then camelCase.
-		$parts = preg_split(pattern: '/[-_]/', subject: $slug);
-		$first = array_shift($parts);
-		$rest = array_map(
-			callback: fn ($part) => ucfirst(string: $part),
-			array: $parts
-		);
-
-		$name = $first . implode(separator: '', array: $rest);
-
-		// Ensure starts with letter or underscore.
-		if (preg_match(pattern: '/^[_a-zA-Z]/', subject: $name) !== 1) {
-			$name = '_' . $name;
-		}
-
-		// Remove any remaining invalid characters.
-		$name = preg_replace(pattern: '/[^_a-zA-Z0-9]/', replacement: '', subject: $name);
-
-		return $name;
-	}//end toFieldName()
-
-	/**
-	 * Naive singularization for Dutch/English schema slugs.
-	 *
-	 * @param string $plural The plural form
-	 *
-	 * @return string The singular form
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function singularize(string $plural): string {
-		// Dutch: -en suffix.
-		if (str_ends_with(haystack: $plural, needle: 'en') === true
-			&& strlen(string: $plural) > 4
-		) {
-			return substr(string: $plural, offset: 0, length: -2);
-		}
-
-		// English: -ies -> -y.
-		if (str_ends_with(haystack: $plural, needle: 'ies') === true) {
-			return substr(string: $plural, offset: 0, length: -3) . 'y';
-		}
-
-		// English: -es -> remove.
-		if (str_ends_with(haystack: $plural, needle: 'es') === true
-			&& strlen(string: $plural) > 4
-		) {
-			return substr(string: $plural, offset: 0, length: -2);
-		}
-
-		// English: -s -> remove.
-		if (str_ends_with(haystack: $plural, needle: 's') === true
-			&& str_ends_with(haystack: $plural, needle: 'ss') === false
-		) {
-			return substr(string: $plural, offset: 0, length: -1);
-		}
-
-		return $plural;
-	}//end singularize()
-
-	/**
-	 * The `_owner` field: answered at the field, so an alias cannot get round it.
-	 *
-	 * The row keeps `_owner`, because a property rule on a related row reads it there.
-	 *
-	 * @param array<string, mixed> $row The resolved row.
-	 *
-	 * @return string|null The owner, or null for an anonymous caller.
-	 *
-	 * @spec openspec/specs/row-field-level-security/spec.md
-	 */
-	private function ownerForCaller(array $row): ?string {
-		if ($this->userSession->getUser() === null) {
-			return null;
-		}
-
-		return $row['_owner'] ?? null;
-	}//end ownerForCaller()
-
-	/**
-	 * Create a resolver for single object queries.
-	 *
-	 * @param RegisterSchema $schema The register schema
-	 *
-	 * @return callable The resolver function
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function createSingleResolverPlaceholder(RegisterSchema $schema): callable {
-		$resolver = $this->resolver;
-		return function ($root, $args) use ($schema, $resolver) {
-			if ($resolver !== null) {
-				return $resolver->resolveSingle($schema, $root, $args);
-			}
-
-			return null;
-		};
-
-	}//end createSingleResolverPlaceholder()
-
-	/**
-	 * Create a resolver for list queries.
-	 *
-	 * @param RegisterSchema $schema The register schema
-	 *
-	 * @return callable The resolver function
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function createListResolverPlaceholder(RegisterSchema $schema): callable {
-		$resolver = $this->resolver;
-		return function ($root, $args) use ($schema, $resolver) {
-			if ($resolver !== null) {
-				return $resolver->resolveList($schema, $root, $args);
-			}
-
-			return null;
-		};
-
-	}//end createListResolverPlaceholder()
-
-	/**
-	 * Create a resolver for mutations.
-	 *
-	 * @param RegisterSchema $schema The register schema
-	 * @param string $action The mutation action (create, update, delete)
-	 *
-	 * @return callable The resolver function
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md
-	 */
-	private function createMutationResolverPlaceholder(RegisterSchema $schema, string $action): callable {
-		$resolver = $this->resolver;
-		return function ($root, $args) use ($schema, $action, $resolver) {
-			if ($resolver === null) {
-				return null;
-			}
-
-			return match ($action) {
-				'create' => $resolver->resolveCreate($schema, $args),
-				'update' => $resolver->resolveUpdate($schema, $args),
-				'delete' => $resolver->resolveDelete($schema, $args),
-				default => null,
-			};
-		};
-
-	}//end createMutationResolverPlaceholder()
-
-	/**
-	 * Get registers indexed by ID.
-	 *
-	 * @return array<int, Register>
+	 * @return array<int, RegisterSchema> The schemas
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
 	 */
-	public function getRegistersById(): array {
-		return $this->registersById;
-	}//end getRegistersById()
+	private function loadSchemas(): array {
+		return $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+	}//end loadSchemas()
+
+	/**
+	 * The register-scoped query field.
+	 *
+	 * @return array<string, mixed> The field
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+	 */
+	private function registerField(): array {
+		return [
+			'type' => $this->objectTypes->jsonScalar(),
+			'args' => ['id' => Type::nonNull(Type::id())],
+			'resolve' => fn () => null,
+			'description' => 'Query within a specific register scope',
+		];
+	}//end registerField()
 }//end class

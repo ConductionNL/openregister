@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		name="Mass Validate Objects"
-		:canClose="!massValidating"
+		:noClose="massValidating"
 		size="large"
 		@closing="$emit('close')">
 		<div class="dialog-content">

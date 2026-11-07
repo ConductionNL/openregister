@@ -31,46 +31,38 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
-use OCP\DB\Exception as DbException;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Encrypt existing plaintext values of a newly-flagged property.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class EncryptFieldCommand extends Command {
+class EncryptFieldCommand extends MagicTableCommand {
+	use MagicColumnNameTrait;
+
 	/**
-	 * Wire the mappers, encryption handler and database connection used by the command.
+	 * Wire the table selection, encryption handler and database connection used by the command.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapperInterface $magicMapper Magic table resolver.
+	 * @param MagicTableSelection $selection Finds the tables to work on.
 	 * @param FieldEncryptionHandler $fieldEncryptionHandler Envelope encrypt/decrypt logic.
 	 * @param IDBConnection $db Database connection for native SELECT/UPDATE.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $magicMapper,
+		MagicTableSelection $selection,
 		private readonly FieldEncryptionHandler $fieldEncryptionHandler,
 		private readonly IDBConnection $db,
 	) {
-		parent::__construct();
+		parent::__construct(selection: $selection);
 	}//end __construct()
 
 	/**
@@ -84,281 +76,189 @@ class EncryptFieldCommand extends Command {
 				'Encrypt existing plaintext values of a property flagged x-openregister-encrypted. '
 				. 'Idempotent: values already encrypted are skipped.'
 			)
-			->addOption('property', null, InputOption::VALUE_REQUIRED, 'The property name to encrypt (required)')
-			->addOption('dry-run', null, InputOption::VALUE_NONE, 'Report counts without writing to the database')
-			->addOption('register', null, InputOption::VALUE_REQUIRED, 'Limit to a single register (slug, uuid or id)')
-			->addOption('schema', null, InputOption::VALUE_REQUIRED, 'Limit to a single schema (slug, uuid or id)');
+			->addOption('property', null, InputOption::VALUE_REQUIRED, 'The property name to encrypt (required)');
+		$this->addSelectionOptions();
 	}//end configure()
 
 	/**
-	 * Iterate every magic table whose schema flags the given property encrypted,
-	 * and encrypt any plaintext value found.
+	 * A run needs the property to encrypt.
 	 *
-	 * @param InputInterface $input Console input.
-	 * @param OutputInterface $output Console output stream.
+	 * @param MagicTableRun $run The run
+	 *
+	 * @return bool Whether to go on
+	 */
+	protected function isReady(MagicTableRun $run): bool {
+		if ($this->property(run: $run) !== '') {
+			return true;
+		}
+
+		$run->output->writeln('<error>--property is required.</error>');
+		return false;
+	}//end isReady()
+
+	/**
+	 * A schema that does not flag the property is skipped, rather than encrypting
+	 * a field nobody asked to protect.
+	 *
+	 * @param Schema $schema The schema
+	 * @param MagicTableRun $run The run
+	 *
+	 * @return bool Whether to work on its tables
+	 */
+	protected function applies(Schema $schema, MagicTableRun $run): bool {
+		return in_array($this->property(run: $run), $schema->getEncryptedProperties(), true);
+	}//end applies()
+
+	/**
+	 * Say what this run is about to do.
+	 *
+	 * @param MagicTableRun $run The run
+	 *
+	 * @return void
+	 */
+	protected function announce(MagicTableRun $run): void {
+		$run->output->writeln(
+			sprintf('<info>Encrypting property \'%s\'%s</info>', $this->property(run: $run), $run->dryRunNote(words: ' (dry run)'))
+		);
+	}//end announce()
+
+	/**
+	 * Encrypt the plaintext values of the property across one magic table.
+	 *
+	 * Row-by-row (ICrypto::encrypt() is not batchable in SQL): a property lives in
+	 * its own column, which holds the envelope afterwards.
+	 *
+	 * @param MagicTableTarget $target The table
+	 * @param MagicTableRun $run The run
+	 *
+	 * @return void
+	 */
+	protected function workOn(MagicTableTarget $target, MagicTableRun $run): void {
+		$pass = new FieldEncryptionPass(target: $target, run: $run);
+		$pass->column = $this->sanitizeColumnName(name: $this->property(run: $run));
+		$result = $this->filledRows(pass: $pass);
+
+		while (($row = $result->fetch()) !== false) {
+			$this->encryptRow(row: $row, pass: $pass);
+		}
+
+		$result->closeCursor();
+
+		$run->scanned += $pass->scanned;
+		$run->changed += $pass->encrypted;
+		$run->failed += $pass->failed;
+		$run->output->writeln(sprintf('  %s: scanned=%d encrypted=%d failed=%d', $target->label(), $pass->scanned, $pass->encrypted, $pass->failed));
+	}//end workOn()
+
+	/**
+	 * Report the totals. Fails loud: a run with per-row failures must not exit 0, because
+	 * an operator scripting this command needs to know some rows still hold plaintext.
+	 *
+	 * @param MagicTableRun $run The run
 	 *
 	 * @return int Symfony command exit code.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$property = (string)($input->getOption('property') ?? '');
-		if ($property === '') {
-			$output->writeln('<error>--property is required.</error>');
-			return Command::FAILURE;
-		}
+	protected function finish(MagicTableRun $run): int {
+		$totals = [$run->tables, $run->scanned, $run->changed, $run->failed, $run->dryRunNote(words: ' (dry run — no writes performed)')];
+		$run->output->writeln(sprintf('<info>Done. Tables=%d scanned=%d encrypted=%d failed=%d%s</info>', ...$totals));
 
-		$dryRun = (bool)$input->getOption('dry-run');
-		$registerRef = $input->getOption('register');
-		$schemaRef = $input->getOption('schema');
-
-		try {
-			$registers = $this->resolveRegisters(registerRef: $registerRef);
-			$schemas = $this->resolveSchemas(schemaRef: $schemaRef);
-		} catch (\Throwable $e) {
-			$output->writeln('<error>' . $e->getMessage() . '</error>');
-			return Command::FAILURE;
-		}
-
-		if (count($registers) === 0 || count($schemas) === 0) {
-			$output->writeln('<comment>No registers or schemas resolved — nothing to do.</comment>');
-			return Command::SUCCESS;
-		}
-
-		$modeLabel = '';
-		if ($dryRun === true) {
-			$modeLabel = ' (dry run)';
-		}
-
-		$output->writeln(
-			sprintf('<info>Encrypting property \'%s\'%s</info>', $property, $modeLabel)
-		);
-
-		$grandScanned = 0;
-		$grandEncrypted = 0;
-		$grandFailed = 0;
-		$tablesTouched = 0;
-
-		$schemasById = [];
-		foreach ($schemas as $schema) {
-			$schemasById[(int)$schema->getId()] = $schema;
-		}
-
-		foreach ($registers as $register) {
-			$allowedSchemaIds = $register->getSchemas();
-			foreach ($allowedSchemaIds as $allowedSchemaId) {
-				$allowedId = (int)$allowedSchemaId;
-				if (isset($schemasById[$allowedId]) === false) {
-					continue;
-				}
-
-				$schema = $schemasById[$allowedId];
-
-				if (in_array($property, $schema->getEncryptedProperties(), true) === false) {
-					// This schema does not flag the property as encrypted — skip it
-					// rather than encrypting a field nobody asked to protect.
-					continue;
-				}
-
-				if ($this->magicMapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
-					continue;
-				}
-
-				$tableName = $this->magicMapper->getTableNameForRegisterSchema(
-					register: $register,
-					schema: $schema
-				);
-
-				[$scanned, $encrypted, $failed] = $this->encryptTable(
-					tableName: $tableName,
-					property: $property,
-					dryRun: $dryRun,
-					output: $output
-				);
-
-				$grandScanned += $scanned;
-				$grandEncrypted += $encrypted;
-				$grandFailed += $failed;
-				$tablesTouched += 1;
-
-				$output->writeln(
-					sprintf(
-						'  %s/%s (%s): scanned=%d encrypted=%d failed=%d',
-						$register->getSlug() ?? $register->getId(),
-						$schema->getSlug() ?? $schema->getId(),
-						$tableName,
-						$scanned,
-						$encrypted,
-						$failed
-					)
-				);
-			}//end foreach
-		}//end foreach
-
-		$summarySuffix = '';
-		if ($dryRun === true) {
-			$summarySuffix = ' (dry run — no writes performed)';
-		}
-
-		$output->writeln(
-			sprintf(
-				'<info>Done. Tables=%d scanned=%d encrypted=%d failed=%d%s</info>',
-				$tablesTouched,
-				$grandScanned,
-				$grandEncrypted,
-				$grandFailed,
-				$summarySuffix
-			)
-		);
-
-		// Fail loud: a run with per-row failures must not exit 0 — an operator
-		// scripting this command needs to know some rows still hold plaintext.
-		if ($grandFailed > 0) {
-			$output->writeln('<error>One or more rows failed to encrypt — see log for details.</error>');
+		if ($run->failed > 0) {
+			$run->output->writeln('<error>One or more rows failed to encrypt — see log for details.</error>');
 			return Command::FAILURE;
 		}
 
 		return Command::SUCCESS;
-	}//end execute()
+	}//end finish()
 
 	/**
-	 * Resolve the list of registers to operate on.
+	 * The property this run encrypts.
 	 *
-	 * @param string|null $registerRef Optional register slug, uuid or id.
+	 * @param MagicTableRun $run The run
 	 *
-	 * @return Register[]
+	 * @return string The property name, empty when none was given
 	 */
-	private function resolveRegisters(?string $registerRef): array {
-		if ($registerRef !== null && $registerRef !== '') {
-			return [$this->registerMapper->find($registerRef, _multitenancy: false)];
-		}
-
-		return $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
-	}//end resolveRegisters()
+	private function property(MagicTableRun $run): string {
+		return (string)($run->input->getOption('property') ?? '');
+	}//end property()
 
 	/**
-	 * Resolve the list of schemas to operate on.
+	 * The rows of the table with a value in the property's column.
 	 *
-	 * @param string|null $schemaRef Optional schema slug, uuid or id.
+	 * @param FieldEncryptionPass $pass The table and column
 	 *
-	 * @return Schema[]
+	 * @return IResult The rows
 	 */
-	private function resolveSchemas(?string $schemaRef): array {
-		if ($schemaRef !== null && $schemaRef !== '') {
-			return [$this->schemaMapper->find($schemaRef, _multitenancy: false)];
-		}
-
-		return $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
-	}//end resolveSchemas()
-
-	/**
-	 * Encrypt the plaintext values of one property across one magic table.
-	 *
-	 * Row-by-row (ICrypto::encrypt() is not batchable in SQL): SELECT id + the
-	 * JSON `object` blob, decode, check the property value, encrypt if it is a
-	 * non-empty string that is not already an envelope, re-encode, UPDATE.
-	 * Also NULLs out any legacy dedicated column matching the property name
-	 * (pre-existing from before the property was flagged encrypted) so no
-	 * plaintext mirror survives outside the blob — best-effort: the column may
-	 * not exist, which is expected and not an error.
-	 *
-	 * @param string $tableName Fully qualified magic table name.
-	 * @param string $property The property name to encrypt.
-	 * @param bool $dryRun When true, only count; never write.
-	 * @param OutputInterface $output Console output for per-row failure logging.
-	 *
-	 * @return array{0:int,1:int,2:int} Tuple of [scanned, encrypted, failed].
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 */
-	private function encryptTable(string $tableName, string $property, bool $dryRun, OutputInterface $output): array {
-		$columnName = preg_replace('/[^a-zA-Z0-9_]/', '', $property);
-
+	private function filledRows(FieldEncryptionPass $pass): IResult {
 		$select = $this->db->getQueryBuilder();
-		$select->select('id', 'object')->from($tableName);
-		$result = $select->executeQuery();
+		$select->select('_id', $pass->column)
+			->from($pass->target->tableName)
+			->where($select->expr()->isNotNull($pass->column));
 
-		$scanned = 0;
-		$encrypted = 0;
-		$failed = 0;
+		return $select->executeQuery();
+	}//end filledRows()
 
-		while (($row = $result->fetch()) !== false) {
-			$objectJson = $row['object'] ?? null;
-			if (is_string($objectJson) === false || $objectJson === '') {
-				continue;
-			}
-
-			$objectData = json_decode($objectJson, true);
-			if (is_array($objectData) === false || array_key_exists($property, $objectData) === false) {
-				continue;
-			}
-
-			$value = $objectData[$property];
-			if ($value === null || $value === '' || is_string($value) === false) {
-				continue;
-			}
-
-			$scanned++;
-
-			if ($this->fieldEncryptionHandler->isEnvelope($value) === true) {
-				// Already encrypted — idempotent no-op.
-				continue;
-			}
-
-			if ($dryRun === true) {
-				$encrypted++;
-				continue;
-			}
-
-			try {
-				$objectData[$property] = $this->fieldEncryptionHandler->encryptValue($value);
-			} catch (\Throwable $e) {
-				$failed++;
-				$output->writeln(
-					sprintf(
-						'  <error>row id=%s: failed to encrypt \'%s\': %s</error>',
-						(string)($row['id'] ?? '?'),
-						$property,
-						$e->getMessage()
-					)
-				);
-				continue;
-			}
-
-			$update = $this->db->getQueryBuilder();
-			$update->update($tableName)
-				->set('object', $update->createNamedParameter(json_encode($objectData)))
-				->where($update->expr()->eq('id', $update->createNamedParameter($row['id'], IQueryBuilder::PARAM_INT)));
-			$update->executeStatement();
-
-			$encrypted++;
-		}//end while
-
-		$result->closeCursor();
-
-		// Best-effort: null out a legacy dedicated column for this property, if
-		// one still exists from before it was flagged encrypted. The column may
-		// not exist (the common case going forward — buildTableColumnsFromSchema()
-		// no longer creates one for an encrypted property) which is expected, not
-		// an error, so an "unknown column" failure here is swallowed deliberately
-		// (unlike decryption failures, which are never swallowed) — it is not
-		// itself a source of data loss, only a no-op when there was nothing to null.
-		if ($dryRun === false && $encrypted > 0) {
-			try {
-				$nullify = $this->db->getQueryBuilder();
-				$nullify->update($tableName)
-					->set($columnName, $nullify->createNamedParameter(null))
-					->where($nullify->expr()->isNotNull($columnName));
-				$nullify->executeStatement();
-			} catch (DbException $e) {
-				// Column does not exist (or is not nullable) — nothing to clean up.
-				unset($e);
-			}
+	/**
+	 * Count one row and encrypt it, unless it holds no plaintext string or this is a dry run.
+	 *
+	 * @param array<string, mixed> $row The row
+	 * @param FieldEncryptionPass $pass The table and column
+	 *
+	 * @return void
+	 */
+	private function encryptRow(array $row, FieldEncryptionPass $pass): void {
+		$value = $row[$pass->column] ?? null;
+		if ($value === '' || is_string($value) === false) {
+			return;
 		}
 
-		return [$scanned, $encrypted, $failed];
-	}//end encryptTable()
+		$pass->scanned++;
+
+		if ($this->fieldEncryptionHandler->isEnvelope($value) === true) {
+			return;
+		}
+
+		if ($pass->run->isDryRun() === true) {
+			$pass->encrypted++;
+			return;
+		}
+
+		$this->writeEnvelope(row: $row, pass: $pass);
+	}//end encryptRow()
+
+	/**
+	 * Replace the value of one row by its envelope, or report why that failed.
+	 *
+	 * @param array<string, mixed> $row The row
+	 * @param FieldEncryptionPass $pass The table and column
+	 *
+	 * @return void
+	 */
+	private function writeEnvelope(array $row, FieldEncryptionPass $pass): void {
+		try {
+			$this->updateValue(row: $row, pass: $pass);
+			$pass->encrypted++;
+		} catch (\Throwable $e) {
+			$pass->failed++;
+			$property = $this->property(run: $pass->run);
+			$pass->run->output->writeln(
+				sprintf('  <error>row id=%s: failed to encrypt \'%s\': %s</error>', (string)($row['_id'] ?? '?'), $property, $e->getMessage())
+			);
+		}
+	}//end writeEnvelope()
+
+	/**
+	 * Write the envelope of one row's value.
+	 *
+	 * @param array<string, mixed> $row The row
+	 * @param FieldEncryptionPass $pass The table and column
+	 *
+	 * @return void
+	 */
+	private function updateValue(array $row, FieldEncryptionPass $pass): void {
+		$update = $this->db->getQueryBuilder();
+		$update->update($pass->target->tableName)
+			->set($pass->column, $update->createNamedParameter($this->fieldEncryptionHandler->encryptValue($row[$pass->column])))
+			->where($update->expr()->eq('_id', $update->createNamedParameter($row['_id'], IQueryBuilder::PARAM_INT)));
+		$update->executeStatement();
+	}//end updateValue()
 }//end class

@@ -27,11 +27,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
-use Closure;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -57,6 +57,7 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Service\Configuration\ListedSeed
  * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceIndex
  * @uses   \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
@@ -75,10 +76,17 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
+ * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
+ * @uses \OCA\OpenRegister\Service\Configuration\ForeignSeedSchema
+ * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	use BuildsObjectSlugHandler;
-
 
 	private const SEED_UUID = '5f0c6d0e-2b1a-4c7e-9a43-0d1f6c2b8e11';
 
@@ -384,11 +392,9 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			objectEntityMapper:  $plainMapper,
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper:       $this->createMock(MappingMapper::class),
-			client:              $this->createMock(Client::class),
 			appConfig:           $appConfig,
 			logger:              $this->createMock(LoggerInterface::class),
 			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
 			objectService:       $this->createMock(ObjectService::class)
 		);
 		$handler->setObjectMapper($routing);
@@ -438,17 +444,7 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			}
 		);
 
-		$mapper = (new ReflectionClass(MagicMapper::class))->newInstanceWithoutConstructor();
-		Closure::bind(
-			function (LoggerInterface $logger): void {
-				$this->logger = $logger;
-			},
-			$mapper,
-			MagicMapper::class
-		)($logger);
-
-		$report = new \ReflectionMethod(MagicMapper::class, 'reportDroppedProperties');
-		$report->invoke($mapper, $data, $schema->getProperties(), $schema);
+		(new MagicDroppedProperties($logger))->report($data, $schema);
 
 		return $warnings;
 	}//end discardWarnings()

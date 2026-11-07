@@ -20,18 +20,18 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtraction\EmlParser;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -126,14 +126,12 @@ class TextExtractionServiceGapTest extends TestCase {
 			schemaMapper: $this->schemaMapper,
 			registerMapper: $this->registerMapper,
 			entityHandler: $this->entityHandler,
-			entityMapper: $this->entityMapper,
-			entityRelationMapper: $this->entityRelationMapper,
 			settingsService: $this->settingsService,
 			riskLevelService: $this->riskLevelService,
 			emlParser: $this->emlParser,
-			spreadsheetExtractor: new \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor($this->logger),
-			pdfExtractor: new \OCA\OpenRegister\Service\TextExtraction\PdfExtractor($this->logger),
-			wordExtractor: new \OCA\OpenRegister\Service\TextExtraction\WordExtractor($this->logger),
+			spreadsheetExtractor: new \OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor($this->logger),
+			pdfExtractor: new \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor($this->logger),
+			wordExtractor: new \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor($this->logger),
 		);
 	}
 

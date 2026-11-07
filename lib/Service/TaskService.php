@@ -555,6 +555,38 @@ class TaskService implements ObjectCalendarTasksInterface {
 	}//end updateTask()
 
 	/**
+	 * Refuse a task that is not one of the caller's tasks on the given object.
+	 *
+	 * The tasks of an object are those in the caller's own calendar that carry
+	 * the object's uuid, so this answers for the calendar and the link at once.
+	 *
+	 * @param string $objectUuid The object the caller addressed.
+	 * @param string $calendarId The calendar the caller named.
+	 * @param string $taskUri    The task the caller named.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when it is not.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function requireTaskOf(string $objectUuid, string $calendarId, string $taskUri): void {
+		try {
+			$tasks = $this->getTasksForObject(objectUuid: $objectUuid);
+		} catch (NoVtodoCalendarException $e) {
+			$tasks = [];
+		}
+
+		foreach ($tasks as $task) {
+			if ((string)$task['calendarId'] === $calendarId && $task['id'] === $taskUri) {
+				return;
+			}
+		}
+
+		throw new Exception('Task not found', 404);
+	}//end requireTaskOf()
+
+	/**
 	 * Delete a CalDAV task.
 	 *
 	 * Deleting a PROJECTED VTODO deletes the calendar entry and nothing else:

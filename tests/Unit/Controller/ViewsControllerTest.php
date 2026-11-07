@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\ViewsController;
+use OCA\OpenRegister\Search\Controller\ViewsController;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;

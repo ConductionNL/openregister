@@ -214,7 +214,7 @@ final class ObjectChangePreview {
 		$objectData = array_diff_key($objectData, $undeclaredIdentity);
 
 		// Properties the schema does not declare are discarded on save
-		// (MagicMapper::reportDroppedProperties()), so they never arrive and
+		// (MagicDroppedProperties::report()), so they never arrive and
 		// would read as a change after every import (live pass O13).
 		$discarded = $this->undeclaredProperties(objectData: $objectData, schema: $schema);
 		$objectData = array_diff_key($objectData, array_flip($discarded));
@@ -235,7 +235,7 @@ final class ObjectChangePreview {
 	/**
 	 * The top-level properties of a remote object that its schema does not declare.
 	 *
-	 * Mirrors MagicMapper::reportDroppedProperties(): `@`- and `_`-prefixed keys,
+	 * Mirrors MagicDroppedProperties::report(): `@`- and `_`-prefixed keys,
 	 * `id` and `uuid` are metadata, not data, and are not counted.
 	 *
 	 * @param array<string, mixed> $objectData The remote object.

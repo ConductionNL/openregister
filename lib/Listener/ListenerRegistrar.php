@@ -42,6 +42,7 @@ use OCA\OpenRegister\Notifications\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupeAnnotationSyncListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Notifications\Listener\SystemEntityNotificationListener;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 
 /**
  * Subscribes every OpenRegister listener to its events.
@@ -77,11 +78,12 @@ final class ListenerRegistrar {
 		Registrar\AccessListenerRegistrar::register(context: $context);
 		Registrar\ConfigurationListenerRegistrar::register(context: $context);
 		Registrar\FlowsListenerRegistrar::register(context: $context);
-		Registrar\McpListenerRegistrar::register(context: $context);
+		\OCA\OpenRegister\Mcp\Listener\Registrar\McpListenerRegistrar::register(context: $context);
 		\OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar::register(context: $context);
 		Registrar\WorkListenerRegistrar::register(context: $context);
 		self::registerFileAndPlatformListeners(context: $context);
 		self::registerFlowAndTaskListeners(context: $context);
+		self::registerPublishListener(context: $context);
 		self::registerSaveRuleListeners(context: $context);
 		self::registerSideEffectListeners(context: $context);
 		self::registerDeliveryListeners(context: $context);
@@ -302,6 +304,22 @@ final class ListenerRegistrar {
 	}//end registerFlowAndTaskListeners()
 
 	/**
+	 * Register the hook that applies a published manifest's schedules as scheduled flows.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 */
+	private static function registerPublishListener(IRegistrationContext $context): void {
+		$publish = \OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener::class;
+		$context->registerEventListener(ObjectCreatedEvent::class, $publish);
+		$context->registerEventListener(ObjectUpdatedEvent::class, $publish);
+		$context->registerEventListener(ObjectDeletedEvent::class, $publish);
+	}//end registerPublishListener()
+
+	/**
 	 * The rules a save passes: lifecycle annotations, identifiers, field rules, validations, calculations, constraints and quotas.
 	 *
 	 * @param IRegistrationContext $context The registration context
@@ -460,6 +478,7 @@ final class ListenerRegistrar {
 		// A frozen object refuses its delete the way it refuses a write, on
 		// every path that dispatches the deleting event.
 		$context->registerEventListener(ObjectDeletingEvent::class, FrozenObjectDeleteGuardListener::class);
+		$context->registerEventListener(ObjectDeletingEvent::class, ObjectStateDeleteGuardListener::class);
 
 		// Named uniqueness constraints — a `refuse` constraint stops the write
 		// naming the combination and the conflicting object; a `report` one

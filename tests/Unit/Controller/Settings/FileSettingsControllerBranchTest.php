@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
-use OCA\OpenRegister\Controller\Settings\FileSettingsController;
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

@@ -1,0 +1,1151 @@
+{
+    "absent object": {
+        "status": 404,
+        "data": {
+            "error": "Object with id object-1 not found"
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            }
+        ]
+    },
+    "actions fail": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid"
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            },
+            {
+                "warning": "[ObjectsController] Could not resolve the actions for a record; returning it without them"
+            }
+        ]
+    },
+    "admin read": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    false,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": false,
+                    "7": false
+                }
+            }
+        ]
+    },
+    "ambiguous": {
+        "status": 409,
+        "data": {
+            "message": "Identifier \"object-1\" matches more than one object in this register and schema",
+            "error": "ambiguous-identifier"
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            }
+        ]
+    },
+    "denied at render": {
+        "status": 404,
+        "data": {
+            "error": "Not Found"
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "does not exist": {
+        "status": 404,
+        "data": {
+            "error": "Not Found"
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            }
+        ]
+    },
+    "extend plain name": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "objects": {
+                    "u1": {
+                        "id": "u1"
+                    }
+                },
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    [
+                        "owner"
+                    ],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": [
+                        "owner"
+                    ],
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "extend string": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "schemas": {
+                    "7": {
+                        "id": 7,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "maxDepth": 0,
+                        "exportable": false
+                    }
+                },
+                "objects": {
+                    "u1": {
+                        "id": "u1"
+                    }
+                },
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    [
+                        "owner",
+                        "_schema"
+                    ],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": [
+                        "owner",
+                        "_schema"
+                    ],
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "keeps empties": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "gone": null,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "lists stay lists": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": [
+                        "b"
+                    ],
+                    "4": [
+                        "a"
+                    ],
+                    "5": [
+                        "c"
+                    ],
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "many registers": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "registers": {
+                    "3": {
+                        "id": 3,
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        }
+                    }
+                },
+                "objects": {
+                    "u1": {
+                        "id": "u1"
+                    }
+                },
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    [
+                        "_registers"
+                    ],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": [
+                        "_registers"
+                    ],
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "many schemas": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "schemas": {
+                    "7": {
+                        "id": 7,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "maxDepth": 0,
+                        "exportable": false
+                    }
+                },
+                "objects": {
+                    "u1": {
+                        "id": "u1"
+                    }
+                },
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    [
+                        "_schemas"
+                    ],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": [
+                        "_schemas"
+                    ],
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "names": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "objects": {
+                    "u1": {
+                        "id": "u1"
+                    }
+                },
+                "names": {
+                    "11111111-1111-4111-8111-111111111111": "Name"
+                },
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    [
+                        "_names"
+                    ],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": [
+                        "_names"
+                    ],
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            },
+            {
+                "names": [
+                    "11111111-1111-4111-8111-111111111111"
+                ]
+            }
+        ]
+    },
+    "no entities": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "objects": {
+                    "u1": {
+                        "id": "u1"
+                    }
+                }
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    [
+                        "_registers",
+                        "_schemas"
+                    ],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": [
+                        "_registers",
+                        "_schemas"
+                    ],
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "not authorized": {
+        "status": 404,
+        "data": {
+            "error": "Not Found"
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            }
+        ]
+    },
+    "one register": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "registers": {
+                    "3": {
+                        "id": 3,
+                        "usage": {
+                            "storage": 0,
+                            "bandwidth": 0,
+                            "requests": 0,
+                            "users": 0,
+                            "groups": 0
+                        }
+                    }
+                },
+                "objects": {
+                    "u1": {
+                        "id": "u1"
+                    }
+                },
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    [
+                        "_register"
+                    ],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": [
+                        "_register"
+                    ],
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "one schema": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "schemas": {
+                    "7": {
+                        "id": 7,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "maxDepth": 0,
+                        "exportable": false
+                    }
+                },
+                "objects": {
+                    "u1": {
+                        "id": "u1"
+                    }
+                },
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    [
+                        "_schema"
+                    ],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": [
+                        "_schema"
+                    ],
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "plain names win": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": [
+                        "x"
+                    ],
+                    "4": [
+                        "x"
+                    ],
+                    "5": [
+                        "x"
+                    ],
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "plain read": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "register not found": {
+        "status": 404,
+        "data": {
+            "message": "Register not found: 'reg'"
+        },
+        "calls": []
+    },
+    "render without self": {
+        "status": 200,
+        "data": {
+            "a": 1
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    [
+                        "_registers"
+                    ],
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": [
+                        "_registers"
+                    ],
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "reveal": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    "bsn"
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "reveal container answers else": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "schema not found": {
+        "status": 404,
+        "data": {
+            "message": "Schema not found: 'sch'"
+        },
+        "calls": []
+    },
+    "strings become lists": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": [
+                        "c",
+                        "d"
+                    ],
+                    "4": [
+                        "a",
+                        "b"
+                    ],
+                    "5": [
+                        "e",
+                        "f"
+                    ],
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    },
+    "unread counts": {
+        "status": 200,
+        "data": {
+            "a": 1,
+            "rel": "11111111-1111-4111-8111-111111111111",
+            "@self": {
+                "id": "object-uuid",
+                "unreadCounts": {
+                    "notes": 1
+                },
+                "actions": [
+                    "read"
+                ]
+            }
+        },
+        "calls": [
+            {
+                "find": [
+                    "object-1",
+                    null,
+                    false,
+                    "reg",
+                    "sch",
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "grantFor": [
+                    "object-uuid",
+                    ""
+                ]
+            },
+            {
+                "render": {
+                    "1": null,
+                    "2": 0,
+                    "3": null,
+                    "4": null,
+                    "5": null,
+                    "6": true,
+                    "7": true
+                }
+            }
+        ]
+    }
+}

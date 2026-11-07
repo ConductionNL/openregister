@@ -138,9 +138,7 @@ class TypeMapperHandler {
 	 * @param callable $objectTypeFactory Gets/creates an ObjectType for a schema
 	 * @param callable $fieldNameConverter Converts a slug to a GraphQL field name
 	 * @param callable $typeNameConverter Converts a slug to a PascalCase type name
-	 * @param PropertyRbacHandler|null $propertyRbac Withholds a property the caller may not read. Nullable and
-	 *                                               last so no construction site shifts; absent, a governed
-	 *                                               property is withheld, which is the safe direction.
+	 * @param PropertyRbacHandler $propertyRbac Withholds a property the caller may not read
 	 */
 	public function __construct(
 		array $scalars,
@@ -148,10 +146,7 @@ class TypeMapperHandler {
 		callable $objectTypeFactory,
 		callable $fieldNameConverter,
 		callable $typeNameConverter,
-		// LAST AND NULLABLE so every existing construction keeps working. The
-		// container always supplies it; null happens only in a hand-built test,
-		// and then a GOVERNED property is withheld, which is the safe direction.
-		private readonly ?PropertyRbacHandler $propertyRbac = null,
+		private readonly PropertyRbacHandler $propertyRbac,
 	) {
 		$this->scalars = $scalars;
 		$this->refResolver = $refResolver;
@@ -741,6 +736,10 @@ class TypeMapperHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function getPropertyAuthDescriptions(RegisterSchema $schema): array {
+		if ($this->propertyRbac->isAdmin() === false) {
+			return [];
+		}
+
 		$result = [];
 		// Schema declares getPropertiesWithAuthorization(), so the early return
 		// that used to guard this call was unreachable.
@@ -771,6 +770,23 @@ class TypeMapperHandler {
 
 		return $result;
 	}//end getPropertyAuthDescriptions()
+	/**
+	 * Whether the object type of this caller carries a field for a property.
+	 *
+	 * @param RegisterSchema $schema   The schema.
+	 * @param string         $property The property name.
+	 *
+	 * @return bool Whether the field stays.
+	 *
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
+	 */
+	public function mayCarryField(RegisterSchema $schema, string $property): bool {
+		return (new AggregateVisibility(rbac: $this->propertyRbac))->mayReadOnSomeRow(
+			schema: $schema,
+			property: $property
+		);
+	}//end mayCarryField()
+
 	/**
 	 * Whether this caller may be told that a property exists.
 	 *

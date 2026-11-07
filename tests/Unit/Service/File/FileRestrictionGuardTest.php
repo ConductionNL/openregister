@@ -21,8 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Event\FileRestrictionAdmitEvent;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\File\FileRestrictionStore;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
 use OCP\IGroupManager;

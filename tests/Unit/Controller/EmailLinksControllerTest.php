@@ -32,7 +32,10 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\EmailLinksController;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -65,19 +68,78 @@ class EmailLinksControllerTest extends TestCase {
 	 */
 	private EmailLinksController $controller;
 
+	/**
+	 * Object service mock.
+	 *
+	 * @var ObjectService&MockObject
+	 */
+	private ObjectService&MockObject $objectService;
+
+	/**
+	 * What the permission handler answers for `update`.
+	 *
+	 * @var boolean
+	 */
+	private bool $mayUpdate = true;
+
+	/**
+	 * The actions the permission handler was asked about.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $askedActions = [];
+
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->service = $this->createMock(EmailLinkService::class);
 
+		$this->objectService = $this->createMock(ObjectService::class);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new Schema());
+		$object = new ObjectEntity();
+		$object->setUuid('uuid-1');
+		$this->objectService->method('getObject')->willReturn($object);
+
+		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturnCallback(
+			function (Schema $schema, string $action): bool {
+				$this->askedActions[] = $action;
+				return $action === 'update' ? $this->mayUpdate : true;
+			}
+		);
+
 		$this->controller = new EmailLinksController(
 			'openregister',
 			$this->request,
 			$this->service,
-			$this->createMock(ObjectService::class)
+			$this->objectService,
+			$permissions
 		);
 	}//end setUp()
+
+	public function testLinkNeedsTheObjectUpdateRight(): void {
+		$this->service->method('isMailAvailable')->willReturn(true);
+		$this->service->expects($this->never())->method('linkEmail');
+		$this->mayUpdate = false;
+
+		$this->assertSame(403, $this->controller->link('reg', 'sch', 'uuid-1')->getStatus());
+		$this->assertSame(['update'], $this->askedActions, 'the right asked is update, not read');
+	}//end testLinkNeedsTheObjectUpdateRight()
+
+	public function testDestroyNeedsTheObjectUpdateRight(): void {
+		$this->service->expects($this->never())->method('unlinkEmail');
+		$this->mayUpdate = false;
+
+		$this->assertSame(403, $this->controller->destroy('reg', 'sch', 'uuid-1', '7')->getStatus());
+		$this->assertSame(['update'], $this->askedActions, 'the right asked is update, not read');
+	}//end testDestroyNeedsTheObjectUpdateRight()
+
+	public function testDestroyWithTheUpdateRightRemovesTheLink(): void {
+		$this->service->expects($this->once())->method('unlinkEmail')->with('uuid-1', 7);
+
+		$this->assertSame(200, $this->controller->destroy('reg', 'sch', 'uuid-1', '7')->getStatus());
+	}//end testDestroyWithTheUpdateRightRemovesTheLink()
 
 	public function testAccountsReturnsTheSessionScopedAccountList(): void {
 		$this->service->method('isMailAvailable')->willReturn(true);

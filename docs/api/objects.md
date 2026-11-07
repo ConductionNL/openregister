@@ -105,7 +105,7 @@ a confidently empty result.
   - `index` or `solr`: Use SOLR search engine
 
 ##### Sorting
-- **`_order`**: Sort specification (field:direction or array of field:direction pairs)
+- **`_order`**: Sort specification: `_order[title]=desc`, that map as JSON, one `field` or `field:direction`, or a list of those or of `{"field": "title", "direction": "DESC"}` objects
 
 #### Example Requests
 

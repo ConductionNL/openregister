@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="t('openregister', 'Compose denial')"
 		size="normal"
-		:canClose="!saving"
+		:noClose="saving"
 		@closing="$emit('close')">
 		<form class="denialForm" @submit.prevent="onSubmit">
 			<p class="denialIntro">

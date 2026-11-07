@@ -1415,17 +1415,21 @@ class ObjectServiceTest extends TestCase {
 	// ── 22. countSearchObjects() tests ──────────────────────────────────
 
 	/**
-	 * Test countSearchObjects delegates to objectEntityMapper.
+	 * Test countSearchObjects goes through the query handler, which resolves references.
 	 */
-	public function testCountSearchObjectsDelegatesToMapper(): void {
-		$this->objectEntityMapper
-			->expects($this->once())
+	public function testCountSearchObjectsDelegatesToTheQueryHandler(): void {
+		$this->objectEntityMapper->expects($this->never())->method('countSearchObjects');
+		$this->queryHandler->expects($this->once())
 			->method('countSearchObjects')
+			->with(['@self' => ['schema' => 'a-slug']], false, false, ['a'], 'u-1')
 			->willReturn(15);
 
 		$result = $this->service->countSearchObjects(
-			query: ['@self' => ['schema' => 2]],
-			_multitenancy: false
+			query: ['@self' => ['schema' => 'a-slug']],
+			_rbac: false,
+			_multitenancy: false,
+			ids: ['a'],
+			uses: 'u-1'
 		);
 
 		$this->assertSame(15, $result);
@@ -1801,37 +1805,6 @@ class ObjectServiceTest extends TestCase {
 		$this->assertSame($this->schema, $this->getProperty('currentSchema'));
 	}
 
-	// ── 34. countSearchObjects tests ────────────────────────────────────
-
-	public function testCountSearchObjectsDelegatesToMapperWithOrgContext(): void {
-		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
-		$this->objectEntityMapper->expects($this->once())
-			->method('countSearchObjects')
-			->willReturn(42);
-
-		$result = $this->service->countSearchObjects(
-			query: ['_register' => 1],
-			_rbac: true,
-			_multitenancy: true
-		);
-
-		$this->assertSame(42, $result);
-	}
-
-	public function testCountSearchObjectsSkipsOrgWhenMultitenancyDisabled(): void {
-		$this->objectEntityMapper->expects($this->once())
-			->method('countSearchObjects')
-			->willReturn(10);
-
-		$result = $this->service->countSearchObjects(
-			query: [],
-			_rbac: false,
-			_multitenancy: false
-		);
-
-		$this->assertSame(10, $result);
-	}
-
 	// ── 35. searchObjectsPaginated — database path ──────────────────────
 
 	public function testSearchObjectsPaginatedUsesDatabaseByDefault(): void {
@@ -1927,16 +1900,6 @@ class ObjectServiceTest extends TestCase {
 			// Expected — deep mocking of saveObject pipeline would require
 			// integration test. We verified delegation started.
 		}
-	}
-
-	public function testBuildObjectSearchQueryDelegatesToBuildSearchQuery(): void {
-		$this->searchQueryHandler->expects($this->once())
-			->method('buildSearchQuery')
-			->willReturn(['_limit' => 20]);
-
-		$result = $this->service->buildObjectSearchQuery(params: ['_limit' => 20]);
-
-		$this->assertSame(20, $result['_limit']);
 	}
 
 	// ── 39. vectorization methods — disabled ────────────────────────────
@@ -2219,18 +2182,6 @@ class ObjectServiceTest extends TestCase {
 		$this->assertSame($this->deleteHandler, $result);
 	}
 
-	// ── 47. collectNamesForResults (private) ────────────────────────────
-
-	public function testCollectNamesForResultsReturnsEmptyForEmptyResults(): void {
-		$result = $this->invokePrivate('collectNamesForResults', [[]]);
-		$this->assertSame([], $result);
-	}
-
-	public function testCollectNamesForResultsSkipsNonArrayResults(): void {
-		$result = $this->invokePrivate('collectNamesForResults', [['not-an-array', 42]]);
-		$this->assertSame([], $result);
-	}
-
 	// ── 48. isUuidFormat (private) ──────────────────────────────────────
 
 	public function testIsUuidFormatReturnsTrueForValid(): void {
@@ -2241,107 +2192,6 @@ class ObjectServiceTest extends TestCase {
 		$this->assertFalse($this->invokePrivate('isUuidFormat', ['not-a-uuid']));
 		$this->assertFalse($this->invokePrivate('isUuidFormat', ['']));
 		$this->assertFalse($this->invokePrivate('isUuidFormat', ['123']));
-	}
-
-	// ── 49. collectUuidsFromRelations (private) ─────────────────────────
-
-	public function testCollectUuidsFromRelationsCollectsDirectUuids(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromRelations', [
-			['550e8400-e29b-41d4-a716-446655440000', 'not-uuid'],
-			&$uuids,
-		]);
-
-		$this->assertCount(1, $uuids);
-		$this->assertSame('550e8400-e29b-41d4-a716-446655440000', $uuids[0]);
-	}
-
-	public function testCollectUuidsFromRelationsCollectsNestedUuids(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromRelations', [
-			[['550e8400-e29b-41d4-a716-446655440000', 'not-uuid']],
-			&$uuids,
-		]);
-
-		$this->assertCount(1, $uuids);
-	}
-
-	// ── 50. collectUuidsFromObjectData (private) ────────────────────────
-
-	public function testCollectUuidsFromObjectDataCollectsTopLevel(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromObjectData', [
-			[
-				'title' => 'Test',
-				'related' => '550e8400-e29b-41d4-a716-446655440000',
-				'@self' => 'skip',
-				'id' => 'skip',
-			],
-			&$uuids,
-			0,
-		]);
-
-		$this->assertCount(1, $uuids);
-	}
-
-	public function testCollectUuidsFromObjectDataStopsAtDepth1(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromObjectData', [
-			['related' => '550e8400-e29b-41d4-a716-446655440000'],
-			&$uuids,
-			1, // depth > 0 should return immediately
-		]);
-
-		$this->assertCount(0, $uuids);
-	}
-
-	public function testCollectUuidsFromObjectDataCollectsFromArrays(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromObjectData', [
-			[
-				'relations' => [
-					'550e8400-e29b-41d4-a716-446655440000',
-					'not-a-uuid',
-					'660e8400-e29b-41d4-a716-446655440000',
-				],
-			],
-			&$uuids,
-			0,
-		]);
-
-		$this->assertCount(2, $uuids);
-	}
-
-	// ── 51. collectUuidsFromArrayResult (private) ───────────────────────
-
-	public function testCollectUuidsFromArrayResultHandlesSelfStructure(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromArrayResult', [
-			[
-				'@self' => [
-					'relations' => ['550e8400-e29b-41d4-a716-446655440000'],
-					'organisation' => '660e8400-e29b-41d4-a716-446655440000',
-					'owner' => '770e8400-e29b-41d4-a716-446655440000',
-					'object' => ['title' => 'Test'],
-				],
-			],
-			&$uuids,
-		]);
-
-		$this->assertCount(3, $uuids);
-	}
-
-	public function testCollectUuidsFromArrayResultHandlesFlatArray(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromArrayResult', [
-			[
-				'related' => '550e8400-e29b-41d4-a716-446655440000',
-				'title' => 'Test',
-			],
-			&$uuids,
-		]);
-
-		$this->assertCount(1, $uuids);
 	}
 
 	// ── 55. getObject / setObject ───────────────────────────────────────
@@ -2370,48 +2220,6 @@ class ObjectServiceTest extends TestCase {
 		);
 
 		$this->assertArrayHasKey('objects', $result['@self']);
-	}
-
-	// ── 55b. getActiveOrganisationForContext (private) ───────────────────
-
-	/**
-	 * Test getActiveOrganisationForContext returns UUID when org is found.
-	 */
-	public function testGetActiveOrganisationReturnsUuidWhenOrgFound(): void {
-		$orgMock = $this->getMockBuilder(\OCA\OpenRegister\Db\Organisation::class)
-			->disableOriginalConstructor()
-			->addMethods(['getUuid'])
-			->getMock();
-		$orgMock->method('getUuid')->willReturn('org-uuid-abc');
-
-		$this->organisationService->method('getActiveOrganisation')->willReturn($orgMock);
-
-		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
-
-		$this->assertSame('org-uuid-abc', $result);
-	}
-
-	/**
-	 * Test getActiveOrganisationForContext returns null when no org found.
-	 */
-	public function testGetActiveOrganisationReturnsNullWhenNoOrg(): void {
-		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
-
-		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
-
-		$this->assertNull($result);
-	}
-
-	/**
-	 * Test getActiveOrganisationForContext returns null when exception thrown.
-	 */
-	public function testGetActiveOrganisationReturnsNullOnException(): void {
-		$this->organisationService->method('getActiveOrganisation')
-			->willThrowException(new Exception('Organisation service unavailable'));
-
-		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
-
-		$this->assertNull($result);
 	}
 
 	// ── 55c. validateObjectIfRequired (private) ─────────────────────────
@@ -2514,37 +2322,6 @@ class ObjectServiceTest extends TestCase {
 		$this->service->setSchema(schema: 2);
 
 		$this->assertSame($this->schema, $this->service->getCurrentSchemaEntity());
-	}
-
-	// ── 55h. countSearchObjects with active organisation ─────────────────
-
-	/**
-	 * Test countSearchObjects passes org UUID when multitenancy enabled and org found.
-	 */
-	public function testCountSearchObjectsPassesOrgUuidWhenFound(): void {
-		$orgMock = $this->getMockBuilder(\OCA\OpenRegister\Db\Organisation::class)
-			->disableOriginalConstructor()
-			->addMethods(['getUuid'])
-			->getMock();
-		$orgMock->method('getUuid')->willReturn('org-uuid-123');
-
-		$this->organisationService->method('getActiveOrganisation')->willReturn($orgMock);
-
-		$this->objectEntityMapper->expects($this->once())
-			->method('countSearchObjects')
-			->with(
-				$this->anything(),
-				'org-uuid-123',
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything()
-			)
-			->willReturn(7);
-
-		$result = $this->service->countSearchObjects(query: [], _multitenancy: true);
-
-		$this->assertSame(7, $result);
 	}
 
 	// ── 55i. searchObjectsPaginated bypasses multitenancy for public schema ──

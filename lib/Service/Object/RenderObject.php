@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
 use Exception;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -39,19 +39,16 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
-use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
-use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -71,6 +68,7 @@ use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use WeakMap;
 
 /**
  * Handler class for rendering objects in the OpenRegister application.
@@ -117,14 +115,6 @@ class RenderObject {
 	 * @var array<int|string, ObjectEntity>
 	 */
 	private array $objectsCache = [];
-
-	/**
-	 * Cache of inverse relationships: maps entity UUID to array of referencing objects.
-	 * Used to batch-load inverse relationships for performance optimization.
-	 *
-	 * @var array<string, ObjectEntity[]>
-	 */
-	private array $inverseRelationCache = [];
 
 	/**
 	 * Transient cache of lightweight file IDs keyed by entity UUID.
@@ -190,6 +180,41 @@ class RenderObject {
 	private ?LinkExposure $linkExposure = null;
 
 	/**
+	 * The inverse relation batch loader, created on first use.
+	 *
+	 * @var InverseRelationPreload|null
+	 */
+	private ?InverseRelationPreload $inversePreload = null;
+
+	/**
+	 * The inverse property filler, created on first use.
+	 *
+	 * @var InverseRelationRender|null
+	 */
+	private ?InverseRelationRender $inverseRender = null;
+
+	/**
+	 * The lookups inverse relation rendering shares, created on first use.
+	 *
+	 * @var InverseRenderSupport|null
+	 */
+	private ?InverseRenderSupport $inverseSupport = null;
+
+	/**
+	 * The read rule of the current render, built on first use.
+	 *
+	 * @var ExtendTargetReads|null
+	 */
+	private ?ExtendTargetReads $extendTargetReads = null;
+
+	/**
+	 * The entities that went through a render, so `@self.objects` can tell them from loaded ones.
+	 *
+	 * @var WeakMap<ObjectEntity, true>|null
+	 */
+	private ?WeakMap $renderedEntities = null;
+
+	/**
 	 * The explicit-reveal masker, resolved on first use.
 	 *
 	 * @var ExplicitRevealMasker|null
@@ -205,7 +230,6 @@ class RenderObject {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
-	 * @param CacheHandlerInterface $cacheHandler Cache service for performance optimization.
 	 * @param CacheHandlerInterface $objectCacheService Object cache service for optimized loading.
 	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
@@ -244,7 +268,6 @@ class RenderObject {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
-		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly CacheHandlerInterface $objectCacheService,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
 		private readonly LoggerInterface $logger,
@@ -346,105 +369,41 @@ class RenderObject {
 			return [];
 		}
 
+		return self::writeOnlyNames(properties: ($schema->getProperties() ?? []));
+	}//end getWriteOnlyProperties()
+
+	/**
+	 * The names of the properties that declare `writeOnly: true`.
+	 *
+	 * @param array $properties The schema properties.
+	 *
+	 * @return array<int, string> The write-only property names.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+	 */
+	private static function writeOnlyNames(array $properties): array {
 		$writeOnly = [];
-		foreach (($schema->getProperties() ?? []) as $propertyName => $propertyConfig) {
-			if (is_array($propertyConfig) === true
-				&& ($propertyConfig['writeOnly'] ?? false) === true
-				&& is_string($propertyName) === true
-			) {
+		foreach ($properties as $propertyName => $propertyConfig) {
+			if (is_string($propertyName) === true && self::isWriteOnly(propertyConfig: $propertyConfig) === true) {
 				$writeOnly[] = $propertyName;
 			}
 		}
 
 		return $writeOnly;
-	}//end getWriteOnlyProperties()
+	}//end writeOnlyNames()
 
 	/**
-	 * Enrich `recurrence`-typed properties with their upcoming occurrences.
+	 * Whether a property definition declares `writeOnly: true`.
 	 *
-	 * For every property declared as `type: recurrence` whose value is a non-empty
-	 * RRULE string, this attaches a sibling virtual field `_occurrences` listing
-	 * the next N occurrences (ISO 8601). N defaults to 5 and may be overridden per
-	 * request via `?recurrenceOccurrences=N` (clamped to 1..100). The RRULE string
-	 * itself is preserved unchanged for round-trip integrity. When the object
-	 * declares exactly one recurrence property, `_occurrences` is attached at the
-	 * object root; with multiple, each is keyed as `<prop>_occurrences` to avoid
-	 * collisions.
+	 * @param mixed $propertyConfig The property definition.
 	 *
-	 * @param array $objectData The object data being rendered.
-	 * @param Schema $schema The schema for the object.
+	 * @return bool
 	 *
-	 * @return array The object data, possibly enriched with occurrence lists.
-	 *
-	 * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
 	 */
-	private function enrichRecurrenceOccurrences(array $objectData, Schema $schema): array {
-		$properties = $schema->getProperties() ?? [];
-
-		// Collect recurrence properties present in the object with a string value.
-		$recurrenceProps = [];
-		foreach ($properties as $propertyName => $propertyConfig) {
-			$type = null;
-			if (is_array($propertyConfig) === true) {
-				$type = ($propertyConfig['type'] ?? null);
-			} elseif (is_object($propertyConfig) === true) {
-				$type = ($propertyConfig->type ?? null);
-			}
-
-			if ($type !== 'recurrence') {
-				continue;
-			}
-
-			$value = ($objectData[$propertyName] ?? null);
-			if (is_string($value) === true && $value !== '') {
-				$recurrenceProps[$propertyName] = $value;
-			}
-		}//end foreach
-
-		if (empty($recurrenceProps) === true) {
-			return $objectData;
-		}
-
-		$count = $this->resolveOccurrenceCount();
-		$validator = new ExtendedFieldTypeValidator();
-		$single = (count($recurrenceProps) === 1);
-
-		foreach ($recurrenceProps as $propertyName => $rrule) {
-			$occurrences = $validator->materialiseOccurrences(rrule: $rrule, count: $count);
-			$key = $propertyName . '_occurrences';
-			if ($single === true) {
-				$key = '_occurrences';
-			}
-
-			$objectData[$key] = $occurrences;
-		}
-
-		return $objectData;
-	}//end enrichRecurrenceOccurrences()
-
-	/**
-	 * Resolve the requested number of recurrence occurrences from the request.
-	 *
-	 * Reads the `recurrenceOccurrences` query parameter (default 5, clamped to
-	 * 1..100 by the validator). Falls back to the default when no request is
-	 * available (e.g. in unit-test construction without an injected IRequest).
-	 *
-	 * @return int The requested occurrence count.
-	 *
-	 * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
-	 */
-	private function resolveOccurrenceCount(): int {
-		if ($this->request === null) {
-			return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
-		}
-
-		$raw = $this->request->getParam('recurrenceOccurrences', null);
-		if ($raw === null || is_numeric($raw) === false) {
-			return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
-		}
-
-		return (int)$raw;
-	}//end resolveOccurrenceCount()
+	private static function isWriteOnly(mixed $propertyConfig): bool {
+		return is_array($propertyConfig) === true && ($propertyConfig['writeOnly'] ?? false) === true;
+	}//end isWriteOnly()
 
 	/**
 	 * Check if a string looks like a UUID (using regex, not strict RFC 4122 validation).
@@ -478,19 +437,57 @@ class RenderObject {
 			return $this->objectsCache[$id];
 		}
 
-		// Use cache service for optimized loading (only if not in ultra cache).
-		$object = $this->objectCacheService->getObject($id);
+		return $this->loadReadableObject(id: $id);
+	}//end getObject()
 
-		// Update local cache for backward compatibility.
-		if ($object !== null) {
-			$this->objectsCache[$id] = $object;
-			if ($object->getUuid() !== null && $object->getUuid() !== '') {
-				$this->objectsCache[$object->getUuid()] = $object;
-			}
+	/**
+	 * Load an object the local cache does not hold, if the reader may read it.
+	 *
+	 * The cache service's own cache answers without a read check, so the answer is checked here.
+	 *
+	 * @param int|string $id The object ID or UUID
+	 *
+	 * @return ObjectEntity|null The object, or null if not found or not readable
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function loadReadableObject(int|string $id): ?ObjectEntity {
+		if ($this->extendReads()->refused(id: $id) === true) {
+			return null;
 		}
 
+		// Use cache service for optimized loading (only if not in ultra cache).
+		$object = $this->objectCacheService->getObject($id);
+		if ($object === null) {
+			return null;
+		}
+
+		if ($this->readableExtendTargets(objects: [$object]) === []) {
+			$this->extendReads()->refuse(id: $id);
+			return null;
+		}
+
+		$this->cacheLoadedObject(id: $id, object: $object);
+
 		return $object;
-	}//end getObject()
+	}//end loadReadableObject()
+
+	/**
+	 * Keep a loaded object in the local cache, by the id asked for and by its uuid.
+	 *
+	 * @param int|string   $id     The id the object was asked for by
+	 * @param ObjectEntity $object The object
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cacheLoadedObject(int|string $id, ObjectEntity $object): void {
+		$this->objectsCache[$id] = $object;
+		if ($object->getUuid() !== null && $object->getUuid() !== '') {
+			$this->objectsCache[$object->getUuid()] = $object;
+		}
+	}//end cacheLoadedObject()
 
 	/**
 	 * Clear all caches
@@ -520,16 +517,50 @@ class RenderObject {
 		foreach ($this->objectsCache as $key => $object) {
 			// Only include entries keyed by UUID (skip numeric IDs).
 			if (is_string($key) === true && UuidFormat::isCanonical(value: $key) === true) {
-				if ($object instanceof ObjectEntity) {
-					$result[$key] = $object->jsonSerialize();
-				} elseif (is_array($object) === true) {
-					$result[$key] = $object;
-				}
+				$result[$key] = $this->serializedCacheEntry(object: $object);
 			}
 		}
 
-		return $result;
+		return array_filter($result, static fn ($entry) => $entry !== null);
 	}//end getObjectsCache()
+
+	/**
+	 * A cache entry as an array: an object as a reader may get it, an array as it is.
+	 *
+	 * @param mixed $object The cache entry.
+	 *
+	 * @return array|null The serialized entry, or null for anything else.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function serializedCacheEntry(mixed $object): ?array {
+		if ($object instanceof ObjectEntity) {
+			return $this->renderedCopy(object: $object);
+		}
+
+		if (is_array($object) === true) {
+			return $object;
+		}
+
+		return null;
+	}//end serializedCacheEntry()
+
+	/**
+	 * A cached object as a reader may get it: an object that was only loaded is rendered first.
+	 *
+	 * @param ObjectEntity $object The cached object.
+	 *
+	 * @return array The serialized object.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function renderedCopy(ObjectEntity $object): array {
+		if (isset($this->renderedEntities[$object]) === true) {
+			return $object->jsonSerialize();
+		}
+
+		return $this->renderRelated(object: $object);
+	}//end renderedCopy()
 
 	/**
 	 * Attach the lightweight `\@self.files` ID list to a batch of un-rendered rows.
@@ -558,29 +589,31 @@ class RenderObject {
 		}
 
 		// Collect UUIDs from heterogeneous row shapes.
-		$uuidByIndex = [];
-		foreach ($rows as $index => $row) {
-			$uuidByIndex[$index] = self::extractRowUuid(row: $row);
-		}
-
-		$uniqueUuids = array_values(array_unique(array_filter($uuidByIndex, static fn ($uid) => $uid !== null)));
-		$idsByUuid = [];
-		if (empty($uniqueUuids) === false) {
-			$idsByUuid = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uniqueUuids));
-		}
+		$uuidByIndex = array_map(static fn ($row) => self::extractRowUuid(row: $row), $rows);
+		$idsByUuid = $this->readableFileIdsOf(uuids: $uuidByIndex);
 
 		foreach ($rows as $index => &$row) {
-			$uuid = $uuidByIndex[$index] ?? null;
-			$ids = [];
-			if ($uuid !== null) {
-				$ids = ($idsByUuid[$uuid] ?? []);
-			}
-
-			self::writeFilesToRow(row: $row, ids: $ids);
+			self::writeFilesToRow(row: $row, ids: ($idsByUuid[$uuidByIndex[$index] ?? ''] ?? []));
 		}
 
 		unset($row);
 	}//end attachLightweightFilesToRows()
+
+	/**
+	 * The readable file IDs of objects, per UUID.
+	 *
+	 * @param array<int|string, string|null> $uuids The UUIDs; null entries are skipped.
+	 *
+	 * @return array<string, array<int, int>>
+	 */
+	private function readableFileIdsOf(array $uuids): array {
+		$uniqueUuids = array_values(array_unique(array_filter($uuids, static fn ($uid) => $uid !== null)));
+		if (empty($uniqueUuids) === true) {
+			return [];
+		}
+
+		return $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uniqueUuids));
+	}//end readableFileIdsOf()
 
 	/**
 	 * Resolve translatable properties on a batch of un-rendered list rows.
@@ -621,59 +654,120 @@ class RenderObject {
 		}
 
 		foreach ($rows as &$row) {
-			if ($row instanceof ObjectEntity === true) {
-				$schemaId = $row->getSchema();
-				if ($schemaId === null) {
-					continue;
-				}
-
-				$schema = $this->getSchema(id: $schemaId);
-				if ($schema === null) {
-					continue;
-				}
-
-				$registerId = $row->getRegister();
-				$register = null;
-				if ($registerId !== null) {
-					$register = $this->getRegister(id: $registerId);
-				}
-
-				$resolved = $this->translationHandler->resolveTranslationsForRender(
-					objectData: $row->getObject(),
-					schema: $schema,
-					register: $register
-				);
-				$row->setObject($resolved);
-				continue;
-			}//end if
-
-			if (is_array($row) === true) {
-				$schemaId = $row['@self']['schema'] ?? null;
-				if (is_int($schemaId) === false && is_string($schemaId) === false) {
-					continue;
-				}
-
-				$schema = $this->getSchema(id: $schemaId);
-				if ($schema === null) {
-					continue;
-				}
-
-				$registerId = $row['@self']['register'] ?? null;
-				$register = null;
-				if (is_int($registerId) === true || is_string($registerId) === true) {
-					$register = $this->getRegister(id: $registerId);
-				}
-
-				$row = $this->translationHandler->resolveTranslationsForRender(
-					objectData: $row,
-					schema: $schema,
-					register: $register
-				);
-			}//end if
-		}//end foreach
+			$row = $this->translatedRow(row: $row);
+		}
 
 		unset($row);
 	}//end resolveTranslationsForRows()
+
+	/**
+	 * One list row with its translations resolved; a row of another shape stays as it is.
+	 *
+	 * @param mixed $row The row.
+	 *
+	 * @return mixed The row.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function translatedRow(mixed $row): mixed {
+		if ($row instanceof ObjectEntity === true) {
+			$this->translateEntityRow(row: $row);
+			return $row;
+		}
+
+		if (is_array($row) === true) {
+			return $this->translateArrayRow(row: $row);
+		}
+
+		return $row;
+	}//end translatedRow()
+
+	/**
+	 * Resolve the translations of one entity row; without a known schema it stays as it is.
+	 *
+	 * @param ObjectEntity $row The row, changed in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function translateEntityRow(ObjectEntity $row): void {
+		$schema = null;
+		if ($row->getSchema() !== null) {
+			$schema = $this->getSchema(id: $row->getSchema());
+		}
+
+		if ($schema === null) {
+			return;
+		}
+
+		$register = null;
+		if ($row->getRegister() !== null) {
+			$register = $this->getRegister(id: $row->getRegister());
+		}
+
+		$row->setObject(
+			$this->translationHandler->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
+		);
+	}//end translateEntityRow()
+
+	/**
+	 * Resolve the translations of one serialized row; without a known schema it stays as it is.
+	 *
+	 * @param array $row The row.
+	 *
+	 * @return array The row with its translations resolved.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function translateArrayRow(array $row): array {
+		$schema = $this->arrayRowSchema(row: $row);
+		if ($schema === null) {
+			return $row;
+		}
+
+		return $this->translationHandler->resolveTranslationsForRender(
+			objectData: $row,
+			schema: $schema,
+			register: $this->arrayRowRegister(row: $row)
+		);
+	}//end translateArrayRow()
+
+	/**
+	 * The schema a serialized row names in @self.
+	 *
+	 * @param array $row The row.
+	 *
+	 * @return Schema|null The schema, or null when the row names none that is known.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function arrayRowSchema(array $row): ?Schema {
+		$schemaId = ($row['@self']['schema'] ?? null);
+		if (is_int($schemaId) === true || is_string($schemaId) === true) {
+			return $this->getSchema(id: $schemaId);
+		}
+
+		return null;
+	}//end arrayRowSchema()
+
+	/**
+	 * The register a serialized row names in @self.
+	 *
+	 * @param array $row The row.
+	 *
+	 * @return Register|null The register, or null when the row names none that is known.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function arrayRowRegister(array $row): ?Register {
+		$registerId = ($row['@self']['register'] ?? null);
+		if (is_int($registerId) === true || is_string($registerId) === true) {
+			return $this->getRegister(id: $registerId);
+		}
+
+		return null;
+	}//end arrayRowRegister()
 
 	/**
 	 * Resolve the declared lenses on a batch of un-rendered list rows.
@@ -698,18 +792,34 @@ class RenderObject {
 		}
 
 		foreach ($rows as $row) {
-			if ($row instanceof ObjectEntity === false || $row->getSchema() === null) {
-				continue;
+			if ($row instanceof ObjectEntity === true) {
+				$this->applyLensToRow(row: $row, rbac: $_rbac);
 			}
-
-			$schema = $this->getSchema(id: $row->getSchema());
-			if ($schema === null || $schema->getLenses() === []) {
-				continue;
-			}
-
-			$row->setObject($this->applyLens(schema: $schema, objectData: ($row->getObject() ?? []), rbac: $_rbac));
 		}
 	}//end applyLensesToRows()
+
+	/**
+	 * Resolve one entity row's lenses; a row whose schema declares none stays as it is.
+	 *
+	 * @param ObjectEntity $row  The row, changed in place.
+	 * @param bool         $rbac Whether the reader's access to the referenced object is checked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lenses/spec.md
+	 */
+	private function applyLensToRow(ObjectEntity $row, bool $rbac): void {
+		if ($row->getSchema() === null) {
+			return;
+		}
+
+		$schema = $this->getSchema(id: $row->getSchema());
+		if ($schema === null || $schema->getLenses() === []) {
+			return;
+		}
+
+		$row->setObject($this->applyLens(schema: $schema, objectData: ($row->getObject() ?? []), rbac: $rbac));
+	}//end applyLensToRow()
 
 	/**
 	 * Redact write-only properties from cheap-path list rows (openregister#380, ocon#147).
@@ -762,18 +872,32 @@ class RenderObject {
 		$pass->applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
 
 		foreach ($rows as &$row) {
-			if ($row instanceof ObjectEntity === true) {
-				$this->redactEntityRow(pass: $pass, row: $row);
-				continue;
-			}
-
-			if (is_array($row) === true) {
-				$row = $this->redactArrayRow(pass: $pass, row: $row);
-			}
+			$row = $this->redactedRow(pass: $pass, row: $row);
 		}
 
 		unset($row);
 	}//end redactWriteOnlyFromRows()
+
+	/**
+	 * One row after the redaction pass; a row of another shape stays as it is.
+	 *
+	 * @param RowRedaction $pass The pass.
+	 * @param mixed        $row  The row.
+	 *
+	 * @return mixed The row.
+	 */
+	private function redactedRow(RowRedaction $pass, mixed $row): mixed {
+		if ($row instanceof ObjectEntity === true) {
+			$this->redactEntityRow(pass: $pass, row: $row);
+			return $row;
+		}
+
+		if (is_array($row) === true) {
+			return $this->redactArrayRow(pass: $pass, row: $row);
+		}
+
+		return $row;
+	}//end redactedRow()
 
 	/**
 	 * Record on the pass the schema of a row and which strips apply to it.
@@ -837,20 +961,8 @@ class RenderObject {
 	 */
 	private function redactEntityRow(RowRedaction $pass, ObjectEntity $row): void {
 		$this->planRowRedaction(pass: $pass, schemaId: $row->getSchema());
-		if ($pass->doWriteOnly === false && $pass->doGated === false) {
-			$this->maskEntityReveals(entity: $row, schema: $pass->schema);
-			return;
-		}
-
-		$object = $row->getObject();
-		if (is_array($object) === true) {
-			if ($pass->doGated === true) {
-				$object = $this->filterAuthorizedProperties(entity: $row, schema: $pass->schema, objectData: $object);
-			} else {
-				$object = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $object);
-			}
-
-			$row->setObject($this->decryptRedactedRow(pass: $pass, data: $object));
+		if ($pass->doWriteOnly === true || $pass->doGated === true) {
+			$this->redactEntityObject(pass: $pass, row: $row);
 		}
 
 		$this->maskEntityReveals(entity: $row, schema: $pass->schema);
@@ -860,6 +972,30 @@ class RenderObject {
 			$row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $relations));
 		}
 	}//end redactEntityRow()
+
+	/**
+	 * Filter an entity's object data for the pass, and decrypt what stays.
+	 *
+	 * @param RowRedaction $pass The pass, planned for this row.
+	 * @param ObjectEntity $row  The entity.
+	 *
+	 * @return void
+	 */
+	private function redactEntityObject(RowRedaction $pass, ObjectEntity $row): void {
+		$object = $row->getObject();
+		if (is_array($object) === false) {
+			return;
+		}
+
+		if ($pass->doGated === true) {
+			$read = new EntityRead(entity: $row, schema: $pass->schema);
+			$object = $this->filterAuthorizedProperties(read: $read, objectData: $object);
+		} else {
+			$object = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $object);
+		}
+
+		$row->setObject($this->decryptRedactedRow(pass: $pass, data: $object));
+	}//end redactEntityObject()
 
 	/**
 	 * Redact one array row: body, `@self` copies of removed properties, masked reveals and `@self.relations`.
@@ -884,23 +1020,38 @@ class RenderObject {
 			return $this->maskRowReveals(row: $row, schema: $pass->schema);
 		}
 
-		if ($pass->doGated === true) {
-			$unfiltered = $row;
-			$row = $this->propertyRbacHandler->filterReadableProperties(schema: $pass->schema, object: $row);
-			$row = $this->withholdRowCopies(
-				row: $row,
-				schema: $pass->schema,
-				removed: $this->removedProperties(before: $unfiltered, after: $row)
-			);
-		} else {
-			$row = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $row);
+		$row = $this->decryptRedactedRow(pass: $pass, data: $this->filteredArrayRow(pass: $pass, row: $row));
+		return $this->withoutWriteOnlyRelations(pass: $pass, row: $this->maskRowReveals(row: $row, schema: $pass->schema));
+	}//end redactArrayRow()
+
+	/**
+	 * An array row filtered for the pass, its copies withheld when the pass is gated.
+	 *
+	 * @param RowRedaction         $pass The pass, planned for this row.
+	 * @param array<string, mixed> $row  The row.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function filteredArrayRow(RowRedaction $pass, array $row): array {
+		if ($pass->doGated === false) {
+			return $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $row);
 		}
 
-		$row = $this->maskRowReveals(row: $this->decryptRedactedRow(pass: $pass, data: $row), schema: $pass->schema);
-		if ($pass->doWriteOnly === true
-			&& isset($row['@self']['relations']) === true
-			&& is_array($row['@self']['relations']) === true
-		) {
+		$filtered = $this->propertyRbacHandler->filterReadableProperties(schema: $pass->schema, object: $row);
+		$removed = $this->removedProperties(before: $row, after: $filtered);
+		return $this->withholdRowCopies(row: $filtered, withheld: new WithheldProperties(schema: $pass->schema, removed: $removed));
+	}//end filteredArrayRow()
+
+	/**
+	 * An array row whose `@self.relations` carry no write-only property.
+	 *
+	 * @param RowRedaction         $pass The pass, planned for this row.
+	 * @param array<string, mixed> $row  The row.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function withoutWriteOnlyRelations(RowRedaction $pass, array $row): array {
+		if ($pass->doWriteOnly === true && is_array($row['@self']['relations'] ?? null) === true) {
 			$row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
 				schema: $pass->schema,
 				object: $row['@self']['relations']
@@ -908,7 +1059,14 @@ class RenderObject {
 		}
 
 		return $row;
-	}//end redactArrayRow()
+	}//end withoutWriteOnlyRelations()
+
+	/**
+	 * The largest file embedded as base64, in bytes.
+	 *
+	 * @var int
+	 */
+	private const MAX_BASE64_BYTES = (10 * 1024 * 1024);
 
 	/**
 	 * The schema configuration keys that copy a property into `@self` metadata.
@@ -960,28 +1118,43 @@ class RenderObject {
 	/**
 	 * Mask a rendered object's explicit-reveal values and withhold their `@self` copies.
 	 *
-	 * @param ObjectEntity         $entity     The entity rendered.
-	 * @param Schema|null          $schema     Its schema.
+	 * @param EntityRead           $read       The entity rendered, with its schema.
 	 * @param array<string, mixed> $objectData The rendered body.
 	 *
 	 * @return array<string, mixed> The body, masked.
 	 *
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
-	private function maskRenderedReveals(ObjectEntity $entity, ?Schema $schema, array $objectData): array {
-		if ($schema === null || ExplicitReveal::explicitProperties(schema: $schema) === [] || $this->revealMasker() === null) {
+	private function maskRenderedReveals(EntityRead $read, array $objectData): array {
+		if ($this->masksReveals(schema: $read->schema) === false) {
 			return $objectData;
 		}
 
 		[$objectData, $masked] = $this->revealMasker()->maskObject(
-			schema: $schema,
+			schema: $read->schema,
 			object: $objectData,
-			objectIds: [(string)$entity->getUuid()]
+			objectIds: [(string)$read->entity->getUuid()]
 		);
-		$this->withholdEntityCopies(entity: $entity, schema: $schema, removed: $masked);
+		$this->withholdEntityCopies(
+			entity: $read->entity,
+			withheld: new WithheldProperties(schema: $read->schema, removed: $masked)
+		);
 
 		return $objectData;
 	}//end maskRenderedReveals()
+
+	/**
+	 * Whether a schema has properties that need an explicit reveal, and a masker can hide them.
+	 *
+	 * @param Schema|null $schema The schema.
+	 *
+	 * @return bool
+	 */
+	private function masksReveals(?Schema $schema): bool {
+		return $schema !== null
+			&& ExplicitReveal::explicitProperties(schema: $schema) !== []
+			&& $this->revealMasker() !== null;
+	}//end masksReveals()
 
 	/**
 	 * Mask a list entity's explicit-reveal values in place.
@@ -996,7 +1169,8 @@ class RenderObject {
 	private function maskEntityReveals(ObjectEntity $entity, ?Schema $schema): void {
 		$object = $entity->getObject();
 		if (is_array($object) === true) {
-			$entity->setObject($this->maskRenderedReveals(entity: $entity, schema: $schema, objectData: $object));
+			$read = new EntityRead(entity: $entity, schema: $schema);
+			$entity->setObject($this->maskRenderedReveals(read: $read, objectData: $object));
 		}
 	}//end maskEntityReveals()
 
@@ -1011,13 +1185,13 @@ class RenderObject {
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
 	private function maskRowReveals(array $row, ?Schema $schema): array {
-		if ($schema === null || ExplicitReveal::explicitProperties(schema: $schema) === [] || $this->revealMasker() === null) {
+		if ($this->masksReveals(schema: $schema) === false) {
 			return $row;
 		}
 
 		[$row, $masked] = $this->revealMasker()->maskObject(schema: $schema, object: $row);
 
-		return $this->withholdRowCopies(row: $row, schema: $schema, removed: $masked);
+		return $this->withholdRowCopies(row: $row, withheld: new WithheldProperties(schema: $schema, removed: $masked));
 	}//end maskRowReveals()
 
 	/**
@@ -1034,25 +1208,24 @@ class RenderObject {
 	 * `@self.description`). Whatever the filter removed from the body is
 	 * removed from its copies, by the same decision.
 	 *
-	 * @param ObjectEntity       $entity  The rendered entity (mutated in memory only).
-	 * @param Schema             $schema  Its schema.
-	 * @param array<int, string> $removed Properties the read filter removed.
+	 * @param ObjectEntity       $entity   The rendered entity (mutated in memory only).
+	 * @param WithheldProperties $withheld What is withheld.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
-	private function withholdEntityCopies(ObjectEntity $entity, Schema $schema, array $removed): void {
-		if ($removed === []) {
+	private function withholdEntityCopies(ObjectEntity $entity, WithheldProperties $withheld): void {
+		if ($withheld->removed === []) {
 			return;
 		}
 
 		$relations = $entity->getRelations();
 		if (is_array($relations) === true && $relations !== []) {
-			$entity->setRelations($this->withoutRelationKeys(relations: $relations, removed: $removed));
+			$entity->setRelations($this->withoutRelationKeys(relations: $relations, removed: $withheld->removed));
 		}
 
-		foreach ($this->withheldMetadataFields(schema: $schema, removed: $removed) as $field) {
+		foreach ($this->withheldMetadataFields(schema: $withheld->schema, removed: $withheld->removed) as $field) {
 			$setter = 'set' . ucfirst($field);
 			$entity->$setter(null);
 		}
@@ -1063,31 +1236,42 @@ class RenderObject {
 	 *
 	 * The array-row twin of {@see self::withholdEntityCopies()}.
 	 *
-	 * @param array<string, mixed> $row     The filtered row.
-	 * @param Schema               $schema  Its schema.
-	 * @param array<int, string>   $removed Properties the read filter removed.
+	 * @param array<string, mixed> $row      The filtered row.
+	 * @param WithheldProperties   $withheld What is withheld.
 	 *
 	 * @return array<string, mixed> The row with its `@self` copies withheld.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
-	private function withholdRowCopies(array $row, Schema $schema, array $removed): array {
-		if ($removed === [] || isset($row['@self']) === false || is_array($row['@self']) === false) {
+	private function withholdRowCopies(array $row, WithheldProperties $withheld): array {
+		if ($withheld->removed === [] || is_array($row['@self'] ?? null) === false) {
 			return $row;
 		}
 
-		if (isset($row['@self']['relations']) === true && is_array($row['@self']['relations']) === true) {
-			$row['@self']['relations'] = $this->withoutRelationKeys(relations: $row['@self']['relations'], removed: $removed);
-		}
-
-		foreach ($this->withheldMetadataFields(schema: $schema, removed: $removed) as $field) {
-			if (array_key_exists($field, $row['@self']) === true) {
-				$row['@self'][$field] = null;
-			}
-		}
-
+		$row['@self'] = $this->withheldSelf(meta: $row['@self'], withheld: $withheld);
 		return $row;
 	}//end withholdRowCopies()
+
+	/**
+	 * A row's `@self` without the relations and metadata that copy withheld properties.
+	 *
+	 * @param array<string, mixed> $meta     The `@self` of the row.
+	 * @param WithheldProperties   $withheld What is withheld.
+	 *
+	 * @return array<string, mixed> The `@self`.
+	 */
+	private function withheldSelf(array $meta, WithheldProperties $withheld): array {
+		if (is_array($meta['relations'] ?? null) === true) {
+			$meta['relations'] = $this->withoutRelationKeys(relations: $meta['relations'], removed: $withheld->removed);
+		}
+
+		$fields = $this->withheldMetadataFields(schema: $withheld->schema, removed: $withheld->removed);
+		foreach (array_intersect($fields, array_keys($meta)) as $field) {
+			$meta[$field] = null;
+		}
+
+		return $meta;
+	}//end withheldSelf()
 
 	/**
 	 * Drop relation keys that belong to a removed property.
@@ -1193,19 +1377,10 @@ class RenderObject {
 		}
 
 		// Magic-mapper rows expose the UUID at @self.id.
-		if (isset($row['@self']['id']) === true && is_string($row['@self']['id']) === true) {
-			return $row['@self']['id'];
-		}
+		$candidates = [($row['@self']['id'] ?? null), ($row['@self']['uuid'] ?? null), ($row['id'] ?? null)];
+		$uuids = array_filter($candidates, 'is_string');
 
-		if (isset($row['@self']['uuid']) === true && is_string($row['@self']['uuid']) === true) {
-			return $row['@self']['uuid'];
-		}
-
-		if (isset($row['id']) === true && is_string($row['id']) === true) {
-			return $row['id'];
-		}
-
-		return null;
+		return array_shift($uuids);
 	}//end extractRowUuid()
 
 	/**
@@ -1249,18 +1424,12 @@ class RenderObject {
 	 * @return bool True when full file metadata should be rendered.
 	 */
 	private static function shouldExtendFiles(array|string|null $extend): bool {
-		if ($extend === null || $extend === '' || $extend === []) {
-			return false;
-		}
-
 		if (is_string($extend) === true) {
 			$extend = array_filter(array_map('trim', explode(',', $extend)));
 		}
 
-		// Type-system invariant: by here, $extend is `array` (the null/empty cases
-		// already returned, and string was converted above).
-		return in_array('@self.files', $extend, true) === true
-			|| in_array('_files', $extend, true) === true;
+		$requested = ($extend ?? []);
+		return in_array('@self.files', $requested, true) === true || in_array('_files', $requested, true) === true;
 	}//end shouldExtendFiles()
 
 	/**
@@ -1381,43 +1550,30 @@ class RenderObject {
 			return $this->fileTagsCache[$fileId];
 		}
 
-		// File tag type constant (same as in FileService).
-		$fileTagType = 'files';
+		$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: 'files');
 
-		// Get tag IDs for the file.
-		$tagIds = $this->systemTagMapper->getTagIdsForObjects(
-			objIds: [$fileId],
-			objectType: $fileTagType
-		);
+		// PERF-1: back-fill the request cache.
+		$this->fileTagsCache[$fileId] = $this->fileTagNames(tagIds: ($tagIds[$fileId] ?? []));
+		return $this->fileTagsCache[$fileId];
+	}//end getFileTags()
 
-		// Check if file has any tags.
-		if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
-			$this->fileTagsCache[$fileId] = [];
+	/**
+	 * The names of tags, without the internal `object:` tags.
+	 *
+	 * @param array<int, string> $tagIds The tag IDs.
+	 *
+	 * @return list<string> The names.
+	 */
+	private function fileTagNames(array $tagIds): array {
+		if ($tagIds === []) {
 			return [];
 		}
 
-		// Get the actual tag objects by their IDs.
-		$tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds[$fileId]);
+		$tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds);
+		$names = array_map(static fn ($tag) => $tag->getName(), $tags);
 
-		// Extract tag names from tag objects and filter out 'object:' tags.
-		$tagNames = array_filter(
-			array_map(
-				static function ($tag) {
-					return $tag->getName();
-				},
-				$tags
-			),
-			static function ($tagName) {
-				// Filter out internal object tags.
-				return !str_starts_with($tagName, 'object:');
-			}
-		);
-
-		// Return array of filtered tag names (PERF-1: back-fill request cache).
-		$result = array_values($tagNames);
-		$this->fileTagsCache[$fileId] = $result;
-		return $result;
-	}//end getFileTags()
+		return array_values(array_filter($names, static fn ($name) => !str_starts_with($name, 'object:')));
+	}//end fileTagNames()
 
 	/**
 	 * Hydrates file properties by replacing file IDs with actual file objects.
@@ -1444,61 +1600,85 @@ class RenderObject {
 	 */
 	private function renderFileProperties(ObjectEntity $entity): ObjectEntity {
 		try {
-			// Get the schema for this object to understand property configurations.
-			$schema = $this->getSchema(id: $entity->getSchema());
-			if ($schema === null) {
-				// If no schema found, return entity unchanged.
-				return $entity;
-			}
-
-			$schemaProperties = $schema->getProperties() ?? [];
-			$objectData = $entity->getObject();
-
-			// First, ensure all file array properties exist in objectData (even if empty).
-			// This is important for properties that have been set to empty arrays.
-			foreach ($schemaProperties as $propertyName => $propertyConfig) {
-				if ($this->isFilePropertyConfig(propertyConfig: $propertyConfig) === true) {
-					$isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-
-					// If it's an array property and not set, initialize it as empty array.
-					if (($isArrayProperty === true) && (($objectData[$propertyName] ?? null) === null) === true) {
-						$objectData[$propertyName] = [];
-					}
-				}
-			}
-
-			// Process each property in the object data.
-			foreach ($objectData ?? [] as $propertyName => $propertyValue) {
-				// Skip metadata properties.
-				if (str_starts_with($propertyName, '@') === true || $propertyName === 'id') {
-					continue;
-				}
-
-				// Check if this property is configured in the schema.
-				if (isset($schemaProperties[$propertyName]) === false) {
-					continue;
-				}
-
-				$propertyConfig = $schemaProperties[$propertyName];
-
-				// Check if this is a file property (direct or array[file]).
-				if ($this->isFilePropertyConfig(propertyConfig: $propertyConfig) === true) {
-					$objectData[$propertyName] = $this->hydrateFileProperty(
-						propertyValue: $propertyValue,
-						propertyConfig: $propertyConfig,
-						_propertyName: $propertyName
-					);
-				}
-			}//end foreach
-
-			// Update the entity with hydrated data.
-			$entity->setObject($objectData);
+			$this->hydrateFilesOf(entity: $entity);
 		} catch (Exception $e) {
 			// Log error but don't break rendering - just return original entity.
 		}//end try
 
 		return $entity;
 	}//end renderFileProperties()
+
+	/**
+	 * Hydrate the file properties of an entity; without a schema the entity stays as it is.
+	 *
+	 * @param ObjectEntity $entity The entity.
+	 *
+	 * @return void
+	 */
+	private function hydrateFilesOf(ObjectEntity $entity): void {
+		$schema = $this->getSchema(id: $entity->getSchema());
+		if ($schema === null) {
+			return;
+		}
+
+		$fileProperties = array_filter(
+			$schema->getProperties() ?? [],
+			fn (array $config): bool => $this->isFilePropertyConfig(propertyConfig: $config)
+		);
+		$objectData = self::withEmptyFileArrays(objectData: $entity->getObject(), fileProperties: $fileProperties);
+		$entity->setObject($this->hydrateFileValues(objectData: $objectData, fileProperties: $fileProperties));
+	}//end hydrateFilesOf()
+
+	/**
+	 * Object data in which every unset file array property is an empty array.
+	 *
+	 * @param array|null                          $objectData     The object data.
+	 * @param array<string, array<string, mixed>> $fileProperties The file properties of the schema.
+	 *
+	 * @return array|null The object data.
+	 */
+	private static function withEmptyFileArrays(?array $objectData, array $fileProperties): ?array {
+		foreach ($fileProperties as $propertyName => $propertyConfig) {
+			if (($propertyConfig['type'] ?? '') === 'array') {
+				$objectData[$propertyName] ??= [];
+			}
+		}
+
+		return $objectData;
+	}//end withEmptyFileArrays()
+
+	/**
+	 * Object data with its file properties hydrated; `@` properties and `id` stay as they are.
+	 *
+	 * @param array|null                          $objectData     The object data.
+	 * @param array<string, array<string, mixed>> $fileProperties The file properties of the schema.
+	 *
+	 * @return array|null The object data.
+	 */
+	private function hydrateFileValues(?array $objectData, array $fileProperties): ?array {
+		foreach ($objectData ?? [] as $propertyName => $propertyValue) {
+			if (self::isFileKey(key: $propertyName, fileProperties: $fileProperties) === true) {
+				$objectData[$propertyName] = $this->hydrateFileProperty(
+					propertyValue: $propertyValue,
+					propertyConfig: $fileProperties[$propertyName]
+				);
+			}
+		}
+
+		return $objectData;
+	}//end hydrateFileValues()
+
+	/**
+	 * Whether an object data key names a file property, and is not metadata.
+	 *
+	 * @param string                              $key            The key.
+	 * @param array<string, array<string, mixed>> $fileProperties The file properties of the schema.
+	 *
+	 * @return bool
+	 */
+	private static function isFileKey(string $key, array $fileProperties): bool {
+		return str_starts_with($key, '@') === false && $key !== 'id' && isset($fileProperties[$key]) === true;
+	}//end isFileKey()
 
 	/**
 	 * Checks if a property configuration indicates a file property.
@@ -1516,20 +1696,8 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function isFilePropertyConfig(array $propertyConfig): bool {
-		// Direct file property.
-		if (($propertyConfig['type'] ?? '') === 'file') {
-			return true;
-		}
-
-		// Array of files.
-		if (($propertyConfig['type'] ?? '') === 'array'
-			&& (($propertyConfig['items'] ?? null) !== null)
-			&& ($propertyConfig['items']['type'] ?? '') === 'file'
-		) {
-			return true;
-		}
-
-		return false;
+		$type = ($propertyConfig['type'] ?? '');
+		return $type === 'file' || ($type === 'array' && ($propertyConfig['items']['type'] ?? '') === 'file');
 	}//end isFilePropertyConfig()
 
 	/**
@@ -1540,14 +1708,11 @@ class RenderObject {
 	 *
 	 * @param mixed $propertyValue The property value (file ID or array of file IDs).
 	 * @param array $propertyConfig The property configuration from schema.
-	 * @param string $_propertyName The property name (for error reporting).
 	 *
 	 * @psalm-param   mixed $propertyValue
 	 * @psalm-param   array<string, mixed> $propertyConfig
-	 * @psalm-param   string $_propertyName
 	 * @phpstan-param mixed $propertyValue
 	 * @phpstan-param array<string, mixed> $propertyConfig
-	 * @phpstan-param string $_propertyName
 	 *
 	 * @return mixed The hydrated property value (file object, base64 string, or array).
 	 *
@@ -1559,66 +1724,74 @@ class RenderObject {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function hydrateFileProperty($propertyValue, array $propertyConfig, string $_propertyName) {
-		$isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-
-		// Determine if base64 format is requested.
-		// Check both the property config and items config (for arrays).
-		$fileConfig = $propertyConfig;
-		if ($isArrayProperty === true) {
-			$fileConfig = ($propertyConfig['items'] ?? []);
+	private function hydrateFileProperty($propertyValue, array $propertyConfig) {
+		if (($propertyConfig['type'] ?? '') === 'array') {
+			return $this->hydrateFileArray(
+				propertyValue: $propertyValue,
+				base64: $this->embedsBase64(fileConfig: ($propertyConfig['items'] ?? []))
+			);
 		}
 
-		$returnBase64 = ($fileConfig['format'] ?? '') === 'base64';
-
-		// PERF-11: never embed base64 file content on a list/collection (page) render —
-		// reading whole files into memory per file per row blows up peak memory. On a
-		// page render, fall back to the lightweight file reference instead; the full
-		// base64 content is still produced on single-object GETs (size-capped below).
-		if ($returnBase64 === true && $this->pageRenderActive === true) {
-			$returnBase64 = false;
+		if (is_numeric($propertyValue) === false) {
+			// Not a file ID.
+			return $propertyValue;
 		}
 
-		if ($isArrayProperty === true) {
-			// Handle array of files.
-			if (is_array($propertyValue) === false) {
-				return $propertyValue;
-				// Return unchanged if not an array.
-			}
-
-			$hydratedFiles = [];
-			foreach ($propertyValue as $fileId) {
-				if ($returnBase64 === true) {
-					$base64Content = $this->getFileAsBase64(fileId: $fileId);
-					if ($base64Content !== null) {
-						$hydratedFiles[] = $base64Content;
-					}
-
-					continue;
-				}
-
-				$fileObject = $this->getFileObject(fileId: $fileId);
-				if ($fileObject !== null) {
-					$hydratedFiles[] = $fileObject;
-				}
-			}
-
-			return $hydratedFiles;
-		}//end if
-
-		// Handle single file.
-		$isDigitString = is_string($propertyValue) === true && ctype_digit($propertyValue) === true;
-		if (is_numeric($propertyValue) === true || $isDigitString === true) {
-			if ($returnBase64 === true) {
-				return $this->getFileAsBase64(fileId: $propertyValue);
-			}
-
-			return $this->getFileObject(fileId: $propertyValue);
-		}
-
-		return $propertyValue;
-		// Return unchanged if not a file ID.
+		return $this->hydrateFileId(fileId: $propertyValue, base64: $this->embedsBase64(fileConfig: $propertyConfig));
 	}//end hydrateFileProperty()
+
+	/**
+	 * Whether a file property renders as base64 content.
+	 *
+	 * PERF-11: never embed base64 file content on a list/collection (page) render:
+	 * reading whole files into memory per file per row blows up peak memory. On a
+	 * page render the lightweight file reference is used instead; the full base64
+	 * content is still produced on single-object GETs (size-capped).
+	 *
+	 * @param array<string, mixed> $fileConfig The configuration of the file itself.
+	 *
+	 * @return bool
+	 */
+	private function embedsBase64(array $fileConfig): bool {
+		return ($fileConfig['format'] ?? '') === 'base64' && $this->pageRenderActive === false;
+	}//end embedsBase64()
+
+	/**
+	 * The files of an array property; a value that is not an array stays as it is.
+	 *
+	 * @param mixed $propertyValue The file IDs.
+	 * @param bool  $base64        Whether to render base64 content.
+	 *
+	 * @return mixed The readable files.
+	 */
+	private function hydrateFileArray($propertyValue, bool $base64) {
+		if (is_array($propertyValue) === false) {
+			return $propertyValue;
+		}
+
+		$hydrated = array_map(
+			fn ($fileId) => $this->hydrateFileId(fileId: $fileId, base64: $base64),
+			array_values($propertyValue)
+		);
+
+		return array_values(array_filter($hydrated, static fn ($file): bool => $file !== null));
+	}//end hydrateFileArray()
+
+	/**
+	 * One file as base64 content or as a file object.
+	 *
+	 * @param mixed $fileId The file ID.
+	 * @param bool  $base64 Whether to render base64 content.
+	 *
+	 * @return array|string|null The file, or null when it cannot be read.
+	 */
+	private function hydrateFileId($fileId, bool $base64): array|string|null {
+		if ($base64 === true) {
+			return $this->getFileAsBase64(fileId: $fileId);
+		}
+
+		return $this->getFileObject(fileId: $fileId);
+	}//end hydrateFileId()
 
 	/**
 	 * Gets a file's content as a base64 data URI string.
@@ -1631,64 +1804,91 @@ class RenderObject {
 	 */
 	private function getFileAsBase64($fileId): ?string {
 		try {
-			// Convert to int.
-			$fileIdInt = (int)$fileId;
-			if ($fileIdInt <= 0) {
+			$file = $this->readableFile(fileId: (int)$fileId);
+			if ($file === null || $this->exceedsBase64Cap(file: $file, fileId: (int)$fileId) === true) {
 				return null;
 			}
 
-			if ($this->withoutRestrictedFiles(fileRecords: [['fileid' => $fileIdInt]]) === []) {
-				return null;
-			}
-
-			// Get the file using FileService.
-			$file = $this->fileService->getFileById($fileIdInt);
-			if ($file === null) {
-				return null;
-			}
-
-			// PERF-11: cap the size of files we are willing to base64-embed even on the
-			// single-object path, so a single oversized attachment cannot exhaust memory.
-			// Oversized files return null (the caller still has the file reference via the
-			// non-base64 path / @self.files).
-			$maxBase64Bytes = (10 * 1024 * 1024);
-			try {
-				$fileSize = (int)$file->getSize();
-				if ($fileSize > $maxBase64Bytes) {
-					$this->logger->warning(
-						message: '[RenderObject] Refusing to base64-embed oversized file',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'fileId' => $fileIdInt,
-							'size' => $fileSize,
-							'cap' => $maxBase64Bytes,
-						]
-					);
-					return null;
-				}
-			} catch (\Throwable $sizeError) {
-				// If size can't be determined, fall through and let getContent() decide.
-				$this->logger->debug(
-					'[RenderObject] Could not determine file size for base64 cap: ' . $sizeError->getMessage()
-				);
-			}//end try
-
-			// Get file content.
-			$fileContent = $file->getContent();
-			if ($fileContent === null || $fileContent === '') {
-				return null;
-			}
-
-			// Get MIME type.
-			$mimeType = $file->getMimeType() ?? 'application/octet-stream';
-
-			// Return as data URI.
-			return 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+			return self::dataUriOf(file: $file);
 		} catch (Exception $e) {
 			return null;
 		}//end try
 	}//end getFileAsBase64()
+
+	/**
+	 * A file's content as a data URI.
+	 *
+	 * @param mixed $file The file.
+	 *
+	 * @return string|null The data URI, or null for a file without content.
+	 */
+	private static function dataUriOf($file): ?string {
+		$fileContent = $file->getContent();
+		if ($fileContent === null || $fileContent === '') {
+			return null;
+		}
+
+		return 'data:' . ($file->getMimeType() ?? 'application/octet-stream') . ';base64,' . base64_encode($fileContent);
+	}//end dataUriOf()
+
+	/**
+	 * The file behind an ID, when the reader may read it.
+	 *
+	 * @param int $fileId The file ID.
+	 *
+	 * @return mixed The file, or null.
+	 */
+	private function readableFile(int $fileId) {
+		if ($fileId <= 0 || $this->withoutRestrictedFiles(fileRecords: [['fileid' => $fileId]]) === []) {
+			return null;
+		}
+
+		return $this->fileService->getFileById($fileId);
+	}//end readableFile()
+
+	/**
+	 * Whether a file is over the size embedded as base64.
+	 *
+	 * PERF-11: a single oversized attachment must not exhaust memory, also on the
+	 * single-object path. The caller still has the file reference through the
+	 * non-base64 path and @self.files. A size that cannot be read counts as under
+	 * the cap, and getContent() decides.
+	 *
+	 * @param mixed $file   The file.
+	 * @param int   $fileId The file ID.
+	 *
+	 * @return bool
+	 */
+	private function exceedsBase64Cap($file, int $fileId): bool {
+		$fileSize = $this->fileSizeOf(file: $file);
+		if ($fileSize <= self::MAX_BASE64_BYTES) {
+			return false;
+		}
+
+		$this->logger->warning(
+			message: '[RenderObject] Refusing to base64-embed oversized file',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'size' => $fileSize, 'cap' => self::MAX_BASE64_BYTES]
+		);
+		return true;
+	}//end exceedsBase64Cap()
+
+	/**
+	 * The size of a file.
+	 *
+	 * @param mixed $file The file.
+	 *
+	 * @return int The size in bytes, 0 when it cannot be read.
+	 */
+	private function fileSizeOf($file): int {
+		try {
+			return (int)$file->getSize();
+		} catch (\Throwable $sizeError) {
+			$this->logger->debug(
+				'[RenderObject] Could not determine file size for base64 cap: ' . $sizeError->getMessage()
+			);
+			return 0;
+		}
+	}//end fileSizeOf()
 
 	/**
 	 * Hydrates metadata (@self) from file properties after they've been converted to file objects.
@@ -1706,43 +1906,33 @@ class RenderObject {
 	 */
 	private function hydrateMetadataFromFileProperties(ObjectEntity $entity): ObjectEntity {
 		try {
-			// Get the schema for this object to understand property configurations.
 			$schema = $this->getSchema(id: $entity->getSchema());
-			if ($schema === null) {
-				return $entity;
+			$imageField = ($schema?->getConfiguration()['objectImageField'] ?? null);
+			if (empty($imageField) === false) {
+				$value = $this->getValueFromPath(data: $entity->getObject(), path: $imageField);
+				$entity->setImage(self::fileUrlOf(value: $value));
 			}
-
-			$config = $schema->getConfiguration();
-			$objectData = $entity->getObject();
-
-			// Check if objectImageField is configured.
-			if (empty($config['objectImageField']) === false) {
-				$imageField = $config['objectImageField'];
-
-				// Get the value from the configured field.
-				$value = $this->getValueFromPath(data: $objectData, path: $imageField);
-
-				// Check if the value is a file object (has downloadUrl or accessUrl).
-				$hasNoDownloadUrl = ($value['downloadUrl'] ?? null) === null;
-				$hasNoAccessUrl = ($value['accessUrl'] ?? null) === null;
-				if (is_array($value) === false || ($hasNoDownloadUrl === true && $hasNoAccessUrl === true)) {
-					// If the file property is null/empty, set image to null.
-					$entity->setImage(null);
-				}
-
-				if (is_array($value) === true && ($hasNoDownloadUrl === false || $hasNoAccessUrl === false)) {
-					// Set the image URL on the entity itself (not in object data).
-					// This will be serialized to @self.image in jsonSerialize().
-					// Prefer downloadUrl, fallback to accessUrl.
-					$entity->setImage($value['downloadUrl'] ?? $value['accessUrl']);
-				}
-			}//end if
 		} catch (\Exception $e) {
 			// Log error but don't break rendering - just return original entity.
 		}//end try
 
 		return $entity;
 	}//end hydrateMetadataFromFileProperties()
+
+	/**
+	 * The URL of a file object, preferring its download URL.
+	 *
+	 * @param mixed $value The value of the image field.
+	 *
+	 * @return mixed The URL, or null for a value that is not a file object.
+	 */
+	private static function fileUrlOf($value): mixed {
+		if (is_array($value) === false) {
+			return null;
+		}
+
+		return ($value['downloadUrl'] ?? $value['accessUrl'] ?? null);
+	}//end fileUrlOf()
 
 	/**
 	 * Helper method to get a value from a nested path in an array.
@@ -1790,46 +1980,63 @@ class RenderObject {
 	 */
 	private function getFileObject($fileId): ?array {
 		try {
-			// Convert to string/int as needed.
-			$fileIdStr = $fileId;
-			if (is_numeric($fileId) === true) {
-				$fileIdStr = (string)$fileId;
-			}
-
-			if (is_string($fileIdStr) === false && is_int($fileIdStr) === false) {
+			if ($this->mayServeFile(fileId: $fileId) === false) {
 				return null;
 			}
 
-			$cacheKey = (string)$fileIdStr;
-
-			// The batch cache is the same for every caller; the restriction is not.
-			if ($this->withoutRestrictedFiles(fileRecords: [['fileid' => $cacheKey]]) === []) {
-				return null;
-			}
-
-			// PERF-1: serve from the request-scoped batch cache when present.
-			if (array_key_exists($cacheKey, $this->fileObjectCache) === true) {
-				return $this->fileObjectCache[$cacheKey];
-			}
-
-			// Use FileMapper to get file information directly.
-			$fileRecord = $this->fileMapper->getFile((int)$fileIdStr);
-
-			if (empty($fileRecord) === true) {
-				$this->fileObjectCache[$cacheKey] = null;
-				return null;
-			}
-
-			$formatted = $this->formatFileRecord(fileRecord: $fileRecord);
-
-			// PERF-1: back-fill the request cache so repeated refs reuse it.
-			$this->fileObjectCache[$cacheKey] = $formatted;
-
-			return $formatted;
+			return $this->cachedFileObject(fileId: (string)$fileId);
 		} catch (Exception $e) {
 			return null;
 		}//end try
 	}//end getFileObject()
+
+	/**
+	 * Whether a value is a file ID the reader may read.
+	 *
+	 * The batch cache is the same for every caller; the restriction is not.
+	 *
+	 * @param mixed $fileId The value.
+	 *
+	 * @return bool
+	 */
+	private function mayServeFile(mixed $fileId): bool {
+		if (is_numeric($fileId) === false && is_string($fileId) === false) {
+			return false;
+		}
+
+		return $this->withoutRestrictedFiles(fileRecords: [['fileid' => (string)$fileId]]) !== [];
+	}//end mayServeFile()
+
+	/**
+	 * A file object from the request-scoped batch cache, back-filling it on a miss (PERF-1).
+	 *
+	 * @param string $fileId The file ID.
+	 *
+	 * @return array|null The file object, or null when there is no such file.
+	 */
+	private function cachedFileObject(string $fileId): ?array {
+		if (array_key_exists($fileId, $this->fileObjectCache) === false) {
+			$this->fileObjectCache[$fileId] = $this->loadFileObject(fileId: $fileId);
+		}
+
+		return $this->fileObjectCache[$fileId];
+	}//end cachedFileObject()
+
+	/**
+	 * A file's record, formatted.
+	 *
+	 * @param string $fileId The file ID.
+	 *
+	 * @return array|null The file object, or null when there is no such file.
+	 */
+	private function loadFileObject(string $fileId): ?array {
+		$fileRecord = $this->fileMapper->getFile((int)$fileId);
+		if (empty($fileRecord) === true) {
+			return null;
+		}
+
+		return $this->formatFileRecord(fileRecord: $fileRecord);
+	}//end loadFileObject()
 
 	/**
 	 * The file records without the restricted files the caller is not admitted to.
@@ -1916,15 +2123,28 @@ class RenderObject {
 			'title' => $fileRecord['name'],
 			'accessUrl' => $fileRecord['accessUrl'] ?? null,
 			'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
+			...self::fileProperties(fileRecord: $fileRecord),
+			'labels' => $labels,
+		];
+	}//end fileShape()
+
+	/**
+	 * The content properties of a file record.
+	 *
+	 * @param array<string, mixed> $fileRecord The file record.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function fileProperties(array $fileRecord): array {
+		return [
 			'type' => $fileRecord['mimetype'] ?? 'application/octet-stream',
 			'extension' => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
 			'size' => (int)$fileRecord['size'],
 			'hash' => $fileRecord['etag'] ?? '',
 			'published' => $fileRecord['published'] ?? null,
 			'modified' => $fileRecord['mtime'] ?? null,
-			'labels' => $labels,
 		];
-	}//end fileShape()
+	}//end fileProperties()
 
 	/**
 	 * Renders an entity with optional extensions and filters.
@@ -1975,14 +2195,21 @@ class RenderObject {
 			return $entity;
 		}
 
-		$this->primeRenderCaches(registers: $registers, schemas: $schemas, objects: $objects);
+		if ($depth === 0) {
+			$this->applyReadRule(rbac: $_rbac, multitenancy: $_multitenancy);
+		}
 
 		$context = new RenderContext(
 			$_extend, $depth, $filter, self::withIdentityFields(fields: $fields), $unset,
 			$registers, $schemas, $objects, self::withVisitedId(entity: $entity, visitedIds: $visitedIds), $_rbac
 		);
+		$this->primeRenderCaches(context: $context);
 
-		return $this->renderWithContext(entity: $entity, context: $context);
+		$rendered = $this->renderWithContext(entity: $entity, context: $context);
+		$this->renderedEntities ??= new WeakMap();
+		$this->renderedEntities[$rendered] = true;
+
+		return $rendered;
 	}//end renderEntity()
 
 	/**
@@ -2058,7 +2285,7 @@ class RenderObject {
 
 		// Explicit-reveal values leave masked on every read, admins and `_rbac: false` included,
 		// after decryption so the mask is of the value and not of its ciphertext.
-		$objectData = $this->maskRenderedReveals(entity: $entity, schema: $schema, objectData: $objectData);
+		$objectData = $this->maskRenderedReveals(read: new EntityRead(entity: $entity, schema: $schema), objectData: $objectData);
 
 		$renderSchema = $this->getSchema(id: $entity->getSchema());
 		$objectData   = $this->resolveRenderTranslations(entity: $entity, schema: $renderSchema, objectData: $objectData);
@@ -2079,27 +2306,33 @@ class RenderObject {
 	/**
 	 * Add preloaded registers, schemas and objects to the render caches.
 	 *
-	 * @param array|null $registers Preloaded registers keyed by id
-	 * @param array|null $schemas   Preloaded schemas keyed by id
-	 * @param array|null $objects   Preloaded objects keyed by id
+	 * @param RenderContext $context The render options, with the preloaded registers, schemas and objects
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function primeRenderCaches(?array $registers, ?array $schemas, ?array $objects): void {
-		foreach ($registers ?? [] as $id => $register) {
-			$this->registersCache[$id] = $register;
-		}
-
-		foreach ($schemas ?? [] as $id => $schema) {
-			$this->schemasCache[$id] = $schema;
-		}
-
-		foreach ($objects ?? [] as $id => $object) {
-			$this->objectsCache[$id] = $object;
-		}
+	private function primeRenderCaches(RenderContext $context): void {
+		self::primeCache(cache: $this->registersCache, entries: $context->registers);
+		self::primeCache(cache: $this->schemasCache, entries: $context->schemas);
+		self::primeCache(cache: $this->objectsCache, entries: $context->objects);
 	}//end primeRenderCaches()
+
+	/**
+	 * Add preloaded entries to one render cache.
+	 *
+	 * @param array      $cache   The cache, changed in place
+	 * @param array|null $entries The preloaded entries keyed by id
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function primeCache(array &$cache, ?array $entries): void {
+		foreach ($entries ?? [] as $id => $entry) {
+			$cache[$id] = $entry;
+		}
+	}//end primeCache()
 
 	/**
 	 * Whether this entity was already rendered on the current path.
@@ -2296,16 +2529,32 @@ class RenderObject {
 			$entity->setObject($redacted);
 		}
 
-		$relations = $entity->getRelations();
-		if (is_array($relations) === true && empty($relations) === false) {
-			$redactedRelations = self::withoutKeys(data: $relations, keys: $writeOnly);
-			if ($redactedRelations !== $relations) {
-				$entity->setRelations($redactedRelations);
-			}
-		}
+		self::redactRelations(entity: $entity, writeOnly: $writeOnly);
 
 		return $redacted;
 	}//end redactWriteOnlyForRbac()
+
+	/**
+	 * Remove write-only properties from an entity's `relations` search-index copy.
+	 *
+	 * @param ObjectEntity $entity    The entity being rendered
+	 * @param array        $writeOnly The write-only property names
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function redactRelations(ObjectEntity $entity, array $writeOnly): void {
+		$relations = $entity->getRelations();
+		if (is_array($relations) === false || empty($relations) === true) {
+			return;
+		}
+
+		$redactedRelations = self::withoutKeys(data: $relations, keys: $writeOnly);
+		if ($redactedRelations !== $relations) {
+			$entity->setRelations($redactedRelations);
+		}
+	}//end redactRelations()
 
 	/**
 	 * The data without the given keys.
@@ -2349,8 +2598,141 @@ class RenderObject {
 			return $objectData;
 		}
 
-		return $this->handleInversedProperties(entity: $entity, objectData: $objectData);
+		return $this->inverseRelations()->handleInversedProperties(entity: $entity, objectData: $objectData);
 	}//end applyInversedProperties()
+
+	/**
+	 * Set the read rule of a top-level render; what it extends stays under that rule.
+	 *
+	 * The object caches hold what one rule admitted, so a change empties them.
+	 *
+	 * @param bool $rbac         False for a trusted read.
+	 * @param bool $multitenancy False for a read across organisations.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function applyReadRule(bool $rbac, bool $multitenancy): void {
+		if ($this->extendReads()->applyRule(rbac: $rbac, multitenancy: $multitenancy) === true) {
+			$this->inverseSupport()->objects->cache->clear();
+			$this->objectsCache = [];
+		}
+	}//end applyReadRule()
+
+	/**
+	 * The read rule of the current render.
+	 *
+	 * @return ExtendTargetReads
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function extendReads(): ExtendTargetReads {
+		$this->extendTargetReads ??= new ExtendTargetReads(
+			mapper: $this->objectEntityMapper,
+			mayRead: fn (ObjectEntity $object): bool => $this->mayReadInverse(object: $object)
+		);
+
+		return $this->extendTargetReads;
+	}//end extendReads()
+
+	/**
+	 * The extend targets the caller may read.
+	 *
+	 * The preload behind an extend applies no access rule. Filtering here, before the
+	 * objects are cached, keeps them out of the extended property and out of
+	 * `@self.objects`. Without a container (legacy fixtures) nothing is filtered.
+	 *
+	 * @param ObjectEntity[] $objects The objects found.
+	 *
+	 * @return ObjectEntity[] The readable objects.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function readableExtendTargets(array $objects): array {
+		if ($this->container === null || $this->extendReads()->checked() === false || SystemOperationContext::isActive() === true) {
+			return $objects;
+		}
+
+		return $this->extendReads()->readable(objects: $objects);
+	}//end readableExtendTargets()
+
+	/**
+	 * Keep the readable preloaded objects in the objects cache and note the others as refused.
+	 *
+	 * @param ObjectEntity[] $objects The objects the preload found.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function cacheExtendTargets(array $objects): void {
+		$readable = $this->readableExtendTargets(objects: $objects);
+		foreach ($readable as $object) {
+			$this->objectsCache[$object->getUuid()] = $object;
+			$this->objectsCache[$object->getId()] = $object;
+		}
+
+		foreach ($objects as $object) {
+			if (in_array($object, $readable, true) === false) {
+				$this->extendReads()->refuse(id: (string)$object->getUuid());
+			}
+		}
+	}//end cacheExtendTargets()
+
+	/**
+	 * The inverse results the caller may read.
+	 *
+	 * The lookups filter on organisation only. Filtering here, where the objects are
+	 * loaded, keeps them out of the inverse property and out of `@self.objects`.
+	 * Without a container (legacy fixtures) nothing is filtered.
+	 *
+	 * @param ObjectEntity[] $objects The objects that point back.
+	 *
+	 * @return ObjectEntity[] The readable objects.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function readableInverseObjects(array $objects): array {
+		if ($this->container === null || $this->extendReads()->checked() === false) {
+			return $objects;
+		}
+
+		return array_values(array_filter($objects, fn (ObjectEntity $object): bool => $this->mayReadInverse(object: $object)));
+	}//end readableInverseObjects()
+
+	/**
+	 * Whether the caller may read one inverse result; a failed check answers no.
+	 *
+	 * @param ObjectEntity $object The object that points back.
+	 *
+	 * @return bool True when the caller may read it.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function mayReadInverse(ObjectEntity $object): bool {
+		try {
+			$schema = $this->getSchema(id: $object->getSchema());
+			if ($schema === null) {
+				return false;
+			}
+
+			$owner = $object->getOwner();
+			if (is_string($owner) === false) {
+				$owner = null;
+			}
+
+			return $this->container->get(PermissionHandler::class)->hasPermission(
+				schema: $schema,
+				action: 'read',
+				objectOwner: $owner,
+				object: $object
+			);
+		} catch (\Throwable $e) {
+			$this->logRenderFailure(failure: 'inverse read check failed for', entity: $object, error: $e);
+			return false;
+		}
+	}//end mayReadInverse()
 
 	/**
 	 * Whether the extend list names one of the schema's inversed properties, or `all`.
@@ -2368,7 +2750,7 @@ class RenderObject {
 			return false;
 		}
 
-		$inversePropertyNames = array_keys($this->getInversedProperties(schema: $schema));
+		$inversePropertyNames = array_keys($this->inversePreload()->getInversedProperties(schema: $schema));
 
 		$extendArray = $extend;
 		if (is_array($extend) === false) {
@@ -2394,12 +2776,7 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private static function normalizeExtend(array|string|null $extend, array $objectData): ?array {
-		if (is_array($extend) === true && in_array('all', $extend, true) === true) {
-			$extend = self::expandExtendAll(extend: $extend, objectData: $objectData);
-		} elseif (is_string($extend) === true) {
-			$extend = explode(',', $extend);
-		}
-
+		$extend = self::expandedExtend(extend: $extend, objectData: $objectData);
 		if (is_array($extend) === false) {
 			return $extend;
 		}
@@ -2418,6 +2795,28 @@ class RenderObject {
 
 		return $extend;
 	}//end normalizeExtend()
+
+	/**
+	 * An extend parameter as a list: a string split on commas, `all` in a list expanded.
+	 *
+	 * @param array|string|null $extend     The extend parameter
+	 * @param array             $objectData The object data
+	 *
+	 * @return array|null
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function expandedExtend(array|string|null $extend, array $objectData): array|null {
+		if (is_string($extend) === true) {
+			return explode(',', $extend);
+		}
+
+		if (is_array($extend) === true && in_array('all', $extend, true) === true) {
+			return self::expandExtendAll(extend: $extend, objectData: $objectData);
+		}
+
+		return $extend;
+	}//end expandedExtend()
 
 	/**
 	 * Add every property whose value is not the object's id or origin id to the extend list.
@@ -2526,7 +2925,7 @@ class RenderObject {
 			$entity->setObject($objectData);
 		}
 
-		$objectData = $this->enrichRecurrenceOccurrences(objectData: $objectData, schema: $schema);
+		$objectData = (new RecurrenceOccurrences(request: $this->request))->enrich(objectData: $objectData, schema: $schema);
 		$entity->setObject($objectData);
 
 		return $objectData;
@@ -2560,15 +2959,14 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function stripUnreadableProperties(ObjectEntity $entity, ?Schema $schema, array $objectData, bool $rbac): array {
-		$stripAuthz  = ($rbac !== false) && (SystemOperationContext::isActive() === false);
 		$doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
-		$doAuthz     = ($stripAuthz === true && $schema !== null && $schema->hasPropertyAuthorization() === true);
+		$doAuthz     = self::stripsAuthorizedProperties(schema: $schema, rbac: $rbac);
 		if ($doWriteOnly === false && $doAuthz === false) {
 			return $objectData;
 		}
 
 		if ($doAuthz === true) {
-			$objectData = $this->filterAuthorizedProperties(entity: $entity, schema: $schema, objectData: $objectData);
+			$objectData = $this->filterAuthorizedProperties(read: new EntityRead(entity: $entity, schema: $schema), objectData: $objectData);
 		} else {
 			$objectData = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $objectData);
 		}
@@ -2581,6 +2979,26 @@ class RenderObject {
 	}//end stripUnreadableProperties()
 
 	/**
+	 * Whether a read strips by property `authorization.read`.
+	 *
+	 * @param Schema|null $schema The object's schema
+	 * @param bool        $rbac   Whether access control applies
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The rbac flag gates the authorization strip
+	 * @SuppressWarnings(PHPMD.StaticAccess)        SystemOperationContext is a static execution-context holder by design
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function stripsAuthorizedProperties(?Schema $schema, bool $rbac): bool {
+		return $rbac !== false
+			&& SystemOperationContext::isActive() === false
+			&& $schema !== null
+			&& $schema->hasPropertyAuthorization() === true;
+	}//end stripsAuthorizedProperties()
+
+	/**
 	 * Strip the properties the reader's groups may not read, writeOnly included.
 	 *
 	 * Property authorization can reference `@self.organisation` or `_organisation`,
@@ -2588,24 +3006,21 @@ class RenderObject {
 	 * never one the data carries. The data's own `@self`, if any, is put back
 	 * afterwards (jsonSerialize re-adds the record's).
 	 *
-	 * @param ObjectEntity $entity     The entity being rendered
-	 * @param Schema       $schema     The object's schema
-	 * @param array        $objectData The object data
+	 * @param EntityRead $read       The entity being rendered, with its schema
+	 * @param array      $objectData The object data
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function filterAuthorizedProperties(ObjectEntity $entity, Schema $schema, array $objectData): array {
-		$filtered = $entity->filterAsRecord(
+	private function filterAuthorizedProperties(EntityRead $read, array $objectData): array {
+		$schema = $read->schema;
+		$filtered = $read->entity->filterAsRecord(
 			data: $objectData,
 			filter: fn (array $probe): array => $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $probe)
 		);
-		$this->withholdEntityCopies(
-			entity: $entity,
-			schema: $schema,
-			removed: $this->removedProperties(before: $objectData, after: $filtered)
-		);
+		$removed = $this->removedProperties(before: $objectData, after: $filtered);
+		$this->withholdEntityCopies(entity: $read->entity, withheld: new WithheldProperties(schema: $schema, removed: $removed));
 
 		return $filtered;
 	}//end filterAuthorizedProperties()
@@ -2735,7 +3150,15 @@ class RenderObject {
 			return $objectData;
 		}
 
-		return $this->applyVirtualCalculations(entity: $entity, schema: $schema, data: $objectData);
+		$calculations = new VirtualCalculations(evaluator: $this->calculationEvaluator, logger: $this->logger);
+
+		return array_replace(
+			$objectData,
+			$calculations->values(
+				calculations: VirtualCalculations::declaredBy(schema: $schema),
+				payload: (new CalculationPayload())->withSelf(data: $objectData, entity: $entity)
+			)
+		);
 	}//end applyRequestedCalculations()
 
 	/**
@@ -2785,10 +3208,11 @@ class RenderObject {
 		$this->applyWatcherMarkers(entity: $entity);
 		$this->applyReadStateMarkers(entity: $entity);
 		$this->applyUpdateRightMarker(entity: $entity, schema: $schema, extend: $extend);
-		$this->applyArchivalRetentionBlock(entity: $entity, schema: $schema);
-		$this->applyArchivalDecision(entity: $entity);
+		$annotations = new RecordAnnotations(logger: $this->logger);
+		$annotations->attachRetention(entity: $entity, schema: $schema);
+		$annotations->attachDecision(entity: $entity);
 		$this->applyRetentionClocks(entity: $entity);
-		$this->applyExternalLinks(entity: $entity, schema: $schema);
+		$annotations->attachExternalLinks(entity: $entity, schema: $schema);
 	}//end applyRenderMarkers()
 
 	/**
@@ -2824,14 +3248,28 @@ class RenderObject {
 		}
 
 		try {
-			$completeness = $this->translationStatusService->completenessForObject((string) $entity->getUuid(), $schema);
-			if (count($completeness) > 0) {
-				$entity->setTranslationCompleteness($completeness);
-			}
+			$this->setTranslationCompleteness(entity: $entity, schema: $schema);
 		} catch (\Throwable $e) {
 			$this->logRenderFailure(failure: 'translation completeness lookup failed for', entity: $entity, error: $e);
 		}
 	}//end applyTranslationCompleteness()
+
+	/**
+	 * Set the completeness the translation status answers, when it has any.
+	 *
+	 * @param ObjectEntity $entity The rendered entity
+	 * @param Schema       $schema The object's schema
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function setTranslationCompleteness(ObjectEntity $entity, Schema $schema): void {
+		$completeness = $this->translationStatusService->completenessForObject((string) $entity->getUuid(), $schema);
+		if (count($completeness) > 0) {
+			$entity->setTranslationCompleteness($completeness);
+		}
+	}//end setTranslationCompleteness()
 
 	/**
 	 * Set the registry subscription state, only for a schema declaring `x-openregister-registry`.
@@ -2844,24 +3282,42 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function applyRegistryState(ObjectEntity $entity, ?Schema $schema): void {
-		if ($this->container === null || $schema === null || $entity->getUuid() === null) {
+		if ($schema === null || $entity->getUuid() === null) {
 			return;
 		}
 
 		try {
-			$registrySubscriptions = $this->container->get(RegistrySubscriptionService::class);
-			if ($registrySubscriptions->annotationFor(schema: $schema) === null) {
-				return;
-			}
-
-			$registryState = $registrySubscriptions->stateFor((string) $entity->getUuid());
-			if ($registryState !== null) {
-				$entity->setRegistryState($registryState);
-			}
+			$this->setRegistryState(entity: $entity, schema: $schema);
 		} catch (\Throwable $e) {
 			$this->logRenderFailure(failure: 'registry subscription state lookup failed for', entity: $entity, error: $e);
 		}
 	}//end applyRegistryState()
+
+	/**
+	 * Set the subscription state of an object whose schema declares a registry.
+	 *
+	 * @param ObjectEntity $entity The rendered entity
+	 * @param Schema       $schema The object's schema
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function setRegistryState(ObjectEntity $entity, Schema $schema): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$registrySubscriptions = $this->container->get(RegistrySubscriptionService::class);
+		if ($registrySubscriptions->annotationFor(schema: $schema) === null) {
+			return;
+		}
+
+		$registryState = $registrySubscriptions->stateFor((string) $entity->getUuid());
+		if ($registryState !== null) {
+			$entity->setRegistryState($registryState);
+		}
+	}//end setRegistryState()
 
 	/**
 	 * Log a render step that failed without failing the render.
@@ -3007,32 +3463,46 @@ class RenderObject {
 		}
 
 		try {
-			$watchers = $this->container->get(WatcherService::class);
-
-			// Anonymous reads get no marker at all: there is no "you" to answer
-			// for, and a hard false would read as "you do not follow this",
-			// which is a different claim.
-			if ($watchers->callerUid() === null) {
-				return;
-			}
-
-			$entity->setWatching(
-				$watchers->isWatchedByCaller(objectUuid: $uuid),
-				$watchers->notifyForCaller(objectUuid: $uuid)
-			);
-
-			// The count is a fact about the object's audience, so it is only
-			// told to a reader who may edit the object.
-			if ($watchers->maySeeWatchers(object: $entity) === true) {
-				$entity->setWatcherCount($watchers->watcherCount(objectUuid: $uuid));
-			}
+			$this->setWatcherMarkers(entity: $entity, uuid: $uuid);
 		} catch (\Throwable $e) {
 			// A subscription lookup must never take out object rendering.
 			$this->logger->debug(
 				sprintf('[RenderObject] watcher markers skipped for %s: %s', $uuid, $e->getMessage())
 			);
-		}//end try
+		}
 	}//end applyWatcherMarkers()
+
+	/**
+	 * Set the caller's own watch state, and the watcher count for a reader who may edit the object.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 * @param string       $uuid   Its uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	private function setWatcherMarkers(ObjectEntity $entity, string $uuid): void {
+		$watchers = $this->container->get(WatcherService::class);
+
+		// Anonymous reads get no marker at all: there is no "you" to answer
+		// for, and a hard false would read as "you do not follow this",
+		// which is a different claim.
+		if ($watchers->callerUid() === null) {
+			return;
+		}
+
+		$entity->setWatching(
+			$watchers->isWatchedByCaller(objectUuid: $uuid),
+			$watchers->notifyForCaller(objectUuid: $uuid)
+		);
+
+		// The count is a fact about the object's audience, so it is only
+		// told to a reader who may edit the object.
+		if ($watchers->maySeeWatchers(object: $entity) === true) {
+			$entity->setWatcherCount($watchers->watcherCount(objectUuid: $uuid));
+		}
+	}//end setWatcherMarkers()
 
 	/**
 	 * Attach `@self.unread` and the per-sub-resource badge counts.
@@ -3108,204 +3578,66 @@ class RenderObject {
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 	 */
 	private function applyUpdateRightMarker(ObjectEntity $entity, ?Schema $schema, array|string|null $extend): void {
-		if ($this->container === null || $schema === null || $extend === null || $extend === '' || $extend === []) {
-			return;
-		}
-
-		if (is_string($extend) === true) {
-			$extend = array_map('trim', explode(',', $extend));
-		}
-
-		if (in_array('@self.can', $extend, true) === false) {
+		if ($schema === null || self::asksForRights(extend: $extend) === false) {
 			return;
 		}
 
 		try {
-			$permissions = $this->container->get(PermissionHandler::class);
-			$owner       = $entity->getOwner();
-			if (is_string($owner) === false) {
-				$owner = null;
-			}
-
-			$can = $this->container->get(ObjectActionList::class)->canRun(object: $entity, schema: $schema);
-			$can['update'] = $permissions->hasPermission(
-				schema: $schema,
-				action: 'update',
-				objectOwner: $owner,
-				object: $entity
-			);
-			$entity->setCan($can);
+			$this->setRightsMarker(entity: $entity, schema: $schema);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[RenderObject] update right marker skipped for %s: %s', (string)$entity->getUuid(), $e->getMessage())
 			);
-		}//end try
+		}
 	}//end applyUpdateRightMarker()
 
 	/**
-	 * Attach the resolved `@self._retention` decision.
+	 * Whether an extend parameter asks for `@self.can`.
 	 *
-	 * The slot has been declared on the entity since add-archival-annotation-support
-	 * and, until this method existed, was filled by nothing outside a unit test —
-	 * so every client asking an object for its archival constraints got silence
-	 * while the facts sat unmerged in three sub-blocks of `retention`.
+	 * @param array|string|null $extend The _extend parameter.
 	 *
-	 * Failures are logged and swallowed for the same reason the annotation block
-	 * above swallows them: a records-management edge case must never take out
-	 * object rendering.
+	 * @return bool
 	 *
-	 * @param ObjectEntity $entity The entity being rendered.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/retention-management/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 	 */
-	private function applyArchivalDecision(ObjectEntity $entity): void {
-		try {
-			$resolver = new ArchivalDecisionResolver();
-			$decision = $resolver->resolve(entity: $entity);
-			if ($decision === null) {
-				return;
-			}
+	private static function asksForRights(array|string|null $extend): bool {
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
 
-			$entity->setArchivalRetention($decision);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf(
-					'[RenderObject] archival decision resolve failed for %s: %s',
-					(string)$entity->getUuid(),
-					$e->getMessage()
-				)
-			);
-		}//end try
-	}//end applyArchivalDecision()
+		return in_array('@self.can', ($extend ?? []), true);
+	}//end asksForRights()
 
 	/**
-	 * Attach the links out of this record, under `@self.externalLinks`.
-	 *
-	 * A link whose placeholders cannot all be filled is not offered, and a
-	 * schema declaring no links attaches nothing at all rather than an empty
-	 * list: a consumer that has to distinguish "no links declared" from "links
-	 * declared, none applicable" can, and one that does not is not handed a key
-	 * it must remember to ignore.
-	 *
-	 * Failure here is swallowed to a debug line for the same reason every other
-	 * tail-of-render block swallows: a link is an ornament on a record, and a
-	 * record the caseworker cannot read at all is a far worse outcome than a
-	 * record missing its shortcut to the BAG viewer.
-	 *
-	 * @param ObjectEntity $entity The rendered object.
-	 * @param Schema|null $schema Its schema, when one is resolvable.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
-	 */
-	private function applyExternalLinks(ObjectEntity $entity, ?Schema $schema): void {
-		if ($schema === null) {
-			return;
-		}
-
-		$configuration = ($schema->getConfiguration() ?? []);
-		$declarations = ($configuration[ExternalLinkResolver::ANNOTATION] ?? null);
-		if (is_array($declarations) === false || $declarations === []) {
-			return;
-		}
-
-		try {
-			$objectData = $entity->getObject();
-			if (is_array($objectData) === false) {
-				$objectData = [];
-			}
-
-			$links = (new ExternalLinkResolver())->resolve(
-				declarations: $declarations,
-				object: $objectData
-			);
-
-			if ($links === []) {
-				return;
-			}
-
-			$objectData['@self'] = ($objectData['@self'] ?? []);
-			if (is_array($objectData['@self']) === false) {
-				$objectData['@self'] = [];
-			}
-
-			$objectData['@self']['externalLinks'] = $links;
-			$entity->setObject($objectData);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf(
-					'[RenderObject] external link resolution failed for %s: %s',
-					(string)$entity->getUuid(),
-					$e->getMessage()
-				)
-			);
-		}//end try
-	}//end applyExternalLinks()
-
-	/**
-	 * Compute + attach the annotation-driven `_retention.annotation` block.
-	 *
-	 * Stateless w.r.t. the row's persisted columns; pulls the annotation off
-	 * the schema's `configuration` and asks `RetentionEvaluator` to produce
-	 * the `{effectiveRetention, matchedRule, expiresAt}` triple for the
-	 * current row + `_created` timestamp.
-	 *
-	 * Failures are logged + swallowed: a malformed annotation must NEVER
-	 * break object rendering.
+	 * Set the `can` marker: the actions the caller may run, and PermissionHandler's verdict on update.
 	 *
 	 * @param ObjectEntity $entity The entity being rendered.
-	 * @param Schema|null $schema The resolved schema (may be null).
+	 * @param Schema       $schema The object's schema.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 	 */
-	private function applyArchivalRetentionBlock(ObjectEntity $entity, ?Schema $schema): void {
-		if ($schema === null) {
+	private function setRightsMarker(ObjectEntity $entity, Schema $schema): void {
+		if ($this->container === null) {
 			return;
 		}
 
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-archival'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
+		$permissions = $this->container->get(PermissionHandler::class);
+		$owner       = $entity->getOwner();
+		if (is_string($owner) === false) {
+			$owner = null;
 		}
 
-		try {
-			$createdAt = $entity->getCreated();
-			if ($createdAt === null) {
-				return;
-			}
-
-			$objectData = $entity->getObject();
-			if (is_array($objectData) === false) {
-				$objectData = [];
-			}
-
-			$row = $objectData;
-			$evaluator = new RetentionEvaluator(logger: $this->logger);
-			$annotationBlock = $evaluator->evaluate(
-				annotation: $annotation,
-				row: $row,
-				createdAt: $createdAt
-			);
-
-			$existing = ($entity->getRetention() ?? []);
-			$existing['annotation'] = $annotationBlock;
-			$entity->setRetention($existing);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf(
-					'[RenderObject] archival retention compute failed for %s: %s',
-					(string)$entity->getUuid(),
-					$e->getMessage()
-				)
-			);
-		}//end try
-	}//end applyArchivalRetentionBlock()
+		$can = $this->container->get(ObjectActionList::class)->canRun(object: $entity, schema: $schema);
+		$can['update'] = $permissions->hasPermission(
+			schema: $schema,
+			action: 'update',
+			objectOwner: $owner,
+			object: $entity
+		);
+		$entity->setCan($can);
+	}//end setRightsMarker()
 
 	/**
 	 * Check whether the current request opts in to the `_translationMeta`
@@ -3484,79 +3816,6 @@ class RenderObject {
 	}//end resolveSourceLanguageForProperty()
 
 	/**
-	 * Apply virtual (materialise:false) calculations declared on the
-	 * schema to the given data array. Materialised calculations are
-	 * persisted on save and skipped here.
-	 *
-	 * @param ObjectEntity $entity The object being rendered (used for @self.* refs).
-	 * @param Schema|null $schema The schema definition (may be null).
-	 * @param array<string, mixed> $data The current rendered data array.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function applyVirtualCalculations(ObjectEntity $entity, $schema, array $data): array {
-		if ($schema === null) {
-			return $data;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$calcs = ($config['x-openregister-calculations'] ?? null);
-		if (is_array($calcs) === false || count($calcs) === 0) {
-			return $data;
-		}
-
-		$created = $entity->getCreated();
-		$updated = $entity->getUpdated();
-
-		$createdFormatted = null;
-		if ($created !== null) {
-			$createdFormatted = $created->format(\DateTimeInterface::ATOM);
-		}
-
-		$updatedFormatted = null;
-		if ($updated !== null) {
-			$updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
-		}
-
-		$payload = $data;
-		$payload['@self'] = [
-			'id' => $entity->getUuid(),
-			'uuid' => $entity->getUuid(),
-			'register' => $entity->getRegister(),
-			'schema' => $entity->getSchema(),
-			'owner' => $entity->getOwner(),
-			'created' => $createdFormatted,
-			'updated' => $updatedFormatted,
-		];
-
-		foreach ($calcs as $name => $spec) {
-			if (is_array($spec) === false) {
-				continue;
-			}
-
-			// Skip materialised — already in $data from save-time listener.
-			if (($spec['materialise'] ?? false) === true) {
-				continue;
-			}
-
-			try {
-				$value = $this->calculationEvaluator->evaluate($payload, $spec['expression'] ?? null);
-				if ($value instanceof \DateTimeInterface) {
-					$value = $value->format(\DateTimeInterface::ATOM);
-				}
-
-				$data[(string)$name] = $value;
-			} catch (\Throwable $e) {
-				$this->logger->debug(
-					sprintf('[RenderObject] Virtual calculation "%s" failed: %s', (string)$name, $e->getMessage())
-				);
-			}
-		}//end foreach
-
-		return $data;
-	}//end applyVirtualCalculations()
-
-	/**
 	 * Handle extends containing a wildcard ($)
 	 *
 	 * @param array $objectData The data to extend
@@ -3568,22 +3827,37 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function handleWildcardExtends(array $objectData, array &$_extend, int $depth): array {
-		$objectData = new Dot($objectData);
+		$run = new ExtendDotRun();
+		$run->data = new Dot($objectData);
+		$run->depth = $depth;
 		if ($depth >= 10) {
-			return $objectData->all();
+			return $run->data->all();
 		}
 
-		$wildcardExtends = array_filter(
-			$_extend,
-			function (string $key) {
-				return str_contains($key, '.$.');
-			}
-		);
+		foreach (self::takeWildcardExtends(extend: $_extend) as $root => $extends) {
+			$run->key = (string)$root;
+			$run->keyExtends = $extends;
+			$this->extendWildcardRoot(run: $run);
+		}
+
+		return $run->data->all();
+	}//end handleWildcardExtends()
+
+	/**
+	 * Take the wildcard entries off an extend list, grouped by the list property they apply to.
+	 *
+	 * @param array $extend The extend list; its wildcard entries leave it.
+	 *
+	 * @return array<string, array> The extends below each root, keeping a named override's path.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function takeWildcardExtends(array &$extend): array {
+		$wildcardExtends = array_filter($extend, fn (string $key) => str_contains($key, '.$.'));
 
 		$extendedRoots = [];
-
 		foreach ($wildcardExtends as $key => $wildcardExtend) {
-			unset($_extend[$key]);
+			unset($extend[$key]);
 
 			[$root, $extends] = explode(separator: '.$.', string: $wildcardExtend, limit: 2);
 
@@ -3596,22 +3870,31 @@ class RenderObject {
 			$extendedRoots[$root][$path] = $extends;
 		}
 
-		foreach ($extendedRoots as $root => $extends) {
-			$data = $objectData->get(key: $root);
-			if (is_iterable($data) === false) {
-				continue;
-			}
+		return $extendedRoots;
+	}//end takeWildcardExtends()
 
-			foreach ($data as $key => $date) {
-				$tmpExtends = $extends;
-				$data[$key] = $this->handleExtendDot(data: $date, _extend: $tmpExtends, depth: $depth);
-			}
-
-			$objectData->set($root, $data);
+	/**
+	 * Extend every entry of the list at the run's key with the key's nested extends.
+	 *
+	 * @param ExtendDotRun $run The extend pass, on one wildcard root.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendWildcardRoot(ExtendDotRun $run): void {
+		$data = $run->data->get(key: $run->key);
+		if (is_iterable($data) === false) {
+			return;
 		}
 
-		return $objectData->all();
-	}//end handleWildcardExtends()
+		foreach ($data as $key => $date) {
+			$tmpExtends = $run->keyExtends;
+			$data[$key] = $this->handleExtendDot(data: $date, _extend: $tmpExtends, depth: $run->depth);
+		}
+
+		$run->data->set($run->key, $data);
+	}//end extendWildcardRoot()
 
 	/**
 	 * Handle extends on a dot array
@@ -3763,23 +4046,14 @@ class RenderObject {
 	 */
 	private function extendDotListItem(ExtendDotRun $run, mixed $identifier): mixed {
 		if (is_array($identifier) === true) {
-			if (isset($identifier['id']) === true || isset($identifier['@self']) === true) {
-				return $this->applyLinkExposure(rendered: $identifier, descriptor: $run->descriptor);
-			}
-
-			return null;
+			return $this->exposedListItem(run: $run, item: $identifier);
 		}
 
 		$object = $this->getObject(id: $identifier);
 		if ($object === null) {
-			$this->logger->debug(
+			$this->logExtendMiss(
 				message: '[RenderObject] Object not found in preloaded cache - preserving original UUID',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $identifier,
-					'context' => 'extend_array_processing',
-				]
+				context: ['identifier' => $identifier, 'context' => 'extend_array_processing']
 			);
 			return $identifier;
 		}
@@ -3790,6 +4064,38 @@ class RenderObject {
 
 		return $this->renderExtendedObject(run: $run, object: $object);
 	}//end extendDotListItem()
+
+	/**
+	 * A list entry that is already an array: an extended object gets the link exposure, anything else is dropped.
+	 *
+	 * @param ExtendDotRun $run  The extend pass, on one key.
+	 * @param array        $item The list entry.
+	 *
+	 * @return array|null The projected entry, or null to drop it.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function exposedListItem(ExtendDotRun $run, array $item): ?array {
+		if (isset($item['id']) === true || isset($item['@self']) === true) {
+			return $this->applyLinkExposure(rendered: $item, descriptor: $run->descriptor);
+		}
+
+		return null;
+	}//end exposedListItem()
+
+	/**
+	 * Log a reference the extend could not find.
+	 *
+	 * @param string $message The log message.
+	 * @param array  $context The identifier and the extend path it was on.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function logExtendMiss(string $message, array $context): void {
+		$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__] + $context);
+	}//end logExtendMiss()
 
 	/**
 	 * Render an extended object one level deeper, with the key's nested extends and link exposure.
@@ -3834,27 +4140,17 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function extendDotSingle(ExtendDotRun $run, mixed $value): void {
-		if (is_string($value) === true
-			&& (str_starts_with(haystack: $value, needle: '@') === true || str_starts_with(haystack: $value, needle: '_') === true)
-		) {
+		if (self::isReservedValue(value: $value) === true) {
 			return;
 		}
 
-		if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-			$pathExploded = explode('/', parse_url($value, PHP_URL_PATH));
-			$value = end($pathExploded);
-		}
+		$value = self::identifierOf(value: $value);
 
 		$object = $this->getObject(id: $value);
 		if ($object === null) {
-			$this->logger->debug(
+			$this->logExtendMiss(
 				message: '[RenderObject] Single object not found in preloaded cache - skipping to prevent N+1 query',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $value,
-					'context' => 'extend_single_processing',
-				]
+				context: ['identifier' => $value, 'context' => 'extend_single_processing']
 			);
 			return;
 		}
@@ -3867,6 +4163,39 @@ class RenderObject {
 
 		self::storeExtended(run: $run, value: $rendered);
 	}//end extendDotSingle()
+
+	/**
+	 * Whether a value is a string starting with '@' or '_', which an extend leaves alone.
+	 *
+	 * @param mixed $value The value at the key.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isReservedValue(mixed $value): bool {
+		return is_string($value) === true
+			&& (str_starts_with(haystack: $value, needle: '@') === true || str_starts_with(haystack: $value, needle: '_') === true);
+	}//end isReservedValue()
+
+	/**
+	 * The identifier a value names: the last path segment of a URL, else the value itself.
+	 *
+	 * @param mixed $value The value at the key.
+	 *
+	 * @return mixed The identifier.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function identifierOf(mixed $value): mixed {
+		if (filter_var($value, FILTER_VALIDATE_URL) === false) {
+			return $value;
+		}
+
+		$pathExploded = explode('/', parse_url($value, PHP_URL_PATH));
+
+		return end($pathExploded);
+	}//end identifierOf()
 
 
 	/**
@@ -3890,17 +4219,11 @@ class RenderObject {
 			return [];
 		}
 
-		if ($this->relationTypes === null) {
-			$this->relationTypes = new RelationTypeResolver();
-		}
-
-		if ($this->linkExposure === null) {
-			$this->linkExposure = new LinkExposure();
-		}
+		$this->relationTypes ??= new RelationTypeResolver();
 
 		$exposures = [];
 		foreach ($this->relationTypes->descriptors(schema: $schema) as $property => $descriptor) {
-			if ($this->linkExposure->declaresExposure(relationType: $descriptor) === true) {
+			if ($this->exposureRules()->declaresExposure(relationType: $descriptor) === true) {
 				$exposures[(string)$property] = $descriptor;
 			}
 		}
@@ -3909,43 +4232,74 @@ class RenderObject {
 	}//end exposuresFor()
 
 	/**
+	 * The link exposure rules.
+	 *
+	 * @return LinkExposure
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function exposureRules(): LinkExposure {
+		$this->linkExposure ??= new LinkExposure();
+
+		return $this->linkExposure;
+	}//end exposureRules()
+
+	/**
 	 * Narrow one extended far record to what its link declares it exposes.
 	 *
 	 * 🔑 THERE IS NO SECOND PERMISSION EVALUATOR HERE, and that is the design
-	 * (D-4). The readable set is whatever survived `renderEntity()`, which has
+	 * (D-4). The record reached this point through the read check of the extend,
+	 * and the readable set is whatever survived `renderEntity()`, which has
 	 * already run the far schema's own property rules through
 	 * `PropertyRbacHandler`. This takes that answer as its argument and
-	 * intersects the declared set with it, so a link can carry a reader to a
-	 * record they could not otherwise open and can never show them a field
-	 * their own rules withhold.
+	 * intersects the declared set with it, so a link never shows more than the
+	 * reader may read on the far record.
 	 *
-	 * 🔴 `@self` AND `id` ARE NOT PROPERTIES AND ARE NEVER WITHHELD. They are
-	 * the render envelope: marking `id` withheld would break every client that
-	 * follows the link it was handed, and it would say "you may not see this
-	 * record's identity" about a record the link exists to point at. The
-	 * exposure decides which FIELDS travel, not whether the link is there.
+	 * `id` is the render envelope and is never withheld. `@self` keeps what
+	 * {@see LinkExposure::envelope()} leaves of it.
 	 *
 	 * @param array<string, mixed>      $rendered   The far record as renderEntity answered it.
 	 * @param array<string, mixed>|null $descriptor The relation descriptor, or null when the link declares none.
 	 *
 	 * @return array<string, mixed> The projection.
 	 *
-	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/row-field-level-security/spec.md
 	 */
 	private function applyLinkExposure(array $rendered, ?array $descriptor): array {
 		if ($descriptor === null) {
 			return $rendered;
 		}
 
-		if ($this->linkExposure === null) {
-			$this->linkExposure = new LinkExposure();
+		[$envelope, $body] = self::splitEnvelope(rendered: $rendered);
+
+		$projected = $this->exposureRules()->project(
+			farObject: $body,
+			relationType: $descriptor,
+			readable: array_map('strval', array_keys($body))
+		);
+
+		if (is_array($envelope['@self'] ?? null) === true) {
+			$envelope['@self'] = $this->exposureRules()->envelope(self: $envelope['@self'], shown: $projected);
 		}
 
+		return array_merge($projected, $envelope);
+	}//end applyLinkExposure()
+
+	/**
+	 * Split a rendered record into its envelope (`id` and `@` keys) and its body.
+	 *
+	 * @param array<string, mixed> $rendered The rendered record.
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The envelope and the body.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/row-field-level-security/spec.md
+	 */
+	private static function splitEnvelope(array $rendered): array {
 		$envelope = [];
 		$body = [];
 		foreach ($rendered as $property => $value) {
 			$property = (string)$property;
-			if ($property === '@self' || $property === 'id' || str_starts_with($property, '@') === true) {
+			if ($property === 'id' || str_starts_with($property, '@') === true) {
 				$envelope[$property] = $value;
 				continue;
 			}
@@ -3953,14 +4307,8 @@ class RenderObject {
 			$body[$property] = $value;
 		}
 
-		$projected = $this->linkExposure->project(
-			farObject: $body,
-			relationType: $descriptor,
-			readable: array_map('strval', array_keys($body))
-		);
-
-		return array_merge($projected, $envelope);
-	}//end applyLinkExposure()
+		return [$envelope, $body];
+	}//end splitEnvelope()
 
 	/**
 	 * Extends an object with additional data based on the extension configuration
@@ -3978,12 +4326,10 @@ class RenderObject {
 
 		// Add register and schema context to @self if requested.
 		if (in_array('@self.register', $_extend) === true || in_array('@self.schema', $_extend) === true) {
-			$self = $objectData['@self'] ?? [];
-			foreach ($this->extendedSelf(entity: $entity, extend: $_extend) as $key => $value) {
-				$self[$key] = $value;
-			}
-
-			$objectData['@self'] = $self;
+			$objectData['@self'] = array_replace(
+				($objectData['@self'] ?? []),
+				$this->extendedSelf(entity: $entity, extend: $_extend)
+			);
 		}
 
 		// Object-source relations first: a property whose `$ref` targets a
@@ -3992,37 +4338,65 @@ class RenderObject {
 		// looked up against native object storage and can match an unrelated
 		// object entirely. Resolved keys are removed from $_extend so the
 		// generic path below never sees them.
-		[$objectData, $_extend] = $this->extendObjectSourceRefs(
-			entity: $entity,
-			_extend: $_extend,
-			objectData: $objectData,
-			depth: $context->depth,
-			visitedIds: ($context->visitedIds ?? [])
-		);
+		$run = self::sourceRefRun(entity: $entity, context: $context);
+		$run->objectData = $objectData;
+		$this->extendObjectSourceRefs(run: $run);
 
-		// **PERFORMANCE OPTIMIZATION**: Batch preload all UUIDs that will be extended.
-		// This collects all UUIDs from the properties that will be extended and loads
-		// them in a SINGLE database query, instead of one query per UUID.
-		// PERF-8: during a full page render renderEntities() has already batch-preloaded
-		// every extend UUID for the whole page into $objectsCache, so re-collecting and
-		// re-preloading per row is wasted CPU. Skip it at depth 0 while a page render is
-		// active; nested (depth > 0) extends still preload their own children.
-		if (($this->pageRenderActive === true && $context->depth === 0) === false) {
-			$this->preloadExtendTargets(
-				entity: $entity,
-				uuids: $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend)
-			);
-		}
+		$this->preloadOwnExtendTargets(run: $run);
 
 		return $this->handleExtendDot(
-			data: $objectData,
-			_extend: $_extend,
+			data: $run->objectData,
+			_extend: $run->extend,
 			depth: $context->depth,
-			allFlag: in_array('all', $_extend, true),
+			allFlag: in_array('all', $run->extend, true),
 			visitedIds: $context->visitedIds,
 			exposures: $this->exposuresFor(schema: $this->getSchema(id: $entity->getSchema()))
 		);
 	}//end extendObject()
+
+	/**
+	 * The object-source pass for an entity's extend list.
+	 *
+	 * @param ObjectEntity  $entity  The entity being extended.
+	 * @param RenderContext $context The render options.
+	 *
+	 * @return SourceRefRun The pass, without the object data.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private static function sourceRefRun(ObjectEntity $entity, RenderContext $context): SourceRefRun {
+		$run = new SourceRefRun();
+		$run->entity = $entity;
+		$run->extend = $context->extend;
+		$run->depth = $context->depth;
+		$run->visitedIds = ($context->visitedIds ?? []);
+
+		return $run;
+	}//end sourceRefRun()
+
+	/**
+	 * Batch preload all UUIDs the extend will resolve, in a SINGLE database query.
+	 *
+	 * During a full page render renderEntities() has already batch-preloaded every
+	 * extend UUID for the whole page into $objectsCache, so depth 0 skips it while a
+	 * page render is active; nested (depth > 0) extends still preload their own children.
+	 *
+	 * @param SourceRefRun $run The finished object-source pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function preloadOwnExtendTargets(SourceRefRun $run): void {
+		if ($this->pageRenderActive === true && $run->depth === 0) {
+			return;
+		}
+
+		$this->preloadExtendTargets(
+			entity: $run->entity,
+			uuids: $this->collectUuidsForExtend(objectData: $run->objectData, extend: $run->extend)
+		);
+	}//end preloadOwnExtendTargets()
 
 	/**
 	 * The register and schema of an entity that its extend list asks to put on @self.
@@ -4072,11 +4446,7 @@ class RenderObject {
 			identifiers: $uuids,
 			registerId: $this->registerIdOf(entity: $entity)
 		);
-		// Add preloaded objects to local cache for immediate access.
-		foreach ($preloadedObjects as $object) {
-			$this->objectsCache[$object->getUuid()] = $object;
-			$this->objectsCache[$object->getId()] = $object;
-		}
+		$this->cacheExtendTargets(objects: $preloadedObjects);
 
 		$this->logger->debug(
 			message: '[RenderObject] Batch preloaded objects for extend',
@@ -4113,21 +4483,19 @@ class RenderObject {
 	 * @return int|null The shared register id.
 	 */
 	private function sharedRegisterIdOf(array $entities): ?int {
-		$shared = null;
+		$registerIds = [];
 		foreach ($entities as $entity) {
-			if ($entity instanceof ObjectEntity === false) {
-				continue;
+			if ($entity instanceof ObjectEntity === true) {
+				$registerIds[] = $this->registerIdOf(entity: $entity);
 			}
-
-			$registerId = $this->registerIdOf(entity: $entity);
-			if ($registerId === null || ($shared !== null && $shared !== $registerId)) {
-				return null;
-			}
-
-			$shared = $registerId;
 		}
 
-		return $shared;
+		$distinct = array_values(array_unique($registerIds));
+		if (count($distinct) !== 1) {
+			return null;
+		}
+
+		return $distinct[0];
 	}//end sharedRegisterIdOf()
 
 	/**
@@ -4144,48 +4512,42 @@ class RenderObject {
 	 * Explicit extend keys only: `_extend=all` does not traverse object-source
 	 * references (their raw keys are preserved un-expanded).
 	 *
-	 * @param ObjectEntity $entity The entity being rendered.
-	 * @param array<int, string> $_extend The requested extends.
-	 * @param array<string, mixed> $objectData The object data (mutated copy).
-	 * @param int $depth The current render depth.
-	 * @param array<int, string> $visitedIds Circular-reference guard.
+	 * @param SourceRefRun $run The pass over an entity; resolved references land in its data, their keys leave its extends.
 	 *
-	 * @return array{0: array<string, mixed>, 1: array<int, string>} [objectData, remaining extends].
+	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function extendObjectSourceRefs(
-		ObjectEntity $entity,
-		array $_extend,
-		array $objectData,
-		int $depth,
-		array $visitedIds,
-	): array {
-		if ($this->objectSourceRegistry === null || $_extend === []) {
-			return [$objectData, $_extend];
+	private function extendObjectSourceRefs(SourceRefRun $run): void {
+		if ($this->objectSourceRegistry === null || $run->extend === []) {
+			return;
 		}
 
-		$schema = $this->getSchema(id: $entity->getSchema());
-		if ($schema === null) {
-			return [$objectData, $_extend];
-		}
-
-		$run = new SourceRefRun();
-		$run->entity = $entity;
-		$run->extend = $_extend;
-		$run->objectData = $objectData;
-		$run->depth = $depth;
-		$run->visitedIds = $visitedIds;
-		foreach (($schema->getProperties() ?? []) as $name => $definition) {
-			if (is_array($definition) === true && in_array($name, $run->extend, true) === true
-				&& $this->sourceRefTarget(run: $run, definition: $definition) === true
-			) {
+		$schema = $this->getSchema(id: $run->entity->getSchema());
+		foreach (($schema?->getProperties() ?? []) as $name => $definition) {
+			if ($this->isSourceRefProperty(run: $run, property: [$name => $definition]) === true) {
 				$this->resolveSourceRefProperty(run: $run, name: $name);
 			}
 		}
-
-		return [$run->objectData, $run->extend];
 	}//end extendObjectSourceRefs()
+
+	/**
+	 * Whether an extended property references an enabled object source.
+	 *
+	 * @param SourceRefRun $run      The pass; receives the target, provider, config and register.
+	 * @param array        $property The property definition, keyed by the property name.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function isSourceRefProperty(SourceRefRun $run, array $property): bool {
+		$definition = reset($property);
+
+		return is_array($definition) === true
+			&& in_array(key($property), $run->extend, true) === true
+			&& $this->sourceRefTarget(run: $run, definition: $definition) === true;
+	}//end isSourceRefProperty()
 
 	/**
 	 * Find the enabled object-source provider a property's `$ref` points at, and the entity's register.
@@ -4202,28 +4564,38 @@ class RenderObject {
 	 */
 	private function sourceRefTarget(SourceRefRun $run, array $definition): bool {
 		$ref = ($definition['$ref'] ?? ($definition['items']['$ref'] ?? null));
-		if (is_int($ref) === false && (is_string($ref) === false || $ref === '')) {
+		if (self::isSchemaRef(ref: $ref) === false) {
 			return false;
 		}
 
 		$run->target = $this->getSchema(id: $ref);
 		$objectSource = $run->target?->getObjectSource();
-		if ($run->target === null || $objectSource === null) {
+		if ($objectSource === null) {
 			return false;
 		}
 
 		$run->provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
-		if ($run->provider === null || $run->provider->isEnabled() === false) {
+		if ($run->provider?->isEnabled() !== true) {
 			return false;
 		}
 
-		if ($run->register === null) {
-			$run->register = $this->getRegister(id: $run->entity->getRegister());
-		}
-
+		$run->register ??= $this->getRegister(id: $run->entity->getRegister());
 		$run->config = ($objectSource['config'] ?? []);
 		return $run->register !== null;
 	}//end sourceRefTarget()
+
+	/**
+	 * Whether a `$ref` value can name a schema: an integer or a non-empty string.
+	 *
+	 * @param mixed $ref The `$ref` value.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private static function isSchemaRef(mixed $ref): bool {
+		return is_int($ref) === true || (is_string($ref) === true && $ref !== '');
+	}//end isSchemaRef()
 
 	/**
 	 * Resolve one property's raw external keys through its provider, and take the property off the extend list.
@@ -4313,606 +4685,116 @@ class RenderObject {
 		$dataDot = new Dot($objectData);
 
 		foreach ($extend as $key) {
-			// Skip special keys.
-			if (str_starts_with($key, '@') === true) {
-				continue;
-			}
-
 			// Get the base property name (before any dots for nested extends).
 			$baseProp = explode('.', $key)[0];
 
-			if ($dataDot->has($baseProp) === false) {
-				continue;
+			// Skip special keys.
+			if (str_starts_with($key, '@') === false && $dataDot->has($baseProp) === true) {
+				$uuids = array_merge($uuids, $this->uuidsIn(value: $dataDot->get($baseProp)));
 			}
-
-			$value = $dataDot->get($baseProp);
-
-			// Handle array of UUIDs.
-			if (is_array($value) === true) {
-				foreach ($value as $item) {
-					// Use regex-based UUID validation to support non-RFC 4122 compliant UUIDs
-					// (e.g., GEMMA ArchiMate UUIDs which have non-standard variant bits).
-					if (is_string($item) === true && $this->isUuidLike(value: $item) === true) {
-						$uuids[] = $item;
-					}
-				}
-
-				continue;
-			}
-
-			// Handle single UUID.
-			// Use regex-based UUID validation to support non-RFC 4122 compliant UUIDs.
-			if (is_string($value) === true && $this->isUuidLike(value: $value) === true) {
-				$uuids[] = $value;
-			}
-		}//end foreach
+		}
 
 		return array_unique($uuids);
 	}//end collectUuidsForExtend()
 
 	/**
-	 * Batch preload inverse relationships for all entities.
+	 * The UUIDs in a property value: a single one, or the ones in a list.
 	 *
-	 * This is a CRITICAL performance optimization that prevents N+1 queries when extending
-	 * inverse properties like 'contactpersonen'. Instead of searching all magic tables
-	 * for each entity, we:
-	 * 1. Identify which inverse properties are being extended
-	 * 2. Determine the target schema for each inverse property
-	 * 3. Do ONE batch query per target schema to find ALL referencing objects
-	 * 4. Cache the results for use during individual entity rendering
+	 * Validates with a regex to support non-RFC 4122 compliant UUIDs (e.g.,
+	 * GEMMA ArchiMate UUIDs which have non-standard variant bits).
 	 *
-	 * @param array $entities Array of ObjectEntity instances being rendered
-	 * @param array $extend The _extend parameter specifying which properties to extend
+	 * @param mixed $value The property value.
 	 *
-	 * @return void
+	 * @return array The UUIDs.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function preloadInverseRelationships(array $entities, array $extend): void {
-		if (empty($entities) === true || empty($extend) === true) {
-			return;
+	private function uuidsIn(mixed $value): array {
+		$candidates = [$value];
+		if (is_array($value) === true) {
+			$candidates = $value;
 		}
 
-		// Get the first entity to determine the schema (all entities should have the same schema).
-		$firstEntity = reset($entities);
-		if ($firstEntity instanceof \OCA\OpenRegister\Db\ObjectEntity === false) {
-			return;
-		}
-
-		$schema = $this->getSchema(id: $firstEntity->getSchema());
-		if ($schema === null) {
-			return;
-		}
-
-		// Get properties that have inversedBy configurations.
-		$inversedProperties = $this->getInversedProperties(schema: $schema);
-		if (empty($inversedProperties) === true) {
-			return;
-		}
-
-		// Filter to only inverse properties that are being extended.
-		$inversePropsExtend = $this->filterExtendedInverseProperties(
-			inversedProperties: $inversedProperties,
-			extend: $extend
+		return array_values(
+			array_filter($candidates, fn ($item) => is_string($item) === true && $this->isUuidLike(value: $item) === true)
 		);
-		if (empty($inversePropsExtend) === true) {
-			return;
-		}
+	}//end uuidsIn()
 
-		// Collect all entity UUIDs.
-		$entityUuids = $this->collectEntityUuids(entities: $entities);
-		if (empty($entityUuids) === true) {
-			return;
-		}
+	/**
+	 * The inverse relation batch loader.
+	 *
+	 * @return InverseRelationPreload
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function inversePreload(): InverseRelationPreload {
+		$this->inversePreload ??= new InverseRelationPreload(support: $this->inverseSupport());
 
-		$this->logger->debug(
-			message: '[RenderObject] [INVERSE_PRELOAD] Starting batch inverse preload',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'entityCount' => count($entityUuids),
-				'inverseProperties' => array_keys($inversePropsExtend),
-			]
+		return $this->inversePreload;
+	}//end inversePreload()
+
+	/**
+	 * The inverse property filler.
+	 *
+	 * @return InverseRelationRender
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function inverseRelations(): InverseRelationRender {
+		$this->inverseRender ??= new InverseRelationRender(
+			support: $this->inverseSupport(),
+			preload: $this->inversePreload()
 		);
 
-		// For each inverse property, determine target schema and batch-load referencing objects.
-		foreach ($inversePropsExtend as $propName => $propConfig) {
-			$this->preloadSingleInverseProperty(
-				propName: $propName,
-				propConfig: $propConfig,
-				entityUuids: $entityUuids,
-				firstEntity: $firstEntity
-			);
-		}//end foreach
-	}//end preloadInverseRelationships()
+		return $this->inverseRender;
+	}//end inverseRelations()
 
 	/**
-	 * Filter inversed properties to only those being extended.
+	 * The lookups inverse relation rendering takes from this renderer.
 	 *
-	 * @param array $inversedProperties All inversed properties from the schema
-	 * @param array $extend The _extend parameter specifying which properties to extend
-	 *
-	 * @return array Filtered array of inverse properties that are being extended
+	 * @return InverseRenderSupport
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function filterExtendedInverseProperties(array $inversedProperties, array $extend): array {
-		$inversePropsExtend = [];
-		foreach ($inversedProperties as $propName => $propConfig) {
-			if (in_array($propName, $extend, true) === true || in_array('all', $extend, true) === true) {
-				$inversePropsExtend[$propName] = $propConfig;
-			}
+	private function inverseSupport(): InverseRenderSupport {
+		if ($this->inverseSupport !== null) {
+			return $this->inverseSupport;
 		}
 
-		return $inversePropsExtend;
-	}//end filterExtendedInverseProperties()
-
-	/**
-	 * Collect UUIDs from an array of entities.
-	 *
-	 * @param array $entities Array of ObjectEntity instances
-	 *
-	 * @return array Array of UUID strings
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function collectEntityUuids(array $entities): array {
-		$entityUuids = [];
-		foreach ($entities as $entity) {
-			if ($entity instanceof \OCA\OpenRegister\Db\ObjectEntity === true && $entity->getUuid() !== null) {
-				$entityUuids[] = $entity->getUuid();
-			}
-		}
-
-		return $entityUuids;
-	}//end collectEntityUuids()
-
-	/**
-	 * Extract inverse configuration (target schema ref and inversedBy fields) from a property config.
-	 *
-	 * Returns null if the configuration is incomplete (missing $ref or inversedBy).
-	 *
-	 * @param array $propConfig The property configuration array
-	 *
-	 * @return array|null Array with keys 'targetSchemaRef' and 'inversedByFields', or null if invalid
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function extractInverseConfig(array $propConfig): ?array {
-		// Extract target schema reference.
-		$targetSchemaRef = $propConfig['items']['$ref'] ?? $propConfig['$ref'] ?? null;
-		$inversedByField = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
-
-		if ($targetSchemaRef === null || $inversedByField === null) {
-			return null;
-		}
-
-		// Normalize inversedBy to an array to support multi-field inverse relations.
-		// Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
-		$inversedByFields = [$inversedByField];
-		if (is_array($inversedByField) === true) {
-			$inversedByFields = $inversedByField;
-		}
-
-		return [
-			'targetSchemaRef' => $targetSchemaRef,
-			'inversedByFields' => $inversedByFields,
-		];
-	}//end extractInverseConfig()
-
-	/**
-	 * Preload inverse objects for a single inverse property.
-	 *
-	 * Resolves the target schema, batch-loads all referencing objects, and populates
-	 * the inverse relation cache for all given entity UUIDs.
-	 *
-	 * @param string $propName The inverse property name
-	 * @param array $propConfig The property configuration array
-	 * @param array $entityUuids Array of entity UUIDs to preload for
-	 * @param ObjectEntity $firstEntity The first entity (used to determine register)
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function preloadSingleInverseProperty(
-		string $propName,
-		array $propConfig,
-		array $entityUuids,
-		ObjectEntity $firstEntity,
-	): void {
-		// Extract and validate inverse configuration.
-		$inverseConfig = $this->extractInverseConfig(propConfig: $propConfig);
-		if ($inverseConfig === null) {
-			return;
-		}
-
-		$inversedByFields = $inverseConfig['inversedByFields'];
-
-		// Resolve schema reference to ID.
-		$targetSchemaId = $this->resolveSchemaReference(schemaRef: $inverseConfig['targetSchemaRef']);
-		if (empty($targetSchemaId) === true) {
-			return;
-		}
-
-		// Get the target schema to find its register.
-		$targetSchema = $this->getSchema(id: $targetSchemaId);
-		if ($targetSchema === null) {
-			return;
-		}
-
-		// Batch find all objects of the target schema that reference ANY of our entity UUIDs.
-		// This uses the _relations column with GIN index for efficiency.
-		try {
-			$referencingObjects = $this->batchLoadReferencingObjects(
-				entityUuids: $entityUuids,
-				targetSchemaId: $targetSchemaId,
-				registerId: (int)$firstEntity->getRegister(),
-				inversedByFields: $inversedByFields
-			);
-
-			// Pre-initialize cache entries for ALL entities with empty arrays.
-			// This prevents fallback to the slow per-entity findByRelation() path,
-			// which does expensive LIKE scans iterating all magic tables.
-			$this->initializeInverseCacheEntries(entityUuids: $entityUuids, propName: $propName);
-
-			// Index the results by which entity UUID they reference.
-			$this->indexReferencingObjects(
-				referencingObjects: $referencingObjects,
-				inversedByFields: $inversedByFields,
-				entityUuids: $entityUuids,
-				propName: $propName
-			);
-
-			$this->logger->debug(
-				message: '[RenderObject] [INVERSE_PRELOAD] Batch loaded inverse relationships',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $propName,
-					'targetSchema' => $targetSchemaId,
-					'foundObjects' => count($referencingObjects),
-				]
-			);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[RenderObject] [INVERSE_PRELOAD] Batch preload failed, falling back to per-entity lookup',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $propName,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-	}//end preloadSingleInverseProperty()
-
-	/**
-	 * Batch load objects from the target schema that reference any of the given UUIDs.
-	 *
-	 * Uses the MagicMapper's findByRelationBatchInSchema with GIN index for efficiency.
-	 *
-	 * @param array $entityUuids Array of entity UUIDs to search for references to
-	 * @param string $targetSchemaId The target schema ID to search within
-	 * @param int $registerId The register ID to search within
-	 * @param array $inversedByFields Array of field names that may hold the inverse reference
-	 *
-	 * @return array Array of ObjectEntity instances that reference the given UUIDs
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function batchLoadReferencingObjects(
-		array $entityUuids,
-		string $targetSchemaId,
-		int $registerId,
-		array $inversedByFields,
-	): array {
-		// Validate inputs before accessing \OC service container.
-		if (empty($entityUuids) === true || empty($inversedByFields) === true) {
-			return [];
-		}
-
-		$schemaIdInt = (int)$targetSchemaId;
-		if ($schemaIdInt <= 0 || $registerId <= 0) {
-			return [];
-		}
-
-		// Pass additional field names for multi-field inversedBy so the SQL also searches
-		// columns that may store references in {"value": "uuid"} format not in _relations.
-		$additionalFields = [];
-		if (count($inversedByFields) > 1) {
-			$additionalFields = array_slice($inversedByFields, 1);
-		}
-
-		return $this->objectEntityMapper->findByRelationBatchInSchema(
-			uuids: $entityUuids,
-			schemaId: $schemaIdInt,
-			registerId: $registerId,
-			fieldName: $inversedByFields[0],
-			additionalFieldNames: $additionalFields
-		);
-	}//end batchLoadReferencingObjects()
-
-	/**
-	 * Pre-initialize inverse relation cache entries for all entities with empty arrays.
-	 *
-	 * This prevents fallback to the slow per-entity findByRelation() path,
-	 * which does expensive LIKE scans iterating all magic tables.
-	 *
-	 * @param array $entityUuids Array of entity UUIDs
-	 * @param string $propName The inverse property name
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function initializeInverseCacheEntries(array $entityUuids, string $propName): void {
-		foreach ($entityUuids as $entityUuid) {
-			$cacheKey = $entityUuid . '_' . $propName;
-			if (isset($this->inverseRelationCache[$cacheKey]) === false) {
-				$this->inverseRelationCache[$cacheKey] = [];
-			}
-		}
-	}//end initializeInverseCacheEntries()
-
-	/**
-	 * Index referencing objects into the inverse relation cache by entity UUID.
-	 *
-	 * Checks all inversedBy fields (supports array of field names) and handles
-	 * object references with {"value": "uuid"} format as well as arrays of UUIDs.
-	 *
-	 * @param array $referencingObjects Array of ObjectEntity instances to index
-	 * @param array $inversedByFields Array of field names that may hold the inverse reference
-	 * @param array $entityUuids Array of entity UUIDs to match against
-	 * @param string $propName The inverse property name for cache key generation
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function indexReferencingObjects(
-		array $referencingObjects,
-		array $inversedByFields,
-		array $entityUuids,
-		string $propName,
-	): void {
-		foreach ($referencingObjects as $refObject) {
-			$refData = $refObject->getObject();
-
-			foreach ($inversedByFields as $field) {
-				$referencedUuids = $this->resolveReferencedUuids(refData: $refData, field: $field);
-
-				foreach ($referencedUuids as $uuid) {
-					if ($uuid !== null && in_array($uuid, $entityUuids, true) === true) {
-						$cacheKey = $uuid . '_' . $propName;
-						// Avoid duplicate entries when the same object matches multiple fields.
-						$existingUuids = array_map(
-							fn (ObjectEntity $obj) => $obj->getUuid(),
-							$this->inverseRelationCache[$cacheKey] ?? []
-						);
-						if (in_array($refObject->getUuid(), $existingUuids, true) === false) {
-							$this->inverseRelationCache[$cacheKey][] = $refObject;
-						}
-
-						// Also add to objects cache for extended rendering.
-						$this->objectsCache[$refObject->getUuid()] = $refObject;
+		$this->inverseSupport = new InverseRenderSupport(
+			mapper: $this->objectEntityMapper,
+			logger: $this->logger,
+			schemas: new InverseSchemaLookups(
+				find: fn (int|string $id): ?Schema => $this->getSchema(id: $id),
+				resolveId: fn (string $ref): string => $this->resolveSchemaReference(schemaRef: $ref)
+			),
+			objects: new InverseObjectHooks(
+				cache: new InverseRelationCache(
+					remember: function (ObjectEntity $object): void {
+						$this->objectsCache[$object->getUuid()] = $object;
 					}
-				}
-			}//end foreach
-		}//end foreach
-	}//end indexReferencingObjects()
-
-	/**
-	 * Resolve referenced UUIDs from a referencing object's data field.
-	 *
-	 * Handles multiple reference formats:
-	 * - Simple string UUID: "uuid-value"
-	 * - Object reference: {"value": "uuid-value"}
-	 * - Array of UUIDs: ["uuid1", "uuid2"]
-	 *
-	 * @param array $refData The referencing object's data array
-	 * @param string $field The field name to extract referenced UUIDs from
-	 *
-	 * @return array Array of UUID strings (may contain nulls which should be filtered by caller)
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function resolveReferencedUuids(array $refData, string $field): array {
-		$referencedUuid = $refData[$field] ?? null;
-
-		// Handle object references with {"value": "uuid"} format.
-		if (is_array($referencedUuid) === true && isset($referencedUuid['value']) === true) {
-			$referencedUuid = $referencedUuid['value'];
-		}
-
-		// Handle both single UUID and array of UUIDs.
-		if (is_array($referencedUuid) === true) {
-			return $referencedUuid;
-		}
-
-		return [$referencedUuid];
-	}//end resolveReferencedUuids()
-
-	/**
-	 * Gets the inversed properties from a schema
-	 *
-	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
-	 *
-	 * @param Schema $schema The schema to check for inversed properties
-	 *
-	 * @return array Array of property names that have inversedBy configurations
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function getInversedProperties(Schema $schema): array {
-		$properties = $schema->getProperties();
-
-		// Use array_filter to get properties with inversedBy configurations.
-		// TODO: Move writeBack, removeAfterWriteBack, and inversedBy
-		// from items property to configuration property.
-		$inversedProperties = array_filter(
-			$properties,
-			function (array $property): bool {
-				return (isset($property['inversedBy'])
-					&& empty($property['inversedBy']) === false)
-					|| (isset($property['items']['inversedBy'])
-					&& empty($property['items']['inversedBy']) === false);
-			}
+				),
+				render: fn (ObjectEntity $object): array => $this->renderRelated(object: $object),
+				rememberBehind: fn (array $objects) => $this->cacheReferencingObjects(objects: $objects),
+				readable: fn (array $objects): array => $this->readableInverseObjects(objects: $objects)
+			),
 		);
 
-		// Extract the property names and their inversedBy values.
-		return $inversedProperties;
-	}//end getInversedProperties()
+		return $this->inverseSupport;
+	}//end inverseSupport()
 
 	/**
-	 * Handles inversed properties for an object
+	 * Render a related object to its full data, as a regular _extend does.
 	 *
-	 * @param ObjectEntity $entity     The entity to process
-	 * @param array        $objectData The current object data
+	 * @param ObjectEntity $object The related object.
 	 *
-	 * @return array The updated object data with inversed properties
+	 * @return array The rendered data.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleInversedProperties(ObjectEntity $entity, array $objectData): array {
-		// Get the schema for this object.
-		$schema = $this->getSchema(id: $entity->getSchema());
-		if ($schema === null) {
-			return $objectData;
-		}
-
-		// Get properties that have inversedBy configurations.
-		$inversedProperties = $this->getInversedProperties(schema: $schema);
-		if (empty($inversedProperties) === true) {
-			return $objectData;
-		}
-
-		// Single-entity render (e.g. show()): the batch preload only runs on the
-		// list path (renderEntities), so the cache is cold here. Route this read
-		// through the SAME schema-targeted batched machinery the list path uses
-		// (preloadInverseRelationships → findByRelationBatchInSchema, GIN-indexed)
-		// instead of falling straight into the generic cross-table
-		// findByRelation() scan. ALL inverse properties are preloaded — not just
-		// the extended ones — because a single read has always resolved every
-		// inverse property once any one of them is extended; preloading a subset
-		// would silently empty the others (consumer-visible response shape).
-		$propertyNames = array_keys($inversedProperties);
-		if ($this->hasCachedInverse(entity: $entity, propertyNames: $propertyNames) === false) {
-			$this->preloadInverseRelationships(
-				entities: [$entity],
-				extend: $propertyNames
-			);
-		}
-
-		if ($this->hasCachedInverse(entity: $entity, propertyNames: $propertyNames) === true) {
-			return $this->handleInversedPropertiesFromCache(
-				entity: $entity,
-				objectData: $objectData,
-				inversedProperties: $inversedProperties
-			);
-		}
-
-		// Fallback: query for referencing objects (the slower cross-table path).
-		// Only reached when the batched preload could not populate the cache
-		// (e.g. unresolvable target schema reference or batch query failure).
-		$lookup = new InverseLookup();
-		$lookup->entity = $entity;
-		$lookup->inversedProperties = $inversedProperties;
-		$lookup->referencingObjects = $this->findInverseReferencingObjects(
-			entity: $entity,
-			inversedProperties: $inversedProperties
-		);
-		$this->cacheReferencingObjects(objects: $lookup->referencingObjects);
-
-		return $this->applyInverseLookup(lookup: $lookup, objectData: $objectData);
-	}//end handleInversedProperties()
-
-	/**
-	 * Whether the inverse relation cache holds an entry for any of the given properties of an entity.
-	 *
-	 * @param ObjectEntity $entity        The entity being rendered.
-	 * @param array        $propertyNames The inverse property names.
-	 *
-	 * @return bool True when at least one property is cached.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function hasCachedInverse(ObjectEntity $entity, array $propertyNames): bool {
-		$entityUuid = $entity->getUuid();
-		foreach ($propertyNames as $propName) {
-			if (isset($this->inverseRelationCache[$entityUuid . '_' . $propName]) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end hasCachedInverse()
-
-	/**
-	 * The objects that reference an entity, through _relations and through every extra inversedBy field.
-	 *
-	 * For multi-field inversedBy, columns are also searched directly, since
-	 * _relations may not contain UUIDs stored in object-format fields
-	 * (e.g., {"value": "uuid"}).
-	 *
-	 * @param ObjectEntity $entity             The entity being rendered.
-	 * @param array        $inversedProperties The inverse property configurations by name.
-	 *
-	 * @return ObjectEntity[] The referencing objects, deduplicated by UUID.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function findInverseReferencingObjects(ObjectEntity $entity, array $inversedProperties): array {
-		$referencingObjects = $this->objectEntityMapper->findByRelation($entity->getUuid());
-		foreach ($inversedProperties as $propConfig) {
-			$additionalResults = $this->findByExtraInverseFields(entity: $entity, propConfig: $propConfig);
-			// Merge results, deduplicating by UUID.
-			$existingUuids = array_map(fn (ObjectEntity $obj) => $obj->getUuid(), $referencingObjects);
-			foreach ($additionalResults as $obj) {
-				if (in_array($obj->getUuid(), $existingUuids, true) === false) {
-					$referencingObjects[] = $obj;
-					$existingUuids[] = $obj->getUuid();
-				}
-			}
-		}
-
-		return $referencingObjects;
-	}//end findInverseReferencingObjects()
-
-	/**
-	 * The objects that reference an entity through the second and later fields of a multi-field inversedBy.
-	 *
-	 * @param ObjectEntity $entity     The entity being rendered.
-	 * @param array        $propConfig One inverse property configuration.
-	 *
-	 * @return ObjectEntity[] The referencing objects, empty for a single-field inversedBy.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function findByExtraInverseFields(ObjectEntity $entity, array $propConfig): array {
-		$inversedByValue = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
-		if (is_array($inversedByValue) === false || count($inversedByValue) <= 1) {
-			return [];
-		}
-
-		$targetSchemaRef = $propConfig['items']['$ref'] ?? $propConfig['$ref'] ?? null;
-		if ($targetSchemaRef === null) {
-			return [];
-		}
-
-		$targetSchemaId = $this->resolveSchemaReference(schemaRef: $targetSchemaRef);
-		if (empty($targetSchemaId) === true) {
-			return [];
-		}
-
-		return $this->objectEntityMapper->findByRelationBatchInSchema(
-			uuids: [$entity->getUuid()],
-			schemaId: (int)$targetSchemaId,
-			registerId: (int)$entity->getRegister(),
-			fieldName: $inversedByValue[0],
-			additionalFieldNames: array_slice($inversedByValue, 1)
-		);
-	}//end findByExtraInverseFields()
+	private function renderRelated(ObjectEntity $object): array {
+		return $this->renderEntity(entity: $object, _extend: [], depth: 1, filter: [], fields: [], unset: [])->jsonSerialize();
+	}//end renderRelated()
 
 	/**
 	 * Put referencing objects with a UUID into the objects cache, ahead of what it already holds.
@@ -4935,248 +4817,6 @@ class RenderObject {
 	}//end cacheReferencingObjects()
 
 	/**
-	 * Fill every inverse property of the object data from the referencing objects of a lookup.
-	 *
-	 * For a property like 'deelnemers' with inversedBy='deelnames', the objects
-	 * that hold our UUID in THEIR 'deelnames' field land in OUR 'deelnemers'.
-	 *
-	 * @param InverseLookup $lookup     The entity, its inverse properties and its referencing objects.
-	 * @param array         $objectData The current object data.
-	 *
-	 * @return array The object data with its inverse properties filled.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function applyInverseLookup(InverseLookup $lookup, array $objectData): array {
-		foreach ($lookup->inversedProperties as $propertyName => $propertyConfig) {
-			$target = $this->inverseTarget(entity: $lookup->entity, propertyConfig: $propertyConfig);
-			if ($target === null) {
-				continue;
-			}
-
-			// Render each inversed object to its full data, as a regular _extend does.
-			$renderedObjects = array_map(
-				fn (ObjectEntity $object) => $this->renderEntity(
-					entity: $object,
-					_extend: [],
-					depth: 1,
-					filter: [],
-					fields: [],
-					unset: []
-				)->jsonSerialize(),
-				$this->matchingInverseObjects(lookup: $lookup, target: $target)
-			);
-
-			if ($target->isArray === true) {
-				$objectData[$propertyName] = $renderedObjects;
-				continue;
-			}
-
-			$objectData[$propertyName] = null;
-			if (empty($renderedObjects) === false) {
-				$objectData[$propertyName] = end($renderedObjects);
-			}
-		}//end foreach
-
-		return $objectData;
-	}//end applyInverseLookup()
-
-	/**
-	 * Where one inverse property looks: the fields that point back, the schema they live in, and its cardinality.
-	 *
-	 * @param ObjectEntity $entity         The entity being rendered.
-	 * @param array        $propertyConfig One inverse property configuration.
-	 *
-	 * @return InverseTarget|null The target, or null when the property has no inversedBy.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function inverseTarget(ObjectEntity $entity, array $propertyConfig): ?InverseTarget {
-		$target = new InverseTarget();
-		$inversedByProperty = null;
-		$targetSchema = null;
-
-		if (($propertyConfig['type'] ?? null) !== null
-			&& ($propertyConfig['type'] === 'array') === true
-			&& (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true
-		) {
-			$inversedByProperty = $propertyConfig['items']['inversedBy'];
-			$targetSchema = $propertyConfig['items']['$ref'] ?? null;
-			$target->isArray = true;
-		} elseif (($propertyConfig['inversedBy'] ?? null) !== null) {
-			// A direct object property with inversedBy.
-			$inversedByProperty = $propertyConfig['inversedBy'];
-			$targetSchema = $propertyConfig['$ref'] ?? null;
-
-			// Fallback for misconfigured arrays.
-			if ($propertyConfig['type'] === 'array') {
-				$target->isArray = true;
-			}
-		}
-
-		if ($inversedByProperty === null) {
-			return null;
-		}
-
-		// Normalize inversedBy to an array to support multi-field inverse relations.
-		$target->fields = [$inversedByProperty];
-		if (is_array($inversedByProperty) === true) {
-			$target->fields = $inversedByProperty;
-		}
-
-		// Use the current schema if no target is specified.
-		$target->schemaId = $entity->getSchema();
-		if ($targetSchema !== null) {
-			$target->schemaId = $this->resolveSchemaReference(schemaRef: $targetSchema);
-		}
-
-		return $target;
-	}//end inverseTarget()
-
-	/**
-	 * The referencing objects that hold the entity's UUID in ANY of the target's fields and live in its schema.
-	 *
-	 * Supports multiple field names, for cases like koppelingen where the
-	 * entity can appear as either moduleA or moduleB.
-	 *
-	 * @param InverseLookup $lookup The entity and its referencing objects.
-	 * @param InverseTarget $target The fields and schema to match.
-	 *
-	 * @return ObjectEntity[] The matching objects, reindexed.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function matchingInverseObjects(InverseLookup $lookup, InverseTarget $target): array {
-		$entityUuid = $lookup->entity->getUuid();
-		return array_values(
-			array_filter(
-				$lookup->referencingObjects,
-				function (ObjectEntity $object) use ($target, $entityUuid) {
-					$data = $object->getObject();
-					foreach ($target->fields as $fieldToCheck) {
-						if (isset($data[$fieldToCheck]) === true
-							&& self::referencePointsAt(referenceValue: $data[$fieldToCheck], uuid: $entityUuid) === true
-							&& $object->getSchema() === $target->schemaId
-						) {
-							return true;
-						}
-					}
-
-					return false;
-				}
-			)
-		);
-	}//end matchingInverseObjects()
-
-	/**
-	 * Whether a stored reference value points at a UUID.
-	 *
-	 * Handles object references in {"value": "uuid"} format, arrays of
-	 * references, and single values that end in the UUID (such as a URL).
-	 *
-	 * @param mixed       $referenceValue The stored reference value.
-	 * @param string|null $uuid           The UUID to look for.
-	 *
-	 * @return bool True when the value references the UUID.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function referencePointsAt(mixed $referenceValue, ?string $uuid): bool {
-		if (is_array($referenceValue) === true && isset($referenceValue['value']) === true) {
-			$referenceValue = $referenceValue['value'];
-		}
-
-		if (is_array($referenceValue) === true) {
-			return in_array($uuid, $referenceValue, true);
-		}
-
-		return str_ends_with(haystack: $referenceValue, needle: (string)$uuid);
-	}//end referencePointsAt()
-
-	/**
-	 * Handle inversed properties using the preloaded cache.
-	 *
-	 * This is the FAST path that uses batch-preloaded inverse relationships
-	 * instead of querying for each entity individually.
-	 *
-	 * @param ObjectEntity $entity The entity to process
-	 * @param array $objectData The current object data
-	 * @param array $inversedProperties The inversed property configurations
-	 *
-	 * @return array The updated object data with inversed properties populated
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function handleInversedPropertiesFromCache(
-		ObjectEntity $entity,
-		array $objectData,
-		array $inversedProperties,
-	): array {
-		$entityUuid = $entity->getUuid();
-
-		foreach ($inversedProperties as $propertyName => $propertyConfig) {
-			// Extract configuration.
-			$isArray = false;
-
-			if (($propertyConfig['type'] ?? null) !== null
-				&& ($propertyConfig['type'] === 'array') === true
-				&& (($propertyConfig['items']['inversedBy'] ?? null) !== null) === true
-			) {
-				$isArray = true;
-			} elseif (($propertyConfig['inversedBy'] ?? null) !== null) {
-				if ($propertyConfig['type'] === 'array') {
-					$isArray = true;
-				}
-			}
-
-			// Skip properties without inversedBy configuration.
-			$hasItemsInverse = ($propertyConfig['type'] ?? null) === 'array'
-				&& ($propertyConfig['items']['inversedBy'] ?? null) !== null;
-			$hasDirectInverse = ($propertyConfig['inversedBy'] ?? null) !== null;
-			if ($hasItemsInverse === false && $hasDirectInverse === false) {
-				continue;
-			}
-
-			// Always use $propertyName as the target property to populate.
-			$targetProperty = $propertyName;
-
-			// Get cached objects for this entity+property combination.
-			$cacheKey = $entityUuid . '_' . $propertyName;
-			$cachedObjects = $this->inverseRelationCache[$cacheKey] ?? [];
-
-			// Render each cached object to get full object data (not just UUIDs).
-			// This makes inversedBy behave like regular _extend - returning full objects.
-			$renderedObjects = array_map(
-				function (ObjectEntity $object) {
-					return $this->renderEntity(
-						entity: $object,
-						_extend: [],
-						depth: 1,
-						filter: [],
-						fields: [],
-						unset: []
-					)->jsonSerialize();
-				},
-				$cachedObjects
-			);
-
-			// Set the target property value with full rendered objects.
-			if ($isArray === true) {
-				$objectData[$targetProperty] = $renderedObjects;
-			}
-
-			if ($isArray === false) {
-				$objectData[$targetProperty] = null;
-				if (empty($renderedObjects) === false) {
-					$objectData[$targetProperty] = end($renderedObjects);
-				}
-			}
-		}//end foreach
-
-		return $objectData;
-	}//end handleInversedPropertiesFromCache()
-
-	/**
 	 * Resolve schema reference to actual schema ID
 	 *
 	 * @param string $schemaRef The schema reference (ID, UUID, path, or slug)
@@ -5194,48 +4834,87 @@ class RenderObject {
 			return $cleanSchemaRef;
 		}
 
-		// If it's a UUID, try to find the schema by UUID.
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef) === true) {
-			try {
-				$schema = $this->schemaMapper->find($cleanSchemaRef);
-				return (string)$schema->getId();
-			} catch (\Exception $e) {
-				// If not found by UUID, continue with other methods.
-			}
+		// If all else fails, try to use the reference as-is.
+		return ($this->schemaIdByUuid(reference: $cleanSchemaRef)
+			?? $this->schemaIdByPath(reference: $cleanSchemaRef)
+			?? $this->schemaIdBySlug(slug: $cleanSchemaRef)
+			?? $cleanSchemaRef);
+	}//end resolveSchemaReference()
+
+	/**
+	 * The id of the schema a UUID names.
+	 *
+	 * @param string $reference The schema reference.
+	 *
+	 * @return string|null The id, or null when the reference is no UUID or no schema answers to it.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function schemaIdByUuid(string $reference): ?string {
+		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $reference) !== 1) {
+			return null;
 		}
 
-		// Handle JSON Schema path references (e.g., "#/components/schemas/organisatie").
-		if (str_contains($cleanSchemaRef, '/') === true) {
-			$lastSegment = basename($cleanSchemaRef);
-			// Remove any file extension or fragment.
-			$lastSegment = preg_replace('/\.[^.]*$/', '', $lastSegment);
-			$lastSegment = preg_replace('/#.*$/', '', $lastSegment);
+		try {
+			return (string)$this->schemaMapper->find($reference)->getId();
+		} catch (\Exception $e) {
+			return null;
+		}
+	}//end schemaIdByUuid()
 
-			// Try to find schema by slug (case-insensitive).
-			// Bypass RBAC and multi-tenancy since this is an internal schema resolution.
-			try {
-				$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
-				foreach ($schemas as $schema) {
-					if (strtolower($schema->getSlug() ?? '') === strtolower($lastSegment)) {
-						return (string)$schema->getId();
-					}
-				}
-			} catch (\Exception $e) {
-				// If not found by slug, continue.
-			}
+	/**
+	 * The id of the schema a JSON Schema path names by its last segment (e.g. "#/components/schemas/organisatie").
+	 *
+	 * Bypasses RBAC and multi-tenancy: this is an internal schema resolution.
+	 *
+	 * @param string $reference The schema reference.
+	 *
+	 * @return string|null The id, or null when the reference is no path or no slug matches, ignoring case.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function schemaIdByPath(string $reference): ?string {
+		if (str_contains($reference, '/') === false) {
+			return null;
 		}
 
-		// If it's a slug, try to find the schema by slug.
-		// Bypass RBAC and multi-tenancy since this is an internal schema resolution.
-		$schemas = $this->schemaMapper->findAll(filters: ['slug' => $cleanSchemaRef], _rbac: false, _multitenancy: false);
+		// Remove any file extension or fragment.
+		$lastSegment = preg_replace('/\.[^.]*$/', '', basename($reference));
+		$lastSegment = strtolower(preg_replace('/#.*$/', '', $lastSegment));
 
+		try {
+			$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+		} catch (\Exception $e) {
+			return null;
+		}
+
+		$matches = array_filter($schemas, static fn ($schema) => strtolower($schema->getSlug() ?? '') === $lastSegment);
+		if ($matches === []) {
+			return null;
+		}
+
+		return (string)reset($matches)->getId();
+	}//end schemaIdByPath()
+
+	/**
+	 * The id of the one schema with a slug.
+	 *
+	 * Bypasses RBAC and multi-tenancy: this is an internal schema resolution.
+	 *
+	 * @param string $slug The slug.
+	 *
+	 * @return string|null The id, or null unless exactly one schema has the slug.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function schemaIdBySlug(string $slug): ?string {
+		$schemas = $this->schemaMapper->findAll(filters: ['slug' => $slug], _rbac: false, _multitenancy: false);
 		if (count($schemas) === 1) {
 			return (string)array_shift($schemas)->getId();
 		}
 
-		// If all else fails, try to use the reference as-is.
-		return $cleanSchemaRef;
-	}//end resolveSchemaReference()
+		return null;
+	}//end schemaIdBySlug()
 
 	/**
 	 * Removes query parameters from a reference string.
@@ -5309,6 +4988,8 @@ class RenderObject {
 			]
 		);
 
+		$this->applyReadRule(rbac: $page->rbac, multitenancy: $page->multitenancy);
+
 		// Batch preload ALL related objects BEFORE rendering, to prevent N+1 queries.
 		if (empty($page->extend) === false && empty($entities) === false) {
 			$this->preloadExtendedRelations(entities: $entities, extend: $page->extend);
@@ -5380,7 +5061,7 @@ class RenderObject {
 
 		// Batch preload objects that REFERENCE our entities, so extending inverse
 		// properties like 'contactpersonen' does not query per row.
-		$this->preloadInverseRelationships(entities: $entities, extend: $extend);
+		$this->inversePreload()->preloadInverseRelationships(entities: $entities, extend: $extend);
 	}//end preloadExtendedRelations()
 
 	/**
@@ -5398,11 +5079,7 @@ class RenderObject {
 			identifiers: $uuids,
 			registerId: $this->sharedRegisterIdOf(entities: $entities)
 		);
-
-		foreach ($preloadedObjects as $object) {
-			$this->objectsCache[$object->getUuid()] = $object;
-			$this->objectsCache[$object->getId()] = $object;
-		}
+		$this->cacheExtendTargets(objects: $preloadedObjects);
 
 		$this->logger->debug(
 			message: '[RenderObject] Batch preloaded objects for renderEntities',
@@ -5435,6 +5112,20 @@ class RenderObject {
 			return;
 		}
 
+		$uuids = self::pageUuids(entities: $entities);
+		if (empty($uuids) === false) {
+			$this->batchFileIdsCache = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uuids));
+		}
+	}//end prefetchPageFileIds()
+
+	/**
+	 * The UUIDs of the object entities of a page.
+	 *
+	 * @param array<int|string, mixed> $entities The page.
+	 *
+	 * @return list<string>
+	 */
+	private static function pageUuids(array $entities): array {
 		$uuids = [];
 		foreach ($entities as $entity) {
 			if ($entity instanceof ObjectEntity === true && $entity->getUuid() !== null) {
@@ -5442,10 +5133,8 @@ class RenderObject {
 			}
 		}
 
-		if (empty($uuids) === false) {
-			$this->batchFileIdsCache = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uuids));
-		}
-	}//end prefetchPageFileIds()
+		return $uuids;
+	}//end pageUuids()
 
 	/**
 	 * Render every row of a page with warm caches, then drop the page's request-scoped caches.
@@ -5511,33 +5200,15 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function batchPreloadFileObjects(array $entities): void {
-		// 1) Collect all file ids referenced by file-typed properties across the page.
-		$allFileIds = [];
-		foreach ($entities as $entity) {
-			if ($entity instanceof ObjectEntity === true) {
-				$allFileIds += $this->referencedFileIds(entity: $entity);
-			}
-		}
-
-		if (empty($allFileIds) === true) {
+		$fileIds = $this->pageFileIds(entities: $entities);
+		if (empty($fileIds) === true) {
 			return;
 		}
 
-		$fileIds = array_values($allFileIds);
-
 		try {
-			// 2) Batch-load all files in one query.
-			$filesById = $this->fileMapper->getFilesByIds(fileIds: $fileIds);
-
-			// 3) and 4) Batch-load and cache the tags of every requested file.
-			$this->cacheFileTags(fileIds: $fileIds);
-
-			// 5) Populate the request-scoped file-object cache (null for missing files).
-			foreach ($fileIds as $fileId) {
-				$this->cacheFileObject(fileIdStr: (string)$fileId, record: ($filesById[(string)$fileId] ?? null));
-			}
+			$this->preloadFiles(fileIds: $fileIds);
 		} catch (Exception $e) {
-			// A prefetch failure must never break rendering — per-row paths will simply
+			// A prefetch failure must never break rendering: per-row paths will simply
 			// fall back to individual lookups (the pre-PERF-1 behaviour).
 			$this->logger->warning(
 				message: '[RenderObject] Batch file prefetch failed; falling back to per-row lookups',
@@ -5545,6 +5216,41 @@ class RenderObject {
 			);
 		}//end try
 	}//end batchPreloadFileObjects()
+
+	/**
+	 * The file IDs referenced by file properties across a page.
+	 *
+	 * @param array<int|string, mixed> $entities The page.
+	 *
+	 * @return list<int>
+	 */
+	private function pageFileIds(array $entities): array {
+		$fileIds = [];
+		foreach ($entities as $entity) {
+			if ($entity instanceof ObjectEntity === true) {
+				$fileIds += $this->referencedFileIds(entity: $entity);
+			}
+		}
+
+		return array_values($fileIds);
+	}//end pageFileIds()
+
+	/**
+	 * Load files and their tags in one query each, into the request-scoped caches.
+	 *
+	 * @param array<int, int> $fileIds The file IDs.
+	 *
+	 * @return void
+	 */
+	private function preloadFiles(array $fileIds): void {
+		$filesById = $this->fileMapper->getFilesByIds(fileIds: $fileIds);
+		$this->cacheFileTags(fileIds: $fileIds);
+
+		// Null for a missing file.
+		foreach ($fileIds as $fileId) {
+			$this->cacheFileObject(fileIdStr: (string)$fileId, record: ($filesById[(string)$fileId] ?? null));
+		}
+	}//end preloadFiles()
 
 	/**
 	 * The file ids an entity references through its file-typed properties, keyed by id.
@@ -5564,15 +5270,24 @@ class RenderObject {
 
 		$fileIds = [];
 		foreach (($schema->getProperties() ?? []) as $propertyName => $propertyConfig) {
-			if (is_array($propertyConfig) === true
-				&& $this->isFilePropertyConfig(propertyConfig: $propertyConfig) === true
-			) {
+			if ($this->isFileConfigValue(config: $propertyConfig) === true) {
 				$fileIds += self::fileIdsOfValue(propertyConfig: $propertyConfig, value: ($objectData[$propertyName] ?? null));
 			}
 		}
 
 		return $fileIds;
 	}//end referencedFileIds()
+
+	/**
+	 * Whether a schema property value is the configuration of a file property.
+	 *
+	 * @param mixed $config The value.
+	 *
+	 * @return bool
+	 */
+	private function isFileConfigValue(mixed $config): bool {
+		return is_array($config) === true && $this->isFilePropertyConfig(propertyConfig: $config) === true;
+	}//end isFileConfigValue()
 
 	/**
 	 * The numeric file ids in one file property's value, keyed by id.
@@ -5597,21 +5312,13 @@ class RenderObject {
 			return [];
 		}
 
-		$candidates = $value;
 		if (is_array($value) === false) {
-			$candidates = [$value];
+			$value = [$value];
 		}
 
-		$fileIds = [];
-		foreach ($candidates as $candidate) {
-			if (is_numeric($candidate) === true
-				|| (is_string($candidate) === true && ctype_digit($candidate) === true)
-			) {
-				$fileIds[(int)$candidate] = (int)$candidate;
-			}
-		}
-
-		return $fileIds;
+		$numeric = array_filter($value, static fn ($candidate): bool => is_numeric($candidate) === true);
+		$fileIds = array_map('intval', $numeric);
+		return array_combine($fileIds, $fileIds);
 	}//end fileIdsOfValue()
 
 	/**
@@ -5641,19 +5348,13 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function visibleTagNames(array $tagIdsPerFile): array {
-		$uniqueTagIds = [];
-		foreach ($tagIdsPerFile as $fileTagIds) {
-			foreach ($fileTagIds as $tagId) {
-				$uniqueTagIds[$tagId] = true;
-			}
-		}
-
+		$uniqueTagIds = array_keys(array_flip(array_merge(...array_values($tagIdsPerFile))));
 		if (empty($uniqueTagIds) === true) {
 			return [];
 		}
 
 		$tagNameMap = [];
-		foreach ($this->systemTagManager->getTagsByIds(tagIds: array_keys($uniqueTagIds)) as $tag) {
+		foreach ($this->systemTagManager->getTagsByIds(tagIds: $uniqueTagIds) as $tag) {
 			$name = $tag->getName();
 			if (str_starts_with($name, 'object:') === false) {
 				$tagNameMap[$tag->getId()] = $name;

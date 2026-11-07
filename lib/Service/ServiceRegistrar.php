@@ -28,7 +28,6 @@ use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -173,15 +172,6 @@ final class ServiceRegistrar {
 			}
 		);
 
-		// Office conversion (ODT and PDF) goes through Nextcloud's conversion
-		// API, so whichever office server registered a provider does the work:
-		// Collabora through richdocuments, or Euro-Office. PDF export, PDF
-		// reports and the Path B PDF anonymisation fallback all use it.
-		$context->registerServiceAlias(
-			\OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
-			\OCA\OpenRegister\Service\File\Office\ConversionManagerConverter::class
-		);
-
 		// Web Push hex-icon service (openregister-web-push-engine): needs an
 		// app-scoped IAppData for its rendered-PNG cache, which is not
 		// auto-wirable, so resolve it via IAppDataFactory here.
@@ -247,17 +237,6 @@ final class ServiceRegistrar {
 		$context->registerService(FolderManagementHandler::class, self::buildFolderManagementHandler(...));
 
 		$context->registerService(TaskService::class, self::buildTaskService(...));
-
-		$context->registerService(NoteService::class, self::buildNoteService(...));
-
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\TimeProvider::class,
-			function (ContainerInterface $container) {
-				return new IntegrationTimeProvider(
-					appConfig: $container->get('OCP\IAppConfig')
-				);
-			}
-		);
 	}//end registerObjectServices()
 
 	/**
@@ -391,7 +370,7 @@ final class ServiceRegistrar {
 				logger: $container->get('Psr\Log\LoggerInterface'),
 				auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
 				mountCache: $container->get('OCP\Files\Config\IUserMountCache'),
-				folderRecorder: $container->get(\OCA\OpenRegister\Db\RegisterFolderRecorder::class),
+				folderRecorder: $container->get(\OCA\OpenRegister\Files\Db\RegisterFolderRecorder::class),
 				fileService: null
 			);
 	}//end buildFolderManagementHandler()
@@ -424,24 +403,6 @@ final class ServiceRegistrar {
 				gate: $gate
 			);
 	}//end buildTaskService()
-
-	/**
-	 * Build the NoteService service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return NoteService
-	 */
-	private static function buildNoteService(ContainerInterface $container): NoteService {
-			return new NoteService(
-				commentsManager: $container->get('OCP\Comments\ICommentsManager'),
-				userSession: $container->get('OCP\IUserSession'),
-				userManager: $container->get('OCP\IUserManager'),
-				logger: $container->get('Psr\Log\LoggerInterface'),
-				visibility: $container->get(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface::class),
-				versions: $container->get(\OCA\OpenRegister\Service\NoteVersionService::class)
-			);
-	}//end buildNoteService()
 
 	/**
 	 * Build the SourceFetcherRegistry service.

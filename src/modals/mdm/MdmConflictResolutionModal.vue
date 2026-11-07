@@ -6,7 +6,7 @@
 	<NcDialog
 		:name="t('openregister', 'Resolve conflicts')"
 		size="large"
-		:canClose="!saving"
+		:noClose="saving"
 		@closing="$emit('close')">
 		<div class="conflictResolution">
 			<template v-if="conflicts.length === 0">

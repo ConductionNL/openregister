@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="t('openregister', 'Delete View')"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<p v-if="!success">
 			{{ t('openregister', 'Are you sure you want to permanently delete') }}
 			<b>{{ view?.name || t('openregister', 'Untitled View') }}</b

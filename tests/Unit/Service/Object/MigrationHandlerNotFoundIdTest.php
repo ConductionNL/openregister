@@ -16,7 +16,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
-use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use PHPUnit\Framework\TestCase;
@@ -31,8 +30,13 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\MigrationRun
  * @uses   \OCA\OpenRegister\Service\Object\MigrationSide
+ * @uses   \OCA\OpenRegister\Service\Object\MoveAddress
+ * @uses   \OCA\OpenRegister\Service\Object\MoveObject
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectMove
  */
 class MigrationHandlerNotFoundIdTest extends TestCase {
+
+	use BuildsMigrationHandler;
 
 	/**
 	 * An object requested by uuid and by its id as a string is migrated once and not reported missing.
@@ -113,20 +117,13 @@ class MigrationHandlerNotFoundIdTest extends TestCase {
 
 		$mapper = $this->createMock(originalClassName: MagicMapper::class);
 		$mapper->method('findMultiple')->willReturn([$object]);
+		$mapper->method('findInRegisterSchemaTable')->willReturn($object);
 		$mapper->method('update')->willReturnArgument(0);
 
 		$dataManip = $this->createMock(originalClassName: DataManipulationHandler::class);
 		$dataManip->method('mapObjectProperties')->willReturn(['title' => 'T']);
 
-		$handler = new MigrationHandler(
-			objectMapper: $mapper,
-			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
-			registerMapper: $this->createMock(originalClassName: RegisterMapper::class),
-			saveHandler: $this->createMock(originalClassName: SaveObject::class),
-			utilityHandler: $utility,
-			dataManipHandler: $dataManip,
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
-		);
+		$handler = $this->migrationHandler(mapper: $mapper, utility: $utility, dataManip: $dataManip);
 
 		return $handler->migrateObjects(
 			sourceRegister: '1',

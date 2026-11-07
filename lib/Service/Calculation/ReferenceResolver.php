@@ -341,13 +341,7 @@ class ReferenceResolver {
 	private function entityToPayload(ObjectEntity $entity): array {
 		$data = $entity->getObject();
 
-		$data['@self'] = [
-			'id' => $entity->getUuid(),
-			'uuid' => $entity->getUuid(),
-			'register' => $entity->getRegister(),
-			'schema' => $entity->getSchema(),
-			'owner' => $entity->getOwner(),
-		];
+		$data['@self'] = (new CalculationPayload())->identity(entity: $entity);
 
 		return $data;
 	}//end entityToPayload()

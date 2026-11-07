@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * Valid, invalid and failing pairs on the sequential search path.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
@@ -67,6 +68,9 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionPage
+ * @uses   \OCA\OpenRegister\Support\OrderParameter
  * @uses   \OCA\OpenRegister\Support\QueryLimit
  */
 class MagicMapperSequentialPairsGoldenTest extends TestCase {

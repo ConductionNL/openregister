@@ -79,8 +79,6 @@ class TmloServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new TmloService(
-			$this->registerMapper,
-			$this->schemaMapper,
 			$this->logger,
 			$this->createMock(MdtoXmlGenerator::class)
 		);

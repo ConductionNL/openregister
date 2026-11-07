@@ -119,7 +119,6 @@ class RetentionSweepTest extends TestCase {
 			$this->registerMapper,
 			$this->createMock(AuditTrailMapper::class),
 			$this->settingsHandler,
-			$this->createMock(IAppConfig::class),
 			$this->createMock(IUserSession::class),
 			$this->logger,
 			// The REAL scanner over the SAME mocks these tests program, not a
@@ -338,7 +337,7 @@ class RetentionSweepTest extends TestCase {
 	 */
 	public function testAFutureDisposalDateExcludes(): void {
 		$retention = $this->dueForDestruction();
-		$retention['archiefactiedatum'] = '2099-01-01';
+		$retention['archiefactiedatum'] = date('Y-m-d', strtotime('+10 years'));
 		$this->givenLegacyRow(id: 3, uuid: 'future-uuid', retention: $retention);
 
 		$this->assertSame([], $this->service->findEligibleForDestruction());

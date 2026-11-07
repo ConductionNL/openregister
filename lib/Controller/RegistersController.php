@@ -24,20 +24,19 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\RegisterDownloads;
+use OCA\OpenRegister\Controller\Support\RegisterGitHubPublisher;
 use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
+use OCA\OpenRegister\Controller\Support\RegisterStatistics;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
-use OCA\OpenRegister\Exception\ExportTooLargeException;
-use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
@@ -60,7 +59,6 @@ use OCP\DB\Exception as DBException;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -116,13 +114,6 @@ class RegistersController extends Controller {
 	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
-	 * Export service for handling data exports
-	 *
-	 * @var ObjectExporterInterface
-	 */
-	private readonly ObjectExporterInterface $exportService;
-
-	/**
 	 * Import service for handling data imports
 	 *
 	 * @var ObjectImporterInterface
@@ -144,25 +135,11 @@ class RegistersController extends Controller {
 	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
-	 * GitHub service for publishing to GitHub
-	 *
-	 * @var GitHubClientInterface
-	 */
-	private readonly GitHubClientInterface $githubService;
-
-	/**
 	 * The register service.
 	 *
 	 * @var RegisterService
 	 */
 	private readonly RegisterService $registerService;
-
-	/**
-	 * The object entity mapper.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * The logger.
@@ -207,6 +184,27 @@ class RegistersController extends Controller {
 	private readonly RegistersControllerServices $services;
 
 	/**
+	 * The exports and import templates this controller hands out.
+	 *
+	 * @var RegisterDownloads
+	 */
+	private readonly RegisterDownloads $downloads;
+
+	/**
+	 * The object counts this controller reports.
+	 *
+	 * @var RegisterStatistics
+	 */
+	private readonly RegisterStatistics $statistics;
+
+	/**
+	 * The publisher of a register's OpenAPI file.
+	 *
+	 * @var RegisterGitHubPublisher
+	 */
+	private readonly RegisterGitHubPublisher $gitHub;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for register operations.
@@ -232,8 +230,10 @@ class RegistersController extends Controller {
 		);
 		parent::__construct(appName: $appName, request: $request);
 		$this->services = $services;
+		$this->downloads = new RegisterDownloads(session: $session, services: $services);
+		$this->statistics = new RegisterStatistics(services: $services);
+		$this->gitHub = new RegisterGitHubPublisher(request: $request, session: $session, services: $services);
 		$this->registerService = $services->registers->registerService;
-		$this->objectEntityMapper = $services->mappers->objectEntityMapper;
 		$this->userSession = $session->userSession;
 		$this->session = $session;
 		$this->container = $services->integrations->container;
@@ -248,11 +248,9 @@ class RegistersController extends Controller {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
-		$this->exportService = $services->transfer->exportService;
 		$this->importService = $services->transfer->importService;
 		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->registerMapper = $services->mappers->registerMapper;
-		$this->githubService = $services->integrations->githubService;
 		$this->logger->debug(
 			message: '[RegistersController] Constructor completed.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -328,7 +326,7 @@ class RegistersController extends Controller {
 		if (in_array('schemas', $extend, true) === true
 			&& in_array('@self.stats', $extend, true) === true
 		) {
-			$statsByRegisterId = $this->schemaStatsByRegister(registers: $registers);
+			$statsByRegisterId = $this->statistics->schemaCounts(registers: $registers);
 		}
 
 		$registersArr = $this->services->registers->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
@@ -371,47 +369,6 @@ class RegistersController extends Controller {
 	}//end listPage()
 
 	/**
-	 * The object counts per schema of every register, keyed by register id.
-	 *
-	 * Every schema across every register is resolved in ONE query; schemaMapper->find()
-	 * per schema id took 1,231 round trips to render one list on an instance with 76
-	 * registers and 1,231 schemas. Orphan ids do not come back from the bulk read and
-	 * cannot contribute to stats.
-	 *
-	 * @param array<Register> $registers The registers in the list.
-	 *
-	 * @return array<int, array> The schema counts per register id.
-	 */
-	private function schemaStatsByRegister(array $registers): array {
-		$allSchemaIds = [];
-		foreach ($registers as $register) {
-			foreach (($register->getSchemas() ?? []) as $schemaId) {
-				$allSchemaIds[] = (int)$schemaId;
-			}
-		}
-
-		$schemasById = $this->schemaMapper->findMultipleOptimized(ids: array_values(array_unique($allSchemaIds)));
-
-		$statsByRegisterId = [];
-		foreach ($registers as $register) {
-			$expandedSchemas = [];
-			foreach (($register->getSchemas() ?? []) as $schemaId) {
-				$schema = ($schemasById[(int)$schemaId] ?? null);
-				if ($schema !== null) {
-					$expandedSchemas[] = $schema;
-				}
-			}
-
-			$statsByRegisterId[(int)$register->getId()] = $this->registerService->getSchemaObjectCounts(
-				registerId: (int)$register->getId(),
-				schemas: $expandedSchemas
-			);
-		}
-
-		return $statsByRegisterId;
-	}//end schemaStatsByRegister()
-
-	/**
 	 * Attach register-level statistics to serialized registers.
 	 *
 	 * They stay a controller concern because they depend on the object and audit-trail
@@ -428,7 +385,7 @@ class RegistersController extends Controller {
 	private function withRegisterStats(array $registers, ?array $statsByRegisterId): array {
 		foreach ($registers as &$register) {
 			$register['stats'] = [
-				'objects' => $this->registerObjectStats(
+				'objects' => $this->statistics->objectTotals(
 					registerId: (int)$register['id'],
 					schemaStats: ($statsByRegisterId[(int)$register['id']] ?? null)
 				),
@@ -440,68 +397,6 @@ class RegistersController extends Controller {
 		unset($register);
 		return $registers;
 	}//end withRegisterStats()
-
-	/**
-	 * Register-level object statistics, reused from the per-schema counts when we have them.
-	 *
-	 * A register's object stats are the sum of its schemas' object stats. When the caller
-	 * asked for `schemas` + `@self.stats`, index() already computed those per-schema
-	 * counts in one UNION per register — so sum them here rather than call
-	 * ObjectEntityMapper::getStatistics(), which recomputes the same numbers by walking
-	 * the whole register/schema-pair list and counting each table again (~4.7s of a ~7s
-	 * request on a 76-register / 1,231-schema instance).
-	 *
-	 * `total` is the LIVE object count (soft-deleted rows excluded), matching what
-	 * `total` has always meant on this endpoint; `deleted` carries the soft-deleted
-	 * count the per-schema UNION also returns. Summing the per-schema counts scopes the
-	 * total to the register's currently-linked schemas, which is exactly the set whose
-	 * per-schema breakdown is shown alongside it.
-	 *
-	 * When `$schemaStats` is null (the `@self.stats`-without-`schemas` caller has no
-	 * per-schema counts), fall back to the mapper so the numbers are still produced.
-	 *
-	 * @param int $registerId The register id.
-	 * @param array<int, array<string, int>>|null $schemaStats Per-schema stats already
-	 *                                                         computed for this register
-	 *                                                         (schemaId => count row), or null.
-	 *
-	 * @return array<string, int> The register-level object stats.
-	 *
-	 * @spec exclude performance: sums already-computed per-schema counts in lieu of a full recount
-	 */
-	private function registerObjectStats(int $registerId, ?array $schemaStats): array {
-		if ($schemaStats === null) {
-			return $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
-		}
-
-		$total = 0;
-		$deleted = 0;
-		$invalid = 0;
-		$locked = 0;
-		$size = 0;
-
-		foreach ($schemaStats as $stat) {
-			$schemaTotal = (int)($stat['total'] ?? 0);
-			$schemaDeleted = (int)($stat['deleted'] ?? 0);
-
-			// The UNION's `total` counts every row; the live total excludes the
-			// soft-deleted subset, so `total` here means the same "live objects" that
-			// getStatistics() reports.
-			$total += max(0, ($schemaTotal - $schemaDeleted));
-			$deleted += $schemaDeleted;
-			$invalid += (int)($stat['invalid'] ?? 0);
-			$locked += (int)($stat['locked'] ?? 0);
-			$size += (int)($stat['size'] ?? 0);
-		}
-
-		return [
-			'total' => $total,
-			'size' => $size,
-			'invalid' => $invalid,
-			'deleted' => $deleted,
-			'locked' => $locked,
-		];
-	}//end registerObjectStats()
 
 	/**
 	 * Retrieves a single register by ID
@@ -542,7 +437,7 @@ class RegistersController extends Controller {
 			// If '@self.stats' is requested, attach statistics to the register.
 			if (in_array('@self.stats', $extend, true) === true) {
 				$registerArr['stats'] = [
-					'objects' => $this->objectEntityMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
+					'objects' => $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
 					'logs' => $this->auditLogStats(registerId: (int)$registerArr['id']),
 					'files' => [ 'total' => 0, 'size' => 0 ],
 				];
@@ -904,7 +799,7 @@ class RegistersController extends Controller {
 	 * @return int Total object count.
 	 */
 	private function countRegisterObjects(int $registerId): int {
-		$stats = $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+		$stats = $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
 		return (int)$stats['total'];
 	}//end countRegisterObjects()
 
@@ -970,25 +865,12 @@ class RegistersController extends Controller {
 		try {
 			// Find the register first to validate it exists and get its ID.
 			$register = $this->registerService->find($id);
-			$registerId = $register->getId();
-
-			// Get the schemas associated with this register.
-			$schemas = $this->registerMapper->getSchemasByRegisterId($registerId);
-
-			// Convert schemas to array format for JSON response.
-			$schemasArray = array_map(fn ($schema) => $schema->jsonSerialize(), $schemas);
-
-			return new JSONResponse(
-				data: [
-					'results' => $schemasArray,
-					'total' => count($schemasArray),
-				]
-			);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// Return a 404 error if the register doesn't exist.
+			$schemas  = $this->registerMapper->getSchemasByRegisterId($register->getId());
+			$results  = array_map(fn ($schema) => $schema->jsonSerialize(), $schemas);
+			return new JSONResponse(data: ['results' => $results, 'total' => count($results)]);
+		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
 		} catch (Exception $e) {
-			// Return a 500 error for other exceptions.
 			return new JSONResponse(data: ['error' => 'Internal server error: ' . $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end schemas()
@@ -1008,57 +890,42 @@ class RegistersController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple format branches
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	public function export(int $id): JSONResponse|DataDownloadResponse {
 		try {
-			$format          = $this->request->getParam(key: 'format', default: 'configuration');
-			$includeObjParam = $this->request->getParam(key: 'includeObjects', default: false);
-			$includeObjects  = filter_var($includeObjParam, FILTER_VALIDATE_BOOLEAN);
-			$register        = $this->registerService->find($id);
-
-			switch ($format) {
-				case 'excel':
-					return $this->exportRegisterToExcel(register: $register);
-				case 'csv':
-				case 'pdf':
-					return $this->exportRegisterSchemaTable(register: $register, format: $format);
-				case 'configuration':
-				default:
-					return $this->exportRegisterConfiguration(register: $register, includeObjects: $includeObjects);
-			}
+			$format   = $this->request->getParam(key: 'format', default: 'configuration');
+			$register = $this->registerService->find($id);
+			return $this->exportAs(register: $register, format: $format);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => 'Failed to export register: ' . $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end export()
 
 	/**
-	 * A register's objects as an Excel download.
+	 * A register as a download in the asked format.
 	 *
 	 * @param Register $register The register.
+	 * @param mixed    $format   The format the request asks for.
 	 *
-	 * @return DataDownloadResponse The download.
+	 * @return JSONResponse|DataDownloadResponse The download, or the refusal.
+	 *
+	 * @throws Exception When the export fails; export() answers 400.
 	 */
-	private function exportRegisterToExcel(Register $register): DataDownloadResponse {
-		$spreadsheet = $this->exportService->exportToExcel(
-			register: $register,
-			schema: null,
-			filters: [],
-			currentUser: $this->userSession->getUser()
-		);
-		$writer   = new Xlsx($spreadsheet);
-		$slug     = $register->getSlug() ?? 'register';
-		$date     = (new DateTime())->format('Y-m-d_His');
-		$filename = sprintf('%s_%s.xlsx', $slug, $date);
-		ob_start();
-		$writer->save('php://output');
-		$content = ob_get_clean();
-		$mime    = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-		return new DataDownloadResponse($content, $filename, $mime);
-	}//end exportRegisterToExcel()
+	private function exportAs(Register $register, mixed $format): JSONResponse|DataDownloadResponse {
+		switch ($format) {
+			case 'excel':
+				return $this->downloads->excel(register: $register);
+			case 'csv':
+			case 'pdf':
+				return $this->exportRegisterSchemaTable(register: $register, format: $format);
+			case 'configuration':
+			default:
+				$includeObjects = filter_var($this->request->getParam(key: 'includeObjects', default: false), FILTER_VALIDATE_BOOLEAN);
+				return $this->downloads->configuration(register: $register, includeObjects: $includeObjects);
+		}
+	}//end exportAs()
 
 	/**
 	 * One schema of a register as a CSV or PDF download.
@@ -1081,88 +948,11 @@ class RegistersController extends Controller {
 
 		$schema = $this->schemaMapper->find($schemaId);
 		if ($format === 'pdf') {
-			return $this->exportRegisterSchemaToPdf(register: $register, schema: $schema);
+			return $this->downloads->pdf(register: $register, schema: $schema);
 		}
 
-		$csv = $this->exportService->exportToCsv(
-			register: $register,
-			schema: $schema,
-			filters: [],
-			currentUser: $this->userSession->getUser()
-		);
-		$filename = sprintf(
-			'%s_%s_%s.csv',
-			$register->getSlug() ?? 'register',
-			$schema->getSlug() ?? 'schema',
-			(new DateTime())->format('Y-m-d_His')
-		);
-		return new DataDownloadResponse($csv, $filename, 'text/csv');
+		return $this->downloads->csv(register: $register, schema: $schema);
 	}//end exportRegisterSchemaTable()
-
-	/**
-	 * One schema of a register as a PDF download.
-	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 *
-	 * @return JSONResponse|DataDownloadResponse The download, or the refusal when the export is too large or needs an office server.
-	 */
-	private function exportRegisterSchemaToPdf(Register $register, Schema $schema): JSONResponse|DataDownloadResponse {
-		try {
-			$pdf = $this->exportService->exportToPdf(
-				register: $register,
-				schema: $schema,
-				filters: [],
-				currentUser: $this->userSession->getUser()
-			);
-		} catch (ExportTooLargeException $e) {
-			return new JSONResponse(
-				data: [
-					'error'    => 'export_too_large',
-					'message'  => $e->getMessage(),
-					'rowCount' => $e->getRowCount(),
-					'maxRows'  => $e->getMaxRows(),
-				],
-				statusCode: ExportTooLargeException::HTTP_STATUS
-			);
-		} catch (OfficeServerRequiredException $e) {
-			return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
-		}
-
-		$filename = sprintf(
-			'%s_%s_%s.pdf',
-			$register->getSlug() ?? 'register',
-			$schema->getSlug() ?? 'schema',
-			(new DateTime())->format('Y-m-d_His')
-		);
-		return new DataDownloadResponse($pdf, $filename, 'application/pdf');
-	}//end exportRegisterSchemaToPdf()
-
-	/**
-	 * A register's configuration as a JSON download.
-	 *
-	 * @param Register $register       The register.
-	 * @param bool     $includeObjects Whether the export carries the register's objects.
-	 *
-	 * @return DataDownloadResponse The download.
-	 *
-	 * @throws Exception When the configuration cannot be encoded as JSON.
-	 */
-	private function exportRegisterConfiguration(Register $register, bool $includeObjects): DataDownloadResponse {
-		$exportData  = $this->configurationService->exportConfig(
-			input: $register,
-			includeObjects: $includeObjects
-		);
-		$jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-		if ($jsonContent === false) {
-			throw new Exception('Failed to encode register data to JSON');
-		}
-
-		$slug     = $register->getSlug() ?? 'register';
-		$date     = (new DateTime())->format('Y-m-d_His');
-		$filename = sprintf('%s_%s.json', $slug, $date);
-		return new DataDownloadResponse($jsonContent, $filename, 'application/json');
-	}//end exportRegisterConfiguration()
 
 	/**
 	 * Download an empty import template for a schema
@@ -1186,55 +976,41 @@ class RegistersController extends Controller {
 	 */
 	public function importTemplate(int|string $id, int|string $schema): JSONResponse|DataDownloadResponse {
 		try {
-			$format = strtolower((string)$this->request->getParam(key: 'format', default: 'xlsx'));
-			if (in_array($format, ['xlsx', 'csv'], true) === false) {
-				return new JSONResponse(
-					data: ['error' => 'Unsupported template format: ' . $format . '. Supported formats: xlsx, csv.'],
-					statusCode: 400
-				);
-			}
-
-			// RBAC is enforced inside both find() calls (default _rbac=true).
-			$register = $this->registerMapper->find($id);
-			$schemaEntity = $this->schemaMapper->find($schema);
-
-			$schemaSlug = $schemaEntity->getSlug() ?? 'schema';
-			$currentUser = $this->userSession->getUser();
-
-			if ($format === 'csv') {
-				$content = $this->exportService->buildTemplateCsv(
-					register: $register,
-					schema: $schemaEntity,
-					currentUser: $currentUser
-				);
-				$filename = sprintf('%s_template.csv', $schemaSlug);
-				return new DataDownloadResponse($content, $filename, 'text/csv');
-			}
-
-			$spreadsheet = $this->exportService->buildTemplateSpreadsheet(
-				register: $register,
-				schema: $schemaEntity,
-				currentUser: $currentUser
-			);
-			$writer = new Xlsx($spreadsheet);
-			ob_start();
-			$writer->save('php://output');
-			$content = ob_get_clean();
-			$filename = sprintf('%s_template.xlsx', $schemaSlug);
-			$mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-			return new DataDownloadResponse($content, $filename, $mime);
+			return $this->templateDownload(id: $id, schema: $schema);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: ['error' => 'Register or schema not found: ' . $e->getMessage()],
-				statusCode: 404
-			);
+			return new JSONResponse(data: ['error' => 'Register or schema not found: ' . $e->getMessage()], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to generate import template: ' . $e->getMessage()],
-				statusCode: 400
-			);
+			return new JSONResponse(data: ['error' => 'Failed to generate import template: ' . $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end importTemplate()
+
+	/**
+	 * The import template the request asks for.
+	 *
+	 * @param int|string $id     The register slug or numeric id.
+	 * @param int|string $schema The schema slug or numeric id.
+	 *
+	 * @return JSONResponse|DataDownloadResponse The template, or 400 on an unsupported format.
+	 *
+	 * @throws DoesNotExistException When the register or schema does not exist.
+	 * @throws Exception             When the template cannot be built.
+	 */
+	private function templateDownload(int|string $id, int|string $schema): JSONResponse|DataDownloadResponse {
+		$format = strtolower((string)$this->request->getParam(key: 'format', default: 'xlsx'));
+		if (in_array($format, ['xlsx', 'csv'], true) === false) {
+			return new JSONResponse(data: ['error' => "Unsupported template format: {$format}. Supported formats: xlsx, csv."], statusCode: 400);
+		}
+
+		// RBAC is enforced inside both find() calls (default _rbac=true).
+		$register = $this->registerMapper->find($id);
+		$schemaEntity = $this->schemaMapper->find($schema);
+
+		if ($format === 'csv') {
+			return $this->downloads->templateCsv(register: $register, schema: $schemaEntity);
+		}
+
+		return $this->downloads->templateXlsx(register: $register, schema: $schemaEntity);
+	}//end templateDownload()
 
 	/**
 	 * Publish register OAS specification to GitHub
@@ -1249,10 +1025,6 @@ class RegistersController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with publish result or error
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       GitHub publishing requires many conditional checks
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
 	 */
 	public function publishToGitHub(int $id): JSONResponse {
@@ -1262,155 +1034,17 @@ class RegistersController extends Controller {
 		// the existing importFromGitHub gate). Ideally callers would use a
 		// per-user token, but until that lands the endpoint must be admin-only.
 		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(
-				data: ['error' => 'Only administrators may publish registers to GitHub'],
-				statusCode: 403
-			);
+			return new JSONResponse(data: ['error' => 'Only administrators may publish registers to GitHub'], statusCode: 403);
 		}
 
 		try {
-			$register = $this->registerMapper->find($id);
-			$target   = $this->gitHubPublishTarget(register: $register);
-			if (empty($target['owner']) === true || empty($target['repo']) === true) {
-				return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
-			}
-
-			$this->logger->info(
-				message: '[RegistersController] Publishing register OAS to GitHub',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'register_id' => $id, 'register_slug' => $register->getSlug()]
-					+ array_intersect_key($target, array_flip(['owner', 'repo', 'path', 'branch']))
-			);
-
-			// A pure OAS file, not a configuration file: no x-openregister metadata.
-			$oasData = $this->services->integrations->oasService->createOas((string)$register->getId());
-			$result  = $this->githubService->publishConfiguration(
-				owner: $target['owner'],
-				repo: $target['repo'],
-				path: $target['path'],
-				branch: $target['branch'],
-				content: json_encode($oasData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
-				commitMessage: $target['commitMessage'],
-				fileSha: $this->gitHubFileSha(target: $target)
-			);
-
-			$this->logger->info(
-				message: "[RegistersController] Successfully published register OAS {$register->getTitle()} to GitHub",
-				context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $target['owner'], 'repo' => $target['repo']]
-					+ ['branch' => $target['branch'], 'path' => $target['path'], 'file_url' => $result['file_url'] ?? null]
-			);
-
-			$notes = $this->gitHubBranchNotes(target: $target, defaultBranch: $this->gitHubDefaultBranch(target: $target));
-			return new JSONResponse(
-				data: ['success' => true, 'message' => $notes['message'], 'registerId' => $register->getId()]
-					+ ['commit_sha' => $result['commit_sha'], 'commit_url' => $result['commit_url'], 'file_url' => $result['file_url']] + $notes,
-				statusCode: 200
-			);
+			return $this->gitHub->publish(register: $this->registerMapper->find($id));
 		} catch (DoesNotExistException $e) {
-			$this->logger->error(
-				message: '[RegistersController] Register not found for publishing',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'register_id' => $id]
-			);
-			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+			return $this->gitHub->registerMissing(id: $id);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[RegistersController] Failed to publish register OAS to GitHub: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return new JSONResponse(data: ['error' => 'Failed to publish register OAS: ' . $e->getMessage()], statusCode: 500);
-		}//end try
+			return $this->gitHub->failure(error: $e);
+		}
 	}//end publishToGitHub()
-
-	/**
-	 * Where to publish a register's OAS, from the request.
-	 *
-	 * The path loses its leading slash and defaults to `<slug>_openregister.json`.
-	 *
-	 * @param Register $register The register to publish.
-	 *
-	 * @return array{owner: string, repo: string, path: string, branch: string, commitMessage: string} The target.
-	 */
-	private function gitHubPublishTarget(Register $register): array {
-		$data = $this->request->getParams();
-		$path = ltrim($data['path'] ?? '', '/');
-		if (empty($path) === true) {
-			$path = ($register->getSlug() ?? 'register') . '_openregister.json';
-		}
-
-		return [
-			'owner'         => $data['owner'] ?? '',
-			'repo'          => $data['repo'] ?? '',
-			'path'          => $path,
-			'branch'        => $data['branch'] ?? 'main',
-			'commitMessage' => $data['commitMessage'] ?? "Update register OAS: {$register->getTitle()}",
-		];
-	}//end gitHubPublishTarget()
-
-	/**
-	 * The sha of the file at the publish target, null when it does not exist yet.
-	 *
-	 * @param array{owner: string, repo: string, path: string, branch: string} $target The publish target.
-	 *
-	 * @return string|null The sha.
-	 */
-	private function gitHubFileSha(array $target): ?string {
-		try {
-			return $this->githubService->getFileSha(owner: $target['owner'], repo: $target['repo'], path: $target['path'], branch: $target['branch']);
-		} catch (Exception $e) {
-			$this->logger->debug(
-				message: '[RegistersController] File does not exist, will create new file',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $target['path']]
-			);
-			return null;
-		}
-	}//end gitHubFileSha()
-
-	/**
-	 * The default branch of the target repository, null when GitHub could not tell.
-	 *
-	 * @param array{owner: string, repo: string} $target The publish target.
-	 *
-	 * @return string|null The default branch.
-	 */
-	private function gitHubDefaultBranch(array $target): ?string {
-		try {
-			$repoInfo = $this->githubService->getRepositoryInfo(owner: $target['owner'], repo: $target['repo']);
-			return $repoInfo['default_branch'] ?? 'main';
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[RegistersController] Could not fetch repository default branch',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $target['owner'], 'repo' => $target['repo'], 'error' => $e->getMessage()]
-			);
-			return null;
-		}
-	}//end gitHubDefaultBranch()
-
-	/**
-	 * The branch part of a publish response, with its Code Search notes.
-	 *
-	 * GitHub Code Search primarily indexes the default branch, so a publish elsewhere says so.
-	 *
-	 * @param array{branch: string} $target        The publish target.
-	 * @param string|null           $defaultBranch The repository's default branch, if known.
-	 *
-	 * @return array{message: string, branch: string, default_branch: string|null, indexing_note: string} The fields.
-	 */
-	private function gitHubBranchNotes(array $target, ?string $defaultBranch): array {
-		$branch  = $target['branch'];
-		$message = 'Register OAS published successfully to GitHub. Note: GitHub Code Search may take a few minutes to index new files.';
-		if ($defaultBranch !== null && $defaultBranch !== '' && $branch !== $defaultBranch) {
-			$message = 'Register OAS published successfully to GitHub'
-				. ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}')."
-				. ' GitHub Code Search primarily indexes the default branch. This may not appear in search results immediately.';
-		}
-
-		$indexingNote = 'File published successfully. GitHub Code Search indexing may take a few minutes.';
-		if ($defaultBranch !== null && $branch !== $defaultBranch) {
-			$indexingNote = "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch.";
-		}
-
-		return ['message' => $message, 'branch' => $branch, 'default_branch' => $defaultBranch, 'indexing_note' => $indexingNote];
-	}//end gitHubBranchNotes()
 
 	/**
 	 * Import data into a register
@@ -1991,6 +1625,7 @@ class RegistersController extends Controller {
 			'summary' => $summary,
 		];
 		if ($errorsCsv !== '') {
+			$responseData['message'] = 'Import finished with errors';
 			$responseData['errors_csv'] = base64_encode($errorsCsv);
 			$responseData['errors_csv_filename'] = 'import_errors.csv';
 		}
@@ -2012,56 +1647,66 @@ class RegistersController extends Controller {
 	public function rollbackImport(): JSONResponse {
 		$importJobId = $this->request->getParam('importJobId');
 		if (is_string($importJobId) === false || $importJobId === '') {
-			return new JSONResponse(
-				data: ['error' => 'importJobId is required'],
-				statusCode: 422
-			);
+			return new JSONResponse(data: ['error' => 'importJobId is required'], statusCode: 422);
 		}
 
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Authentication required'],
-				statusCode: 401
-			);
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		// An app's example data leaves through the app or through occ, never
-		// through this route: it spans archival and append-only schemas, and
-		// archival schemas refuse HTTP deletes.
+		$refusal = ($this->appImportRefusal(importJobId: $importJobId) ?? $this->rollbackRightsRefusal(importJobId: $importJobId, user: $user));
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->softDeleteImport(importJobId: $importJobId);
+	}//end rollbackImport()
+
+	/**
+	 * Refuse a job that loaded an app's example data.
+	 *
+	 * That data leaves through the app or through occ, never through this route:
+	 * it spans archival and append-only schemas, and archival schemas refuse HTTP
+	 * deletes.
+	 *
+	 * @param string $importJobId The import job.
+	 *
+	 * @return JSONResponse|null The refusal, or null when no app owns the job.
+	 */
+	private function appImportRefusal(string $importJobId): ?JSONResponse {
 		$owningApp = $this->container->get(\OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class)
 			->appForJob(importJobId: $importJobId);
-		if ($owningApp !== null) {
-			return new JSONResponse(
-				data: [
-					'error' => sprintf(
-						'This import job loaded data for app %s. Remove it through that app, or with occ openregister:objects:purge --import-job %s.',
-						$owningApp,
-						$importJobId
-					),
-					'importJobId' => $importJobId,
-					'app' => $owningApp,
-				],
-				statusCode: 409
-			);
+		if ($owningApp === null) {
+			return null;
 		}
 
-		// SECURITY: rollback wipes every object created by an import job.
-		// The only safety net was that `deleteObject` runs RBAC, which is
-		// much weaker than it sounds — any user with broad delete rights
-		// on the affected schemas could otherwise wipe a *different*
-		// user's import (and across tenants, since the audit lookup
-		// doesn't filter by organisation). Require the caller to be
-		// either the original importer or a member of the admin group.
-		$auditSample = $this->auditTrailMapper->findByImportJobId(
-			importJobId: $importJobId,
-			action: 'create'
+		$error = 'This import job loaded data for app %s. Remove it through that app, or with occ openregister:objects:purge --import-job %s.';
+		return new JSONResponse(
+			data: ['error' => sprintf($error, $owningApp, $importJobId), 'importJobId' => $importJobId, 'app' => $owningApp],
+			statusCode: 409
 		);
+	}//end appImportRefusal()
+
+	/**
+	 * Refuse a caller who may not roll this job back, or a job that does not exist.
+	 *
+	 * SECURITY: rollback wipes every object created by an import job. The only
+	 * safety net was that `deleteObject` runs RBAC, which is much weaker than it
+	 * sounds — any user with broad delete rights on the affected schemas could
+	 * otherwise wipe a *different* user's import (and across tenants, since the
+	 * audit lookup doesn't filter by organisation). Require the caller to be
+	 * either the original importer or a member of the admin group.
+	 *
+	 * @param string     $importJobId The import job.
+	 * @param \OCP\IUser $user        The authenticated user.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the caller may go on.
+	 */
+	private function rollbackRightsRefusal(string $importJobId, \OCP\IUser $user): ?JSONResponse {
+		$auditSample = $this->auditTrailMapper->findByImportJobId(importJobId: $importJobId, action: 'create');
 		if (count($auditSample) === 0) {
-			return new JSONResponse(
-				data: ['error' => 'Import job not found', 'importJobId' => $importJobId],
-				statusCode: 404
-			);
+			return new JSONResponse(data: ['error' => 'Import job not found', 'importJobId' => $importJobId], statusCode: 404);
 		}
 
 		$importerUid = null;
@@ -2069,23 +1714,29 @@ class RegistersController extends Controller {
 			$importerUid = $auditSample[0]->getUser();
 		}
 
-		if ($this->canRollbackImport(user: $user, importerUid: $importerUid) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: only the user who initiated the import or an admin may roll it back'],
-				statusCode: 403
-			);
+		if ($this->canRollbackImport(user: $user, importerUid: $importerUid) === true) {
+			return null;
 		}
 
+		$error = 'Forbidden: only the user who initiated the import or an admin may roll it back';
+		return new JSONResponse(data: ['error' => $error], statusCode: 403);
+	}//end rollbackRightsRefusal()
+
+	/**
+	 * Soft-delete what the import job created and report it.
+	 *
+	 * @param string $importJobId The import job.
+	 *
+	 * @return JSONResponse The report, or the error.
+	 */
+	private function softDeleteImport(string $importJobId): JSONResponse {
 		try {
 			$report = $this->importService->softDeleteByImportJobId(importJobId: $importJobId);
 			return new JSONResponse(data: $report, statusCode: 200);
 		} catch (\Throwable $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: 500
-			);
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}
-	}//end rollbackImport()
+	}//end softDeleteImport()
 
 	/**
 	 * Get statistics for a specific register

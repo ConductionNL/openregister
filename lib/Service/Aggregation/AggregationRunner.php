@@ -65,9 +65,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
-use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
 
 /**
  * Runs a named aggregation against a schema.
@@ -3637,7 +3635,7 @@ class AggregationRunner {
 	 * Attach aggregates from a SECOND schema to each group of an already
 	 * computed grouped envelope (the `join` clause).
 	 *
-	 * Spec shape (see {@see AggregationJoinAnnotationValidator::validate()}):
+	 * Spec shape (see {@see \OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator::validate()}):
 	 *   "join": {
 	 *     "through": "CommitmentBudget",
 	 *     "on":      "CommitmentBudget.programmeCode",

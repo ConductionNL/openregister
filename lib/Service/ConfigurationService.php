@@ -26,7 +26,6 @@
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -34,9 +33,7 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
@@ -73,19 +70,7 @@ use Psr\Log\LoggerInterface;
  */
 class ConfigurationService implements ConfigurationServiceInterface {
 
-	/**
-	 * Schema mapper instance for handling schema operations.
-	 *
-	 * @var SchemaMapperInterface The schema mapper instance.
-	 */
-	private SchemaMapperInterface $schemaMapper;
 
-	/**
-	 * Register mapper instance for handling register operations.
-	 *
-	 * @var RegisterMapperInterface The register mapper instance.
-	 */
-	private RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Configuration mapper instance for handling configuration operations.
@@ -142,26 +127,8 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 */
 	private readonly UploadHandler $uploadHandler;
 
-	/**
-	 * HTTP Client for making external requests.
-	 *
-	 * @var Client The HTTP client instance.
-	 */
-	private Client $client;
 
-	/**
-	 * Object service instance for handling object operations.
-	 *
-	 * @var ObjectOperationsInterface The object service instance.
-	 */
-	private ObjectOperationsInterface $objectService;
 
-	/**
-	 * Application data path
-	 *
-	 * @var string The application data path
-	 */
-	private string $appDataPath;
 
 	/**
 	 * GitHub handler for GitHub API operations
@@ -203,37 +170,28 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 *
 	 * Initializes service with required dependencies for configuration operations.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations
 	 * @param ConfigurationMapper $configurationMapper Configuration mapper for configuration operations
 	 * @param IAppManager $appManager App manager for checking installed apps
 	 * @param ContainerInterface $container Container for lazy service loading
 	 * @param IAppConfig $appConfig App config for configuration metadata
 	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param Client $client HTTP client for external requests
-	 * @param ObjectOperationsInterface $objectService Object service for object operations
 	 * @param GitHubHandler $githubHandler GitHub handler for GitHub operations
 	 * @param GitLabHandler $gitlabHandler GitLab handler for GitLab operations
 	 * @param CacheHandler $cacheHandler Cache handler for configuration caching
 	 * @param PreviewHandler $previewHandler Preview handler for preview operations
 	 * @param ExportHandler $exportHandler Export handler for export operations
 	 * @param UploadHandler $uploadHandler Upload handler for file upload operations
-	 * @param string $appDataPath Application data path
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
-		SchemaMapperInterface $schemaMapper,
-		RegisterMapperInterface $registerMapper,
 		ConfigurationMapper $configurationMapper,
 		IAppManager $appManager,
 		ContainerInterface $container,
 		IAppConfig $appConfig,
 		LoggerInterface $logger,
-		Client $client,
-		ObjectOperationsInterface $objectService,
 		GitHubHandler $githubHandler,
 		GitLabHandler $gitlabHandler,
 		CacheHandler $cacheHandler,
@@ -241,18 +199,13 @@ class ConfigurationService implements ConfigurationServiceInterface {
 		ExportHandler $exportHandler,
 		// NOTE: ImportHandler is lazy-loaded via getImportHandler() to prevent circular dependency.
 		UploadHandler $uploadHandler,
-		string $appDataPath,
 	) {
 		// Store dependencies for use in service methods.
-		$this->schemaMapper = $schemaMapper;
-		$this->registerMapper = $registerMapper;
 		$this->configurationMapper = $configurationMapper;
 		$this->appManager = $appManager;
 		$this->container = $container;
 		$this->appConfig = $appConfig;
 		$this->logger = $logger;
-		$this->client = $client;
-		$this->objectService = $objectService;
 		$this->githubHandler = $githubHandler;
 		$this->gitlabHandler = $gitlabHandler;
 		$this->cacheHandler = $cacheHandler;
@@ -260,7 +213,6 @@ class ConfigurationService implements ConfigurationServiceInterface {
 		$this->exportHandler = $exportHandler;
 		// NOTE: ImportHandler is lazy-loaded via getImportHandler().
 		$this->uploadHandler = $uploadHandler;
-		$this->appDataPath = $appDataPath;
 
 		// NOTE: PreviewHandler wiring removed to prevent circular dependency during construction.
 		// PreviewHandler should use lazy loading or dependency injection if it needs ConfigurationService.

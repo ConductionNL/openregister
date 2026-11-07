@@ -36,6 +36,7 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\Calculation\ReferenceResolver
  * @covers \OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver
+ * @uses   \OCA\OpenRegister\Service\Calculation\CalculationPayload
  * @uses   \OCA\OpenRegister\Service\Calculation\PayloadPathWalking
  */
 class PayloadTokenReadingTest extends TestCase {

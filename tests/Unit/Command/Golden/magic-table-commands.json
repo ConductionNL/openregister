@@ -1,0 +1,883 @@
+{
+    "backfill all tables": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  r1/s1 (openregister_table_1_11): scanned=2 updated=7",
+            "  r1/s2 (openregister_table_1_12): scanned=2 updated=7",
+            "  r2/s2 (openregister_table_2_12): scanned=2 updated=7",
+            "Done. Tables=3 scanned=6 updated=21",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write"
+        ]
+    },
+    "backfill dry run": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner='' (dry run)",
+            "  r1/s1 (openregister_table_1_11): scanned=2 updated=0",
+            "  r1/s2 (openregister_table_1_12): scanned=2 updated=0",
+            "  r2/s2 (openregister_table_2_12): scanned=2 updated=0",
+            "Done. Tables=3 scanned=6 updated=0 (dry run — no writes performed)",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "select [\"expr\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor"
+        ]
+    },
+    "backfill one register": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  r1/s1 (openregister_table_1_11): scanned=2 updated=7",
+            "  r1/s2 (openregister_table_1_12): scanned=2 updated=7",
+            "Done. Tables=2 scanned=4 updated=14",
+            ""
+        ],
+        "calls": [
+            "registers.find r1 [true,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write"
+        ]
+    },
+    "backfill one schema": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  r1/s1 (openregister_table_1_11): scanned=2 updated=7",
+            "Done. Tables=1 scanned=2 updated=7",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.find s1 [true,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write"
+        ]
+    },
+    "backfill empty references": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  r1/s1 (openregister_table_1_11): scanned=2 updated=7",
+            "  r1/s2 (openregister_table_1_12): scanned=2 updated=7",
+            "  r2/s2 (openregister_table_2_12): scanned=2 updated=7",
+            "Done. Tables=3 scanned=6 updated=21",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write"
+        ]
+    },
+    "backfill lookup fails": {
+        "exit": 1,
+        "output": [
+            "Register gone not found",
+            ""
+        ],
+        "calls": [
+            "registers.find gone [true,false]"
+        ]
+    },
+    "backfill no registers": {
+        "exit": 0,
+        "output": [
+            "No registers or schemas resolved — nothing to do.",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]"
+        ]
+    },
+    "backfill no schemas": {
+        "exit": 0,
+        "output": [
+            "No registers or schemas resolved — nothing to do.",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]"
+        ]
+    },
+    "backfill missing table": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  r1/s2 (openregister_table_1_12): scanned=2 updated=7",
+            "  r2/s2 (openregister_table_2_12): scanned=2 updated=7",
+            "Done. Tables=2 scanned=4 updated=14",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write"
+        ]
+    },
+    "backfill no slugs": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  1/11 (openregister_table_1_11): scanned=2 updated=7",
+            "Done. Tables=1 scanned=2 updated=7",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write"
+        ]
+    },
+    "backfill unknown schema id": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  r1/s1 (openregister_table_1_11): scanned=2 updated=7",
+            "Done. Tables=1 scanned=2 updated=7",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write"
+        ]
+    },
+    "backfill empty table": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  r1/s1 (openregister_table_1_11): scanned=0 updated=0",
+            "  r1/s2 (openregister_table_1_12): scanned=0 updated=0",
+            "  r2/s2 (openregister_table_2_12): scanned=0 updated=0",
+            "Done. Tables=3 scanned=0 updated=0",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "select [\"expr\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor"
+        ]
+    },
+    "backfill unflagged schema": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  r1/s1 (openregister_table_1_11): scanned=2 updated=7",
+            "  r1/s2 (openregister_table_1_12): scanned=2 updated=7",
+            "  r2/s2 (openregister_table_2_12): scanned=2 updated=7",
+            "Done. Tables=3 scanned=6 updated=21",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write"
+        ]
+    },
+    "backfill failing write": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  r1/s1 (openregister_table_1_11): scanned=2 updated=7",
+            "  r1/s2 (openregister_table_1_12): scanned=2 updated=7",
+            "  r2/s2 (openregister_table_2_12): scanned=2 updated=7",
+            "Done. Tables=3 scanned=6 updated=21",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write"
+        ]
+    },
+    "backfill failing crypto": {
+        "exit": 0,
+        "output": [
+            "Backfilling _owner='__system__' on rows with _owner=''",
+            "  r1/s1 (openregister_table_1_11): scanned=2 updated=7",
+            "  r1/s2 (openregister_table_1_12): scanned=2 updated=7",
+            "  r2/s2 (openregister_table_2_12): scanned=2 updated=7",
+            "Done. Tables=3 scanned=6 updated=21",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write",
+            "select [\"expr\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "closeCursor",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"_owner\",\"__system__\"]",
+            "where [\"_owner = \\\"\\\"\"]",
+            "write"
+        ]
+    },
+    "encrypt all tables": {
+        "exit": 0,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  r1/s1 (openregister_table_1_11): scanned=3 encrypted=2 failed=0",
+            "  r1/s2 (openregister_table_1_12): scanned=3 encrypted=2 failed=0",
+            "  r2/s2 (openregister_table_2_12): scanned=3 encrypted=2 failed=0",
+            "Done. Tables=3 scanned=9 encrypted=6 failed=0",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor"
+        ]
+    },
+    "encrypt dry run": {
+        "exit": 0,
+        "output": [
+            "Encrypting property 'bsn' (dry run)",
+            "  r1/s1 (openregister_table_1_11): scanned=3 encrypted=2 failed=0",
+            "  r1/s2 (openregister_table_1_12): scanned=3 encrypted=2 failed=0",
+            "  r2/s2 (openregister_table_2_12): scanned=3 encrypted=2 failed=0",
+            "Done. Tables=3 scanned=9 encrypted=6 failed=0 (dry run — no writes performed)",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "closeCursor"
+        ]
+    },
+    "encrypt one register": {
+        "exit": 0,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  r1/s1 (openregister_table_1_11): scanned=3 encrypted=2 failed=0",
+            "  r1/s2 (openregister_table_1_12): scanned=3 encrypted=2 failed=0",
+            "Done. Tables=2 scanned=6 encrypted=4 failed=0",
+            ""
+        ],
+        "calls": [
+            "registers.find r1 [true,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor"
+        ]
+    },
+    "encrypt one schema": {
+        "exit": 0,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  r1/s1 (openregister_table_1_11): scanned=3 encrypted=2 failed=0",
+            "Done. Tables=1 scanned=3 encrypted=2 failed=0",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.find s1 [true,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor"
+        ]
+    },
+    "encrypt empty references": {
+        "exit": 0,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  r1/s1 (openregister_table_1_11): scanned=3 encrypted=2 failed=0",
+            "  r1/s2 (openregister_table_1_12): scanned=3 encrypted=2 failed=0",
+            "  r2/s2 (openregister_table_2_12): scanned=3 encrypted=2 failed=0",
+            "Done. Tables=3 scanned=9 encrypted=6 failed=0",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor"
+        ]
+    },
+    "encrypt lookup fails": {
+        "exit": 1,
+        "output": [
+            "Register gone not found",
+            ""
+        ],
+        "calls": [
+            "registers.find gone [true,false]"
+        ]
+    },
+    "encrypt no registers": {
+        "exit": 0,
+        "output": [
+            "No registers or schemas resolved — nothing to do.",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]"
+        ]
+    },
+    "encrypt no schemas": {
+        "exit": 0,
+        "output": [
+            "No registers or schemas resolved — nothing to do.",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]"
+        ]
+    },
+    "encrypt missing table": {
+        "exit": 0,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  r1/s2 (openregister_table_1_12): scanned=3 encrypted=2 failed=0",
+            "  r2/s2 (openregister_table_2_12): scanned=3 encrypted=2 failed=0",
+            "Done. Tables=2 scanned=6 encrypted=4 failed=0",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor"
+        ]
+    },
+    "encrypt no slugs": {
+        "exit": 0,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  1/11 (openregister_table_1_11): scanned=3 encrypted=2 failed=0",
+            "Done. Tables=1 scanned=3 encrypted=2 failed=0",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor"
+        ]
+    },
+    "encrypt unknown schema id": {
+        "exit": 0,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  r1/s1 (openregister_table_1_11): scanned=3 encrypted=2 failed=0",
+            "Done. Tables=1 scanned=3 encrypted=2 failed=0",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor"
+        ]
+    },
+    "encrypt empty table": {
+        "exit": 0,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  r1/s1 (openregister_table_1_11): scanned=0 encrypted=0 failed=0",
+            "  r1/s2 (openregister_table_1_12): scanned=0 encrypted=0 failed=0",
+            "  r2/s2 (openregister_table_2_12): scanned=0 encrypted=0 failed=0",
+            "Done. Tables=3 scanned=0 encrypted=0 failed=0",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "closeCursor"
+        ]
+    },
+    "encrypt unflagged schema": {
+        "exit": 0,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  r1/s2 (openregister_table_1_12): scanned=3 encrypted=2 failed=0",
+            "  r2/s2 (openregister_table_2_12): scanned=3 encrypted=2 failed=0",
+            "Done. Tables=2 scanned=6 encrypted=4 failed=0",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "write",
+            "closeCursor"
+        ]
+    },
+    "encrypt failing write": {
+        "exit": 1,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  row id=2: failed to encrypt 'bsn': value too long",
+            "  r1/s1 (openregister_table_1_11): scanned=3 encrypted=1 failed=1",
+            "  row id=2: failed to encrypt 'bsn': value too long",
+            "  r1/s2 (openregister_table_1_12): scanned=3 encrypted=1 failed=1",
+            "  row id=2: failed to encrypt 'bsn': value too long",
+            "  r2/s2 (openregister_table_2_12): scanned=3 encrypted=1 failed=1",
+            "Done. Tables=3 scanned=9 encrypted=3 failed=3",
+            "One or more rows failed to encrypt — see log for details.",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_11\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_1_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-1)\"]",
+            "where [\"_id = 1\"]",
+            "write",
+            "update [\"openregister_table_2_12\",null]",
+            "set [\"bsn\",\"openregister:enc:v1:cipher(plain-2)\"]",
+            "where [\"_id = 2\"]",
+            "closeCursor"
+        ]
+    },
+    "encrypt failing crypto": {
+        "exit": 1,
+        "output": [
+            "Encrypting property 'bsn'",
+            "  row id=1: failed to encrypt 'bsn': no key",
+            "  row id=2: failed to encrypt 'bsn': no key",
+            "  r1/s1 (openregister_table_1_11): scanned=3 encrypted=0 failed=2",
+            "  row id=1: failed to encrypt 'bsn': no key",
+            "  row id=2: failed to encrypt 'bsn': no key",
+            "  r1/s2 (openregister_table_1_12): scanned=3 encrypted=0 failed=2",
+            "  row id=1: failed to encrypt 'bsn': no key",
+            "  row id=2: failed to encrypt 'bsn': no key",
+            "  r2/s2 (openregister_table_2_12): scanned=3 encrypted=0 failed=2",
+            "Done. Tables=3 scanned=9 encrypted=0 failed=6",
+            "One or more rows failed to encrypt — see log for details.",
+            ""
+        ],
+        "calls": [
+            "registers.findAll [false,false]",
+            "schemas.findAll [false,false]",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_11\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_11\",null]",
+            "update [\"openregister_table_1_11\",null]",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_1_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_1_12\",null]",
+            "update [\"openregister_table_1_12\",null]",
+            "closeCursor",
+            "select [\"_id\",\"bsn\"]",
+            "from [\"openregister_table_2_12\",null]",
+            "where [\"bsn IS NOT NULL\"]",
+            "update [\"openregister_table_2_12\",null]",
+            "update [\"openregister_table_2_12\",null]",
+            "closeCursor"
+        ]
+    },
+    "encrypt no property": {
+        "exit": 1,
+        "output": [
+            "--property is required.",
+            ""
+        ],
+        "calls": []
+    }
+}

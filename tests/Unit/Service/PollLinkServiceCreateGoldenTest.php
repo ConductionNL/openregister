@@ -78,6 +78,7 @@ class PollLinkServiceCreateGoldenTest extends TestCase {
 		);
 		$db->method('lastInsertId')->willReturnCallback(
 			function (string $table) use ($insertId) {
+				$this->assertSame('*PREFIX*polls_polls_id_seq', $table);
 				return $insertId;
 			}
 		);

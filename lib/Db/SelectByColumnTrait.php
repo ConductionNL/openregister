@@ -48,6 +48,22 @@ trait SelectByColumnTrait {
 	}//end selectWhere()
 
 	/**
+	 * A query for every row of the table, lowest id first.
+	 *
+	 * @return IQueryBuilder The query.
+	 *
+	 * @spec exclude shared mapper plumbing, not a capability of its own
+	 */
+	private function selectAllById(): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->orderBy('id', 'ASC');
+
+		return $qb;
+	}//end selectAllById()
+
+	/**
 	 * The one entity a query finds, or null when it finds none.
 	 *
 	 * @param IQueryBuilder $query The query.

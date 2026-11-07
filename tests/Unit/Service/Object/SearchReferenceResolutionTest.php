@@ -59,6 +59,8 @@ use Psr\Log\LoggerInterface;
  * because the reference was resolved before the mapper saw it.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Object\SearchReferenceResolver
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceKey
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  */
 class SearchReferenceResolutionTest extends TestCase {
 
@@ -200,15 +202,12 @@ class SearchReferenceResolutionTest extends TestCase {
 	private function queryHandler(MagicMapper $mapper, ?SearchReferenceResolver $resolver): QueryHandler {
 		return new QueryHandler(
 			$mapper,
-			$this->createMock(GetObject::class),
 			$this->createMock(RenderObject::class),
 			$this->createMock(SearchQueryHandler::class),
 			$this->createMock(FacetHandler::class),
 			$this->createMock(PerformanceOptimizationHandler::class),
 			$this->createMock(ContentSearchHandler::class),
 			$this->createMock(IAppContainer::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class),
 			null,
 			null,
 			$resolver

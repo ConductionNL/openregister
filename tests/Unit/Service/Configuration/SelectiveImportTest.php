@@ -225,23 +225,17 @@ class SelectiveImportTest extends TestCase {
 		);
 
 		return new ConfigurationService(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
 			$this->configurationMapper,
 			$this->createMock(IAppManager::class),
 			$container,
 			$this->createMock(IAppConfig::class),
 			$logger,
-			$client,
-			$this->createMock(ObjectService::class),
 			$this->createMock(GitHubHandler::class),
 			$this->createMock(GitLabHandler::class),
 			$this->createMock(CacheHandler::class),
 			$this->createMock(PreviewHandler::class),
 			$this->createMock(ExportHandler::class),
-			$this->createMock(UploadHandler::class),
-			'/tmp'
-		);
+			$this->createMock(UploadHandler::class));
 
 	}//end service()
 

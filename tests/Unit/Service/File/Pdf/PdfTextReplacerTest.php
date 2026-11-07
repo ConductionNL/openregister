@@ -3,7 +3,7 @@
 /**
  * PdfTextReplacerTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer}
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer}
  * covering the replace → validate → fail-closed pipeline plus the
  * adjacent-duplicate placeholder collapse helper.
  *
@@ -27,10 +27,10 @@ declare(strict_types=1);
 namespace Unit\Service\File\Pdf;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
-use OCA\OpenRegister\Service\File\Pdf\PdfStructureInspector;
-use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
-use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
-use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
+use OCA\OpenRegister\Files\Service\File\Pdf\PdfStructureInspector;
+use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
+use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

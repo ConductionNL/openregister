@@ -71,6 +71,11 @@ final class ObjectHandling {
 	public const URI = 'uri';
 
 	/**
+	 * The handlings that keep a reference to a separate object.
+	 */
+	public const RELATING = [self::RELATED_OBJECT, self::RELATED_SCHEMA];
+
+	/**
 	 * Whether this handling stores only a UUID reference to a separately-stored object.
 	 *
 	 * A property whose handling relates gets a VARCHAR(255) UUID column, NOT a json
@@ -83,6 +88,6 @@ final class ObjectHandling {
 	 * @spec exclude pure predicate over the handling enum (no state, no I/O)
 	 */
 	public static function relates(?string $handling): bool {
-		return in_array($handling, [self::RELATED_OBJECT, self::RELATED_SCHEMA], true);
+		return in_array($handling, self::RELATING, true);
 	}//end relates()
 }//end class

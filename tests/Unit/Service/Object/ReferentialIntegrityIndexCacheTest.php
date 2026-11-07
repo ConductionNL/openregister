@@ -25,10 +25,14 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
+use Doctrine\DBAL\Platforms\MySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
@@ -41,9 +45,12 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
+ * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard
  * @uses \OCA\OpenRegister\Service\Object\ReferenceKey
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityIndexCacheTest extends TestCase {
 
@@ -577,4 +584,85 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 
 		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
 	}//end makeArchivalGuard()
+
+	/**
+	 * A stamp that cannot be read gives no version, so the cache is not trusted.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableStampGivesNoVersion(): void {
+		$service = $this->service([], [$this->row(1), $this->row(2, '0.0.1', 'not a date')]);
+
+		$this->assertNull((new \ReflectionMethod($service, 'schemaCatalogueVersion'))->invoke($service));
+	}//end testAnUnreadableStampGivesNoVersion()
+
+	/**
+	 * Read the schema-register map off a table list, on the given platform.
+	 *
+	 * @param object $platform The database platform.
+	 * @param array  $sql      Receives the statement that was prepared.
+	 *
+	 * @return array The map.
+	 */
+	private function registerMapOn(object $platform, array &$sql): array {
+		$first = new Register();
+		$first->setId(1);
+		$second = new Register();
+		$second->setId(2);
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('findAll')->willReturn([$first, $second]);
+
+		$rows = [['table_name' => 'oc_openregister_table_1_7'], ['table_name' => 'oc_openregister_table_2_7'], ['other' => 'x'], false];
+		$statement = $this->createMock(IPreparedStatement::class);
+		$statement->method('fetch')->willReturnCallback(static function () use (&$rows): mixed {
+			return array_shift($rows);
+		});
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($platform);
+		$db->method('prepare')->willReturnCallback(static function (string $query) use (&$sql, $statement): IPreparedStatement {
+			$sql[] = $query;
+
+			return $statement;
+		});
+
+		$service = new ReferentialIntegrityService(
+			$this->createMock(SchemaMapper::class),
+			$registers,
+			$this->createMock(MagicMapper::class),
+			$this->createMock(AuditTrailMapper::class),
+			$this->createMock(LoggerInterface::class),
+			$db,
+			$this->cacheFactory,
+			$this->makeArchivalGuard()
+		);
+		(new \ReflectionProperty($service, 'schemaRegisterMap'))->setValue($service, []);
+		(new \ReflectionMethod($service, 'buildSchemaRegisterMap'))->invoke($service);
+
+		return (new \ReflectionProperty($service, 'schemaRegisterMap'))->getValue($service);
+	}//end registerMapOn()
+
+	/**
+	 * The first table of a schema decides its register.
+	 *
+	 * @return void
+	 */
+	public function testTheFirstTableDecidesASchemasRegister(): void {
+		$sql = [];
+		$map = $this->registerMapOn(new MySQLPlatform(), $sql);
+
+		$this->assertSame(1, $map['7']->getId());
+		$this->assertStringContainsString('table_schema = DATABASE()', $sql[0]);
+	}//end testTheFirstTableDecidesASchemasRegister()
+
+	/**
+	 * PostgreSQL names the current schema with its own function.
+	 *
+	 * @return void
+	 */
+	public function testPostgresNamesTheCurrentSchemaItsOwnWay(): void {
+		$sql = [];
+		$this->registerMapOn(new PostgreSQLPlatform(), $sql);
+
+		$this->assertStringContainsString('table_schema = current_schema()', $sql[0]);
+	}//end testPostgresNamesTheCurrentSchemaItsOwnWay()
 }//end class

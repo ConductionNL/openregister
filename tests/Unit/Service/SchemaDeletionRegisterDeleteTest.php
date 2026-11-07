@@ -42,6 +42,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -112,6 +114,8 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		parent::setUp();
 
 		$this->db = $this->createMock(IDBConnection::class);
+
+		$this->db->method('getDatabaseProvider')->willReturn(IDBConnection::PLATFORM_SQLITE);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
@@ -130,12 +134,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		);
 		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
 			function (Register $register, Schema $schema, ?int $limit = null, ?int $offset = null): array {
-				// One chunk per table: a second read (offset > 0) returns nothing.
-				if ((int)$offset > 0) {
-					return [];
-				}
-
-				return $this->rows[(int)$schema->getId()] ?? [];
+				return array_slice(($this->rows[(int)$schema->getId()] ?? []), (int)$offset, $limit);
 			}
 		);
 
@@ -270,6 +269,111 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		}
 
 	}//end testOneArchivalSchemaRefusesTheWholeRegisterAndDeletesNothing()
+
+	/**
+	 * One frozen row refuses the whole register before any row is audited or deleted.
+	 *
+	 * @return void
+	 */
+	public function testOneFrozenRowRefusesTheWholeRegisterAndDeletesNothing(): void {
+		$this->givenSchema(id: 42, uuids: ['a-1']);
+		$this->givenSchema(id: 43, uuids: ['b-1', 'b-2']);
+		$this->rows[43][1]->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
+
+		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
+		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->db->expects($this->never())->method('commit');
+
+		$this->expectException(ObjectStateWriteException::class);
+
+		$this->service->deleteObjectsByRegister(register: $this->register([42, 43]));
+	}//end testOneFrozenRowRefusesTheWholeRegisterAndDeletesNothing()
+
+	/**
+	 * A row frozen as the transaction opens still refuses: the check reads inside it.
+	 *
+	 * @return void
+	 */
+	public function testARowFrozenAsTheTransactionOpensRefusesTheRegister(): void {
+		$this->givenSchema(id: 42, uuids: ['a-1']);
+		$this->db->method('beginTransaction')->willReturnCallback(
+			function (): void {
+				$this->rows[42][0]->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
+			}
+		);
+
+		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
+		$this->db->expects($this->once())->method('rollBack');
+
+		$this->expectException(ObjectStateWriteException::class);
+
+		$this->service->deleteObjectsByRegister(register: $this->register([42]));
+	}//end testARowFrozenAsTheTransactionOpensRefusesTheRegister()
+
+	/**
+	 * An archived row refuses a table delete as well.
+	 *
+	 * @return void
+	 */
+	public function testAnArchivedRowRefusesTheWholeRegister(): void {
+		$this->givenSchema(id: 42, uuids: ['a-1']);
+		$this->rows[42][0]->setArchived(['by' => 'anna', 'at' => '2026-09-12T00:00:00+00:00', 'reason' => 'closed']);
+
+		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
+
+		$this->expectException(ObjectStateWriteException::class);
+
+		$this->service->deleteObjectsByRegister(register: $this->register([42]));
+	}//end testAnArchivedRowRefusesTheWholeRegister()
+
+	/**
+	 * A locked row refuses a table delete as well.
+	 *
+	 * @return void
+	 */
+	public function testALockedRowRefusesTheWholeRegister(): void {
+		$this->givenSchema(id: 42, uuids: ['a-1']);
+		$this->rows[42][0]->setLocked(['kind' => ObjectEntity::LOCK_KIND_USER, 'user' => 'bob']);
+
+		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
+
+		$this->expectException(LockedException::class);
+
+		$this->service->deleteObjectsByRegister(register: $this->register([42]));
+	}//end testALockedRowRefusesTheWholeRegister()
+
+	/**
+	 * A frozen row past the first chunk refuses as well.
+	 *
+	 * @return void
+	 */
+	public function testAFrozenRowInALaterChunkIsFound(): void {
+		$this->givenSchema(id: 42, uuids: array_map(strval(...), range(1, 501)));
+		$this->rows[42][500]->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
+
+		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
+
+		$this->expectException(ObjectStateWriteException::class);
+
+		$this->service->deleteObjectsByRegister(register: $this->register([42]));
+	}//end testAFrozenRowInALaterChunkIsFound()
+
+	/**
+	 * One frozen row refuses a schema-wide delete too, before any row is audited or deleted.
+	 *
+	 * @return void
+	 */
+	public function testOneFrozenRowRefusesTheSchemaWideDelete(): void {
+		$this->givenSchema(id: 42, uuids: ['a-1']);
+		$this->rows[42][0]->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
+
+		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
+		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+
+		$this->expectException(ObjectStateWriteException::class);
+
+		$this->service->deleteObjectsBySchema(registerId: self::REGISTER_ID, schemaId: 42);
+	}//end testOneFrozenRowRefusesTheSchemaWideDelete()
 
 	/**
 	 * A failure on a later table rolls the earlier ones back.

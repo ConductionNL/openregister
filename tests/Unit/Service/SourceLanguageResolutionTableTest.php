@@ -28,6 +28,19 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\TranslationProjectionService
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
+ * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
+ * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
+ * @uses \OCA\OpenRegister\Service\Object\InverseBatch
+ * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
+ * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
+ * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
+ * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender
+ * @uses \OCA\OpenRegister\Service\Object\InverseRenderSupport
+ * @uses \OCA\OpenRegister\Service\Object\InverseSchemaLookups
+ * @uses \OCA\OpenRegister\Service\Object\InverseObjectHooks
+ * @uses \OCA\OpenRegister\Service\Object\InverseTarget
  * @uses   \OCA\OpenRegister\Service\Object\PropertySourceLanguage
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\ObjectEntity

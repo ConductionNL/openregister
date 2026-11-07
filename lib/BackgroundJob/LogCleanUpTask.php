@@ -24,7 +24,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\StateHistoryMapper;
-use OCA\OpenRegister\Search\Service\MetricsService;
+use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  *      retention setting was echoed to the admin UI and enforced by nothing,
  *      the only caller of the sweep being a manual admin endpoint.
  *   3. Metrics: rows past the 90-day default of
- *      MetricsService::cleanOldMetrics() are deleted. Audit rows are not touched.
+ *      MetricsRetentionInterface::cleanOldMetrics() are deleted. Audit rows are not touched.
  *
  * A failure in one sweep is logged and never skips the other.
  *
@@ -111,7 +111,7 @@ class LogCleanUpTask extends TimedJob {
 	 * @param ObjectRetentionHandler $retentionHandler  The retention settings handler
 	 * @param LoggerInterface        $logger            The logger for logging operations
 	 * @param StateHistoryMapper|null $stateHistory     The derived state-history projection, pruned with the trail
-	 * @param MetricsService|null     $metrics          The operational metrics, cut to their retention
+	 * @param MetricsRetentionInterface|null $metrics          The operational metrics, cut to their retention
 	 *
 	 * @return void
 	 *
@@ -126,7 +126,7 @@ class LogCleanUpTask extends TimedJob {
 		// LAST AND NULLABLE so every existing construction of this job keeps
 		// working; the container always supplies it.
 		private readonly ?StateHistoryMapper $stateHistory = null,
-		private readonly ?MetricsService $metrics = null,
+		private readonly ?MetricsRetentionInterface $metrics = null,
 	) {
 		parent::__construct(time: $time);
 		$this->auditTrailMapper = $auditTrailMapper;

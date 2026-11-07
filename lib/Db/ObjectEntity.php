@@ -1223,8 +1223,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		// Initialize the object data with an empty array if null.
 		$objectData = $this->object ?? [];
 
-		// Ensure 'id' is the first field by setting it before merging with object data.
-		$objectData = array_merge(['id' => $this->uuid], $objectData);
+		// Ensure 'id' is the first field; array_replace keeps numeric property keys.
+		$objectData = array_replace(['id' => $this->uuid], $objectData);
 
 		return $objectData;
 	}//end getObject()

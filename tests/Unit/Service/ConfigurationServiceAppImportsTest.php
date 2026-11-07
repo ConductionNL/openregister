@@ -93,23 +93,17 @@ class ConfigurationServiceAppImportsTest extends TestCase {
 		);
 
 		return new ConfigurationService(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			appManager: $this->createMock(IAppManager::class),
 			container: $container,
 			appConfig: $this->createMock(IAppConfig::class),
 			logger: $this->createMock(LoggerInterface::class),
-			client: $this->createMock(Client::class),
-			objectService: $this->createMock(ObjectService::class),
 			githubHandler: $this->createMock(GitHubHandler::class),
 			gitlabHandler: $this->createMock(GitLabHandler::class),
 			cacheHandler: $this->createMock(CacheHandler::class),
 			previewHandler: $this->createMock(PreviewHandler::class),
 			exportHandler: $this->createMock(ExportHandler::class),
-			uploadHandler: $this->createMock(UploadHandler::class),
-			appDataPath: '/tmp'
-		);
+			uploadHandler: $this->createMock(UploadHandler::class));
 	}
 
 	/**

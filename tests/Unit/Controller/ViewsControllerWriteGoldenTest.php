@@ -9,7 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Controller\ViewsController;
+use OCA\OpenRegister\Search\Controller\ViewsController;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
@@ -32,8 +32,8 @@ use Psr\Log\LoggerInterface;
  * nothing, so a forged owner or userId in the body shows up as a refusal or
  * as a different recorded uid. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
- * @covers \OCA\OpenRegister\Controller\ViewsController
- * @uses \OCA\OpenRegister\Controller\Support\ViewPatch
+ * @covers \OCA\OpenRegister\Search\Controller\ViewsController
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewPatch
  * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Service\View\ViewAlert

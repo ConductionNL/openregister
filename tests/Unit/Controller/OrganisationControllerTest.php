@@ -2218,7 +2218,6 @@ class OrganisationControllerTest extends TestCase {
 			$this->organisationMapper,
 			$this->groupManager,
 			$this->createMock(IUserManager::class),
-			$this->createMock(IEventDispatcher::class),
 			$this->logger
 		);
 

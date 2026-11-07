@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Relation;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
@@ -38,13 +39,30 @@ use ReflectionMethod;
 /**
  * @covers \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
+ * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
+ * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
+ * @uses \OCA\OpenRegister\Service\Object\InverseBatch
+ * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
+ * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
+ * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
+ * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender
+ * @uses \OCA\OpenRegister\Service\Object\InverseRenderSupport
+ * @uses \OCA\OpenRegister\Service\Object\InverseSchemaLookups
+ * @uses \OCA\OpenRegister\Service\Object\InverseObjectHooks
+ * @uses \OCA\OpenRegister\Service\Object\InverseTarget
  * @covers \OCA\OpenRegister\Db\SchemaMapper
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Relation\LinkExposure
  * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
  */
 final class LinkExposureWiringTest extends TestCase {
 
@@ -339,10 +357,11 @@ final class LinkExposureWiringTest extends TestCase {
 	 * @return array<int, array{code: string, message: string}> The refusals.
 	 */
 	private function refusalsFor(SchemaMapper $mapper, Schema $schema): array {
-		$reflected = new ReflectionMethod(objectOrMethod: SchemaMapper::class, method: 'exposureRefusals');
-		$reflected->setAccessible(true);
+		$check = new RelationDeclarationCheck(
+			findSchema: static fn (string $id): Schema => $mapper->find(id: $id, _rbac: false, _multitenancy: false)
+		);
 
-		return $reflected->invoke($mapper, $schema);
+		return $check->exposureRefusals(schema: $schema);
 	}//end refusalsFor()
 
 	/**
@@ -410,4 +429,30 @@ final class LinkExposureWiringTest extends TestCase {
 			$this->refusalsFor($this->mapperResolving($this->farSchema()), $this->schemaLinkingTo(null))
 		);
 	}//end testALinkWithNoDeclaredSetIsNotRefused()
+
+	/**
+	 * Of `@self` the identity stays, and a display field only when its value is shown anyway.
+	 *
+	 * @return void
+	 */
+	public function testTheEnvelopeKeepsTheIdentityAndWhatIsShownAnyway(): void {
+		$self = [
+			'id' => 'uuid-1',
+			'register' => 1,
+			'schema' => 9,
+			'name' => 'shown',
+			'summary' => 'private',
+			'description' => 'uuid-1',
+			'image' => LinkExposure::WITHHELD,
+			'slug' => '9',
+			'owner' => 'alice',
+			'relations' => ['geheim' => 'uuid-2'],
+		];
+		$shown = ['status' => 'shown', 'nested' => ['a' => 1], 'geheim' => LinkExposure::WITHHELD];
+
+		$this->assertSame(
+			['id' => 'uuid-1', 'register' => 1, 'schema' => 9, 'name' => 'shown', 'description' => 'uuid-1'],
+			(new LinkExposure())->envelope(self: $self, shown: $shown)
+		);
+	}
 }//end class

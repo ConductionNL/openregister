@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\ContextChat\ContentItem;
 use OCP\ContextChat\IContentManager;
@@ -37,7 +37,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenRegister\Listener\ContextChatSubmissionListener
+ * @covers \OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent

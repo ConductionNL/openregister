@@ -193,6 +193,7 @@ class EdepotSettingsController extends Controller {
 				'password' => 'edepot_sftp_password',
 				'keyPath' => 'edepot_sftp_key_path',
 				'remotePath' => 'edepot_sftp_remote_path',
+				'hostKeyFingerprint' => 'edepot_sftp_host_key_fingerprint',
 				'sourceId' => 'edepot_openconnector_source_id',
 				'baseUrl' => 'edepot_openconnector_base_url',
 			];

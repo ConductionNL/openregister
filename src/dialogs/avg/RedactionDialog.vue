@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="t('openregister', 'Apply redaction')"
 		size="normal"
-		:canClose="!saving"
+		:noClose="saving"
 		@closing="$emit('close')">
 		<form class="redactionForm" @submit.prevent="onSubmit">
 			<p class="redactionIntro">

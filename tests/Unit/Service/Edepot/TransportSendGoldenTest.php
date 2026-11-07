@@ -258,10 +258,6 @@ class TransportSendGoldenTest extends TestCase {
 				[$down],
 				fn ($c, $l) => $oc($c, $l)->testConnection(['sourceId' => 's-1']),
 			],
-			'sftp: without phpseclib' => [
-				[],
-				fn ($c, $l) => $sftp($c, $l)->send($this->sip, self::SFTP),
-			],
 			'sftp: missing file' => [
 				[],
 				fn ($c, $l) => $sftp($c, $l)->send('/nonexistent/sip.zip', self::SFTP),
@@ -269,10 +265,6 @@ class TransportSendGoldenTest extends TestCase {
 			'sftp: no credentials' => [
 				[],
 				fn ($c, $l) => $sftp($c, $l)->send($this->sip, ['host' => 'h', 'username' => 'u']),
-			],
-			'sftp: connection test without phpseclib' => [
-				[],
-				fn ($c, $l) => $sftp($c, $l)->testConnection(self::SFTP),
 			],
 		];
 	}//end scenarios()

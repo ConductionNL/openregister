@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Oas;
 
+use OCA\OpenRegister\Exception\OasValidationException;
+
 /**
  * Collects validation issues for a single OAS generation pass.
  */
@@ -200,6 +202,20 @@ final class OasValidationReport {
 	}//end isEmpty()
 
 	/**
+	 * The refusal of an invalid document in strict mode, carrying this report.
+	 *
+	 * @return OasValidationException The exception to throw
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	public function strictFailure(): OasValidationException {
+		return new OasValidationException(
+			message: 'Generated OAS failed strict validation: ' . count($this->getErrors()) . ' error(s)',
+			report: $this,
+		);
+	}//end strictFailure()
+
+	/**
 	 * Compact summary intended for the `x-validation-summary` extension
 	 * field on the generated OAS document.
 	 *
@@ -239,4 +255,17 @@ final class OasValidationReport {
 		);
 
 	}//end filterBySeverity()
+
+	/**
+	 * A reference repair pass that reports here.
+	 *
+	 * @param list<string> $componentNames The component schemas of the document
+	 *
+	 * @return OasReferenceRepair
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#scenario-pagination-structure-follows-api-42
+	 */
+	public function referenceRepair(array $componentNames): OasReferenceRepair {
+		return new OasReferenceRepair(componentNames: $componentNames, report: $this);
+	}//end referenceRepair()
 }//end class

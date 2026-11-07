@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		:name="t('openregister', 'New {name}', { name: schemaTitle })"
-		:canClose="!saving"
+		:noClose="saving"
 		size="normal"
 		class="or-create-connected-dialog"
 		@closing="$emit('cancel')">

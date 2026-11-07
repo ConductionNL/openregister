@@ -61,9 +61,7 @@ class ExportServiceCoverageTest extends TestCase {
 			$this->groupManager,
 			$this->objectService,
 			$this->cacheHandler,
-			$this->propertyRbacHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class)
-		);
+			$this->propertyRbacHandler);
 	}
 
 	private function invokeMethod(object $obj, string $method, array $args = []): mixed {

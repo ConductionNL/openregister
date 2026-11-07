@@ -107,6 +107,13 @@ class FacetCacheVersion {
 	private const MAX_ENUMERATED_PAIRS = 32;
 
 	/**
+	 * Key of one counter, from its register part and schema part.
+	 *
+	 * @var string
+	 */
+	private const KEY_FORMAT = 'facetver:r%s:s%s';
+
+	/**
 	 * Distributed cache holding the counters, null when no backend is available.
 	 *
 	 * @var ICache|null
@@ -172,12 +179,7 @@ class FacetCacheVersion {
 		}
 
 		foreach ($this->scopeKeysToBump(register: $register, schema: $schema) as $key) {
-			if (isset($this->bumpedThisRequest[$key]) === true) {
-				continue;
-			}
-
-			$this->increment(key: $key);
-			$this->bumpedThisRequest[$key] = true;
+			$this->incrementOnce(key: $key);
 		}
 	}//end bump()
 
@@ -203,17 +205,7 @@ class FacetCacheVersion {
 			return 0;
 		}
 
-		try {
-			$current = $this->cache->get($this->scopeKey(register: $register, schema: $schema));
-		} catch (\Throwable $e) {
-			return 0;
-		}
-
-		if (is_numeric($current) === true) {
-			return (int)$current;
-		}
-
-		return 0;
+		return $this->readCounter(key: $this->scopeKey(register: $register, schema: $schema));
 	}//end version()
 
 	/**
@@ -248,29 +240,29 @@ class FacetCacheVersion {
 	 * @return array<int, array{0: string|null, 1: string|null}> Scope pairs to read.
 	 */
 	private function readScopes(array $registers, array $schemas): array {
-		$registers = array_values(array_unique(array_filter($registers, static fn ($value) => $value !== '')));
-		$schemas = array_values(array_unique(array_filter($schemas, static fn ($value) => $value !== '')));
+		$registers = $this->namedIds(ids: $registers);
+		$schemas = $this->namedIds(ids: $schemas);
 
-		if (empty($schemas) === true && empty($registers) === true) {
-			// Names neither: only the global counter can be right.
-			return [[null, null]];
-		}
-
-		if (empty($schemas) === true) {
-			// Names registers only: the schemas inside them are not knowable
-			// from the query, so read each register's own counter.
-			return array_map(static fn ($register) => [$register, null], $registers);
-		}
-
-		if (empty($registers) === true) {
-			// Names schemas only, across any register.
-			return array_map(static fn ($schema) => [null, $schema], $schemas);
+		if (empty($schemas) === true || empty($registers) === true) {
+			return $this->oneSidedScopes(registers: $registers, schemas: $schemas);
 		}
 
 		if ((count($registers) * count($schemas)) > self::MAX_ENUMERATED_PAIRS) {
 			return [[null, null]];
 		}
 
+		return $this->pairScopes(registers: $registers, schemas: $schemas);
+	}//end readScopes()
+
+	/**
+	 * Every (register, schema) pair of a query that names both.
+	 *
+	 * @param array<int, string> $registers Register ids.
+	 * @param array<int, string> $schemas   Schema ids.
+	 *
+	 * @return array<int, array{0: string, 1: string}> Scope pairs to read.
+	 */
+	private function pairScopes(array $registers, array $schemas): array {
 		$scopes = [];
 		foreach ($registers as $register) {
 			foreach ($schemas as $schema) {
@@ -279,7 +271,42 @@ class FacetCacheVersion {
 		}
 
 		return $scopes;
-	}//end readScopes()
+	}//end pairScopes()
+
+	/**
+	 * The distinct, non-empty ids a query names, as a list.
+	 *
+	 * @param array<int, string> $ids Ids as the query named them.
+	 *
+	 * @return array<int, string> The ids that name something.
+	 */
+	private function namedIds(array $ids): array {
+		return array_values(array_unique(array_filter($ids, static fn ($value) => $value !== '')));
+	}//end namedIds()
+
+	/**
+	 * The scopes of a query that names registers or schemas, but not both.
+	 *
+	 * A query naming registers only cannot know the schemas inside them, so it
+	 * reads each register's own counter. A query naming nothing has only the
+	 * global counter that can be right.
+	 *
+	 * @param array<int, string> $registers Register ids, empty when the query names schemas.
+	 * @param array<int, string> $schemas   Schema ids, empty when the query names registers.
+	 *
+	 * @return array<int, array{0: string|null, 1: string|null}> Scope pairs to read.
+	 */
+	private function oneSidedScopes(array $registers, array $schemas): array {
+		if (empty($registers) === false) {
+			return array_map(static fn ($register) => [$register, null], $registers);
+		}
+
+		if (empty($schemas) === false) {
+			return array_map(static fn ($schema) => [null, $schema], $schemas);
+		}
+
+		return [[null, null]];
+	}//end oneSidedScopes()
 
 	/**
 	 * The scope keys a single object write must bump.
@@ -287,21 +314,14 @@ class FacetCacheVersion {
 	 * @param string|null $register Register id of the written object.
 	 * @param string|null $schema   Schema id of the written object.
 	 *
-	 * @return array<int, string> Cache keys.
+	 * @return array<int, string> Cache keys, global first and the exact pair last.
 	 */
 	private function scopeKeysToBump(?string $register, ?string $schema): array {
-		$keys = [$this->scopeKey(register: null, schema: null)];
-
-		if ($schema !== null && $schema !== '') {
-			$keys[] = $this->scopeKey(register: null, schema: $schema);
-		}
-
-		if ($register !== null && $register !== '') {
-			$keys[] = $this->scopeKey(register: $register, schema: null);
-		}
-
-		if ($register !== null && $register !== '' && $schema !== null && $schema !== '') {
-			$keys[] = $this->scopeKey(register: $register, schema: $schema);
+		$keys = [];
+		foreach (array_unique(['*', $this->scopePart(id: $register)]) as $registerPart) {
+			foreach (array_unique(['*', $this->scopePart(id: $schema)]) as $schemaPart) {
+				$keys[] = sprintf(self::KEY_FORMAT, $registerPart, $schemaPart);
+			}
 		}
 
 		return $keys;
@@ -316,18 +336,69 @@ class FacetCacheVersion {
 	 * @return string Cache key.
 	 */
 	private function scopeKey(?string $register, ?string $schema): string {
-		$registerPart = '*';
-		if ($register !== null && $register !== '') {
-			$registerPart = $register;
-		}
-
-		$schemaPart = '*';
-		if ($schema !== null && $schema !== '') {
-			$schemaPart = $schema;
-		}
-
-		return sprintf('facetver:r%s:s%s', $registerPart, $schemaPart);
+		return sprintf(self::KEY_FORMAT, $this->scopePart(id: $register), $this->scopePart(id: $schema));
 	}//end scopeKey()
+
+	/**
+	 * What an id contributes to a cache key.
+	 *
+	 * @param string|null $id Register or schema id, or null.
+	 *
+	 * @return string The id, or the wildcard when it names nothing.
+	 */
+	private function scopePart(?string $id): string {
+		if ($id === null || $id === '') {
+			return '*';
+		}
+
+		return $id;
+	}//end scopePart()
+
+	/**
+	 * Read one counter, answering 0 when the backend fails.
+	 *
+	 * @param string $key Cache key to read.
+	 *
+	 * @return int The counter value.
+	 */
+	private function readCounter(string $key): int {
+		try {
+			return $this->numberIn(stored: $this->cache->get($key));
+		} catch (\Throwable $e) {
+			return 0;
+		}
+	}//end readCounter()
+
+	/**
+	 * The counter a stored value stands for.
+	 *
+	 * @param mixed $stored What the backend holds for a key.
+	 *
+	 * @return int The number, or 0 when it holds none.
+	 */
+	private function numberIn(mixed $stored): int {
+		if (is_numeric($stored) === true) {
+			return (int)$stored;
+		}
+
+		return 0;
+	}//end numberIn()
+
+	/**
+	 * Increase one counter, unless this request already did and read nothing since.
+	 *
+	 * @param string $key Cache key to increase.
+	 *
+	 * @return void
+	 */
+	private function incrementOnce(string $key): void {
+		if (isset($this->bumpedThisRequest[$key]) === true) {
+			return;
+		}
+
+		$this->increment(key: $key);
+		$this->bumpedThisRequest[$key] = true;
+	}//end incrementOnce()
 
 	/**
 	 * Increase one counter by one.
@@ -344,20 +415,10 @@ class FacetCacheVersion {
 	 */
 	private function increment(string $key): void {
 		try {
-			if ($this->cache instanceof IMemcache) {
-				$result = $this->cache->inc($key);
-				if ($result !== false) {
-					return;
-				}
+			if ($this->incrementedAtomically(key: $key) === false) {
+				$next = ($this->numberIn(stored: $this->cache->get($key)) + 1);
+				$this->cache->set($key, $next, self::VERSION_TTL);
 			}
-
-			$current = $this->cache->get($key);
-			$next = 1;
-			if (is_numeric($current) === true) {
-				$next = ((int)$current + 1);
-			}
-
-			$this->cache->set($key, $next, self::VERSION_TTL);
 		} catch (\Throwable $e) {
 			// A counter that cannot be written leaves the TTL as the only
 			// bound, which is where this started. Say so rather than pass.
@@ -366,4 +427,15 @@ class FacetCacheVersion {
 			);
 		}//end try
 	}//end increment()
+
+	/**
+	 * Increase one counter through the backend's atomic increment.
+	 *
+	 * @param string $key Cache key to increase.
+	 *
+	 * @return bool False when the backend has none or it refused.
+	 */
+	private function incrementedAtomically(string $key): bool {
+		return $this->cache instanceof IMemcache && $this->cache->inc($key) !== false;
+	}//end incrementedAtomically()
 }//end class

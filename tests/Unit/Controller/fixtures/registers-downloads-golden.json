@@ -1,0 +1,511 @@
+{
+    "configuration bare": {
+        "response": {
+            "status": 200,
+            "type": "application/json",
+            "name": "attachment; filename=register_MOMENT.json",
+            "content": "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}"
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "exportConfig",
+                "OCA\\OpenRegister\\Db\\Register",
+                false
+            ]
+        ]
+    },
+    "configuration named": {
+        "response": {
+            "status": 200,
+            "type": "application/json",
+            "name": "attachment; filename=reg_MOMENT.json",
+            "content": "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}"
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "exportConfig",
+                "OCA\\OpenRegister\\Db\\Register",
+                false
+            ]
+        ]
+    },
+    "configuration without objects": {
+        "response": {
+            "status": 200,
+            "type": "application/json",
+            "name": "attachment; filename=reg_MOMENT.json",
+            "content": "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}"
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "exportConfig",
+                "OCA\\OpenRegister\\Db\\Register",
+                false
+            ]
+        ]
+    },
+    "csv bare": {
+        "response": {
+            "status": 200,
+            "type": "text/csv",
+            "name": "attachment; filename=register_schema_MOMENT.csv",
+            "content": "a,b\n"
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "findSchema",
+                "5"
+            ],
+            [
+                "csv",
+                null,
+                [],
+                "alice"
+            ]
+        ]
+    },
+    "csv named": {
+        "response": {
+            "status": 200,
+            "type": "text/csv",
+            "name": "attachment; filename=reg_sch_MOMENT.csv",
+            "content": "a,b\n"
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "findSchema",
+                "5"
+            ],
+            [
+                "csv",
+                "sch",
+                [],
+                "alice"
+            ]
+        ]
+    },
+    "csv without schema": {
+        "response": {
+            "status": 400,
+            "data": {
+                "error": "CSV export requires a specific schema to be selected"
+            }
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ]
+        ]
+    },
+    "excel bare": {
+        "response": {
+            "status": 200,
+            "type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "name": "attachment; filename=register_MOMENT.xlsx",
+            "content": "xlsx"
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "excel",
+                null,
+                [],
+                "alice"
+            ]
+        ]
+    },
+    "excel named": {
+        "response": {
+            "status": 200,
+            "type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "name": "attachment; filename=reg_MOMENT.xlsx",
+            "content": "xlsx"
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "excel",
+                null,
+                [],
+                "alice"
+            ]
+        ]
+    },
+    "pdf bare": {
+        "response": {
+            "status": 200,
+            "type": "application/pdf",
+            "name": "attachment; filename=register_schema_MOMENT.pdf",
+            "content": "%PDF"
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "findSchema",
+                "5"
+            ],
+            [
+                "pdf",
+                null,
+                [],
+                "alice"
+            ]
+        ]
+    },
+    "pdf empty schema": {
+        "response": {
+            "status": 400,
+            "data": {
+                "error": "PDF export requires a specific schema to be selected"
+            }
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ]
+        ]
+    },
+    "pdf fails": {
+        "response": {
+            "status": 400,
+            "data": {
+                "error": "Failed to export register: pdf broke"
+            }
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "findSchema",
+                "5"
+            ],
+            [
+                "pdf",
+                "sch",
+                [],
+                "alice"
+            ]
+        ]
+    },
+    "pdf named": {
+        "response": {
+            "status": 200,
+            "type": "application/pdf",
+            "name": "attachment; filename=reg_sch_MOMENT.pdf",
+            "content": "%PDF"
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "findSchema",
+                "5"
+            ],
+            [
+                "pdf",
+                "sch",
+                [],
+                "alice"
+            ]
+        ]
+    },
+    "pdf needs office": {
+        "response": {
+            "status": 501,
+            "data": {
+                "error": "office_server_required",
+                "message": "PDF output requires an office server (Collabora or Euro-Office) that converts documents to PDF. Ask your administrator to install one, or choose another format."
+            }
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "findSchema",
+                "5"
+            ],
+            [
+                "pdf",
+                "sch",
+                [],
+                "alice"
+            ]
+        ]
+    },
+    "pdf too large": {
+        "response": {
+            "status": 400,
+            "data": {
+                "error": "export_too_large",
+                "message": "PDF export row count (6000) exceeds the maximum allowed (5000). Narrow the export with filters or use CSV/Excel export instead.",
+                "rowCount": 6000,
+                "maxRows": 5000
+            }
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "findSchema",
+                "5"
+            ],
+            [
+                "pdf",
+                "sch",
+                [],
+                "alice"
+            ]
+        ]
+    },
+    "register missing": {
+        "response": {
+            "status": 400,
+            "data": {
+                "error": "Failed to export register: no register"
+            }
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ]
+        ]
+    },
+    "schema missing": {
+        "response": {
+            "status": 400,
+            "data": {
+                "error": "Failed to export register: no schema"
+            }
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "findSchema",
+                "5"
+            ]
+        ]
+    },
+    "template bad format": {
+        "response": {
+            "status": 400,
+            "data": {
+                "error": "Unsupported template format: pdf. Supported formats: xlsx, csv."
+            }
+        },
+        "calls": []
+    },
+    "template csv bare": {
+        "response": {
+            "status": 200,
+            "type": "text/csv",
+            "name": "attachment; filename=schema_template.csv",
+            "content": "a\n"
+        },
+        "calls": [
+            [
+                "findRegister",
+                "reg"
+            ],
+            [
+                "findSchema",
+                "sch"
+            ],
+            [
+                "templateCsv",
+                null,
+                "no filters",
+                "alice"
+            ]
+        ]
+    },
+    "template csv named": {
+        "response": {
+            "status": 200,
+            "type": "text/csv",
+            "name": "attachment; filename=sch_template.csv",
+            "content": "a\n"
+        },
+        "calls": [
+            [
+                "findRegister",
+                "reg"
+            ],
+            [
+                "findSchema",
+                "sch"
+            ],
+            [
+                "templateCsv",
+                "sch",
+                "no filters",
+                "alice"
+            ]
+        ]
+    },
+    "template fails": {
+        "response": {
+            "status": 400,
+            "data": {
+                "error": "Failed to generate import template: template broke"
+            }
+        },
+        "calls": [
+            [
+                "findRegister",
+                "reg"
+            ],
+            [
+                "findSchema",
+                "sch"
+            ],
+            [
+                "templateCsv",
+                "sch",
+                "no filters",
+                "alice"
+            ]
+        ]
+    },
+    "template register missing": {
+        "response": {
+            "status": 404,
+            "data": {
+                "error": "Register or schema not found: no register"
+            }
+        },
+        "calls": [
+            [
+                "findRegister",
+                "reg"
+            ]
+        ]
+    },
+    "template schema missing": {
+        "response": {
+            "status": 404,
+            "data": {
+                "error": "Register or schema not found: no schema"
+            }
+        },
+        "calls": [
+            [
+                "findRegister",
+                "reg"
+            ],
+            [
+                "findSchema",
+                "sch"
+            ]
+        ]
+    },
+    "template xlsx bare": {
+        "response": {
+            "status": 200,
+            "type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "name": "attachment; filename=schema_template.xlsx",
+            "content": "xlsx"
+        },
+        "calls": [
+            [
+                "findRegister",
+                "reg"
+            ],
+            [
+                "findSchema",
+                "sch"
+            ],
+            [
+                "templateXlsx",
+                null,
+                "no filters",
+                "alice"
+            ]
+        ]
+    },
+    "template xlsx named": {
+        "response": {
+            "status": 200,
+            "type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "name": "attachment; filename=sch_template.xlsx",
+            "content": "xlsx"
+        },
+        "calls": [
+            [
+                "findRegister",
+                "reg"
+            ],
+            [
+                "findSchema",
+                "sch"
+            ],
+            [
+                "templateXlsx",
+                "sch",
+                "no filters",
+                "alice"
+            ]
+        ]
+    },
+    "unknown format is a configuration": {
+        "response": {
+            "status": 200,
+            "type": "application/json",
+            "name": "attachment; filename=reg_MOMENT.json",
+            "content": "{\n    \"openapi\": \"3.0.0\",\n    \"url\": \"a/b\"\n}"
+        },
+        "calls": [
+            [
+                "findRegister",
+                1
+            ],
+            [
+                "exportConfig",
+                "OCA\\OpenRegister\\Db\\Register",
+                true
+            ]
+        ]
+    }
+}

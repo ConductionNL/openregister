@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -223,7 +224,7 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	private function evaluationPayload(RematerialiseRun $run, \OCA\OpenRegister\Db\ObjectEntity $entity): ?array {
-		$payload = $this->withSelf(data: ($entity->getObject() ?? []), entity: $entity);
+		$payload = (new CalculationPayload())->withSelf(data: ($entity->getObject() ?? []), entity: $entity);
 		if ($run->referenceSpecs !== null) {
 			$payload['@ref'] = $this->references->resolveAll(
 				payload: $payload,
@@ -451,39 +452,4 @@ class RematerialiseCalculationsCommand extends Command {
 		);
 		return false;
 	}//end saveForMaterialisation()
-
-	/**
-	 * Inject the synthetic `@self` metadata into an evaluation payload.
-	 *
-	 * @param array<string, mixed> $data Object data.
-	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity Object entity providing metadata.
-	 *
-	 * @return array<string, mixed> Payload with `@self` injected.
-	 *
-	 * @spec openspec/specs/computed-fields/spec.md
-	 */
-	private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array {
-		$created = $entity->getCreated();
-		$updated = $entity->getUpdated();
-		$createdFormatted = null;
-		if ($created !== null) {
-			$createdFormatted = $created->format(DateTimeInterface::ATOM);
-		}
-
-		$updatedFormatted = null;
-		if ($updated !== null) {
-			$updatedFormatted = $updated->format(DateTimeInterface::ATOM);
-		}
-
-		$data['@self'] = [
-			'id' => $entity->getUuid(),
-			'uuid' => $entity->getUuid(),
-			'register' => $entity->getRegister(),
-			'schema' => $entity->getSchema(),
-			'owner' => $entity->getOwner(),
-			'created' => $createdFormatted,
-			'updated' => $updatedFormatted,
-		];
-		return $data;
-	}//end withSelf()
 }//end class

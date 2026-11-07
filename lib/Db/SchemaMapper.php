@@ -27,66 +27,35 @@ use Closure;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks;
+use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
+use OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck;
+use OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields;
+use OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck;
+use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
+use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
+use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser;
+use OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaRegisterReads;
+use OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
-use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
-use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
-use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
-use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
-use OCA\OpenRegister\Service\BulkJob\ReversibilityAnnotationValidator;
-use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
-use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
-use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
-use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
-use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
-use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
-use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
-use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
-use OCA\OpenRegister\Service\Flow\MacroActionBinding;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
-use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
-use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
-use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
-use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
-use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
-use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
-use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
-use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
-use OCA\OpenRegister\Service\Rbac\DenyResolver;
-use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
-use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
-use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
-use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
-use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
-use OCA\OpenRegister\Service\Rbac\RevealCollector;
-use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
-use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
-use OCA\OpenRegister\Service\Relation\LinkExposure;
-use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
-use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
-use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
-use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
-use OCA\OpenRegister\Service\Rules\DependentValueValidator;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
-use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance;
-use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -99,7 +68,6 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * SchemaMapper handles database operations for Schema entities
@@ -158,33 +126,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private const MAX_IN_LIST_SIZE = 1000;
 
 	/**
-	 * Event dispatcher instance
-	 *
-	 * Dispatches events when schemas are created, updated, or deleted.
-	 *
-	 * @var IEventDispatcher Event dispatcher instance
-	 */
-	private readonly IEventDispatcher $eventDispatcher;
-
-	/**
-	 * Schema property validator instance
-	 *
-	 * Validates schema property definitions and types.
-	 *
-	 * @var PropertyValidatorHandler Schema property validator instance
-	 */
-	private readonly PropertyValidatorHandler $validator;
-
-	/**
-	 * Organisation mapper for multi-tenancy
-	 *
-	 * Used to get active organisation and apply organisation filters.
-	 *
-	 * @var OrganisationMapperInterface Organisation mapper instance
-	 */
-	protected readonly OrganisationMapperInterface $organisationMapper;
-
-	/**
 	 * App configuration for multi-tenancy settings
 	 *
 	 * Used by MultiTenancyTrait to check multi-tenancy status.
@@ -203,44 +144,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @var array<string, Schema>
 	 */
 	private array $findCache = [];
-
-	/**
-	 * Read-attribution counters, keyed by "<mapper method>|<caller signature>".
-	 *
-	 * Only populated when {@see self::$perfTrace} is on. Static so the picture
-	 * spans every mapper instance in the request.
-	 *
-	 * @var array<string, int>
-	 */
-	private static array $perfCounts = [];
-
-	/**
-	 * Whether read attribution is on: null until resolved, then a bool.
-	 *
-	 * Resolved once per process — reading app config per schema read would
-	 * itself be one of the reads we are trying to count.
-	 *
-	 * @var boolean|null
-	 */
-	private static ?bool $perfTrace = null;
-
-	/**
-	 * User session for current user
-	 *
-	 * Used to get current user context for RBAC and multi-tenancy.
-	 *
-	 * @var IUserSession User session instance
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Group manager for RBAC
-	 *
-	 * Used to check user group memberships for permission verification.
-	 *
-	 * @var IGroupManager Group manager instance
-	 */
-	private readonly IGroupManager $groupManager;
 
 	// Note: $appConfig is provided by MultiTenancyTrait (protected ?IAppConfig $appConfig=null)
 	// We assign it in the constructor to make it available to the trait methods.
@@ -274,11 +177,11 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		IEventDispatcher $eventDispatcher,
-		PropertyValidatorHandler $validator,
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		private readonly IEventDispatcher $eventDispatcher,
+		private readonly PropertyValidatorHandler $validator,
+		protected readonly OrganisationMapperInterface $organisationMapper,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
 		IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction of this mapper keeps
@@ -292,81 +195,18 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
 
-		// Store dependencies for use in mapper methods.
-		$this->eventDispatcher = $eventDispatcher;
-		$this->validator = $validator;
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
 		// Assign appConfig to trait's protected property.
 		$this->appConfig = $appConfig;
 	}//end __construct()
 
 	/**
-	 * Record one schema read against its caller, when attribution is enabled.
+	 * The attribution of schema reads.
 	 *
-	 * A single object create was measured issuing 5,135 sequential scans of
-	 * `oc_openregister_schemas` (2026-07-28). The count alone does not say
-	 * which path is responsible, and the fix differs per path — a cache key
-	 * that is too specific is a different repair from an uncached sibling
-	 * method. This records `<mapper method>|<caller signature>` so the answer
-	 * is measured rather than guessed.
-	 *
-	 * Off by default and gated on `openregister perf_trace_schema_reads`,
-	 * resolved once per process: reading app config on every schema read would
-	 * itself be one of the reads being counted.
-	 *
-	 * @param string $method The mapper method issuing the read.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ErrorControlOperator) The trace file is a
-	 * best-effort diagnostic written from a shutdown function; a failure to
-	 * write it must never surface as a warning on a real request.
-	 *
-	 * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
+	 * @return SchemaReadTrace
 	 */
-	private function traceRead(string $method): void {
-		if (self::$perfTrace === null) {
-			self::$perfTrace = ($this->appConfig->getValueString('openregister', 'perf_trace_schema_reads', '') === '1');
-			if (self::$perfTrace === true) {
-				register_shutdown_function(
-					static function (): void {
-						if (empty(self::$perfCounts) === true) {
-							return;
-						}
-
-						@file_put_contents(
-							'/tmp/or-schema-reads.jsonl',
-							json_encode(self::$perfCounts) . PHP_EOL,
-							(FILE_APPEND | LOCK_EX)
-						);
-						self::$perfCounts = [];
-					}
-				);
-			}
-		}
-
-		if (self::$perfTrace === false) {
-			return;
-		}
-
-		// Four frames past this one is enough to name the responsible path
-		// without paying for a full backtrace on every read.
-		$frames = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 6);
-		$sig = [];
-		foreach (array_slice($frames, 2, 4) as $frame) {
-			$sig[] = (($frame['class'] ?? '') . ($frame['type'] ?? '') . ($frame['function'] ?? '?'));
-		}
-
-		$key = $method . '|' . implode('<', $sig);
-		if (isset(self::$perfCounts[$key]) === false) {
-			self::$perfCounts[$key] = 0;
-		}
-
-		self::$perfCounts[$key]++;
-
-	}//end traceRead()
+	private function readTrace(): SchemaReadTrace {
+		return new SchemaReadTrace(appConfig: $this->appConfig);
+	}//end readTrace()
 
 	/**
 	 * Finds a schema by id, with optional extension for statistics
@@ -404,7 +244,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return $this->findCache[$cacheKey];
 		}
 
-		$this->traceRead(method: 'find');
+		$this->readTrace()->record(method: 'find');
 		\OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'schema.db.read');
 
 		$qb = $this->buildFindByIdentifierQuery(id: $id);
@@ -439,7 +279,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->warnAboutAmbiguousIdentifier(id: $id, rows: $rows);
 
 		// Resolve schema composition if present (allOf, oneOf, anyOf).
-		$schema = $this->resolveSchemaExtension(schema: Schema::fromRow($rows[0]));
+		$schema = $this->composition()->resolve(schema: Schema::fromRow($rows[0]));
 
 		// BUG-DB-10: cache writes reuse the read-side suffix so they stay consistent.
 		$this->findCache[$cacheKey] = $schema;
@@ -493,70 +333,100 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$qb->select('*')
 			->from('openregister_schemas');
 
-		$orConditions = $qb->expr()->orX(
+		$this->whereIdentifier(qb: $qb, id: $id);
+		$this->orderOwnedRowsFirst(qb: $qb);
+
+		return $qb;
+	}//end buildFindByIdentifierQuery()
+
+	/**
+	 * Match an identifier against uuid, slug and, for a numeric one, id, an exact id first.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 * @param int|string    $id The identifier.
+	 *
+	 * @return void
+	 */
+	private function whereIdentifier(IQueryBuilder $qb, string|int $id): void {
+		$conditions = $qb->expr()->orX(
 			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
-			$qb->expr()->eq(
-				$qb->func()->lower('slug'),
-				$qb->createNamedParameter(value: strtolower((string)$id), type: IQueryBuilder::PARAM_STR)
-			)
+			$this->slugEquals(qb: $qb, slug: (string)$id)
 		);
 
 		$idParam = null;
 		if (is_numeric($id) === true) {
 			$idParam = $qb->createNamedParameter(value: (int)$id, type: IQueryBuilder::PARAM_INT);
-			$orConditions->add(
-				$qb->expr()->eq('id', $idParam)
-			);
+			$conditions->add($qb->expr()->eq('id', $idParam));
 		}
 
-		$qb->where($orConditions);
+		$qb->where($conditions);
 
 		if ($idParam !== null) {
-			$qb->addOrderBy(
-				$qb->createFunction(
-					'CASE WHEN id = ' . $idParam . ' THEN 0 ELSE 1 END'
-				),
-				'ASC'
-			);
+			$qb->addOrderBy($qb->createFunction('CASE WHEN id = ' . $idParam . ' THEN 0 ELSE 1 END'), 'ASC');
 		}
+	}//end whereIdentifier()
 
-		// A bare slug can legitimately match SEVERAL rows. Since
-		// Version1Date20260723000000 widened the unique key from
-		// (organisation, slug) to (organisation, application, slug), two apps
-		// may each own a schema with the same generic slug — that widening was
-		// deliberate, and reverting it would put back the collision it fixed.
-		//
-		// What did NOT land with it is the determinism its own docblock promised
-		// ("resolution is scoped by app (import) and by register (runtime) in
-		// the accompanying code change"). The scoped resolvers exist, but every
-		// one of them falls back HERE when it misses, and here there was no
-		// ORDER BY and no row cap at all: which same-slug schema won was decided
-		// by the storage engine.
-		//
-		// Measured 2026-08-02: schemas 5012 "AgentFlow" (application '') and
-		// 5020 "Agent flow" (application 'hermiq') both carry slug `agentflow`
-		// in one organisation. 5012 holds 1 object, 5020 holds 46. Every
-		// slug-based resolution was a coin flip that happened to keep landing on
-		// the populated one.
-		//
-		// The tie-break, in order. First: a row an app OWNS beats an
-		// unattributed one. The widened key exists precisely to express
-		// ownership, so a leftover row that no app claims must never shadow an
-		// app's real schema. Second: the lowest id, matching
-		// RegisterMapper::find() and the `openregister:schemas:dedup` command's
-		// keep-the-lowest rule.
-		//
-		// Ownership has to come first, and not only for tidiness: on the live
-		// duplicate the unordered query returns the UNATTRIBUTED row first, and
-		// so would a bare `ORDER BY id ASC`.
+	/**
+	 * Order rows an application owns before unattributed ones, then by lowest id.
+	 *
+	 * A bare slug can legitimately match SEVERAL rows. Since
+	 * Version1Date20260723000000 widened the unique key from
+	 * (organisation, slug) to (organisation, application, slug), two apps
+	 * may each own a schema with the same generic slug — that widening was
+	 * deliberate, and reverting it would put back the collision it fixed.
+	 *
+	 * What did NOT land with it is the determinism its own docblock promised
+	 * ("resolution is scoped by app (import) and by register (runtime) in
+	 * the accompanying code change"). The scoped resolvers exist, but every
+	 * one of them falls back HERE when it misses, and here there was no
+	 * ORDER BY and no row cap at all: which same-slug schema won was decided
+	 * by the storage engine.
+	 *
+	 * Measured 2026-08-02: schemas 5012 "AgentFlow" (application '') and
+	 * 5020 "Agent flow" (application 'hermiq') both carry slug `agentflow`
+	 * in one organisation. 5012 holds 1 object, 5020 holds 46. Every
+	 * slug-based resolution was a coin flip that happened to keep landing on
+	 * the populated one.
+	 *
+	 * The tie-break, in order. First: a row an app OWNS beats an
+	 * unattributed one. The widened key exists precisely to express
+	 * ownership, so a leftover row that no app claims must never shadow an
+	 * app's real schema. Second: the lowest id, matching
+	 * RegisterMapper::find() and the `openregister:schemas:dedup` command's
+	 * keep-the-lowest rule.
+	 *
+	 * Ownership has to come first, and not only for tidiness: on the live
+	 * duplicate the unordered query returns the UNATTRIBUTED row first, and
+	 * so would a bare `ORDER BY id ASC`.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 */
+	private function orderOwnedRowsFirst(IQueryBuilder $qb): void {
 		$qb->addOrderBy(
 			$qb->createFunction("CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END"),
 			'ASC'
 		);
 		$qb->addOrderBy('id', 'ASC');
+	}//end orderOwnedRowsFirst()
 
-		return $qb;
-	}//end buildFindByIdentifierQuery()
+	/**
+	 * The case-insensitive match of the slug column.
+	 *
+	 * @param IQueryBuilder $qb   The query.
+	 * @param string        $slug The slug.
+	 *
+	 * @return string The comparison.
+	 */
+	private function slugEquals(IQueryBuilder $qb, string $slug): string {
+		return $qb->expr()->eq(
+			$qb->func()->lower('slug'),
+			$qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
+		);
+	}//end slugEquals()
 
 	/**
 	 * Warn when an identifier matched more than one schema, naming every
@@ -570,35 +440,55 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/specs/register-slug-resolution/spec.md
 	 */
 	private function warnAboutAmbiguousIdentifier(string|int $id, array $rows): void {
-		if (count($rows) > 1) {
-			$this->logger->warning(
-				message: sprintf(
-					'[SchemaMapper] Identifier "%s" matches more than one schema; resolving to #%s ("%s", application "%s"). '
-					. 'Fix the duplicate with `occ openregister:schemas:dedup`.',
-					(string)$id,
-					(string)($rows[0]['id'] ?? '?'),
-					(string)($rows[0]['title'] ?? '?'),
-					(string)($rows[0]['application'] ?? '')
-				),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => (string)$id,
-					'candidates' => array_map(
-						static function (array $candidate): array {
-							return [
-								'id' => ($candidate['id'] ?? null),
-								'title' => ($candidate['title'] ?? null),
-								'slug' => ($candidate['slug'] ?? null),
-								'application' => ($candidate['application'] ?? null),
-							];
-						},
-						$rows
-					),
-				]
-			);
-		}//end if
+		if (count($rows) <= 1) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: self::ambiguityMessage(id: (string)$id, chosen: $rows[0]),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'identifier' => (string)$id,
+				'candidates' => array_map(self::candidateSummary(...), $rows),
+			]
+		);
 	}//end warnAboutAmbiguousIdentifier()
+
+	/**
+	 * The ambiguity warning for an identifier and the row it resolved to.
+	 *
+	 * @param string               $id     The identifier.
+	 * @param array<string, mixed> $chosen The first row.
+	 *
+	 * @return string
+	 */
+	private static function ambiguityMessage(string $id, array $chosen): string {
+		return sprintf(
+			'[SchemaMapper] Identifier "%s" matches more than one schema; resolving to #%s ("%s", application "%s"). '
+			. 'Fix the duplicate with `occ openregister:schemas:dedup`.',
+			$id,
+			(string)($chosen['id'] ?? '?'),
+			(string)($chosen['title'] ?? '?'),
+			(string)($chosen['application'] ?? '')
+		);
+	}//end ambiguityMessage()
+
+	/**
+	 * What the ambiguity warning names of a matched row.
+	 *
+	 * @param array<string, mixed> $candidate The row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function candidateSummary(array $candidate): array {
+		return [
+			'id' => ($candidate['id'] ?? null),
+			'title' => ($candidate['title'] ?? null),
+			'slug' => ($candidate['slug'] ?? null),
+			'application' => ($candidate['application'] ?? null),
+		];
+	}//end candidateSummary()
 
 	/**
 	 * Resolve a schema by slug, scoped to a single owning application.
@@ -620,22 +510,42 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *                     does not (yet) own a schema with this slug.
 	 */
 	public function findByApplicationAndSlug(string $slug, string $application): ?Schema {
-		$this->traceRead(method: 'findByApplicationAndSlug');
+		$this->readTrace()->record(method: 'findByApplicationAndSlug');
 
+		$qb = $this->applicationSlugQuery(slug: $slug, application: $application);
+		$qb->setMaxResults(1);
+
+		return $this->firstResolved(qb: $qb);
+	}//end findByApplicationAndSlug()
+
+	/**
+	 * A query for the schemas an application owns under a slug.
+	 *
+	 * @param string $slug        The slug, matched case-insensitively.
+	 * @param string $application The owning application id.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function applicationSlugQuery(string $slug, string $application): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_schemas')
-			->where(
-				$qb->expr()->eq(
-					$qb->func()->lower('slug'),
-					$qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
-				)
-			)
+			->where($this->slugEquals(qb: $qb, slug: $slug))
 			->andWhere(
 				$qb->expr()->eq('application', $qb->createNamedParameter(value: $application, type: IQueryBuilder::PARAM_STR))
-			)
-			->setMaxResults(1);
+			);
 
+		return $qb;
+	}//end applicationSlugQuery()
+
+	/**
+	 * The first row of a query as a resolved schema.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return Schema|null The schema, null when the query matched nothing.
+	 */
+	private function firstResolved(IQueryBuilder $qb): ?Schema {
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
@@ -644,8 +554,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return null;
 		}
 
-		return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
-	}//end findByApplicationAndSlug()
+		return $this->composition()->resolve(schema: Schema::fromRow($row));
+	}//end firstResolved()
 
 	/**
 	 * EVERY schema an application owns under a slug, not just the first.
@@ -670,28 +580,17 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	public function findAllByApplicationAndSlug(string $slug, string $application): array {
-		$this->traceRead(method: 'findAllByApplicationAndSlug');
+		$this->readTrace()->record(method: 'findAllByApplicationAndSlug');
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from('openregister_schemas')
-			->where(
-				$qb->expr()->eq(
-					$qb->func()->lower('slug'),
-					$qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
-				)
-			)
-			->andWhere(
-				$qb->expr()->eq('application', $qb->createNamedParameter(value: $application, type: IQueryBuilder::PARAM_STR))
-			)
-			->orderBy('id', 'ASC');
+		$qb = $this->applicationSlugQuery(slug: $slug, application: $application);
+		$qb->orderBy('id', 'ASC');
 
 		$result = $qb->executeQuery();
 		$rows = $result->fetchAll();
 		$result->closeCursor();
 
 		return array_map(
-			fn (array $row): Schema => $this->resolveSchemaExtension(schema: Schema::fromRow($row)),
+			fn (array $row): Schema => $this->composition()->resolve(schema: Schema::fromRow($row)),
 			$rows
 		);
 	}//end findAllByApplicationAndSlug()
@@ -712,44 +611,52 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *                     none of the register's schemas carry this slug.
 	 */
 	public function findBySlugInIds(string $slug, array $schemaIds): ?Schema {
-		// Normalise to a list of positive integers; an empty set can never match.
+		$ids = self::positiveIds(candidates: $schemaIds);
+		if ($ids === []) {
+			return null;
+		}
+
+		$this->readTrace()->record(method: 'findBySlugInIds');
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where($this->slugEquals(qb: $qb, slug: $slug))
+			->andWhere($this->idIn(qb: $qb, ids: $ids))
+			->setMaxResults(1);
+
+		return $this->firstResolved(qb: $qb);
+	}//end findBySlugInIds()
+
+	/**
+	 * The match of the id column against a list.
+	 *
+	 * @param IQueryBuilder   $qb  The query.
+	 * @param array<int, int> $ids The ids.
+	 *
+	 * @return string The comparison.
+	 */
+	private function idIn(IQueryBuilder $qb, array $ids): string {
+		return $qb->expr()->in('id', $qb->createNamedParameter(value: $ids, type: IQueryBuilder::PARAM_INT_ARRAY));
+	}//end idIn()
+
+	/**
+	 * A candidate id list as positive integers; an empty result can never match.
+	 *
+	 * @param array<mixed> $candidates The candidates.
+	 *
+	 * @return array<int, int>
+	 */
+	private static function positiveIds(array $candidates): array {
 		$ids = [];
-		foreach ($schemaIds as $candidate) {
+		foreach ($candidates as $candidate) {
 			if (is_numeric($candidate) === true && (int)$candidate > 0) {
 				$ids[] = (int)$candidate;
 			}
 		}
 
-		if ($ids === []) {
-			return null;
-		}
-
-		$this->traceRead(method: 'findBySlugInIds');
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from('openregister_schemas')
-			->where(
-				$qb->expr()->eq(
-					$qb->func()->lower('slug'),
-					$qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
-				)
-			)
-			->andWhere(
-				$qb->expr()->in('id', $qb->createNamedParameter(value: $ids, type: IQueryBuilder::PARAM_INT_ARRAY))
-			)
-			->setMaxResults(1);
-
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		if ($row === false) {
-			return null;
-		}
-
-		return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
-	}//end findBySlugInIds()
+		return $ids;
+	}//end positiveIds()
 
 
 	/**
@@ -771,36 +678,19 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	public function findInIds(string|int $id, array $schemaIds): ?Schema {
-		// Normalise to a list of positive integers; an empty set can never match.
-		$ids = [];
-		foreach ($schemaIds as $candidate) {
-			if (is_numeric($candidate) === true && (int)$candidate > 0) {
-				$ids[] = (int)$candidate;
-			}
-		}
-
+		$ids = self::positiveIds(candidates: $schemaIds);
 		if ($ids === []) {
 			return null;
 		}
 
-		$this->traceRead(method: 'findInIds');
+		$this->readTrace()->record(method: 'findInIds');
 
 		// Same identifier forms and tie-breaks as find(), narrowed to the id set.
 		$qb = $this->buildFindByIdentifierQuery(id: (string)$id);
-		$qb->andWhere(
-			$qb->expr()->in('id', $qb->createNamedParameter(value: $ids, type: IQueryBuilder::PARAM_INT_ARRAY))
-		);
+		$qb->andWhere($this->idIn(qb: $qb, ids: $ids));
 		$qb->setMaxResults(1);
 
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		if ($row === false) {
-			return null;
-		}
-
-		return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
+		return $this->firstResolved(qb: $qb);
 	}//end findInIds()
 
 	/**
@@ -822,17 +712,12 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
 	 */
 	public function countBySlug(string $slug): int {
-		$this->traceRead(method: 'countBySlug');
+		$this->readTrace()->record(method: 'countBySlug');
 
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'slug_count'))
 			->from('openregister_schemas')
-			->where(
-				$qb->expr()->eq(
-					$qb->func()->lower('slug'),
-					$qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
-				)
-			);
+			->where($this->slugEquals(qb: $qb, slug: $slug));
 
 		$result = $qb->executeQuery();
 		$row    = $result->fetch();
@@ -926,29 +811,38 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		// list exceeds that. This instance already holds 1,233 schemas, so the
 		// registers-with-stats endpoint tripped it on every request. Chunk it.
 		foreach (array_chunk($ids, self::MAX_IN_LIST_SIZE) as $chunk) {
-			$this->traceRead(method: 'findMultipleOptimized');
-
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from('openregister_schemas')
-				->where(
-					$qb->expr()->in('id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY))
-				);
-
-			$result = $qb->executeQuery();
-
-			while (($row = $result->fetch()) !== false) {
-				$schema = new Schema();
-				$schema = $schema->fromRow($row);
-
-				$schemas[$row['id']] = $schema;
-			}
-
-			$result->closeCursor();
-		}//end foreach
+			$this->readTrace()->record(method: 'findMultipleOptimized');
+			$schemas = array_replace($schemas, $this->schemasWithIds(ids: $chunk));
+		}
 
 		return $schemas;
 	}//end findMultipleOptimized()
+
+	/**
+	 * The schemas with the given ids, keyed by id, unresolved.
+	 *
+	 * @param array<int, mixed> $ids The ids, at most MAX_IN_LIST_SIZE.
+	 *
+	 * @return array<int|string, Schema>
+	 */
+	private function schemasWithIds(array $ids): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where(
+				$qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
+			);
+
+		$result = $qb->executeQuery();
+		$schemas = [];
+		while (($row = $result->fetch()) !== false) {
+			$schemas[$row['id']] = Schema::fromRow($row);
+		}
+
+		$result->closeCursor();
+
+		return $schemas;
+	}//end schemasWithIds()
 
 	/**
 	 * Finds schemas by slug
@@ -975,7 +869,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
-		$this->traceRead(method: 'findBySlug');
+		$this->readTrace()->record(method: 'findBySlug');
 
 		$qb = $this->db->getQueryBuilder();
 
@@ -1044,7 +938,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			// $this->verifyRbacPermission('read', 'schema');
 		}
 
-		$this->traceRead(method: 'findAll');
+		$this->readTrace()->record(method: 'findAll');
 
 		$qb = $this->db->getQueryBuilder();
 
@@ -1136,32 +1030,40 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return;
 		}
 
-		$properties = ($entity->getProperties() ?? []);
-		if ($properties === []) {
-			return;
-		}
-
 		$governance = new ScopedPropertyGovernance(
 			userSession: $this->userSession,
 			groupManager: $this->groupManager,
 			appConfig: $this->appConfig
 		);
 
-		foreach ($properties as $name => $property) {
-			if (is_array($property) === false) {
-				continue;
-			}
-
-			$scope = ($property[ScopedPropertyDeclaration::ANNOTATION] ?? null);
-			if (is_string($scope) === false || trim($scope) === '') {
-				continue;
-			}
-
-			$scope = trim($scope);
+		foreach ($this->scopedProperties(schema: $entity) as $name => $scope) {
 			$governance->assertMayAddAtScope(scope: $scope, path: (string)$name);
 			$governance->assertBelowCeiling(schema: $entity, scope: $scope, property: (string)$name);
 		}
 	}//end assertScopedPropertiesAreGoverned()
+
+	/**
+	 * The scope each scoped property declares, trimmed, by property name.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return array<int|string, string>
+	 */
+	private function scopedProperties(Schema $schema): array {
+		$scopes = [];
+		foreach ($schema->getProperties() as $name => $property) {
+			$scope = null;
+			if (is_array($property) === true) {
+				$scope = ($property[ScopedPropertyDeclaration::ANNOTATION] ?? null);
+			}
+
+			if (is_string($scope) === true && trim($scope) !== '') {
+				$scopes[$name] = trim($scope);
+			}
+		}
+
+		return $scopes;
+	}//end scopedProperties()
 
 	/**
 	 * Ensures that a schema object has a UUID and a slug.
@@ -1169,166 +1071,121 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @param Schema $schema The schema object to clean
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
 	private function cleanObject(Schema $schema): void {
-		$this->cleanRefProperties(schema: $schema);
-		$this->ensureSchemaIdentifiers(schema: $schema);
-		$this->validateConfigurationFields(schema: $schema);
-		$this->buildRequiredFieldsArray(schema: $schema);
-		$this->autoPopulateConfigurationFields(schema: $schema);
-		$this->validateLifecycleAnnotation(schema: $schema);
-		$this->validateMacroActions(schema: $schema);
-		$this->validateMdtoMappingAnnotation(schema: $schema);
-		$this->validateAggregationsAnnotation(schema: $schema);
-		$this->validateCalculationsAnnotation(schema: $schema);
-		$this->validateConsentAnnotation(schema: $schema);
-		$this->validateRelationAnnotation(schema: $schema);
-		$this->validateDependentValueTables(schema: $schema);
-		$this->validateQualityAnnotation(schema: $schema);
-		$this->validateDedupAnnotation(schema: $schema);
-		$this->validateUniqueHintAnnotation(schema: $schema);
-		$this->validateHingeAnnotations(schema: $schema);
-		$this->validateSurvivorshipAnnotation(schema: $schema);
-		$this->validateMergeAnnotation(schema: $schema);
-		$this->validatePartyAnnotation(schema: $schema);
-		$this->validateNotificationsAnnotation(schema: $schema);
-		$this->validateWidgetsAnnotation(schema: $schema);
-		$this->validateArchivalAnnotation(schema: $schema);
-		$this->validateHandoffAnnotation(schema: $schema);
-		$this->validateHandoffContractBinding(schema: $schema);
-		$this->validateMcpAnnotation(schema: $schema);
-		$this->validateRegistryAnnotation(schema: $schema);
-		$this->validateExternalLinksAnnotation(schema: $schema);
-		$this->validateExtendingFormAnnotation(schema: $schema);
-		$this->validateAuthorizationDeny(schema: $schema);
-		$this->validateHierarchyAnnotation(schema: $schema);
-		$this->validateDepartmentMatrix(schema: $schema);
-		$this->validateRevealAudit(schema: $schema);
-		$this->validateReversibilityDeclaration(schema: $schema);
-		$this->validateReviewDeclaration(schema: $schema);
+		$this->prepareForSave(schema: $schema);
+		$this->checkBehaviourDeclarations(schema: $schema);
+		$this->checkDataDeclarations(schema: $schema);
+		$this->checkExchangeDeclarations(schema: $schema);
+		$this->checkAccessDeclarations(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
 
 	/**
-	 * Refuse an authorization block whose deny contradicts its own grants.
+	 * Normalise references, fill defaults and settle the name and description fields.
 	 *
-	 * A deny is the first rule in this layer that subtracts, and the two
-	 * contradictions it makes possible are cheap to catch here and expensive to
-	 * discover later: a principal granted and denied the same verb at one level,
-	 * and a register left with no principal holding `manage`.
+	 * @param Schema $schema The schema being saved.
 	 *
-	 * The refusal is HTTP 422 rather than 400. The request was understood and
-	 * well formed; the rules inside it disagree with each other, and the message
-	 * names both so the author knows which two to look at.
+	 * @return void
+	 */
+	private function prepareForSave(Schema $schema): void {
+		(new ReferenceNormaliser())->normalise(schema: $schema);
+		$defaults = new SchemaDefaults();
+		$defaults->ensureIdentifiers(schema: $schema);
+		$fields = new ConfigurationFields(schema: $schema);
+		$fields->validate();
+		$defaults->buildRequired(schema: $schema);
+		$fields->populate();
+	}//end prepareForSave()
+
+	/**
+	 * What objects of this schema do: lifecycle, actions, calculations, relations and rules.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 */
+	private function checkBehaviourDeclarations(Schema $schema): void {
+		(new LifecycleAnnotationCheck(logger: $this->logger))->check(schema: $schema);
+		(new DeclaredActionCheck(objectActions: $this->objectActions, logger: $this->logger))->check(schema: $schema);
+		(new RecordAnnotationRefusals(logger: $this->logger))->checkMdtoMapping(schema: $schema);
+		(new AdvisoryAnnotationChecks(logger: $this->logger))->checkAggregations(schema: $schema);
+		(new CalculationAnnotationCheck(logger: $this->logger))->check(schema: $schema);
+		(new SubjectDeclarationRefusals())->checkConsent(schema: $schema);
+		(new RelationDeclarationCheck(
+			findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)
+		))->check(schema: $schema);
+		(new PropertyDeclarationRefusals())->checkDependentValues(schema: $schema);
+	}//end checkBehaviourDeclarations()
+
+	/**
+	 * What the data of this schema means: quality, dedup, merge, party and archiving.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 */
+	private function checkDataDeclarations(Schema $schema): void {
+		$advisory = new AdvisoryAnnotationChecks(logger: $this->logger);
+		$records = new RecordAnnotationRefusals(logger: $this->logger);
+		$advisory->checkQuality(schema: $schema);
+		$advisory->checkDedup(schema: $schema);
+		$records->checkUniqueHint(schema: $schema);
+		$advisory->checkHinge(schema: $schema);
+		$advisory->checkSurvivorship(schema: $schema);
+		$advisory->checkMerge(schema: $schema);
+		$advisory->checkParty(schema: $schema);
+		$advisory->checkNotifications(schema: $schema);
+		$records->checkWidgets(schema: $schema);
+		$records->checkArchival(schema: $schema);
+	}//end checkDataDeclarations()
+
+	/**
+	 * How objects leave or enter: handoff, MCP, registry, links and extending forms.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 */
+	private function checkExchangeDeclarations(Schema $schema): void {
+		$exchange = new ExchangeAnnotationRefusals();
+		$exchange->checkHandoff(schema: $schema);
+		$exchange->checkHandoffContract(schema: $schema);
+		$exchange->checkMcp(schema: $schema);
+		(new SubjectDeclarationRefusals())->checkRegistry(schema: $schema);
+		(new RecordAnnotationRefusals(logger: $this->logger))->checkExternalLinks(schema: $schema);
+		(new PropertyDeclarationRefusals())->checkExtendingForm(schema: $schema);
+	}//end checkExchangeDeclarations()
+
+	/**
+	 * Who reaches what: authorization, hierarchy, matrix, reveal audit, reversibility and review.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 */
+	private function checkAccessDeclarations(Schema $schema): void {
+		$this->validateAuthorizationDeny(schema: $schema);
+		$access = new AccessDeclarationChecks(logger: $this->logger);
+		$access->checkHierarchy(schema: $schema);
+		$access->checkDepartmentMatrix(schema: $schema);
+		$access->checkRevealAudit(schema: $schema);
+		(new PropertyDeclarationRefusals())->checkReversibility(schema: $schema);
+		(new SubjectDeclarationRefusals())->checkReview(schema: $schema);
+	}//end checkAccessDeclarations()
+
+	/**
+	 * Refuse an authorization block that cannot hold; RegisterMapper has its own of this name.
 	 *
 	 * @param Schema $schema Schema to validate.
 	 *
 	 * @return void
-	 *
-	 * @throws \OCA\OpenRegister\Exception\AuthorizationBlockException When the block contradicts itself.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function validateAuthorizationDeny(Schema $schema): void {
-		(new MetadataConditionFindings(db: $this->db))->assertSchemaSavable(schema: $schema);
-		(new UnknownRuleKeyFindings(db: $this->db))->assertSchemaSavable(schema: $schema);
-
-		$authorization = $schema->getAuthorization();
-		if (is_array($authorization) === false || $authorization === []) {
-			return;
-		}
-
-		$subject = sprintf('the schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? ''));
-
-		// The catalogue check runs FIRST. An unknown verb is the mistake that
-		// survives longest: it matches nothing, so it grants nothing and denies
-		// nothing, and the block looks correct in every screen that shows it.
-		// Refusing it here is what publishing the set is for.
-		(new PermissionCatalogue(eventDispatcher: $this->eventDispatcher))->assertGrantable(
-			authorization: $this->withoutDeclaredActions(authorization: $authorization, declared: $schema->declaredActionNames()),
-			roleDefinitions: null,
-			subject: $subject
-		);
-
-		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
-			authorization: $authorization,
-			subject: $subject
-		);
+		(new AuthorizationBlockCheck(db: $this->db, eventDispatcher: $this->eventDispatcher))->check(schema: $schema);
 	}//end validateAuthorizationDeny()
-
-	/**
-	 * The block without the actions the schema declares itself, at its top level and in its deny.
-	 *
-	 * A schema may grant its own `x-openregister-action` entries
-	 * (declared-actions spec), which the app-wide catalogue does not list.
-	 *
-	 * @param array<string, mixed> $authorization The block as written.
-	 * @param array<int, string>   $declared      The schema's declared action keys.
-	 *
-	 * @return array<string, mixed> The block the catalogue checks.
-	 *
-	 * @spec openspec/specs/declared-actions/spec.md
-	 */
-	private function withoutDeclaredActions(array $authorization, array $declared): array {
-		$names = array_flip($declared);
-		$checked = array_diff_key($authorization, $names);
-		if (is_array($checked[DenyResolver::DENY_KEY] ?? null) === true) {
-			$checked[DenyResolver::DENY_KEY] = array_diff_key($checked[DenyResolver::DENY_KEY], $names);
-		}
-
-		return $checked;
-	}//end withoutDeclaredActions()
-
-	/**
-	 * Refuse a schema that declares an action reversible that cannot be.
-	 *
-	 * Validated here rather than in the controller because this is the one
-	 * choke point the create, update and file-upload paths all pass through,
-	 * the same reason the relation declarations are checked here.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @throws ReversibilityDeclarationException When a declaration contradicts itself.
-	 *
-	 * @spec openspec/specs/bulk-action-jobs/spec.md
-	 */
-	private function validateReversibilityDeclaration(Schema $schema): void {
-		$errors = (new ReversibilityAnnotationValidator())->validate(configuration: ($schema->getConfiguration() ?? []));
-
-		if ($errors === []) {
-			return;
-		}
-
-		throw new ReversibilityDeclarationException(errors: $errors);
-	}//end validateReversibilityDeclaration()
-
-	/**
-	 * Refuse an `x-openregister-review` declaration the ownership rule cannot honour.
-	 *
-	 * Refused rather than logged: a mistyped ownership read as open would leave
-	 * a four-eyes review open while its author believes it is closed.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @throws ReviewDeclarationException When the declaration is unsound.
-	 *
-	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
-	 */
-	private function validateReviewDeclaration(Schema $schema): void {
-		$errors = (new ReviewAnnotationValidator())->validate(configuration: ($schema->getConfiguration() ?? []));
-
-		if ($errors === []) {
-			return;
-		}
-
-		throw new ReviewDeclarationException(errors: $errors);
-	}//end validateReviewDeclaration()
 
 	/**
 	 * R07: surface dropped `x-openregister-*` keys via the structured
@@ -1356,1733 +1213,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$message .= ' Typo? See Schema::ANNOTATION_VOCABULARY for the declared keys.';
 		$this->logger->warning($message);
 	}//end logDroppedAnnotationKeys()
-
-	/**
-	 * Refuse a declared action bound to a flow nobody can run.
-	 *
-	 * Three of the refusals are questions about the flow — it exists, it is
-	 * published, it has a manual trigger — and all three are SILENT at run
-	 * time. An action bound to a missing flow appears in the menu, does nothing
-	 * when clicked, and looks exactly like a flow that ran and changed nothing.
-	 * The handler cannot tell those apart and cannot fix either, so the refusal
-	 * belongs here, in front of the author who can.
-	 *
-	 * @param Schema $schema The schema being saved.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When a macro binding cannot run or a declared action is malformed.
-	 *
-	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
-	 */
-	private function validateMacroActions(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-
-		$objectActions = $this->objectActions;
-		if ($objectActions instanceof Closure) {
-			$objectActions = $objectActions();
-		}
-
-		if ($objectActions instanceof ObjectActionValidator) {
-			$refusals = $objectActions->refusals(schema: $schema);
-			if ($refusals !== []) {
-				throw new InvalidArgumentException(implode(' ', $refusals));
-			}
-
-			return;
-		}
-
-		// No validator wired: the shape is still checked, and the save says
-		// which half did not run rather than reporting a clean pass.
-		$refusals = array_merge(
-			ObjectActionDefinition::refusals(configuration: $configuration, authorization: ($schema->getAuthorization() ?? [])),
-			MacroActionBinding::refusals(configuration: $configuration)
-		);
-		if ($refusals !== []) {
-			throw new InvalidArgumentException(implode(' ', $refusals));
-		}
-
-		$runnable = array_filter(
-			ObjectActionDefinition::parse(configuration: $configuration),
-			static fn (ObjectActionDefinition $definition): bool => $definition->isRunnable()
-		);
-		if ($runnable !== []) {
-			$this->logger->warning(
-				'[SchemaMapper] Declared actions saved without verifying their flows: no validator is wired'
-			);
-		}
-	}//end validateMacroActions()
-
-	/**
-	 * Validate the optional `x-openregister-lifecycle` annotation.
-	 *
-	 * The annotation is stored under `configuration['x-openregister-lifecycle']`.
-	 * A broken transition `condition`, `autoWhen` or `executionMode` refuses the
-	 * save; every other lifecycle error is advisory and only logged, and the
-	 * schema is stored as written.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When a transition `condition` or automatic-transition
-	 *                   declaration is malformed or unsupported.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function validateLifecycleAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-lifecycle'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		// Validator expects the annotation at top-level alongside `properties`.
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-lifecycle' => $annotation,
-		];
-
-		$errors = (new LifecycleAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// A broken transition CONDITION is the one lifecycle error that refuses
-		// the save. A condition is a gate, and a gate that is stored broken
-		// either blocks every transition it covers or — for a graph block —
-		// silently gates nothing while its author believes it holds. No register
-		// shipped a condition before this key existed, so refusing here breaks
-		// no existing import, which is what the advisory policy below protects.
-		//
-		// The four `autoWhen` / `executionMode` codes join it for the same two
-		// reasons. A stored scalar `autoWhen` is WORSE than a stored broken
-		// condition: it evaluates as a truthy literal, so the transition fires
-		// on every write from its `from` state, each move writing an audit row
-		// and feeding the next decision. The loop cap bounds that, but "bounded
-		// damage on every save" is not an acceptable failure mode for a typo.
-		// An unknown `executionMode`, a required input beside `autoWhen` and an
-		// `autoWhen` on a graph block each describe a move that can never
-		// happen as written. And no register carries either key yet.
-		//
-		// The two `provider` codes join them on the same test. A mistyped
-		// provider tag, or a `provider` declared beside `transitions`, does not
-		// fail at save time: it fails on a GET, when the client asks what the
-		// object can do and OpenRegister cannot resolve the app service that
-		// knows. Stored advisory, that is a lifecycle an author believes is
-		// wired and a user sees as a dead timeline. And `provider` is new, so
-		// no register carries the key yet.
-		$blocking = array_values(
-			array_filter(
-				$errors,
-				static fn (array $err): bool => in_array(
-					$err['code'],
-					[
-						'lifecycle-condition-malformed',
-						'lifecycle-condition-graph-unsupported',
-						'lifecycle-autowhen-malformed',
-						'lifecycle-execution-mode-malformed',
-						'lifecycle-autowhen-requires-input',
-						'lifecycle-autowhen-graph-unsupported',
-						'lifecycle-provider-invalid',
-						'lifecycle-provider-mode-conflict',
-					],
-					true
-				)
-			)
-		);
-		if ($blocking !== []) {
-			// Leads with "Invalid" because SchemasController maps a save
-			// exception to 400 by matching that word; the codes ride along so a
-			// client can tell which rule refused.
-			$details = array_map(
-				static fn (array $err): string => '[' . $err['code'] . '] ' . $err['message'],
-				$blocking
-			);
-			throw new Exception('Invalid x-openregister-lifecycle declaration: ' . implode(' ', $details));
-		}
-
-		// Every other lifecycle error is ADVISORY: rejecting the whole schema
-		// import over it breaks register imports for apps that ship a partial or
-		// different-dialect lifecycle block. So the schema is saved and this is a
-		// warning. Note what that does NOT mean: the annotation is stored as
-		// written, and LifecycleValidationListener still acts on it. It is not
-		// switched off, so the warning must not claim it was.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-lifecycle annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid; it was stored as written and the lifecycle listener still acts on it: '
-			. implode(' ', $messages)
-		);
-	}//end validateLifecycleAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-mdto-mapping` annotation.
-	 *
-	 * 🔴 EVERY ERROR HERE REFUSES THE SAVE, unlike the lifecycle block above.
-	 * Two reasons. The key is new, so no register ships one and refusing breaks
-	 * no existing import, which is exactly the argument that made the lifecycle
-	 * condition codes blocking. And a mapping stored broken is worse than no
-	 * mapping: `MdtoPreconditions` refuses a transfer the moment a schema
-	 * declares a mapping that does not fill a mandatory element, so an
-	 * administrator who saved a typo would find out when a transfer they had
-	 * scheduled stopped, with the schema editor having reported success.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the mapping names an element MDTO does not have, a
-	 *                   property the schema does not declare, no source, two
-	 *                   sources, or leaves a mandatory element unfilled.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
-	 */
-	private function validateMdtoMappingAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$mapping = ($configuration[ElementMappingValidator::ANNOTATION_KEY] ?? null);
-		if (is_array($mapping) === false) {
-			return;
-		}
-
-		$validator = new ElementMappingValidator(catalogue: new MdtoElementCatalogue());
-		$errors = $validator->validate(
-			mapping: $mapping,
-			properties: ($schema->getProperties() ?? [])
-		);
-
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// "Invalid" is load-bearing: SchemasController maps the exception to a
-		// 400 by matching that word, and the codes ride along so a client can
-		// tell which rule refused.
-		$details = array_map(
-			static fn (array $err): string => '[' . $err['code'] . '] ' . $err['message'],
-			$errors
-		);
-
-		throw new Exception(
-			'Invalid ' . ElementMappingValidator::ANNOTATION_KEY . ' declaration: ' . implode(' ', $details)
-		);
-	}//end validateMdtoMappingAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-aggregations` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 */
-	private function validateAggregationsAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-aggregations'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-aggregations' => $annotation,
-		];
-
-		$errors = (new AggregationAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// Aggregations are ADVISORY report-metadata, not a storage requirement.
-		// A malformed / empty / non-canonical aggregation block must not abort the
-		// whole schema import — the schema still stores objects, the aggregation
-		// simply won't be runnable. Degrade to a non-fatal warning.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-aggregations annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (aggregation not registered): ' . implode(' ', $messages)
-		);
-	}//end validateAggregationsAnnotation()
-
-	/**
-	 * Validate declared calculations, from the annotation and from the properties.
-	 *
-	 * Two declarations reach one engine. `x-openregister-calculations` is
-	 * written by hand in a register file; a `calculation` key on a property is
-	 * forwarded by an administration surface. They are merged and validated
-	 * together, so a cycle between one of each is still a cycle.
-	 *
-	 * They differ in what a refusal costs. The annotation stays ADVISORY: a
-	 * register file shipped by an app must not be able to break the whole
-	 * import, so a malformed block is logged and the schema is stored. A
-	 * forwarded declaration is BLOCKING: a person just wrote it in a form and
-	 * pressed save, and storing an expression that will silently never
-	 * evaluate is the failure ADR-005 names. The save refuses and the response
-	 * carries the code and the node that refused it.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws CalculationDeclarationException When a forwarded property declaration is invalid.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/computed-fields/spec.md
-	 */
-	private function validateCalculationsAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$properties = ($schema->getProperties() ?? []);
-		$annotation = ($configuration['x-openregister-calculations'] ?? []);
-		if (is_array($annotation) === false) {
-			$annotation = [];
-		}
-
-		if (is_array($properties) === false) {
-			$properties = [];
-		}
-
-		$forwarding = new PropertyCalculations();
-		$forwarded = $forwarding->fromProperties(properties: $properties);
-		if ($annotation === [] && $forwarded === []) {
-			return;
-		}
-
-		$errors = [];
-
-		// A name declared in both places has two expressions and no rule says
-		// which wins, so the save refuses rather than picking one.
-		foreach ($forwarding->duplicates(annotation: $annotation, properties: $properties) as $duplicate) {
-			$errors[] = [
-				'code' => 'calculation-duplicate-declaration',
-				'message' => sprintf(
-					'Calculation "%s" is declared both on the property and in x-openregister-calculations.',
-					$duplicate
-				),
-			];
-		}
-
-		$shape = [
-			'properties' => $properties,
-			'x-openregister-calculations' => $forwarding->merge(annotation: $annotation, properties: $properties),
-			'x-openregister-references' => ($configuration['x-openregister-references'] ?? []),
-			'x-openregister-aggregate-refs' => ($configuration['x-openregister-aggregate-refs'] ?? []),
-		];
-
-		$errors = array_merge($errors, (new CalculationAnnotationValidator())->validate($shape));
-		if ($errors === []) {
-			return;
-		}
-
-		$blocking = $forwarding->blockingErrors(errors: $errors, forwarded: array_map('strval', array_keys($forwarded)));
-		if ($blocking !== []) {
-			throw new CalculationDeclarationException(errors: $blocking);
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-calculations annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (calculation not evaluated): ' . implode(' ', $messages)
-		);
-	}//end validateCalculationsAnnotation()
-
-	/**
-	 * Validate the `x-openregister-consent` annotation on a schema's properties.
-	 *
-	 * Blocking, and deliberately so (unlike the optional
-	 * `x-openregister-notifications` annotation, which degrades to a warning):
-	 * an evidentiary consent property that silently never fills evidence is
-	 * worse than a save that names the mistake, since an app author would
-	 * otherwise believe consent is being proven when it is not.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws ConsentDeclarationException When a declaration cannot be honoured.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/consent-evidence-envelope/spec.md
-	 */
-	private function validateConsentAnnotation(Schema $schema): void {
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($properties) === false) {
-			return;
-		}
-
-		$hasAnnotation = false;
-		foreach ($properties as $definition) {
-			if (is_array($definition) === true && isset($definition['x-openregister-consent']) === true) {
-				$hasAnnotation = true;
-				break;
-			}
-		}
-
-		if ($hasAnnotation === false) {
-			return;
-		}
-
-		$errors = (new ConsentAnnotationValidator())->validate(['properties' => $properties]);
-		if ($errors === []) {
-			return;
-		}
-
-		throw new ConsentDeclarationException(errors: $errors);
-	}//end validateConsentAnnotation()
-
-	/**
-	 * Validate the relation declarations on a schema's properties.
-	 *
-	 * Blocking, and deliberately so. Both keys are new, so no register carries
-	 * one and refusing breaks no existing import, which is the test the
-	 * advisory policy above sets. And both failures they catch are silent
-	 * ones: a symmetric relation that also names an inverse reads one way on
-	 * one side and the other way on the other, and a `type` naming a
-	 * vocabulary entry that does not exist renders as the generic "referenced
-	 * by" fallback forever while its author believes the link is typed.
-	 *
-	 * Validated here rather than in the controller because this is the one
-	 * choke point the create, update and file-upload paths all pass through.
-	 *
-	 * @param Schema $schema Schema being saved.
-	 *
-	 * @throws RelationDeclarationException When a relation declaration cannot be honoured.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function validateRelationAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-		];
-
-		$vocabulary = ($configuration[RelationAnnotationValidator::VOCABULARY_ANNOTATION] ?? null);
-		if ($vocabulary !== null) {
-			$shape[RelationAnnotationValidator::VOCABULARY_ANNOTATION] = $vocabulary;
-		}
-
-		$errors = (new RelationAnnotationValidator())->validate($shape);
-
-		// What a link EXPOSES is refused here too, and only once the shape above
-		// is sound: a type naming a vocabulary key nobody declared has already
-		// failed, and asking what that type exposes would be asking about
-		// nothing.
-		if ($errors === []) {
-			$errors = $this->exposureRefusals(schema: $schema);
-		}
-
-		if ($errors === []) {
-			return;
-		}
-
-		throw new RelationDeclarationException(errors: $errors);
-	}//end validateRelationAnnotation()
-
-	/**
-	 * Refuse an `exposes` list naming a property the linked schema does not declare.
-	 *
-	 * Refused at SAVE, because the alternative is silent. A name that matches
-	 * nothing is simply absent from every projection afterwards: the author
-	 * reads a 200 and ships a link that hands over one field fewer than they
-	 * wrote, and nothing anywhere says so.
-	 *
-	 * 🔑 A FAR SCHEMA THAT CANNOT BE RESOLVED IS NOT A REFUSAL, deliberately.
-	 * Schemas arrive in whatever order a configuration import walks them, so
-	 * the schema a `$ref` names may genuinely not exist yet when this one is
-	 * saved. Refusing there would make a valid import fail on ordering alone.
-	 * The check is therefore what it can honestly be: a refusal when the far
-	 * schema IS resolvable and does not declare the property. The
-	 * `relation-without-ref` refusal above already covers a link with no `$ref`
-	 * at all.
-	 *
-	 * @param Schema $schema The schema being saved.
-	 *
-	 * @return array<int, array{code: string, message: string}> The refusals.
-	 *
-	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
-	 */
-	private function exposureRefusals(Schema $schema): array {
-		$resolver = new RelationTypeResolver();
-		$exposure = new LinkExposure();
-		$properties = ($schema->getProperties() ?? []);
-
-		if (is_array($properties) === false) {
-			return [];
-		}
-
-		$errors = [];
-		foreach ($resolver->descriptors(schema: $schema) as $property => $descriptor) {
-			if ($exposure->declaresExposure(relationType: $descriptor) === false) {
-				continue;
-			}
-
-			$far = $this->schemaForReference(property: ($properties[$property] ?? null));
-			if ($far === null) {
-				continue;
-			}
-
-			$farProperties = ($far->getProperties() ?? []);
-			if (is_array($farProperties) === false) {
-				$farProperties = [];
-			}
-
-			$reason = $exposure->refusalFor(
-				relationType: $descriptor,
-				farProperties: array_map('strval', array_keys($farProperties)),
-				typeName: (string)(($descriptor['type'] ?? null) ?? $property)
-			);
-
-			if ($reason !== null) {
-				$errors[] = ['code' => 'relation-exposes-unknown-property', 'message' => $reason];
-			}
-		}//end foreach
-
-		return $errors;
-	}//end exposureRefusals()
-
-	/**
-	 * The schema a reference property points at, or null when it cannot be resolved.
-	 *
-	 * @param mixed $property The property definition.
-	 *
-	 * @return Schema|null The linked schema.
-	 *
-	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
-	 */
-	private function schemaForReference(mixed $property): ?Schema {
-		if (is_object($property) === true) {
-			$property = (array)$property;
-		}
-
-		if (is_array($property) === false) {
-			return null;
-		}
-
-		$items = ($property['items'] ?? null);
-		if (is_object($items) === true) {
-			$items = (array)$items;
-		}
-
-		$reference = ($property['$ref'] ?? null);
-		if (is_string($reference) === false && is_array($items) === true) {
-			$reference = ($items['$ref'] ?? null);
-		}
-
-		if (is_string($reference) === false || trim($reference) === '') {
-			return null;
-		}
-
-		// `#/components/schemas/Besluit`, a URL, a uuid, an id or a bare slug.
-		// find() already resolves the last three; the first two reduce to a slug.
-		$identifier = trim($reference);
-		if (str_contains($identifier, '/') === true) {
-			$identifier = substr($identifier, (strrpos($identifier, '/') + 1));
-		}
-
-		if ($identifier === '') {
-			return null;
-		}
-
-		try {
-			return $this->find(id: $identifier, _rbac: false, _multitenancy: false);
-		} catch (\Throwable $e) {
-			// Unresolvable is not a refusal; see the note on exposureRefusals().
-			return null;
-		}
-	}//end schemaForReference()
-
-	/**
-	 * Validate the two property-level rule annotations this change adds.
-	 *
-	 * REFUSES, it does not warn. A table naming a property the schema does not
-	 * declare, or a value the controlling property cannot take, does not fail
-	 * loudly at object save: it constrains nothing, and the object it was
-	 * written to guard saves cleanly. Storing it advisory would be storing a
-	 * rule its author believes is enforced.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * `x-openregister-default-expression` rides along for the same reason: an
-	 * expression the evaluator cannot dispatch does not fail at save, it fails
-	 * on the first create, one object at a time, for whoever happens to be
-	 * using the register that day.
-	 *
-	 * @throws DependentValueDeclarationException When a declaration is malformed or names nothing.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) The expression shape check reads one constant
-	 *   operator table and holds no state; it is the same walk the evaluator dispatches on.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function validateDependentValueTables(Schema $schema): void {
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($properties) === false || $properties === []) {
-			return;
-		}
-
-		$errors = array_merge(
-			(new DependentValueValidator())->validate(['properties' => $properties]),
-			ExpressionDefaultResolver::validateDeclarations(properties: $properties)
-		);
-		if ($errors === []) {
-			return;
-		}
-
-		throw new DependentValueDeclarationException(errors: $errors);
-	}//end validateDependentValueTables()
-
-	/**
-	 * Validate the optional `x-openregister-extends-form` annotation.
-	 *
-	 * An app whose own form authors schema properties declares which
-	 * vocabulary keys that form forwards. A key nobody defines is refused
-	 * naming it, in both directions: a type the vocabulary does not hold fails
-	 * the property, and a forwarded key it does not hold fails the
-	 * declaration. Silence here is how an app ends up narrowing a platform
-	 * contract by ten capabilities and nobody can tell it was deliberate.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws PropertyVocabularyException When a declaration forwards a key the vocabulary does not hold.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/runtime-schema-api/spec.md
-	 */
-	private function validateExtendingFormAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($configuration) === false) {
-			$configuration = [];
-		}
-
-		if (is_array($properties) === false) {
-			$properties = [];
-		}
-
-		$declarations = new ExtendingFormDeclaration();
-		$found = $declarations->fromSchema(configuration: $configuration, properties: $properties);
-		if ($found === []) {
-			return;
-		}
-
-		$errors = [];
-		foreach ($found as $path => $annotation) {
-			$errors = array_merge($errors, $declarations->validate(annotation: $annotation, path: $path));
-		}
-
-		if ($errors === []) {
-			return;
-		}
-
-		$keys = implode(', ', array_map(static fn (array $error): string => $error['key'], $errors));
-		throw new PropertyVocabularyException(
-			message: 'Invalid ' . ExtendingFormDeclaration::ANNOTATION . " declaration: '{$keys}'. "
-			. 'Read /api/schemas/property-vocabulary for the keys a form may forward.',
-			errors: $errors
-		);
-	}//end validateExtendingFormAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-quality` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 */
-	private function validateQualityAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-quality'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-quality' => $annotation,
-		];
-
-		$errors = (new QualityAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// Quality scoring is ADVISORY derived-field metadata, not a storage
-		// requirement. A malformed quality block must not abort the whole schema
-		// import — the schema still stores objects, the score simply won't be
-		// materialised. Degrade to a non-fatal warning.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-quality annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (quality score not materialised): ' . implode(' ', $messages)
-		);
-	}//end validateQualityAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-dedup` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 */
-	private function validateDedupAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-dedup'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-dedup' => $annotation,
-		];
-
-		$errors = (new DedupAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// Dedup match rules are ADVISORY metadata consumed on demand by
-		// DuplicateDetectionService. A malformed block must not abort the schema
-		// import — duplicate detection simply falls back to caller-supplied rules.
-		// Degrade to a non-fatal warning.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-dedup annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (declared match rules not used): ' . implode(' ', $messages)
-		);
-	}//end validateDedupAnnotation()
-
-	/**
-	 * Validate the lens, list and geographic-inheritance annotations.
-	 *
-	 * All three are declarative reading instructions, not storage requirements:
-	 * a malformed one costs a surface, never an object. So this degrades to a
-	 * warning rather than aborting the import — but it does warn, because the
-	 * failure mode without it is a lens that renders empty forever and reads
-	 * exactly like a field nobody filled in.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function validateHingeAnnotations(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-		];
-
-		$declared = false;
-		foreach ([Schema::LENS_ANNOTATION, Schema::LIST_ANNOTATION, Schema::GEO_INHERITANCE_ANNOTATION] as $key) {
-			if (isset($configuration[$key]) === false) {
-				continue;
-			}
-
-			$shape[$key] = $configuration[$key];
-			$declared = true;
-		}
-
-		if ($declared === false) {
-			return;
-		}
-
-		$errors = (new HingeAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'Hinge annotations on schema "' . ((string)($schema->getSlug() ?? '')) . '" are '
-			. 'invalid and were ignored: ' . implode(' ', $messages)
-		);
-	}//end validateHingeAnnotations()
-
-	/**
-	 * Validate the optional `x-openregister-unique-hint` annotation.
-	 *
-	 * FATAL, unlike {@see validateDedupAnnotation()} one method above, which
-	 * degrades a malformed block to a logged warning. The difference is the
-	 * cost of being wrong. A malformed dedup block costs a duplicate sweep you
-	 * can re-run; a nomination of a property that does not exist costs a
-	 * uniqueness alert that silently never fires, and the only symptom is a
-	 * second case on the same KvK number found months later or never. The
-	 * administrator who typed the name is the one person who can fix it, and
-	 * they are still holding the form.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws UniqueHintException When a nomination names a property the schema does not declare.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
-	 */
-	private function validateUniqueHintAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		if (array_key_exists('x-openregister-unique-hint', $configuration) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-unique-hint' => $configuration['x-openregister-unique-hint'],
-		];
-
-		$errors = (new UniqueHintAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-
-		throw new UniqueHintException(
-			message: 'x-openregister-unique-hint: ' . implode(' ', $messages),
-			errors: $errors
-		);
-	}//end validateUniqueHintAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-survivorship` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 */
-	private function validateSurvivorshipAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-survivorship'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-survivorship' => $annotation,
-		];
-
-		$errors = (new SurvivorshipAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// Survivorship is ADVISORY derived-field metadata, not a storage
-		// requirement. A malformed survivorship block must not abort the whole
-		// schema import — the schema still stores objects, the golden record
-		// simply won't be materialised. Degrade to a non-fatal warning.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-survivorship annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (golden record not materialised): ' . implode(' ', $messages)
-		);
-	}//end validateSurvivorshipAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-merge` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 */
-	private function validateMergeAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-merge'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-merge' => $annotation,
-		];
-
-		$errors = (new MergeAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// Merge config is ADVISORY steward-action metadata, not a storage
-		// requirement. A malformed merge block must not abort the whole schema
-		// import — the schema still stores objects, merges simply fall back to
-		// the documented defaults. Degrade to a non-fatal warning.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-merge annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (merge falls back to defaults): ' . implode(' ', $messages)
-		);
-	}//end validateMergeAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-party` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
-	 */
-	private function validatePartyAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-party'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-party' => $annotation,
-		];
-
-		$errors = (new PartyAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// A party declaration is ADVISORY metadata on top of a schema that
-		// stores objects perfectly well without it, so a malformed block must
-		// not abort the import. It is warned about rather than dropped: the
-		// failure a dropped declaration causes is a party schema that reads as
-		// an ordinary one, and the operator needs the field name to fix it.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-party annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (the schema is not treated as a party schema): ' . implode(' ', $messages)
-		);
-	}//end validatePartyAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-notifications` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 */
-	private function validateNotificationsAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-notifications'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-notifications' => $annotation,
-		];
-
-		$errors = (new NotificationAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-
-		// A malformed OPTIONAL notification annotation must NOT block the schema
-		// itself — and, on config import, the entire register + every schema
-		// that references it (the import aborts and 0 objects land). The runtime
-		// dispatcher only fires notifications whose trigger matches a known
-		// event, so an invalid/legacy notification spec (e.g. the older
-		// `onCreate`/`onStatusChange` shape without a trigger.type) is simply
-		// inert. Log a warning so it can be cleaned up, but keep the schema
-		// valid and importable.
-		$this->logger->warning(
-			'Schema "' . $schema->getSlug() . '" has invalid x-openregister-notifications (ignored at runtime, fix to enable): ' . implode(' ', $messages),
-			['schema' => $schema->getSlug()]
-		);
-	}//end validateNotificationsAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-widgets` annotation.
-	 *
-	 * Schemas that pre-declare widgets (e.g. the `dashboard` schema in
-	 * the `reports` register) carry the array under
-	 * `configuration['x-openregister-widgets']`. Operators see shape
-	 * errors at schema-save time rather than at first render.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 */
-	private function validateWidgetsAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-widgets'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = ['x-openregister-widgets' => $annotation];
-
-		$errors = (new WidgetAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		throw new Exception('x-openregister-widgets: ' . implode(' ', $messages));
-	}//end validateWidgetsAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-archival` annotation.
-	 *
-	 * The annotation is stored under `configuration['x-openregister-archival']`.
-	 * Errors are aggregated by ArchivalAnnotationValidator and thrown here as
-	 * a single message so callers see a clear schema-save failure.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
-	 */
-	private function validateArchivalAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-archival'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = ['x-openregister-archival' => $annotation];
-
-		$findings = (new ArchivalAnnotationValidator())->validate(schema: $shape);
-		$split = ArchivalAnnotationValidator::partition(findings: $findings);
-
-		// An UNKNOWN key is surfaced and ignored, never fatal — the same rule
-		// R07 applies to an unknown `x-openregister-*` key one level up
-		// (logDroppedAnnotationKeys). It declares nothing, so dropping it loses
-		// nothing, whereas refusing it refuses the whole schema: at import time
-		// that costs the register every object of that schema, and the operator
-		// sees it as a seeding failure several layers away from the annotation.
-		if (count($split['warnings']) > 0) {
-			$this->logger->warning(
-				sprintf(
-					'[OpenRegister.SchemaMapper] Ignored %d unknown x-openregister-archival key(s) on schema "%s": %s',
-					count($split['warnings']),
-					(string)($schema->getSlug() ?? ''),
-					implode(' ', array_map(static fn (array $finding) => $finding['message'], $split['warnings']))
-				)
-			);
-		}
-
-		if (count($split['errors']) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
-		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
-	}//end validateArchivalAnnotation()
-
-	/**
-	 * Refuse `audit: true` on a property nobody is kept out of (row 5.6).
-	 *
-	 * THE REFUSAL IS THE POINT OF THE FEATURE. An audited reveal answers "who
-	 * saw the BSN", and it can only answer it while the entries are rare. A
-	 * property with no `read` rule is shown to every reader of the object, so
-	 * auditing it writes an entry per reader per object per request for a
-	 * value nobody was ever kept from — and the handful of entries that matter
-	 * are then somewhere inside several million that do not. A trail nobody can
-	 * search is the same as no trail, arrived at by a route that looks like
-	 * diligence.
-	 *
-	 * @param Schema $schema The schema being saved.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When a property audits a reveal it cannot restrict.
-	 *
-	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
-	 */
-	private function validateRevealAudit(Schema $schema): void {
-		$offenders = [];
-		foreach (($schema->getProperties() ?? []) as $name => $config) {
-			if (is_array($config) === false) {
-				continue;
-			}
-
-			$authorization = ($config['authorization'] ?? null);
-			if (is_array($authorization) === false) {
-				continue;
-			}
-
-			if (($authorization[RevealCollector::AUDIT_KEY] ?? null) !== true) {
-				continue;
-			}
-
-			$read = ($authorization['read'] ?? null);
-			if (is_array($read) === true && count($read) > 0) {
-				continue;
-			}
-
-			$offenders[] = (string)$name;
-		}
-
-		if ($offenders === []) {
-			return;
-		}
-
-		throw new Exception(
-			'authorization.audit is only meaningful on a property with a read rule, and these have none: '
-			. implode(', ', $offenders)
-		);
-	}//end validateRevealAudit()
-
-	/**
-	 * Refuse a broken `authorization.matrix` at save (row B13).
-	 *
-	 * THIS ONE THROWS for the same reason the hierarchy validator does: the
-	 * block decides who reaches which objects, and every way of getting it
-	 * wrong is silent afterwards. A matrix on `afdeling` where the schema
-	 * declares `department` compiles to a condition on a column that does not
-	 * exist, which the SQL builder answers by DROPPING the predicate, and a
-	 * rule meant to narrow a group to its own department becomes an
-	 * unconditional grant to the whole group. There is no error anywhere on
-	 * that path; there is only a group that can suddenly read everything.
-	 *
-	 * @param Schema $schema The schema being saved.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When the matrix cannot be compiled.
-	 *
-	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
-	 */
-	private function validateDepartmentMatrix(Schema $schema): void {
-		$authorization = $schema->getAuthorization();
-		if (is_array($authorization) === false
-			|| array_key_exists(DepartmentMatrixCompiler::KEY, $authorization) === false
-		) {
-			return;
-		}
-
-		$findings = (new DepartmentMatrixValidator(declaredActions: $schema->declaredActionNames()))->validate(
-			properties: ($schema->getProperties() ?? []),
-			authorization: $authorization
-		);
-
-		if (count($findings) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $finding) => $finding['message'], $findings);
-		throw new Exception('authorization.matrix: ' . implode(' ', $messages));
-	}//end validateDepartmentMatrix()
-
-	/**
-	 * Refuse a broken `x-openregister-hierarchy` declaration at save.
-	 *
-	 * THIS ONE THROWS, and the reason is what the annotation does: it names the
-	 * edge a GRANT travels down. An author who points it at the wrong property
-	 * has not written a cosmetic mistake. `assignee` on a case references a
-	 * USER, so a hierarchy declared over it would hand everybody who may read
-	 * one object every object filed to the same person, and from that moment on
-	 * it is indistinguishable from working inheritance. The save is the only
-	 * point at which the two can be told apart.
-	 *
-	 * An unknown key inside the block is surfaced and ignored, the same rule
-	 * {@see self::validateArchivalAnnotation()} records: it declares nothing, so
-	 * dropping it loses nothing, and refusing it would cost the register every
-	 * object of that schema at import time.
-	 *
-	 * @param Schema $schema The schema being saved.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When the declaration cannot be honoured.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private function validateHierarchyAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration[HierarchyGrantExpander::ANNOTATION] ?? null);
-		if ($annotation === null) {
-			return;
-		}
-
-		$findings = (new HierarchyAnnotationValidator())->validate(
-			[
-				'properties' => ($schema->getProperties() ?? []),
-				'slug' => (string)($schema->getSlug() ?? ''),
-				// The id and the uuid, because the import path rewrites every
-				// `$ref` to the resolved schema id before the schema reaches
-				// this validator. Without them a self-reference that was
-				// written as the slug arrives here as "169" and the whole
-				// schema is refused. See identitiesOf().
-				'id' => (string)($schema->getId() ?? ''),
-				'uuid' => (string)($schema->getUuid() ?? ''),
-				'title' => (string)($schema->getTitle() ?? ''),
-				HierarchyGrantExpander::ANNOTATION => $annotation,
-			]
-		);
-
-		$split = HierarchyAnnotationValidator::partition(findings: $findings);
-
-		if (count($split['warnings']) > 0) {
-			$this->logger->warning(
-				sprintf(
-					'[OpenRegister.SchemaMapper] Ignored %d unknown %s key(s) on schema "%s": %s',
-					count($split['warnings']),
-					HierarchyGrantExpander::ANNOTATION,
-					(string)($schema->getSlug() ?? ''),
-					implode(' ', array_map(static fn (array $finding) => $finding['message'], $split['warnings']))
-				)
-			);
-		}
-
-		if (count($split['errors']) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
-		throw new Exception(HierarchyGrantExpander::ANNOTATION . ': ' . implode(' ', $messages));
-	}//end validateHierarchyAnnotation()
-
-	/**
-	 * Refuse a broken `x-openregister-external-links` declaration at save.
-	 *
-	 * This one throws rather than warns, and the reason is the feature's own
-	 * failure mode. A link whose placeholder cannot be filled is HIDDEN by
-	 * design, because a URL with `{bagId}` still in it is a broken link that
-	 * looks like a working one. That makes a misspelt placeholder and an object
-	 * with no value indistinguishable at render: an author would read a 200,
-	 * see no link, and have no way to tell which of the two happened. The save
-	 * is the only moment the two can be told apart, so it is the only moment
-	 * worth refusing at.
-	 *
-	 * @param Schema $schema The schema being saved.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When a declaration cannot produce a link.
-	 *
-	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
-	 */
-	private function validateExternalLinksAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration[ExternalLinkResolver::ANNOTATION] ?? null);
-		if ($annotation === null) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			ExternalLinkResolver::ANNOTATION => $annotation,
-		];
-
-		$errors = (new ExternalLinkAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		throw new Exception(ExternalLinkResolver::ANNOTATION . ': ' . implode(' ', $errors));
-	}//end validateExternalLinksAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-handoff` annotation (ADR-051).
-	 *
-	 * The annotation is stored under `configuration['x-openregister-handoff']`.
-	 * A malformed handoff declaration REJECTS the schema (contract: schema-save
-	 * validation SHALL reject with the typed handoff-* error codes) — unlike
-	 * advisory annotations, a broken handoff would otherwise surface as a
-	 * runtime conversion failure on user action.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/semantic-object-handoff/spec.md
-	 *   (Requirement: `x-openregister-handoff` declarative dialect)
-	 */
-	private function validateHandoffAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-handoff'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-handoff' => $annotation,
-			'x-openregister-lifecycle' => ($configuration['x-openregister-lifecycle'] ?? null),
-		];
-
-		$errors = (new HandoffAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
-		throw new Exception('x-openregister-handoff: ' . implode(' ', $messages));
-	}//end validateHandoffAnnotation()
-
-	/**
-	 * Validate the optional `handoffContract` binding block (ADR-051,
-	 * provider side). Stored at `configuration['handoffContract']`; when
-	 * present, every mandatory contract field of each bound kind must map to
-	 * an existing own property — otherwise the schema is rejected with
-	 * `handoff-contract-incomplete` listing the missing fields. A schema that
-	 * implements a kind with NO binding block passes untouched (it is simply
-	 * not a handoff provider).
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the binding block is incomplete or malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/semantic-object-handoff/spec.md
-	 *   (Scenario: Implementer omits a mandatory contract field)
-	 */
-	private function validateHandoffContractBinding(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		if (array_key_exists('handoffContract', $configuration) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'handoffContract' => $configuration['handoffContract'],
-			'implements' => ($configuration['implements'] ?? null),
-			'jsonld' => ($configuration['jsonld'] ?? null),
-			'x-schema-org' => ($configuration['x-schema-org'] ?? null),
-		];
-
-		$errors = (new HandoffContractBindingValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
-		throw new Exception('handoffContract: ' . implode(' ', $messages));
-	}//end validateHandoffContractBinding()
-
-	/**
-	 * Validate the optional `x-openregister-mcp` annotation (ADR-063).
-	 *
-	 * The annotation is stored under `configuration['x-openregister-mcp']`.
-	 * This change defines and validates the declaration only — no MCP tool
-	 * is emitted and no serving surface is altered by this validator (that
-	 * is the `or-mcp-derived-tool-provider` change). A malformed block
-	 * fails the schema save loudly, consistent with every sibling
-	 * `x-openregister-*` dialect validator.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Requirement: REQ-DIALECT-002 — Save-time validation of the dialect shape)
-	 */
-	private function validateMcpAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-mcp'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-mcp' => $annotation,
-		];
-
-		$errors = (new McpAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
-		throw new Exception('x-openregister-mcp: ' . implode(' ', $messages));
-	}//end validateMcpAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-registry` annotation.
-	 *
-	 * The annotation is stored under `configuration['x-openregister-registry']`.
-	 * Per `registry-subscriptions` REQ 1, an annotation naming an `identity`
-	 * or `owned` property the schema does not declare MUST refuse the save
-	 * — unlike most other `x-openregister-*` dialects, this one is
-	 * BLOCKING, not advisory, because a stored-but-wrong annotation would
-	 * let the inbound registry endpoint write a property nobody reviewed.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md
-	 */
-	private function validateRegistryAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-registry'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-registry' => $annotation,
-		];
-
-		$errors = (new RegistryAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
-		throw new Exception('x-openregister-registry: ' . implode(' ', $messages));
-	}//end validateRegistryAnnotation()
-
-	/**
-	 * Clean $ref properties to ensure they are strings
-	 *
-	 * @param Schema $schema Schema to clean
-	 *
-	 * @return void
-	 */
-	private function cleanRefProperties(Schema $schema): void {
-		$properties = $schema->getProperties() ?? [];
-		$this->enforceRefIsStringRecursive(properties: $properties);
-		$schema->setProperties($properties);
-	}//end cleanRefProperties()
-
-	/**
-	 * Ensure schema has UUID, slug, version and source
-	 *
-	 * @param Schema $schema Schema to update
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
-	 */
-	private function ensureSchemaIdentifiers(Schema $schema): void {
-		if ($schema->getUuid() === null) {
-			$schema->setUuid((string)Uuid::v4());
-		}
-
-		if (empty($schema->getSlug()) === true) {
-			$schema->setSlug($this->generateSlug(title: $schema->getTitle() ?? 'schema'));
-		}
-
-		if ($schema->getVersion() === null) {
-			$schema->setVersion('0.0.1');
-		}
-
-		if ($schema->getSource() === null || $schema->getSource() === '') {
-			$schema->setSource('internal');
-		}
-	}//end ensureSchemaIdentifiers()
-
-	/**
-	 * Generate a slug from a title
-	 *
-	 * @param string $title Title to convert
-	 *
-	 * @return string Generated slug
-	 */
-	private function generateSlug(string $title): string {
-		$slug = strtolower(trim($title));
-		$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
-		$slug = preg_replace('/-+/', '-', $slug);
-		return trim($slug, '-');
-	}//end generateSlug()
-
-	/**
-	 * Validate that configuration fields exist in properties
-	 *
-	 * @param Schema $schema Schema to validate
-	 *
-	 * @throws \Exception If field doesn't exist
-	 *
-	 * @return void
-	 */
-	private function validateConfigurationFields(Schema $schema): void {
-		$propertyKeys = array_keys($schema->getProperties() ?? []);
-		$configuration = $schema->getConfiguration() ?? [];
-
-		$objectNameField = $configuration['objectNameField'] ?? '';
-		if (empty($objectNameField) === false) {
-			$this->validateConfigField(
-				fieldValue: $objectNameField,
-				propertyKeys: $propertyKeys,
-				fieldName: 'objectNameField'
-			);
-		}
-
-		$objDescField = $configuration['objectDescriptionField'] ?? '';
-		if (empty($objDescField) === false) {
-			$this->validateConfigField(
-				fieldValue: $objDescField,
-				propertyKeys: $propertyKeys,
-				fieldName: 'objectDescriptionField'
-			);
-		}
-	}//end validateConfigurationFields()
-
-	/**
-	 * Validate a configuration field value against property keys
-	 *
-	 * Supports multiple formats:
-	 * - Simple property names: "name"
-	 * - Twig-style templates: "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
-	 * - Pipe-separated fallbacks: "name | identifier | type" (uses first available)
-	 * - Dot-notation paths into an object property: "description.nl.longDescription",
-	 *   valid when the first segment is a property (the reader walks the rest)
-	 *
-	 * @param string $fieldValue The field value to validate
-	 * @param array $propertyKeys Array of valid property keys
-	 * @param string $fieldName Name of the field for error messages
-	 *
-	 * @throws \Exception If field references non-existent properties
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
-	 */
-	private function validateConfigField(string $fieldValue, array $propertyKeys, string $fieldName): void {
-		// Check if it's a Twig-style template (contains {{ ... }}).
-		if (strpos($fieldValue, '{{') !== false && strpos($fieldValue, '}}') !== false) {
-			// Extract property names from template: {{ propName }}.
-			preg_match_all('/\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/', $fieldValue, $matches);
-			// Group 1 is always populated by preg_match_all, so no `?? []` fallback.
-			$templateProps = $matches[1];
-
-			if (empty($templateProps) === true) {
-				// Template syntax but no valid property references found.
-				return;
-			}
-
-			// Validate each property in the template exists.
-			foreach ($templateProps as $prop) {
-				if (in_array($prop, $propertyKeys, true) === false) {
-					throw new Exception(
-						"The template property '{$prop}' in {$fieldName} does not exist."
-					);
-				}
-			}
-
-			return;
-		}//end if
-
-		// Check if it's a pipe-separated fallback list (e.g., "name | identifier | type").
-		if (strpos($fieldValue, '|') !== false) {
-			$fallbackFields = array_map('trim', explode('|', $fieldValue));
-
-			// Validate that at least one fallback field exists in properties.
-			$hasValidField = false;
-			foreach ($fallbackFields as $field) {
-				if ($this->isPropertyPath(path: $field, propertyKeys: $propertyKeys) === true) {
-					$hasValidField = true;
-					break;
-				}
-			}
-
-			if ($hasValidField === false) {
-				throw new Exception(
-					"None of the fallback fields in {$fieldName} ('{$fieldValue}') exist as properties in the schema."
-				);
-			}
-
-			return;
-		}//end if
-
-		// Simple property name or dot-notation path - its first segment must be a property.
-		if ($this->isPropertyPath(path: $fieldValue, propertyKeys: $propertyKeys) === false) {
-			throw new Exception(
-				"The value for {$fieldName} ('{$fieldValue}') does not exist as a property in the schema."
-			);
-		}
-	}//end validateConfigField()
-
-	/**
-	 * Whether a configuration path names a property of the schema.
-	 *
-	 * A plain name must be a property; a dot-notation path must start with one,
-	 * as MetadataHydrationHandler::getValueFromPath() reads it.
-	 *
-	 * @param string            $path         The property name or dot-notation path.
-	 * @param array<int|string> $propertyKeys The schema's property keys.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
-	 */
-	private function isPropertyPath(string $path, array $propertyKeys): bool {
-		if (in_array($path, $propertyKeys, true) === true) {
-			return true;
-		}
-
-		$first = strstr($path, '.', true);
-
-		return $first !== false && $first !== '' && in_array($first, $propertyKeys, true) === true;
-	}//end isPropertyPath()
-
-	/**
-	 * Build required fields array from schema or property flags
-	 *
-	 * @param Schema $schema Schema to update
-	 *
-	 * @return void
-	 */
-	private function buildRequiredFieldsArray(Schema $schema): void {
-		$existingRequired = $schema->getRequired();
-
-		if (empty($existingRequired) === false) {
-			return;
-		}
-
-		$requiredFields = [];
-		$properties = $schema->getProperties() ?? [];
-
-		foreach ($properties as $propertyKey => $property) {
-			if ($this->isPropertyRequired(property: $property) === true) {
-				$requiredFields[] = $propertyKey;
-			}
-		}
-
-		$schema->setRequired($requiredFields);
-	}//end buildRequiredFieldsArray()
-
-	/**
-	 * Check if a property is marked as required
-	 *
-	 * @param array $property Property definition
-	 *
-	 * @return bool True if required
-	 */
-	private function isPropertyRequired(array $property): bool {
-		$requiredValue = $property['required'] ?? null;
-
-		if ($requiredValue === null) {
-			return false;
-		}
-
-		if ($requiredValue === true || $requiredValue === 'true') {
-			return true;
-		}
-
-		return is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true';
-	}//end isPropertyRequired()
-
-	/**
-	 * Auto-populate configuration name/description fields if empty
-	 *
-	 * @param Schema $schema Schema to update
-	 *
-	 * @return void
-	 */
-	private function autoPopulateConfigurationFields(Schema $schema): void {
-		$propertyKeys = array_keys($schema->getProperties() ?? []);
-		$configuration = $schema->getConfiguration() ?? [];
-
-		$nameFieldKeys = ['name', 'naam', 'title', 'titel'];
-		$descFieldKeys = ['description', 'beschrijving', 'omschrijving', 'summary'];
-
-		$objectNameField = $configuration['objectNameField'] ?? '';
-		if (empty($objectNameField) === true) {
-			$matchedKey = $this->findFirstMatchingKey(
-				propertyKeys: $propertyKeys,
-				candidates: $nameFieldKeys
-			);
-			if ($matchedKey !== null) {
-				$configuration['objectNameField'] = $matchedKey;
-				$schema->setConfiguration($configuration);
-			}
-		}
-
-		$objDescField = $configuration['objectDescriptionField'] ?? '';
-		if (empty($objDescField) === true) {
-			$matchedKey = $this->findFirstMatchingKey(
-				propertyKeys: $propertyKeys,
-				candidates: $descFieldKeys
-			);
-			if ($matchedKey !== null) {
-				$configuration['objectDescriptionField'] = $matchedKey;
-				$schema->setConfiguration($configuration);
-			}
-		}
-	}//end autoPopulateConfigurationFields()
-
-	/**
-	 * Find first key from candidates that exists in property keys
-	 *
-	 * @param array $propertyKeys Property key array
-	 * @param array $candidates Candidate keys to search for
-	 *
-	 * @return string|null Found key or null
-	 */
-	private function findFirstMatchingKey(array $propertyKeys, array $candidates): ?string {
-		foreach ($candidates as $key) {
-			if (in_array($key, $propertyKeys) === true) {
-				return $key;
-			}
-		}
-
-		return null;
-	}//end findFirstMatchingKey()
-
-	/**
-	 * Recursively enforce that $ref is always a string in all properties and array items
-	 *
-	 * @param array $properties The properties array to check (passed by reference)
-	 *
-	 * @return void
-	 *
-	 * @throws \Exception If $ref is not a string or cannot be converted
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 */
-	private function enforceRefIsStringRecursive(array &$properties): void {
-		foreach ($properties as $key => &$property) {
-			// If property is not an array, skip.
-			if (is_array($property) === false) {
-				continue;
-			}
-
-			// Check $ref at this level.
-			if (($property['$ref'] ?? null) !== null) {
-				if (is_array($property['$ref']) === true && (($property['$ref']['id'] ?? null) !== null)) {
-					$property['$ref'] = $property['$ref']['id'];
-				} elseif (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
-					$property['$ref'] = $property['$ref']->id;
-				} elseif (is_int($property['$ref']) === true) {
-					// The `!== ''` clause that used to sit here was dead: `is_string()
-					// === false` has already excluded every string, so an empty-string
-					// $ref never reaches this branch and is NOT rejected today, despite
-					// what the message below says. Left as-is deliberately — tightening
-					// it would reject schemas that currently import, so it belongs in a
-					// behaviour change, not a lint migration.
-				} elseif (is_string($property['$ref']) === false) {
-					$refValue = json_encode($property['$ref']);
-					$msg = "Schema property '$key' has a \$ref that is not a string or empty: " . $refValue;
-					throw new Exception($msg);
-				}
-			}
-
-			// Check array items recursively.
-			if (($property['items'] ?? null) !== null && is_array($property['items']) === true) {
-				$this->enforceRefIsStringRecursive(properties: $property['items']);
-			}
-
-			// Check nested properties recursively.
-			if (($property['properties'] ?? null) !== null && is_array($property['properties']) === true) {
-				$this->enforceRefIsStringRecursive(properties: $property['properties']);
-			}
-		}//end foreach
-	}//end enforceRefIsStringRecursive()
 
 	/**
 	 * Creates a schema from an array
@@ -3113,11 +1243,11 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		// **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
 		// This ensures we only store the differences, not the full resolved schema.
-		// NOTE: Circular reference validation is done during resolveSchemaExtension().
+		// NOTE: Circular reference validation is done during SchemaComposition::resolve().
 		$schema = $this->extractSchemaDelta(schema: $schema);
 
 		// **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
-		$this->generateFacetConfiguration(schema: $schema);
+		(new FacetConfiguration())->generate(schema: $schema);
 
 		$schema = $this->insert(entity: $schema);
 
@@ -3151,7 +1281,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->assertScopedPropertiesAreGoverned(entity: $entity);
 
 		// Fetch old entity directly without organisation filter for event comparison.
-		$this->traceRead(method: 'update');
+		$this->readTrace()->record(method: 'update');
 
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
@@ -3164,11 +1294,11 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		// **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
 		// This ensures we only store the differences, not the full resolved schema.
-		// NOTE: Circular reference validation is done during resolveSchemaExtension().
+		// NOTE: Circular reference validation is done during SchemaComposition::resolve().
 		$entity = $this->extractSchemaDelta(schema: $entity);
 
 		// **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
-		$this->generateFacetConfiguration(schema: $entity);
+		(new FacetConfiguration())->generate(schema: $entity);
 
 		/*
 		 * **MODIFICATION STAMP**: `updated` was never written on an edit. The
@@ -3320,20 +1450,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	/**
 	 * Count the objects still attached to a schema.
 	 *
-	 * Objects live in the per-register/schema MAGIC tables
-	 * (`openregister_table_{registerId}_{schemaId}`). The previous implementation of
-	 * this guard counted rows in the retired `openregister_objects` blob table, which
-	 * is always empty for magic-table objects — so it counted 0 and waved every
-	 * deletion through.
-	 *
-	 * This is a direct DB query, not a call into MagicMapper/MagicStatisticsHandler,
-	 * and that is deliberate: MagicStatisticsHandler injects SchemaMapper, so injecting
-	 * it back here would be a genuine circular dependency. The table name is
-	 * deterministic, so the count can be taken without the mapper.
-	 *
-	 * Soft-deleted rows are excluded, matching the object count the controller's guard
-	 * reports to the caller.
-	 *
 	 * @param int $schemaId The schema id.
 	 *
 	 * @return int The number of live objects attached to the schema.
@@ -3341,69 +1457,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
 	private function countAttachedObjects(int $schemaId): int {
-		$total = 0;
-
-		foreach ($this->getRegisterIdsWithSchema(schemaId: $schemaId) as $registerId) {
-			$tableName = MagicMapperInterface::TABLE_PREFIX . $registerId . '_' . $schemaId;
-
-			if ($this->db->tableExists($tableName) === false) {
-				continue;
-			}
-
-			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->func()->count('*'))
-				->from($tableName)
-				->where($qb->expr()->isNull('_deleted'));
-
-			$result = $qb->executeQuery();
-			$total += (int)$result->fetchOne();
-			$result->closeCursor();
-		}
-
-		return $total;
+		return (new SchemaRegisterReads(db: $this->db))->attachedObjects(schemaId: $schemaId);
 	}//end countAttachedObjects()
-
-	/**
-	 * Find the ids of every register that references a schema.
-	 *
-	 * Direct query + decode in PHP, mirroring RegisterMapper::getAllRegisterIdsWithSchema():
-	 * the `schemas` column is JSON on Postgres and text elsewhere, so there is no
-	 * portable SQL predicate for "array contains N". Registers are O(10s) per install,
-	 * so the cost is trivial. RegisterMapper itself cannot be injected here — it
-	 * injects SchemaMapper.
-	 *
-	 * @param int $schemaId The schema id.
-	 *
-	 * @return array<int, int> The register ids.
-	 */
-	private function getRegisterIdsWithSchema(int $schemaId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'schemas')
-			->from('openregister_registers');
-
-		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
-		$result->closeCursor();
-
-		$needle = (string)$schemaId;
-		$registerIds = [];
-
-		foreach ($rows as $row) {
-			$schemas = json_decode(($row['schemas'] ?? '[]'), true);
-			if (is_array($schemas) === false) {
-				continue;
-			}
-
-			foreach ($schemas as $candidate) {
-				if ((string)$candidate === $needle) {
-					$registerIds[] = (int)$row['id'];
-					break;
-				}
-			}
-		}
-
-		return $registerIds;
-	}//end getRegisterIdsWithSchema()
 
 	/**
 	 * Get the number of registers associated with each schema
@@ -3417,496 +1472,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return int[]
 	 */
 	public function getRegisterCountPerSchema(): array {
-		// TODO: Optimize for large datasets (current approach loads all registers into memory).
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'schemas')
-			->from('openregister_registers');
-		$result = $qb->executeQuery()->fetchAll();
-
-		$counts = [];
-		foreach ($result as $row) {
-			// Decode the schemas JSON array for each register.
-			$decoded = json_decode($row['schemas'], true);
-			$schemas = [];
-			if ($decoded !== null && $decoded !== false) {
-				$schemas = $decoded;
-			}
-
-			foreach ($schemas as $schemaId) {
-				$counts[(int)$schemaId] = ($counts[(int)$schemaId] ?? 0) + 1;
-			}
-		}
-
-		return $counts;
+		return (new SchemaRegisterReads(db: $this->db))->registerCountPerSchema();
 	}//end getRegisterCountPerSchema()
-
-	/**
-	 * Find schemas that have properties referencing the given schema
-	 *
-	 * This method searches through all schemas to find ones that have properties
-	 * with $ref pointing to the target schema, indicating a relationship.
-	 *
-	 * @param Schema|int|string $schema The target schema to find references to
-	 *
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the target schema does not exist
-	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple target schemas are found
-	 * @throws \OCP\DB\Exception If a database error occurs
-	 *
-	 * @return Schema[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Schema>
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	public function getRelated(Schema|int|string $schema): array {
-		// If we received a Schema entity, get its ID, otherwise find the schema.
-		if ($schema instanceof Schema === false) {
-			// Find the target schema to get all its identifiers.
-			// Metadata read: bypasses multitenancy, like the controller's own
-			// outgoing half and every other schema catalog lookup.
-			$targetSchema = $this->find(id: $schema, _multitenancy: false);
-			$targetSchemaId = (string)$targetSchema->getId();
-			$targetSchemaUuid = $targetSchema->getUuid();
-			$targetSchemaSlug = $targetSchema->getSlug();
-		}
-
-		if ($schema instanceof Schema === true) {
-			$targetSchemaId = (string)$schema->getId();
-			$targetSchemaUuid = $schema->getUuid();
-			$targetSchemaSlug = $schema->getSlug();
-		}
-
-		// Get all schemas to search through their properties (metadata read).
-		$allSchemas = $this->findAll(_multitenancy: false);
-		$relatedSchemas = [];
-
-		foreach ($allSchemas as $currentSchema) {
-			// Skip the target schema itself.
-			if ($currentSchema->getId() === (int)$targetSchemaId) {
-				continue;
-			}
-
-			// Get the properties of the current schema.
-			$properties = $currentSchema->getProperties() ?? [];
-
-			// Search for references to the target schema.
-			if ($this->hasReferenceToSchema(
-				properties: $properties,
-				targetSchemaId: $targetSchemaId,
-				targetSchemaUuid: $targetSchemaUuid,
-				targetSchemaSlug: $targetSchemaSlug
-			) === true
-			) {
-				$relatedSchemas[] = $currentSchema;
-			}
-		}//end foreach
-
-		return $relatedSchemas;
-	}//end getRelated()
-
-	/**
-	 * Recursively check if properties contain a reference to the target schema
-	 *
-	 * This method searches through properties recursively to find $ref values
-	 * that match the target schema's ID, files: UUID, rbac: or slug.
-	 *
-	 * @param array $properties The properties array to search through
-	 * @param string $targetSchemaId The target schema ID to look for
-	 * @param string $targetSchemaUuid The target schema UUID to look for
-	 * @param string $targetSchemaSlug The target schema slug to look for
-	 *
-	 * @return bool True if a reference to the target schema is found
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Recursive reference checking requires many conditions
-	 */
-	public function hasReferenceToSchema(
-		array $properties,
-		string $targetSchemaId,
-		string $targetSchemaUuid,
-		string $targetSchemaSlug,
-	): bool {
-		foreach ($properties as $property) {
-			// Skip non-array properties.
-			if (is_array($property) === false) {
-				continue;
-			}
-
-			// Check if this property has a $ref that matches our target schema.
-			if (($property['$ref'] ?? null) !== null) {
-				$ref = $property['$ref'];
-
-				// Check exact matches first.
-				if ($ref === $targetSchemaId
-					|| $ref === $targetSchemaUuid
-					|| $ref === $targetSchemaSlug
-					|| $ref === (int)$targetSchemaId
-				) {
-					return true;
-				}
-
-				// Check if the ref contains the target schema slug in JSON Schema format.
-				// Format: "#/components/schemas/slug" or "components/schemas/slug" etc.
-				if (is_string($ref) === true && empty($targetSchemaSlug) === false) {
-					if (str_contains($ref, '/schemas/' . $targetSchemaSlug) === true
-						|| str_contains($ref, 'schemas/' . $targetSchemaSlug) === true
-						|| str_ends_with($ref, '/' . $targetSchemaSlug) === true
-					) {
-						return true;
-					}
-				}
-
-				// Check if the entity contains the target schema UUID.
-				if (is_string($ref) === true && empty($targetSchemaUuid) === false) {
-					if (str_contains($ref, $targetSchemaUuid) === true) {
-						return true;
-					}
-				}
-			}//end if
-
-			// Recursively check nested properties.
-			if (($property['properties'] ?? null) !== null && is_array($property['properties']) === true) {
-				if ($this->hasReferenceToSchema(
-					properties: $property['properties'],
-					targetSchemaId: $targetSchemaId,
-					targetSchemaUuid: $targetSchemaUuid,
-					targetSchemaSlug: $targetSchemaSlug
-				) === true
-				) {
-					return true;
-				}
-			}
-
-			// Check array items for references.
-			if (($property['items'] ?? null) !== null && is_array($property['items']) === true) {
-				if ($this->hasReferenceToSchema(
-					properties: [$property['items']],
-					targetSchemaId: $targetSchemaId,
-					targetSchemaUuid: $targetSchemaUuid,
-					targetSchemaSlug: $targetSchemaSlug
-				) === true
-				) {
-					return true;
-				}
-			}
-		}//end foreach
-
-		return false;
-	}//end hasReferenceToSchema()
-
-	/**
-	 * Generate facet configuration from schema properties
-	 *
-	 * @param Schema $schema The schema to generate facets for.
-	 *
-	 * @return void
-	 *
-	 * @deprecated This method is no longer needed since facets are now computed at runtime
-	 *             from property-level `facetable: true` settings. The system automatically
-	 *             reads facetable properties when processing facet requests.
-	 *             This method is kept for backward compatibility only.
-	 */
-	private function generateFacetConfiguration(Schema $schema): void {
-		$properties = $schema->getProperties() ?? [];
-		$facetConfig = [
-			'@self' => [
-				'register' => ['type' => 'terms'],
-				'schema' => ['type' => 'terms'],
-				'created' => ['type' => 'date_histogram', 'interval' => 'month'],
-				'updated' => ['type' => 'date_histogram', 'interval' => 'month'],
-				'published' => ['type' => 'date_histogram', 'interval' => 'month'],
-				'owner' => ['type' => 'terms'],
-			],
-			'object_fields' => [],
-		];
-
-		// Analyze properties for facetable fields.
-		foreach ($properties as $fieldName => $property) {
-			if (is_array($property) === false) {
-				continue;
-			}
-
-			$facetType = $this->determineFacetTypeForProperty(
-				property: $property,
-				fieldName: $fieldName
-			);
-			if ($facetType !== null) {
-				$facetConfig['object_fields'][$fieldName] = ['type' => $facetType];
-
-				// Add interval for date histograms.
-				if ($facetType === 'date_histogram') {
-					$facetConfig['object_fields'][$fieldName]['interval'] = 'month';
-				}
-			}
-		}
-
-		// Store the facet configuration in the schema.
-		// $facetConfig always contains at least '@self', so it's never empty.
-		$schema->setFacets($facetConfig);
-	}//end generateFacetConfiguration()
-
-	/**
-	 * Determine the appropriate facet type for a schema property
-	 *
-	 * PERFORMANCE OPTIMIZATION**: Smart detection of facetable fields based on
-	 * property characteristics, names, and explicit facetable markers.
-	 *
-	 * @param array $property The property definition
-	 * @param string $fieldName The field name
-	 *
-	 * @return null|string The facet type ('terms', 'date_histogram') or null if not facetable
-	 *
-	 * @psalm-return 'date_histogram'|'terms'|null
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 */
-	private function determineFacetTypeForProperty(array $property, string $fieldName): ?string {
-		// Check if explicitly marked as not facetable (facetable: false).
-		// This must be checked first to prevent auto-detection from overriding explicit exclusion.
-		$facetable = $property['facetable'] ?? null;
-		if ($facetable === false || $facetable === 'false'
-			|| (is_string($facetable) === true && strtolower(trim($facetable)) === 'false')
-		) {
-			return null;
-		}
-
-		// Check if explicitly marked as facetable.
-		$isFacetableString = is_string($facetable) === true
-			&& strtolower(trim($facetable)) === 'true';
-		if ($facetable !== null
-			&& ($facetable === true || $facetable === 'true'
-			|| $isFacetableString === true) === true
-		) {
-			return $this->determineFacetTypeFromProperty(property: $property);
-		}
-
-		// Auto-detect common facetable field names.
-		$commonFacetFields = [
-			'type',
-			'status',
-			'category',
-			'tags',
-			'label',
-			'group',
-			'department',
-			'location',
-			'priority',
-			'state',
-			'classification',
-			'genre',
-			'brand',
-			'model',
-			'version',
-			'license',
-			'language',
-		];
-
-		$lowerFieldName = strtolower($fieldName);
-		if (in_array($lowerFieldName, $commonFacetFields) === true) {
-			return $this->determineFacetTypeFromProperty(property: $property);
-		}
-
-		// Auto-detect enum properties (good for faceting).
-		if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true && count($property['enum']) > 0) {
-			return 'terms';
-		}
-
-		// Auto-detect date/datetime fields.
-		$propertyType = $property['type'] ?? '';
-		if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true) {
-			return 'date_histogram';
-		}
-
-		// Check for date-like field names.
-		$dateFields = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
-		foreach ($dateFields as $dateField) {
-			if (str_contains($lowerFieldName, $dateField) === true) {
-				return 'date_histogram';
-			}
-		}
-
-		return null;
-	}//end determineFacetTypeForProperty()
-
-	/**
-	 * Determine facet type from property characteristics
-	 *
-	 * @param array $property The property definition
-	 *
-	 * @return string The facet type ('terms' or 'date_histogram')
-	 *
-	 * @psalm-return 'date_histogram'|'terms'
-	 */
-	private function determineFacetTypeFromProperty(array $property): string {
-		$propertyType = $property['type'] ?? 'string';
-		$propertyFormat = $property['format'] ?? '';
-
-		// Date/datetime properties use date_histogram.
-		// Checks both 'type' (e.g. type: date) and 'format' (e.g. type: string, format: date)
-		// because JSON Schema represents dates as type: "string" with format: "date".
-		if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true
-			|| in_array($propertyFormat, ['date', 'date-time', 'datetime']) === true
-		) {
-			return 'date_histogram';
-		}
-
-		// Enum properties use terms.
-		if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true) {
-			return 'terms';
-		}
-
-		// Boolean, integer, number with small ranges use terms.
-		if (in_array($propertyType, ['boolean', 'integer', 'number']) === true) {
-			return 'terms';
-		}
-
-		// Default to terms for other types.
-		return 'terms';
-	}//end determineFacetTypeFromProperty()
-
-	/**
-	 * Resolve schema composition by merging referenced schemas
-	 *
-	 * This method implements JSON Schema composition patterns conforming to the specification:
-	 * 1. Handles 'allOf' - instance must validate against ALL schemas (multiple inheritance)
-	 * 2. Handles 'oneOf' - instance must validate against EXACTLY ONE schema
-	 * 3. Handles 'anyOf' - instance must validate against AT LEAST ONE schema
-	 *
-	 * The method enforces the Liskov Substitution Principle:
-	 * - Extended schemas can ONLY ADD constraints, never relax them
-	 * - Metadata (title, description, order) can be overridden
-	 * - Validation rules (type, format, enum, min/max, pattern) cannot be relaxed
-	 *
-	 * @param Schema $schema The schema to resolve
-	 * @param array $visited Array of visited schema IDs to prevent circular references
-	 *
-	 * @throws \Exception If circular reference is detected or referenced schema not found
-	 *
-	 * @return Schema The resolved schema with merged properties
-	 */
-	private function resolveSchemaExtension(Schema $schema, array $visited = []): Schema {
-		// Get current schema identifier for tracking.
-		$currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-
-		// Check for circular references.
-		if (in_array($currentId, $visited) === true) {
-			throw new Exception("Circular schema composition detected: schema '{$currentId}' creates a loop");
-		}
-
-		// Add current schema to visited list.
-		$visited[] = $currentId;
-
-		// Check for composition patterns (in order of precedence).
-		$allOf = $schema->getAllOf();
-		$oneOf = $schema->getOneOf();
-		$anyOf = $schema->getAnyOf();
-
-		// If schema has allOf, resolve it (most common for extension/inheritance).
-		if ($allOf !== null && count($allOf) > 0) {
-			return $this->resolveAllOf(schema: $schema, allOf: $allOf, visited: $visited);
-		}
-
-		// If schema has oneOf, resolve it.
-		if ($oneOf !== null && count($oneOf) > 0) {
-			return $this->resolveOneOf(schema: $schema, oneOf: $oneOf, visited: $visited);
-		}
-
-		// If schema has anyOf, resolve it.
-		if ($anyOf !== null && count($anyOf) > 0) {
-			return $this->resolveAnyOf(schema: $schema, anyOf: $anyOf, visited: $visited);
-		}
-
-		// No composition - return schema as-is.
-		return $schema;
-	}//end resolveSchemaExtension()
-
-	/**
-	 * Resolve allOf composition pattern
-	 *
-	 * Instance must validate against ALL referenced schemas.
-	 * This is the recommended pattern for schema extension/inheritance.
-	 * Properties from all schemas are merged with the child schema.
-	 *
-	 * @param Schema $schema The child schema
-	 * @param array $allOf Array of schema identifiers to merge
-	 * @param array $visited Visited schemas for circular reference detection
-	 *
-	 * @throws \Exception If referenced schema not found or circular reference detected
-	 *
-	 * @return Schema Resolved schema with all properties merged
-	 */
-	private function resolveAllOf(Schema $schema, array $allOf, array $visited): Schema {
-		$currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-
-		// Start with empty properties and required fields.
-		$mergedProperties = [];
-		$mergedRequired = [];
-
-		// Iterate through each referenced schema in allOf.
-		foreach ($allOf as $parentRef) {
-			// Skip empty or null references.
-			if (empty($parentRef) === true) {
-				continue;
-			}
-
-			// Skip inline constraint schemas. JSON Schema allows an allOf entry to be an
-			// inline schema object ({ "required": [...] }, { "properties": {...} }), not
-			// only a $ref to another schema. OpenRegister's composition model treats
-			// allOf/oneOf/anyOf as a list of schema IDENTIFIERS, so only string/int
-			// entries are references to load — an array entry is a constraint that stands
-			// on its own and must not be handed to loadSchema() (which would fatal on the
-			// array). This unblocked openconnector's register import, silently broken by
-			// lti_deployment's `oneOf: [{required, not}, ...]` XOR constraint.
-			if (is_string($parentRef) === false && is_int($parentRef) === false) {
-				continue;
-			}
-
-			// Check for self-reference.
-			if ($parentRef === $currentId || $parentRef === $schema->getId()
-				|| $parentRef === $schema->getUuid() || $parentRef === $schema->getSlug()
-			) {
-				throw new Exception("Schema '{$currentId}' cannot reference itself in allOf");
-			}
-
-			// Load and resolve the parent schema.
-			$parentSchema = $this->loadSchema(identifier: $parentRef);
-			$parentSchema = $this->resolveSchemaExtension(
-				schema: $parentSchema,
-				visited: $visited
-			);
-
-			// Merge properties from this parent.
-			$mergedProperties = $this->mergeSchemaProperties(
-				parentProperties: $mergedProperties,
-				childProperties: $parentSchema->getProperties()
-			);
-
-			// Merge required fields (union - must satisfy all).
-			$mergedRequired = array_unique(
-				array_merge($mergedRequired, $parentSchema->getRequired())
-			);
-		}//end foreach
-
-		// Now merge child schema properties on top (child can add constraints).
-		$childProperties = $schema->getProperties();
-		$mergedProperties = (new SchemaPropertyInheritance(schemaId: (string)$currentId))->mergeProperties(
-			parentProperties: $mergedProperties,
-			childProperties: $childProperties
-		);
-
-		// Merge child required fields (can only add, not remove).
-		$mergedRequired = array_unique(
-			array_merge($mergedRequired, $schema->getRequired())
-		);
-
-		// Create resolved schema.
-		$resolvedSchema = clone $schema;
-		$resolvedSchema->setProperties($mergedProperties);
-		$resolvedSchema->setRequired($mergedRequired);
-
-		return $resolvedSchema;
-	}//end resolveAllOf()
 
 	/**
 	 * Get property source metadata for a schema
@@ -3922,13 +1489,40 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *     array{source: 'native'|'inherited', inheritedFrom: string|null}>
 	 */
 	public function getPropertySourceMetadata(Schema $schema): array {
+		$nativeProperties = $this->storedProperties(schema: $schema);
 		$metadata = [];
-		$nativeProperties = [];
+		foreach (array_keys($schema->getProperties()) as $propName) {
+			$metadata[$propName] = ['source' => 'native', 'inheritedFrom' => null];
+			if (isset($nativeProperties[$propName]) === false) {
+				$metadata[$propName] = ['source' => 'inherited', 'inheritedFrom' => $this->inheritedFrom(schema: $schema, propertyName: (string)$propName)];
+			}
+		}
 
-		// Get the raw schema data from database to see what properties it actually stores.
-		// This is necessary because the resolved schema has merged properties.
+		return $metadata;
+	}//end getPropertySourceMetadata()
+
+	/**
+	 * The parent schema a property of a composed schema comes from.
+	 *
+	 * @param Schema $schema       The schema.
+	 * @param string $propertyName The property.
+	 *
+	 * @return string|null
+	 */
+	private function inheritedFrom(Schema $schema, string $propertyName): ?string {
+		return $this->composition()->propertySource(propertyName: $propertyName, parentRefs: ($schema->getAllOf() ?? []));
+	}//end inheritedFrom()
+
+	/**
+	 * The properties a schema stores itself, as the resolved schema has them merged.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<mixed> The stored properties, empty when they cannot be read.
+	 */
+	private function storedProperties(Schema $schema): array {
 		try {
-			$this->traceRead(method: 'getPropertySourceMetadata');
+			$this->readTrace()->record(method: 'getPropertySourceMetadata');
 
 			$qb = $this->db->getQueryBuilder();
 			$qb->select('properties')
@@ -3938,166 +1532,133 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			$row = $result->fetch();
 			$result->closeCursor();
 
-			if ($row !== false && ($row['properties'] ?? null) !== null) {
-				$nativeProperties = json_decode($row['properties'], true) ?? [];
-			}
+			return (json_decode((($row['properties'] ?? null) ?? 'null'), true) ?? []);
 		} catch (Exception $e) {
-			// If we can't get raw data, use current properties.
-			$nativeProperties = [];
-		}//end try
-
-		$allProperties = $schema->getProperties();
-		$allOf = $schema->getAllOf() ?? [];
-
-		foreach ($allProperties as $propName => $propDef) {
-			// Suppress unused variable warning for $propDef - only processing property names.
-			unset($propDef);
-			$isNative = isset($nativeProperties[$propName]);
-
-			$source = 'inherited';
-			if ($isNative === true) {
-				$source = 'native';
-			}
-
-			$inheritedFrom = null;
-			if ($isNative === false) {
-				$inheritedFrom = $this->findPropertySource(
-					propertyName: $propName,
-					parentRefs: $allOf
-				);
-			}
-
-			$metadata[$propName] = [
-				'source' => $source,
-				'inheritedFrom' => $inheritedFrom,
-			];
-		}//end foreach
-
-		return $metadata;
-	}//end getPropertySourceMetadata()
+			return [];
+		}
+	}//end storedProperties()
 
 	/**
-	 * Find which parent schema a property was inherited from
+	 * Composition over the schemas this mapper loads.
 	 *
-	 * @param string $propertyName The property name to search for
-	 * @param array $parentRefs Array of parent schema references
-	 *
-	 * @return string|null The parent schema ID/UUID/slug, or null if not found
+	 * @return SchemaComposition
 	 */
-	private function findPropertySource(string $propertyName, array $parentRefs): ?string {
-		foreach ($parentRefs as $parentRef) {
-			// Skip empty or null references.
-			if (empty($parentRef) === true) {
-				continue;
+	private function composition(): SchemaComposition {
+		return new SchemaComposition(
+			loadSchema: fn (string|int $identifier): Schema => $this->loadSchema(identifier: $identifier)
+		);
+	}//end composition()
+
+	/**
+	 * A composed schema reduced to what it adds to its parents.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return Schema
+	 */
+	private function extractSchemaDelta(Schema $schema): Schema {
+		return $this->composition()->extractDelta(schema: $schema);
+	}//end extractSchemaDelta()
+
+	/**
+	 * Find schemas that compose with a given schema.
+	 *
+	 * Returns the uuids of the schemas that reference the given schema in their
+	 * allOf, oneOf or anyOf composition patterns.
+	 *
+	 * @param int|string  $schemaIdentifier The ID, UUID, or slug of the schema.
+	 * @param string|null $knownUuid        Pre-known UUID to avoid redundant lookups.
+	 * @param string|null $knownSlug        Pre-known slug to avoid redundant lookups.
+	 *
+	 * @return array Array of schema UUIDs that compose with this schema
+	 *
+	 * @psalm-return list{0?: mixed,...}
+	 */
+	public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid = null, ?string $knownSlug = null): array {
+		$identifiers = [(string)$schemaIdentifier, $knownUuid, $knownSlug];
+		if ($knownUuid === null && $knownSlug === null) {
+			try {
+				$targetSchema = $this->find(id: $schemaIdentifier);
+			} catch (Exception $e) {
+				return [];
 			}
 
-			try {
-				$parentSchema = $this->loadSchema(identifier: $parentRef);
-				$parentSchema = $this->resolveSchemaExtension(schema: $parentSchema);
+			$identifiers = [(string)$targetSchema->getId(), $targetSchema->getUuid(), $targetSchema->getSlug()];
+		}
 
-				if (isset($parentSchema->getProperties()[$propertyName]) === true) {
-					return (string)$parentRef;
-				}
-			} catch (Exception $e) {
-				// Parent not found, continue.
-				continue;
+		return (new ExtendedByReads(db: $this->db, tableName: $this->getTableName()))->referencing(identifiers: $identifiers);
+	}//end findExtendedBy()
+
+	/**
+	 * Find schemas that have properties referencing the given schema.
+	 *
+	 * @param Schema|int|string $schema The target schema to find references to.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the target schema does not exist
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple target schemas are found
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @return Schema[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Schema>
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function getRelated(Schema|int|string $schema): array {
+		// Metadata reads: these bypass multitenancy, like the controller's own
+		// outgoing half and every other schema catalog lookup.
+		$target = $schema;
+		if ($schema instanceof Schema === false) {
+			$target = $this->find(id: $schema, _multitenancy: false);
+		}
+
+		$related = [];
+		foreach ($this->findAll(_multitenancy: false) as $candidate) {
+			if ($candidate->getId() !== (int)$target->getId() && $this->hasReferenceToSchema(
+				properties: $candidate->getProperties(),
+				targetSchemaId: (string)$target->getId(),
+				targetSchemaUuid: (string)$target->getUuid(),
+				targetSchemaSlug: (string)$target->getSlug()
+			) === true
+			) {
+				$related[] = $candidate;
 			}
 		}
 
-		return null;
-	}//end findPropertySource()
+		return $related;
+	}//end getRelated()
 
 	/**
-	 * Resolve oneOf composition pattern
+	 * Recursively check if properties contain a reference to the target schema.
 	 *
-	 * Instance must validate against EXACTLY ONE referenced schema.
-	 * This pattern is used for mutually exclusive options.
-	 * Properties from each schema are kept separate (not merged).
+	 * @param array  $properties       The properties array to search through.
+	 * @param string $targetSchemaId   The target schema ID to look for.
+	 * @param string $targetSchemaUuid The target schema UUID to look for.
+	 * @param string $targetSchemaSlug The target schema slug to look for.
 	 *
-	 * @param Schema $schema The schema with oneOf
-	 * @param array $oneOf Array of schema identifiers
-	 * @param array $visited Visited schemas for circular reference detection
-	 *
-	 * @throws \Exception If referenced schema not found
-	 *
-	 * @return Schema The schema with resolved oneOf references
+	 * @return bool True if a reference to the target schema is found
 	 */
-	private function resolveOneOf(Schema $schema, array $oneOf, array $visited): Schema {
-		// For oneOf, we don't merge properties - each option stands alone.
-		// Just validate that all referenced schemas exist and resolve them.
-		$currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
+	public function hasReferenceToSchema(
+		array $properties,
+		string $targetSchemaId,
+		string $targetSchemaUuid,
+		string $targetSchemaSlug,
+	): bool {
+		$search = new SchemaReferenceSearch(
+			target: ['id' => $targetSchemaId, 'uuid' => $targetSchemaUuid, 'slug' => $targetSchemaSlug]
+		);
 
-		foreach ($oneOf as $ref) {
-			// Skip inline constraint schemas — a oneOf entry may be an inline schema object
-			// ({ "required": [...], "not": {...} }) rather than a $ref to another schema.
-			// Only string/int entries are schema identifiers to load. See resolveAllOf.
-			if (is_string($ref) === false && is_int($ref) === false) {
-				continue;
-			}
-
-			if ($ref === $currentId || $ref === $schema->getId()
-				|| $ref === $schema->getUuid() || $ref === $schema->getSlug()
-			) {
-				throw new Exception("Schema '{$currentId}' cannot reference itself in oneOf");
-			}
-
-			// Load and resolve referenced schema (validates it exists).
-			$referencedSchema = $this->loadSchema(identifier: $ref);
-			$this->resolveSchemaExtension(
-				schema: $referencedSchema,
-				visited: $visited
-			);
-		}//end foreach
-
-		// Return schema as-is (oneOf schemas are not merged).
-		return $schema;
-	}//end resolveOneOf()
+		return $search->foundIn(properties: $properties);
+	}//end hasReferenceToSchema()
 
 	/**
-	 * Resolve anyOf composition pattern
+	 * Find all schema extension relationships in a single scan.
 	 *
-	 * Instance must validate against AT LEAST ONE referenced schema.
-	 * This pattern provides flexible composition.
-	 * Properties from each schema are kept separate (not merged).
-	 *
-	 * @param Schema $schema The schema with anyOf
-	 * @param array $anyOf Array of schema identifiers
-	 * @param array $visited Visited schemas for circular reference detection
-	 *
-	 * @throws \Exception If referenced schema not found
-	 *
-	 * @return Schema The schema with resolved anyOf references
+	 * @return array<int, string[]> Map of targetSchemaId => [extendingSchemaUuid, ...]
 	 */
-	private function resolveAnyOf(Schema $schema, array $anyOf, array $visited): Schema {
-		// For anyOf, we don't merge properties - each option stands alone.
-		// Just validate that all referenced schemas exist and resolve them.
-		$currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-
-		foreach ($anyOf as $ref) {
-			// Skip inline constraint schemas — an anyOf entry may be an inline schema
-			// object rather than a $ref. Only string/int entries are identifiers. See
-			// resolveAllOf.
-			if (is_string($ref) === false && is_int($ref) === false) {
-				continue;
-			}
-
-			if ($ref === $currentId || $ref === $schema->getId()
-				|| $ref === $schema->getUuid() || $ref === $schema->getSlug()
-			) {
-				throw new Exception("Schema '{$currentId}' cannot reference itself in anyOf");
-			}
-
-			// Load and resolve referenced schema (validates it exists).
-			$referencedSchema = $this->loadSchema(identifier: $ref);
-			$this->resolveSchemaExtension(
-				schema: $referencedSchema,
-				visited: $visited
-			);
-		}//end foreach
-
-		// Return schema as-is (anyOf schemas are not merged).
-		return $schema;
-	}//end resolveAnyOf()
+	public function findAllExtendedBy(): array {
+		return (new ExtendedByReads(db: $this->db, tableName: $this->getTableName()))->reverseMap();
+	}//end findAllExtendedBy()
 
 	/**
 	 * Load a schema by ID, UUID, or slug
@@ -4114,25 +1675,12 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	private function loadSchema(string|int $identifier): Schema {
 		try {
-			$this->traceRead(method: 'loadSchema');
+			$this->readTrace()->record(method: 'loadSchema');
 
 			$qb = $this->db->getQueryBuilder();
-			$matches = [
-				$qb->expr()->eq('uuid', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
-				$qb->expr()->eq('slug', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
-			];
-			// Compare `id` only for an integer: PostgreSQL refuses a uuid or slug
-			// bound as an integer for the whole query (live pass O4, 5 Oct).
-			if (is_int($identifier) === true || ctype_digit($identifier) === true) {
-				$matches[] = $qb->expr()->eq(
-					'id',
-					$qb->createNamedParameter(value: (int) $identifier, type: IQueryBuilder::PARAM_INT)
-				);
-			}
-
 			$qb->select('*')
 				->from('openregister_schemas')
-				->where($qb->expr()->orX(...$matches));
+				->where($qb->expr()->orX(...$this->identifierMatches(qb: $qb, identifier: $identifier)));
 
 			return $this->findEntity(query: $qb);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -4141,612 +1689,29 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end loadSchema()
 
 	/**
-	 * Merge parent and child schema properties (without validation)
+	 * The conditions that match a schema by uuid, slug or, for an integer, id.
 	 *
-	 * This method performs a deep merge of schema properties where:
-	 * - Properties present in both parent and child: child values override parent values
-	 * - Properties only in parent: included in result
-	 * - Properties only in child: included in result
-	 * - For nested properties (objects), performs recursive merge
+	 * Compares `id` only for an integer: PostgreSQL refuses a uuid or slug bound
+	 * as an integer for the whole query (live pass O4, 5 Oct).
 	 *
-	 * NOTE: This method does NOT enforce Liskov Substitution Principle.
-	 * Use SchemaPropertyInheritance::mergeProperties() for extension scenarios.
+	 * @param IQueryBuilder $qb         The query.
+	 * @param string|int    $identifier Schema ID, UUID, or slug.
 	 *
-	 * @param array $parentProperties Parent schema properties
-	 * @param array $childProperties Child schema properties (overrides)
+	 * @return array<int, mixed>
 	 *
-	 * @return array Merged properties array
+	 * @spec openspec/specs/mariadb-ci-matrix/spec.md#requirement-a-text-identifier-is-never-bound-as-an-integer
 	 */
-	private function mergeSchemaProperties(array $parentProperties, array $childProperties): array {
-		// Start with parent properties as the base.
-		$merged = $parentProperties;
-
-		// Apply child properties on top (overriding parent where present).
-		foreach ($childProperties as $propertyName => $propertyDefinition) {
-			$mergedExists = ($merged[$propertyName] ?? null) !== null;
-			$bothArrays = is_array($propertyDefinition) === true && is_array($merged[$propertyName] ?? null) === true;
-			if ($mergedExists === true && $bothArrays === true) {
-				// If property exists in both and both are arrays, perform deep merge.
-				$merged[$propertyName] = $this->deepMergeProperty(
-					parentProperty: $merged[$propertyName],
-					childProperty: $propertyDefinition
-				);
-				continue;
-			}
-
-			// Otherwise, child property completely replaces parent property.
-			$merged[$propertyName] = $propertyDefinition;
+	private function identifierMatches(IQueryBuilder $qb, string|int $identifier): array {
+		$matches = [
+			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
+			$qb->expr()->eq('slug', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
+		];
+		if (is_int($identifier) === true || ctype_digit($identifier) === true) {
+			$matches[] = $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $identifier, type: IQueryBuilder::PARAM_INT));
 		}
 
-		return $merged;
-	}//end mergeSchemaProperties()
-
-	/**
-	 * Perform deep merge of a single property definition (WITHOUT validation)
-	 *
-	 * This method recursively merges property definitions, allowing child schemas
-	 * to override specific aspects of a property while preserving others.
-	 *
-	 * NOTE: This method does NOT enforce Liskov Substitution Principle.
-	 * Use SchemaPropertyInheritance for extension scenarios.
-	 *
-	 * Examples:
-	 * - Parent has 'minLength': 5, child has 'maxLength': 100 -> both are preserved
-	 * - Parent has 'title': 'Name', child has 'title': 'Full Name' -> child overrides
-	 * - For nested objects/arrays, performs recursive merge
-	 *
-	 * @param array $parentProperty Parent property definition
-	 * @param array $childProperty Child property definition (overrides)
-	 *
-	 * @return array Merged property definition
-	 */
-	private function deepMergeProperty(array $parentProperty, array $childProperty): array {
-		$merged = $parentProperty;
-
-		foreach ($childProperty as $key => $value) {
-			if (($merged[$key] ?? null) === null || is_array($value) === false || is_array($merged[$key]) === false) {
-				// Scalar values: child overrides parent.
-				$merged[$key] = $value;
-				continue;
-			}
-
-			// Recursively merge nested arrays.
-			// Special handling for 'properties' and 'items' which need deep merge.
-			if ($key !== 'properties' && $key !== 'items') {
-				// For other arrays (like enum, required at property level), child replaces parent.
-				$merged[$key] = $value;
-				continue;
-			}
-
-			$merged[$key] = $this->deepMergeProperty(
-				parentProperty: $merged[$key],
-				childProperty: $value
-			);
-		}
-
-		return $merged;
-	}//end deepMergeProperty()
-
-	/**
-	 * Extract the delta (differences) between parent schemas and child schema properties
-	 *
-	 * This method is called before saving a schema that uses composition.
-	 * It removes any properties that are identical to the parent(s), keeping only
-	 * the differences (delta) in the child schema. This ensures we only store
-	 * what's actually changed, making schema composition more maintainable.
-	 *
-	 * Supports:
-	 * - allOf: Extracts delta against all parent schemas (merged)
-	 * - oneOf/anyOf: No delta extraction (properties not merged)
-	 *
-	 * @param Schema $schema The schema to extract delta from
-	 *
-	 * @throws \Exception If parent schema cannot be loaded
-	 *
-	 * @return Schema The schema with only delta properties
-	 */
-	private function extractSchemaDelta(Schema $schema): Schema {
-		// Get composition patterns.
-		$allOf = $schema->getAllOf();
-		$oneOf = $schema->getOneOf();
-		$anyOf = $schema->getAnyOf();
-
-		// For oneOf and anyOf, no delta extraction (properties not merged).
-		if (($oneOf !== null && count($oneOf) > 0)
-			|| ($anyOf !== null && count($anyOf) > 0)
-		) {
-			return $schema;
-		}
-
-		// For allOf, extract delta against all parents.
-		if ($allOf !== null && count($allOf) > 0) {
-			return $this->extractAllOfDelta(
-				schema: $schema,
-				allOf: $allOf
-			);
-		}
-
-		// No composition - return as-is.
-		return $schema;
-	}//end extractSchemaDelta()
-
-	/**
-	 * Extract delta for allOf composition (multiple parents)
-	 *
-	 * Merges all parent schemas and extracts only the differences
-	 * in the child schema.
-	 *
-	 * ## `allOf` is not only a parent list (openregister#2534)
-	 *
-	 * This method used to treat EVERY `allOf` entry as a schema identifier and
-	 * hand it straight to `loadSchema(string|int)`. In JSON Schema an `allOf`
-	 * entry is a SUBSCHEMA, and only some of them name another schema. The
-	 * common non-naming case is a conditional:
-	 *
-	 *     "allOf": [ { "if": {...}, "then": {}, "else": { "required": [...] } } ]
-	 *
-	 * which is an array, so the call raised a TypeError. The `catch (Exception)`
-	 * below did not stop it — a TypeError is an `Error`, not an `Exception` —
-	 * so it escaped as HTTP 500 from `POST /api/schemas`, and any schema
-	 * carrying a conditional was simply unimportable. Measured on scholiq
-	 * 2026-08-16: the CI seed had grown a documented workaround for it
-	 * ("created schema \"lesson\" WITHOUT its top-level allOf — OpenRegister
-	 * 500s on composed schemas; conditional validation dropped for this
-	 * fixture") — a fixture comment describing a bug nobody had filed.
-	 *
-	 * `parentIdentifierFromAllOfEntry()` now decides what an entry IS, and a
-	 * subschema that names no parent contributes nothing to a PARENT delta and
-	 * is skipped rather than crashed on. The catch is widened to `\Throwable`
-	 * so the next unexpected shape degrades to "no delta extraction" — which is
-	 * what the comment there already promised.
-	 *
-	 * @param Schema $schema The child schema
-	 * @param array $allOf Array of `allOf` subschemas; the ones that name a
-	 *                     parent schema are merged, the rest are skipped.
-	 *
-	 * @return Schema Schema with only delta properties
-	 */
-	private function extractAllOfDelta(Schema $schema, array $allOf): Schema {
-		try {
-			// Start with empty merged parent properties.
-			$mergedParentProps = [];
-			$mergedParentRequired = [];
-
-			// Load and merge all parent schemas.
-			foreach ($allOf as $entry) {
-				$parentRef = $this->parentIdentifierFromAllOfEntry(entry: $entry);
-
-				// Not a parent reference (an inline conditional or subschema),
-				// or an empty one — nothing to merge from it.
-				if ($parentRef === null) {
-					continue;
-				}
-
-				$parentSchema = $this->loadSchema(identifier: $parentRef);
-
-				// Recursively resolve parent to get its full properties.
-				if ($parentSchema->getAllOf() !== null) {
-					$parentSchema = $this->resolveSchemaExtension(schema: $parentSchema);
-				}
-
-				// Merge this parent's properties into the accumulated parent properties.
-				$mergedParentProps = $this->mergeSchemaProperties(
-					parentProperties: $mergedParentProps,
-					childProperties: $parentSchema->getProperties()
-				);
-
-				// Merge required fields.
-				$mergedParentRequired = array_unique(
-					array_merge($mergedParentRequired, $parentSchema->getRequired())
-				);
-			}//end foreach
-
-			// Extract only the properties that differ from merged parents.
-			$deltaProperties = $this->extractPropertyDelta(
-				parentProperties: $mergedParentProps,
-				childProperties: $schema->getProperties()
-			);
-
-			// Extract only the required fields that differ from merged parents.
-			$deltaRequired = array_diff(
-				$schema->getRequired(),
-				$mergedParentRequired
-			);
-
-			// Update the schema with delta only.
-			$schema->setProperties($deltaProperties);
-			$schema->setRequired(array_values($deltaRequired));
-			// Re-index array.
-			return $schema;
-		} catch (\Throwable $e) {
-			// If a parent schema doesn't exist yet (e.g. during import Pass 1),
-			// return the schema without delta extraction. The full properties are
-			// preserved and delta will be correctly extracted during Pass 2 (update)
-			// when all schemas exist in the database.
-			//
-			// `\Throwable`, not `Exception`: this net was written to keep an
-			// unresolvable parent from failing an import, and a TypeError from a
-			// composition shape it did not expect is the same situation — but it
-			// is an `Error`, so it used to sail straight through and 500 the
-			// request (openregister#2534). Delta extraction is an OPTIMISATION;
-			// nothing it can fail at justifies refusing to store the schema.
-			return $schema;
-		}//end try
-	}//end extractAllOfDelta()
-
-	/**
-	 * The parent schema identifier an `allOf` entry names, or null if it names none.
-	 *
-	 * Three shapes are accepted, and the third is the one that matters:
-	 *
-	 *   1. a scalar — `"person"`, `42`, a uuid — OpenRegister's own shorthand
-	 *      for "extend this schema", which is what the whole allOf-delta
-	 *      mechanism was built around;
-	 *   2. `{"$ref": "..."}` — standard JSON Schema. The last path segment is
-	 *      taken, so `#/components/schemas/Person` resolves to `Person`, which
-	 *      is what `loadSchema` matches against id / uuid / slug;
-	 *   3. anything else — `{"if": …, "then": …, "else": …}`, an inline
-	 *      `{"properties": …}`, a `$ref` that is not a string. These are valid
-	 *      JSON Schema and name NO parent, so they contribute nothing to a
-	 *      parent delta. Returning null skips them; before, they reached
-	 *      `loadSchema(string|int)` as an array and 500'd the request.
-	 *
-	 * @param mixed $entry One element of a schema's `allOf` array.
-	 *
-	 * @return string|int|null The parent identifier, or null when the entry
-	 *                         names no parent schema.
-	 */
-	private function parentIdentifierFromAllOfEntry(mixed $entry): string|int|null {
-		if (is_string($entry) === true || is_int($entry) === true) {
-			if ($entry === '' || $entry === 0) {
-				return null;
-			}
-
-			return $entry;
-		}
-
-		if (is_array($entry) === true && isset($entry['$ref']) === true
-			&& is_string($entry['$ref']) === true && $entry['$ref'] !== ''
-		) {
-			$ref = $entry['$ref'];
-			$offset = 0;
-			$lastSlash = strrpos($ref, '/');
-			if ($lastSlash !== false) {
-				$offset = ($lastSlash + 1);
-			}
-
-			$segment = substr($ref, $offset);
-			if ($segment === '') {
-				return null;
-			}
-
-			return $segment;
-		}
-
-		return null;
-	}//end parentIdentifierFromAllOfEntry()
-
-	/**
-	 * Extract properties that differ from parent
-	 *
-	 * This method compares child properties with parent properties and returns
-	 * only the properties that are new or different.
-	 *
-	 * @param array $parentProperties Parent schema properties
-	 * @param array $childProperties Child schema properties
-	 *
-	 * @return array Properties that differ from parent (delta)
-	 */
-	private function extractPropertyDelta(array $parentProperties, array $childProperties): array {
-		$delta = [];
-
-		foreach ($childProperties as $propertyName => $childProperty) {
-			// If property doesn't exist in parent, it's new - include in delta.
-			if (isset($parentProperties[$propertyName]) === false) {
-				$delta[$propertyName] = $childProperty;
-				continue;
-			}
-
-			// If property exists in parent, check if it's different.
-			$parentProperty = $parentProperties[$propertyName];
-
-			// Deep comparison: if properties are different, include in delta.
-			if ($this->arePropertiesDifferent(
-				parentProperty: $parentProperty,
-				childProperty: $childProperty
-			) === true
-			) {
-				// For objects with nested properties, extract nested delta.
-				if (is_array($childProperty) === false || is_array($parentProperty) === false) {
-					$delta[$propertyName] = $childProperty;
-					continue;
-				}
-
-				$delta[$propertyName] = $this->extractNestedPropertyDelta(
-					parentProperty: $parentProperty,
-					childProperty: $childProperty
-				);
-			}
-
-			// If properties are identical, don't include in delta.
-		}//end foreach
-
-		return $delta;
-	}//end extractPropertyDelta()
-
-	/**
-	 * Check if two property definitions are different
-	 *
-	 * Performs deep comparison of property definitions to determine if they differ.
-	 *
-	 * @param mixed $parentProperty Parent property definition
-	 * @param mixed $childProperty Child property definition
-	 *
-	 * @return bool True if properties are different
-	 */
-	private function arePropertiesDifferent($parentProperty, $childProperty): bool {
-		// Use JSON encoding for deep comparison.
-		// This handles arrays, nested objects, and scalar values uniformly.
-		return json_encode($parentProperty) !== json_encode($childProperty);
-	}//end arePropertiesDifferent()
-
-	/**
-	 * Extract nested property delta for object properties
-	 *
-	 * When a property is an object with nested properties, extract only
-	 * the nested properties that differ from the parent.
-	 *
-	 * @param array $parentProperty Parent property definition
-	 * @param array $childProperty Child property definition
-	 *
-	 * @return array Property definition with only delta fields
-	 */
-	private function extractNestedPropertyDelta(array $parentProperty, array $childProperty): array {
-		$delta = [];
-
-		foreach ($childProperty as $key => $value) {
-			if (isset($parentProperty[$key]) === false) {
-				// New field in child.
-				$delta[$key] = $value;
-			} elseif ($this->arePropertiesDifferent(
-				parentProperty: $parentProperty[$key],
-				childProperty: $value
-			) === true
-			) {
-				// Changed field.
-				if ($key !== 'properties' || is_array($value) === false || is_array($parentProperty[$key]) === false) {
-					$delta[$key] = $value;
-					continue;
-				}
-
-				// Recursively extract delta for nested properties.
-				$delta[$key] = $this->extractPropertyDelta(
-					parentProperties: $parentProperty[$key],
-					childProperties: $value
-				);
-			}//end if
-		}//end foreach
-
-		return $delta;
-	}//end extractNestedPropertyDelta()
-
-	/**
-	 * Find schemas that compose with a given schema
-	 *
-	 * Returns an array of schema UUIDs for schemas that reference the given schema
-	 * in their allOf, oneOf, or anyOf composition patterns.
-	 *
-	 * @param int|string $schemaIdentifier The ID, UUID, or slug of the schema.
-	 * @param string|null $knownUuid Pre-known UUID to avoid redundant lookups.
-	 * @param string|null $knownSlug Pre-known slug to avoid redundant lookups.
-	 *
-	 * @return array Array of schema UUIDs that compose with this schema
-	 *
-	 * @psalm-return list{0?: mixed,...}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Schema composition search requires many conditional checks
-	 */
-	public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid = null, ?string $knownSlug = null): array {
-		// Use pre-known values when available to avoid a redundant find() query per schema.
-		$targetId = (string)$schemaIdentifier;
-		$targetUuid = $knownUuid;
-		$targetSlug = $knownSlug;
-
-		if ($knownUuid === null && $knownSlug === null) {
-			// Fallback: fetch the schema to get all its identifiers.
-			try {
-				$targetSchema = $this->find(id: $schemaIdentifier);
-			} catch (Exception $e) {
-				return [];
-			}
-
-			$targetId = (string)$targetSchema->getId();
-			$targetUuid = $targetSchema->getUuid();
-			$targetSlug = $targetSchema->getSlug();
-		}
-
-		// Build query to find schemas that reference this schema in composition.
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('uuid')
-			->from($this->getTableName());
-
-		// Add conditions for all possible ways to reference the schema.
-		$orConditions = [];
-
-		// Check in allOf field (JSON array).
-		if ($targetId !== '') {
-			$orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
-		}
-
-		if ($targetUuid !== null && $targetUuid !== '') {
-			$orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
-		}
-
-		if ($targetSlug !== null && $targetSlug !== '') {
-			$orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
-		}
-
-		// Check in oneOf field (JSON array).
-		if ($targetId !== '') {
-			$orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
-		}
-
-		if ($targetUuid !== null && $targetUuid !== '') {
-			$orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
-		}
-
-		if ($targetSlug !== null && $targetSlug !== '') {
-			$orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
-		}
-
-		// Check in anyOf field (JSON array).
-		// Note: $targetId is cast to (string), so it can never be null, only empty string.
-		if ($targetId !== '') {
-			$orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
-		}
-
-		if ($targetUuid !== null && $targetUuid !== '') {
-			$orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
-		}
-
-		if ($targetSlug !== null && $targetSlug !== '') {
-			$orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
-		}
-
-		if (empty($orConditions) === true) {
-			return [];
-		}
-
-		$qb->where($qb->expr()->orX(...$orConditions));
-
-		$result = $qb->executeQuery();
-		$uuids = [];
-
-		while (($row = $result->fetch()) !== false) {
-			if (($row['uuid'] ?? null) !== null) {
-				$uuids[] = $row['uuid'];
-			}
-		}
-
-		$result->closeCursor();
-
-		return $uuids;
-	}//end findExtendedBy()
-
-	/**
-	 * Find all schema extension relationships in a single query
-	 *
-	 * Scans all schemas for allOf/oneOf/anyOf references and builds a reverse map
-	 * of which schemas extend which. Replaces N individual findExtendedBy() calls
-	 * with 1 query.
-	 *
-	 * @return array<int, string[]> Map of targetSchemaId => [extendingSchemaUuid, ...]
-	 */
-	public function findAllExtendedBy(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'uuid', 'slug', 'all_of', 'one_of', 'any_of')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->orX(
-					$qb->expr()->isNotNull('all_of'),
-					$qb->expr()->isNotNull('one_of'),
-					$qb->expr()->isNotNull('any_of')
-				)
-			);
-
-		$result = $qb->executeQuery();
-
-		// Build lookup of all schemas by id/uuid/slug for resolving references.
-		// We need a second query to get all schemas for reference resolution.
-		$allSchemasQb = $this->db->getQueryBuilder();
-		$allSchemasQb->select('id', 'uuid', 'slug')
-			->from($this->getTableName());
-		$allSchemasResult = $allSchemasQb->executeQuery();
-
-		$schemaLookup = [];
-		while (($row = $allSchemasResult->fetch()) !== false) {
-			$schemaLookup[(string)$row['id']] = (int)$row['id'];
-			if (($row['uuid'] ?? null) !== null) {
-				$schemaLookup[$row['uuid']] = (int)$row['id'];
-			}
-
-			if (($row['slug'] ?? null) !== null) {
-				$schemaLookup[$row['slug']] = (int)$row['id'];
-			}
-		}
-
-		$allSchemasResult->closeCursor();
-
-		// Build the reverse map: targetSchemaId => [extendingSchemaUuid, ...].
-		$extendedByMap = [];
-
-		while (($row = $result->fetch()) !== false) {
-			$extendingUuid = $row['uuid'] ?? null;
-			if ($extendingUuid === null) {
-				continue;
-			}
-
-			// Collect all referenced identifiers from allOf, oneOf, anyOf.
-			$references = [];
-			foreach (['all_of', 'one_of', 'any_of'] as $field) {
-				$value = $row[$field] ?? null;
-				if ($value === null) {
-					continue;
-				}
-
-				$decoded = json_decode(json: $value, associative: true);
-				if (is_array($decoded) === true) {
-					$references = array_merge($references, $decoded);
-				}
-			}
-
-			// Resolve each reference to a schema ID and add to reverse map.
-			//
-			// 🔴 THROUGH THE SHARED RESOLVER, NOT `(string)$entry`. An `allOf`
-			// entry is a SCHEMA OBJECT in standard JSON Schema — `{"$ref":
-			// "person"}` — and casting one to string yields the literal
-			// "Array", which matches no key in $schemaLookup. So this loop
-			// resolved nothing and said nothing, while emitting a PHP notice
-			// per row:
-			//
-			//   Array to string conversion at lib/Db/SchemaMapper.php#4148
-			//   GET /index.php/apps/openregister/api/schemas?_limit=1000
-			//
-			// Measured across the fleet's descriptors: 236 allOf/oneOf/anyOf
-			// entries, ALL of them objects, NOT ONE a bare string. The reverse
-			// map this function exists to build was therefore empty for every
-			// real schema — an "extended by" relationship that is never found
-			// rather than one that errors.
-			//
-			// `parentIdentifierFromAllOfEntry()` already encodes the three
-			// shapes that occur (scalar shorthand, `{"$ref": …}` with its last
-			// path segment, and everything else naming no parent). Its own
-			// docblock records that an earlier caller passed arrays through and
-			// 500'd; this one passed them through and went quiet instead.
-			foreach ($references as $entry) {
-				$identifier = $this->parentIdentifierFromAllOfEntry(entry: $entry);
-				if ($identifier === null) {
-					continue;
-				}
-
-				$ref = (string)$identifier;
-				if (isset($schemaLookup[$ref]) === true) {
-					$targetId = $schemaLookup[$ref];
-					$extendedByMap[$targetId][] = $extendingUuid;
-				}
-			}
-		}//end while
-
-		$result->closeCursor();
-
-		// Deduplicate UUIDs per target schema.
-		foreach ($extendedByMap as $targetId => $uuids) {
-			$extendedByMap[$targetId] = array_values(array_unique($uuids));
-		}
-
-		return $extendedByMap;
-	}//end findAllExtendedBy()
+		return $matches;
+	}//end identifierMatches()
 
 	/**
 	 * Return the IDs of all schemas whose `searchable` flag is false.
@@ -4766,24 +1731,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function findNonSearchableIds(): array {
-		$this->traceRead(method: 'findNonSearchableIds');
+		$this->readTrace()->record(method: 'findNonSearchableIds');
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id')
-			->from('openregister_schemas')
-			->where($qb->expr()->eq('searchable', $qb->createNamedParameter(value: false, type: IQueryBuilder::PARAM_BOOL)));
-
-		$ids = [];
-		$result = $qb->executeQuery();
-		while (($row = $result->fetch()) !== false) {
-			if (isset($row['id']) === true) {
-				$ids[] = (int)$row['id'];
-			}
-		}
-
-		$result->closeCursor();
-
-		return $ids;
+		return $this->idsWithFlag(column: 'searchable', value: false);
 	}//end findNonSearchableIds()
 
 	/**
@@ -4801,24 +1751,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function findSearchableIds(): array {
-		$this->traceRead(method: 'findSearchableIds');
+		$this->readTrace()->record(method: 'findSearchableIds');
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id')
-			->from('openregister_schemas')
-			->where($qb->expr()->eq('searchable', $qb->createNamedParameter(value: true, type: IQueryBuilder::PARAM_BOOL)));
-
-		$ids = [];
-		$result = $qb->executeQuery();
-		while (($row = $result->fetch()) !== false) {
-			if (isset($row['id']) === true) {
-				$ids[] = (int)$row['id'];
-			}
-		}
-
-		$result->closeCursor();
-
-		return $ids;
+		return $this->idsWithFlag(column: 'searchable', value: true);
 	}//end findSearchableIds()
 
 	/**
@@ -4839,12 +1774,24 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
 	 */
 	public function findSmartPickerEnabledIds(): array {
-		$this->traceRead(method: 'findSmartPickerEnabledIds');
+		$this->readTrace()->record(method: 'findSmartPickerEnabledIds');
 
+		return $this->idsWithFlag(column: 'smart_picker_enabled', value: true);
+	}//end findSmartPickerEnabledIds()
+
+	/**
+	 * The ids of the schemas whose boolean column holds the given value.
+	 *
+	 * @param string $column The column.
+	 * @param bool   $value  The value.
+	 *
+	 * @return array<int, int>
+	 */
+	private function idsWithFlag(string $column, bool $value): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('id')
 			->from('openregister_schemas')
-			->where($qb->expr()->eq('smart_picker_enabled', $qb->createNamedParameter(value: true, type: IQueryBuilder::PARAM_BOOL)));
+			->where($qb->expr()->eq($column, $qb->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_BOOL)));
 
 		$ids = [];
 		$result = $qb->executeQuery();
@@ -4857,5 +1804,5 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$result->closeCursor();
 
 		return $ids;
-	}//end findSmartPickerEnabledIds()
+	}//end idsWithFlag()
 }//end class

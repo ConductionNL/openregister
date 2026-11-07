@@ -6,7 +6,6 @@ import { translate as t } from '@nextcloud/l10n'
 	<NcDialog
 		:name="t('openregister', 'Manage Organisation Roles')"
 		size="normal"
-		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ t('openregister', 'Roles updated successfully') }}</p>

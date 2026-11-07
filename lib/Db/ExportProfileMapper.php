@@ -27,7 +27,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -38,6 +37,8 @@ use OCP\IDBConnection;
  * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfileMapper extends QBMapper {
+
+	use SelectByColumnTrait;
 	/**
 	 * Constructor.
 	 *
@@ -60,12 +61,7 @@ class ExportProfileMapper extends QBMapper {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function find(int $id): ExportProfile {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -81,12 +77,7 @@ class ExportProfileMapper extends QBMapper {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function findByUuid(string $uuid): ExportProfile {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'uuid', value: $uuid)));
 	}//end findByUuid()
 
 	/**
@@ -99,11 +90,8 @@ class ExportProfileMapper extends QBMapper {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function findByOwner(string $owner): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('owner', $qb->createNamedParameter($owner)))
-			->orderBy('id', 'ASC');
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'owner', value: $owner));
+		$qb->orderBy('id', 'ASC');
 
 		return $this->findEntities(query: $qb);
 	}//end findByOwner()
@@ -116,11 +104,6 @@ class ExportProfileMapper extends QBMapper {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function findAll(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('id', 'ASC');
-
-		return $this->findEntities(query: $qb);
+		return $this->findEntities(query: $this->selectAllById());
 	}//end findAll()
 }//end class

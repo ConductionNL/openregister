@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ObjectSourceQuery;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
@@ -494,12 +495,9 @@ class PaginateObjectSourceTest extends TestCase {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function testCanonicalQueryKeysAreNormalisedForProviders(): void {
-		$reflection = new ReflectionClass(ObjectService::class);
-		$service = $reflection->newInstanceWithoutConstructor();
-		$method = $reflection->getMethod('normaliseObjectSourceQuery');
-		$method->setAccessible(true);
+		$adapter = new ObjectSourceQuery();
 
-		$normalised = $method->invoke($service, [
+		$normalised = $adapter->forProvider([
 			'_limit' => '5',
 			'_page' => '2',
 			'_order' => ['status' => 'ASC'],
@@ -515,7 +513,7 @@ class PaginateObjectSourceTest extends TestCase {
 		$this->assertSame('granted', $normalised['_search']);
 
 		// Pre-set contract keys win over canonical ones.
-		$preset = $method->invoke($service, [
+		$preset = $adapter->forProvider([
 			'limit' => 3,
 			'offset' => 9,
 			'filters' => ['a' => 'b'],

@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 
@@ -34,6 +33,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<AnalyticsSeries>
  */
 class AnalyticsSeriesMapper extends QBMapper {
+
+	use SelectByColumnTrait;
 	/**
 	 * Constructor.
 	 *
@@ -51,15 +52,13 @@ class AnalyticsSeriesMapper extends QBMapper {
 	 * @return AnalyticsSeries|null The series, or null when unknown.
 	 */
 	public function findByKey(string $seriesKey): ?AnalyticsSeries {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('series_key', $qb->createNamedParameter($seriesKey)));
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'series_key', value: $seriesKey));
 
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findOneOrNull(query: $qb);
+		if ($found instanceof AnalyticsSeries) {
+			return $found;
 		}
+
+		return null;
 	}//end findByKey()
 }//end class

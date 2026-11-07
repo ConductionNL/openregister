@@ -23,12 +23,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search;
 
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
+use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\MetricsService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
@@ -53,6 +56,8 @@ final class SearchRegistrar {
 	 */
 	public const BINDINGS = [
 		VectorEmbeddingsInterface::class => VectorEmbeddings::class,
+		EmbeddingGeneratorInterface::class => VectorEmbeddings::class,
+		MetricsRetentionInterface::class => MetricsService::class,
 		DuplicateDetectionServiceInterface::class => DuplicateDetectionService::class,
 		VectorizationServiceInterface::class => VectorizationService::class,
 		VectorStorageHandlerInterface::class => VectorStorageHandler::class,

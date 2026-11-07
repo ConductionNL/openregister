@@ -92,7 +92,6 @@ class RetentionClassificationOverrideTest extends TestCase {
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(AuditTrailMapper::class),
 			$settings,
-			$this->createMock(IAppConfig::class),
 			$this->createMock(IUserSession::class),
 			$logger,
 			$this->createMock(RetentionRowScanner::class),

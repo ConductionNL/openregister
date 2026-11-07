@@ -252,15 +252,12 @@ class QueryHandlerPaginatedDatabaseTest extends TestCase {
 
 		return new QueryHandler(
 			$mapper,
-			$this->createMock(GetObject::class),
 			$render,
 			$this->createMock(SearchQueryHandler::class),
 			$facets,
 			$performance,
 			$content,
 			$this->createMock(IAppContainer::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IRequest::class),
 			$history
 		);
 	}//end handlerFor()

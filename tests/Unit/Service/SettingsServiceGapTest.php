@@ -98,16 +98,8 @@ class SettingsServiceGapTest extends TestCase {
 
 		$this->service = new SettingsService(
 			$this->config,
-			$auditTrailMapper,
-			$cacheFactory,
-			$groupManager,
 			$this->logger,
-			$organisationMapper,
-			$schemaCacheService,
-			$searchTrailMapper,
-			$userManager,
 			$db,
-			null,
 			null,
 			'openregister',
 			null,

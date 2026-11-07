@@ -2277,7 +2277,216 @@
         ]
     },
     "numeric property name": {
-        "columns": "TypeError",
+        "columns": {
+            "_id": {
+                "name": "_id",
+                "type": "bigint",
+                "nullable": false,
+                "autoincrement": true,
+                "primary": true
+            },
+            "_uuid": {
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
+            },
+            "_slug": {
+                "name": "_slug",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_uri": {
+                "name": "_uri",
+                "type": "text",
+                "nullable": true
+            },
+            "_version": {
+                "name": "_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_register": {
+                "name": "_register",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_schema": {
+                "name": "_schema",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "index": true
+            },
+            "_owner": {
+                "name": "_owner",
+                "type": "string",
+                "length": 64,
+                "nullable": true,
+                "index": true
+            },
+            "_organisation": {
+                "name": "_organisation",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            },
+            "_application": {
+                "name": "_application",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_folder": {
+                "name": "_folder",
+                "type": "string",
+                "length": 255,
+                "nullable": true
+            },
+            "_name": {
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
+            },
+            "_description": {
+                "name": "_description",
+                "type": "text",
+                "nullable": true
+            },
+            "_summary": {
+                "name": "_summary",
+                "type": "text",
+                "nullable": true
+            },
+            "_image": {
+                "name": "_image",
+                "type": "text",
+                "nullable": true
+            },
+            "_size": {
+                "name": "_size",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_schema_version": {
+                "name": "_schema_version",
+                "type": "string",
+                "length": 50,
+                "nullable": true
+            },
+            "_created": {
+                "name": "_created",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_updated": {
+                "name": "_updated",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_last_user_activity": {
+                "name": "_last_user_activity",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_expires": {
+                "name": "_expires",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            },
+            "_files": {
+                "name": "_files",
+                "type": "json",
+                "nullable": true
+            },
+            "_relations": {
+                "name": "_relations",
+                "type": "json",
+                "nullable": true
+            },
+            "_locked": {
+                "name": "_locked",
+                "type": "json",
+                "nullable": true
+            },
+            "_authorization": {
+                "name": "_authorization",
+                "type": "json",
+                "nullable": true
+            },
+            "_validation": {
+                "name": "_validation",
+                "type": "json",
+                "nullable": true
+            },
+            "_quality": {
+                "name": "_quality",
+                "type": "json",
+                "nullable": true
+            },
+            "_deleted": {
+                "name": "_deleted",
+                "type": "json",
+                "nullable": true
+            },
+            "_archived": {
+                "name": "_archived",
+                "type": "json",
+                "nullable": true
+            },
+            "_frozen": {
+                "name": "_frozen",
+                "type": "json",
+                "nullable": true
+            },
+            "_status": {
+                "name": "_status",
+                "type": "string",
+                "length": 16,
+                "nullable": true,
+                "index": true
+            },
+            "_geo": {
+                "name": "_geo",
+                "type": "json",
+                "nullable": true
+            },
+            "_retention": {
+                "name": "_retention",
+                "type": "json",
+                "nullable": true
+            },
+            "_groups": {
+                "name": "_groups",
+                "type": "json",
+                "nullable": true
+            },
+            "_tmlo": {
+                "name": "_tmlo",
+                "type": "json",
+                "nullable": true
+            },
+            "7": {
+                "name": "7",
+                "type": "text",
+                "nullable": true
+            }
+        },
         "events": []
     },
     "numeric format": {

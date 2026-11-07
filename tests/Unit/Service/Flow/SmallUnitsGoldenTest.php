@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Service\File\PlaceholderIdTranslator;
+use OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator;
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarDependency;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
@@ -23,7 +23,7 @@ use RuntimeException;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary
- * @covers \OCA\OpenRegister\Service\File\PlaceholderIdTranslator
+ * @covers \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator
  * @covers \OCA\OpenRegister\Service\Flow\Timer\CalendarDependency
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours

@@ -530,7 +530,7 @@ class ValidationHandler {
 		return [
 			'processed' => count($objectsData),
 			'updated' => ($statistics['saved'] ?? 0) + ($statistics['updated'] ?? 0),
-			'failed' => $statistics['failed'] ?? 0,
+			'failed' => $statistics['failed'] ?? $statistics['invalid'] ?? 0,
 		];
 	}//end bulkSaveCounts()
 

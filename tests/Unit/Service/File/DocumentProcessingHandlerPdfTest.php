@@ -17,12 +17,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Db\AnonymisationLogMapper;
+use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
-use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
-use OCA\OpenRegister\Service\File\OfficeDocumentSanitizer;
-use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
+use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;

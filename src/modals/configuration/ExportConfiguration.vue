@@ -11,7 +11,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		name="export-configuration-dialog"
 		:title="t('openregister', 'Export Configuration')"
 		size="small"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="errorMessage" type="error">
 			<p>{{ errorMessage }}</p>
 		</NcNoteCard>

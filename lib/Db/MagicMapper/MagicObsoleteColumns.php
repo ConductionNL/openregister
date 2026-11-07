@@ -82,7 +82,7 @@ final class MagicObsoleteColumns {
 		$released = [];
 		foreach ($sync->columns->current as $colName => $colDef) {
 			if ($this->isObsolete(sync: $sync, colName: $colName) === true
-				&& $this->releaseColumn(sync: $sync, column: [$colName, $colDef['type'] ?? 'text']) === true
+				&& $this->releaseColumn(sync: $sync, column: [$colName, $this->liveType(column: $colDef)]) === true
 			) {
 				$released[] = $colName . ' (obsolete)';
 			}
@@ -108,7 +108,7 @@ final class MagicObsoleteColumns {
 	}//end isDuplicate()
 
 	/**
-	 * Drop one duplicate column.
+	 * Drop one duplicate column; it was read from the table, so no `IF EXISTS`, which MySQL does not have.
 	 *
 	 * @param TableStructureSync $sync    The table sync.
 	 * @param string             $colName The live column.
@@ -123,7 +123,7 @@ final class MagicObsoleteColumns {
 		$quoted = (new MagicColumnSql(isPostgres: $sync->isPostgres))->quote(name: $colName);
 
 		return $this->ddl->attempt(
-			sql: 'ALTER TABLE ' . $sync->tableNameQuoted . ' DROP COLUMN IF EXISTS ' . $quoted,
+			sql: 'ALTER TABLE ' . $sync->tableNameQuoted . ' DROP COLUMN ' . $quoted,
 			failure: new MagicDdlFailure(message: '[MagicMapper] Failed to drop duplicate column', context: ['columnName' => $colName])
 		);
 	}//end drop()
@@ -141,6 +141,17 @@ final class MagicObsoleteColumns {
 			&& isset($sync->requiredNames[$colName]) === false
 			&& ($sync->columns->current[$colName]['nullable'] ?? true) !== true;
 	}//end isObsolete()
+
+	/**
+	 * The live SQL type of a column; `data_type` alone has no length, and MySQL refuses a bare `varchar`.
+	 *
+	 * @param array $column The live column.
+	 *
+	 * @return string The SQL type.
+	 */
+	private function liveType(array $column): string {
+		return $column['sqlType'] ?? $column['type'] ?? 'text';
+	}//end liveType()
 
 	/**
 	 * Make one obsolete column nullable.

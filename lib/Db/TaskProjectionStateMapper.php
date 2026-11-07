@@ -26,7 +26,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 
@@ -36,6 +35,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<TaskProjectionState>
  */
 class TaskProjectionStateMapper extends QBMapper {
+
+	use SelectByColumnTrait;
 
 	/**
 	 * Constructor.
@@ -58,18 +59,16 @@ class TaskProjectionStateMapper extends QBMapper {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-projection-is-idempotent-and-does-not-feed-itself
 	 */
 	public function findForTask(string $taskUuid, string $surface = TaskProjectionState::SURFACE_CALDAV): ?TaskProjectionState {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('task_uuid', $qb->createNamedParameter($taskUuid)))
-			->andWhere($qb->expr()->eq('surface', $qb->createNamedParameter($surface)))
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'task_uuid', value: $taskUuid));
+		$qb->andWhere($qb->expr()->eq('surface', $qb->createNamedParameter($surface)))
 			->setMaxResults(1);
 
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException) {
-			return null;
+		$found = $this->findOneOrNull(query: $qb);
+		if ($found instanceof TaskProjectionState) {
+			return $found;
 		}
+
+		return null;
 	}//end findForTask()
 
 	/**

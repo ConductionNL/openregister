@@ -51,13 +51,7 @@ final class MiddlewareRegistrar {
 		// POST/PUT/PATCH with `?_validate=true`; pass-through otherwise.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\OasValidationMiddleware::class);
 
-		// Writes the request's reveals of audited properties, once, after the
-		// controller has answered (ledger row 5.6, D-2). Registered LAST of the
-		// middlewares so it runs closest to the response: everything the read
-		// path was going to collect has been collected by then, and a
-		// middleware that flushed earlier would write a shorter trail than the
-		// request actually produced.
-		$context->registerMiddleware(\OCA\OpenRegister\Middleware\RevealAuditMiddleware::class);
+		self::registerResponseMiddlewares(context: $context);
 
 		// Register the RateLimitMiddleware to wire SecurityService brute-force
 		// protection into the inbound API auth path (issue #1834). Records
@@ -138,4 +132,24 @@ final class MiddlewareRegistrar {
 		// other apps answer public requests with OpenRegister's records too.
 		$context->registerMiddleware(AnonymousEnvelopeMiddleware::class, global: true);
 	}//end register()
+
+	/**
+	 * Register the middlewares that act on what the request collected.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerResponseMiddlewares(IRegistrationContext $context): void {
+		// Writes the request's reveals of audited properties, once, after the
+		// controller has answered (ledger row 5.6, D-2). Registered LAST of the
+		// middlewares so it runs closest to the response: everything the read
+		// path was going to collect has been collected by then, and a
+		// middleware that flushed earlier would write a shorter trail than the
+		// request actually produced.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\RevealAuditMiddleware::class);
+
+		// Global: a publish can arrive through any app's controller.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ScheduleRefusalMiddleware::class, true);
+	}//end registerResponseMiddlewares()
 }//end class

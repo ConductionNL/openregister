@@ -40,11 +40,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use DateTimeImmutable;
-use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
+use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
+use OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption;
+use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
+use OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableCreator;
@@ -68,10 +70,17 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
+use OCA\OpenRegister\Db\MagicMapper\MagicRelationSql;
+use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
+use OCA\OpenRegister\Db\MagicMapper\MagicSlugTable;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionPage;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionScore;
 use OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnAdder;
@@ -90,9 +99,6 @@ use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
-use OCA\OpenRegister\Service\Rbac\RuleColumns;
-use OCA\OpenRegister\Service\DateTimeNormalizer;
-use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -100,6 +106,7 @@ use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Support\OrderParameter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -219,97 +226,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private const METADATA_PREFIX = '_';
 
 	/**
-	 * Schema-and-property pairs already warned about as named like a metadata column.
-	 *
-	 * @var array<string, true>
-	 */
-	private static array $warnedMetadataNamedProperties = [];
-
-	/**
-	 * The metadata fields every object write names, in column order.
-	 *
-	 * @var string[]
-	 */
-	private const METADATA_WRITE_FIELDS = [
-		'uuid',
-		'slug',
-		'uri',
-		'version',
-		'register',
-		'schema',
-		'owner',
-		'organisation',
-		'application',
-		'folder',
-		'name',
-		'description',
-		'summary',
-		'image',
-		'size',
-		'schema_version',
-		'files',
-		'relations',
-		'locked',
-		// `authorization` is DELIBERATELY absent from this list.
-		//
-		// authoritativeMetadata() strips it because per-object RBAC must not be
-		// writable by ordinary create/update calls. Listing it here would resolve
-		// the stripped key to an explicit NULL, and the UPDATE would write it,
-		// destroying the stored rules on the next save of that object: a private
-		// object would silently become visible again, and the per-object action
-		// overrides would be wiped the same way.
-		//
-		// Omitting the field means the column is never named in the INSERT or
-		// UPDATE at all (`updateObjectInRegisterSchemaTable()` only sets keys that
-		// are PRESENT), so the stored value is carried forward untouched. Writes go
-		// through the dedicated authorization-management path.
-		'validation',
-		'quality',
-		'deleted',
-		// Listed, and therefore carried forward on every ordinary update, for the
-		// same reason `locked` is: the value comes from the ENTITY, and
-		// `setSelfMetadata()` never accepts either key from a client `@self`
-		// payload, so no write path can archive or freeze an object without the
-		// endpoint. Omitting them would make `updateObjectEntity()` stop naming the
-		// column, and the dedicated archive write would be the only write that
-		// could ever clear it.
-		'archived',
-		'frozen',
-		// Carried forward like `frozen`: setSelfMetadata() lets a client set
-		// `draft` on create only, and only the submit leaves it.
-		'status',
-		'geo',
-		'retention',
-		'groups',
-		'tmlo',
-		'created',
-		'updated',
-		'last_user_activity',
-		'expires',
-	];
-
-	/**
-	 * The metadata fields stored as JSON; the schema's active linked types are added per write.
-	 *
-	 * @var string[]
-	 */
-	private const METADATA_JSON_FIELDS = [
-		'files',
-		'relations',
-		'locked',
-		'authorization',
-		'validation',
-		'quality',
-		'deleted',
-		'archived',
-		'frozen',
-		'geo',
-		'retention',
-		'groups',
-		'tmlo',
-	];
-
-	/**
 	 * Whether the last single-object write INSERTED or UPDATED.
 	 *
 	 * The mapper is the only layer that knows. `SaveObject` performs its own
@@ -375,19 +291,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Rows the identifier lookup reads at most (key matches first, then id order).
 	 */
 	private const IDENTIFIER_MATCH_LIMIT = 50;
-
-	/**
-	 * Condition matching a UUID anywhere in _relations, array or object format (PostgreSQL).
-	 *
-	 * Uses @> containment instead of ?, which would clash with PDO placeholders.
-	 */
-	private const RELATIONS_CONTAIN_SQL_POSTGRES = "((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text))"
-		. " OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))";
-
-	/**
-	 * Condition matching a UUID anywhere in _relations, array or object format (MySQL/MariaDB).
-	 */
-	private const RELATIONS_CONTAIN_SQL_MYSQL = 'JSON_SEARCH(_relations, \'one\', ?) IS NOT NULL';
 
 	/**
 	 * Request-scoped memo for {@see checkTableExistsInDatabase()}.
@@ -597,14 +500,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private ?MagicPgTrgmProbe $pgTrgmProbe = null;
 
 	/**
-	 * Undeclared properties already reported as discarded, by schema id then property name.
+	 * Remembers the undeclared properties reported as discarded.
 	 *
 	 * MagicMapper is one shared service per process, so this lives for one
-	 * request (or one occ/cron run): see reportDroppedProperties().
+	 * request (or one occ/cron run).
 	 *
-	 * @var array<string, array<string, true>>
+	 * @var MagicDroppedProperties|null
 	 */
-	private array $reportedDrops = [];
+	private ?MagicDroppedProperties $droppedProperties = null;
 
 	/**
 	 * Constructor for MagicMapper service.
@@ -1653,6 +1556,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			]
 		);
 
+		$query = (new MagicUnionOrder(isPostgres: false))->orderable(
+			query: $query,
+			columns: $this->collectAllPropertyColumns(registerSchemaPairs: $registerSchemaPairs)
+		);
+
 		// OPTIMIZATION: Use UNION ALL for multi-table search in a single query.
 		// This is MUCH faster than looping through tables individually.
 		if (count($registerSchemaPairs) > 1 && $this->shouldUseUnionQuery(query: $query) === true) {
@@ -1726,48 +1634,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function countUnionBatch(array $query, array $registerSchemaPairs): int {
 		$arms = [];
 		foreach ($registerSchemaPairs as $pair) {
-			$register = ($pair['register'] ?? null);
-			$schema = ($pair['schema'] ?? null);
-			if ($register === null || $schema === null
-				|| $this->existsTableForRegisterSchema(register: $register, schema: $schema) === false
-			) {
-				continue;
+			$arm = $this->unionCountArm(query: $query, pair: $pair);
+			if ($arm !== null) {
+				$arms[] = $this->unionCountSql(arm: $arm);
 			}
-
-			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-
-			// The columns the search arm would search, as buildUnionSelectPart()
-			// collects them for its metadata-only projection.
-			$existingColumns = [];
-			foreach (array_keys($schema->getProperties() ?? []) as $ownProperty) {
-				$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
-				if ($this->columnExistsInTable(tableName: $tableName, columnName: $ownColumn) === true) {
-					$existingColumns[] = $ownColumn;
-				}
-			}
-
-			$armQuery = $query;
-			if (isset($armQuery['@self']) === true && is_array($armQuery['@self']) === true
-				&& array_key_exists('schema', $armQuery['@self']) === true
-			) {
-				$armQuery['@self']['schema'] = $schema->getId();
-			}
-
-			$where = $this->searchHandler->buildWhereConditionsSql(
-				query: $armQuery,
-				schema: $schema,
-				existingColumns: $existingColumns,
-				registerId: $register->getId(),
-				tableName: $tableName
-			);
-
-			$arm = 'SELECT COUNT(*) AS cnt FROM '.$this->getFullTableName(tableName: $tableName);
-			if (empty($where) === false) {
-				$arm .= ' WHERE '.implode(' AND ', $where);
-			}
-
-			$arms[] = $arm;
-		}//end foreach
+		}
 
 		if ($arms === []) {
 			return 0;
@@ -1783,12 +1654,55 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end countUnionBatch()
 
 	/**
+	 * The arm a count reads for one pair, or null without a pair or a table.
+	 *
+	 * A count never creates a table: a missing one holds no rows.
+	 *
+	 * @param array $query The search query.
+	 * @param array $pair  The register+schema pair.
+	 *
+	 * @return MagicUnionArm|null The arm, with its table's own columns.
+	 */
+	private function unionCountArm(array $query, array $pair): ?MagicUnionArm {
+		$register = ($pair['register'] ?? null);
+		$schema = ($pair['schema'] ?? null);
+		if ($register === null || $schema === null
+			|| $this->existsTableForRegisterSchema(register: $register, schema: $schema) === false
+		) {
+			return null;
+		}
+
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$arm = new MagicUnionArm(tableName: $tableName, query: $query, schema: $schema, register: $register);
+		$arm->existingColumns = $this->unionOwnColumns(arm: $arm);
+
+		return $arm;
+	}//end unionCountArm()
+
+	/**
+	 * The `COUNT(*)` statement of one arm, on the same WHERE as its search arm.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return string The statement.
+	 */
+	private function unionCountSql(MagicUnionArm $arm): string {
+		$sql = 'SELECT COUNT(*) AS cnt FROM '.$this->getFullTableName(tableName: $arm->tableName);
+		$where = $this->unionArmWhereClauses(arm: $arm);
+		if (empty($where) === false) {
+			$sql .= ' WHERE '.implode(' AND ', $where);
+		}
+
+		return $sql;
+	}//end unionCountSql()
+
+	/**
 	 * Determine if we should use UNION ALL optimization.
 	 *
 	 * UNION ALL is faster but has limitations:
 	 * - All tables must exist
 	 * - No complex aggregations
-	 * - No related-row filters (`_related`, `_referenced`)
+	 * - No related-row filters (`_related`, `_referenced`) or `_relations_contains`
 	 * - Simpler query structure
 	 *
 	 * @param array $query Search query parameters.
@@ -1807,9 +1721,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
 		// refuses them, which on this route would end in an uncaught exception
 		// (HTTP 500), so a query carrying either takes the sequential path.
-		if (array_key_exists('_related', $query) === true || array_key_exists('_referenced', $query) === true
-			|| array_key_exists('_element', $query) === true
-		) {
+		// `_relations_contains` has no raw-SQL twin either: a union would answer
+		// without the filter.
+		$builderOnly = ['_related', '_referenced', '_element', '_relations_contains'];
+		if (array_intersect($builderOnly, array_keys($query)) !== []) {
 			return false;
 		}
 
@@ -1921,7 +1836,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return [];
 		}
 
-		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $query) . $this->unionLimitClause(query: $query);
+		// The batch orders on what it projects: a column of another batch is null in all of its rows.
+		$orderQuery = (new MagicUnionOrder(isPostgres: false))->orderable(query: $query, columns: ($allPropertyColumns ?? []));
+		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $orderQuery) . $this->unionPage(query: $query)->limitClause();
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
@@ -2047,46 +1964,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end unionOrderByClause()
 
 	/**
-	 * The LIMIT/OFFSET clause of a union.
-	 *
-	 * Both values are cast and clamped here, so raw user input cannot reach
-	 * the interpolated SQL string (SQL injection via _limit / _offset).
-	 *
-	 * Unlimited omits the clause rather than interpolating a large number:
-	 * this SQL is concatenated, not bound, and a sentinel like PHP_INT_MAX
-	 * is a number some databases reject.
-	 *
-	 * @param array $query Search parameters.
-	 *
-	 * @return string The clause with a leading space, or an empty string.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
-	 */
-	private function unionLimitClause(array $query): string {
-		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
-		$offset = max(0, (int)($query['_offset'] ?? 0));
-		if ($normalisedLimit !== null) {
-			// A NUMERIC limit is still clamped to the documented maximum. That
-			// clamp is a deliberate protection (objects-crud: "List page size is
-			// bounded by a hard maximum") against a client loading an
-			// arbitrarily large result set by accident. `_limit=false` is the
-			// explicit opt-in, and the only way past the bound.
-			$limit = min($normalisedLimit, self::MAX_PAGE_SIZE);
-			return " LIMIT {$limit} OFFSET {$offset}";
-		}
-
-		// MySQL and MariaDB reject a bare OFFSET without a LIMIT, so an
-		// offset with no limit still needs the clause. The upper bound is
-		// the largest value the syntax accepts, which is the documented
-		// idiom for "everything from here on".
-		if ($offset > 0) {
-			return ' LIMIT 18446744073709551615 OFFSET ' . $offset;
-		}
-
-		return '';
-	}//end unionLimitClause()
-
-	/**
 	 * Resolve the ORDER BY keys for a cross-schema UNION search.
 	 *
 	 * Returns one entry per key, in order, each carrying the SQL expression to
@@ -2100,145 +1977,20 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return array<int, array{row: string, sql: string, dir: string}> Ordered sort keys.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function buildUnionOrderKeys(array $query, bool $isPostgres): array {
-		$hasSearch = isset($query['_search']) === true
-			&& empty($query['_search']) === false;
-		$orderParams = $query['_order'] ?? [];
-		$uuidColumn = self::METADATA_PREFIX . 'uuid';
-
-		$keys = [];
-		if (empty($orderParams) === false && is_array($orderParams) === true) {
-			foreach ($orderParams as $field => $direction) {
-				$dir = 'ASC';
-				if (strtoupper((string)$direction) === 'DESC') {
-					$dir = 'DESC';
-				}
-
-				// Special handling for _relevance: map to _search_score in UNION queries.
-				// The _relevance column is used by MagicSearchHandler for single-table
-				// queries, but UNION queries use _search_score for relevance scoring.
-				if ($field === '_relevance') {
-					// Skip _relevance ordering if no search term (nothing to order by).
-					if ($hasSearch === true) {
-						$keys[] = ['row' => '_search_score', 'sql' => '_search_score', 'dir' => $dir];
-					}
-
-					continue;
-				}
-
-				// Translate field name to column name.
-				$rowKey = $this->sanitizeColumnName(name: $field);
-				$columnName = $rowKey;
-				if (str_starts_with($field, '@self.') === true) {
-					// Metadata fields: sanitize the bare name, then validate against
-					// the known METADATA_PREFIX column allowlist before quoting.
-					// Without this allowlist, raw user input was concatenated into
-					// the UNION SQL (SQL injection via ORDER BY).
-					$sanitizedMeta = $this->sanitizeColumnName(name: substr($field, 6));
-					$candidateColumn = self::METADATA_PREFIX . $sanitizedMeta;
-					if (in_array($candidateColumn, array_keys(MagicMetadataColumns::ALL), true) === false) {
-						// Unknown metadata column - skip this ORDER BY clause entirely.
-						continue;
-					}
-
-					$rowKey = $candidateColumn;
-					$columnName = $this->quoteIdentifier(name: $candidateColumn, isPostgres: $isPostgres);
-				} elseif (str_starts_with($field, '_') === false) {
-					// Non-metadata fields - property columns are included in UNION queries.
-					// The column must exist in the SELECT for ordering to work.
-					// Quote to protect against SQL reserved keywords (e.g. "order", "group").
-					$columnName = $this->quoteIdentifier(name: $rowKey, isPostgres: $isPostgres);
-				}//end if
-
-				$keys[] = ['row' => $rowKey, 'sql' => $columnName, 'dir' => $dir];
-			}//end foreach
-		} elseif ($hasSearch === true) {
-			// Default to search score ordering when no _order specified but search is present.
-			$keys[] = ['row' => '_search_score', 'sql' => '_search_score', 'dir' => 'DESC'];
-		}//end if
-
-		// BUG-DB-4: a stable tiebreaker so rows that compare equal on the
-		// requested order keep a deterministic order across pages, and so a
-		// query with no usable order still pages deterministically.
-		$keys[] = ['row' => $uuidColumn, 'sql' => $uuidColumn, 'dir' => 'ASC'];
-
-		return $keys;
+		return (new MagicUnionOrder(isPostgres: $isPostgres))->keys(query: $query);
 	}//end buildUnionOrderKeys()
 
 	/**
-	 * Sort merged rows from several UNION batches on the SQL's own order keys.
-	 *
-	 * Each batch is already ordered by its own statement; merging them is not.
-	 * A row that a batch did not project (a property column another schema
-	 * owns) sorts as null, which is what the UNION's `NULL AS alias` arm would
-	 * have produced.
-	 *
-	 * @param array $rows      Merged raw rows.
-	 * @param array $orderKeys Keys from buildUnionOrderKeys().
-	 *
-	 * @return array Rows in the merged order.
-	 */
-	private function sortUnionRows(array $rows, array $orderKeys): array {
-		usort(
-			$rows,
-			static function (array $left, array $right) use ($orderKeys): int {
-				foreach ($orderKeys as $key) {
-					$leftValue = ($left[$key['row']] ?? null);
-					$rightValue = ($right[$key['row']] ?? null);
-
-					// Cast to string and let the spaceship operator decide: PHP
-					// compares two NUMERIC strings numerically, so a score of
-					// "0.9" still beats "0.75" and "1.0E-5" still loses to
-					// "0.0001", while a missing column (null, cast to "") is
-					// compared as text instead of silently becoming zero.
-					$comparison = ((string)$leftValue <=> (string)$rightValue);
-
-					if ($comparison !== 0) {
-						if ($key['dir'] === 'DESC') {
-							return -$comparison;
-						}
-
-						return $comparison;
-					}
-				}
-
-				return 0;
-			}
-		);
-
-		return $rows;
-	}//end sortUnionRows()
-
-	/**
 	 * The per-batch query: page one, wide enough to cover the caller's page.
-	 *
-	 * Every batch answers the same question over its own arms, so each has to
-	 * reach as far as `offset + limit` for the merged set to be able to serve
-	 * the requested page. A batch asked for only `limit` rows could not
-	 * contribute the last row of a later page even when it owns it.
-	 *
-	 * An unlimited query stays unlimited: there is nothing to over-fetch to.
 	 *
 	 * @param array $query Search parameters.
 	 *
 	 * @return array The query to run per batch.
 	 */
 	private function buildUnionBatchQuery(array $query): array {
-		$batchQuery = $query;
-		$batchQuery['_offset'] = 0;
-
-		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
-		if ($normalisedLimit !== null) {
-			// The batch runner clamps this to MAX_PAGE_SIZE, the same bound the
-			// single-statement path applies, so paging past that bound is
-			// truncated identically either way.
-			$batchQuery['_limit'] = (max(0, (int)($query['_offset'] ?? 0)) + $normalisedLimit);
-		}
-
-		return $batchQuery;
+		return $this->unionPage(query: $query)->batchQuery();
 	}//end buildUnionBatchQuery()
 
 	/**
@@ -2255,19 +2007,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array The merged page.
 	 */
 	private function mergeUnionBatchRows(array $rows, array $query, bool $isPostgres): array {
-		$rows = $this->sortUnionRows(
-			rows: $rows,
-			orderKeys: $this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres)
-		);
+		$order = new MagicUnionOrder(isPostgres: $isPostgres);
 
-		$offset = max(0, (int)($query['_offset'] ?? 0));
-		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
-		if ($normalisedLimit === null) {
-			return array_slice($rows, $offset);
-		}
-
-		return array_slice($rows, $offset, min($normalisedLimit, self::MAX_PAGE_SIZE));
+		return $this->unionPage(query: $query)->cut(rows: $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query)));
 	}//end mergeUnionBatchRows()
+
+	/**
+	 * The page of a union search.
+	 *
+	 * @param array $query Search parameters.
+	 *
+	 * @return MagicUnionPage The page.
+	 */
+	private function unionPage(array $query): MagicUnionPage {
+		return new MagicUnionPage(query: $query, maxSize: self::MAX_PAGE_SIZE);
+	}//end unionPage()
 
 	/**
 	 * Convert raw UNION rows to ObjectEntity objects.
@@ -2378,13 +2132,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function unionPropertySelect(MagicUnionArm $arm): array {
 		$arm->existingColumns = [];
 		if ($arm->metadataOnly === true) {
-			foreach (array_keys($arm->schema->getProperties() ?? []) as $ownProperty) {
-				$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
-				if ($this->columnExistsInTable(tableName: $arm->tableName, columnName: $ownColumn) === true) {
-					$arm->existingColumns[] = $ownColumn;
-				}
-			}
-
+			$arm->existingColumns = $this->unionOwnColumns(arm: $arm);
 			return [];
 		}
 
@@ -2402,6 +2150,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $selectColumns;
 	}//end unionPropertySelect()
+
+	/**
+	 * The columns of the arm's own schema that its table has.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return array<int, string> The column names.
+	 */
+	private function unionOwnColumns(MagicUnionArm $arm): array {
+		$columns = [];
+		foreach (array_keys($arm->schema->getProperties() ?? []) as $ownProperty) {
+			$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
+			if ($this->columnExistsInTable(tableName: $arm->tableName, columnName: $ownColumn) === true) {
+				$columns[] = $ownColumn;
+			}
+		}
+
+		return $columns;
+	}//end unionOwnColumns()
 
 	/**
 	 * The `_search_score` column of a UNION arm.
@@ -2426,38 +2193,40 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		// The connection quote() adds the quotes itself.
-		$quotedTerm = $this->db->getQueryBuilder()->getConnection()->quote($searchTerm);
-		$likePattern = "'%" . trim($quotedTerm, "'") . "%'";
-		$hasTrgm = $this->hasPgTrgmExtension();
+		$score = new MagicUnionScore(
+			quotedTerm: $this->db->getQueryBuilder()->getConnection()->quote($searchTerm),
+			isPostgres: $arm->isPostgres,
+			hasTrgm: $this->hasPgTrgmExtension()
+		);
 
 		$scores = [];
-		foreach ($schemaProps as $propName => $propDef) {
-			$columnName = $this->sanitizeColumnName(name: $propName);
-			if (in_array($propDef['type'] ?? 'string', ['string', 'text'], true) === false
-				|| $this->columnExistsInTable(tableName: $arm->tableName, columnName: $columnName) === false
-			) {
-				continue;
-			}
-
-			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $arm->isPostgres);
-			$score = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
-			if ($arm->isPostgres === true) {
-				$score = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
-			}
-
-			if ($arm->isPostgres === true && $hasTrgm === true) {
-				$score = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
-			}
-
-			$scores[] = $score;
-		}//end foreach
-
-		if ($scores === []) {
-			return '0 AS _search_score';
+		foreach ($this->unionScorableColumns(arm: $arm) as $columnName) {
+			$scores[] = $score->ofColumn(column: $this->quoteIdentifier(name: $columnName, isPostgres: $arm->isPostgres));
 		}
 
-		return 'GREATEST(' . implode(', ', $scores) . ') AS _search_score';
+		return $score->greatest(scores: $scores);
 	}//end unionSearchScore()
+
+	/**
+	 * The string and text columns of the arm's schema that its table has.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return array<int, string> The column names.
+	 */
+	private function unionScorableColumns(MagicUnionArm $arm): array {
+		$columns = [];
+		foreach (($arm->schema->getProperties() ?? []) as $propName => $propDef) {
+			$columnName = $this->sanitizeColumnName(name: $propName);
+			if (in_array($propDef['type'] ?? 'string', ['string', 'text'], true) === true
+				&& $this->columnExistsInTable(tableName: $arm->tableName, columnName: $columnName) === true
+			) {
+				$columns[] = $columnName;
+			}
+		}
+
+		return $columns;
+	}//end unionScorableColumns()
 
 	/**
 	 * The WHERE conditions of a UNION arm, from the shared filter builder that
@@ -2600,29 +2369,29 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * the tables one after the other gave the same question a different
 	 * order, and a different page 2, depending on the path that ran.
 	 *
+	 * A numeric `_limit` is bounded by MAX_PAGE_SIZE, as on the UNION path;
+	 * only `_limit=false` asks for every row.
+	 *
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs.
 	 *
 	 * @return array Array of ObjectEntity objects.
 	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-list-page-size-is-bounded-by-a-hard-maximum
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function searchAcrossMultipleTablesSequential(array $query, array $registerSchemaPairs): array {
 		// Each table answers the merged question's first `offset + limit` rows,
 		// the same over-fetch buildUnionBatchQuery() uses for UNION batches.
-		$pageQuery = $query;
+		$pageQuery = $this->boundedPageQuery(query: $query);
 		$query = $this->buildUnionBatchQuery(query: $pageQuery);
 
-		// The UNION path's own order keys, so both paths answer the same
-		// question in the same order. Every table is asked for its rows in
-		// that order, closed by the uuid; on its own default (`_id`) a table's
-		// first `offset + limit` rows are not the ones the merged page needs.
-		// The platform only changes how the SQL is quoted; the row keys read
-		// here are the same on every database.
-		$orderKeys = $this->buildUnionOrderKeys(query: $pageQuery, isPostgres: false);
-		$propertyFields = $this->orderedPropertyFields(query: $pageQuery);
-		$query['_order'] = $this->buildSequentialTableOrder(orderKeys: $orderKeys, propertyFields: $propertyFields);
+		// Every table is asked for its rows in the UNION path's order, closed by
+		// the uuid; on its own default (`_id`) a table's first `offset + limit`
+		// rows are not the ones the merged page needs.
+		$order = new MagicSequentialOrder(query: $pageQuery);
+		$query['_order'] = $order->tableOrder();
 
 		$allResults = [];
 		foreach ($registerSchemaPairs as $pair) {
@@ -2636,11 +2405,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// Order the merged rows on the same keys, with the same comparator, as
 		// the UNION path merges its batches; a search term orders by score.
-		$allResults = $this->sortSequentialResults(
-			results: $allResults,
-			orderKeys: $orderKeys,
-			propertyFields: $propertyFields
-		);
+		$allResults = $order->sorted(results: $allResults);
 
 		// The caller's page, cut once from the merged rows.
 		$allResults = array_slice(
@@ -2661,6 +2426,24 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $allResults;
 	}//end searchAcrossMultipleTablesSequential()
+
+	/**
+	 * The query with a numeric `_limit` reduced to MAX_PAGE_SIZE.
+	 *
+	 * @param array $query Search parameters.
+	 *
+	 * @return array The query; an unlimited one is returned as it came.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-list-page-size-is-bounded-by-a-hard-maximum
+	 */
+	private function boundedPageQuery(array $query): array {
+		$limit = QueryLimit::normalise($query['_limit'] ?? null);
+		if ($limit !== null) {
+			$query['_limit'] = min($limit, self::MAX_PAGE_SIZE);
+		}
+
+		return $query;
+	}//end boundedPageQuery()
 
 	/**
 	 * The rows one register+schema pair contributes to a sequential search.
@@ -2743,162 +2526,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $results;
 	}//end searchSequentialTable()
-
-	/**
-	 * The property fields a query orders by, keyed by their column name.
-	 *
-	 * The UNION order keys name a property by its sanitized column; the
-	 * single-table query and the object data both use the property's own
-	 * name. This maps one back to the other.
-	 *
-	 * @param array $query Search parameters.
-	 *
-	 * @return array<string, string> Column name => property name.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function orderedPropertyFields(array $query): array {
-		$orderParams = ($query['_order'] ?? []);
-		if (is_array($orderParams) === false) {
-			return [];
-		}
-
-		$fields = [];
-		foreach (array_keys($orderParams) as $field) {
-			$field = (string) $field;
-			if (str_starts_with($field, '@self.') === true || str_starts_with($field, '_') === true) {
-				continue;
-			}
-
-			$fields[$this->sanitizeColumnName(name: $field)] = $field;
-		}
-
-		return $fields;
-	}//end orderedPropertyFields()
-
-	/**
-	 * Translate the UNION order keys into the `_order` of one table's query.
-	 *
-	 * The score is `_relevance` there, a metadata column is `@self.<name>`
-	 * and a property is its own name. A key neither form can name is left
-	 * out, as the UNION path leaves out an unknown metadata column.
-	 *
-	 * @param array<int, array{row: string, sql: string, dir: string}> $orderKeys      Keys from buildUnionOrderKeys().
-	 * @param array<string, string>                                    $propertyFields Column name => property name.
-	 *
-	 * @return array<string, string> The single-table `_order`.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function buildSequentialTableOrder(array $orderKeys, array $propertyFields): array {
-		$metadataColumns = MagicMetadataColumns::ALL;
-		$order = [];
-		foreach ($orderKeys as $key) {
-			$field = null;
-			if ($key['row'] === '_search_score') {
-				$field = '_relevance';
-			} elseif (isset($propertyFields[$key['row']]) === true) {
-				$field = $propertyFields[$key['row']];
-			} elseif (array_key_exists($key['row'], $metadataColumns) === true) {
-				$field = '@self.' . substr($key['row'], strlen(self::METADATA_PREFIX));
-			}
-
-			if ($field !== null && isset($order[$field]) === false) {
-				$order[$field] = $key['dir'];
-			}
-		}
-
-		return $order;
-	}//end buildSequentialTableOrder()
-
-	/**
-	 * Order merged entities on the UNION path's keys with its comparator.
-	 *
-	 * Each entity is projected onto the row keys the UNION statement would
-	 * have produced, sorted with sortUnionRows(), and put back in that order.
-	 *
-	 * @param array<int, ObjectEntity>                                 $results        The merged entities.
-	 * @param array<int, array{row: string, sql: string, dir: string}> $orderKeys      Keys from buildUnionOrderKeys().
-	 * @param array<string, string>                                    $propertyFields Column name => property name.
-	 *
-	 * @return array<int, ObjectEntity> The entities in the merged order.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function sortSequentialResults(array $results, array $orderKeys, array $propertyFields): array {
-		$rows = [];
-		foreach (array_values($results) as $index => $entity) {
-			$row = ['__index' => $index];
-			foreach ($orderKeys as $key) {
-				$row[$key['row']] = $this->sequentialOrderValue(
-					entity: $entity,
-					rowKey: $key['row'],
-					propertyFields: $propertyFields
-				);
-			}
-
-			$rows[] = $row;
-		}
-
-		$results = array_values($results);
-		$sorted = [];
-		foreach ($this->sortUnionRows(rows: $rows, orderKeys: $orderKeys) as $row) {
-			$sorted[] = $results[$row['__index']];
-		}
-
-		return $sorted;
-	}//end sortSequentialResults()
-
-	/**
-	 * The value an entity holds for one UNION order key.
-	 *
-	 * The score is the one the row carries (`_search_score` in its data, else
-	 * its relevance as a fraction), 0 without one. A metadata column reads the
-	 * entity's own field, a property column the object's value; dates compare
-	 * as `Y-m-d H:i:s.u`, arrays as JSON, and a missing value is null, which
-	 * sorts where the UNION's `NULL AS alias` arm puts it.
-	 *
-	 * @param ObjectEntity          $entity         The entity.
-	 * @param string                $rowKey         The UNION row key.
-	 * @param array<string, string> $propertyFields Column name => property name.
-	 *
-	 * @return mixed The comparable value.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function sequentialOrderValue(ObjectEntity $entity, string $rowKey, array $propertyFields): mixed {
-		$value = null;
-		if ($rowKey === '_search_score') {
-			$data = $entity->getObject();
-			$value = 0;
-			if (isset($data['_search_score']) === true) {
-				$value = (float) $data['_search_score'];
-			} elseif ($entity->getRelevance() !== null) {
-				$value = ($entity->getRelevance() / 100);
-			}
-		} elseif (isset($propertyFields[$rowKey]) === true) {
-			$value = ($entity->getObject()[$propertyFields[$rowKey]] ?? null);
-		} elseif (str_starts_with($rowKey, self::METADATA_PREFIX) === true) {
-			$field = lcfirst(str_replace('_', '', ucwords(substr($rowKey, strlen(self::METADATA_PREFIX)), '_')));
-			if (property_exists($entity, $field) === true) {
-				$value = $entity->{'get' . ucfirst($field)}();
-			}
-		}
-
-		if ($value instanceof \DateTimeInterface) {
-			return $value->format('Y-m-d H:i:s.u');
-		}
-
-		if (is_bool($value) === true) {
-			return (int) $value;
-		}
-
-		if (is_array($value) === true) {
-			return json_encode($value);
-		}
-
-		return $value;
-	}//end sequentialOrderValue()
 
 	/**
 	 * Get cache key for register+schema combination
@@ -3389,543 +3016,26 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		unset($data['@self']);
 
 		// An encrypted property is written only as an envelope, whichever path
-		// got here (see encryptFlaggedProperties()).
-		$data = $this->encryptFlaggedProperties(data: $data, schema: $schema);
+		// got here (see MagicFlaggedEncryption).
+		$data = (new MagicFlaggedEncryption(container: $this->container))->forObject(data: $data, schema: $schema);
 
-		$metadata = $this->authoritativeMetadata(
+		$rowMetadata = new MagicRowMetadata(container: $this->container);
+		$metadata = $rowMetadata->authoritative(
 			objectData: $objectData,
 			ids: ['register' => $register->getId(), 'schema' => $schema->getId()]
 		);
 		$metadata['created'] ??= $now;
 		$metadata['updated'] ??= $now;
 
-		$preparedData = $this->prepareMetadataColumns(metadata: $metadata, schema: $schema);
-		$preparedData = array_replace($preparedData, $this->preparePropertyColumns(data: $data, schema: $schema));
+		$preparedData = $rowMetadata->columns(metadata: $metadata, schema: $schema);
+		$propertyColumns = new MagicPropertyColumns(container: $this->container, logger: $this->logger);
+		$preparedData = array_replace($preparedData, $propertyColumns->forObject(data: $data, schema: $schema));
 
-		$this->reportDroppedProperties(data: $data, schemaProperties: $schema->getProperties(), schema: $schema);
+		$this->droppedProperties ??= new MagicDroppedProperties(logger: $this->logger);
+		$this->droppedProperties->report(data: $data, schema: $schema);
 
 		return $preparedData;
 	}//end prepareObjectDataForTable()
-
-	/**
-	 * The `@self` metadata of an object with the server-controlled fields made authoritative.
-	 *
-	 * SECURITY (wave-7 CRITICAL C2, @self allowlist enforcement): clients must not be able
-	 * to overwrite server-controlled fields via the @self block. The primary defence lives
-	 * in SaveObject::setSelfMetadata (which strips owner/authorization from raw client
-	 * $selfData). This is defence in depth at the DB write boundary, for fields that any
-	 * code path can reach, not just the REST request path.
-	 *
-	 * - owner: the server-stamped owner (a scalar UID string set by
-	 *   SaveObject::applyOwnerAttribution before jsonSerialize()) MUST be persisted,
-	 *   otherwise rows land with an empty `_owner` column: the creator can never equal the
-	 *   owner, so the update lock-guard 403s the owner's own update and ownership-based
-	 *   RBAC and owner notifications are neutered. A non-string owner, the shape a
-	 *   forged `@self` payload would take, is dropped.
-	 * - authorization: per-object RBAC rules are not writable by ordinary create/update
-	 *   calls; they are managed through the dedicated authorization endpoint.
-	 * - register / schema: always the authoritative method parameters, never a client value.
-	 *
-	 * Not stripped here, because the server sets them before this point: version, created,
-	 * updated, deleted, locked, retention, uuid, slug, uri. Client injection of any of
-	 * those must be fixed at the SaveObject/controller level.
-	 *
-	 * @param array                                $objectData The object data, with its optional `@self` block
-	 * @param array{register: mixed, schema: mixed} $ids        The authoritative register and schema ids
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function authoritativeMetadata(array $objectData, array $ids): array {
-		$metadata = $objectData['@self'] ?? [];
-		unset($metadata['authorization']);
-
-		if (isset($metadata['owner']) === true && is_string($metadata['owner']) === false) {
-			unset($metadata['owner']);
-		}
-
-		$metadata['register'] = $ids['register'];
-		$metadata['schema']   = $ids['schema'];
-
-		// The entity serialises `schemaVersion` and `lastUserActivity`; the columns are snake_case.
-		$metadata['schema_version']     = $metadata['schemaVersion'] ?? $metadata['schema_version'] ?? null;
-		$metadata['last_user_activity'] = $metadata['lastUserActivity'] ?? null;
-
-		return $metadata;
-	}//end authoritativeMetadata()
-
-	/**
-	 * The `_`-prefixed metadata columns written for one object, in column order.
-	 *
-	 * @param array<string, mixed> $metadata The authoritative metadata, `created` and `updated` filled in
-	 * @param Schema               $schema   The schema context
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function prepareMetadataColumns(array $metadata, Schema $schema): array {
-		// RuleColumns::LINKED_TYPES values carry the column prefix; the loop below adds its own,
-		// so the linked type key itself is the field.
-		$fields     = self::METADATA_WRITE_FIELDS;
-		$jsonFields = self::METADATA_JSON_FIELDS;
-		foreach ($schema->getLinkedTypes() as $linkedType) {
-			if (isset(RuleColumns::LINKED_TYPES[$linkedType]) === true) {
-				$fields[]     = $linkedType;
-				$jsonFields[] = $linkedType;
-			}
-		}
-
-		$columns = [];
-		foreach ($fields as $field) {
-			$value = $this->prepareMetadataValue(field: $field, value: ($metadata[$field] ?? null));
-			if (in_array($field, $jsonFields) === true) {
-				$value = $this->jsonColumnValue(value: $value);
-			}
-
-			$columns[self::METADATA_PREFIX.$field] = $value;
-		}
-
-		return $columns;
-	}//end prepareMetadataColumns()
-
-	/**
-	 * A metadata value as its column stores it; datetime fields become UTC 'Y-m-d H:i:s'.
-	 *
-	 * A DateTime is converted to the column's
-	 * timezone before formatting, because format() renders in the instance's own timezone
-	 * and a non-UTC value would be read back as UTC (WOO-567). This is done inline rather
-	 * than through DateTimeNormalizer so the path works without a resolvable container. A
-	 * string goes through DateTimeNormalizer, so empty input becomes null rather than now
-	 * and a non-UTC offset is converted rather than dropped.
-	 *
-	 * @param string $field The metadata field
-	 * @param mixed  $value The value from `@self`
-	 *
-	 * @return mixed
-	 */
-	private function prepareMetadataValue(string $field, mixed $value): mixed {
-		if (in_array($field, ['created', 'updated', 'last_user_activity', 'expires']) === false) {
-			return $value;
-		}
-
-		if ($value instanceof \DateTimeInterface) {
-			return DateTimeImmutable::createFromInterface($value)
-				->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
-				->format(DateTimeNormalizer::DATABASE_FORMAT);
-		}
-
-		if (is_string($value) === true) {
-			return $this->container
-				->get(DateTimeNormalizer::class)
-				->formatForDatabase($value);
-		}
-
-		return $value;
-	}//end prepareMetadataValue()
-
-	/**
-	 * A value for a JSON metadata column: an empty array is NULL so IS NULL checks hold,
-	 * a string is kept, anything else is JSON-encoded.
-	 *
-	 * An empty string becomes NULL at the final insert/update stage, not here.
-	 *
-	 * @param mixed $value The value
-	 *
-	 * @return mixed
-	 */
-	private function jsonColumnValue(mixed $value): mixed {
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_array($value) === true && empty($value) === true) {
-			return null;
-		}
-
-		if (is_string($value) === false) {
-			return json_encode($value);
-		}
-
-		return $value;
-	}//end jsonColumnValue()
-
-	/**
-	 * The property columns written for one object, keyed by sanitised column name.
-	 *
-	 * A property absent from the data is skipped, so its column is left unchanged; a
-	 * property present with a null value is written as null.
-	 *
-	 * A property whose column is a metadata column (`_owner`, `_authorization`, `_status`,
-	 * ...) never writes it: the metadata columns are stamped from server-side values and
-	 * the client's value must not replace them. The read side treats such a column as
-	 * metadata too.
-	 *
-	 * @param array  $data   The object's property values, without `@self`
-	 * @param Schema $schema The schema context
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function preparePropertyColumns(array $data, Schema $schema): array {
-		$schemaProperties = $schema->getProperties();
-		if (is_array($schemaProperties) === false) {
-			return [];
-		}
-
-		$columns     = [];
-		$columnRoles = new MagicMetadataColumn();
-		foreach (array_keys($schemaProperties) as $propertyName) {
-			if (is_string($propertyName) === true && $columnRoles->shadowsMetadata(key: $propertyName) === true) {
-				$this->warnMetadataNamedProperty(schema: $schema, propertyName: $propertyName);
-				continue;
-			}
-
-			if (array_key_exists($propertyName, $data) === true) {
-				$value = $this->preparePropertyValue(
-					property: ['name' => $propertyName, 'config' => ($schemaProperties[$propertyName] ?? [])],
-					value: $data[$propertyName]
-				);
-				$columns[$this->sanitizeColumnName(name: $propertyName)] = $value;
-			}
-		}
-
-		return $columns;
-	}//end preparePropertyColumns()
-
-	/**
-	 * Warn, once per schema and property per request, that a property named like a
-	 * metadata column is not written.
-	 *
-	 * @param Schema $schema       The schema
-	 * @param string $propertyName The property
-	 *
-	 * @return void
-	 */
-	private function warnMetadataNamedProperty(Schema $schema, string $propertyName): void {
-		$warnedKey = $schema->getId().':'.$propertyName;
-		if (isset(self::$warnedMetadataNamedProperties[$warnedKey]) === true) {
-			return;
-		}
-
-		self::$warnedMetadataNamedProperties[$warnedKey] = true;
-		$this->logger->warning(
-			message: '[MagicMapper] A schema property is named like a metadata column; its value is not written',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'propertyName' => $propertyName,
-				'schema' => $schema->getId(),
-			]
-		);
-	}//end warnMetadataNamedProperty()
-
-	/**
-	 * A property value as its column stores it.
-	 *
-	 * Booleans become 0/1, because some drivers turn PHP's false into an empty string.
-	 * Arrays and objects become JSON. An empty string becomes NULL at the final
-	 * insert/update stage, not here.
-	 *
-	 * @param array{name: int|string, config: mixed} $property The property's name and schema definition
-	 * @param mixed                                  $value    The value
-	 *
-	 * @return mixed
-	 */
-	private function preparePropertyValue(array $property, mixed $value): mixed {
-		$value = $this->dropUnprocessedUploads(property: $property, value: $value);
-		$value = $this->normalisePropertyDate(value: $value, format: ($property['config']['format'] ?? null));
-
-		if (is_bool($value) === true) {
-			$value = (int)$value;
-		}
-
-		if (is_array($value) === true || is_object($value) === true) {
-			$value = json_encode($value);
-		}
-
-		return $value;
-	}//end preparePropertyValue()
-
-	/**
-	 * A file property value without the base64 data URLs FilePropertyHandler did not process.
-	 *
-	 * Such a value would fail PostgreSQL with "invalid input syntax for type json". A file
-	 * property holding one becomes null; an array of files loses those items, and becomes
-	 * null when none is left. Each is logged as a warning.
-	 *
-	 * @param array{name: int|string, config: mixed} $property The property's name and schema definition
-	 * @param mixed                                  $value    The value
-	 *
-	 * @return mixed
-	 */
-	private function dropUnprocessedUploads(array $property, mixed $value): mixed {
-		$propertyConfig = $property['config'];
-		$propertyType   = $propertyConfig['type'] ?? 'string';
-
-		if ($propertyType === 'file' && is_string($value) === true && strpos($value, 'data:') === 0) {
-			$msg = '[MagicMapper] File property contains unprocessed';
-			$msg .= ' base64 data URL - setting to null to prevent DB error';
-			$this->logUnprocessedUpload(message: $msg, context: ['propertyName' => $property['name'], 'valueLength' => strlen($value)]);
-			return null;
-		}
-
-		$isArrayOfFiles = $propertyType === 'array' && (($propertyConfig['items']['type'] ?? '') === 'file');
-		if ($isArrayOfFiles === false || is_array($value) === false) {
-			return $value;
-		}
-
-		return $this->withoutUnprocessedUploads(propertyName: $property['name'], items: $value);
-	}//end dropUnprocessedUploads()
-
-	/**
-	 * An array of files without its unprocessed base64 data URLs, or null when none is left.
-	 *
-	 * @param int|string $propertyName The property
-	 * @param array      $items        The files
-	 *
-	 * @return array|null
-	 */
-	private function withoutUnprocessedUploads(int|string $propertyName, array $items): ?array {
-		$cleanedArray = [];
-		foreach ($items as $item) {
-			if (is_string($item) === true && strpos($item, 'data:') === 0) {
-				$msg = '[MagicMapper] Array file item contains';
-				$msg .= ' unprocessed base64 data URL - skipping item';
-				$this->logUnprocessedUpload(message: $msg, context: ['propertyName' => $propertyName, 'valueLength' => strlen($item)]);
-				continue;
-			}
-
-			$cleanedArray[] = $item;
-		}
-
-		if (empty($cleanedArray) === true) {
-			return null;
-		}
-
-		return $cleanedArray;
-	}//end withoutUnprocessedUploads()
-
-	/**
-	 * Log an unprocessed base64 upload that is not written.
-	 *
-	 * @param string                                                 $message The message
-	 * @param array{propertyName: int|string, valueLength: int} $context The property and the data URL's length
-	 *
-	 * @return void
-	 */
-	private function logUnprocessedUpload(string $message, array $context): void {
-		$this->logger->warning(
-			message: $message,
-			context: ['file' => __FILE__, 'line' => __LINE__] + $context
-		);
-	}//end logUnprocessedUpload()
-
-	/**
-	 * A `date` or `date-time` property value as 'Y-m-d H:i:s' for a DATETIME column.
-	 *
-	 * The two differ. A date-time names an instant, so a non-UTC offset is applied before
-	 * storing (WOO-567). A date names a calendar day and has no instant, so converting it
-	 * through a timezone could move it: `2026-10-20T00:00:00+02:00` would become 2026-10-19
-	 * in UTC. A due date must survive being submitted from a client that sends an offset.
-	 *
-	 * @param mixed $value  The value
-	 * @param mixed $format The property's format
-	 *
-	 * @return mixed
-	 */
-	private function normalisePropertyDate(mixed $value, mixed $format): mixed {
-		if (in_array($format, ['date-time', 'date'], true) === false || $value === null) {
-			return $value;
-		}
-
-		$isCalendarDate = ($format === 'date');
-		if ($value instanceof \DateTimeInterface) {
-			$moment = DateTimeImmutable::createFromInterface($value);
-			if ($isCalendarDate === false) {
-				$moment = $moment->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE));
-			}
-
-			return $moment->format(DateTimeNormalizer::DATABASE_FORMAT);
-		}
-
-		if (is_string($value) === false) {
-			return $value;
-		}
-
-		$normalizer = $this->container->get(DateTimeNormalizer::class);
-		if ($isCalendarDate === true) {
-			return $normalizer->formatDateForDatabase($value);
-		}
-
-		return $normalizer->formatForDatabase($value);
-	}//end normalisePropertyDate()
-
-	/**
-	 * Replace every `x-openregister-encrypted` property value with its envelope.
-	 *
-	 * SaveObject encrypts on the single-object path, but the table is the one
-	 * place every write passes through. Encrypting here as well means no path
-	 * (bulk, import, a service writing an entity back) can put plaintext in an
-	 * encrypted column. FieldEncryptionHandler::encryptProperties() skips a value
-	 * that is already an envelope, so the second pass never double-encrypts.
-	 *
-	 * Fails closed: if the schema has encrypted properties and the handler
-	 * cannot be resolved, the write is refused rather than stored in the clear.
-	 *
-	 * @param array<string, mixed> $data   Property values, without `@self`.
-	 * @param Schema               $schema The schema being written to.
-	 *
-	 * @return array<string, mixed> The data with encrypted properties as envelopes.
-	 *
-	 * @throws RuntimeException When the schema needs encryption and no handler is available.
-	 *
-	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
-	 */
-	private function encryptFlaggedProperties(array $data, Schema $schema): array {
-		if ($schema->hasEncryptedProperties() === false) {
-			return $data;
-		}
-
-		$handler = $this->container->get(FieldEncryptionHandler::class);
-		if ($handler instanceof FieldEncryptionHandler === false) {
-			throw new RuntimeException(
-				'Schema "' . ($schema->getSlug() ?? (string) $schema->getId())
-				. '" has encrypted properties but no FieldEncryptionHandler is available; refusing to store them in the clear.'
-			);
-		}
-
-		return $handler->encryptProperties(data: $data, schema: $schema);
-	}//end encryptFlaggedProperties()
-
-	/**
-	 * Apply encryptFlaggedProperties() to every row of a bulk write.
-	 *
-	 * A bulk row carries its properties either under `object` or at the top
-	 * level beside `@self`, the two shapes MagicBulkHandler reads.
-	 *
-	 * @param array<int|string, mixed> $objects The rows.
-	 * @param Schema                   $schema  The schema being written to.
-	 *
-	 * @return array<int|string, mixed> The rows with encrypted properties as envelopes.
-	 *
-	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
-	 */
-	private function encryptFlaggedPropertiesInRows(array $objects, Schema $schema): array {
-		if ($schema->hasEncryptedProperties() === false) {
-			return $objects;
-		}
-
-		foreach ($objects as $key => $object) {
-			if (is_array($object) === false) {
-				continue;
-			}
-
-			if (isset($object['object']) === true && is_array($object['object']) === true) {
-				$object['object'] = $this->encryptFlaggedProperties(data: $object['object'], schema: $schema);
-			} else {
-				$object = $this->encryptFlaggedProperties(data: $object, schema: $schema);
-			}
-
-			$objects[$key] = $object;
-		}
-
-		return $objects;
-	}//end encryptFlaggedPropertiesInRows()
-
-	/**
-	 * Say so when a property the caller sent is about to be thrown away.
-	 *
-	 * The loop above is a whitelist BY OMISSION: it walks the schema's declared
-	 * properties and copies those out of `$data`. Anything the caller sent that
-	 * the schema does not declare is simply never read — and there is no `object`
-	 * JSON blob column to fall back on, so it is gone. No error, no warning, no
-	 * trace: the write succeeds and the field is missing.
-	 *
-	 * Measured 2026-08-02: the hydra flow documents carry `description`, the
-	 * agentflow schema had no such property, and every flow's description was
-	 * discarded on save. The graphs table then showed "—" for all ten, which
-	 * reads exactly like ten flows that were never given a description.
-	 *
-	 * This does not reject — rejecting at the DB write boundary is far too late
-	 * for a clean 400 (the entity is built, folders may exist, cascades have
-	 * run) and would break every caller that harmlessly posts an extra key. It
-	 * makes the loss VISIBLE, which is the whole difference between a schema
-	 * that needs a property added and a field that quietly evaporates.
-	 *
-	 * @param array<string, mixed> $data The caller's data, minus `@self`.
-	 * @param mixed $schemaProperties The schema's declared properties.
-	 * @param Schema $schema The schema being written to.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/or-silent-field-loss/specs/silent-field-loss/spec.md
-	 */
-	private function reportDroppedProperties(array $data, mixed $schemaProperties, Schema $schema): void {
-		if (is_array($schemaProperties) === false) {
-			return;
-		}
-
-		$dropped = [];
-		foreach (array_keys($data) as $key) {
-			$name = (string)$key;
-			if (array_key_exists($name, $schemaProperties) === true) {
-				continue;
-			}
-
-			// `@`-prefixed keys are envelope/metadata (`@self` is already gone),
-			// `_`-prefixed keys are OpenRegister's own metadata columns, and `id`
-			// and `uuid` are the caller echoing back an identifier. None of these
-			// are user data the schema was ever supposed to declare, so warning
-			// about them would drown the signal in noise on literally every save.
-			if ($name === '' || $name === 'id' || $name === 'uuid' || $name[0] === '@' || $name[0] === '_') {
-				continue;
-			}
-
-			$dropped[] = $name;
-		}
-
-		// Once per schema and property per process. One import or bulk write of
-		// thousands of objects with the same undeclared key logged one warning
-		// per object (a throwaway instance wrote a 28 GB log). The first
-		// discard of each property is still a warning, so schema drift stays
-		// visible; a NEW undeclared property on the same schema warns again.
-		$schemaKey = (string)($schema->getId() ?? $schema->getSlug() ?? '');
-		$dropped   = array_values(
-			array_filter(
-				$dropped,
-				fn (string $name): bool => isset($this->reportedDrops[$schemaKey][$name]) === false
-			)
-		);
-
-		if ($dropped === []) {
-			return;
-		}
-
-		foreach ($dropped as $name) {
-			$this->reportedDrops[$schemaKey][$name] = true;
-		}
-
-		$plural = 'ies';
-		if (count($dropped) === 1) {
-			$plural = 'y';
-		}
-
-		$this->logger->warning(
-			message: sprintf(
-				'[MagicMapper] Discarding %d propert%s the schema "%s" does not declare: %s. '
-				. 'They are NOT stored anywhere — add them to the schema or stop sending them. '
-				. 'Reported once per property per request.',
-				count($dropped),
-				$plural,
-				(string)($schema->getTitle() ?? $schema->getSlug() ?? (string)$schema->getId()),
-				implode(', ', $dropped)
-			),
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schema' => $schema->getId(),
-				'schemaSlug' => $schema->getSlug(),
-				'dropped' => $dropped,
-			]
-		);
-	}//end reportDroppedProperties()
 
 	/**
 	 * Convert database row to ObjectEntity.
@@ -5106,6 +4216,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end fetchRows()
 
 	/**
+	 * The slug column of a register+schema table, or null without a table.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return MagicSlugTable|null
+	 */
+	private function slugTable(Register $register, Schema $schema): ?MagicSlugTable {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return null;
+		}
+
+		return new MagicSlugTable(db: $this->db, tableName: $this->getTableNameForRegisterSchema(register: $register, schema: $schema));
+	}//end slugTable()
+
+	/**
 	 * The live objects whose slug starts with a prefix, as slug => uuid pairs.
 	 *
 	 * For the seed import to find an object stored under a suffixed slug (`<slug>-<14 digits>`);
@@ -5120,26 +4246,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return list<array{slug: string, uuid: string}> The matches.
 	 */
 	public function findSlugsByPrefix(Register $register, Schema $schema, string $prefix, int $limit=50): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(self::METADATA_PREFIX . 'slug', self::METADATA_PREFIX . 'uuid')
-			->from($tableName)
-			->where($qb->expr()->like(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix) . '%')))
-			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'))
-			->orderBy(self::METADATA_PREFIX . 'id', 'ASC')
-			->setMaxResults($limit);
-		$result = $qb->executeQuery();
-		$matches = [];
-		while (($row = $result->fetch()) !== false) {
-			$matches[] = ['slug' => (string)$row[self::METADATA_PREFIX . 'slug'], 'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid']];
-		}
-
-		$result->closeCursor();
-		return $matches;
+		return ($this->slugTable(register: $register, schema: $schema)?->byPrefix(prefix: $prefix, limit: $limit) ?? []);
 	}//end findSlugsByPrefix()
 
 	/**
@@ -5181,28 +4288,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		string $slug,
 		?string $excludeUuid=null,
 	): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(self::METADATA_PREFIX . 'uuid')
-			->from($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
-			->where($qb->expr()->eq(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($slug)))
-			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'))
-			->setMaxResults(1);
-		if ($excludeUuid !== null) {
-			$qb->andWhere($qb->expr()->neq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($excludeUuid)));
-		}
-
-		$result = $qb->executeQuery();
-		$uuids = [];
-		while (($row = $result->fetch()) !== false) {
-			$uuids[] = (string)$row[self::METADATA_PREFIX . 'uuid'];
-		}
-
-		$result->closeCursor();
-		return $uuids;
+		return ($this->slugTable(register: $register, schema: $schema)?->holders(slug: $slug, excludeUuid: $excludeUuid) ?? []);
 	}//end findSlugHolders()
 
 	/**
@@ -5223,46 +4309,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function findSlugState(Register $register, Schema $schema, array $slugs, array $uuids): array {
-		$state = ['holders' => [], 'stored' => []];
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return $state;
-		}
-
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$uuidCol = self::METADATA_PREFIX . 'uuid';
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$queries = [
-			'holders' => [$slugCol, array_values(array_unique(array_filter($slugs, static fn ($wanted) => $wanted !== null && $wanted !== '')))],
-			'stored' => [$uuidCol, array_values(array_unique(array_filter($uuids, static fn ($uuid) => $uuid !== null && $uuid !== '')))],
-		];
-		foreach ($queries as $kind => [$column, $values]) {
-			foreach (array_chunk($values, 1000) as $chunk) {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select($uuidCol, $slugCol)
-					->from($tableName)
-					->where($qb->expr()->in($column, $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
-					->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
-				$result = $qb->executeQuery();
-				while (($row = $result->fetch()) !== false) {
-					$rowSlug = $row[$slugCol];
-					if ($kind === 'holders') {
-						$state['holders'][(string)$rowSlug][] = (string)$row[$uuidCol];
-						continue;
-					}
-
-					$storedSlug = null;
-					if ($rowSlug !== null && $rowSlug !== '') {
-						$storedSlug = (string)$rowSlug;
-					}
-
-					$state['stored'][(string)$row[$uuidCol]] = $storedSlug;
-				}
-
-				$result->closeCursor();
-			}
-		}
-
-		return $state;
+		return ($this->slugTable(register: $register, schema: $schema)?->state(slugs: $slugs, uuids: $uuids) ?? ['holders' => [], 'stored' => []]);
 	}//end findSlugState()
 
 	/**
@@ -5278,54 +4325,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function findDuplicateSlugs(Register $register, Schema $schema): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
-
-		// Grouped case-folded: on a case-insensitive collation `Hello-World` and
-		// `hello-world` are one slug, and the save paths compare them that way.
-		$sub = $this->db->getQueryBuilder();
-		$folded = $sub->func()->lower($slugCol);
-		$sub->selectAlias($folded, 'slug_key')
-			->from($tableName)
-			->where($sub->expr()->isNotNull($slugCol))
-			->andWhere($sub->expr()->neq($slugCol, $sub->createNamedParameter('')))
-			->andWhere($sub->expr()->isNull($deletedCol))
-			->groupBy($folded)
-			->having('COUNT(*) > 1');
-		$result = $sub->executeQuery();
-		$slugs = [];
-		while (($row = $result->fetch()) !== false) {
-			$slugs[] = (string)$row['slug_key'];
-		}
-
-		$result->closeCursor();
-		if ($slugs === []) {
-			return [];
-		}
-
-		$duplicates = [];
-		foreach (array_chunk($slugs, 1000) as $chunk) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select(self::METADATA_PREFIX . 'uuid', $slugCol)
-				->from($tableName)
-				->where($qb->expr()->in($qb->func()->lower($slugCol), $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
-				->andWhere($qb->expr()->isNull($deletedCol))
-				->orderBy(self::METADATA_PREFIX . 'created', 'ASC')
-				->addOrderBy(self::METADATA_PREFIX . 'id', 'ASC');
-			$rows = $qb->executeQuery();
-			while (($row = $rows->fetch()) !== false) {
-				$duplicates[mb_strtolower((string)$row[$slugCol])][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
-			}
-
-			$rows->closeCursor();
-		}
-
-		return $duplicates;
+		return ($this->slugTable(register: $register, schema: $schema)?->duplicates() ?? []);
 	}//end findDuplicateSlugs()
 
 	/**
@@ -5341,25 +4341,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function findAllSlugs(Register $register, Schema $schema): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(self::METADATA_PREFIX . 'uuid', $slugCol)
-			->from($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
-			->where($qb->expr()->isNotNull($slugCol))
-			->andWhere($qb->expr()->neq($slugCol, $qb->createNamedParameter('')))
-			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
-		$result = $qb->executeQuery();
-		$slugs = [];
-		while (($row = $result->fetch()) !== false) {
-			$slugs[(string)$row[$slugCol]][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
-		}
-
-		$result->closeCursor();
-		return $slugs;
+		return ($this->slugTable(register: $register, schema: $schema)?->all() ?? []);
 	}//end findAllSlugs()
 
 	/**
@@ -5393,96 +4375,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		int $afterId,
 		int $pageSize,
 	): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+		$table = $this->slugTable(register: $register, schema: $schema);
+		if ($table === null) {
 			return ['rows' => [], 'fetched' => 0, 'lastId' => $afterId];
 		}
 
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$result = $this->slugBackfillQuery(tableName: $tableName, afterId: $afterId, pageSize: $pageSize)->executeQuery();
-		$page = [];
-		$fetched = 0;
-		$lastId = $afterId;
-		while (($row = $result->fetch()) !== false) {
-			$fetched++;
-			$lastId = (int)$row[self::METADATA_PREFIX . 'id'];
-			$entry = $this->slugBackfillEntry(row: $row, register: $register, schema: $schema, tableName: $tableName);
-			if ($entry !== null) {
-				$page[] = $entry;
-			}
-		}
+		$convert = fn (array $row): ?ObjectEntity => $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
 
-		$result->closeCursor();
-		return ['rows' => $page, 'fetched' => $fetched, 'lastId' => $lastId];
+		return (new MagicSlugBackfill(table: $table, convert: $convert, logger: $this->logger))->page(afterId: $afterId, pageSize: $pageSize);
 	}//end findSlugBackfillPage()
-
-	/**
-	 * The next page of live rows without a slug, in `_id` order.
-	 *
-	 * @param string $tableName The magic table.
-	 * @param int    $afterId   Last `_id` of the previous page.
-	 * @param int    $pageSize  Rows per page.
-	 *
-	 * @return IQueryBuilder The query.
-	 */
-	private function slugBackfillQuery(string $tableName, int $afterId, int $pageSize): IQueryBuilder {
-		$idCol = 't.' . self::METADATA_PREFIX . 'id';
-		$slugCol = 't.' . self::METADATA_PREFIX . 'slug';
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($tableName, 't')
-			->where($qb->expr()->gt($idCol, $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'))
-			// Only rows without a slug: a set slug is never rewritten by the backfill.
-			->andWhere($qb->expr()->orX($qb->expr()->isNull($slugCol), $qb->expr()->eq($slugCol, $qb->createNamedParameter(''))))
-			->orderBy($idCol, 'ASC')
-			->setMaxResults($pageSize);
-
-		return $qb;
-	}//end slugBackfillQuery()
-
-	/**
-	 * One backfill row as the planner reads it, or null (logged) when it cannot be converted.
-	 *
-	 * @param array<string, mixed> $row       The table row.
-	 * @param Register             $register  The register.
-	 * @param Schema               $schema    The schema.
-	 * @param string               $tableName The magic table (log context).
-	 *
-	 * @return array{id: int, uuid: string, slug: string|null, created: string|null, object: array}|null
-	 */
-	private function slugBackfillEntry(array $row, Register $register, Schema $schema, string $tableName): ?array {
-		$entity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
-		if ($entity === null) {
-			$this->logger->warning(
-				sprintf(
-					'[ObjectSlug] Backfill skipped object %s in table %s: the row could not be converted into an object',
-					(string)($row[self::METADATA_PREFIX . 'uuid'] ?? '?'),
-					$tableName
-				),
-				['app' => 'openregister', 'path' => 'backfill']
-			);
-			return null;
-		}
-
-		$entry = [
-			'id' => (int)$row[self::METADATA_PREFIX . 'id'],
-			'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid'],
-			'slug' => null,
-			'created' => null,
-			'object' => $entity->getObject() ?? [],
-		];
-		$slug = ($row[self::METADATA_PREFIX . 'slug'] ?? null);
-		if ($slug !== null && $slug !== '') {
-			$entry['slug'] = (string)$slug;
-		}
-
-		$created = ($row[self::METADATA_PREFIX . 'created'] ?? null);
-		if ($created !== null) {
-			$entry['created'] = (string)$created;
-		}
-
-		return $entry;
-	}//end slugBackfillEntry()
 
 	/**
 	 * Write one object's slug column directly, for the slug backfill.
@@ -5508,19 +4409,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		string $uuid,
 		string $slug,
 	): int {
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
-			->set($slugCol, $qb->createNamedParameter($slug))
-			->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)))
-			->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull($slugCol),
-					$qb->expr()->eq($slugCol, $qb->createNamedParameter(''))
-				)
-			);
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
-		return $qb->executeStatement();
+		return (new MagicSlugTable(db: $this->db, tableName: $tableName))->fillEmpty(uuid: $uuid, slug: $slug);
 	}//end updateSlugColumn()
 
 	/**
@@ -7113,111 +6004,89 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		bool $dispatchEvents = true,
 		bool $failIfExists = false,
 	): ObjectEntity {
-		// Dispatch creating event (pre-save hook). A refusal is held until the write knows whether
-		// this is a create at all: over a taken identifier it is an update, judged by the update guards.
+		// A refusal is held until the write knows whether this is a create at all:
+		// over a taken identifier it is an update, judged by the update guards.
 		$refusal = null;
 		if ($dispatchEvents === true) {
 			$refusal = $this->runCreatingHooks(entity: $entity);
 		}
 
-		// Ensure table exists.
 		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-
+		$write = [
+			'register' => $register,
+			'schema' => $schema,
+			'table' => $this->getTableNameForRegisterSchema(register: $register, schema: $schema),
+			'failIfExists' => $failIfExists,
+			'refusal' => $refusal,
+		];
 		$this->logger->debug(
 			message: '[MagicMapper] Inserting object entity into register+schema table',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $entity->getUuid(),
-				'tableName' => $tableName,
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $entity->getUuid(), 'tableName' => $write['table']]
 		);
 
-		// Set register and schema on entity if not already set.
+		$write['data'] = $this->insertableObject(entity: $entity, write: $write);
+
+		[$uuid, $insertedId] = $this->writeClaimingIdentifier(entity: $entity, write: $write);
+
+		// Event dispatching is handled by the public insert/update/delete methods.
+		$entity->setId($insertedId ?? $this->storedIdAfterLostInsert(uuid: $uuid, tableName: $write['table']));
+
+		return $entity;
+	}//end insertObjectEntity()
+
+	/**
+	 * The object as table data, with its register, schema and uuid filled in.
+	 *
+	 * @param ObjectEntity $entity The object being created.
+	 * @param array        $write  `register` and `schema`.
+	 *
+	 * @return array The serialised object.
+	 */
+	private function insertableObject(ObjectEntity $entity, array $write): array {
 		if ($entity->getRegister() === null) {
-			$entity->setRegister((string)$register->getId());
+			$entity->setRegister((string)$write['register']->getId());
 		}
 
 		if ($entity->getSchema() === null) {
-			$entity->setSchema((string)$schema->getId());
+			$entity->setSchema((string)$write['schema']->getId());
 		}
 
-		// Ensure entity has a UUID before serialization.
-		$entityUuid = $entity->getUuid();
-		if ($entityUuid === null || $entityUuid === '') {
-			$entityUuid = Uuid::v4()->toRfc4122();
-			$entity->setUuid($entityUuid);
+		if ($entity->getUuid() === null || $entity->getUuid() === '') {
+			$entity->setUuid(Uuid::v4()->toRfc4122());
 		}
 
-		// Convert entity to array for table storage.
-		$objectArray = $entity->jsonSerialize();
+		return $entity->jsonSerialize();
+	}//end insertableObject()
 
-		// Save to table, learning the generated `_id` from the INSERT itself.
-		[$uuid, $insertedId] = $this->writeClaimingIdentifier(
-			entity: $entity,
-			write: [
-				'data' => $objectArray,
-				'register' => $register,
-				'schema' => $schema,
-				'table' => $tableName,
-				'failIfExists' => $failIfExists,
-				'refusal' => $refusal,
-			]
+	/**
+	 * The `_id` of a row whose INSERT lost a uuid race and was applied as an update.
+	 *
+	 * The only write that costs a read: a won INSERT reports its own generated
+	 * key. Keeping the lost-write check matters: the alternative is returning an
+	 * entity with a null id to a caller with no way to tell a write landed,
+	 * which is exactly what #2212 turned out to be.
+	 *
+	 * @param string $uuid      The uuid written.
+	 * @param string $tableName The table.
+	 *
+	 * @throws Exception When the row is not in the table.
+	 *
+	 * @return int The stored id.
+	 */
+	private function storedIdAfterLostInsert(string $uuid, string $tableName): int {
+		$row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
+		if ($row !== null) {
+			return (int)$row[self::METADATA_PREFIX . 'id'];
+		}
+
+		$this->logger->error(
+			message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'tableName' => $tableName]
 		);
 
-		// Update entity UUID if it was generated.
-		if ($entity->getUuid() === null) {
-			$entity->setUuid($uuid);
-		}
-
-		// No read-back. The INSERT reported its own generated key, which is the
-		// only thing the old re-read could tell us that we did not already hold:
-		// `_id` is this table's sole database-generated column, and `_created` /
-		// `_updated` have no column default, so PHP wrote them and they are
-		// already on this entity.
-		//
-		// `_id` is also not the identity callers use — saveObjectToRegisterSchemaTable()
-		// returns the UUID, which PHP generates above. So this is the entity's
-		// internal key catching up, not the object becoming addressable.
-		if ($insertedId !== null) {
-			$entity->setId($insertedId);
-
-			// NOTE: Event dispatching is handled by the public insert/update/delete methods.
-			// Do NOT dispatch ObjectCreatedEvent here.
-			return $entity;
-		}
-
-		// $insertedId is null only when the INSERT lost a uuid race and was
-		// applied as an update instead. Rare, and the only path that still costs
-		// a read — a raw row fetch, not the hydrating one. Keeping the lost-write
-		// check here matters: the alternative is returning an entity with a null
-		// id to a caller with no way to tell a write landed, which is exactly
-		// what #2212 turned out to be.
-		$row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
-		if ($row === null) {
-			$this->logger->error(
-				message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'tableName' => $tableName,
-				]
-			);
-
-			throw new Exception(
-				sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName)
-			);
-		}
-
-		$entity->setId((int)$row[self::METADATA_PREFIX . 'id']);
-
-		// NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
-		// Do NOT dispatch ObjectCreatedEvent here.
-		return $entity;
-	}//end insertObjectEntity()
+		throw new Exception(sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName));
+	}//end storedIdAfterLostInsert()
 
 	/**
 	 * Write a create, claiming its identifier.
@@ -8205,7 +7074,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// The bulk path never went through SaveObject's encryption step. An
 		// encrypted property used to have no column, so bulk dropped its value;
 		// now that it has one, encrypt here so it can only ever hold an envelope.
-		$objects = $this->encryptFlaggedPropertiesInRows(objects: $objects, schema: $schema);
+		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $objects, schema: $schema);
 
 		try {
 			return $this->bulkHandler->bulkUpsert(
@@ -8292,48 +7161,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return [];
 		}
 
+		$tables  = $this->getAllMagicMapperTables();
 		$results = [];
-
-		// Get all existing magic mapper tables.
-		$tables = $this->getAllMagicMapperTables();
-
-		$this->logger->debug(
-			message: '[MagicMapper] findByRelation searching across tables',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $uuid,
-				'tableCount' => count($tables),
-			]
-		);
-
 		foreach ($tables as $tableName) {
-			try {
-				$tableResults = $this->findByRelationInTable(uuid: $uuid, tableName: $tableName);
-				$results = array_merge($results, $tableResults);
-			} catch (Exception $e) {
-				$this->logger->debug(
-					message: '[MagicMapper] Failed to search table for relation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $tableName,
-						'uuid' => $uuid,
-						'error' => $e->getMessage(),
-					]
-				);
-				// Continue with other tables even if one fails.
-			}
+			$results = array_merge($results, $this->findByRelationInTable(uuid: $uuid, tableName: $tableName));
 		}
 
 		$this->logger->debug(
 			message: '[MagicMapper] findByRelation completed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $uuid,
-				'resultCount' => count($results),
-			]
+			context: ['uuid' => $uuid, 'tableCount' => count($tables), 'resultCount' => count($results)]
 		);
 
 		return $results;
@@ -8360,91 +7196,72 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return [];
 		}
 
-		$results = [];
-		$tables = $this->getAllMagicMapperTables();
-
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
 		$startTime = microtime(true);
-
-		// Apply multi-tenancy filtering to inverse relationship lookups.
-		[$orgFilter, $orgParams] = $this->buildOrganisationFilterForRelation();
-
+		$tables    = $this->getAllMagicMapperTables();
+		$results   = [];
 		foreach ($tables as $tableName) {
-			try {
-				$fullTableName = $this->getFullTableName(tableName: $tableName);
-
-				// Search for the UUID as a VALUE within the _relations JSONB.
-				// The _relations column can be either:.
-				// - An object: {"propertyName": "uuid", ...} (new format).
-				// - An array: ["uuid1", "uuid2", ...] (legacy format).
-				// We need to find rows where the UUID appears in either format.
-				// MySQL: Use JSON_SEARCH to find the UUID as a value anywhere.
-				// This works for both arrays and objects.
-				$sql = "SELECT * FROM {$fullTableName}
-                        WHERE _deleted IS NULL
-                        AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL
-                        {$orgFilter}
-                        LIMIT 100";
-				$sqlParams = array_merge([$uuid], $orgParams);
-
-				if ($isPostgres === true) {
-					// PostgreSQL: Handle both object and array formats.
-					// - For objects: use jsonb_each_text to search values.
-					// - For arrays: use @> containment operator (can't use ? as it conflicts with PDO placeholders).
-					// Note: We use @> with a JSON array literal instead of ? operator.
-					$sql = "SELECT * FROM {$fullTableName}
-                            WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
-                            AND (
-                                -- Array format: check if UUID is in the array using @> containment
-                                (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text))
-                                OR
-                                -- Object format: check if UUID is a value in the object
-                                (jsonb_typeof(_relations) = 'object' AND EXISTS (
-                                    SELECT 1 FROM jsonb_each_text(_relations) AS kv
-                                    WHERE kv.value = ?
-                                ))
-                            )
-                            {$orgFilter}
-                            LIMIT 100";
-					// Need to pass UUID twice for both checks.
-					$sqlParams = array_merge([$uuid, $uuid], $orgParams);
-				}//end if
-
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute($sqlParams);
-				$results = array_merge($results, $this->rowsToObjectEntities(rows: $stmt->fetchAll()));
-			} catch (Exception $e) {
-				$this->logger->debug(
-					message: '[MagicMapper] findByRelationUsingRelationsColumn table query failed',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $tableName,
-						'error' => $e->getMessage(),
-					]
-				);
-				continue;
-			}//end try
-		}//end foreach
-
-		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+			$results = array_merge($results, $this->relationColumnMatches(uuid: $uuid, tableName: $tableName));
+		}
 
 		$this->logger->debug(
 			message: '[MagicMapper] findByRelationUsingRelationsColumn completed',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
 				'uuid' => $uuid,
 				'tableCount' => count($tables),
 				'resultCount' => count($results),
-				'executionTime' => $executionTime . 'ms',
+				'executionTime' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
 			]
 		);
 
 		return $results;
 	}//end findByRelationUsingRelationsColumn()
+
+	/**
+	 * The objects of one table that reference a uuid; a failing table holds none.
+	 *
+	 * @param string $uuid      The uuid to look for.
+	 * @param string $tableName The table.
+	 *
+	 * @return ObjectEntity[] The objects.
+	 */
+	private function relationColumnMatches(string $uuid, string $tableName): array {
+		try {
+			return $this->relationObjects(uuid: $uuid, tableName: $tableName);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: '[MagicMapper] findByRelationUsingRelationsColumn table query failed',
+				context: ['tableName' => $tableName, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+	}//end relationColumnMatches()
+
+	/**
+	 * The objects of one table that reference a uuid, within the caller's organisation filter.
+	 *
+	 * @param string $uuid      The uuid to look for.
+	 * @param string $tableName The table.
+	 *
+	 * @return ObjectEntity[] The objects.
+	 */
+	private function relationObjects(string $uuid, string $tableName): array {
+		$fullTableName  = $this->getFullTableName(tableName: $tableName);
+		[$sql, $params] = $this->relationSql()->referencing(fullTableName: $fullTableName, uuid: $uuid);
+
+		return $this->objectsOfStatement(sql: $sql, params: $params);
+	}//end relationObjects()
+
+	/**
+	 * The relation statements for this platform and the caller's organisation filter.
+	 *
+	 * @return MagicRelationSql The statements.
+	 */
+	private function relationSql(): MagicRelationSql {
+		return new MagicRelationSql(
+			isPostgres: $this->isPostgresPlatform(),
+			organisationFilter: $this->buildOrganisationFilterForRelation()
+		);
+	}//end relationSql()
 
 	/**
 	 * Find objects in a specific schema's magic table that have a given entity ID in a linked type column.
@@ -8459,52 +7276,23 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array Array of ObjectEntity objects
 	 */
 	public function findByLinkedEntity(Schema $schema, string $columnName, string $entityId): array {
-		$results = [];
 		$tableName = $this->getTableName(schema: $schema);
-
 		if ($tableName === null) {
 			return [];
 		}
 
 		$fullTableName = $this->getFullTableName(tableName: $tableName);
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
 		try {
-			// MySQL default: use JSON_SEARCH to find the ID as a value in the array.
-			$sql = "SELECT * FROM {$fullTableName}
-                    WHERE _deleted IS NULL
-                    AND {$columnName} IS NOT NULL
-                    AND JSON_SEARCH({$columnName}, 'one', ?) IS NOT NULL
-                    LIMIT 100";
-			if ($isPostgres === true) {
-				// PostgreSQL: use JSONB containment operator.
-				// Note: ::jsonb cast is intentional for polymorphic column support, but defeats any GIN
-				// index on $columnName if it is already jsonb. Acceptable for now; if a GIN index is added
-				// in a future migration for this column, branch the query to omit the cast in the jsonb case.
-				$sql = "SELECT * FROM {$fullTableName}
-                        WHERE (_deleted IS NULL OR _deleted::text = 'null')
-                        AND {$columnName} IS NOT NULL
-                        AND {$columnName}::jsonb @> to_jsonb(?::text)
-                        LIMIT 100";
-			}
-
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute([$entityId]);
-			$results = $this->rowsToObjectEntities(rows: $stmt->fetchAll());
+			$sql = $this->relationSql()->linkedTo(fullTableName: $fullTableName, columnName: $columnName);
+			return $this->objectsOfStatement(sql: $sql, params: [$entityId]);
 		} catch (Exception $e) {
 			$this->logger->debug(
 				'[MagicMapper] findByLinkedEntity query failed',
-				[
-					'table' => $fullTableName,
-					'column' => $columnName,
-					'entityId' => $entityId,
-					'error' => $e->getMessage(),
-				]
+				['table' => $fullTableName, 'column' => $columnName, 'entityId' => $entityId, 'error' => $e->getMessage()]
 			);
-		}//end try
-
-		return $results;
+			return [];
+		}
 	}//end findByLinkedEntity()
 
 	/**
@@ -8560,112 +7348,49 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		// Construct the magic table name directly: openregister_table_{registerId}_{schemaId}.
-		$tableName     = self::TABLE_PREFIX . $registerId . '_' . $schemaId;
-		$fullTableName = $this->getFullTableName(tableName: $tableName);
-		$logContext    = ['tableName' => $fullTableName, 'schemaId' => $schemaId, 'registerId' => $registerId];
+		$tableName  = self::TABLE_PREFIX . $registerId . '_' . $schemaId;
+		$logContext = ['tableName' => $this->getFullTableName(tableName: $tableName), 'schemaId' => $schemaId, 'registerId' => $registerId];
 
 		if ($this->checkTableExistsInDatabase(tableName: $tableName) === false) {
-			$this->logger->debug(
-				message: '[MagicMapper] findByRelationBatchInSchema: table does not exist',
-				context: array_merge(['file' => __FILE__, 'line' => __LINE__], $logContext)
-			);
+			$this->logger->debug(message: '[MagicMapper] findByRelationBatchInSchema: table does not exist', context: $logContext);
 			return [];
 		}
 
-		$logContext['fieldName'] = $fieldName;
-		$logContext['uuidCount'] = count($uuids);
-		$startTime = microtime(true);
-
+		$fullTableName = $logContext['tableName'];
+		$logContext += ['fieldName' => $fieldName, 'uuidCount' => count($uuids)];
 		try {
-			[$where, $params] = $this->buildRelationBatchWhere(uuids: $uuids, extraFields: $additionalFieldNames);
-
-			$stmt = $this->db->prepare("SELECT * FROM {$fullTableName} WHERE {$where} LIMIT 1000");
-			$stmt->execute($params);
-			$results = $this->rowsToObjectEntities(rows: $stmt->fetchAll());
+			[$where, $params] = $this->relationSql()->batchWhere(uuids: $uuids, extraFields: $additionalFieldNames);
+			$results = $this->objectsOfStatement(sql: "SELECT * FROM {$fullTableName} WHERE {$where} LIMIT 1000", params: $params);
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[MagicMapper] findByRelationBatchInSchema failed',
-				context: array_merge(['file' => __FILE__, 'line' => __LINE__], $logContext, ['error' => $e->getMessage()])
+				context: array_merge($logContext, ['error' => $e->getMessage()])
 			);
 			return [];
 		}
 
-		$logContext['resultCount']   = count($results);
-		$logContext['executionTime'] = round((microtime(true) - $startTime) * 1000, 2) . 'ms';
 		$this->logger->debug(
 			message: '[MagicMapper] findByRelationBatchInSchema completed',
-			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $logContext)
+			context: array_merge($logContext, ['resultCount' => count($results)])
 		);
 
 		return $results;
 	}//end findByRelationBatchInSchema()
 
 	/**
-	 * Build the WHERE clause of a batch inverse-relation lookup.
+	 * The objects a statement selects.
 	 *
-	 * Matches rows whose _relations holds any of the UUIDs (array or object format),
-	 * or whose extra reference columns hold one, among the live rows the caller may
-	 * see through buildOrganisationFilterForRelation().
+	 * @param string $sql    The statement.
+	 * @param array  $params Its parameters.
 	 *
-	 * @param array $uuids       The UUIDs to look for.
-	 * @param array $extraFields Property names whose columns may hold a reference directly.
-	 *
-	 * @return array{0: string, 1: list<mixed>} The WHERE clause and its bound parameters.
+	 * @return ObjectEntity[] The objects.
 	 */
-	private function buildRelationBatchWhere(array $uuids, array $extraFields): array {
-		$isPostgres = $this->isPostgresPlatform();
-		$contains   = self::RELATIONS_CONTAIN_SQL_MYSQL;
-		$deleted    = '_deleted IS NULL';
-		if ($isPostgres === true) {
-			$contains = self::RELATIONS_CONTAIN_SQL_POSTGRES;
-			$deleted  = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
-		}
+	private function objectsOfStatement(string $sql, array $params): array {
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($params);
 
-		$conditions = [];
-		$params     = [];
-		foreach ($uuids as $uuid) {
-			$conditions[] = $contains;
-			array_push($params, ...array_fill(0, substr_count($contains, '?'), $uuid));
-		}
-
-		[$extraConditions, $extraParams] = $this->buildReferenceColumnConditions(uuids: $uuids, extraFields: $extraFields);
-		[$orgFilter, $orgParams]         = $this->buildOrganisationFilterForRelation();
-
-		$where = $deleted . ' AND (' . implode(' OR ', array_merge($conditions, $extraConditions)) . ')' . $orgFilter;
-		return [$where, array_merge($params, $extraParams, $orgParams)];
-	}//end buildRelationBatchWhere()
-
-	/**
-	 * Build conditions matching a UUID stored directly in reference columns.
-	 *
-	 * Matches both a plain UUID string and a {"value": "uuid"} JSON object.
-	 *
-	 * @param array $uuids       The UUIDs to look for.
-	 * @param array $extraFields Property names whose columns may hold a reference.
-	 *
-	 * @return array{0: list<string>, 1: list<string>} The conditions and their bound parameters.
-	 */
-	private function buildReferenceColumnConditions(array $uuids, array $extraFields): array {
-		$isPostgres = $this->isPostgresPlatform();
-		$conditions = [];
-		$params     = [];
-		foreach ($extraFields as $extraField) {
-			$columnName = strtolower(preg_replace('/[A-Z]/', '_$0', $extraField));
-			$quotedCol  = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-			$textCol    = "CAST({$quotedCol} AS CHAR)";
-			if ($isPostgres === true) {
-				$textCol = "{$quotedCol}::text";
-			}
-
-			foreach ($uuids as $uuid) {
-				$conditions[] = "({$quotedCol} = ? OR {$textCol} LIKE ?)";
-				$params[]     = $uuid;
-				$params[]     = '%' . $uuid . '%';
-			}
-		}
-
-		return [$conditions, $params];
-	}//end buildReferenceColumnConditions()
+		return $this->rowsToObjectEntities(rows: $stmt->fetchAll());
+	}//end objectsOfStatement()
 
 	/**
 	 * Whether the connection runs on PostgreSQL.
@@ -8691,6 +7416,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			try {
 				$entity = $this->rowToObjectEntity(row: $row);
 			} catch (Exception $e) {
+				$this->logger->debug(message: '[MagicMapper] Failed to convert row to ObjectEntity', context: ['error' => $e->getMessage()]);
 				continue;
 			}
 
@@ -8743,99 +7469,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return ObjectEntity[] Array of matching objects
 	 */
 	private function findByRelationInTable(string $uuid, string $tableName): array {
-		// Get database platform to determine proper search approach.
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-		// Construct the full table name with prefix for use in SQL functions.
-		$fullTableName = $this->getFullTableName(tableName: $tableName);
-
 		try {
-			// Apply multi-tenancy filtering to inverse relationship lookups.
-			[$orgFilter, $orgParams] = $this->buildOrganisationFilterForRelation();
-
-			// BUG-DB-9: the previous MySQL/MariaDB branch used the invalid
-			// `CAST({$fullTableName} AS CHAR)` (you cannot CAST a table to a
-			// scalar), so every MariaDB/MySQL call threw and was swallowed at
-			// debug level, silently resolving inverse relations to nothing.
-			// Search the `_relations` JSON column for the UUID as a value, the
-			// same approach findByRelationUsingRelationsColumn() uses.
-			// MySQL/MariaDB: JSON_SEARCH finds the UUID as a value anywhere
-			// (works for both object and array relation shapes).
-			$sql = "SELECT * FROM {$fullTableName} WHERE _deleted IS NULL
-                    AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL
-                    {$orgFilter}
-                    LIMIT 100";
-			$sqlParams = array_merge([$uuid], $orgParams);
-			if ($isPostgres === true) {
-				// PostgreSQL: handle both object and array relation shapes.
-				$sql = "SELECT * FROM {$fullTableName}
-                        WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
-                        AND (
-                            (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text))
-                            OR
-                            (jsonb_typeof(_relations) = 'object' AND EXISTS (
-                                SELECT 1 FROM jsonb_each_text(_relations) AS kv
-                                WHERE kv.value = ?
-                            ))
-                        )
-                        {$orgFilter}
-                        LIMIT 100";
-				$sqlParams = array_merge([$uuid, $uuid], $orgParams);
-			}
-
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute($sqlParams);
-			$rows = $stmt->fetchAll();
-
-			$this->logger->debug(
-				message: '[MagicMapper] findByRelationInTable query executed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $fullTableName,
-					'uuid' => $uuid,
-					'resultCount' => count($rows),
-				]
-			);
+			return $this->relationObjects(uuid: $uuid, tableName: $tableName);
 		} catch (Exception $e) {
-			// BUG-DB-9: raise from debug to warning so a genuinely failing
-			// inverse-relation lookup is visible rather than silently empty.
 			$this->logger->warning(
 				message: '[MagicMapper] findByRelationInTable query failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $fullTableName,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
+				context: ['tableName' => $this->getFullTableName(tableName: $tableName), 'uuid' => $uuid, 'error' => $e->getMessage()]
 			);
 			return [];
-		}//end try
-
-		// Convert rows to ObjectEntity instances.
-		$entities = [];
-		foreach ($rows as $row) {
-			try {
-				$entity = $this->rowToObjectEntity(row: $row);
-				if ($entity !== null) {
-					$entities[] = $entity;
-				}
-			} catch (Exception $e) {
-				$this->logger->debug(
-					message: '[MagicMapper] Failed to convert row to ObjectEntity',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $tableName,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
 		}
-
-		return $entities;
 	}//end findByRelationInTable()
 
 	/**
@@ -8908,7 +7550,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function rowToObjectEntity(array $row): ?ObjectEntity {
-		// Check if we have the minimum required fields.
 		if (isset($row['_uuid']) === false) {
 			return null;
 		}
@@ -8916,7 +7557,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$entity = new ObjectEntity();
 		$entity->setUuid($row['_uuid']);
 
-		// Set metadata fields (register and schema are stored as strings).
+		$this->applyRowMetadata(entity: $entity, row: $row);
+		$entity->setObject($this->rowObjectData(row: $row, columnToPropertyMap: $this->rowColumnToPropertyMap(row: $row)));
+
+		return $entity;
+	}//end rowToObjectEntity()
+
+	/**
+	 * Set the metadata a row holds; register and schema are stored as strings.
+	 *
+	 * @param ObjectEntity $entity The object.
+	 * @param array        $row    The database row.
+	 *
+	 * @return void
+	 */
+	private function applyRowMetadata(ObjectEntity $entity, array $row): void {
 		if (isset($row['_register']) === true) {
 			$entity->setRegister((string)$row['_register']);
 		}
@@ -8928,82 +7583,121 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		if (isset($row['_name']) === true) {
 			$entity->setName($row['_name']);
 		}
+	}//end applyRowMetadata()
 
-		// Build column-to-property mapping from schema if available.
-		// This allows us to restore original property names (e.g., 'e-mailadres').
-		// from their sanitized column names (e.g., 'e_mailadres').
-		$columnToPropertyMap = [];
-		if (isset($row['_schema']) === true) {
-			$schemaIdForMap = (int)$row['_schema'];
-			// PERF-12: reuse the memoised column→property map for this schema id
-			// instead of re-resolving the schema and rebuilding the map per row.
-			if (isset($this->rowColumnToPropertyCache[$schemaIdForMap]) === true) {
-				$columnToPropertyMap = $this->rowColumnToPropertyCache[$schemaIdForMap];
-			} else {
-				try {
-					// The find() call throws when the schema is missing; the catch below is
-					// the "not found" path, so no null test is needed here.
-					$schema = $this->schemaMapper->find($schemaIdForMap);
-
-					// BUG-DB-8: use the same disambiguated column names the write
-					// path produces (buildTableColumnsFromSchema), keyed by
-					// property name, so collision-resolved columns round-trip
-					// back to their original property instead of being lost.
-					$schemaProperties = ($schema->getProperties() ?? []);
-					foreach ($this->buildTableColumnsFromSchema(schema: $schema) as $propertyName => $columnDef) {
-						// Skip metadata columns (handled separately above); a schema
-						// property whose name starts with an underscore stays.
-						if (str_starts_with($propertyName, '_') === true && isset($schemaProperties[$propertyName]) === false) {
-							continue;
-						}
-
-						$physicalColumn = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-						$columnToPropertyMap[$physicalColumn] = $propertyName;
-					}
-
-					$this->rowColumnToPropertyCache[$schemaIdForMap] = $columnToPropertyMap;
-				} catch (\Exception $e) {
-					// Schema not found - will fall back to column names as-is.
-					$this->logger->debug(
-						message: '[MagicMapper] Could not load schema for property mapping',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaId' => $row['_schema'],
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end if
-		}//end if
-
-		// Build the object data from non-metadata columns.
-		$objectData = [];
-		foreach ($row as $column => $value) {
-			// Skip metadata columns; a property column with the prefix is read.
-			if ((new MagicMetadataColumn())->field(column: $column, columnToPropertyMap: $columnToPropertyMap) !== null) {
-				continue;
-			}
-
-			// Map column name back to original property name if we have a mapping.
-			$propertyName = $columnToPropertyMap[$column] ?? $column;
-
-			// Decode JSON values.
-			if (is_string($value) === true) {
-				$decoded = json_decode($value, true);
-				if (json_last_error() === JSON_ERROR_NONE) {
-					$objectData[$propertyName] = $decoded;
-					continue;
-				}
-			}
-
-			$objectData[$propertyName] = $value;
+	/**
+	 * The property each column of a row holds, memoised per schema (PERF-12).
+	 *
+	 * This restores original property names ('e-mailadres') from their
+	 * sanitized columns ('e_mailadres'). A schema that cannot be loaded leaves
+	 * the column names as they are, and is asked for again on the next row.
+	 *
+	 * @param array $row The database row.
+	 *
+	 * @return array<string, string> Property name per column.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function rowColumnToPropertyMap(array $row): array {
+		if (isset($row['_schema']) === false) {
+			return [];
 		}
 
-		$entity->setObject($objectData);
+		$schemaId = (int)$row['_schema'];
 
-		return $entity;
-	}//end rowToObjectEntity()
+		return ($this->rowColumnToPropertyCache[$schemaId] ?? $this->loadColumnToPropertyMap(schemaId: $schemaId));
+	}//end rowColumnToPropertyMap()
+
+	/**
+	 * Load and memoise the column map of a schema, or none when it cannot be loaded.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return array<string, string> Property name per column.
+	 */
+	private function loadColumnToPropertyMap(int $schemaId): array {
+		try {
+			$map = $this->schemaColumnToPropertyMap(schema: $this->schemaMapper->find($schemaId));
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[MagicMapper] Could not load schema for property mapping',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+
+		$this->rowColumnToPropertyCache[$schemaId] = $map;
+
+		return $map;
+	}//end loadColumnToPropertyMap()
+
+	/**
+	 * The property of each column of a schema's table.
+	 *
+	 * BUG-DB-8: the same disambiguated column names the write path produces, so
+	 * collision-resolved columns round-trip back to their original property.
+	 * Metadata columns are left out; a schema property whose name starts with
+	 * an underscore stays.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<string, string> Property name per column.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function schemaColumnToPropertyMap(Schema $schema): array {
+		$properties = ($schema->getProperties() ?? []);
+		$map = [];
+		foreach ($this->buildTableColumnsFromSchema(schema: $schema) as $propertyName => $columnDef) {
+			if (str_starts_with((string)$propertyName, '_') === false || isset($properties[$propertyName]) === true) {
+				$map[($columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName))] = $propertyName;
+			}
+		}
+
+		return $map;
+	}//end schemaColumnToPropertyMap()
+
+	/**
+	 * The object data of a row: its non-metadata columns under their property names.
+	 *
+	 * @param array $row                 The database row.
+	 * @param array $columnToPropertyMap Property name per column.
+	 *
+	 * @return array The object data.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function rowObjectData(array $row, array $columnToPropertyMap): array {
+		$metadata   = new MagicMetadataColumn();
+		$objectData = [];
+		foreach ($row as $column => $value) {
+			if ($metadata->field(column: $column, columnToPropertyMap: $columnToPropertyMap) === null) {
+				$objectData[($columnToPropertyMap[$column] ?? $column)] = $this->decodedColumnValue(value: $value);
+			}
+		}
+
+		return $objectData;
+	}//end rowObjectData()
+
+	/**
+	 * A column value, decoded when it is a string holding JSON.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return mixed The value.
+	 */
+	private function decodedColumnValue(mixed $value): mixed {
+		if (is_string($value) === false) {
+			return $value;
+		}
+
+		$decoded = json_decode($value, true);
+		if (json_last_error() === JSON_ERROR_NONE) {
+			return $decoded;
+		}
+
+		return $value;
+	}//end decodedColumnValue()
 
 	/**
 	 * Check if a column exists in a database table.
@@ -9341,6 +8035,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		if ($search !== null && trim($search) !== '') {
 			$filters['_search'] = $search;
 		}
+
+		$filters = $this->narrowedToUses(query: $filters, uses: $uses);
 
 		$entities = $this->findAllInRegisterSchemaTable(
 			register: $register,
@@ -10248,14 +8944,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					_multitenancy: false,
 					_rbac: false
 				);
-				$register = $result['register'];
-				$schema = $result['schema'];
-				$key = $register->getId() . '-' . $schema->getId();
-				$grouped[$key] ??= ['register' => $register, 'schema' => $schema, 'uuids' => []];
-				$grouped[$key]['uuids'][] = $uuid;
 			} catch (\Exception $e) {
 				// Skip UUIDs that can't be found.
+				continue;
 			}
+
+			$this->assertDeletable(entity: $result['object']);
+			$register = $result['register'];
+			$schema = $result['schema'];
+			$key = $register->getId() . '-' . $schema->getId();
+			$grouped[$key] ??= ['register' => $register, 'schema' => $schema, 'uuids' => []];
+			$grouped[$key]['uuids'][] = $uuid;
 		}
 
 		foreach ($grouped as $group) {
@@ -10632,6 +9331,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @psalm-suppress                              LessSpecificImplementedReturnType
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
 	 */
 	public function searchObjects(
 		array $query = [],
@@ -10641,6 +9342,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?array $ids = null,
 		?string $uses = null,
 	): array|int {
+		$query = $this->narrowedToIds(query: $query, ids: $ids);
+		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
+			return [];
+		}
+
+		$query = $this->narrowedToUses(query: $query, uses: $uses);
+
 		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
 		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 
@@ -10703,6 +9411,71 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end searchObjects()
 
 	/**
+	 * The query narrowed to the given ids, within any `_ids` it already carries.
+	 *
+	 * @param array      $query The search query.
+	 * @param array|null $ids   The ids to keep, or null for no narrowing.
+	 *
+	 * @return array The query.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
+	 */
+	private function narrowedToIds(array $query, ?array $ids): array {
+		if ($ids === null) {
+			return $query;
+		}
+
+		$given = ($query['_ids'] ?? null);
+		if (is_array($given) === true) {
+			$ids = array_intersect($given, $ids);
+		}
+
+		$query['_ids'] = array_values($ids);
+
+		return $query;
+	}//end narrowedToIds()
+
+	/**
+	 * Whether a given id list left nothing to select.
+	 *
+	 * @param array      $query The narrowed search query.
+	 * @param array|null $ids   The ids the caller gave, or null for none.
+	 *
+	 * @return bool True when no row can match.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
+	 */
+	private function selectsNothing(array $query, ?array $ids): bool {
+		return ($ids !== null && $query['_ids'] === []);
+	}//end selectsNothing()
+
+	/**
+	 * The query narrowed to the objects that use the given object.
+	 *
+	 * A relation the query already asks for stays: the objects have to use both.
+	 *
+	 * @param array       $query The search query.
+	 * @param string|null $uses  The object they have to use, or null or empty for no narrowing.
+	 *
+	 * @return array The query.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function narrowedToUses(array $query, ?string $uses): array {
+		if ($uses === null || $uses === '') {
+			return $query;
+		}
+
+		$relations = array_unique([...(array)($query['_relations_contains'] ?? []), $uses]);
+		$query['_relations_contains'] = $uses;
+		if (count($relations) > 1) {
+			$query['_relations_contains'] = array_values($relations);
+		}
+
+		return $query;
+	}//end narrowedToUses()
+
+	/**
 	 * Count search objects.
 	 *
 	 * @param array $query Search query
@@ -10715,6 +9488,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return int Object count
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
 	 */
 	public function countSearchObjects(
 		array $query = [],
@@ -10724,6 +9499,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?array $ids = null,
 		?string $uses = null,
 	): int {
+		$query = $this->narrowedToIds(query: $query, ids: $ids);
+		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
+			return 0;
+		}
+
+		$query = $this->narrowedToUses(query: $query, uses: $uses);
+
 		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
 		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 
@@ -10889,9 +9671,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?array $ids = null,
 		?string $uses = null,
 	): array {
+		$searchQuery = $this->narrowedToIds(query: $searchQuery, ids: $ids);
+		if ($this->selectsNothing(query: $searchQuery, ids: $ids) === true) {
+			return ['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []];
+		}
+
 		$request = [
-			'search'        => $searchQuery,
-			'count'         => $countQuery,
+			'search'        => $this->narrowedToUses(query: $searchQuery, uses: $uses),
+			'count'         => $this->narrowedToUses(query: $this->narrowedToIds(query: $countQuery, ids: $ids), uses: $uses),
 			'activeOrgUuid' => $_activeOrgUuid,
 			'rbac'          => $_rbac,
 			'multitenancy'  => $_multitenancy,
@@ -10902,8 +9689,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return ($this->searchMultiSchema(request: $request, scope: $scope)
 			?? $this->searchSingleSchema(request: $request, scope: $scope)
-			?? $this->searchWithoutSchema(request: $request, scope: $scope));
+			?? $this->searchUnresolvedScope(request: $request, scope: $scope));
 	}//end searchObjectsPaginated()
+
+	/**
+	 * A search that resolved no register and schema: given ids or `uses` narrow
+	 * a search of those, so alone they select nothing.
+	 *
+	 * @param array $request The search request: queries and flags
+	 * @param array $scope   The search scope
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function searchUnresolvedScope(array $request, array $scope): array {
+		if ($request['ids'] !== null || ($request['uses'] ?? '') !== '') {
+			return ['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []];
+		}
+
+		return $this->searchWithoutSchema(request: $request, scope: $scope);
+	}//end searchUnresolvedScope()
 
 	/**
 	 * A multi-schema search, or null when the scope does not name a set of schemas.

@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -36,6 +35,8 @@ use OCP\IDBConnection;
  * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
  */
 class TaskRelationMapper extends QBMapper {
+
+	use SelectByColumnTrait;
 
 	/**
 	 * Constructor.
@@ -57,10 +58,7 @@ class TaskRelationMapper extends QBMapper {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
 	 */
 	public function findForTask(int $taskId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('task_id', $qb->createNamedParameter($taskId, IQueryBuilder::PARAM_INT)));
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'task_id', value: $taskId));
 
 		return $this->findEntities(query: $qb);
 	}//end findForTask()
@@ -80,10 +78,7 @@ class TaskRelationMapper extends QBMapper {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
 	 */
 	public function findByObject(string $objectUuid, ?string $role = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'object_uuid', value: $objectUuid));
 
 		if ($role !== null) {
 			$qb->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role)));

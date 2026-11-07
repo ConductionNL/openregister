@@ -40,6 +40,8 @@ use OCP\IDBConnection;
  */
 class FlowTimerEventMapper extends QBMapper {
 
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -64,12 +66,23 @@ class FlowTimerEventMapper extends QBMapper {
 			throw new InvalidArgumentException('FlowTimerEventMapper persists FlowTimerEvent entities only.');
 		}
 
-		if ($entity->getCreated() === null) {
-			$entity->setCreated(new DateTime());
-		}
+		$this->stampCreated(entity: $entity);
 
 		return parent::insert(entity: $entity);
 	}//end insert()
+
+	/**
+	 * Set the creation time of a new row unless it already has one.
+	 *
+	 * @param FlowTimerEvent $entity The row.
+	 *
+	 * @return void
+	 */
+	private function stampCreated(FlowTimerEvent $entity): void {
+		if ($entity->getCreated() === null) {
+			$entity->setCreated(new DateTime());
+		}
+	}//end stampCreated()
 
 	/**
 	 * Updates are refused: the history is append-only.
@@ -111,11 +124,8 @@ class FlowTimerEventMapper extends QBMapper {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function findByTimer(string $timerUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('timer_uuid', $qb->createNamedParameter($timerUuid)))
-			->orderBy('created', 'ASC')
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'timer_uuid', value: $timerUuid));
+		$qb->orderBy('created', 'ASC')
 			->addOrderBy('id', 'ASC');
 
 		return $this->findEntities(query: $qb);

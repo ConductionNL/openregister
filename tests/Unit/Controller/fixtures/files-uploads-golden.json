@@ -1,0 +1,356 @@
+{
+    "bare single": [
+        {
+            "name": "b",
+            "type": "",
+            "tmp_name": "",
+            "error": 4,
+            "size": 0,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "empty names": {
+        "failure": "No files uploaded"
+    },
+    "files and file": [
+        {
+            "name": "x.png",
+            "type": "image/png",
+            "tmp_name": "/tmp/x",
+            "error": 0,
+            "size": 1,
+            "share": false,
+            "tags": []
+        },
+        {
+            "name": "y.png",
+            "type": "image/jpeg",
+            "tmp_name": "/tmp/y",
+            "error": 4,
+            "size": 2,
+            "share": false,
+            "tags": []
+        },
+        {
+            "name": "a.pdf",
+            "type": "application/pdf",
+            "tmp_name": "/tmp/a",
+            "error": 0,
+            "size": 3,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "files without name, no file": {
+        "failure": "No files uploaded"
+    },
+    "files without name, with file": [
+        {
+            "name": "a.pdf",
+            "type": "application/pdf",
+            "tmp_name": "/tmp/a",
+            "error": 0,
+            "size": 3,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "many": [
+        {
+            "name": "x.png",
+            "type": "image/png",
+            "tmp_name": "/tmp/x",
+            "error": 0,
+            "size": 1,
+            "share": false,
+            "tags": []
+        },
+        {
+            "name": "y.png",
+            "type": "image/jpeg",
+            "tmp_name": "/tmp/y",
+            "error": 4,
+            "size": 2,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "many missing columns": [
+        {
+            "name": "x",
+            "type": "",
+            "tmp_name": "",
+            "error": 4,
+            "size": 0,
+            "share": false,
+            "tags": []
+        },
+        {
+            "name": "y",
+            "type": "",
+            "tmp_name": "",
+            "error": 4,
+            "size": 0,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "many null in columns": [
+        {
+            "name": "x",
+            "type": "",
+            "tmp_name": "",
+            "error": 4,
+            "size": 0,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "many number columns": [
+        {
+            "name": "x",
+            "type": "",
+            "tmp_name": "",
+            "error": 4,
+            "size": 0,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "many scalar columns": [
+        {
+            "name": "x",
+            "type": "",
+            "tmp_name": "",
+            "error": 2,
+            "size": 9,
+            "share": false,
+            "tags": []
+        },
+        {
+            "name": "y",
+            "type": "",
+            "tmp_name": "",
+            "error": 2,
+            "size": 9,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "many share": [
+        {
+            "name": "x.png",
+            "type": "image/png",
+            "tmp_name": "/tmp/x",
+            "error": 0,
+            "size": 1,
+            "share": true,
+            "tags": []
+        },
+        {
+            "name": "y.png",
+            "type": "image/jpeg",
+            "tmp_name": "/tmp/y",
+            "error": 4,
+            "size": 2,
+            "share": true,
+            "tags": []
+        }
+    ],
+    "many short columns": [
+        {
+            "name": "x",
+            "type": "t",
+            "tmp_name": "p",
+            "error": 1,
+            "size": 5,
+            "share": false,
+            "tags": []
+        },
+        {
+            "name": "y",
+            "type": "",
+            "tmp_name": "",
+            "error": 4,
+            "size": 0,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "many short columns with scalars": [
+        {
+            "name": "x",
+            "type": "",
+            "tmp_name": "",
+            "error": 6,
+            "size": 7,
+            "share": false,
+            "tags": []
+        },
+        {
+            "name": "y",
+            "type": "",
+            "tmp_name": "",
+            "error": 6,
+            "size": 7,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "many tags for one file": [
+        {
+            "name": "x.png",
+            "type": "image/png",
+            "tmp_name": "/tmp/x",
+            "error": 0,
+            "size": 1,
+            "share": false,
+            "tags": [
+                "a"
+            ]
+        },
+        {
+            "name": "y.png",
+            "type": "image/jpeg",
+            "tmp_name": "/tmp/y",
+            "error": 4,
+            "size": 2,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "many tags per file": [
+        {
+            "name": "x.png",
+            "type": "image/png",
+            "tmp_name": "/tmp/x",
+            "error": 0,
+            "size": 1,
+            "share": false,
+            "tags": [
+                "a",
+                "b"
+            ]
+        },
+        {
+            "name": "y.png",
+            "type": "image/jpeg",
+            "tmp_name": "/tmp/y",
+            "error": 4,
+            "size": 2,
+            "share": false,
+            "tags": [
+                "c",
+                "d"
+            ]
+        }
+    ],
+    "many text error and size": [
+        {
+            "name": "x",
+            "type": "",
+            "tmp_name": "",
+            "error": 4,
+            "size": 0,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "names with gaps": [
+        {
+            "name": "",
+            "type": "",
+            "tmp_name": "",
+            "error": 4,
+            "size": 0,
+            "share": false,
+            "tags": []
+        },
+        {
+            "name": "x",
+            "type": "a",
+            "tmp_name": "",
+            "error": 4,
+            "size": 0,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "names with text keys": [
+        {
+            "name": "",
+            "type": "",
+            "tmp_name": "",
+            "error": 4,
+            "size": 0,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "nothing": {
+        "failure": "No files uploaded"
+    },
+    "one in file": [
+        {
+            "name": "a.pdf",
+            "type": "application/pdf",
+            "tmp_name": "/tmp/a",
+            "error": 0,
+            "size": 3,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "one in files": [
+        {
+            "name": "a.pdf",
+            "type": "application/pdf",
+            "tmp_name": "/tmp/a",
+            "error": 0,
+            "size": 3,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "single share and tags": [
+        {
+            "name": "a.pdf",
+            "type": "application/pdf",
+            "tmp_name": "/tmp/a",
+            "error": 0,
+            "size": 3,
+            "share": true,
+            "tags": [
+                "a",
+                " b",
+                "c"
+            ]
+        }
+    ],
+    "single share off": [
+        {
+            "name": "a.pdf",
+            "type": "application/pdf",
+            "tmp_name": "/tmp/a",
+            "error": 0,
+            "size": 3,
+            "share": false,
+            "tags": []
+        }
+    ],
+    "single tag array": [
+        {
+            "name": "a.pdf",
+            "type": "application/pdf",
+            "tmp_name": "/tmp/a",
+            "error": 0,
+            "size": 3,
+            "share": true,
+            "tags": [
+                "a",
+                "b"
+            ]
+        }
+    ]
+}

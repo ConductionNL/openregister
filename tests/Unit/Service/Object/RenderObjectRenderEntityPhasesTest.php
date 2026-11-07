@@ -21,9 +21,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -56,6 +57,9 @@ use RuntimeException;
  */
 class RenderObjectRenderEntityPhasesTest extends TestCase {
 
+	/** @var RegisterMapper&MockObject */
+	private RegisterMapper&MockObject $registers;
+
 	private const UUID = '5b0c1f0e-0000-4000-8000-000000000001';
 
 	private SchemaMapper&MockObject $schemaMapper;
@@ -81,6 +85,7 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		parent::setUp();
 
 		$this->schemaMapper      = $this->createMock(SchemaMapper::class);
+		$this->registers         = $this->createMock(RegisterMapper::class);
 		$this->logger            = $this->createMock(LoggerInterface::class);
 		$this->enricher          = $this->createMock(LinkedEntityEnricher::class);
 		$this->evaluator         = $this->createMock(CalculationEvaluator::class);
@@ -108,11 +113,10 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		return new RenderObject(
 			$this->createMock(FileMapper::class),
 			$this->createMock(MagicMapper::class),
-			$this->createMock(RegisterMapper::class),
+			$this->registers,
 			$this->schemaMapper,
 			$this->createMock(ISystemTagManager::class),
 			$this->createMock(ISystemTagObjectMapper::class),
-			$this->createMock(CacheHandler::class),
 			$this->createMock(CacheHandler::class),
 			$this->createMock(PropertyRbacHandler::class),
 			$this->logger,
@@ -238,6 +242,282 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		$this->assertSame(42, $asArray['total']);
 		$this->assertArrayNotHasKey('stored', $asArray, 'A materialised calculation is not evaluated on read');
 	}//end testVirtualCalculationsRunOnlyWhenExtended()
+
+	/**
+	 * An expression sees the object's `@self` values, and a date comes back as ISO 8601.
+	 *
+	 * @return void
+	 */
+	public function testACalculationSeesSelfAndAnswersDatesInIso(): void {
+		$this->givenSchema(['x-openregister-calculations' => ['due' => ['expression' => 'x']]]);
+		$seen = [];
+		$this->evaluator->method('evaluate')->willReturnCallback(
+			static function (array $payload, ?string $expression) use (&$seen): \DateTimeImmutable {
+				$seen = [$payload, $expression];
+
+				return new \DateTimeImmutable('2026-03-01T10:00:00+00:00');
+			}
+		);
+		$entity = $this->entity();
+		$entity->setOwner('alice');
+		$entity->setCreated(new \DateTime('2026-01-02T03:04:05+00:00'));
+
+		$data = $this->render()->renderEntity(entity: $entity, _extend: ['calculations'])->getObject();
+
+		$this->assertSame('2026-03-01T10:00:00+00:00', $data['due']);
+		$this->assertSame('x', $seen[1]);
+		$this->assertSame('Z-1', $seen[0]['title']);
+		$this->assertSame(
+			[
+				'id' => self::UUID,
+				'uuid' => self::UUID,
+				'register' => '3',
+				'schema' => '7',
+				'owner' => 'alice',
+				'created' => '2026-01-02T03:04:05+00:00',
+				'updated' => null,
+			],
+			$seen[0]['@self']
+		);
+	}//end testACalculationSeesSelfAndAnswersDatesInIso()
+
+	/**
+	 * A failed calculation is left out and the others still run; a malformed entry is skipped.
+	 *
+	 * @return void
+	 */
+	public function testAFailedCalculationOnlyLeavesItselfOut(): void {
+		$this->givenSchema(
+			['x-openregister-calculations' => ['bad' => ['expression' => 'boom'], 'broken' => 'nope', 'good' => ['expression' => 'ok']]]
+		);
+		$this->evaluator->method('evaluate')->willReturnCallback(
+			static function (array $payload, ?string $expression): int {
+				if ($expression === 'boom') {
+					throw new \RuntimeException('no');
+				}
+
+				return 1;
+			}
+		);
+		$messages = $this->collectDebugMessages();
+
+		$data = $this->render()->renderEntity(entity: $this->entity(), _extend: ['calculations'])->getObject();
+
+		$this->assertSame(1, $data['good']);
+		$this->assertArrayNotHasKey('bad', $data);
+		$this->assertArrayNotHasKey('broken', $data);
+		$this->assertStringContainsString('Virtual calculation "bad" failed: no', implode("\n", (array)$messages));
+	}//end testAFailedCalculationOnlyLeavesItselfOut()
+
+	/**
+	 * Calculations that are not a list do nothing.
+	 *
+	 * @return void
+	 */
+	public function testCalculationsThatAreNotAListDoNothing(): void {
+		$this->givenSchema(['x-openregister-calculations' => 'nope']);
+		$this->evaluator->expects($this->never())->method('evaluate');
+
+		$data = $this->render()->renderEntity(entity: $this->entity(), _extend: ['calculations'])->getObject();
+
+		$this->assertSame('Z-1', $data['title']);
+	}//end testCalculationsThatAreNotAListDoNothing()
+
+	/**
+	 * One recurrence property answers `_occurrences`, with the requested number of dates.
+	 *
+	 * @return void
+	 */
+	public function testOneRecurrencePropertyAnswersOccurrences(): void {
+		$this->givenSchema()->setProperties(['rule' => ['type' => 'recurrence'], 'empty' => ['type' => 'recurrence']]);
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => $key === 'recurrenceOccurrences' ? '3' : $default
+		);
+
+		$data = $this->render($request)->renderEntity(entity: $this->entity(['rule' => 'FREQ=DAILY', 'empty' => '']))->getObject();
+
+		$this->assertCount(3, $data['_occurrences']);
+		$this->assertSame('FREQ=DAILY', $data['rule']);
+		$this->assertArrayNotHasKey('rule_occurrences', $data);
+	}//end testOneRecurrencePropertyAnswersOccurrences()
+
+	/**
+	 * Several recurrence properties answer per property, with the default number of dates.
+	 *
+	 * @return void
+	 */
+	public function testSeveralRecurrencePropertiesAnswerPerProperty(): void {
+		$this->givenSchema()->setProperties(['a' => ['type' => 'recurrence'], 'b' => ['type' => 'recurrence'], 'c' => ['type' => 'string']]);
+
+		$data = $this->render()->renderEntity(entity: $this->entity(['a' => 'FREQ=DAILY', 'b' => 'FREQ=WEEKLY', 'c' => 'FREQ=DAILY']))->getObject();
+
+		$this->assertCount(5, $data['a_occurrences']);
+		$this->assertCount(5, $data['b_occurrences']);
+		$this->assertArrayNotHasKey('_occurrences', $data);
+		$this->assertArrayNotHasKey('c_occurrences', $data);
+	}//end testSeveralRecurrencePropertiesAnswerPerProperty()
+
+	/**
+	 * A count that is no number falls back to the default.
+	 *
+	 * @return void
+	 */
+	public function testACountThatIsNoNumberFallsBackToTheDefault(): void {
+		$this->givenSchema()->setProperties(['rule' => ['type' => 'recurrence']]);
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => $key === 'recurrenceOccurrences' ? '3 days' : $default
+		);
+
+		$data = $this->render($request)->renderEntity(entity: $this->entity(['rule' => 'FREQ=DAILY']))->getObject();
+
+		$this->assertCount(5, $data['_occurrences']);
+	}//end testACountThatIsNoNumberFallsBackToTheDefault()
+
+	/**
+	 * Row translations are told the row's schema and register, for both row shapes.
+	 *
+	 * @return void
+	 */
+	public function testRowTranslationsAreToldTheRowsRegister(): void {
+		$schema = $this->givenSchema();
+		$register = new Register();
+		$this->registers->method('find')->willReturn($register);
+		$seen = [];
+		$this->translationHandler = $this->createMock(TranslationHandler::class);
+		$this->translationHandler->method('resolveTranslationsForRender')->willReturnCallback(
+			static function (array $objectData, Schema $schema, ?Register $register) use (&$seen): array {
+				$seen[] = [$schema, $register];
+				$objectData['translated'] = true;
+
+				return $objectData;
+			}
+		);
+		$rows = [$this->entity(), ['@self' => ['schema' => 7, 'register' => 3]]];
+
+		$this->render()->resolveTranslationsForRows(rows: $rows);
+
+		$this->assertTrue($rows[0]->getObject()['translated']);
+		$this->assertTrue($rows[1]['translated']);
+		$this->assertSame([[$schema, $register], [$schema, $register]], $seen);
+	}//end testRowTranslationsAreToldTheRowsRegister()
+
+	/**
+	 * A row without a schema, or with one that cannot be found, stays as it is.
+	 *
+	 * @return void
+	 */
+	public function testARowWithoutAKnownSchemaStaysAsItIs(): void {
+		$this->schemaMapper->method('find')->willThrowException(new \RuntimeException('gone'));
+		$this->translationHandler = $this->createMock(TranslationHandler::class);
+		$this->translationHandler->expects($this->never())->method('resolveTranslationsForRender');
+		$noSchema = new ObjectEntity();
+		$noSchema->setObject(['title' => 'Z-1']);
+		$rows = [$noSchema, $this->entity(), ['@self' => ['schema' => 7]], ['@self' => ['schema' => ['x']]]];
+
+		$this->render()->resolveTranslationsForRows(rows: $rows);
+
+		$this->assertSame('Z-1', $rows[0]->getObject()['title']);
+		$this->assertSame(['@self' => ['schema' => 7]], $rows[2]);
+	}//end testARowWithoutAKnownSchemaStaysAsItIs()
+
+	/**
+	 * A declared link that can be filled lands on `@self.externalLinks`, next to what `@self` holds.
+	 *
+	 * @return void
+	 */
+	public function testAFilledLinkLandsOnSelf(): void {
+		$this->givenSchema(
+			['x-openregister-external-links' => [['title' => 'Viewer', 'url' => 'https://example.org/{title}'], ['title' => 'Other', 'url' => 'https://example.org/{gone}'], 'nope']]
+		);
+
+		$data = $this->render()->renderEntity(entity: $this->entity(['title' => 'Z-1', '@self' => ['kept' => 1]]))->getObject();
+
+		$this->assertSame([['title' => 'Viewer', 'url' => 'https://example.org/Z-1']], $data['@self']['externalLinks']);
+		$this->assertSame(1, $data['@self']['kept']);
+	}//end testAFilledLinkLandsOnSelf()
+
+	/**
+	 * No declared link, or none that can be filled, leaves no key behind.
+	 *
+	 * @return void
+	 */
+	public function testNoLinkLeavesNoKey(): void {
+		$this->givenSchema(['x-openregister-external-links' => [['title' => 'Other', 'url' => 'https://example.org/{gone}']]]);
+
+		$data = $this->render()->renderEntity(entity: $this->entity())->getObject();
+
+		$this->assertArrayNotHasKey('externalLinks', ($data['@self'] ?? []));
+	}//end testNoLinkLeavesNoKey()
+
+	/**
+	 * The annotation block joins what the row's retention already held.
+	 *
+	 * @return void
+	 */
+	public function testTheRetentionBlockJoinsTheRowsRetention(): void {
+		$this->givenSchema(['x-openregister-archival' => ['retention' => ['default' => 'P1Y']]]);
+		$entity = $this->entity();
+		$entity->setCreated(new \DateTime('2026-01-02T00:00:00+00:00'));
+		$entity->setRetention(['kept' => 1]);
+
+		$retention = $this->render()->renderEntity(entity: $entity)->getRetention();
+
+		$this->assertSame(1, $retention['kept']);
+		$this->assertSame('P1Y', $retention['annotation']['effectiveRetention']);
+		$this->assertStringStartsWith('2027-01-02', (string)$retention['annotation']['expiresAt']);
+	}//end testTheRetentionBlockJoinsTheRowsRetention()
+
+	/**
+	 * A row without a creation date gets no annotation block.
+	 *
+	 * @return void
+	 */
+	public function testARowWithoutACreationDateGetsNoRetentionBlock(): void {
+		$this->givenSchema(['x-openregister-archival' => ['retention' => ['default' => 'P1Y']]]);
+		$entity = $this->entity();
+		$entity->setCreated(null);
+		$messages = $this->collectDebugMessages();
+
+		$retention = ($this->render()->renderEntity(entity: $entity)->getRetention() ?? []);
+
+		$this->assertArrayNotHasKey('annotation', $retention);
+		$this->assertStringNotContainsString('archival retention', implode("\n", (array)$messages));
+	}//end testARowWithoutACreationDateGetsNoRetentionBlock()
+
+	/**
+	 * A malformed annotation is a debug line, not a failed render.
+	 *
+	 * @return void
+	 */
+	public function testAMalformedAnnotationIsOnlyLogged(): void {
+		$this->givenSchema(['x-openregister-archival' => ['nope' => true]]);
+		$entity = $this->entity();
+		$entity->setCreated(new \DateTime('2026-01-02T00:00:00+00:00'));
+		$messages = $this->collectDebugMessages();
+
+		$data = $this->render()->renderEntity(entity: $entity)->getObject();
+
+		$this->assertSame('Z-1', $data['title']);
+		$this->assertStringContainsString(
+			'[RenderObject] archival retention compute failed for ' . self::UUID . ': ',
+			implode("\n", (array)$messages)
+		);
+	}//end testAMalformedAnnotationIsOnlyLogged()
+
+	/**
+	 * The archival decision of a row with a retention block lands on the entity.
+	 *
+	 * @return void
+	 */
+	public function testTheArchivalDecisionLandsOnTheEntity(): void {
+		$this->givenSchema(['x-openregister-archival' => ['retention' => ['default' => 'P1Y']]]);
+		$entity = $this->entity();
+		$entity->setCreated(new \DateTime('2026-01-02T00:00:00+00:00'));
+
+		$this->assertIsArray($this->render()->renderEntity(entity: $entity)->getArchivalRetention());
+	}//end testTheArchivalDecisionLandsOnTheEntity()
 
 	/**
 	 * The lens is applied on every render and receives the rbac flag.

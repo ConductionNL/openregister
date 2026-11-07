@@ -87,7 +87,8 @@ final class MagicSchemaColumns {
 		$columns = array_merge(MagicMetadataColumns::ALL, $this->linkedTypeColumns(schema: $schema));
 		$claims = new MagicColumnNameClaims(columns: $columns, logger: $this->logger);
 
-		foreach ($schema->getProperties() as $propertyName => $propertyConfig) {
+		foreach ($schema->getProperties() as $key => $propertyConfig) {
+			$propertyName = (string)$key;
 			// A planned column keeps its definition: a property of that name is never written (REQ-MTR-001).
 			if ($this->isProperty(name: $propertyName, config: $propertyConfig) === false || isset($columns[$propertyName]) === true) {
 				continue;

@@ -20,12 +20,9 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -45,29 +42,29 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One collaborator per migration step, plus the slug re-check (#4037).
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One collaborator per migration step.
  */
 class MigrationHandler {
 	/**
 	 * Constructor for MigrationHandler.
 	 *
 	 * @param MagicMapperInterface $objectMapper Mapper for object entities.
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities.
-	 * @param RegisterMapperInterface $registerMapper Mapper for register entities.
-	 * @param SaveObjectInterface $saveHandler Handler for saving objects.
 	 * @param UtilityHandler $utilityHandler Handler for utility operations.
 	 * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
+	 * @param MoveObject $mover Moves an object to its target address.
+	 * @param SaveObjectInterface $relationScanner Finds the relations in the mapped data.
+	 * @param AuditTrailMapperInterface $auditTrail Records what the mapping changed.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SaveObjectInterface $saveHandler,
 		private readonly UtilityHandler $utilityHandler,
 		private readonly DataManipulationHandler $dataManipHandler,
+		private readonly MoveObject $mover,
+		private readonly SaveObjectInterface $relationScanner,
+		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -173,7 +170,8 @@ class MigrationHandler {
 			$objectDetail['objectTitle'] = $sourceObject->getName() ?? $sourceObject->getUuid();
 			$this->assertInSource(sourceObject: $sourceObject, run: $run);
 
-			$sourceData = $sourceObject->getObject();
+			$stored = $this->storedObject(sourceObject: $sourceObject, run: $run);
+			$sourceData = $stored->getObject();
 			$mappedData = $this->dataManipHandler->mapObjectProperties(
 				sourceData: $sourceData,
 				mapping: $run->mapping
@@ -189,15 +187,17 @@ class MigrationHandler {
 				]
 			);
 
-			// Files and relations stay attached to the object, so moving it moves them.
-			$sourceObject->setRegister($run->target->registerEntity->getId());
-			$sourceObject->setSchema($run->target->schemaEntity->getId());
-			$sourceObject->setObject($mappedData);
-			$this->keepSlugFreeAtTarget(sourceObject: $sourceObject, run: $run);
-			$savedObject = $this->objectMapper->update($sourceObject);
+			$before = clone $stored;
+
+			// Relations are keyed by property, so the mapping decides which survive and under which name.
+			$stored->setObject($mappedData);
+			$stored->setRelations(
+				$this->relationScanner->scanForRelations(data: $mappedData, schema: $run->target->schemaEntity)
+			);
+			$objectDetail['newObjectId'] = $this->moveToTarget(sourceObject: $stored, run: $run);
+			$this->recordMapping(before: $before, after: $stored);
 
 			$objectDetail['success'] = true;
-			$objectDetail['newObjectId'] = $savedObject->getUuid();
 			$run->migrated();
 		} catch (Exception $e) {
 			$objectDetail['error'] = $e->getMessage();
@@ -208,24 +208,85 @@ class MigrationHandler {
 	}//end migrateOne()
 
 	/**
-	 * Re-check the slug an object carries against the target's live holders (#4037).
+	 * The object as stored in the source table, with its owner, organisation and relations.
 	 *
-	 * The slug was decided in the source; the target may already have a live holder of it.
+	 * The batch load fills in the data and the address only, and whatever is not on the entity
+	 * is not written at the target. Access was decided by the caller, so it is not applied again.
 	 *
-	 * @param ObjectEntity $sourceObject The object, already pointing at the target.
+	 * @param ObjectEntity $sourceObject The object as the batch load returned it.
 	 * @param MigrationRun $run          The migration.
+	 *
+	 * @return ObjectEntity The full object.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function storedObject(ObjectEntity $sourceObject, MigrationRun $run): ObjectEntity {
+		return $this->objectMapper->findInRegisterSchemaTable(
+			identifier: (string)$sourceObject->getUuid(),
+			register: $run->source->registerEntity,
+			schema: $run->source->schemaEntity,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end storedObject()
+
+	/**
+	 * Move the object with its mapped data: one row at the target, none left in the source.
+	 *
+	 * The audit entry names the caller from the session, so no actor is passed.
+	 *
+	 * @param ObjectEntity $sourceObject The object, carrying its mapped data.
+	 * @param MigrationRun $run          The migration.
+	 *
+	 * @return string The uuid of the moved object.
+	 *
+	 * @throws InvalidArgumentException When the object was not moved.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function moveToTarget(ObjectEntity $sourceObject, MigrationRun $run): string {
+		$outcome = $this->mover->move(
+			object: $sourceObject,
+			sourceRegister: $run->source->registerEntity,
+			sourceSchema: $run->source->schemaEntity,
+			targetRegister: $run->target->registerEntity,
+			targetSchema: $run->target->schemaEntity,
+			actor: ''
+		);
+
+		if ($outcome['moved'] === false) {
+			throw new InvalidArgumentException(implode(' ', $outcome['errors']));
+		}
+
+		foreach ($outcome['errors'] as $warning) {
+			$run->warn(warning: $outcome['uuid'] . ': ' . $warning);
+		}
+
+		return $outcome['uuid'];
+	}//end moveToTarget()
+
+	/**
+	 * Record what the mapping changed: the move's own audit entry only names the two addresses.
+	 *
+	 * The object has moved by now, so a failed entry is logged and does not fail the object.
+	 *
+	 * @param ObjectEntity $before The object as stored in the source.
+	 * @param ObjectEntity $after  The object at the target.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function keepSlugFreeAtTarget(ObjectEntity $sourceObject, MigrationRun $run): void {
-		$register = $run->target->registerEntity;
-		$schema = $run->target->schemaEntity;
-		if ($register instanceof Register && $schema instanceof Schema) {
-			$sourceObject->setSlug($this->objectMapper->slugForMove(entity: $sourceObject, register: $register, schema: $schema));
+	private function recordMapping(ObjectEntity $before, ObjectEntity $after): void {
+		try {
+			$this->auditTrail->createAuditTrail(old: $before, new: $after, action: 'update');
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[MigrationHandler] the mapping of ' . (string)$after->getUuid() . ' could not be recorded: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
 		}
-	}//end keepSlugFreeAtTarget()
+	}//end recordMapping()
 
 	/**
 	 * Refuse an object that does not live in the requested source register and schema.

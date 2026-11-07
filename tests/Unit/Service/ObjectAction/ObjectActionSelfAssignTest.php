@@ -66,6 +66,12 @@ use Psr\Log\NullLogger;
 
 /**
  * Who may take an unassigned object, and what the action may write.
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
  */
 class ObjectActionSelfAssignTest extends TestCase {
 
@@ -720,7 +726,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			$this->createMock(IAppConfig::class),
 			new NullLogger()
 		);
-		$validate = new ReflectionMethod(SchemaMapper::class, 'validateDepartmentMatrix');
+		$validate = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
 		$matrix = static fn (string $action): array => [
 			'read' => ['team'],
 			'matrix' => ['field' => 'group', 'userSource' => ['groups' => true], 'rows' => [['group' => 'team', 'value' => '$self', 'actions' => [$action]]]],

@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
-use OCA\OpenRegister\Service\File\OfficeSessionService;
+use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCP\App\IAppManager;
 use OCP\Files\File;
 use OCP\IAppConfig;

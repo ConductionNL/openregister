@@ -35,10 +35,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -53,6 +55,7 @@ use OCP\IRequest;
  */
 class EmailLinksController extends Controller {
 	use ObjectLinkActionsTrait;
+	use ChecksObjectUpdateRight;
 
 	/**
 	 * Constructor.
@@ -61,12 +64,14 @@ class EmailLinksController extends Controller {
 	 * @param IRequest $request HTTP request.
 	 * @param EmailLinkService $emailLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param PermissionHandler $permissions Answers the object update right
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly EmailLinkService $emailLinkService,
 		private readonly ObjectOperationsInterface $objectService,
+		private readonly PermissionHandler $permissions,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -130,6 +135,10 @@ class EmailLinksController extends Controller {
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			action: function (ObjectEntity $object): JSONResponse {
+				if ($this->mayUpdate(object: $object) === false) {
+					return $this->updateRefused();
+				}
+
 				$mailAccountId = (int)$this->request->getParam('mailAccountId', 0);
 				$messageId = (string)$this->request->getParam('messageId', '');
 				$messageUid = (string)$this->request->getParam('messageUid', '');
@@ -171,12 +180,25 @@ class EmailLinksController extends Controller {
 		return $this->onLinkedObject(
 			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			action: function (ObjectEntity $object) use ($linkId): JSONResponse {
+				if ($this->mayUpdate(object: $object) === false) {
+					return $this->updateRefused();
+				}
+
 				$this->emailLinkService->unlinkEmail($object->getUuid(), (int)$linkId);
 
 				return new JSONResponse(['success' => true]);
 			}
 		);
 	}//end destroy()
+
+	/**
+	 * The answer to a caller who may read the object but not change it.
+	 *
+	 * @return JSONResponse The 403.
+	 */
+	private function updateRefused(): JSONResponse {
+		return new JSONResponse(['error' => 'You may not change this object, so you cannot change its emails.'], 403);
+	}//end updateRefused()
 
 	/**
 	 * List Mail accounts owned by the current user (picker step 1).

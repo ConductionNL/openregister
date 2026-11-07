@@ -55,13 +55,11 @@ class MigrationService {
 	 * @param MagicMapperInterface $magicMapper The magic mapper.
 	 * @param RegisterMapperInterface $registerMapper The register mapper.
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param IDBConnection $db The database connection.
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $magicMapper,
 		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
-		private readonly IDBConnection $db,
 	) {
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
 			registerMapper: $registerMapper,

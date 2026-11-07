@@ -53,29 +53,28 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
-use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
-use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
-use OCA\OpenRegister\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
-use OCA\OpenRegister\Service\File\ShareUrlBuilder;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\StreamResponse;
@@ -86,14 +85,9 @@ use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
-use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserManager;
 use OCP\IUserSession;
-use OCP\Share\IManager;
 use OCP\Share\IShare;
-use OCP\SystemTag\ISystemTagManager;
-use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -114,19 +108,7 @@ use Psr\Log\LoggerInterface;
  */
 class FileService {
 
-	/**
-	 * File mapper
-	 *
-	 * @var FileMapperInterface
-	 */
-	private FileMapperInterface $fileMapper;
 
-	/**
-	 * Group manager
-	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
 
 	/**
 	 * Logger
@@ -149,26 +131,8 @@ class FileService {
 	 */
 	private IRootFolder $rootFolder;
 
-	/**
-	 * Share manager
-	 *
-	 * @var IManager
-	 */
-	private IManager $shareManager;
 
-	/**
-	 * System tag manager
-	 *
-	 * @var ISystemTagManager
-	 */
-	private ISystemTagManager $systemTagManager;
 
-	/**
-	 * System tag mapper
-	 *
-	 * @var ISystemTagObjectMapper
-	 */
-	private ISystemTagObjectMapper $systemTagMapper;
 
 	/**
 	 * Builds share links for the host the visitor used
@@ -177,12 +141,6 @@ class FileService {
 	 */
 	private ShareUrlBuilder $shareUrls;
 
-	/**
-	 * User manager
-	 *
-	 * @var IUserManager
-	 */
-	private IUserManager $userManager;
 
 	/**
 	 * User session
@@ -250,9 +208,9 @@ class FileService {
 	/**
 	 * Tagging handler (Single Responsibility: Tag management)
 	 *
-	 * @var TaggingHandler
+	 * @var TaggingHandlerInterface
 	 */
-	private TaggingHandler $taggingHandler;
+	private TaggingHandlerInterface $taggingHandler;
 
 	/**
 	 * File formatting handler (Single Responsibility: File formatting and filtering)
@@ -264,9 +222,9 @@ class FileService {
 	/**
 	 * Document processing handler (Single Responsibility: Document manipulation and anonymization)
 	 *
-	 * @var DocumentProcessingHandler
+	 * @var DocumentProcessingHandlerInterface
 	 */
-	private DocumentProcessingHandler $documentProcessingHandler;
+	private DocumentProcessingHandlerInterface $documentProcessingHandler;
 
 	/**
 	 * File publishing handler (Single Responsibility: File publishing and ZIP archiving)
@@ -377,22 +335,15 @@ class FileService {
 		'createFileHandler',
 		'readFileHandler',
 		'fileFormattingHandler',
-		'documentProcessingHandler',
 		'filePublishingHandler',
 	];
 
 	/**
 	 * Constructor
 	 *
-	 * @param FileMapperInterface $fileMapper File mapper
-	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
 	 * @param IRootFolder $rootFolder Root folder
-	 * @param IManager $shareManager Share manager
-	 * @param ISystemTagManager $systemTagManager System tag manager
-	 * @param ISystemTagObjectMapper $systemTagMapper System tag mapper
 	 * @param ShareUrlBuilder $shareUrls Share link builder
-	 * @param IUserManager $userManager User manager
 	 * @param IUserSession $userSession User session
 	 * @param FileValidationHandler $fileValidHandler File validation handler
 	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler
@@ -402,9 +353,9 @@ class FileService {
 	 * @param ReadFileHandler $readFileHandler Read file handler
 	 * @param UpdateFileHandler $updateFileHandler Update file handler
 	 * @param DeleteFileHandler $deleteFileHandler Delete file handler
-	 * @param TaggingHandler $taggingHandler Tagging handler
+	 * @param TaggingHandlerInterface $taggingHandler Tagging handler
 	 * @param FileFormattingHandler $fileFormatHandler File formatting handler
-	 * @param DocumentProcessingHandler $docProcHandler Document processing handler
+	 * @param DocumentProcessingHandlerInterface $docProcHandler Document processing handler
 	 * @param FilePublishingHandler $filePubHandler File publishing handler
 	 * @param FileVersioningHandler $fileVerHandler File versioning handler
 	 * @param FileLockHandler $fileLockHandler File lock handler
@@ -415,15 +366,9 @@ class FileService {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
-		FileMapperInterface $fileMapper,
-		IGroupManager $groupManager,
 		LoggerInterface $logger,
 		IRootFolder $rootFolder,
-		IManager $shareManager,
-		ISystemTagManager $systemTagManager,
-		ISystemTagObjectMapper $systemTagMapper,
 		ShareUrlBuilder $shareUrls,
-		IUserManager $userManager,
 		IUserSession $userSession,
 		FileValidationHandler $fileValidHandler,
 		FolderManagementHandler $folderMgmtHandler,
@@ -433,9 +378,9 @@ class FileService {
 		ReadFileHandler $readFileHandler,
 		UpdateFileHandler $updateFileHandler,
 		DeleteFileHandler $deleteFileHandler,
-		TaggingHandler $taggingHandler,
+		TaggingHandlerInterface $taggingHandler,
 		FileFormattingHandler $fileFormatHandler,
-		DocumentProcessingHandler $docProcHandler,
+		DocumentProcessingHandlerInterface $docProcHandler,
 		FilePublishingHandler $filePubHandler,
 		FileVersioningHandler $fileVerHandler,
 		FileLockHandler $fileLockHandler,
@@ -448,15 +393,9 @@ class FileService {
 			message: '[FileService] FileService constructor started.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		$this->fileMapper = $fileMapper;
-		$this->groupManager = $groupManager;
 		// REMOVED: registerMapper assignment (unused, caused circular dependency).
 		$this->rootFolder = $rootFolder;
-		$this->shareManager = $shareManager;
-		$this->systemTagManager = $systemTagManager;
-		$this->systemTagMapper = $systemTagMapper;
 		$this->shareUrls = $shareUrls;
-		$this->userManager = $userManager;
 		$this->userSession = $userSession;
 		$this->fileValidationHandler = $fileValidHandler;
 		$this->folderManagementHandler = $folderMgmtHandler;
@@ -699,21 +638,15 @@ class FileService {
 	}//end createObjectFolderById()
 
 	/**
-	 * Get the OpenRegister user root folder.
+	 * Refuse when the OpenRegister user's root folder cannot be reached.
 	 *
-	 * This method provides a consistent way to access the OpenRegister user's
-	 * root folder across the entire FileService.
-	 *
-	 * @return Folder The OpenRegister user's root folder
+	 * @return void
 	 *
 	 * @throws Exception If the user folder cannot be accessed
-	 *
-	 * @psalm-return   Folder
-	 * @phpstan-return Folder
 	 */
-	private function getOpenRegisterUserFolder(): Folder {
-		return $this->folderManagementHandler->getOpenRegisterUserFolder();
-	}//end getOpenRegisterUserFolder()
+	private function assertOpenRegisterUserFolder(): void {
+		$this->folderManagementHandler->getOpenRegisterUserFolder();
+	}//end assertOpenRegisterUserFolder()
 
 	/**
 	 * Get files for either a Register or ObjectEntity.
@@ -1194,8 +1127,7 @@ class FileService {
 		}
 
 		try {
-			// Note: userId and userFolder not currently used - file retrieved from rootFolder.
-			$this->getOpenRegisterUserFolder();
+			$this->assertOpenRegisterUserFolder();
 		} catch (Exception) {
 			$msg = "[FileService] Can't create share link for $path because OpenRegister user folder couldn't be found.";
 			$this->logger->error(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
@@ -1310,7 +1242,7 @@ class FileService {
 	 * @param string|null   $category    New category; '' clears, null skips.
 	 * @param string[]|null $labels      New labels; [] clears, null skips.
 	 *
-	 * @return \OCA\OpenRegister\Db\File The persisted metadata row.
+	 * @return \OCA\OpenRegister\Files\Db\File The persisted metadata row.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -1319,7 +1251,7 @@ class FileService {
 		?string $description = null,
 		?string $category = null,
 		?array $labels = null,
-	): \OCA\OpenRegister\Db\File {
+	): \OCA\OpenRegister\Files\Db\File {
 		return $this->updateFileHandler->updateFileMetadata(
 			fileId: $fileId,
 			description: $description,
@@ -1413,7 +1345,12 @@ class FileService {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function generateObjectTag(ObjectEntity|string $objectEntity): string {
-		return $this->taggingHandler->generateObjectTag($objectEntity);
+		$identifier = $objectEntity;
+		if ($objectEntity instanceof ObjectEntity === true) {
+			$identifier = $objectEntity->getUuid() ?? (string)$objectEntity->getId();
+		}
+
+		return $this->taggingHandler->generateObjectTag($identifier);
 	}//end generateObjectTag()
 
 	/**

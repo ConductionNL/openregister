@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,17 +36,17 @@ final class ChatStreamChat {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param AgentMapper        $agentMapper        Agent mapper.
-	 * @param ChatService        $chatService        Chat service.
+	 * @param ConversationMapperInterface $conversationMapper Conversation mapper.
+	 * @param AgentMapperInterface        $agentMapper        Agent mapper.
+	 * @param ChatServiceInterface        $chatService        Chat service.
 	 * @param LoggerInterface    $logger             Logger.
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		public readonly ConversationMapper $conversationMapper,
-		public readonly AgentMapper $agentMapper,
-		public readonly ChatService $chatService,
+		public readonly ConversationMapperInterface $conversationMapper,
+		public readonly AgentMapperInterface $agentMapper,
+		public readonly ChatServiceInterface $chatService,
 		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

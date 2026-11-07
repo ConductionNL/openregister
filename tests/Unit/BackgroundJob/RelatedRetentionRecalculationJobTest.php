@@ -118,7 +118,6 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 			$this->registerMapper,
 			$this->createMock(AuditTrailMapper::class),
 			$settings,
-			$this->createMock(IAppConfig::class),
 			$this->createMock(IUserSession::class),
 			$logger,
 			$this->createMock(RetentionRowScanner::class),

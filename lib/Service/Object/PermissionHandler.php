@@ -2235,8 +2235,6 @@ class PermissionHandler {
 	 *
 	 * @return bool True if the group has permission
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Rule entries: string, object, conditional, or nested group - each type is a distinct RBAC branch
-	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function hasGroupPermission(
@@ -2249,255 +2247,144 @@ class PermissionHandler {
 		?array $objectData = null,
 		?string $objectOrganisation = null,
 	): bool {
-		// 🔴 THE TOKEN CEILING IS CONSULTED FIRST, AHEAD OF THE ADMIN AND OWNER
-		// BYPASSES BELOW. Both of those return true without looking at the
-		// block at all, so a grant that only rewrote the block would narrow a
-		// supplier and leave the administrator who issued them the token
-		// unnarrowed — and would let any token write its holder's OWN objects,
-		// which is most of what a supplier's token touches. A grant is a filter
-		// over its holder's rights, and a filter that the most privileged
-		// caller escapes is not one (row Q13.20, D-1).
-		if ($this->tokenGrantNarrower !== null
-			&& $this->tokenGrantNarrower->markerPermits(authorization: $authorization, action: $action) === false
-		) {
-			return false;
-		}
+		$request = (new GroupRuleRequest(authorization: $authorization, action: $action))
+			->forGroup(groupId: $groupId, userGroup: $userGroup)
+			->forUser(userId: $userId, objectOwner: $objectOwner)
+			->onObject(data: $objectData, organisation: $objectOrganisation);
 
-		// Admin group always has all permissions.
-		if ($groupId === 'admin' || $userGroup === 'admin') {
-			return true;
-		}
-
-		// Object owner always has all permissions for their specific objects.
-		if ($userId !== null && $objectOwner !== null && $objectOwner === $userId) {
-			return true;
-		}
-
-		// Wave-12 Fix 2: schemas without an `authorization` block AND without
-		// an explicit `public: true` opt-in are evaluated under the
-		// `enforce_default_closed` policy when the operator has opted in via
-		// IAppConfig. Default behaviour (flag unset/false) is preserved for BC —
-		// see the {@see CONFIG_ENFORCE_DEFAULT_CLOSED} docblock for the rationale
-		// and the tracking issue for the next-major default flip.
-		$publicOptIn = (is_array($authorization) === true
-			&& array_key_exists('public', $authorization) === true
-			&& $authorization['public'] === true);
-
-		if (empty($authorization) === true || $publicOptIn === true) {
-			if ($this->isDefaultClosedEnforced() === true
-				&& in_array(needle: $action, haystack: self::DEFAULT_CLOSED_WRITE_ACTIONS, strict: true) === true
-				&& $publicOptIn === false
-			) {
-				// Default-CLOSED write action: deny unless the caller is admin
-				// (handled at evaluatePermission) or the object owner (handled
-				// above). Both branches have already returned by this point.
-				return false;
-			}
-
-			// Default-OPEN behaviour preserved.
-			// Emit a deprecation WARNING the FIRST time this branch is hit for
-			// a given schema/action pair when the flag is OFF, so leaf-app
-			// maintainers see actionable signal in NC logs ahead of the flip.
-			if ($this->isDefaultClosedEnforced() === false
-				&& in_array(needle: $action, haystack: self::DEFAULT_CLOSED_WRITE_ACTIONS, strict: true) === true
-				&& $publicOptIn === false
-				&& empty($authorization) === true
-			) {
-				$this->logDefaultOpenDeprecation(action: $action);
-			}
-
-			return true;
-		}//end if
-
-		// Fail-closed: once a schema opts into authorization (non-empty block),
-		// an action that is not explicitly listed is denied — including for the
-		// `public`/unauthenticated pseudo-group. Only the empty-block default
-		// above still grants by default; the admin/owner bypasses precede this.
-		//
-		// This unconditional deny SUBSUMES wave-12's narrower rule here, which
-		// denied an unlisted action only when `enforce_default_closed` was on AND
-		// the action was a write, and otherwise granted it. Every input this
-		// branch denies, wave-12 denied or granted; it never grants where wave-12
-		// denied, so wave-12's default-closed intent is preserved and tightened.
-		// Wave-12's default-closed enforcement for the EMPTY-block case remains
-		// intact above (see isDefaultClosedEnforced/DEFAULT_CLOSED_WRITE_ACTIONS).
-		// `empty()` rather than `isset()` additionally denies an explicitly empty
-		// rule list (e.g. `"create": []`), which reads as "grant to nobody".
-		if (empty($authorization[$action]) === true) {
-			return false;
-		}
-
-		// Check each authorization entry for this action.
-		foreach ($authorization[$action] as $entry) {
-			// 🔴 The `mcp` scope never matches a caller, whatever the caller is
-			// in. A block reaching here should already have been stripped (see
-			// stripMcpScope()), but hasGroupPermission() is public and is
-			// called with raw blocks from outside this class, so the refusal is
-			// enforced at the point of match as well.
-			//
-			// The concrete attack this closes: an administrator creates a real
-			// Nextcloud group called `mcp`, and every schema that documented an
-			// agent surface silently becomes a grant to its members. Verified
-			// as reachable before this guard existed — both branches below
-			// admitted such a user.
-			if (self::isMcpScopeEntry(entry: $entry) === true) {
-				continue;
-			}
-
-			// User-level override entry (delegation): a bare string `user:<uid>`
-			// or a complex entry `{ "user": "<uid>", "match": {...} }` grants the
-			// action to that one user independent of group membership. This is the
-			// zaaktype-scoped DELEGATION primitive (rbac-zaaktype): it is purely
-			// ADDITIVE — it can only WIDEN access for the named user and never
-			// affects group rules. Fail-closed: only an exact uid match is honoured.
-			if ($this->userOverrideMatches(
-				entry: $entry,
-				action: $action,
-				userId: $userId,
-				objectData: $objectData,
-				objectOrganisation: $objectOrganisation
-			) === true
-			) {
-				return true;
-			}
-
-			// Simple string entry: direct group match.
-			if (is_string($entry) === true) {
-				if ($entry === $groupId) {
-					return true;
-				}
-
-				continue;
-			}
-
-			// Complex entry with match conditions.
-			if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
-				// If no match conditions, the group match alone is sufficient.
-				if (isset($entry['match']) === false || empty($entry['match']) === true) {
-					return true;
-				}
-
-				// Evaluate all match conditions (all must pass) via the shared ConditionMatcher.
-				// Build the envelope so ConditionMatcher::getObjectValue() can resolve _organisation
-				// (and any other _-prefixed @self field) by stripping the underscore and looking
-				// up @self[<stripped>].
-				//
-				// Precedence: the record's own organisation ($objectOrganisation) wins over an
-				// `@self.organisation` inside $objectData, which a request body can carry.
-				$envelope = ($objectData ?? []);
-				if ($objectOrganisation !== null) {
-					$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $objectOrganisation]);
-				}
-
-				if ($this->conditionMatcher->objectMatchesConditions(
-					object: $envelope,
-					match: $entry['match']
-				) === true
-				) {
-					return true;
-				}
-			}//end if
-		}//end foreach
-
-		return false;
+		return $this->groupRuleVerdict(request: $request);
 	}//end hasGroupPermission()
 
 	/**
-	 * Determine whether an authorization entry is a user-level override that
-	 * grants the current user the requested action.
+	 * The verdict of {@see hasGroupPermission()}: the token ceiling, the bypasses, then the rules.
 	 *
-	 * User-level overrides implement zaaktype-scoped DELEGATION (rbac-zaaktype):
-	 * a permission granted to an individual user independent of group membership,
-	 * used for external advisors, temporary replacements, and escalation paths.
-	 * They are expressed inside the same schema `authorization[$action]` list as
-	 * either:
-	 *   - a bare string `"user:<uid>"`; or
-	 *   - a complex entry `{ "user": "<uid>", "match": { ... } }` whose optional
-	 *     `match` clause is evaluated by the shared {@see ConditionMatcher} (so an
-	 *     expiry can be encoded as e.g. `{ "_expires": { "$gt": "$now" } }` on the
-	 *     object, or any other object-data predicate).
+	 * @param GroupRuleRequest $request The question.
 	 *
-	 * SECURITY — fail closed and never widen group access:
-	 *   - Only an EXACT uid match grants. A missing/blank uid, a non-matching uid,
-	 *     or a malformed entry returns false.
-	 *   - Anonymous principals (userId === null) can never match a user override.
-	 *   - The override is purely additive: returning false here lets the normal
-	 *     group/owner/public rule chain decide, so an override can only ADD access
-	 *     for the named user and can never remove a group's existing grant.
+	 * @return bool True if the group has permission.
 	 *
-	 * @param mixed $entry A single authorization entry for the action.
-	 * @param string $action The CRUD action being checked (for match-create filtering).
-	 * @param string|null $userId The current user ID (null = anonymous).
-	 * @param array|null $objectData Optional object data for conditional matching.
-	 * @param string|null $objectOrganisation Optional object organisation (folded into @self.organisation).
-	 *
-	 * @return bool True only when the entry is a user override for the current user
-	 *              and any attached match clause is satisfied.
-	 *
-	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function userOverrideMatches(
-		mixed $entry,
-		string $action,
-		?string $userId,
-		?array $objectData = null,
-		?string $objectOrganisation = null,
-	): bool {
-		// Anonymous principals can never match a user-level override.
-		if ($userId === null || $userId === '') {
+	private function groupRuleVerdict(GroupRuleRequest $request): bool {
+		if ($this->tokenCeilingRefuses(request: $request) === true) {
 			return false;
 		}
 
-		$targetUid = null;
-		$match = null;
-
-		// Bare string form: "user:<uid>".
-		if (is_string($entry) === true) {
-			if (str_starts_with($entry, 'user:') === false) {
-				return false;
-			}
-
-			$targetUid = substr($entry, strlen('user:'));
-		} elseif (is_array($entry) === true && isset($entry['user']) === true && is_string($entry['user']) === true) {
-			// Complex form: { "user": "<uid>", "match": {...} }.
-			$targetUid = $entry['user'];
-			$match = ($entry['match'] ?? null);
-		} else {
-			return false;
-		}
-
-		// Exact uid match required (fail closed on blank / mismatch).
-		if ($targetUid === '' || $targetUid !== $userId) {
-			return false;
-		}
-
-		// No match clause: the user override alone is sufficient.
-		if ($match === null || is_array($match) === false || empty($match) === true) {
+		if ($this->bypassesGroupRules(request: $request) === true) {
 			return true;
 		}
 
-		// On create there is no existing object to match organisation against;
-		// strip organisation predicates exactly as the group path relies on
-		// ConditionMatcher to do elsewhere.
-		if ($action === 'create') {
-			$match = $this->conditionMatcher->filterOrganisationMatchForCreate(match: $match);
-			if ($match === []) {
+		if (empty($request->authorization) === true || $request->publicOptIn() === true) {
+			return $this->noRulesVerdict(request: $request);
+		}
+
+		return $this->anyRuleEntryGrants(request: $request);
+	}//end groupRuleVerdict()
+
+	/**
+	 * Whether the token's ceiling refuses the action.
+	 *
+	 * 🔴 CONSULTED FIRST, AHEAD OF THE ADMIN AND OWNER BYPASSES. Both of those
+	 * return true without looking at the block at all, so a grant that only
+	 * rewrote the block would narrow a supplier and leave the administrator who
+	 * issued them the token unnarrowed, and would let any token write its
+	 * holder's OWN objects, which is most of what a supplier's token touches. A
+	 * grant is a filter over its holder's rights, and a filter that the most
+	 * privileged caller escapes is not one (row Q13.20, D-1).
+	 *
+	 * @param GroupRuleRequest $request The question.
+	 *
+	 * @return bool True when the ceiling refuses.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function tokenCeilingRefuses(GroupRuleRequest $request): bool {
+		return ($this->tokenGrantNarrower !== null
+			&& $this->tokenGrantNarrower->markerPermits(authorization: $request->authorization, action: $request->action) === false);
+	}//end tokenCeilingRefuses()
+
+	/**
+	 * Whether the caller passes without the block being read: the admin group, or the object's owner.
+	 *
+	 * @param GroupRuleRequest $request The question.
+	 *
+	 * @return bool True for a bypass.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function bypassesGroupRules(GroupRuleRequest $request): bool {
+		if ($request->groupId === 'admin' || $request->userGroup === 'admin') {
+			return true;
+		}
+
+		return ($request->userId !== null && $request->objectOwner === $request->userId);
+	}//end bypassesGroupRules()
+
+	/**
+	 * The verdict for a schema without rules, or one that opts in with `public: true`.
+	 *
+	 * Without an explicit opt-in, a write answers to the `enforce_default_closed`
+	 * policy: refused when the operator has opted in through IAppConfig, otherwise
+	 * still granted with a deprecation warning ahead of the next-major default flip
+	 * (see the {@see CONFIG_ENFORCE_DEFAULT_CLOSED} docblock). Admin and owner have
+	 * already passed by this point.
+	 *
+	 * @param GroupRuleRequest $request The question.
+	 *
+	 * @return bool True when the action is open.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function noRulesVerdict(GroupRuleRequest $request): bool {
+		if ($request->publicOptIn() === true
+			|| in_array(needle: $request->action, haystack: self::DEFAULT_CLOSED_WRITE_ACTIONS, strict: true) === false
+		) {
+			return true;
+		}
+
+		if ($this->isDefaultClosedEnforced() === true) {
+			return false;
+		}
+
+		$this->logDefaultOpenDeprecation(action: $request->action);
+
+		return true;
+	}//end noRulesVerdict()
+
+	/**
+	 * Whether any entry of the action's rule list grants the request.
+	 *
+	 * Fail-closed: once a schema opts into authorization (non-empty block), an action
+	 * that is not explicitly listed is denied, including for the `public` pseudo-group.
+	 * `empty()` rather than `isset()` additionally denies an explicitly empty rule list
+	 * (`"create": []`), which reads as "grant to nobody".
+	 *
+	 * 🔴 The `mcp` scope never matches a caller, whatever the caller is in. A block
+	 * reaching here should already have been stripped (see stripMcpScope()), but
+	 * hasGroupPermission() is public and is called with raw blocks from outside this
+	 * class, so the refusal is enforced at the point of match as well. It closes an
+	 * administrator creating a real Nextcloud group called `mcp`, which would turn
+	 * every schema that documented an agent surface into a grant to its members.
+	 *
+	 * @param GroupRuleRequest $request The question.
+	 *
+	 * @return bool True when an entry grants.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function anyRuleEntryGrants(GroupRuleRequest $request): bool {
+		if (empty($request->authorization[$request->action]) === true) {
+			return false;
+		}
+
+		$entries = new GroupRuleEntries(conditionMatcher: $this->conditionMatcher);
+		foreach ($request->authorization[$request->action] as $entry) {
+			if (self::isMcpScopeEntry(entry: $entry) === false && $entries->grants(entry: $entry, request: $request) === true) {
 				return true;
 			}
 		}
 
-		// Evaluate the match clause via the shared ConditionMatcher (ADR-011) —
-		// same envelope construction as the group path so _organisation resolves.
-		$envelope = ($objectData ?? []);
-		if ($objectOrganisation !== null) {
-			$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $objectOrganisation]);
-		}
-
-		return $this->conditionMatcher->objectMatchesConditions(
-			object: $envelope,
-			match: $match
-		);
-	}//end userOverrideMatches()
+		return false;
+	}//end anyRuleEntryGrants()
 
 	/**
 	 * Determine whether the `public` group is EXPLICITLY granted an action.
@@ -2518,20 +2405,13 @@ class PermissionHandler {
 	 * @return bool True only when `public` is explicitly listed for the action.
 	 */
 	private function publicGroupExplicitlyGranted(?array $authorization, string $action): bool {
-		if (empty($authorization) === true || isset($authorization[$action]) === false) {
+		$rules = ($authorization[$action] ?? null);
+		if (is_array($rules) === false) {
 			return false;
 		}
 
-		if (is_array($authorization[$action]) === false) {
-			return false;
-		}
-
-		foreach ($authorization[$action] as $entry) {
-			if (is_string($entry) === true && $entry === 'public') {
-				return true;
-			}
-
-			if (is_array($entry) === true && ($entry['group'] ?? null) === 'public') {
+		foreach ($rules as $entry) {
+			if (self::entryNamesGroup(entry: $entry, group: 'public') === true) {
 				return true;
 			}
 		}
@@ -3441,16 +3321,26 @@ class PermissionHandler {
 	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private static function isMcpScopeEntry(mixed $entry): bool {
-		if (is_string($entry) === true) {
-			return ($entry === self::SCOPE_MCP);
-		}
-
-		if (is_array($entry) === true) {
-			return (($entry['group'] ?? null) === self::SCOPE_MCP);
-		}
-
-		return false;
+		return self::entryNamesGroup(entry: $entry, group: self::SCOPE_MCP);
 	}//end isMcpScopeEntry()
+
+	/**
+	 * Whether a single authorization entry names the group, as a bare string or as `{"group": ...}`.
+	 *
+	 * @param mixed  $entry One entry from an action's rule list.
+	 * @param string $group The group.
+	 *
+	 * @return bool True when the entry names the group.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private static function entryNamesGroup(mixed $entry, string $group): bool {
+		if (is_array($entry) === true) {
+			return (($entry['group'] ?? null) === $group);
+		}
+
+		return ($entry === $group);
+	}//end entryNamesGroup()
 
 	/**
 	 * Resolve whether authenticated users inherit `public` group rights for a schema.

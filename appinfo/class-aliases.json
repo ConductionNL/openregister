@@ -1005,6 +1005,821 @@
 			"class": "OCA\\OpenRegister\\Notifications\\Service\\Webhook\\WebhookInterceptionCache",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\AggregationController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\AggregationController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\ContactSearchController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\ContactSearchController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\DashboardController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\DashboardController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\DuplicateController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\DuplicateController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\GraphQLController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\GraphQLController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\MapsOverviewController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\MapsOverviewController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\ReportsController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\ReportsController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\SearchController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\SearchController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\ViewPatch": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\Support\\ViewPatch",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\ViewsController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\ViewsController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\ChunkVectorizationBatch": {
+			"class": "OCA\\OpenRegister\\Files\\BackgroundJob\\ChunkVectorizationBatch",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\ChunkVectorizationJob": {
+			"class": "OCA\\OpenRegister\\Files\\BackgroundJob\\ChunkVectorizationJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\CronFileTextExtractionJob": {
+			"class": "OCA\\OpenRegister\\Files\\BackgroundJob\\CronFileTextExtractionJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Command\\MoveObjectFilesCommand": {
+			"class": "OCA\\OpenRegister\\Files\\Command\\MoveObjectFilesCommand",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\FileSearchController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\FileSearchController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\FileSidebarController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\FileSidebarController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\FilesController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\FilesController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\ObjectFolderController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\ObjectFolderController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Settings\\FileSettingsController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Settings\\FileSettingsController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileEditing": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileEditing",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileGuards": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileGuards",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FilePlatform": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FilePlatform",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileStore": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileStore",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileTransfer": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTransfer",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FilesControllerServices": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FilesControllerServices",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\ObjectFolderControllerServices": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\ObjectFolderControllerServices",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\AnonymisationLog": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\AnonymisationLog",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\AnonymisationLogMapper": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\AnonymisationLogMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\Chunk": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\Chunk",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ChunkMapper": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\ChunkMapper",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\DetectionMethod": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\DetectionMethod",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\EntityRelationMapperInterface": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\EntityRelationMapperInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\File": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\File",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\FileMapper": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\FileMapper",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\FileMapperInterface": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\FileMapperInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NoteVersion": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\NoteVersion",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NoteVersionMapper": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\NoteVersionMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\RegisterFolderRecorder": {
+			"class": "OCA\\OpenRegister\\Files\\Db\\RegisterFolderRecorder",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Repair\\MoveObjectFilesToOpenRegisterAccount": {
+			"class": "OCA\\OpenRegister\\Files\\Repair\\MoveObjectFilesToOpenRegisterAccount",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\FileSidebarService": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\FileSidebarService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\AttachNodeHandler": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\AttachNodeHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ChunkTextMatcher": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ChunkTextMatcher",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\DocumentProcessingHandler": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\DocumentProcessingHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\DocumentReplacement": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\DocumentReplacement",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\DocxTextMatch": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\DocxTextMatch",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\DocxTextReplacer": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\DocxTextReplacer",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\FileAuditHandler": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\FileAuditHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\FileMetadataFormHandler": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\FileMetadataFormHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\FileOwnershipHandler": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\FileOwnershipHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\FileReadScope": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\FileReadScope",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\FileRestrictionGuard": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\FileRestrictionGuard",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\FileRestrictionService": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\FileRestrictionService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\FileRestrictionStore": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\FileRestrictionStore",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\FileSharingHandler": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\FileSharingHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ManualEntityRequest": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ManualEntityRequest",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ManualEntityResult": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ManualEntityResult",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ManualEntityService": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ManualEntityService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ObjectFileAccess": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ObjectFileAccess",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ObjectFileMigration": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ObjectFileMigration",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ObjectFileShareReowner": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ObjectFileShareReowner",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ObjectFolderBrowser": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ObjectFolderBrowser",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ObjectFolderResponder": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ObjectFolderResponder",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ObjectFolderUploads": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ObjectFolderUploads",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\OfficeDocumentSanitizer": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\OfficeDocumentSanitizer",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\OfficeSession": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\OfficeSession",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\OfficeSessionService": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\OfficeSessionService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Office\\ConversionManagerConverter": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Office\\ConversionManagerConverter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Office\\ConversionWorkFolder": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Office\\ConversionWorkFolder",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Pdf\\Fallback\\NcOfficeConverterInterface": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Pdf\\Fallback\\NcOfficeConverterInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Pdf\\Fallback\\PdfOdtFallbackOrchestrator": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Pdf\\Fallback\\PdfOdtFallbackOrchestrator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Pdf\\PdfMetadataSanitizer": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Pdf\\PdfMetadataSanitizer",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Pdf\\PdfStructureInspector": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Pdf\\PdfStructureInspector",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Pdf\\PdfTextReplacer": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Pdf\\PdfTextReplacer",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Pdf\\StructureMeasurement": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Pdf\\StructureMeasurement",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Pdf\\StructurePreservation": {
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\StructurePreservation",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\PlaceholderIdTranslator": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\PlaceholderIdTranslator",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\PlaceholderLookup": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\PlaceholderLookup",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\PreviewSize": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\PreviewSize",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\RegisterFolderProvisioner": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\RegisterFolderProvisioner",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\SanitizationReport": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\SanitizationReport",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\SanitizationResult": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\SanitizationResult",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Sanitizer\\DocxSanitizer": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Sanitizer\\DocxSanitizer",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Sanitizer\\OdtSanitizer": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Sanitizer\\OdtSanitizer",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\Sanitizer\\SanitizerInterface": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Sanitizer\\SanitizerInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\ShareUrlBuilder": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\ShareUrlBuilder",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\File\\TaggingHandler": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\File\\TaggingHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Integration\\AttachTargetFilter": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\Integration\\AttachTargetFilter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Integration\\TalkChatExporter": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\Integration\\TalkChatExporter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\NoteService": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\NoteService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\NoteVersionService": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\NoteVersionService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\PendingExtractionWalk": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\PendingExtractionWalk",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\RiskLevelService": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\RiskLevelService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Sharing\\AccessLinkReader": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\Sharing\\AccessLinkReader",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtractionService": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtractionService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\DocumentBodyParser": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\DocumentBodyParser",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\DocumentContentReader": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\DocumentContentReader",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\DocumentExtractor": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\DocumentExtractor",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\DocumentStyleMap": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\DocumentStyleMap",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\EmlAttachment": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\EmlAttachment",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\EmlBody": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\EmlBody",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\EmlParser": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\EmlParser",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\EmlStructure": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\EmlStructure",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\EntityRecognitionHandler": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\EntityRecognitionHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\ObjectHandler": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\ObjectHandler",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\OoxmlElements": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\OoxmlElements",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\OoxmlPackage": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\OoxmlPackage",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\PatternSet\\JurisdictionPatternSet": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\PatternSet\\JurisdictionPatternSet",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\PatternSet\\NlPatternSet": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\PatternSet\\NlPatternSet",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\PdfExtractor": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\PdfExtractor",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\PresentationExtractor": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\PresentationExtractor",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\PresentationSlideParser": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\PresentationSlideParser",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\SpreadsheetExtractor": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\SpreadsheetExtractor",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\TextExtractionHandlerInterface": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\TextExtractionHandlerInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\WordExtractor": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\WordExtractor",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextExtraction\\WordTextReader": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextExtraction\\WordTextReader",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TextSplitPass": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\TextSplitPass",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\UploadService": {
+			"class": "OCA\\OpenRegister\\Files\\Service\\UploadService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Command\\ContextChatReindexCommand": {
+			"class": "OCA\\OpenRegister\\Mcp\\Command\\ContextChatReindexCommand",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\McpServerController": {
+			"class": "OCA\\OpenRegister\\Mcp\\Controller\\McpServerController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\McpServerControllerServices": {
+			"class": "OCA\\OpenRegister\\Mcp\\Controller\\Support\\McpServerControllerServices",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\McpServerDomain": {
+			"class": "OCA\\OpenRegister\\Mcp\\Controller\\Support\\McpServerDomain",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\McpServerPlatform": {
+			"class": "OCA\\OpenRegister\\Mcp\\Controller\\Support\\McpServerPlatform",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\Agent": {
+			"class": "OCA\\OpenRegister\\Mcp\\Db\\Agent",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\AgentMapper": {
+			"class": "OCA\\OpenRegister\\Mcp\\Db\\AgentMapper",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\Conversation": {
+			"class": "OCA\\OpenRegister\\Mcp\\Db\\Conversation",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ConversationMapper": {
+			"class": "OCA\\OpenRegister\\Mcp\\Db\\ConversationMapper",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\ContextChatSubmissionListener": {
+			"class": "OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\Registrar\\McpListenerRegistrar": {
+			"class": "OCA\\OpenRegister\\Mcp\\Listener\\Registrar\\McpListenerRegistrar",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\ToolRegistrationListener": {
+			"class": "OCA\\OpenRegister\\Mcp\\Listener\\ToolRegistrationListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ChatMessageRequest": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\ChatMessageRequest",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ChatService": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\ChatService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\ContextRetrievalHandler": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\ContextRetrievalHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\ConversationManagementHandler": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\ConversationManagementHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\MessageHistoryHandler": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\MessageHistoryHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\ResponseGenerationHandler": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\ResponseGenerationHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\StreamYieldChannel": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\StreamYieldChannel",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\ToolManagementHandler": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\ToolManagementHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Mcp\\McpAnnotationValidator": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Mcp\\McpAnnotationValidator",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Mcp\\McpProtocolService": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Mcp\\McpProtocolService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Mcp\\McpResourcesService": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Mcp\\McpResourcesService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Mcp\\McpToolsService": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Mcp\\McpToolsService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Mcp\\ToolRegistryFacade": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Mcp\\ToolRegistryFacade",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ToolRegistry": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\ToolRegistry",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\AbstractTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\AbstractTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\AgentTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\AgentTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\ApplicationTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\ApplicationTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\McpProviderBridge": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\McpProviderBridge",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\ObjectsTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\ObjectsTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\RegisterTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\RegisterTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\SchemaTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\SchemaTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\StreamingToolInstanceWrapper": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\StreamingToolInstanceWrapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\ToolInterface": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\ToolInterface",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\FileExtractionController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\FileExtractionController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\FileTextController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\FileTextController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileExtractionControllerServices": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileExtractionControllerServices",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileExtractionDomain": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileExtractionDomain",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileExtractionListing": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileExtractionListing",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileExtractionMappers": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileExtractionMappers",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileExtractionPlatform": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileExtractionPlatform",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileTextControllerServices": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextControllerServices",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileTextDomain": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextDomain",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileTextMappers": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextMappers",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileTextPlatform": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
+			"eager": false,
+			"service": true
 		}
 	}
 }

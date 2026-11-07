@@ -12,7 +12,7 @@ import {
 	<NcDialog
 		v-if="navigationStore.modal === 'deleteSchemaProperty'"
 		name="Verwijder Schema-eigenschap"
-		:canClose="false">
+		noClose>
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
 				<p>Schema-eigenschap succesvol verwijderd</p>

@@ -42,6 +42,10 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\Object\SearchRenderRequest
  * @uses   \OCA\OpenRegister\Service\Object\SearchResultShaper
+ * @uses \OCA\OpenRegister\Service\Object\SearchPaging
+ * @uses \OCA\OpenRegister\Service\Object\SearchResponseReports
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceKey
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -254,15 +258,12 @@ class QueryHandlerSearchObjectsGoldenTest extends TestCase {
 
 		return new QueryHandler(
 			objectMapper: $mapper,
-			getHandler: $this->createMock(GetObject::class),
 			renderHandler: $render,
 			searchQueryHandler: $searchQuery,
 			facetHandler: $this->createMock(FacetHandler::class),
 			performanceHandler: $performance,
 			contentSearchHandler: $this->createMock(ContentSearchHandler::class),
 			container: $container,
-			logger: $this->createMock(LoggerInterface::class),
-			request: $this->createMock(IRequest::class),
 			referenceResolver: $resolver
 		);
 	}//end handler()

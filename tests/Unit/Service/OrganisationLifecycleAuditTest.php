@@ -109,7 +109,6 @@ class OrganisationLifecycleAuditTest extends TestCase {
 			$this->organisations,
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IUserManager::class),
-			$this->createMock(IEventDispatcher::class),
 			new NullLogger(),
 			$this->auditor
 		);

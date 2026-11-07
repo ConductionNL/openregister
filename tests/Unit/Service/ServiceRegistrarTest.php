@@ -53,8 +53,6 @@ class ServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Object\CacheHandler',
 				'OCA\OpenRegister\Service\File\FolderManagementHandler',
 				'OCA\OpenRegister\Service\TaskService',
-				'OCA\OpenRegister\Service\NoteService',
-				'OCA\OpenRegister\Service\Integration\TimeProvider',
 			],
 			actual: $context->services
 		);
@@ -131,12 +129,12 @@ class ServiceRegistrarTest extends TestCase {
 	 */
 	public function testTheOfficeConverterIsTheConversionManagerConverter(): void {
 		$context = new RecordingRegistrationContext();
-		ServiceRegistrar::register(context: $context);
+		\OCA\OpenRegister\Files\FilesRegistrar::register(context: $context);
 
 		$this->assertContains(
 			needle: [
-				'alias'  => 'OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface',
-				'target' => 'OCA\OpenRegister\Service\File\Office\ConversionManagerConverter',
+				'alias'  => 'OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface',
+				'target' => 'OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter',
 			],
 			haystack: $context->aliases
 		);

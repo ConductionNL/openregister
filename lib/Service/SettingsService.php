@@ -24,13 +24,8 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
@@ -41,11 +36,8 @@ use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
-use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IDBConnection;
-use OCP\IGroupManager;
-use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -123,19 +115,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 */
 	private IConfig $config;
 
-	/**
-	 * Audit trail mapper
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private AuditTrailMapperInterface $auditTrailMapper;
 
-	/**
-	 * Cache factory
-	 *
-	 * @var ICacheFactory
-	 */
-	private ICacheFactory $cacheFactory;
 
 	/**
 	 * Database connection (lazy-loaded when needed)
@@ -144,19 +124,7 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 */
 	private ?IDBConnection $db = null;
 
-	/**
-	 * Object cache service (lazy-loaded when needed)
-	 *
-	 * @var CacheHandlerInterface|null
-	 */
-	private ?CacheHandlerInterface $objectCacheService = null;
 
-	/**
-	 * Group manager
-	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
 
 	/**
 	 * Validation operations handler
@@ -221,34 +189,9 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 */
 	// Private ?MagicMapper $objectMapper;.
 
-	/**
-	 * Organisation mapper
-	 *
-	 * @var OrganisationMapperInterface
-	 */
-	private OrganisationMapperInterface $organisationMapper;
-
-	/**
-	 * Schema cache handler
-	 *
-	 * @var SchemaCacheHandler
-	 */
-	private SchemaCacheHandler $schemaCacheService;
 
 
-	/**
-	 * Search trail mapper
-	 *
-	 * @var SearchTrailMapper
-	 */
-	private SearchTrailMapper $searchTrailMapper;
 
-	/**
-	 * User manager
-	 *
-	 * @var IUserManager
-	 */
-	private IUserManager $userManager;
 
 	/**
 	 * This property holds the name of the application, which is used for identification and configuration purposes.
@@ -328,16 +271,8 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 * Constructor for SettingsService
 	 *
 	 * @param IConfig $config Configuration service
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper
-	 * @param ICacheFactory $cacheFactory Cache factory
-	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler
-	 * @param SearchTrailMapper $searchTrailMapper Search trail mapper
-	 * @param IUserManager $userManager User manager
 	 * @param IDBConnection $db Database connection
-	 * @param CacheHandlerInterface|null $objectCacheService Object cache service (optional)
 	 * @param IAppContainer|null $container Container for lazy loading (optional)
 	 * @param string $appName Application name
 	 * @param ValidationOperationsHandler|null $validOpsHandler Validation operations handler
@@ -354,17 +289,8 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 	 */
 	public function __construct(
 		IConfig $config,
-		AuditTrailMapperInterface $auditTrailMapper,
-		ICacheFactory $cacheFactory,
-		IGroupManager $groupManager,
 		LoggerInterface $logger,
-		// REMOVED: ObjectEntityMapper $objectEntityMapper (unused, caused circular dependency).
-		OrganisationMapperInterface $organisationMapper,
-		SchemaCacheHandler $schemaCacheService,
-		SearchTrailMapper $searchTrailMapper,
-		IUserManager $userManager,
 		IDBConnection $db,
-		?CacheHandlerInterface $objectCacheService = null,
 		?IAppContainer $container = null,
 		string $appName = 'openregister',
 		?ValidationOperationsHandler $validOpsHandler = null,
@@ -376,17 +302,9 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		?ConfigurationSettingsHandler $cfgSettingsHandler = null,
 	) {
 		$this->config = $config;
-		$this->auditTrailMapper = $auditTrailMapper;
-		$this->cacheFactory = $cacheFactory;
-		$this->groupManager = $groupManager;
 		$this->logger = $logger;
 		// REMOVED: objectEntityMapper assignment (unused, caused circular dependency).
-		$this->organisationMapper = $organisationMapper;
-		$this->schemaCacheService = $schemaCacheService;
-		$this->searchTrailMapper = $searchTrailMapper;
-		$this->userManager = $userManager;
 		$this->db = $db;
-		$this->objectCacheService = $objectCacheService;
 		$this->container = $container;
 		$this->appName = $appName;
 
@@ -1174,11 +1092,11 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		$platform = $this->db->getDatabasePlatform();
 		$tablesQuery = "SELECT table_name as tablename FROM information_schema.tables
                    WHERE table_schema = DATABASE()
-                   AND table_name LIKE 'oc_openregister_table_%'";
+                   AND table_name LIKE '*PREFIX*openregister_table_%'";
 		if (stripos($platform::class, 'PostgreSQL') !== false) {
 			$tablesQuery = "SELECT tablename FROM pg_tables
                    WHERE schemaname = 'public'
-                   AND tablename LIKE 'oc_openregister_table_%'";
+                   AND tablename LIKE '*PREFIX*openregister_table_%'";
 		}
 
 		return $this->db->executeQuery($tablesQuery)->fetchAll(\PDO::FETCH_COLUMN);

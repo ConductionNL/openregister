@@ -13,7 +13,7 @@
  * because the object read is where RBAC, multitenancy and the published
  * predicate are enforced, and a service that looks its own object up invites a
  * caller to skip that. It does not write the comment either: a note is still a
- * Nextcloud comment and {@see \OCA\OpenRegister\Service\NoteService} still owns
+ * Nextcloud comment and {@see \OCA\OpenRegister\Files\Service\NoteService} still owns
  * it.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -98,43 +98,16 @@ class TimelineEntryService {
 	 * @throws TimelineValidationException When the kind is undeclared or a field does not fit.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
 	 */
 	public function record(ObjectEntity $object, array $data): TimelineEntry {
 		$kind = $this->stringOrNull(data: $data, key: 'kind');
-		$fields = [];
-		if (isset($data['fields']) === true && is_array($data['fields']) === true) {
-			$fields = $data['fields'];
-		}
+		$accepted = $this->kinds->validateFields(kindSlug: $kind, fields: $this->arrayOrEmpty(data: $data, key: 'fields'));
 
-		$accepted = $this->kinds->validateFields(kindSlug: $kind, fields: $fields);
-		$message = (string)($data['message'] ?? '');
-
-		$entry = new TimelineEntry();
-		$entry->setUuid((string)Uuid::v4());
-		$entry->setObjectUuid((string)$object->getUuid());
-		$entry->setRegister($this->stringOrNull(data: $data, key: 'register'));
-		$entry->setSchema($this->stringOrNull(data: $data, key: 'schema'));
-		$entry->setCommentId($this->readInt(data: $data, key: 'commentId'));
+		$entry = $this->newEntry(object: $object, data: $data);
 		$entry->setKind($kind);
-		$entry->setAuthor($this->callerUid());
-		$entry->setVisibility($this->visibility->normalise(value: $this->stringOrNull(data: $data, key: 'visibility')));
-		$entry->setMessage($message);
 		$entry->setFields($accepted);
-		$entry->setPinned(false);
-		$entry->setLanguage($this->languages->detect(text: $message));
-		$entry->setRawSource($this->stringOrNull(data: $data, key: 'rawSource'));
-		$entry->setCreated(new DateTime());
-		$entry->setUpdated(new DateTime());
-
-		if (isset($data['rawHeaders']) === true && is_array($data['rawHeaders']) === true) {
-			$entry->setRawHeaders($data['rawHeaders']);
-		}
-
-		if (isset($data['siblings']) === true && is_array($data['siblings']) === true) {
-			$entry->setSiblings(array_values($data['siblings']));
-		}
+		$this->writeText(entry: $entry, data: $data);
+		$this->writeInbound(entry: $entry, data: $data);
 
 		if ($this->kinds->carriesFollowUp(kindSlug: $kind) === true) {
 			$entry->setFollowUp(TimelineEntry::FOLLOW_UP_OPEN);
@@ -142,6 +115,67 @@ class TimelineEntryService {
 
 		return $this->entryMapper->insert($entry);
 	}//end record()
+
+	/**
+	 * A record with its identity, place and author, not yet stored.
+	 *
+	 * @param ObjectEntity        $object The object the entry hangs on.
+	 * @param array<string,mixed> $data   The payload.
+	 *
+	 * @return TimelineEntry The new record.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
+	 */
+	private function newEntry(ObjectEntity $object, array $data): TimelineEntry {
+		$entry = new TimelineEntry();
+		$entry->setUuid((string)Uuid::v4());
+		$entry->setObjectUuid((string)$object->getUuid());
+		$entry->setRegister($this->stringOrNull(data: $data, key: 'register'));
+		$entry->setSchema($this->stringOrNull(data: $data, key: 'schema'));
+		$entry->setCommentId($this->readInt(data: $data, key: 'commentId'));
+		$entry->setAuthor($this->callerUid());
+		$entry->setPinned(false);
+		$entry->setCreated(new DateTime());
+		$entry->setUpdated(new DateTime());
+
+		return $entry;
+	}//end newEntry()
+
+	/**
+	 * Write the text, its language and the visibility flag onto a record.
+	 *
+	 * @param TimelineEntry       $entry The record.
+	 * @param array<string,mixed> $data  The payload.
+	 *
+	 * @return void
+	 */
+	private function writeText(TimelineEntry $entry, array $data): void {
+		$message = (string)($data['message'] ?? '');
+
+		$entry->setVisibility($this->visibility->normalise(value: $this->stringOrNull(data: $data, key: 'visibility')));
+		$entry->setMessage($message);
+		$entry->setLanguage($this->languages->detect(text: $message));
+	}//end writeText()
+
+	/**
+	 * Write the raw inbound source and the siblings onto a record.
+	 *
+	 * @param TimelineEntry       $entry The record.
+	 * @param array<string,mixed> $data  The payload.
+	 *
+	 * @return void
+	 */
+	private function writeInbound(TimelineEntry $entry, array $data): void {
+		$entry->setRawSource($this->stringOrNull(data: $data, key: 'rawSource'));
+
+		if (is_array($data['rawHeaders'] ?? null) === true) {
+			$entry->setRawHeaders($data['rawHeaders']);
+		}
+
+		if (is_array($data['siblings'] ?? null) === true) {
+			$entry->setSiblings(array_values($data['siblings']));
+		}
+	}//end writeInbound()
 
 	/**
 	 * Keep the record in step with the note that was just rewritten.
@@ -154,27 +188,25 @@ class TimelineEntryService {
 	 * A comment with no record is not an error. Notes written before this
 	 * change have none, and inventing one here would date them wrong.
 	 *
-	 * @param integer     $commentId  The comment that was rewritten.
-	 * @param string|null $message    The new text, or null when it did not change.
-	 * @param string|null $visibility The new flag, or null when it did not change.
+	 * @param NoteRewrite $rewrite What changed.
 	 *
 	 * @return TimelineEntry|null The rewritten record, or null when the comment has none.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function syncFromNote(int $commentId, ?string $message = null, ?string $visibility = null): ?TimelineEntry {
-		$entry = $this->entryMapper->findByComment(commentId: $commentId);
+	public function syncFromNote(NoteRewrite $rewrite): ?TimelineEntry {
+		$entry = $this->entryMapper->findByComment(commentId: $rewrite->commentId);
 		if ($entry === null) {
 			return null;
 		}
 
-		if ($message !== null) {
-			$entry->setMessage($message);
-			$entry->setLanguage($this->languages->detect(text: $message));
+		if ($rewrite->message !== null) {
+			$entry->setMessage($rewrite->message);
+			$entry->setLanguage($this->languages->detect(text: $rewrite->message));
 		}
 
-		if ($visibility !== null) {
-			$entry->setVisibility($this->visibility->normalise(value: $visibility));
+		if ($rewrite->visibility !== null) {
+			$entry->setVisibility($this->visibility->normalise(value: $rewrite->visibility));
 		}
 
 		$entry->setUpdated(new DateTime());
@@ -256,9 +288,8 @@ class TimelineEntryService {
 	 * four. Setting it is therefore an act on the object, authorised the same
 	 * way moving a note across the counter is.
 	 *
-	 * @param ObjectEntity  $object The object the entry hangs on.
-	 * @param TimelineEntry $entry  The entry.
-	 * @param boolean       $pinned Whether it should be pinned.
+	 * @param ObjectEntity $object The object the entry hangs on.
+	 * @param EntryPin     $pin    The entry and the pin asked for.
 	 *
 	 * @return TimelineEntry The written record.
 	 *
@@ -266,21 +297,20 @@ class TimelineEntryService {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function pin(ObjectEntity $object, TimelineEntry $entry, bool $pinned): TimelineEntry {
+	public function pin(ObjectEntity $object, EntryPin $pin): TimelineEntry {
 		if ($this->visibility->mayManage(object: $object) === false) {
 			throw new TimelinePermissionException('You do not have permission to pin entries on this object');
 		}
 
-		$pinnedBy = null;
-		$pinnedAt = null;
-		if ($pinned === true) {
-			$pinnedBy = $this->callerUid();
-			$pinnedAt = new DateTime();
+		$entry = $pin->entry;
+		$entry->setPinned($pin->pinned);
+		$entry->setPinnedBy(null);
+		$entry->setPinnedAt(null);
+		if ($pin->pinned === true) {
+			$entry->setPinnedBy($this->callerUid());
+			$entry->setPinnedAt(new DateTime());
 		}
 
-		$entry->setPinned($pinned);
-		$entry->setPinnedBy($pinnedBy);
-		$entry->setPinnedAt($pinnedAt);
 		$entry->setUpdated(new DateTime());
 
 		return $this->entryMapper->update($entry);
@@ -362,12 +392,26 @@ class TimelineEntryService {
 
 		$written = [];
 		foreach ($entries as $entry) {
-			$siblings = [];
-			foreach ($entries as $other) {
-				if ($other->getUuid() === $entry->getUuid()) {
-					continue;
-				}
+			$entry->setSiblings($this->siblingsOf(entry: $entry, entries: $entries));
+			$entry->setUpdated(new DateTime());
+			$written[] = $this->entryMapper->update($entry);
+		}
 
+		return $written;
+	}//end linkSiblings()
+
+	/**
+	 * What one entry says about the other entries of its note.
+	 *
+	 * @param TimelineEntry             $entry   The entry.
+	 * @param array<int, TimelineEntry> $entries The entries the note produced.
+	 *
+	 * @return array<int, array<string, string|null>> One reference per other entry.
+	 */
+	private function siblingsOf(TimelineEntry $entry, array $entries): array {
+		$siblings = [];
+		foreach ($entries as $other) {
+			if ($other->getUuid() !== $entry->getUuid()) {
 				$siblings[] = [
 					'entry' => $other->getUuid(),
 					'objectUuid' => $other->getObjectUuid(),
@@ -375,14 +419,10 @@ class TimelineEntryService {
 					'schema' => $other->getSchema(),
 				];
 			}
+		}
 
-			$entry->setSiblings($siblings);
-			$entry->setUpdated(new DateTime());
-			$written[] = $this->entryMapper->update($entry);
-		}//end foreach
-
-		return $written;
-	}//end linkSiblings()
+		return $siblings;
+	}//end siblingsOf()
 
 	/**
 	 * Forget the record behind a deleted note.

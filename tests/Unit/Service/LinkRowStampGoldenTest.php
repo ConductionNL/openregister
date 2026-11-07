@@ -86,6 +86,23 @@ if (class_exists('OCA\\Bookmarks\\Db\\Bookmark') === false) {
 class LinkRowStampGoldenTest extends TestCase {
 
 	/**
+	 * The moment the test started: stamps from then on read as now.
+	 *
+	 * @var int
+	 */
+	private int $startedAt;
+
+	/**
+	 * Note when the test starts.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->startedAt = time();
+	}//end setUp()
+
+	/**
 	 * Schema ids to link under.
 	 *
 	 * @return array<string, array{0: int}>
@@ -477,7 +494,8 @@ class LinkRowStampGoldenTest extends TestCase {
 		foreach (array_keys($entity->getFieldTypes()) as $field) {
 			$value = $entity->{'get' . ucfirst($field)}();
 			if ($value instanceof DateTimeInterface) {
-				$value = abs($value->getTimestamp() - time()) < 60 ? 'now' : $value->format('c');
+				$stampedNow = $value->getTimestamp() >= $this->startedAt && $value->getTimestamp() <= time();
+				$value = $stampedNow === true ? 'now' : $value->format('c');
 			}
 
 			$fields[$field] = $value;

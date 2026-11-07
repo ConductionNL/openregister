@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
 // SPDX-License-Identifier: EUPL-1.2
 // Style rules shared verbatim by several components under src/modals.
-// Each mixin emits one complete rule; a component includes it where the rule belongs.
+// Each mixin emits complete rules; a component includes it where the rules belong.
 
 @mixin tab-container-deep-nav-link {
 	.tabContainer :deep(.nav-link) {
@@ -852,5 +852,107 @@
 			font-size: 14px;
 			line-height: 1.5;
 		}
+	}
+}
+
+@mixin tab-container-column {
+	.tabContainer {
+		width: 100%;
+	}
+
+	.form-editor {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		padding: 1rem 0;
+	}
+
+	.selectField {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.selectField label {
+		font-weight: 500;
+		color: var(--color-text-maxcontrast);
+	}
+
+	.checkboxField {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.field-hint {
+		font-size: 0.875rem;
+		color: var(--color-text-maxcontrast);
+		margin: 0;
+	}
+}
+
+@mixin code-mirror-editor {
+	.codeMirrorContainer :deep(.cm-editor) {
+		outline: none !important;
+	}
+
+	.codeMirrorContainer.light > .vue-codemirror {
+		border: 1px dotted silver;
+	}
+
+	.codeMirrorContainer.dark > .vue-codemirror {
+		border: 1px dotted grey;
+	}
+}
+
+@mixin code-mirror-frame {
+	.codeMirrorContainer {
+		margin-block-start: 6px;
+	}
+
+	.prettifyButton {
+		margin-block-start: 10px;
+	}
+}
+
+@mixin action-badge-colours {
+	.action-badge.action-create {
+		background: var(--color-success);
+	}
+
+	.action-badge.action-update {
+		background: var(--color-warning);
+	}
+
+	.action-badge.action-delete {
+		background: var(--color-error);
+	}
+
+	.action-badge.action-read {
+		background: var(--color-info);
+	}
+}
+
+@mixin nav-tabs-link {
+	.nav-tabs .nav-link {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+	}
+
+	.nav-tabs .nav-link span {
+		display: inline-flex;
+		align-items: center;
+	}
+}
+
+@mixin error-text-rules {
+	.error-text {
+		color: var(--color-error);
+	}
+
+	.warning-text {
+		color: var(--color-warning);
 	}
 }

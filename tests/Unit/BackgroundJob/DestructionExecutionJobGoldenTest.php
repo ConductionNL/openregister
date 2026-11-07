@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
@@ -42,6 +43,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\BackgroundJob\DestructionExecutionJob
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\Object\RetentionDestruction
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\BackgroundJob\DestructionListRun
  */
@@ -273,6 +275,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
         $deleter->method('deleteObject')->willReturnCallback(
             function (...$args): bool {
                 $this->record('deleteObject', array_slice($args, 0, 6));
+                $this->assertTrue((new RetentionDestruction())->isRunning(), 'a destruction is not stopped by a lock or the archive');
                 if ($args[2] === 'undeletable') {
                     throw new RuntimeException('delete refused');
                 }

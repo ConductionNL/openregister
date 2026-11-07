@@ -29,10 +29,12 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\RowRedaction;
+use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
-use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -44,8 +46,21 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @covers \OCA\OpenRegister\Service\ExportService
  * @uses \OCA\OpenRegister\Db\StoredEntity
- * @covers \OCA\OpenRegister\Service\Sharing\AccessLinkReader
+ * @covers \OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
+ * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
+ * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
+ * @uses \OCA\OpenRegister\Service\Object\InverseBatch
+ * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
+ * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
+ * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
+ * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender
+ * @uses \OCA\OpenRegister\Service\Object\InverseRenderSupport
+ * @uses \OCA\OpenRegister\Service\Object\InverseSchemaLookups
+ * @uses \OCA\OpenRegister\Service\Object\InverseObjectHooks
+ * @uses \OCA\OpenRegister\Service\Object\InverseTarget
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
@@ -185,4 +200,68 @@ class ExplicitRevealRoutesTest extends TestCase {
 		$this->assertSame(self::MASK, $row['citizenServiceNumber']);
 		$this->assertNull($row['@self']['name']);
 	}//end testAListRowIsMaskedWithItsNameCopy()
+
+	/**
+	 * A rendered entity loses the copy of the value on `@self` too, not only the body.
+	 *
+	 * @return void
+	 */
+	public function testAnEntityIsMaskedWithItsNameCopy(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('11111111-1111-4111-8111-111111111111');
+		$entity->setName(self::BSN);
+		$entity->setObject(['citizenServiceNumber' => self::BSN]);
+
+		$this->call($this->masking(), 'maskEntityReveals', ['entity' => $entity, 'schema' => $this->schema()]);
+
+		$this->assertSame(self::MASK, $entity->getObject()['citizenServiceNumber']);
+		$this->assertNull($entity->getName());
+	}//end testAnEntityIsMaskedWithItsNameCopy()
+
+	/**
+	 * An encrypted list row is masked after decryption: the mask is of the value, not of its ciphertext.
+	 *
+	 * @return void
+	 */
+	public function testAnEncryptedRowIsMaskedAfterDecryption(): void {
+		$schema = $this->schema();
+		$properties = $schema->getProperties();
+		$properties['citizenServiceNumber']['x-openregister-encrypted'] = true;
+		$schema->setProperties($properties);
+
+		$rbac = $this->createMock(PropertyRbacHandler::class);
+		$rbac->method('canReadProperty')->willReturn(true);
+		$rbac->method('filterReadableProperties')->willReturnArgument(1);
+		$encryption = $this->createMock(FieldEncryptionHandler::class);
+		$encryption->method('decryptProperties')->willReturnCallback(
+			static fn (array $data): array => (['citizenServiceNumber' => self::BSN] + $data)
+		);
+		$render = $this->masking();
+		$reflection = new ReflectionClass($render);
+		$reflection->getProperty('propertyRbacHandler')->setValue($render, $rbac);
+		$reflection->getProperty('fieldEncryptionHandler')->setValue($render, $encryption);
+		$reflection->getProperty('schemasCache')->setValue($render, [7 => $schema]);
+
+		$row = $this->call($render, 'redactArrayRow', [
+			'pass' => new RowRedaction(),
+			'row' => ['citizenServiceNumber' => 'ciphertext-9999', '@self' => ['schema' => 7]],
+		]);
+
+		$this->assertSame(self::MASK, $row['citizenServiceNumber']);
+	}//end testAnEncryptedRowIsMaskedAfterDecryption()
+
+	/**
+	 * A render that can mask explicit-reveal values.
+	 *
+	 * @return RenderObject The render.
+	 */
+	private function masking(): RenderObject {
+		$rbac = $this->createMock(PropertyRbacHandler::class);
+		$rbac->method('canReadProperty')->willReturn(true);
+		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($masker);
+
+		return $this->bare(RenderObject::class, ['container' => $container]);
+	}//end masking()
 }//end class

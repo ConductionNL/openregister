@@ -34,11 +34,18 @@ use Psr\Log\LoggerInterface;
  */
 final class MagicTableColumnReader {
 	/**
-	 * The columns read, without the table filter.
+	 * The columns read on every platform.
 	 *
 	 * @var string
 	 */
-	private const SELECT = 'SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default
+	private const SELECT = 'SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default';
+
+	/**
+	 * The table filter, without the schema.
+	 *
+	 * @var string
+	 */
+	private const FROM = '
                     FROM information_schema.columns
                     WHERE table_name = ? AND table_schema = ';
 
@@ -85,17 +92,18 @@ final class MagicTableColumnReader {
 	}//end read()
 
 	/**
-	 * The query for this platform's current schema.
+	 * The query for this platform's current schema. MySQL also reads `column_type`,
+	 * the full type with its length, because MODIFY has to restate it; PostgreSQL has no such column.
 	 *
 	 * @return string The SQL.
 	 */
 	private function selectSql(): string {
 		$platform = $this->db->getDatabasePlatform();
 		if (stripos($platform::class, 'PostgreSQL') !== false) {
-			return self::SELECT . 'current_schema()';
+			return self::SELECT . self::FROM . 'current_schema()';
 		}
 
-		return self::SELECT . 'DATABASE()';
+		return self::SELECT . ', column_type' . self::FROM . 'DATABASE()';
 	}//end selectSql()
 
 	/**
@@ -108,17 +116,29 @@ final class MagicTableColumnReader {
 	private function definitions(array $rows): array {
 		$definitions = [];
 		foreach ($rows as $column) {
-			$definitions[$column['column_name']] = [
-				'name' => $column['column_name'],
-				'type' => $column['data_type'],
-				'length' => $column['character_maximum_length'],
-				'precision' => $column['numeric_precision'] ?? null,
-				'scale' => $column['numeric_scale'] ?? null,
-				'nullable' => $column['is_nullable'] === 'YES',
-				'default' => $column['column_default'],
-			];
+			$definitions[$column['column_name']] = $this->definition(column: $column);
 		}
 
 		return $definitions;
 	}//end definitions()
+
+	/**
+	 * The column definition of one information_schema row.
+	 *
+	 * @param array $column The row.
+	 *
+	 * @return (bool|mixed)[] Column definition.
+	 */
+	private function definition(array $column): array {
+		return [
+			'name' => $column['column_name'],
+			'type' => $column['data_type'],
+			'sqlType' => $column['column_type'] ?? $column['data_type'],
+			'length' => $column['character_maximum_length'],
+			'precision' => $column['numeric_precision'] ?? null,
+			'scale' => $column['numeric_scale'] ?? null,
+			'nullable' => $column['is_nullable'] === 'YES',
+			'default' => $column['column_default'],
+		];
+	}//end definition()
 }//end class

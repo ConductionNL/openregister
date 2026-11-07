@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\AggregationController;
+use OCA\OpenRegister\Search\Controller\AggregationController;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
@@ -37,7 +37,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Controller\AggregationController
+ * @coversDefaultClass \OCA\OpenRegister\Search\Controller\AggregationController
  */
 class AggregationControllerFilterSpellingTest extends TestCase {
 

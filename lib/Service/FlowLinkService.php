@@ -55,7 +55,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -78,7 +77,6 @@ class FlowLinkService {
 	 *
 	 * @param FlowLinkMapper $flowLinkMapper Persistence for link rows.
 	 * @param IDBConnection $db Database connection.
-	 * @param ContainerInterface $container Container for late-bound classes.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
 	 * @param IGroupManager $groupManager Group manager (for admin checks).
@@ -87,7 +85,6 @@ class FlowLinkService {
 	public function __construct(
 		private readonly FlowLinkMapper $flowLinkMapper,
 		private readonly IDBConnection $db,
-		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,

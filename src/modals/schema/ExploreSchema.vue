@@ -8,7 +8,6 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 	<NcDialog
 		name="Analyze Schema Properties"
 		size="large"
-		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>
@@ -125,135 +124,16 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 
 				<!-- Analysis Results (inside the well) -->
 				<div v-else-if="explorationData" class="analysis-summary">
-					<div
-						style="
-							display: grid;
-							grid-template-columns: repeat(
-								auto-fit,
-								minmax(200px, 1fr)
-							);
-							gap: 16px;
-							margin-bottom: 20px;
-						">
+					<div class="summary-cards">
 						<div
-							style="
-								background: var(--color-main-background);
-								border: 2px solid var(--color-border);
-								border-radius: 8px;
-								padding: 20px;
-								text-align: center;
-								box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-							">
-							<div
-								style="
-									font-size: 2rem;
-									font-weight: bold;
-									color: var(--color-primary-element);
-									margin-bottom: 8px;
-								">
-								{{ explorationData.total_objects }}
+							v-for="card in summaryCards"
+							:key="card.label"
+							class="summary-card">
+							<div class="summary-card-value">
+								{{ card.value }}
 							</div>
-							<div
-								style="
-									font-size: 0.9rem;
-									color: var(--color-text-maxcontrast);
-									text-transform: uppercase;
-									font-weight: 600;
-								">
-								{{ t('openregister', 'Objects Analyzed') }}
-							</div>
-						</div>
-						<div
-							style="
-								background: var(--color-main-background);
-								border: 2px solid var(--color-border);
-								border-radius: 8px;
-								padding: 20px;
-								text-align: center;
-								box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-							">
-							<div
-								style="
-									font-size: 2rem;
-									font-weight: bold;
-									color: var(--color-primary-element);
-									margin-bottom: 8px;
-								">
-								{{
-									explorationData.analysis_summary
-										?.new_properties_count
-									|| Object.keys(
-										explorationData.discovered_properties || {},
-									).length
-								}}
-							</div>
-							<div
-								style="
-									font-size: 0.9rem;
-									color: var(--color-text-maxcontrast);
-									text-transform: uppercase;
-									font-weight: 600;
-								">
-								{{ t('openregister', 'New Properties') }}
-							</div>
-						</div>
-						<div
-							style="
-								background: var(--color-main-background);
-								border: 2px solid var(--color-border);
-								border-radius: 8px;
-								padding: 20px;
-								text-align: center;
-								box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-							">
-							<div
-								style="
-									font-size: 2rem;
-									font-weight: bold;
-									color: var(--color-primary-element);
-									margin-bottom: 8px;
-								">
-								{{
-									explorationData.analysis_summary
-										?.existing_properties_improvements || 0
-								}}
-							</div>
-							<div
-								style="
-									font-size: 0.9rem;
-									color: var(--color-text-maxcontrast);
-									text-transform: uppercase;
-									font-weight: 600;
-								">
-								{{ t('openregister', 'Existing Improvements') }}
-							</div>
-						</div>
-						<div
-							style="
-								background: var(--color-main-background);
-								border: 2px solid var(--color-border);
-								border-radius: 8px;
-								padding: 20px;
-								text-align: center;
-								box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-							">
-							<div
-								style="
-									font-size: 2rem;
-									font-weight: bold;
-									color: var(--color-primary-element);
-									margin-bottom: 8px;
-								">
-								{{ selectedProperties.length }}
-							</div>
-							<div
-								style="
-									font-size: 0.9rem;
-									color: var(--color-text-maxcontrast);
-									text-transform: uppercase;
-									font-weight: 600;
-								">
-								{{ t('openregister', 'Selected') }}
+							<div class="summary-card-label">
+								{{ card.label }}
 							</div>
 						</div>
 					</div>
@@ -805,115 +685,21 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 										{{ t('openregister', 'Property Behaviors') }}
 									</h5>
 									<div class="behaviors-grid">
-										<!-- Left Column -->
-										<div class="behavior-column">
-											<div class="behavior-item">
+										<div
+											v-for="(column, columnIndex) in behaviorColumns"
+											:key="columnIndex"
+											class="behavior-column">
+											<div
+												v-for="behavior in column"
+												:key="behavior.field"
+												class="behavior-item">
 												<NcCheckboxRadioSwitch
 													v-model="
 														selectedPropertiesConfig[
 															suggestion.property_name
-														].required
+														][behavior.field]
 													">
-													{{
-														t(
-															'openregister',
-															'Required field',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].immutable
-													">
-													{{
-														t(
-															'openregister',
-															'Immutable',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].deprecated
-													">
-													{{
-														t(
-															'openregister',
-															'Deprecated',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].visible
-													">
-													{{
-														t(
-															'openregister',
-															'Visible to users',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-										</div>
-
-										<!-- Right Column -->
-										<div class="behavior-column">
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].hideOnCollection
-													">
-													{{
-														t(
-															'openregister',
-															'Hide in list view',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].hideOnForm
-													">
-													{{
-														t(
-															'openregister',
-															'Hide in forms',
-														)
-													}}
-												</NcCheckboxRadioSwitch>
-											</div>
-											<div class="behavior-item">
-												<NcCheckboxRadioSwitch
-													v-model="
-														selectedPropertiesConfig[
-															suggestion.property_name
-														].facetable
-													">
-													{{
-														t(
-															'openregister',
-															'Enable faceting',
-														)
-													}}
+													{{ behavior.label }}
 												</NcCheckboxRadioSwitch>
 											</div>
 										</div>
@@ -1134,6 +920,42 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude UI display helper — the counts shown above the analysis results.
+		 * @return {Array<object>} One label and value per card.
+		 */
+		summaryCards() {
+			const data = this.explorationData
+			const summary = data.analysis_summary
+			const discovered = Object.keys(data.discovered_properties || {}).length
+			return [
+				{ label: this.t('openregister', 'Objects Analyzed'), value: data.total_objects },
+				{ label: this.t('openregister', 'New Properties'), value: summary?.new_properties_count || discovered },
+				{ label: this.t('openregister', 'Existing Improvements'), value: summary?.existing_properties_improvements || 0 },
+				{ label: this.t('openregister', 'Selected'), value: this.selectedProperties.length },
+			]
+		},
+
+		/**
+		 * @spec exclude UI display helper — the behaviour switches of a property, per column.
+		 * @return {Array<Array<object>>} Two columns of a field and label each.
+		 */
+		behaviorColumns() {
+			return [
+				[
+					{ field: 'required', label: this.t('openregister', 'Required field') },
+					{ field: 'immutable', label: this.t('openregister', 'Immutable') },
+					{ field: 'deprecated', label: this.t('openregister', 'Deprecated') },
+					{ field: 'visible', label: this.t('openregister', 'Visible to users') },
+				],
+				[
+					{ field: 'hideOnCollection', label: this.t('openregister', 'Hide in list view') },
+					{ field: 'hideOnForm', label: this.t('openregister', 'Hide in forms') },
+					{ field: 'facetable', label: this.t('openregister', 'Enable faceting') },
+				],
+			]
+		},
+
 		/**
 		 * @spec exclude UI display helper — static property-type select options.
 		 */
@@ -1718,6 +1540,36 @@ export default {
 
 <style scoped lang="scss">
 @use '../../styles/modals.scss' as *;
+
+.summary-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 16px;
+	margin-bottom: 20px;
+}
+
+.summary-card {
+	background: var(--color-main-background);
+	border: 2px solid var(--color-border);
+	border-radius: 8px;
+	padding: 20px;
+	text-align: center;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card-value {
+	font-size: 2rem;
+	font-weight: bold;
+	color: var(--color-primary-element);
+	margin-bottom: 8px;
+}
+
+.summary-card-label {
+	font-size: 0.9rem;
+	color: var(--color-text-maxcontrast);
+	text-transform: uppercase;
+	font-weight: 600;
+}
 
 .exploitation-header {
 	margin-bottom: 2rem;

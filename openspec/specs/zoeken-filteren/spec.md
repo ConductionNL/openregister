@@ -343,6 +343,13 @@ The system MUST support sorting by one or more fields via the `_order` parameter
 - **THEN** results MUST be ordered by `aanmaakdatum` descending
 
 The `?ordering=-aanmaakdatum` form this scenario used to describe is NOT supported.
+
+#### Scenario: Every form of `_order` orders the same
+- **GIVEN** a search on one schema or across several
+- **WHEN** `_order` is a map, that map as JSON, a list of objects with `field` and `direction`, a list of names, or one name, where a name is `field` or `field:direction`
+- **THEN** the search MUST order on those fields, ascending unless the direction is `desc` in any case
+- **AND** an entry that names no field MUST be left out, not end in an error
+- **AND** a field that may not be sorted on MUST be refused in every form
 It was only ever implemented in `SearchQueryHandler::cleanQuery()`, which no
 production code called; over HTTP `ordering` is read as a filter on a property no
 schema declares, which adds `1 = 0` and returns **zero rows**. Measured on a live

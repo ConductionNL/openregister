@@ -15,7 +15,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				|| 'Object')
 		"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<p v-if="success === null">
 			Do you want to lock
 			<b>{{

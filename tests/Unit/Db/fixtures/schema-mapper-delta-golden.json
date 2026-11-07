@@ -1,0 +1,255 @@
+{
+    "equal property dropped": {
+        "result": {
+            "properties": {
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "own"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "changed scalar field kept": {
+        "result": {
+            "properties": {
+                "name": {
+                    "title": "Other"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "new field kept": {
+        "result": {
+            "properties": {
+                "name": {
+                    "maxLength": 5
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "nested properties": {
+        "result": {
+            "properties": {
+                "a": {
+                    "properties": {
+                        "y": {
+                            "title": "New"
+                        }
+                    }
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "property turned scalar": {
+        "result": {
+            "properties": {
+                "name": "scalar"
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "nested properties turned scalar": {
+        "result": {
+            "properties": {
+                "a": {
+                    "properties": "x"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "two parents": {
+        "result": {
+            "properties": {
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "parent with parents": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 1
+    },
+    "ref entry": {
+        "result": {
+            "properties": {
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "ref bare": {
+        "result": {
+            "properties": {
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "ref ending in a slash": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 1
+    },
+    "ref empty": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 1
+    },
+    "ref not a string": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 1
+    },
+    "conditional entry": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "empty entries": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 1
+    },
+    "missing parent": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "one of": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 1
+    },
+    "any of": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 1
+    },
+    "no composition": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    }
+}

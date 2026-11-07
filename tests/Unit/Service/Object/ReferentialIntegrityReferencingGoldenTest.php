@@ -42,9 +42,11 @@ use ReflectionProperty;
  * missing or cannot be read. Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityReferencingGoldenTest extends TestCase {
 

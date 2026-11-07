@@ -60,7 +60,6 @@ use ReflectionClass;
 class ImportServiceRegisterAutoCreateTest extends TestCase {
 	use PassThroughL10nTrait;
 
-
 	/** @var RegisterMapper&MockObject */
 	private RegisterMapper $registerMapper;
 
@@ -97,11 +96,9 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
 			appConfig: $this->createMock(IAppConfig::class),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: sys_get_temp_dir(),
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->objectService
 		);
 

@@ -48,8 +48,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;

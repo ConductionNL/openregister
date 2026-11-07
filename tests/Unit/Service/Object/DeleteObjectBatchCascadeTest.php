@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -273,6 +274,68 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->assertSame('child-2', $batchedEntities[1]->getDeleted()['objectId']);
 		$this->assertSame('system', $batchedEntities[0]->getDeleted()['deletedBy']);
 	}//end testCascadeUsesBatchedPipelineForResolvedChildren()
+
+	/**
+	 * A child the delete guards refuse refuses the whole cascade: nothing is written.
+	 */
+	public function testARefusedChildStopsTheBatchedCascade(): void {
+		$parent = $this->makeEntity('parent-uuid', ['children' => ['child-1', 'child-2']]);
+		$context = [
+			'object' => $parent,
+			'register' => $this->makeRegister(),
+			'schema' => $this->makeSchema(['children' => ['cascade' => true, 'type' => 'array']]),
+		];
+		$this->objectMapper->method('findAcrossAllSources')->willReturn($context);
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+			->willReturn([$this->makeEntity('child-1'), $this->makeEntity('child-2')]);
+		$this->objectMapper->method('assertDeletable')->willReturnCallback(
+			static function (ObjectEntity $entity): void {
+				if ($entity->getUuid() === 'child-2') {
+					throw new HookStoppedException(message: 'kept');
+				}
+			}
+		);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+
+		$this->objectMapper->expects($this->never())->method('softDeleteMultipleObjectEntities');
+		$this->objectMapper->expects($this->never())->method('update');
+
+		$this->expectException(HookStoppedException::class);
+		$this->expectExceptionMessage('kept');
+
+		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+	}//end testARefusedChildStopsTheBatchedCascade()
+
+	/**
+	 * A child already soft-deleted is not asked: it is gone, and its guards have nothing to keep.
+	 */
+	public function testASoftDeletedChildIsNotAskedAgain(): void {
+		$parent = $this->makeEntity('parent-uuid', ['children' => ['child-1']]);
+		$child = $this->makeEntity('child-1');
+		$child->setDeleted(['deletedBy' => 'alice']);
+		$context = [
+			'object' => $parent,
+			'register' => $this->makeRegister(),
+			'schema' => $this->makeSchema(['children' => ['cascade' => true, 'type' => 'array']]),
+		];
+		$this->objectMapper->method('findAcrossAllSources')->willReturn($context);
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$child]);
+		$this->objectMapper->method('softDeleteMultipleObjectEntities')->willReturnArgument(0);
+		$this->objectMapper->method('update')->willReturn($parent);
+		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
+		$this->withAuditTrailsEnabled(false);
+
+		$asked = [];
+		$this->objectMapper->method('assertDeletable')->willReturnCallback(
+			static function (ObjectEntity $entity) use (&$asked): void {
+				$asked[] = $entity->getUuid();
+			}
+		);
+
+		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+
+		$this->assertSame(['parent-uuid'], $asked);
+	}//end testASoftDeletedChildIsNotAskedAgain()
 
 	/**
 	 * The batched write gets an untouched copy of each stamped child as its old

@@ -66,6 +66,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController
  * @covers \OCA\OpenRegister\Controller\Settings\EdepotSettingsController
  * @uses \OCA\OpenRegister\Service\Connection\ConnectionReporter
+ * @uses \OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices
  */
 class SettingsConnectionReportTest extends TestCase {
 

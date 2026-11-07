@@ -25,7 +25,7 @@ use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -2049,7 +2049,16 @@ class RegistersControllerTest extends TestCase {
 	}
 
 	/**
-	 * registerObjectStats() sums the per-schema counts, reporting a LIVE total.
+	 * The statistics the controller reports through.
+	 *
+	 * @return \OCA\OpenRegister\Controller\Support\RegisterStatistics
+	 */
+	private function statistics(): \OCA\OpenRegister\Controller\Support\RegisterStatistics {
+		return (new \ReflectionProperty(RegistersController::class, 'statistics'))->getValue($this->controller);
+	}
+
+	/**
+	 * objectTotals() sums the per-schema counts, reporting a LIVE total.
 	 *
 	 * `total` must exclude soft-deleted rows (the per-schema UNION's `total` includes
 	 * them, `deleted` is the subset), so a register with two schemas — one with 5 objects
@@ -2066,9 +2075,7 @@ class RegistersControllerTest extends TestCase {
 			20 => ['total' => 3, 'deleted' => 0, 'invalid' => 0, 'locked' => 0, 'size' => 50],
 		];
 
-		$method = new \ReflectionMethod(RegistersController::class, 'registerObjectStats');
-		$method->setAccessible(true);
-		$result = $method->invoke($this->controller, 7, $schemaStats);
+		$result = $this->statistics()->objectTotals(7, $schemaStats);
 
 		$this->assertSame(7, $result['total']);
 		$this->assertSame(1, $result['deleted']);
@@ -2076,8 +2083,22 @@ class RegistersControllerTest extends TestCase {
 	}
 
 	/**
+	 * A schema reporting more deleted rows than rows adds nothing to the live total.
+	 *
+	 * @return void
+	 */
+	public function testObjectTotalsKeepEveryCountAndNeverSubtractFromTheLiveTotal(): void {
+		$result = $this->statistics()->objectTotals(7, [
+			['total' => 2, 'deleted' => 0, 'invalid' => 1, 'locked' => 2, 'size' => 4],
+			['total' => 1, 'deleted' => 3],
+		]);
+
+		$this->assertSame(['total' => 2, 'size' => 4, 'invalid' => 1, 'deleted' => 3, 'locked' => 2], $result);
+	}
+
+	/**
 	 * With no per-schema counts (the '@self.stats'-without-'schemas' caller),
-	 * registerObjectStats() falls back to the mapper rather than reporting zero.
+	 * objectTotals() falls back to the mapper rather than reporting zero.
 	 *
 	 * @return void
 	 */
@@ -2087,9 +2108,7 @@ class RegistersControllerTest extends TestCase {
 			->with(registerId: 7, schemaId: null)
 			->willReturn(['total' => 42, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0]);
 
-		$method = new \ReflectionMethod(RegistersController::class, 'registerObjectStats');
-		$method->setAccessible(true);
-		$result = $method->invoke($this->controller, 7, null);
+		$result = $this->statistics()->objectTotals(7, null);
 
 		$this->assertSame(42, $result['total']);
 	}

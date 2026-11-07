@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCP\IL10N;
 
 /**
@@ -40,13 +40,13 @@ class NotesProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param NoteService $noteService Notes service.
+	 * @param NoteServiceInterface $noteService Notes service.
 	 * @param IL10N $l10n Localisation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private NoteService $noteService,
+		private NoteServiceInterface $noteService,
 		private IL10N $l10n,
 	) {
 	}//end __construct()
@@ -170,6 +170,7 @@ class NotesProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
+		$this->noteService->requireNoteOf(objectUuid: $objectId, noteId: (int)$entityId);
 		$message = (string)($payload['message'] ?? '');
 		return $this->noteService->updateNote(noteId: (int)$entityId, message: $message);
 	}//end update()
@@ -187,6 +188,7 @@ class NotesProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+		$this->noteService->requireNoteOf(objectUuid: $objectId, noteId: (int)$entityId);
 		$this->noteService->deleteNote(noteId: (int)$entityId);
 	}//end delete()
 }//end class

@@ -95,7 +95,6 @@ class DestructionListCreatorTest extends TestCase {
 			$registerMapper,
 			$this->createMock(AuditTrailMapper::class),
 			$settings,
-			$this->createMock(IAppConfig::class),
 			$session,
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(RetentionRowScanner::class),
@@ -169,7 +168,7 @@ class DestructionListCreatorTest extends TestCase {
 
 	public function testEveryRuleOfTheSweepRefusesWithItsOwnReason(): void {
 		$this->object('kept', ['archiefnominatie' => 'bewaren', 'archiefactiedatum' => '2020-01-01']);
-		$this->object('early', ['archiefnominatie' => 'vernietigen', 'archiefactiedatum' => '2999-01-01']);
+		$this->object('early', ['archiefnominatie' => 'vernietigen', 'archiefactiedatum' => date('Y-m-d', strtotime('+10 years'))]);
 		$this->object('gone', $this->due() + ['archiefstatus' => 'vernietigd']);
 		$this->object('listed', $this->due());
 		$this->object('ok', $this->due());

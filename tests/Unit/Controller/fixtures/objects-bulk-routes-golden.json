@@ -252,7 +252,7 @@
         "status": 500,
         "data": {
             "success": false,
-            "error": "no way",
+            "error": "Internal server error",
             "message": "Validation failed"
         },
         "order": [

@@ -79,7 +79,7 @@ class LinkTableFallbackGoldenTest extends TestCase {
 		'forms_v2_forms' => [
 			['id' => 21, 'hash' => 'h21', 'title' => 'Live [or:obj-1]', 'description' => 'D', 'expires' => 1, 'state' => 0],
 			['id' => 22, 'title' => 'Draft', 'expires' => 0, 'state' => 2],
-			['id' => 23, 'hash' => 'h23', 'title' => 'Future', 'expires' => 4102444800, 'state' => 0],
+			['id' => 23, 'hash' => 'h23', 'title' => 'Future', 'expires' => 253402214400, 'state' => 0],
 			['id' => 24, 'state' => 1],
 		],
 		'forms_v2_submissions' => [['n' => 1]],

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Unit\Service\Configuration;
 
-use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -12,9 +11,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
+use OCA\OpenRegister\Service\Configuration\SeedRelatedItems;
+use OCA\OpenRegister\Service\Configuration\SeedRelatedTarget;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IAppConfig;
@@ -43,10 +43,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 	private MagicMapper&MockObject $objectEntityMapper;
 	private ConfigurationMapper&MockObject $configurationMapper;
 	private MappingMapper&MockObject $mappingMapper;
-	private Client&MockObject $client;
 	private IAppConfig&MockObject $appConfig;
 	private LoggerInterface&MockObject $logger;
-	private UploadHandler&MockObject $uploadHandler;
 	private ObjectService&MockObject $objectService;
 
 	protected function setUp(): void {
@@ -56,10 +54,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$this->mappingMapper = $this->createMock(MappingMapper::class);
-		$this->client = $this->createMock(Client::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->uploadHandler = $this->createMock(UploadHandler::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 	}
 
@@ -300,11 +296,9 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 			objectEntityMapper: $this->objectEntityMapper,
 			configurationMapper: $this->configurationMapper,
 			mappingMapper: $this->mappingMapper,
-			client: $this->client,
 			appConfig: $this->appConfig,
 			logger: $this->logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->uploadHandler,
 			objectService: $this->objectService
 		);
 	}
@@ -325,6 +319,22 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 	}
 
 	/**
+	 * Without a user, nothing is reported as skipped when there were no notes or tasks to skip.
+	 */
+	public function testNoUserWarningNeedsItemsToSkip(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+		$items = new SeedRelatedItems(logger: $logger);
+		$items->useNoteService($this->createMock(NoteService::class));
+		$items->useTaskService($this->createMock(TaskService::class));
+
+		$result = [];
+		$items->create(new SeedRelatedTarget(object: new ObjectEntity()), $result);
+
+		$this->assertSame(['relatedFiles' => 0, 'relatedNotes' => 0, 'relatedTasks' => 0], $result);
+	}
+
+	/**
 	 * @param array<string, mixed> $items
 	 * @param array<string, mixed> $result
 	 */
@@ -338,17 +348,12 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		bool $hasUserContext,
 		array &$result,
 	): void {
-		$reflection = new \ReflectionClass($handler);
-		$method = $reflection->getMethod('processRelatedItems');
-		$method->setAccessible(true);
-		$method->invokeArgs($handler, [
-			$object,
-			$items,
-			$registerId,
-			$schemaId,
-			$title,
-			$hasUserContext,
-			&$result,
-		]);
+		$target = new SeedRelatedTarget(object: $object);
+		$target->items = $items;
+		$target->registerId = $registerId;
+		$target->schemaId = $schemaId;
+		$target->title = $title;
+		$target->hasUserContext = $hasUserContext;
+		(new \ReflectionProperty(ImportHandler::class, 'relatedItems'))->getValue($handler)->create($target, $result);
 	}
 }

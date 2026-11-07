@@ -89,7 +89,7 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 			grant: new TokenGrant(
 				verbs: ['read'],
 				schemas: ['zaak'],
-				expiresAt: new DateTimeImmutable('2099-01-01T00:00:00+00:00'),
+				expiresAt: new DateTimeImmutable('+10 years'),
 				tokenId: 'leverancier'
 			),
 			schemaSlug: 'zaak',

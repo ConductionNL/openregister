@@ -42,6 +42,8 @@ use OCP\IDBConnection;
  */
 class FlowTimerFireMapper extends QBMapper {
 
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -66,12 +68,23 @@ class FlowTimerFireMapper extends QBMapper {
 			throw new InvalidArgumentException('FlowTimerFireMapper persists FlowTimerFire entities only.');
 		}
 
-		if ($entity->getCreated() === null) {
-			$entity->setCreated(new DateTime());
-		}
+		$this->stampCreated(entity: $entity);
 
 		return parent::insert(entity: $entity);
 	}//end insert()
+
+	/**
+	 * Set the creation time of a new row unless it already has one.
+	 *
+	 * @param FlowTimerFire $entity The row.
+	 *
+	 * @return void
+	 */
+	private function stampCreated(FlowTimerFire $entity): void {
+		if ($entity->getCreated() === null) {
+			$entity->setCreated(new DateTime());
+		}
+	}//end stampCreated()
 
 	/**
 	 * Updates are refused: the ledger is append-only.
@@ -137,11 +150,8 @@ class FlowTimerFireMapper extends QBMapper {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function findByTimer(string $timerUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('timer_uuid', $qb->createNamedParameter($timerUuid)))
-			->orderBy('id', 'ASC');
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'timer_uuid', value: $timerUuid));
+		$qb->orderBy('id', 'ASC');
 
 		return $this->findEntities(query: $qb);
 	}//end findByTimer()

@@ -45,9 +45,13 @@ use ReflectionProperty;
 class MagicBulkHandlerUpsertChunkGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/magic-bulk-upsert-chunk-golden.json';
 
+	private const RECORDED_LATER_STAMP = '2999-01-01 00:00:00';
+
 	private const TABLE_COLUMNS = ['_uuid', '_slug', '_name', '_created', '_updated', '_version', 'flag', 'title'];
 
 	private array $events = [];
+
+	private ?string $laterStamp = null;
 
 	private static function chunks(): array {
 		return [
@@ -115,6 +119,16 @@ class MagicBulkHandlerUpsertChunkGoldenTest extends TestCase {
 	}//end testUpsertChunkMatchesGolden()
 
 	/**
+	 * A row stamp after any start of the run, fixed for the length of the test.
+	 *
+	 * @return string
+	 */
+	private function laterStamp(): string {
+		$this->laterStamp ??= date('Y-m-d H:i:s', strtotime('+10 years'));
+		return $this->laterStamp;
+	}
+
+	/**
 	 * Replace generated UUIDs and the operation start time with stable markers.
 	 */
 	private function normalise(mixed $value): mixed {
@@ -122,8 +136,12 @@ class MagicBulkHandlerUpsertChunkGoldenTest extends TestCase {
 			$out = [];
 			foreach ($value as $key => $item) {
 				$out[$key] = $this->normalise(value: $item);
-				if ($key === 'operation_start_time' || ($key === '_updated' && str_starts_with((string) $item, '2999') === false && str_starts_with((string) $item, '2000') === false)) {
+				if ($key === 'operation_start_time' || ($key === '_updated' && str_starts_with((string) $item, '2000') === false)) {
 					$out[$key] = '<start>';
+				}
+
+				if ($key === '_updated' && $item === $this->laterStamp()) {
+					$out[$key] = self::RECORDED_LATER_STAMP;
 				}
 			}
 
@@ -206,7 +224,7 @@ class MagicBulkHandlerUpsertChunkGoldenTest extends TestCase {
 		$readBack = str_starts_with($sql, 'SELECT * ') && str_contains($sql, '_uuid') && empty($this->upsertSeen()) === false;
 		foreach ($uuids as $uuid) {
 			if ($readBack === true) {
-				$updated = ($uuid === 'u-2' || $uuid === 'u-9') ? '2999-01-01 00:00:00' : '2000-01-01 00:00:00';
+				$updated = ($uuid === 'u-2' || $uuid === 'u-9') ? $this->laterStamp() : '2000-01-01 00:00:00';
 				if ($uuid === 'u-1') {
 					$updated = (new \DateTime())->format('Y-m-d H:i:s');
 				}

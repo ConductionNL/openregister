@@ -39,6 +39,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Tests\Unit\Architecture\ControllerSources;
 
 /**
  * Status codes, bodies and the auth posture of each route.
@@ -424,18 +425,12 @@ class FormsControllerTest extends TestCase {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
 	public function testNoControllerAssertsADraftOwner(): void {
-		$root = dirname(__DIR__, 3) . '/lib/Controller';
-		$files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
 		$read = 0;
 		$offenders = [];
-		foreach ($files as $file) {
-			if ($file->getExtension() !== 'php') {
-				continue;
-			}
-
+		foreach (ControllerSources::files() as $file) {
 			$read++;
-			if (preg_match('/\bDraftOwner\b|\b_owner\s*:/', (string)file_get_contents($file->getPathname())) === 1) {
-				$offenders[] = substr($file->getPathname(), (strlen($root) + 1));
+			if (preg_match('/\bDraftOwner\b|\b_owner\s*:/', (string)file_get_contents($file)) === 1) {
+				$offenders[] = $file;
 			}
 		}
 

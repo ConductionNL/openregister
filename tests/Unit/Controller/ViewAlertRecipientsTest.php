@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\ViewsController;
+use OCA\OpenRegister\Search\Controller\ViewsController;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
@@ -45,8 +45,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
- * @covers \OCA\OpenRegister\Controller\ViewsController
- * @uses \OCA\OpenRegister\Controller\Support\ViewPatch
+ * @covers \OCA\OpenRegister\Search\Controller\ViewsController
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewPatch
  * @covers \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
  * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Exception\InvalidViewAlertException

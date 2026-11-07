@@ -20,6 +20,7 @@ use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -305,7 +306,7 @@ class MagicMapperPrepareObjectDataTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	private function invokePrepare(MagicMapper $mapper, array $data, Register $register, Schema $schema): array {
-		$warned = new \ReflectionProperty(MagicMapper::class, 'warnedMetadataNamedProperties');
+		$warned = new \ReflectionProperty(MagicPropertyColumns::class, 'warned');
 		$warned->setValue(null, []);
 
 		$method = new ReflectionMethod(MagicMapper::class, 'prepareObjectDataForTable');

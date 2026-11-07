@@ -4,7 +4,7 @@
  * ShareLinkService — Tier-2 shares integration service.
  *
  * Composes `OCP\Share\IManager` (NC core sharing — the single source of
- * truth) with the OR `ObjectEntityMapper` + `FolderManagementHandler`
+ * truth) with the OR `MagicMapper` + `FileService`
  * so the registry "Shares" leaf can list, create and revoke shares on
  * the files inside an object's NC folder.
  *
@@ -25,7 +25,7 @@
  *   - getShareableFiles(objectUuid)                     — files in the object's folder
  *
  * Lazy-resolution policy mirrors {@see SharesProvider}: `IManager`,
- * `FolderManagementHandler`, `ObjectEntityMapper` and `IUserSession`
+ * `FileService`, `MagicMapper` and `IUserSession`
  * are pulled from the server container on demand so the ctor stays a
  * plain `(IL10N, LoggerInterface, ?ContainerInterface)` and unit tests
  * inject a mock container.
@@ -51,6 +51,8 @@ namespace OCA\OpenRegister\Service;
 
 use DateTimeInterface;
 use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IL10N;
@@ -114,14 +116,12 @@ class ShareLinkService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IL10N $l10n Localisation.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ContainerInterface|null $container Optional server-container override (tests only).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
 		?ContainerInterface $container = null,
 	) {
@@ -132,7 +132,7 @@ class ShareLinkService {
 	 * List shares linked to an OR object.
 	 *
 	 * Walks the object's NC folder (resolved via the H-1 entity-input
-	 * branch of {@see FolderManagementHandler::getObjectFolder()}) and
+	 * branch of {@see FileService::getObjectFolder()}) and
 	 * unions shares across the object's files for every relevant share
 	 * type, deduplicated by share id.
 	 *
@@ -161,42 +161,132 @@ class ShareLinkService {
 			return [];
 		}
 
+		$sharers = [$userId];
+		$systemUserId = $this->systemUserId();
+		if ($systemUserId !== null && $this->mayUpdateObject(entity: $this->resolveObjectEntity(objectUuid: $objectUuid)) === true) {
+			$sharers[] = $systemUserId;
+		}
+
 		$rows = [];
 		$seen = [];
 		$count = 0;
-		foreach ($folder->getDirectoryListing() as $node) {
+		foreach ($this->readableChildren(folder: $folder) as $node) {
 			if ($count >= self::MAX_NODES) {
 				break;
 			}
 
 			$count++;
 
-			foreach (self::SHARE_TYPES as $type) {
-				try {
-					$shares = $shareManager->getSharesBy($userId, $type, $node);
-				} catch (Throwable $e) {
-					continue;
-				}
-
-				foreach ($shares as $share) {
-					$row = $this->normaliseShare(share: $share, userId: $userId);
-					if ($row === null) {
+			foreach ($sharers as $sharer) {
+				foreach ($this->sharesOf(manager: $shareManager, sharer: $sharer, node: $node) as $share) {
+					$row = $this->normaliseShare(share: $share, userId: $sharer);
+					if ($row === null || isset($seen[$row['shareId']]) === true) {
 						continue;
 					}
 
-					$id = $row['shareId'];
-					if (isset($seen[$id]) === true) {
-						continue;
-					}
-
-					$seen[$id] = true;
+					$seen[$row['shareId']] = true;
 					$rows[] = $row;
 				}
-			}//end foreach
+			}
 		}//end foreach
 
 		return $rows;
 	}//end getLinkedShares()
+
+	/**
+	 * The shares one sharer made of a node, across the supported types.
+	 *
+	 * @param IManager $manager The share manager.
+	 * @param string   $sharer  The sharer's uid.
+	 * @param Node     $node    The node.
+	 *
+	 * @return array<int, IShare> The shares.
+	 */
+	private function sharesOf(IManager $manager, string $sharer, Node $node): array {
+		$shares = [];
+		foreach (self::SHARE_TYPES as $type) {
+			try {
+				$shares = array_merge($shares, $manager->getSharesBy($sharer, $type, $node));
+			} catch (Throwable $e) {
+				continue;
+			}
+		}
+
+		return $shares;
+	}//end sharesOf()
+
+	/**
+	 * The uid of the app's account, which holds the objects' files and shares them.
+	 *
+	 * @return string|null The uid, or null when the account cannot be reached.
+	 */
+	private function systemUserId(): ?string {
+		try {
+			return $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\FileService')?->getUser()->getUID();
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end systemUserId()
+
+	/**
+	 * Whether the caller holds the `update` right editing the object requires.
+	 *
+	 * @param object|null $entity The object.
+	 *
+	 * @return bool True when they do; false too when it cannot be asked.
+	 */
+	private function mayUpdateObject(?object $entity): bool {
+		$permissions = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\Object\\PermissionHandler');
+		$schemas = $this->lookup(serviceName: 'OCA\\OpenRegister\\Db\\SchemaMapper');
+		if (($entity instanceof ObjectEntity) === false || $permissions === null || $schemas === null) {
+			return false;
+		}
+
+		try {
+			return $permissions->hasPermission(
+				schema: $schemas->find((int)$entity->getSchema()),
+				action: 'update',
+				objectOwner: $entity->getOwner(),
+				object: $entity
+			);
+		} catch (Throwable $e) {
+			return false;
+		}
+	}//end mayUpdateObject()
+
+	/**
+	 * Put a share on the object's audit trail under the session user.
+	 *
+	 * The share itself is made by the app's account, so this is the only record of who asked.
+	 * A failed entry is logged: the share has already changed.
+	 *
+	 * @param object|null $entity The object.
+	 * @param IShare      $share  The share.
+	 * @param string      $verb   `recordGrant` or `recordRevoke`.
+	 *
+	 * @return void
+	 */
+	private function auditShare(?object $entity, IShare $share, string $verb): void {
+		$auditor = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\Rbac\\GrantChangeAuditor');
+		if (($entity instanceof ObjectEntity) === false || $auditor === null) {
+			return;
+		}
+
+		try {
+			$grant = [
+				'id' => $share->getId(),
+				'type' => (string)$share->getShareType(),
+				'sharedWith' => $share->getSharedWith(),
+				'permissions' => $share->getPermissions(),
+			];
+			$auditor->$verb(object: $entity, grant: $grant, admittedAs: 'update');
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'ShareLinkService: a share change was not audited: ' . $e->getMessage(),
+				['app' => 'openregister']
+			);
+		}
+	}//end auditShare()
 
 	/**
 	 * Create a share on a file inside the object's folder.
@@ -239,16 +329,28 @@ class ShareLinkService {
 			throw new Exception('shareWith is required for this share type', 400);
 		}
 
+		$entity = $this->resolveObjectEntity(objectUuid: $objectUuid);
+		if ($this->mayUpdateObject(entity: $entity) === false) {
+			throw new Exception('You may not change this object, so you cannot share its files.', 403);
+		}
+
+		$sharer = $this->systemUserId();
+		if ($sharer === null) {
+			throw new Exception('The OpenRegister account is not available', 503);
+		}
+
 		$share = $shareManager->newShare();
 		$share->setNode($node);
 		$share->setShareType($draft->shareType);
-		$share->setSharedBy($userId);
+		$share->setSharedBy($sharer);
 		$share->setPermissions($draft->permissions());
 
 		$this->applyOptionalFields(share: $share, draft: $draft);
 
 		try {
-			return $shareManager->createShare($share);
+			$created = $shareManager->createShare($share);
+			$this->auditShare(entity: $entity, share: $created, verb: 'recordGrant');
+			return $created;
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'ShareLinkService::createShare failed: ' . $e->getMessage(),
@@ -295,8 +397,8 @@ class ShareLinkService {
 	 *
 	 * @return void
 	 *
-	 * @throws Exception On missing user (401), share-not-found (404),
-	 *                   ownership mismatch (403).
+	 * @throws Exception On missing user (401), or 404 when the share does not exist,
+	 *                   lies outside the object's folder or is not the caller's.
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the revoke-share contract is owned by the
 	 *              integration-shares / generic-integrations capability.
@@ -316,10 +418,18 @@ class ShareLinkService {
 
 		$folder = $this->resolveObjectFolder(objectUuid: $objectUuid);
 		if ($folder === null || $this->shareIsInFolder(share: $share, folder: $folder) === false) {
-			throw new Exception('Share does not belong to this object', 403);
+			throw new Exception('Share not found', 404);
+		}
+
+		$entity = $this->resolveObjectEntity(objectUuid: $objectUuid);
+		$isCallers = ($share->getSharedBy() === $userId || $share->getShareOwner() === $userId);
+		$isManaged = ($share->getSharedBy() === $this->systemUserId() && $this->mayUpdateObject(entity: $entity) === true);
+		if ($isCallers === false && $isManaged === false) {
+			throw new Exception('Share not found', 404);
 		}
 
 		$shareManager->deleteShare($share);
+		$this->auditShare(entity: $entity, share: $share, verb: 'recordRevoke');
 	}//end revokeShare()
 
 	/**
@@ -340,7 +450,7 @@ class ShareLinkService {
 
 		$files = [];
 		$count = 0;
-		foreach ($folder->getDirectoryListing() as $node) {
+		foreach ($this->readableChildren(folder: $folder) as $node) {
 			if ($count >= self::MAX_NODES) {
 				break;
 			}
@@ -379,7 +489,27 @@ class ShareLinkService {
 	}//end getShareManager()
 
 	/**
-	 * Resolve the object's NC folder via FolderManagementHandler,
+	 * The folder's children the caller may read, by the file restrictions.
+	 *
+	 * Fails closed: without the guard nothing is listed.
+	 *
+	 * @param Folder $folder The folder.
+	 *
+	 * @return array<int, Node> The readable children.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 */
+	private function readableChildren(Folder $folder): array {
+		$guard = $this->lookup(serviceName: FileRestrictionGuard::class);
+		if ($guard === null) {
+			return [];
+		}
+
+		return $guard->readableNodes(nodes: $folder->getDirectoryListing());
+	}//end readableChildren()
+
+	/**
+	 * Resolve the object's NC folder via FileService,
 	 * passing the resolved ObjectEntity so the handler uses its
 	 * entity-input branch (the H-1 fix — string input throws "no
 	 * objectEntity or registerId given").
@@ -391,7 +521,7 @@ class ShareLinkService {
 	private function resolveObjectFolder(string $objectUuid): ?Folder {
 		try {
 			$handler = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler'
+				serviceName: 'OCA\\OpenRegister\\Service\\FileService'
 			);
 			if ($handler === null) {
 				return null;
@@ -424,7 +554,7 @@ class ShareLinkService {
 		}
 
 		$count = 0;
-		foreach ($folder->getDirectoryListing() as $node) {
+		foreach ($this->readableChildren(folder: $folder) as $node) {
 			if ($count >= self::MAX_NODES) {
 				break;
 			}
@@ -485,7 +615,7 @@ class ShareLinkService {
 	private function resolveObjectEntity(string $objectUuid): ?object {
 		try {
 			$mapper = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Db\\ObjectEntityMapper'
+				serviceName: 'OCA\\OpenRegister\\Db\\MagicMapper'
 			);
 			if ($mapper === null) {
 				return null;

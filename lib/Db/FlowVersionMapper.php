@@ -27,8 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -39,6 +39,8 @@ use OCP\IDBConnection;
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class FlowVersionMapper extends QBMapper {
+
+	use SelectByColumnTrait;
 	/**
 	 * Constructor.
 	 *
@@ -60,19 +62,11 @@ class FlowVersionMapper extends QBMapper {
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function find(string $flowUuid, int $version): ?FlowVersion {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('flow_uuid', $qb->createNamedParameter($flowUuid)))
-			->andWhere($qb->expr()->eq('version', $qb->createNamedParameter($version, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'flow_uuid', value: $flowUuid));
+		$qb->andWhere($qb->expr()->eq('version', $qb->createNamedParameter($version, IQueryBuilder::PARAM_INT)))
 			->setMaxResults(1);
 
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
+		return $this->firstVersion(query: $qb);
 
 	}//end find()
 
@@ -94,20 +88,12 @@ class FlowVersionMapper extends QBMapper {
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function findPublished(string $flowUuid): ?FlowVersion {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('flow_uuid', $qb->createNamedParameter($flowUuid)))
-			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(FlowVersion::STATUS_PUBLISHED)))
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'flow_uuid', value: $flowUuid));
+		$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(FlowVersion::STATUS_PUBLISHED)))
 			->orderBy('version', 'DESC')
 			->setMaxResults(1);
 
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
+		return $this->firstVersion(query: $qb);
 
 	}//end findPublished()
 
@@ -121,12 +107,8 @@ class FlowVersionMapper extends QBMapper {
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function findAllForFlow(string $flowUuid): array {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('flow_uuid', $qb->createNamedParameter($flowUuid)))
-			->orderBy('version', 'DESC');
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'flow_uuid', value: $flowUuid));
+		$qb->orderBy('version', 'DESC');
 
 		return $this->findEntities(query: $qb);
 
@@ -220,4 +202,20 @@ class FlowVersionMapper extends QBMapper {
 		return (int)$qb->executeStatement();
 
 	}//end deleteOrphaned()
+
+	/**
+	 * The version a query finds, or null.
+	 *
+	 * @param IQueryBuilder $query The query.
+	 *
+	 * @return FlowVersion|null The version.
+	 */
+	private function firstVersion(IQueryBuilder $query): ?FlowVersion {
+		$found = $this->findOneOrNull(query: $query);
+		if ($found instanceof FlowVersion) {
+			return $found;
+		}
+
+		return null;
+	}//end firstVersion()
 }//end class

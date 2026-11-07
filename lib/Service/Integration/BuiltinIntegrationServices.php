@@ -77,7 +77,7 @@ final class BuiltinIntegrationServices {
 			'l10n'        => \OCP\IL10N::class,
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider::class => [
-			'noteService' => \OCA\OpenRegister\Service\NoteService::class,
+			'noteService' => \OCA\OpenRegister\Files\Service\NoteService::class,
 			'l10n'        => \OCP\IL10N::class,
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class => [
@@ -198,7 +198,6 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-shares/spec.md
 		\OCA\OpenRegister\Service\ShareLinkService::class => [
-			'l10n'   => \OCP\IL10N::class,
 			'logger' => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-leaf-foundation/spec.md
@@ -278,7 +277,6 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\FlowLinkService::class => [
 			'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapper::class,
 			'db'             => \OCP\IDBConnection::class,
-			'container'      => self::CONTAINER,
 			'appManager'     => \OCP\App\IAppManager::class,
 			'userSession'    => \OCP\IUserSession::class,
 			'groupManager'   => \OCP\IGroupManager::class,
