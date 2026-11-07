@@ -65,7 +65,7 @@ use OCA\OpenRegister\Controller\Support\TaskEventsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
-use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -113,9 +113,9 @@ class TaskEventsController extends Controller {
 	/**
 	 * The link-table layer, uuid-anchored.
 	 *
-	 * @var CalendarLinkService
+	 * @var CalendarLinkServiceInterface
 	 */
-	private readonly CalendarLinkService $links;
+	private readonly CalendarLinkServiceInterface $links;
 
 	/**
 	 * The VEVENT layer, for the legacy
