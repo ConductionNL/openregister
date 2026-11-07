@@ -50,7 +50,7 @@ use OCA\OpenRegister\Controller\Support\ObjectShareLinkControllerServices;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -109,9 +109,9 @@ class ObjectShareLinkController extends Controller {
 	/**
 	 * Projects the object onto what an anonymous caller may read.
 	 *
-	 * @var AccessLinkReader
+	 * @var AccessLinkReaderInterface
 	 */
-	private readonly AccessLinkReader $reader;
+	private readonly AccessLinkReaderInterface $reader;
 
 	/**
 	 * Brute-force throttler for rejected tokens.

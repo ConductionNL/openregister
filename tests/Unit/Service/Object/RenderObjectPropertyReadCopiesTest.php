@@ -80,7 +80,7 @@ class RenderObjectPropertyReadCopiesTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		return new RenderObject(
-			$this->createMock(\OCA\OpenRegister\Db\FileMapper::class),
+			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
 			$this->createMock(\OCA\OpenRegister\Db\MagicMapper::class),
 			$this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class),
 			$schemaMapper,

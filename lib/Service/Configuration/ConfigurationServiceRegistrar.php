@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
@@ -274,10 +274,10 @@ final class ConfigurationServiceRegistrar {
 		$optional = [
 			'setFileService' => [\OCA\OpenRegister\Service\FileService::class, 'FileService'],
 			'setRegisterFolderProvisioner' => [
-				\OCA\OpenRegister\Service\File\RegisterFolderProvisioner::class,
+				\OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner::class,
 				'RegisterFolderProvisioner',
 			],
-			'setNoteService' => [\OCA\OpenRegister\Service\NoteService::class, 'NoteService'],
+			'setNoteService' => [\OCA\OpenRegister\Files\Service\NoteService::class, 'NoteService'],
 			'setTaskService' => [\OCA\OpenRegister\Service\TaskService::class, 'TaskService'],
 			'setUserSession' => ['OCP\IUserSession', 'IUserSession'],
 			'setGroupManager' => ['OCP\IGroupManager', 'IGroupManager'],

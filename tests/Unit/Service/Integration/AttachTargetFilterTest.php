@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Service\Integration\AttachTargetFilter;
+use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
 use PHPUnit\Framework\TestCase;
 
 /**

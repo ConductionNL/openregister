@@ -21,10 +21,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\File\FileRestrictionService;
-use OCA\OpenRegister\Service\File\FileRestrictionStore;
+use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionService;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;

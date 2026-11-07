@@ -5,7 +5,7 @@ namespace Unit\Tool;
 use BadMethodCallException;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapper;
-use OCA\OpenRegister\Tool\ApplicationTool;
+use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;

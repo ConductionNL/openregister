@@ -47,7 +47,7 @@ final class SchemasControllerFactory {
 		\OCA\OpenRegister\Db\SchemaMapper $schemaMapper,
 		\OCA\OpenRegister\Db\RegisterMapper $registerMapper,
 		\OCA\OpenRegister\Db\MagicMapper $objectEntityMapper,
-		\OCA\OpenRegister\Service\UploadService $uploadService,
+		\OCA\OpenRegister\Files\Service\UploadService $uploadService,
 		\OCA\OpenRegister\Db\AuditTrailMapper $auditTrailMapper,
 		\OCA\OpenRegister\Service\OrganisationService $organisationService,
 		\OCA\OpenRegister\Service\Schemas\SchemaCacheHandler $schemaCacheService,

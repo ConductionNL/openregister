@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Sharing;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
 /**
@@ -58,11 +58,11 @@ class AccessLinkActs {
 	/**
 	 * Constructor.
 	 *
-	 * @param NoteService $notes Writes the comment.
+	 * @param NoteServiceInterface $notes Writes the comment.
 	 * @param FileService $files Stores the file.
 	 */
 	public function __construct(
-		private readonly NoteService $notes,
+		private readonly NoteServiceInterface $notes,
 		private readonly FileService $files,
 	) {
 

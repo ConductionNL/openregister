@@ -2,8 +2,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;

@@ -17,7 +17,7 @@
 
 namespace OCA\OpenRegister\Tests\Service;
 
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\Files\File;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -37,9 +37,9 @@ class TextExtractionWordExtractionTest extends TestCase {
 	/**
 	 * The handler that owns the Word reader selection and the element walk.
 	 *
-	 * @var \OCA\OpenRegister\Service\TextExtraction\WordExtractor
+	 * @var \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor
 	 */
-	private \OCA\OpenRegister\Service\TextExtraction\WordExtractor $wordExtractor;
+	private \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor $wordExtractor;
 
 	/**
 	 * Temp fixture paths to clean up.
@@ -55,7 +55,7 @@ class TextExtractionWordExtractionTest extends TestCase {
 		parent::setUp();
 		$this->service = \OC::$server->get(TextExtractionService::class);
 		// TextExtractionService::extractWord() is a one-line delegation to WordExtractor.
-		$this->wordExtractor = \OC::$server->get(\OCA\OpenRegister\Service\TextExtraction\WordExtractor::class);
+		$this->wordExtractor = \OC::$server->get(\OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor::class);
 	}
 
 	/**
@@ -244,7 +244,7 @@ class TextExtractionWordExtractionTest extends TestCase {
 	public function testParseFailureLogsNoDocumentContent(): void {
 		// The failure-path log moved with the code: extractWord() delegates to
 		// WordExtractor::extract(), which is where the catch block lives now.
-		$src = (string)file_get_contents(__DIR__ . '/../../lib/Service/TextExtraction/WordExtractor.php');
+		$src = (string)file_get_contents(__DIR__ . '/../../lib/Files/Service/TextExtraction/WordExtractor.php');
 
 		// Isolate the failure-path log call inside extractWord().
 		$start = strpos($src, 'Word extraction failed; returning null');

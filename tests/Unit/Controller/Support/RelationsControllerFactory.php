@@ -36,7 +36,7 @@ final class RelationsControllerFactory {
 		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\ObjectService $objectService,
-		\OCA\OpenRegister\Service\NoteService $noteService,
+		\OCA\OpenRegister\Files\Service\NoteService $noteService,
 		\OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface $taskService,
 		\OCA\OpenRegister\Notifications\Service\EmailService $emailService,
 		\OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface $calendarEventService,

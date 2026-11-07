@@ -46,6 +46,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class EmailProvider extends AbstractIntegrationProvider {
+	use LinkTableAppDescriptor;
 
 	/**
 	 * NC app id required for this integration.
@@ -93,14 +94,6 @@ class EmailProvider extends AbstractIntegrationProvider {
 		return 'comms';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
 	public function isEnabled(): bool {
 		return $this->emailLinkService->isMailAvailable();
 	}//end isEnabled()
@@ -140,32 +133,10 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/integration-email/spec.md
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$limit = null;
-		if (isset($filters['_limit']) === true) {
-			$limit = (int)$filters['_limit'];
-		}
-
-		$page = 0;
-		if (isset($filters['_page']) === true) {
-			$page = max(0, (int)$filters['_page']);
-		}
-
-		$offset = 0;
-		if ($limit !== null) {
-			$offset = ($page * $limit);
-		}
-
-		$offsetArg = null;
-		if ($limit !== null) {
-			$offsetArg = $offset;
-		}
+		$paging = new EmailListPaging(filters: $filters);
 
 		try {
-			$result = $this->emailService->getEmailsForObject(
-				objectUuid: $objectId,
-				limit: $limit,
-				offset: $offsetArg
-			);
+			$result = $this->emailService->getEmailsForObject(objectUuid: $objectId, limit: $paging->limit(), offset: $paging->offset());
 		} catch (Throwable $e) {
 			return ['items' => [], 'total' => 0, 'nextCursor' => null];
 		}
@@ -173,19 +144,10 @@ class EmailProvider extends AbstractIntegrationProvider {
 		$items = $result['results'];
 		$total = (int)$result['total'];
 
-		// A further page exists when the rows seen so far (offset + this
-		// batch) is still short of the total. The cursor is the next
-		// zero-indexed page number consumed by `_page`. Paging only
-		// applies when a limit (and therefore a concrete offset) is set.
-		$nextCursor = null;
-		if ($limit !== null && (($offset + count($items)) < $total)) {
-			$nextCursor = (string)($page + 1);
-		}
-
 		return [
 			'items' => $items,
 			'total' => $total,
-			'nextCursor' => $nextCursor,
+			'nextCursor' => $paging->nextCursor(seen: count($items), total: $total),
 		];
 	}//end list()
 

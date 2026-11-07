@@ -1,0 +1,1233 @@
+{
+    "import: empty": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "The file is empty.",
+        "report": null
+    },
+    "importStrictly: empty": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "The file is empty.",
+        "report": null
+    },
+    "import: blank": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "The file is empty.",
+        "report": null
+    },
+    "importStrictly: blank": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "The file is empty.",
+        "report": null
+    },
+    "import: not xml": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "The file could not be read: Namespace prefix bpmn on definitions is not defined",
+        "report": null
+    },
+    "importStrictly: not xml": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "The file could not be read: Namespace prefix bpmn on definitions is not defined",
+        "report": null
+    },
+    "import: not bpmn": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnSchemaInvalid",
+        "message": "The file is not valid BPMN 2.0.2 on line 1: Element 'foo': No matching global declaration available for the validation root.",
+        "line": 1,
+        "element": "foo"
+    },
+    "importStrictly: not bpmn": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnSchemaInvalid",
+        "message": "The file is not valid BPMN 2.0.2 on line 1: Element 'foo': No matching global declaration available for the validation root.",
+        "line": 1,
+        "element": "foo"
+    },
+    "import: no process": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "The file declares no bpmn:process, so there is no flow in it.",
+        "report": null
+    },
+    "importStrictly: no process": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "The file declares no bpmn:process, so there is no flow in it.",
+        "report": null
+    },
+    "import: two processes": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "the file declares more than one process; import one process per file so it is clear which became the flow.",
+        "report": null
+    },
+    "importStrictly: two processes": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "the file declares more than one process; import one process per file so it is clear which became the flow.",
+        "report": null
+    },
+    "import: minimal unnamed": {
+        "flow": {
+            "name": "",
+            "nodes": [
+                {
+                    "id": "s1",
+                    "name": "",
+                    "type": "openregister.trigger-manual",
+                    "position": {
+                        "x": 0,
+                        "y": 0
+                    }
+                }
+            ],
+            "edges": []
+        },
+        "report": {
+            "summary": {
+                "mapped": 1,
+                "approximated": 0,
+                "refused": 0
+            },
+            "lostSomething": false,
+            "entries": [
+                {
+                    "elementId": "s1",
+                    "kind": "startEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                }
+            ]
+        }
+    },
+    "importStrictly: minimal unnamed": {
+        "flow": {
+            "name": "",
+            "nodes": [
+                {
+                    "id": "s1",
+                    "name": "",
+                    "type": "openregister.trigger-manual",
+                    "position": {
+                        "x": 0,
+                        "y": 0
+                    }
+                }
+            ],
+            "edges": []
+        },
+        "report": {
+            "summary": {
+                "mapped": 1,
+                "approximated": 0,
+                "refused": 0
+            },
+            "lostSomething": false,
+            "entries": [
+                {
+                    "elementId": "s1",
+                    "kind": "startEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                }
+            ]
+        }
+    },
+    "import: empty process": {
+        "flow": {
+            "name": "Leeg",
+            "nodes": [],
+            "edges": []
+        },
+        "report": {
+            "summary": {
+                "mapped": 0,
+                "approximated": 0,
+                "refused": 0
+            },
+            "lostSomething": false,
+            "entries": []
+        }
+    },
+    "importStrictly: empty process": {
+        "flow": {
+            "name": "Leeg",
+            "nodes": [],
+            "edges": []
+        },
+        "report": {
+            "summary": {
+                "mapped": 0,
+                "approximated": 0,
+                "refused": 0
+            },
+            "lostSomething": false,
+            "entries": []
+        }
+    },
+    "import: collaboration": {
+        "flow": {
+            "name": "",
+            "nodes": [
+                {
+                    "id": "s1",
+                    "name": "",
+                    "type": "openregister.trigger-manual",
+                    "position": {
+                        "x": 0,
+                        "y": 0
+                    }
+                }
+            ],
+            "edges": []
+        },
+        "report": {
+            "summary": {
+                "mapped": 1,
+                "approximated": 0,
+                "refused": 0
+            },
+            "lostSomething": false,
+            "entries": [
+                {
+                    "elementId": "s1",
+                    "kind": "startEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                }
+            ]
+        }
+    },
+    "importStrictly: collaboration": {
+        "flow": {
+            "name": "",
+            "nodes": [
+                {
+                    "id": "s1",
+                    "name": "",
+                    "type": "openregister.trigger-manual",
+                    "position": {
+                        "x": 0,
+                        "y": 0
+                    }
+                }
+            ],
+            "edges": []
+        },
+        "report": {
+            "summary": {
+                "mapped": 1,
+                "approximated": 0,
+                "refused": 0
+            },
+            "lostSomething": false,
+            "entries": [
+                {
+                    "elementId": "s1",
+                    "kind": "startEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                }
+            ]
+        }
+    },
+    "import: foreign": {
+        "flow": {
+            "name": "Ingekocht proces",
+            "nodes": [
+                {
+                    "id": "s1",
+                    "name": "Start",
+                    "type": "openregister.trigger-manual",
+                    "position": {
+                        "x": 0,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "s2",
+                    "name": "Timer",
+                    "type": "openregister.trigger-schedule",
+                    "position": {
+                        "x": 180,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "s3",
+                    "name": "Cond",
+                    "type": "openregister.trigger-object",
+                    "position": {
+                        "x": 360,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "u1",
+                    "name": "Beoordeel",
+                    "type": "openregister.await-signal",
+                    "position": {
+                        "x": 540,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "t1",
+                    "name": "Send email",
+                    "type": "",
+                    "position": {
+                        "x": 720,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "g1",
+                    "name": "",
+                    "type": "openregister.switch",
+                    "position": {
+                        "x": 900,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "g2",
+                    "name": "",
+                    "type": "openregister.route",
+                    "position": {
+                        "x": 0,
+                        "y": 140
+                    }
+                },
+                {
+                    "id": "c1",
+                    "name": "",
+                    "type": "openregister.await-signal",
+                    "position": {
+                        "x": 180,
+                        "y": 140
+                    }
+                },
+                {
+                    "id": "c2",
+                    "name": "",
+                    "type": "openregister.wait",
+                    "position": {
+                        "x": 360,
+                        "y": 140
+                    }
+                },
+                {
+                    "id": "a1",
+                    "name": "Sub",
+                    "type": "openregister.sub-flow",
+                    "position": {
+                        "x": 540,
+                        "y": 140
+                    }
+                },
+                {
+                    "id": "e1",
+                    "name": "Einde",
+                    "type": "openregister.end",
+                    "position": {
+                        "x": 720,
+                        "y": 140
+                    }
+                },
+                {
+                    "id": "e2",
+                    "name": "",
+                    "type": "openregister.end",
+                    "position": {
+                        "x": 900,
+                        "y": 140
+                    }
+                }
+            ],
+            "edges": [
+                {
+                    "id": "f1",
+                    "from": "s1",
+                    "to": "u1"
+                },
+                {
+                    "id": "f2",
+                    "from": "u1",
+                    "to": "g1",
+                    "condition": "json.ok == true"
+                },
+                {
+                    "id": "f3",
+                    "from": "g1",
+                    "to": "e1"
+                }
+            ]
+        },
+        "report": {
+            "summary": {
+                "mapped": 8,
+                "approximated": 4,
+                "refused": 10
+            },
+            "lostSomething": true,
+            "entries": [
+                {
+                    "elementId": "s1",
+                    "kind": "startEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "s2",
+                    "kind": "timerStartEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "s3",
+                    "kind": "conditionalStartEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "s4",
+                    "kind": "messageStartEvent",
+                    "verdict": "refused",
+                    "action": "\"messageStartEvent\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "u1",
+                    "kind": "userTask",
+                    "verdict": "approximated",
+                    "action": "a user task becomes a signal the flow waits for; the form and the assignee are not imported."
+                },
+                {
+                    "elementId": "t1",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "t2",
+                    "kind": "scriptTask",
+                    "verdict": "refused",
+                    "action": "\"scriptTask\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "g1",
+                    "kind": "exclusiveGateway",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "g2",
+                    "kind": "inclusiveGateway",
+                    "verdict": "approximated",
+                    "action": "an inclusive gateway becomes a route, which takes ONE branch; a file expecting several to run needs splitting by hand."
+                },
+                {
+                    "elementId": "g3",
+                    "kind": "parallelGateway",
+                    "verdict": "refused",
+                    "action": "\"parallelGateway\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "c1",
+                    "kind": "intermediateCatchEvent:message",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "c2",
+                    "kind": "intermediateCatchEvent:timer",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "c3",
+                    "kind": "intermediateThrowEvent:message",
+                    "verdict": "refused",
+                    "action": "\"intermediateThrowEvent:message\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "a1",
+                    "kind": "callActivity",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "b1",
+                    "kind": "boundaryEvent:timer",
+                    "verdict": "refused",
+                    "action": "\"boundaryEvent:timer\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "x1",
+                    "kind": "transaction",
+                    "verdict": "refused",
+                    "action": "a transaction boundary has no equivalent: the engine commits each step as it completes."
+                },
+                {
+                    "elementId": "x2",
+                    "kind": "subProcess",
+                    "verdict": "refused",
+                    "action": "\"subProcess\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "x3",
+                    "kind": "subProcess",
+                    "verdict": "refused",
+                    "action": "\"subProcess\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "e1",
+                    "kind": "endEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "e2",
+                    "kind": "terminateEndEvent",
+                    "verdict": "approximated",
+                    "action": "a terminate end ends this path only; it does not cancel work already running elsewhere in the flow."
+                },
+                {
+                    "elementId": "e3",
+                    "kind": "messageEndEvent",
+                    "verdict": "refused",
+                    "action": "\"messageEndEvent\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "n1",
+                    "kind": "textAnnotation",
+                    "verdict": "refused",
+                    "action": "\"textAnnotation\" is not a construct this importer reads; it was dropped."
+                }
+            ]
+        }
+    },
+    "importStrictly: foreign": {
+        "error": "OCA\\OpenRegister\\Exception\\BpmnImportRefused",
+        "message": "The file contains constructs this importer refuses, and strict was requested, so no flow was created.",
+        "report": {
+            "summary": {
+                "mapped": 8,
+                "approximated": 4,
+                "refused": 10
+            },
+            "lostSomething": true,
+            "entries": [
+                {
+                    "elementId": "s1",
+                    "kind": "startEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "s2",
+                    "kind": "timerStartEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "s3",
+                    "kind": "conditionalStartEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "s4",
+                    "kind": "messageStartEvent",
+                    "verdict": "refused",
+                    "action": "\"messageStartEvent\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "u1",
+                    "kind": "userTask",
+                    "verdict": "approximated",
+                    "action": "a user task becomes a signal the flow waits for; the form and the assignee are not imported."
+                },
+                {
+                    "elementId": "t1",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "t2",
+                    "kind": "scriptTask",
+                    "verdict": "refused",
+                    "action": "\"scriptTask\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "g1",
+                    "kind": "exclusiveGateway",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "g2",
+                    "kind": "inclusiveGateway",
+                    "verdict": "approximated",
+                    "action": "an inclusive gateway becomes a route, which takes ONE branch; a file expecting several to run needs splitting by hand."
+                },
+                {
+                    "elementId": "g3",
+                    "kind": "parallelGateway",
+                    "verdict": "refused",
+                    "action": "\"parallelGateway\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "c1",
+                    "kind": "intermediateCatchEvent:message",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "c2",
+                    "kind": "intermediateCatchEvent:timer",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "c3",
+                    "kind": "intermediateThrowEvent:message",
+                    "verdict": "refused",
+                    "action": "\"intermediateThrowEvent:message\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "a1",
+                    "kind": "callActivity",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "b1",
+                    "kind": "boundaryEvent:timer",
+                    "verdict": "refused",
+                    "action": "\"boundaryEvent:timer\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "x1",
+                    "kind": "transaction",
+                    "verdict": "refused",
+                    "action": "a transaction boundary has no equivalent: the engine commits each step as it completes."
+                },
+                {
+                    "elementId": "x2",
+                    "kind": "subProcess",
+                    "verdict": "refused",
+                    "action": "\"subProcess\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "x3",
+                    "kind": "subProcess",
+                    "verdict": "refused",
+                    "action": "\"subProcess\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "e1",
+                    "kind": "endEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "e2",
+                    "kind": "terminateEndEvent",
+                    "verdict": "approximated",
+                    "action": "a terminate end ends this path only; it does not cancel work already running elsewhere in the flow."
+                },
+                {
+                    "elementId": "e3",
+                    "kind": "messageEndEvent",
+                    "verdict": "refused",
+                    "action": "\"messageEndEvent\" is not a construct this importer reads; it was dropped."
+                },
+                {
+                    "elementId": "n1",
+                    "kind": "textAnnotation",
+                    "verdict": "refused",
+                    "action": "\"textAnnotation\" is not a construct this importer reads; it was dropped."
+                }
+            ]
+        }
+    },
+    "import: ours": {
+        "flow": {
+            "name": "Eigen",
+            "nodes": [
+                {
+                    "id": "s1",
+                    "name": "Start",
+                    "type": "openregister.trigger-manual",
+                    "position": {
+                        "x": 10,
+                        "y": 20
+                    }
+                },
+                {
+                    "id": "t1",
+                    "name": "Mail",
+                    "type": "openregister.send-email",
+                    "config": {
+                        "to": "{{email}}",
+                        "subject": "Hi"
+                    },
+                    "position": {
+                        "x": 200,
+                        "y": 40
+                    }
+                },
+                {
+                    "id": "t2",
+                    "name": "Bad config",
+                    "type": "openregister.set-fields",
+                    "position": {
+                        "x": 360,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "t3",
+                    "name": "Scalar config",
+                    "type": "openregister.set-fields",
+                    "position": {
+                        "x": 540,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "g1",
+                    "name": "",
+                    "type": "openregister.route",
+                    "position": {
+                        "x": 720,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "x1",
+                    "name": "",
+                    "type": "openregister.wait",
+                    "position": {
+                        "x": 900,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "t4",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 0,
+                        "y": 140
+                    }
+                },
+                {
+                    "id": "e1",
+                    "name": "",
+                    "type": "openregister.end",
+                    "config": [],
+                    "position": {
+                        "x": 180,
+                        "y": 140
+                    }
+                }
+            ],
+            "edges": [
+                {
+                    "id": "f1",
+                    "from": "s1",
+                    "to": "t1"
+                },
+                {
+                    "id": "f2",
+                    "from": "t1",
+                    "to": "e1"
+                }
+            ]
+        },
+        "report": {
+            "summary": {
+                "mapped": 7,
+                "approximated": 1,
+                "refused": 0
+            },
+            "lostSomething": true,
+            "entries": [
+                {
+                    "elementId": "s1",
+                    "kind": "startEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "t1",
+                    "kind": "serviceTask",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "t2",
+                    "kind": "serviceTask",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "t3",
+                    "kind": "serviceTask",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "g1",
+                    "kind": "exclusiveGateway",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "x1",
+                    "kind": "transaction",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "t4",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "e1",
+                    "kind": "endEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                }
+            ]
+        }
+    },
+    "importStrictly: ours": {
+        "flow": {
+            "name": "Eigen",
+            "nodes": [
+                {
+                    "id": "s1",
+                    "name": "Start",
+                    "type": "openregister.trigger-manual",
+                    "position": {
+                        "x": 10,
+                        "y": 20
+                    }
+                },
+                {
+                    "id": "t1",
+                    "name": "Mail",
+                    "type": "openregister.send-email",
+                    "config": {
+                        "to": "{{email}}",
+                        "subject": "Hi"
+                    },
+                    "position": {
+                        "x": 200,
+                        "y": 40
+                    }
+                },
+                {
+                    "id": "t2",
+                    "name": "Bad config",
+                    "type": "openregister.set-fields",
+                    "position": {
+                        "x": 360,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "t3",
+                    "name": "Scalar config",
+                    "type": "openregister.set-fields",
+                    "position": {
+                        "x": 540,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "g1",
+                    "name": "",
+                    "type": "openregister.route",
+                    "position": {
+                        "x": 720,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "x1",
+                    "name": "",
+                    "type": "openregister.wait",
+                    "position": {
+                        "x": 900,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "t4",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 0,
+                        "y": 140
+                    }
+                },
+                {
+                    "id": "e1",
+                    "name": "",
+                    "type": "openregister.end",
+                    "config": [],
+                    "position": {
+                        "x": 180,
+                        "y": 140
+                    }
+                }
+            ],
+            "edges": [
+                {
+                    "id": "f1",
+                    "from": "s1",
+                    "to": "t1"
+                },
+                {
+                    "id": "f2",
+                    "from": "t1",
+                    "to": "e1"
+                }
+            ]
+        },
+        "report": {
+            "summary": {
+                "mapped": 7,
+                "approximated": 1,
+                "refused": 0
+            },
+            "lostSomething": true,
+            "entries": [
+                {
+                    "elementId": "s1",
+                    "kind": "startEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "t1",
+                    "kind": "serviceTask",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "t2",
+                    "kind": "serviceTask",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "t3",
+                    "kind": "serviceTask",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "g1",
+                    "kind": "exclusiveGateway",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "x1",
+                    "kind": "transaction",
+                    "verdict": "mapped",
+                    "action": ""
+                },
+                {
+                    "elementId": "t4",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "e1",
+                    "kind": "endEvent",
+                    "verdict": "mapped",
+                    "action": ""
+                }
+            ]
+        }
+    },
+    "import: many nodes laid out": {
+        "flow": {
+            "name": "",
+            "nodes": [
+                {
+                    "id": "n1",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 0,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n2",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 180,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n3",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 360,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n4",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 540,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n5",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 720,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n6",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 900,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n7",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 0,
+                        "y": 140
+                    }
+                },
+                {
+                    "id": "n8",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 180,
+                        "y": 140
+                    }
+                }
+            ],
+            "edges": []
+        },
+        "report": {
+            "summary": {
+                "mapped": 0,
+                "approximated": 8,
+                "refused": 0
+            },
+            "lostSomething": true,
+            "entries": [
+                {
+                    "elementId": "n1",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n2",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n3",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n4",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n5",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n6",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n7",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n8",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                }
+            ]
+        }
+    },
+    "importStrictly: many nodes laid out": {
+        "flow": {
+            "name": "",
+            "nodes": [
+                {
+                    "id": "n1",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 0,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n2",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 180,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n3",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 360,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n4",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 540,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n5",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 720,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n6",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 900,
+                        "y": 0
+                    }
+                },
+                {
+                    "id": "n7",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 0,
+                        "y": 140
+                    }
+                },
+                {
+                    "id": "n8",
+                    "name": "",
+                    "type": "",
+                    "position": {
+                        "x": 180,
+                        "y": 140
+                    }
+                }
+            ],
+            "edges": []
+        },
+        "report": {
+            "summary": {
+                "mapped": 0,
+                "approximated": 8,
+                "refused": 0
+            },
+            "lostSomething": true,
+            "entries": [
+                {
+                    "elementId": "n1",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n2",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n3",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n4",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n5",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n6",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n7",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                },
+                {
+                    "elementId": "n8",
+                    "kind": "serviceTask",
+                    "verdict": "approximated",
+                    "action": "this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it."
+                }
+            ]
+        }
+    }
+}

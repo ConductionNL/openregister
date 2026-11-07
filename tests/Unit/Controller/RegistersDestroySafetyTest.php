@@ -43,7 +43,7 @@ use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\App\IAppManager;
 use OCP\IGroupManager;
 use OCP\IRequest;

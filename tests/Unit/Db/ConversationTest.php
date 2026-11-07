@@ -3,7 +3,7 @@
 namespace Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\Conversation;
 use PHPUnit\Framework\TestCase;
 
 class ConversationTest extends TestCase {

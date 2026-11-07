@@ -381,7 +381,6 @@ import {
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
@@ -405,6 +404,7 @@ import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import { checkConfigurationVersion } from '../../services/configurationDisplay.js'
 
 /**
  * Import a discovered configuration from GitHub (a result with a repository) or GitLab.
@@ -580,6 +580,8 @@ export default {
 	},
 
 	methods: {
+		handleCheckVersion: checkConfigurationVersion,
+
 		/**
 		 * Check if API tokens are configured
 		 *
@@ -1001,42 +1003,6 @@ export default {
 			}
 
 			return response.data
-		},
-
-		/**
-		 * @param {object} configuration
-		 * @spec exclude Triggers the configurations check-version endpoint and surfaces update toasts; UI orchestration plumbing.
-		 */
-		async handleCheckVersion(configuration) {
-			// Handle check version for already imported configurations
-			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/configurations/${configuration.id}/check-version`,
-					),
-				)
-
-				if (response.data.hasUpdate) {
-					showSuccess(
-						t('openregister', 'Update available: {local} → {remote}', {
-							local: response.data.localVersion,
-							remote: response.data.remoteVersion,
-						}),
-					)
-				} else {
-					showSuccess(t('openregister', 'Configuration is up to date'))
-				}
-
-				// Refresh the list to show updated version info
-				await configurationStore.refreshConfigurationList()
-			} catch (error) {
-				console.error('Failed to check version:', error)
-				showError(
-					t('openregister', 'Failed to check version: {error}', {
-						error: error.response?.data?.error || error.message,
-					}),
-				)
-			}
 		},
 	},
 }

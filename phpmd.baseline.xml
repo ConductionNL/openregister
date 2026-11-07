@@ -65,15 +65,15 @@
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Controller/EntityRelationsController.php" method="__construct"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/FederationController.php"/>
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Controller/FederationController.php"/>
-  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Controller/FileExtractionController.php" method="__construct"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/FileTextController.php"/>
-  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/FileTextController.php"/>
-  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Controller/FileTextController.php" method="__construct"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/FileTextController.php" method="anonymizeFile"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/FileTextController.php" method="addManualEntity"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/FileTextController.php" method="addManualEntity"/>
-  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Controller/FilesController.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/FilesController.php" method="show"/>
+  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Files/Controller/FileExtractionController.php" method="__construct"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Files/Controller/FileTextController.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Files/Controller/FileTextController.php"/>
+  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Files/Controller/FileTextController.php" method="__construct"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Files/Controller/FileTextController.php" method="anonymizeFile"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Files/Controller/FileTextController.php" method="addManualEntity"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Files/Controller/FileTextController.php" method="addManualEntity"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Files/Controller/FilesController.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Files/Controller/FilesController.php" method="show"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Controller/IconController.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/NamesController.php" method="index"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ObjectIntegrationsController.php"/>
@@ -90,7 +90,7 @@
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Controller/SchemasController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/SchemasController.php"/>
   <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Controller/SearchTrailController.php"/>
-  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Controller/Settings/FileSettingsController.php"/>
+  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Files/Controller/Settings/FileSettingsController.php"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/SettingsController.php" method="getHybridSearchDiagnostics"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Controller/SettingsController.php" method="getHybridSearchDiagnostics"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/SourcesController.php"/>
@@ -147,7 +147,7 @@
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Listener/ApprovalChainGateListener.php" method="handle"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Listener/ApprovalChainGateListener.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Listener/ApprovalChainGateListener.php" method="resolveStepsOverride"/>
-  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Listener/ContextChatSubmissionListener.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Mcp/Listener/ContextChatSubmissionListener.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Listener/FlowNodePreflightListener.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Listener/FlowNodeRegistrationListener.php"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Listener/FlowNodeRegistrationListener.php" method="__construct"/>
@@ -193,7 +193,7 @@
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/AuditQueryService.php"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/AuthorizationService.php" method="authorizeJwt"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/CaseTokenService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Chat/ToolManagementHandler.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Mcp/Service/Chat/ToolManagementHandler.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ConditionMatcher.php" method="resolveDynamicValue"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/ConditionMatcher.php" method="resolveDynamicValue"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Config/FederatedConfigService.php"/>
@@ -216,24 +216,24 @@
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/Edepot/EdepotTransferService.php" method="processResults"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Edepot/SipPackageBuilder.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/Edepot/TransferListService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/File/ChunkTextMatcher.php" method="buildPattern"/>
-  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/File/DocumentProcessingHandler.php"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/File/DocumentProcessingHandler.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/File/DocumentProcessingHandler.php" method="anonymizeDocument"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/File/DocumentProcessingHandler.php" method="anonymizeDocument"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/File/DocumentProcessingHandler.php" method="anonymizeDocument"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/File/DocumentProcessingHandler.php"/>
-  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/File/DocumentProcessingHandler.php"/>
-  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Service/File/ManualEntityService.php"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/File/ManualEntityService.php" method="addManualEntity"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/File/ManualEntityService.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/File/Pdf/PdfMetadataSanitizer.php" method="sanitizeXmp"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/File/Pdf/PdfMetadataSanitizer.php" method="sanitizeXmp"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/File/Pdf/PdfTextReplacer.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/File/Pdf/PdfTextReplacer.php" method="validateOutput"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/File/Pdf/PdfTextReplacer.php" method="validateOutput"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/File/Pdf/PdfTextReplacer.php" method="validateOutput"/>
-  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Service/File/Pdf/PdfTextReplacer.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Files/Service/File/ChunkTextMatcher.php" method="buildPattern"/>
+  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Files/Service/File/DocumentProcessingHandler.php"/>
+  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Files/Service/File/DocumentProcessingHandler.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Files/Service/File/DocumentProcessingHandler.php" method="anonymizeDocument"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Files/Service/File/DocumentProcessingHandler.php" method="anonymizeDocument"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Files/Service/File/DocumentProcessingHandler.php" method="anonymizeDocument"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Files/Service/File/DocumentProcessingHandler.php"/>
+  <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Files/Service/File/DocumentProcessingHandler.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Files/Service/File/ManualEntityService.php"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Files/Service/File/ManualEntityService.php" method="addManualEntity"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Files/Service/File/ManualEntityService.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Files/Service/File/Pdf/PdfMetadataSanitizer.php" method="sanitizeXmp"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Files/Service/File/Pdf/PdfMetadataSanitizer.php" method="sanitizeXmp"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Files/Service/File/Pdf/PdfTextReplacer.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Files/Service/File/Pdf/PdfTextReplacer.php" method="validateOutput"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Files/Service/File/Pdf/PdfTextReplacer.php" method="validateOutput"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Files/Service/File/Pdf/PdfTextReplacer.php" method="validateOutput"/>
+  <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Files/Service/File/Pdf/PdfTextReplacer.php"/>
   <violation rule="PHPMD\Rule\ExcessivePublicCount" file="lib/Service/FileService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/FileService.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Service/Flow/FlowEngine.php"/>
@@ -418,13 +418,13 @@
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Service/Sync/RestApiSourceFetcher.php"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/TenantLifecycleService.php" method="provision"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/TenantLifecycleService.php" method="provision"/>
-  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Service/TextExtraction/EntityRecognitionHandler.php"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Service/TextExtraction/EntityRecognitionHandler.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/TextExtraction/EntityRecognitionHandler.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Service/TextExtraction/EntityRecognitionHandler.php" method="sanitizeUtf8"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/TextExtraction/SpreadsheetExtractor.php" method="extract"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/TextExtraction/SpreadsheetExtractor.php" method="extract"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/TextExtraction/SpreadsheetExtractor.php"/>
+  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Files/Service/TextExtraction/EntityRecognitionHandler.php"/>
+  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Files/Service/TextExtraction/EntityRecognitionHandler.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Files/Service/TextExtraction/EntityRecognitionHandler.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ErrorControlOperator" file="lib/Files/Service/TextExtraction/EntityRecognitionHandler.php" method="sanitizeUtf8"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Files/Service/TextExtraction/SpreadsheetExtractor.php" method="extract"/>
+  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Files/Service/TextExtraction/SpreadsheetExtractor.php" method="extract"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Files/Service/TextExtraction/SpreadsheetExtractor.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/TimeTrackerLinkService.php" method="applyRefreshedInfo"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/TranslationProjectionService.php"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/TranslationProjectionService.php" method="project"/>

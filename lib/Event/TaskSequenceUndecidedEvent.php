@@ -29,14 +29,13 @@ namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskSequence;
-use OCP\EventDispatcher\Event;
 
 /**
  * Carries the undecided sequence and the task whose outcome closed it.
  *
  * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
  */
-class TaskSequenceUndecidedEvent extends Event {
+class TaskSequenceUndecidedEvent extends AbstractTaskSequenceEvent {
 
 	/**
 	 * Constructor.
@@ -45,23 +44,12 @@ class TaskSequenceUndecidedEvent extends Event {
 	 * @param Task $task The position that completed without a decision.
 	 */
 	public function __construct(
-		private readonly TaskSequence $sequence,
+		TaskSequence $sequence,
 		private readonly Task $task,
 	) {
-		parent::__construct();
+		parent::__construct(sequence: $sequence);
 
 	}//end __construct()
-
-	/**
-	 * The closed sequence.
-	 *
-	 * @return TaskSequence The sequence, with status `undecided`.
-	 *
-	 * @spec openspec/changes/a-sequence-advances-only-on-an-approving-outcome/specs/flow-approval-consolidation/spec.md#requirement-a-completion-that-neither-approves-nor-rejects-ends-the-sequence-as-undecided
-	 */
-	public function getSequence(): TaskSequence {
-		return $this->sequence;
-	}//end getSequence()
 
 	/**
 	 * The position that completed without a decision.

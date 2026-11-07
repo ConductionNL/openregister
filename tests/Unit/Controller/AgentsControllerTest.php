@@ -6,11 +6,11 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\AgentsControllerFactory;
 use OCA\OpenRegister\Controller\AgentsController;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;

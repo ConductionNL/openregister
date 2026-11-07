@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Service\TaskService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -42,9 +42,9 @@ final class SeedRelatedItems
 	private ?FileService $fileService = null;
 
 	/**
-	 * @var NoteService|null Writes the seed notes, when present.
+	 * @var NoteServiceInterface|null Writes the seed notes, when present.
 	 */
-	private ?NoteService $noteService = null;
+	private ?NoteServiceInterface $noteService = null;
 
 	/**
 	 * @var TaskService|null Writes the seed tasks, when present.
@@ -77,13 +77,13 @@ final class SeedRelatedItems
 	/**
 	 * Set the service that writes seed notes.
 	 *
-	 * @param NoteService|null $noteService The note service.
+	 * @param NoteServiceInterface|null $noteService The note service.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function useNoteService(?NoteService $noteService): void
+	public function useNoteService(?NoteServiceInterface $noteService): void
 	{
 		$this->noteService = $noteService;
 	}//end useNoteService()

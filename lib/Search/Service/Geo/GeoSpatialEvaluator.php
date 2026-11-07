@@ -79,21 +79,13 @@ class GeoSpatialEvaluator {
 			return false;
 		}
 
-		switch ($filter->type) {
-			case GeoFilter::TYPE_BBOX:
-				return $this->matchesBbox(geometry: $rowGeometry, bbox: $filter->payload);
-			case GeoFilter::TYPE_NEAR:
-				return $this->matchesNear(geometry: $rowGeometry, payload: $filter->payload);
-			case GeoFilter::TYPE_WITHIN:
-				return $this->matchesWithin(rowGeometry: $rowGeometry, predicateGeometry: $filter->payload['geometry']);
-			case GeoFilter::TYPE_INTERSECTS:
-				return $this->matchesIntersects(
-					rowGeometry: $rowGeometry,
-					predicateGeometry: $filter->payload['geometry']
-				);
-		}
-
-		return false;
+		return match ($filter->type) {
+			GeoFilter::TYPE_BBOX => $this->matchesBbox(geometry: $rowGeometry, bbox: $filter->payload),
+			GeoFilter::TYPE_NEAR => $this->matchesNear(geometry: $rowGeometry, payload: $filter->payload),
+			GeoFilter::TYPE_WITHIN => $this->matchesWithin(rowGeometry: $rowGeometry, predicateGeometry: $filter->payload['geometry']),
+			GeoFilter::TYPE_INTERSECTS => $this->matchesIntersects(rowGeometry: $rowGeometry, predicateGeometry: $filter->payload['geometry']),
+			default => false,
+		};
 	}//end matches()
 
 	/**
@@ -205,20 +197,9 @@ class GeoSpatialEvaluator {
 
 		$rowPolygons = $this->extractPolygons(geometry: $rowGeometry);
 		$predicatePolygons = $this->extractPolygons(geometry: $predicateGeometry);
-
 		foreach ($rowPolygons as $row) {
-			foreach ($predicatePolygons as $pred) {
-				foreach (($row[0] ?? []) as $vertex) {
-					if ($this->pointInRing(point: $vertex, ring: $pred[0]) === true) {
-						return true;
-					}
-				}
-
-				foreach (($pred[0] ?? []) as $vertex) {
-					if ($this->pointInRing(point: $vertex, ring: $row[0]) === true) {
-						return true;
-					}
-				}
+			if ($this->touchesAny(row: $row, predicatePolygons: $predicatePolygons) === true) {
+				return true;
 			}
 		}
 
@@ -226,17 +207,55 @@ class GeoSpatialEvaluator {
 	}//end matchesIntersects()
 
 	/**
+	 * Whether a row polygon and any predicate polygon have a vertex inside the other's outer ring.
+	 *
+	 * @param mixed        $row               One row polygon.
+	 * @param array<mixed> $predicatePolygons The predicate polygons.
+	 *
+	 * @return bool
+	 */
+	private function touchesAny(mixed $row, array $predicatePolygons): bool {
+		foreach ($predicatePolygons as $pred) {
+			if ($this->anyVertexInside(vertices: ($row[0] ?? []), polygon: $pred) === true
+				|| $this->anyVertexInside(vertices: ($pred[0] ?? []), polygon: $row) === true
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end touchesAny()
+
+	/**
+	 * Whether any of the vertices lies inside the polygon's outer ring.
+	 *
+	 * The ring is read per vertex, so a polygon is not touched when there are no vertices.
+	 *
+	 * @param mixed $vertices The vertices.
+	 * @param mixed $polygon  The polygon.
+	 *
+	 * @return bool
+	 */
+	private function anyVertexInside(mixed $vertices, mixed $polygon): bool {
+		foreach ($vertices as $vertex) {
+			if ($this->pointInRing(point: $vertex, ring: $polygon[0]) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyVertexInside()
+
+	/**
 	 * Extract a representative `[lon, lat]` from a GeoJSON geometry.
 	 *
 	 * @param array $geometry The geometry.
 	 *
-	 * @return ?array `[lon, lat]` or null when the shape is unsupported.
+	 * Point: its coordinates. Polygon: the centroid of the outer ring.
+	 * MultiPolygon: the centroid of the first polygon's outer ring.
+	 * LineString: its first vertex.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *   One branch per supported GeoJSON geometry type (Point / Polygon /
-	 *   MultiPolygon / LineString) plus shape-validity guards.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *   Same: each geometry type is one branch.
+	 * @return ?array `[lon, lat]` or null when the shape is unsupported.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
 	 */
@@ -247,83 +266,64 @@ class GeoSpatialEvaluator {
 			return null;
 		}
 
-		if ($type === 'Point') {
-			if (count($coords) >= 2 && is_numeric($coords[0]) === true && is_numeric($coords[1]) === true) {
-				return [(float)$coords[0], (float)$coords[1]];
-			}
+		return match ($type) {
+			'Point' => $this->numericPair(pair: $coords),
+			'Polygon' => $this->ringCentroid(ring: $this->arrayOrEmpty(value: ($coords[0] ?? null))),
+			'MultiPolygon' => $this->ringCentroid(ring: $this->arrayOrEmpty(value: ($coords[0][0] ?? null))),
+			'LineString' => $this->numericPair(pair: ($coords[0] ?? null)),
+			default => null,
+		};
+	}//end extractRepresentativePoint()
 
+	/**
+	 * Read `[lon, lat]` floats from a vertex with at least two numeric leading values.
+	 *
+	 * @param mixed $pair The vertex.
+	 *
+	 * @return ?array `[lon, lat]`, or null when the vertex is not a numeric pair.
+	 */
+	private function numericPair(mixed $pair): ?array {
+		if (is_array($pair) === false || count($pair) < 2 || is_numeric($pair[0]) === false || is_numeric($pair[1]) === false) {
 			return null;
 		}
 
-		if ($type === 'Polygon') {
-			$ring = ($coords[0] ?? null);
-			$ringArray = [];
-			if (is_array($ring) === true) {
-				$ringArray = $ring;
-			}
+		return [(float) $pair[0], (float) $pair[1]];
+	}//end numericPair()
 
-			return $this->ringCentroid(ring: $ringArray);
+	/**
+	 * The value when it is an array, else an empty array.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<mixed>
+	 */
+	private function arrayOrEmpty(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
 		}
 
-		if ($type === 'MultiPolygon') {
-			$ring = ($coords[0][0] ?? null);
-			$ringArray = [];
-			if (is_array($ring) === true) {
-				$ringArray = $ring;
-			}
-
-			return $this->ringCentroid(ring: $ringArray);
-		}
-
-		if ($type === 'LineString'
-			&& isset($coords[0]) === true
-			&& is_array($coords[0]) === true
-			&& count($coords[0]) >= 2
-			&& is_numeric($coords[0][0]) === true
-			&& is_numeric($coords[0][1]) === true
-		) {
-			return [(float)$coords[0][0], (float)$coords[0][1]];
-		}
-
-		return null;
-	}//end extractRepresentativePoint()
+		return [];
+	}//end arrayOrEmpty()
 
 	/**
 	 * Compute the arithmetic centroid of a ring.
 	 *
 	 * @param array $ring The ring vertices.
 	 *
-	 * @return ?array `[lon, lat]` centroid, or null when the ring is empty.
+	 * Vertices that are not numeric pairs are skipped.
+	 *
+	 * @return ?array `[lon, lat]` centroid, or null when the ring has no usable vertex.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
 	 */
 	private function ringCentroid(array $ring): ?array {
-		if (count($ring) === 0) {
+		$points = array_values(array_filter(array_map(fn (mixed $vertex): ?array => $this->numericPair(pair: $vertex), $ring)));
+		$count = count($points);
+		if ($count === 0) {
 			return null;
 		}
 
-		$sumLon = 0.0;
-		$sumLat = 0.0;
-		$n = 0;
-		foreach ($ring as $pt) {
-			if (is_array($pt) === false || count($pt) < 2) {
-				continue;
-			}
-
-			if (is_numeric($pt[0]) === false || is_numeric($pt[1]) === false) {
-				continue;
-			}
-
-			$sumLon += (float)$pt[0];
-			$sumLat += (float)$pt[1];
-			$n++;
-		}
-
-		if ($n === 0) {
-			return null;
-		}
-
-		return [($sumLon / $n), ($sumLat / $n)];
+		return [(array_sum(array_column($points, 0)) / $count), (array_sum(array_column($points, 1)) / $count)];
 	}//end ringCentroid()
 
 	/**
@@ -355,8 +355,6 @@ class GeoSpatialEvaluator {
 	 *
 	 * @return bool
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Standard Bevis & Chatelain ray-casting algorithm; the branches are inherent to the geometry test.
-	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
 	 */
 	private function pointInRing(array $point, array $ring): bool {
@@ -364,35 +362,57 @@ class GeoSpatialEvaluator {
 			return false;
 		}
 
-		$x = $point[0];
-		$y = $point[1];
+		$ray = [$point[0], $point[1]];
 		$inside = false;
 		$n = count($ring);
-
 		for ($i = 0, $j = ($n - 1); $i < $n; $j = $i++) {
-			$xi = ($ring[$i][0] ?? null);
-			$yi = ($ring[$i][1] ?? null);
-			$xj = ($ring[$j][0] ?? null);
-			$yj = ($ring[$j][1] ?? null);
-
-			if ($xi === null || $yi === null || $xj === null || $yj === null) {
-				continue;
-			}
-
-			$denom = ($yj - $yi);
-			if ($denom === 0.0) {
-				$denom = 1e-12;
-			}
-
-			$intersect = (($yi > $y) !== ($yj > $y))
-				&& ($x < (($xj - $xi) * (($y - $yi) / $denom) + $xi));
-			if ($intersect === true) {
+			if ($this->edgeCrossesRay(ray: $ray, edge: [($ring[$i] ?? null), ($ring[$j] ?? null)]) === true) {
 				$inside = !$inside;
 			}
-		}//end for
+		}
 
 		return $inside;
 	}//end pointInRing()
+
+	/**
+	 * Whether a ring edge crosses the horizontal ray cast east from a point.
+	 *
+	 * @param array{0: mixed, 1: mixed} $ray  The point `[x, y]` the ray starts at.
+	 * @param array{0: mixed, 1: mixed} $edge The edge's two vertices.
+	 *
+	 * @return bool False for an edge with a missing coordinate.
+	 */
+	private function edgeCrossesRay(array $ray, array $edge): bool {
+		$vertices = $this->edgeCoordinates(edge: $edge);
+		if ($vertices === null) {
+			return false;
+		}
+
+		[$x, $y] = $ray;
+		[$xi, $yi, $xj, $yj] = $vertices;
+		$denom = ($yj - $yi);
+		if ($denom === 0.0) {
+			$denom = 1e-12;
+		}
+
+		return (($yi > $y) !== ($yj > $y)) && ($x < (($xj - $xi) * (($y - $yi) / $denom) + $xi));
+	}//end edgeCrossesRay()
+
+	/**
+	 * The `[xi, yi, xj, yj]` coordinates of an edge, or null when one is missing.
+	 *
+	 * @param array{0: mixed, 1: mixed} $edge The edge's two vertices.
+	 *
+	 * @return array{0: mixed, 1: mixed, 2: mixed, 3: mixed}|null
+	 */
+	private function edgeCoordinates(array $edge): ?array {
+		$coordinates = [($edge[0][0] ?? null), ($edge[0][1] ?? null), ($edge[1][0] ?? null), ($edge[1][1] ?? null)];
+		if (in_array(null, $coordinates, true) === true) {
+			return null;
+		}
+
+		return $coordinates;
+	}//end edgeCoordinates()
 
 	/**
 	 * Normalise a Polygon or MultiPolygon to a list of polygons.

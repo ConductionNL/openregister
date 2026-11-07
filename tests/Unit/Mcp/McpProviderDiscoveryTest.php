@@ -13,7 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
 use OCA\OpenRegister\Mcp\McpProviderDiscovery;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
@@ -31,7 +31,7 @@ class McpProviderDiscoveryTest extends TestCase {
 		(new McpProviderDiscovery())->register(context: $context);
 
 		$this->assertSame(
-			expected: ['OCA\OpenRegister\Service\Mcp\McpToolsService'],
+			expected: ['OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService'],
 			actual: $context->services
 		);
 		$this->assertCount(expectedCount: 0, haystack: $context->listeners);

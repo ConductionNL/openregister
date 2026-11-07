@@ -28,12 +28,12 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
 use OCA\OpenRegister\Controller\Support\ConversationFailure;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -62,9 +62,9 @@ class ConversationController extends Controller {
 	/**
 	 * Conversation mapper
 	 *
-	 * @var ConversationMapper
+	 * @var ConversationMapperInterface
 	 */
-	private ConversationMapper $conversationMapper;
+	private ConversationMapperInterface $conversationMapper;
 
 	/**
 	 * Message mapper
@@ -83,9 +83,9 @@ class ConversationController extends Controller {
 	/**
 	 * Agent mapper
 	 *
-	 * @var AgentMapper
+	 * @var AgentMapperInterface
 	 */
-	private AgentMapper $agentMapper;
+	private AgentMapperInterface $agentMapper;
 
 	/**
 	 * Organisation service
@@ -97,9 +97,9 @@ class ConversationController extends Controller {
 	/**
 	 * Chat service
 	 *
-	 * @var ChatService
+	 * @var ChatServiceInterface
 	 */
-	private ChatService $chatService;
+	private ChatServiceInterface $chatService;
 
 	/**
 	 * Logger

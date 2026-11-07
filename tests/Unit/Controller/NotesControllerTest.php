@@ -13,7 +13,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\NotesControllerFactory;
 use Exception;
 use OCA\OpenRegister\Notifications\Controller\NotesController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;

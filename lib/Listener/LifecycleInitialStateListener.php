@@ -26,9 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
@@ -66,14 +64,14 @@ class LifecycleInitialStateListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up schema lifecycle metadata.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
+	 * @param LifecycleEditReader $edits Reads the object's lifecycle declaration.
 	 * @param ReferenceResolver $references Cross-object reference resolver (dynamic initial).
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly LifecycleEditReader $edits,
 		private readonly ReferenceResolver $references,
 		private readonly LoggerInterface $logger,
 	) {
@@ -89,23 +87,24 @@ class LifecycleInitialStateListener implements IEventListener {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
-		if (($event instanceof ObjectCreatingEvent) === false) {
-			return;
+		if (($event instanceof ObjectCreatingEvent) === true) {
+			$this->initialise(event: $event);
 		}
-
-		$object = $event->getObject();
-		$schema = $this->loadSchema(object: $object);
-		if ($schema === null) {
-			return;
-		}
-
-		$annotation = $this->getLifecycleAnnotation(schema: $schema);
-		if ($annotation === null) {
-			return;
-		}
-
-		$this->applyInitial(event: $event, declaration: ['schema' => $schema, 'annotation' => $annotation]);
 	}//end handle()
+
+	/**
+	 * Apply the initial state when the object's schema declares a lifecycle.
+	 *
+	 * @param ObjectCreatingEvent $event The create.
+	 *
+	 * @return void
+	 */
+	private function initialise(ObjectCreatingEvent $event): void {
+		$declaration = $this->edits->declarationOf(object: $event->getObject(), logAs: 'Lifecycle initial-state listener');
+		if ($declaration !== null) {
+			$this->applyInitial(create: new LifecycleCreate(event: $event, declaration: $declaration));
+		}
+	}//end initialise()
 
 	/**
 	 * Fill an empty lifecycle field with the resolved initial state, or refuse a create in another state.
@@ -115,41 +114,26 @@ class LifecycleInitialStateListener implements IEventListener {
 	 * SystemOperationContext (a seed, an example set, a configuration import) may
 	 * create in any state, as it may write declared state on an update.
 	 *
-	 * @param ObjectCreatingEvent                                $event       The create.
-	 * @param array{schema: Schema, annotation: array<string, mixed>} $declaration The schema and its `x-openregister-lifecycle` block.
+	 * @param LifecycleCreate $create The create.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-create-starts-in-the-declared-initial-state
 	 */
-	private function applyInitial(ObjectCreatingEvent $event, array $declaration): void {
-		$annotation = $declaration['annotation'];
-		$field      = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
-		if ($field === '' || array_key_exists('initial', $annotation) === false) {
+	private function applyInitial(LifecycleCreate $create): void {
+		if ($create->declaresInitial() === false) {
 			return;
 		}
 
-		$object  = $event->getObject();
-		$data    = $object->getObject() ?? [];
-		$initial = $this->resolveInitial(
-			initial: $annotation['initial'],
-			object: $object,
-			schema: $declaration['schema'],
-			data: $data
-		);
-
-		$chosen = ($data[$field] ?? null);
-		if ($chosen !== null && $chosen !== '') {
-			$this->judgeChosenState(
-				event: $event,
-				state: ['field' => $field, 'chosen' => $chosen, 'initial' => $initial, 'allowed' => $this->createStates(annotation: $annotation)]
-			);
+		$initial = $this->resolveInitial(create: $create);
+		if ($create->hasChosen() === false) {
+			$create->fill(initial: $initial);
 			return;
 		}
 
-		if ($initial !== null && $initial !== '') {
-			$data[$field] = $initial;
-			$object->setObject($data);
+		$allowed = $this->createStates(annotation: $create->declaration->annotation);
+		if ($this->mayStartIn(chosen: $create->chosen(), states: [$initial, ...$allowed]) === false) {
+			$create->refuse(error: $this->refusal(create: $create, initial: $initial));
 		}
 	}//end applyInitial()
 
@@ -174,99 +158,95 @@ class LifecycleInitialStateListener implements IEventListener {
 	}//end createStates()
 
 	/**
-	 * Refuse a create whose lifecycle value is not the initial state, unless the system writes it or a historic import keeps it.
+	 * Whether a create may start in the chosen state: a declared one, or any when the system writes it or a historic import keeps it.
 	 *
-	 * @param ObjectCreatingEvent $event The create.
-	 * @param array               $state `field`, the caller's value `chosen`, the resolved `initial`, and the
-	 *                                   `allowed` states the schema's `createStates` declares beside it.
+	 * @param mixed             $chosen The caller's value.
+	 * @param array<int, mixed> $states The resolved initial state and the declared `createStates`.
 	 *
-	 * @return void
+	 * @return bool
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext and KeepLifecycleStatesScope are ambient markers; a static read is
 	 *   the whole point of them.
 	 *
 	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-create-starts-in-the-declared-initial-state
 	 */
-	private function judgeChosenState(ObjectCreatingEvent $event, array $state): void {
-		if ($state['chosen'] === $state['initial']
-			|| in_array($state['chosen'], $state['allowed'], true) === true
+	private function mayStartIn(mixed $chosen, array $states): bool {
+		return in_array($chosen, $states, true) === true
 			|| SystemOperationContext::isActive() === true
-			|| KeepLifecycleStatesScope::isActive() === true
-		) {
-			return;
-		}
+			|| KeepLifecycleStatesScope::isActive() === true;
+	}//end mayStartIn()
 
+	/**
+	 * The refusal of a create in a state it may not start in.
+	 *
+	 * @param LifecycleCreate $create  The create.
+	 * @param string|null     $initial The resolved initial state.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-create-starts-in-the-declared-initial-state
+	 */
+	private function refusal(LifecycleCreate $create, ?string $initial): array {
 		$chosen = 'a non-text value';
-		if (is_scalar($state['chosen']) === true) {
-			$chosen = (string)$state['chosen'];
+		if (is_scalar($create->chosen()) === true) {
+			$chosen = (string)$create->chosen();
 		}
 
-		$event->setErrors(
-			[
-				'code' => 'lifecycle-invalid-initial',
-				'field' => $state['field'],
-				'attempted' => $state['chosen'],
-				'initial' => $state['initial'],
-				'allowed' => $state['allowed'],
-				'message' => sprintf('A new object starts in "%s"; "%s" cannot be set when it is created.', (string)$state['initial'], $chosen),
-			]
-		);
-		$event->stopPropagation();
-	}//end judgeChosenState()
+		return [
+			'code' => 'lifecycle-invalid-initial',
+			'field' => $create->declaration->field(),
+			'attempted' => $create->chosen(),
+			'initial' => $initial,
+			'allowed' => $this->createStates(annotation: $create->declaration->annotation),
+			'message' => sprintf('A new object starts in "%s"; "%s" cannot be set when it is created.', (string)$initial, $chosen),
+		];
+	}//end refusal()
 
 	/**
 	 * Resolve the `initial` annotation to a concrete state string.
 	 *
-	 * Static string → returned as-is. A `{ "from": <ref>, "field": <field> }`
-	 * dict OR a `"@ref.<ref>.<field>"` token → resolved from the related object
-	 * declared in `x-openregister-references`. Anything unresolvable yields
-	 * null (a logged no-op upstream).
+	 * Static string: returned as-is. A `{ "from": <ref>, "field": <field> }` dict or a
+	 * `"@ref.<ref>.<field>"` token: resolved from the related object declared in
+	 * `x-openregister-references`. Anything unresolvable yields null (a logged no-op
+	 * upstream).
 	 *
-	 * @param mixed $initial The declared initial value (string or reference dict).
-	 * @param ObjectEntity $object The object being created.
-	 * @param Schema $schema The resolved schema (for its references block).
-	 * @param array<string, mixed> $data The object's current data payload.
+	 * @param LifecycleCreate $create The create.
 	 *
 	 * @return string|null The resolved initial state, or null when unresolvable.
 	 */
-	private function resolveInitial(mixed $initial, ObjectEntity $object, Schema $schema, array $data): ?string {
-		// Static string form — but recognise the "@ref.<ref>.<field>" token.
-		if (is_string($initial) === true) {
-			if (str_starts_with($initial, '@ref.') === true) {
-				$parts = explode('.', substr($initial, 5), 2);
-				$refName = ($parts[0] ?? '');
-				$refField = ($parts[1] ?? '');
-				return $this->resolveFromReference(
-					refName: $refName,
-					field: $refField,
-					object: $object,
-					schema: $schema,
-					data: $data
-				);
-			}
-
+	private function resolveInitial(LifecycleCreate $create): ?string {
+		$initial = $create->declaration->annotation['initial'];
+		if (is_string($initial) === true && str_starts_with($initial, '@ref.') === false) {
 			return $initial;
 		}
 
-		// Dynamic reference dict { "from": <ref>, "field": <field> }.
-		if (is_array($initial) === true) {
-			$refName = (string)($initial['from'] ?? '');
-			$field = (string)($initial['field'] ?? '');
-			if ($refName === '' || $field === '') {
-				return null;
-			}
-
-			return $this->resolveFromReference(
-				refName: $refName,
-				field: $field,
-				object: $object,
-				schema: $schema,
-				data: $data
-			);
+		$reference = $this->referenceIn(initial: $initial);
+		if ($reference->isComplete() === false) {
+			return null;
 		}
 
-		return null;
+		return $this->resolveFromReference(reference: $reference, create: $create);
 	}//end resolveInitial()
+
+	/**
+	 * The reference a dynamic `initial` declares; an incomplete one when it has neither form.
+	 *
+	 * @param mixed $initial A `@ref.` token or a reference dict.
+	 *
+	 * @return LifecycleInitialReference
+	 */
+	private function referenceIn(mixed $initial): LifecycleInitialReference {
+		if (is_string($initial) === true) {
+			$parts = explode('.', substr($initial, 5), 2);
+			return new LifecycleInitialReference(name: ($parts[0] ?? ''), field: ($parts[1] ?? ''));
+		}
+
+		if (is_array($initial) === true) {
+			return new LifecycleInitialReference(name: (string)($initial['from'] ?? ''), field: (string)($initial['field'] ?? ''));
+		}
+
+		return new LifecycleInitialReference(name: '', field: '');
+	}//end referenceIn()
 
 	/**
 	 * Resolve `<field>` from the related object behind a declared reference name.
@@ -275,114 +255,91 @@ class LifecycleInitialStateListener implements IEventListener {
 	 * plumbing the calculation engine uses) and reads `<field>` off the
 	 * named reference's resolved data. RBAC + tenant scoped; never throws.
 	 *
-	 * @param string $refName The declared reference name.
-	 * @param string $field The field on the related object to read.
-	 * @param ObjectEntity $object The object being created.
-	 * @param Schema $schema The resolved schema.
-	 * @param array<string, mixed> $data The object's current data payload.
+	 * @param LifecycleInitialReference $reference The declared reference and the field to read.
+	 * @param LifecycleCreate           $create    The create.
 	 *
 	 * @return string|null The related field value as a string, or null when unresolvable.
 	 */
-	private function resolveFromReference(
-		string $refName,
-		string $field,
-		ObjectEntity $object,
-		Schema $schema,
-		array $data,
-	): ?string {
-		if ($refName === '' || $field === '') {
-			return null;
-		}
-
-		$references = $this->getReferences(schema: $schema);
-		if ($references === null || array_key_exists($refName, $references) === false) {
+	private function resolveFromReference(LifecycleInitialReference $reference, LifecycleCreate $create): ?string {
+		$references = $this->getReferences(schema: $create->declaration->schema);
+		if (array_key_exists($reference->name, $references) === false) {
 			$this->logger->warning(
-				sprintf('Lifecycle dynamic initial: reference "%s" is not declared on the schema.', $refName)
+				sprintf('Lifecycle dynamic initial: reference "%s" is not declared on the schema.', $reference->name)
 			);
 			return null;
 		}
 
+		return $this->relatedValue(reference: $reference, related: $this->related(reference: $reference, create: $create));
+	}//end resolveFromReference()
+
+	/**
+	 * The resolved data of the related object behind a declared reference.
+	 *
+	 * @param LifecycleInitialReference $reference The declared reference.
+	 * @param LifecycleCreate           $create    The create.
+	 *
+	 * @return mixed
+	 */
+	private function related(LifecycleInitialReference $reference, LifecycleCreate $create): mixed {
+		$declared = $this->getReferences(schema: $create->declaration->schema)[$reference->name];
 		$resolved = $this->references->resolveAll(
-			payload: $data,
-			references: [$refName => $references[$refName]],
-			register: $object->getRegister(),
-			organisation: $object->getOrganisation()
+			payload: $create->data(),
+			references: [$reference->name => $declared],
+			register: $create->object()->getRegister(),
+			organisation: $create->object()->getOrganisation()
 		);
 
-		$related = ($resolved[$refName] ?? null);
-		if (is_array($related) === false || array_key_exists($field, $related) === false) {
+		return ($resolved[$reference->name] ?? null);
+	}//end related()
+
+	/**
+	 * Read the referenced field off the related object.
+	 *
+	 * @param LifecycleInitialReference $reference The declared reference and the field to read.
+	 * @param mixed                     $related   The related object's resolved data.
+	 *
+	 * @return string|null The value as text, or null when it is missing or empty.
+	 */
+	private function relatedValue(LifecycleInitialReference $reference, mixed $related): ?string {
+		if (is_array($related) === false || array_key_exists($reference->field, $related) === false) {
 			$this->logger->warning(
-				sprintf('Lifecycle dynamic initial: reference "%s" resolved no "%s" field.', $refName, $field)
+				sprintf('Lifecycle dynamic initial: reference "%s" resolved no "%s" field.', $reference->name, $reference->field)
 			);
 			return null;
 		}
 
-		$value = $related[$field];
+		return $this->stateText(value: $related[$reference->field]);
+	}//end relatedValue()
+
+	/**
+	 * A related value as a state, or null when it is empty.
+	 *
+	 * @param mixed $value The related value.
+	 *
+	 * @return string|null
+	 */
+	private function stateText(mixed $value): ?string {
 		if ($value === null || $value === '') {
 			return null;
 		}
 
 		return (string)$value;
-	}//end resolveFromReference()
+	}//end stateText()
 
 	/**
 	 * Read the `x-openregister-references` configuration block.
 	 *
 	 * @param Schema $schema Schema to inspect.
 	 *
-	 * @return array<string, mixed>|null References map, or null when absent.
+	 * @return array<string, mixed> References map, empty when absent.
 	 */
-	private function getReferences(Schema $schema): ?array {
+	private function getReferences(Schema $schema): array {
 		$config = ($schema->getConfiguration() ?? []);
 		$value = ($config['x-openregister-references'] ?? null);
-		if (is_array($value) === true && count($value) > 0) {
+		if (is_array($value) === true) {
 			return $value;
 		}
 
-		return null;
+		return [];
 	}//end getReferences()
-
-	/**
-	 * Look up the schema referenced by an object instance.
-	 *
-	 * @param ObjectEntity $object Object whose schema reference to resolve.
-	 *
-	 * @return Schema|null Resolved schema, or null on lookup failure.
-	 */
-	private function loadSchema(ObjectEntity $object): ?Schema {
-		$schemaRef = $object->getSchema();
-		if ($schemaRef === null || $schemaRef === '') {
-			return null;
-		}
-
-		try {
-			return $this->schemaMapper->find($schemaRef, _multitenancy: false);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf(
-					'Lifecycle initial-state listener could not load schema "%s": %s',
-					(string)$schemaRef,
-					$e->getMessage()
-				)
-			);
-			return null;
-		}
-	}//end loadSchema()
-
-	/**
-	 * Read the `x-openregister-lifecycle` configuration block.
-	 *
-	 * @param Schema $schema Schema to inspect.
-	 *
-	 * @return array<string, mixed>|null Lifecycle annotation, or null when missing.
-	 */
-	private function getLifecycleAnnotation(Schema $schema): ?array {
-		$config = ($schema->getConfiguration() ?? []);
-		$annotation = ($config['x-openregister-lifecycle'] ?? null);
-		if (is_array($annotation) === true) {
-			return $annotation;
-		}
-
-		return null;
-	}//end getLifecycleAnnotation()
 }//end class

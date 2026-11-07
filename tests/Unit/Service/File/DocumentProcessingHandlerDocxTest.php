@@ -22,10 +22,10 @@ namespace Unit\Service\File;
 
 use DOMDocument;
 use DOMXPath;
-use OCA\OpenRegister\Db\AnonymisationLogMapper;
+use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
-use OCA\OpenRegister\Service\File\OfficeDocumentSanitizer;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
-use OCA\OpenRegister\Controller\FileExtractionController;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Controller\FileExtractionController;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -809,7 +809,7 @@ class FileExtractionControllerTest extends TestCase {
 	// ─── show() ─────────────────────────────────────────────────────
 
 	public function testShowSuccess(): void {
-		$chunk1 = $this->createMock(\OCA\OpenRegister\Db\Chunk::class);
+		$chunk1 = $this->createMock(\OCA\OpenRegister\Files\Db\Chunk::class);
 		$chunk1->method('jsonSerialize')->willReturn([
 			'id' => 1,
 			'sourceType' => 'file',
@@ -817,7 +817,7 @@ class FileExtractionControllerTest extends TestCase {
 			'chunkIndex' => 0,
 		]);
 
-		$chunk2 = $this->createMock(\OCA\OpenRegister\Db\Chunk::class);
+		$chunk2 = $this->createMock(\OCA\OpenRegister\Files\Db\Chunk::class);
 		$chunk2->method('jsonSerialize')->willReturn([
 			'id' => 2,
 			'sourceType' => 'file',

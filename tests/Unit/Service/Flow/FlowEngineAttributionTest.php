@@ -99,10 +99,7 @@ class FlowEngineAttributionTest extends TestCase {
 		$this->engine = new FlowEngine(
 			new FlowDefinitionBuilder(),
 			$this->createMock(LoggerInterface::class),
-			null,
-			null,
-			null,
-			$this->context
+			runContext: $this->context
 		);
 	}//end setUp()
 

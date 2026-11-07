@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Decision;
 
 use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCP\IDBConnection;

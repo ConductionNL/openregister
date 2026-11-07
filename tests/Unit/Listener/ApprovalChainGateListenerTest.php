@@ -49,6 +49,11 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
+ * @uses \OCA\OpenRegister\Listener\ChainGateRun
+ * @uses \OCA\OpenRegister\Listener\LifecycleAttempt
+ * @uses \OCA\OpenRegister\Listener\LifecycleDeclaration
+ * @uses \OCA\OpenRegister\Listener\LifecycleEdit
+ * @uses \OCA\OpenRegister\Listener\LifecycleEditReader
  * @covers \OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
@@ -78,13 +83,12 @@ class ApprovalChainGateListenerTest extends TestCase {
 		// The REAL compiler on purpose: it is a pure function of the schema,
 		// and the gate's contract includes what the compiler derives.
 		$this->listener = new ApprovalChainGateListener(
-			$this->schemaMapper,
+			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $logger),
 			$this->sequenceMapper,
 			$this->sequenceService,
 			new ApprovalChainAnnotationInstaller(logger: $logger),
 			$this->userSession,
-			$logger,
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
+			$logger
 		);
 	}//end setUp()
 

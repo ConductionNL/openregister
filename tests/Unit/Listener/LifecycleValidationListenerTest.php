@@ -54,6 +54,10 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\LifecycleValidationListener
+ * @uses \OCA\OpenRegister\Listener\LifecycleAttempt
+ * @uses \OCA\OpenRegister\Listener\LifecycleDeclaration
+ * @uses \OCA\OpenRegister\Listener\LifecycleEdit
+ * @uses \OCA\OpenRegister\Listener\LifecycleEditReader
  */
 class LifecycleValidationListenerTest extends TestCase {
 
@@ -132,11 +136,10 @@ class LifecycleValidationListenerTest extends TestCase {
 		);
 
 		$this->listener = new LifecycleValidationListener(
-			$this->schemaMapper,
+			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $logger),
 			$this->guardRegistry,
 			$this->userSession,
 			$this->permissionHandler,
-			$logger,
 			new LifecycleConditionEvaluator(
 				$this->userSession,
 				$this->groupManager,
@@ -144,7 +147,6 @@ class LifecycleValidationListenerTest extends TestCase {
 				$this->logger,
 				$this->realConditionDialect()
 			),
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()),
 			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
@@ -264,15 +266,13 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->schemaWithLifecycle(self::VOORSTEL_LIFECYCLE);
 		$actions  = new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext();
 		$listener = new LifecycleValidationListener(
-			schemaMapper: $this->schemaMapper,
-			guardRegistry: $this->guardRegistry,
-			userSession: $this->userSession,
-			permissionHandler: $this->permissionHandler,
-			logger: $this->logger,
-			conditionEvaluator: $this->createMock(LifecycleConditionEvaluator::class),
-			transitionResolver: new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($actions),
-			conditionTracer: new \OCA\OpenRegister\Service\Rules\ConditionTracer(dialect: $this->realConditionDialect()),
-			ruleRuns: $this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
+			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($actions), $this->logger),
+			$this->guardRegistry,
+			$this->userSession,
+			$this->permissionHandler,
+			$this->createMock(LifecycleConditionEvaluator::class),
+			new \OCA\OpenRegister\Service\Rules\ConditionTracer(dialect: $this->realConditionDialect()),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 
 		$outside = $this->event('lifecycle', 'geparafeerd', 'concept');

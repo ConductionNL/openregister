@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\File as OrFile;
+use OCA\OpenRegister\Files\Db\File as OrFile;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\InvalidPathException;
 use OCP\Files\Lock\ILock;
@@ -33,6 +33,8 @@ use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Lock\LockedException;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 
 /**
  * Handles file formatting and filtering operations.
@@ -82,25 +84,25 @@ class FileFormattingHandler {
 	/**
 	 * Constructor for FileFormattingHandler.
 	 *
-	 * @param TaggingHandler $taggingHandler Tagging handler for tag operations.
+	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for tag operations.
 	 * @param FileSharingHandler $fileSharingHandler Sharing handler for share operations.
 	 * @param IURLGenerator $urlGenerator URL generator for creating URLs.
 	 * @param ILockManager $lockManager Lock manager for reading file lock state.
 	 * @param IUserSession $userSession Session used to gate lock fields for authenticated callers only.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
+	 * @param \OCA\OpenRegister\Files\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         description / category / labels / downloadCount
 	 *                                                         enrichment. When null (test fixtures, legacy
 	 *                                                         callers), enrichment is skipped silently.
 	 */
 	public function __construct(
-		private readonly TaggingHandler $taggingHandler,
+		private readonly TaggingHandlerInterface $taggingHandler,
 		private readonly FileSharingHandler $fileSharingHandler,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly ILockManager $lockManager,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
+		private readonly ?\OCA\OpenRegister\Files\Db\FileMapperInterface $fileMapper = null,
 	) {
 	}//end __construct()
 

@@ -1,0 +1,550 @@
+{
+    "normalise / string": [],
+    "normalise / null": [],
+    "normalise / empty": [],
+    "normalise / bare record": [
+        {
+            "json": {
+                "a": 1
+            },
+            "binary": [],
+            "pairedItem": null
+        }
+    ],
+    "normalise / bare record with index": [
+        {
+            "json": {
+                "a": 1
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 4
+            }
+        }
+    ],
+    "normalise / single item": [
+        {
+            "json": {
+                "a": 1
+            },
+            "binary": {
+                "f": "b"
+            },
+            "pairedItem": {
+                "item": 7
+            },
+            "output": "yes"
+        }
+    ],
+    "normalise / single item int paired": [
+        {
+            "json": {
+                "a": 1
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 5
+            }
+        }
+    ],
+    "normalise / single item json not array": [
+        {
+            "json": [
+                "scalar"
+            ],
+            "binary": [
+                "x"
+            ],
+            "pairedItem": null
+        }
+    ],
+    "normalise / single item empty output": [
+        {
+            "json": [],
+            "binary": [],
+            "pairedItem": null
+        }
+    ],
+    "normalise / single item numeric output": [
+        {
+            "json": [],
+            "binary": [],
+            "pairedItem": null
+        }
+    ],
+    "normalise / paired without item": [
+        {
+            "json": [],
+            "binary": [],
+            "pairedItem": {
+                "item": 9
+            }
+        }
+    ],
+    "normalise / paired null item": [
+        {
+            "json": [],
+            "binary": [],
+            "pairedItem": {
+                "item": 9
+            }
+        }
+    ],
+    "normalise / list": [
+        {
+            "json": {
+                "a": 1
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "b": 2
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 1
+            }
+        },
+        {
+            "json": {
+                "c": 3
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            },
+            "output": "no"
+        }
+    ],
+    "normalise / list with index": [
+        {
+            "json": {
+                "a": 1
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 6
+            }
+        },
+        {
+            "json": {
+                "b": 2
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 6
+            }
+        }
+    ],
+    "normalise / list of scalars": [],
+    "normalise / list with nested lists": [
+        {
+            "json": [
+                1,
+                2
+            ],
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": [
+                [
+                    3
+                ]
+            ],
+            "binary": [],
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "normalise / sparse keys not list": [
+        {
+            "json": {
+                "1": {
+                    "a": 1
+                },
+                "2": {
+                    "b": 2
+                }
+            },
+            "binary": [],
+            "pairedItem": null
+        }
+    ],
+    "item / defaults": {
+        "json": {
+            "a": 1
+        },
+        "binary": [],
+        "pairedItem": null
+    },
+    "item / full": {
+        "json": {
+            "a": 1
+        },
+        "binary": {
+            "b": 2
+        },
+        "pairedItem": {
+            "item": 0
+        },
+        "output": "out"
+    },
+    "item / empty output": {
+        "json": [],
+        "binary": [],
+        "pairedItem": null
+    },
+    "outputOf": [
+        null,
+        "x",
+        null
+    ],
+    "fromSubject / serialisable": [
+        {
+            "json": {
+                "id": "u1",
+                "name": "live",
+                "status": "new"
+            },
+            "binary": [],
+            "pairedItem": null
+        }
+    ],
+    "fromSubject / getObject": [
+        {
+            "json": {
+                "uuid": "u1",
+                "name": "obj"
+            },
+            "binary": [],
+            "pairedItem": null
+        }
+    ],
+    "fromSubject / plain": [
+        {
+            "json": {
+                "id": "p1",
+                "name": "plain"
+            },
+            "binary": [],
+            "pairedItem": null
+        }
+    ],
+    "fromSubject / serialisable scalar": [
+        {
+            "json": [
+                "x"
+            ],
+            "binary": [],
+            "pairedItem": null
+        }
+    ],
+    "fromSubject / serialisable empty": [
+        {
+            "json": [],
+            "binary": [],
+            "pairedItem": null
+        }
+    ],
+    "refresh / match": [
+        {
+            "json": {
+                "@self": {
+                    "id": " u1 "
+                },
+                "name": "live",
+                "answer": "kept",
+                "id": "u1",
+                "status": "new"
+            },
+            "binary": [],
+            "pairedItem": null
+        },
+        {
+            "json": {
+                "id": "u1",
+                "name": "live",
+                "status": "new"
+            }
+        },
+        {
+            "json": {
+                "uuid": "u1",
+                "id": "u1",
+                "name": "live",
+                "status": "new"
+            }
+        },
+        {
+            "json": {
+                "@self": {
+                    "id": ""
+                },
+                "id": "u1",
+                "name": "live",
+                "status": "new"
+            }
+        },
+        {
+            "json": {
+                "@self": {
+                    "id": "other"
+                },
+                "id": "u1"
+            }
+        },
+        {
+            "json": {
+                "id": "u1",
+                "uuid": "u1",
+                "name": "live",
+                "status": "new"
+            }
+        },
+        {
+            "json": {
+                "id": "u1",
+                "uuid": "u1",
+                "name": "live",
+                "status": "new"
+            }
+        },
+        {
+            "json": {
+                "id": "u2"
+            }
+        },
+        "not-an-item",
+        {
+            "binary": []
+        },
+        {
+            "json": "scalar"
+        }
+    ],
+    "refresh / blank uuid": [
+        {
+            "json": {
+                "@self": {
+                    "id": " u1 "
+                },
+                "name": "old",
+                "answer": "kept"
+            },
+            "binary": [],
+            "pairedItem": null
+        },
+        {
+            "json": {
+                "id": "u1",
+                "name": "old2"
+            }
+        },
+        {
+            "json": {
+                "uuid": "u1"
+            }
+        },
+        {
+            "json": {
+                "@self": {
+                    "id": ""
+                },
+                "id": "u1"
+            }
+        },
+        {
+            "json": {
+                "@self": {
+                    "id": "other"
+                },
+                "id": "u1"
+            }
+        },
+        {
+            "json": {
+                "id": "  ",
+                "uuid": "u1"
+            }
+        },
+        {
+            "json": {
+                "id": 5,
+                "uuid": "u1"
+            }
+        },
+        {
+            "json": {
+                "id": "u2"
+            }
+        },
+        "not-an-item",
+        {
+            "binary": []
+        },
+        {
+            "json": "scalar"
+        }
+    ],
+    "refresh / no items": [],
+    "refresh / empty live": [
+        {
+            "json": {
+                "@self": {
+                    "id": " u1 "
+                },
+                "name": "old",
+                "answer": "kept"
+            },
+            "binary": [],
+            "pairedItem": null
+        },
+        {
+            "json": {
+                "id": "u1",
+                "name": "old2"
+            }
+        },
+        {
+            "json": {
+                "uuid": "u1"
+            }
+        },
+        {
+            "json": {
+                "@self": {
+                    "id": ""
+                },
+                "id": "u1"
+            }
+        },
+        {
+            "json": {
+                "@self": {
+                    "id": "other"
+                },
+                "id": "u1"
+            }
+        },
+        {
+            "json": {
+                "id": "  ",
+                "uuid": "u1"
+            }
+        },
+        {
+            "json": {
+                "id": 5,
+                "uuid": "u1"
+            }
+        },
+        {
+            "json": {
+                "id": "u2"
+            }
+        },
+        "not-an-item",
+        {
+            "binary": []
+        },
+        {
+            "json": "scalar"
+        }
+    ],
+    "refresh / getObject subject": [
+        {
+            "json": {
+                "@self": {
+                    "id": " u1 "
+                },
+                "name": "obj",
+                "answer": "kept",
+                "uuid": "u1"
+            },
+            "binary": [],
+            "pairedItem": null
+        },
+        {
+            "json": {
+                "id": "u1",
+                "name": "obj",
+                "uuid": "u1"
+            }
+        },
+        {
+            "json": {
+                "uuid": "u1",
+                "name": "obj"
+            }
+        },
+        {
+            "json": {
+                "@self": {
+                    "id": ""
+                },
+                "id": "u1",
+                "uuid": "u1",
+                "name": "obj"
+            }
+        },
+        {
+            "json": {
+                "@self": {
+                    "id": "other"
+                },
+                "id": "u1"
+            }
+        },
+        {
+            "json": {
+                "id": "  ",
+                "uuid": "u1",
+                "name": "obj"
+            }
+        },
+        {
+            "json": {
+                "id": 5,
+                "uuid": "u1",
+                "name": "obj"
+            }
+        },
+        {
+            "json": {
+                "id": "u2"
+            }
+        },
+        "not-an-item",
+        {
+            "binary": []
+        },
+        {
+            "json": "scalar"
+        }
+    ],
+    "refresh / keys preserved": {
+        "5": {
+            "json": {
+                "id": "u1",
+                "name": "live",
+                "status": "new"
+            }
+        },
+        "k": {
+            "json": {
+                "id": "u1",
+                "x": 1,
+                "name": "live",
+                "status": "new"
+            }
+        }
+    }
+}
