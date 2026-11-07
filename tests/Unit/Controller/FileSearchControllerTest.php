@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileSearchController;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Controller\FileSearchController;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -325,10 +325,10 @@ class FileSearchControllerTest extends TestCase {
 	/**
 	 * A read scope that keeps every hit: these tests are about the response shape, not the scope.
 	 *
-	 * @return \OCA\OpenRegister\Service\File\FileReadScope
+	 * @return \OCA\OpenRegister\Files\Service\File\FileReadScope
 	 */
-	private function passThroughScope(): \OCA\OpenRegister\Service\File\FileReadScope {
-		$scope = $this->createMock(\OCA\OpenRegister\Service\File\FileReadScope::class);
+	private function passThroughScope(): \OCA\OpenRegister\Files\Service\File\FileReadScope {
+		$scope = $this->createMock(\OCA\OpenRegister\Files\Service\File\FileReadScope::class);
 		$scope->method('readableResults')->willReturnArgument(0);
 
 		return $scope;

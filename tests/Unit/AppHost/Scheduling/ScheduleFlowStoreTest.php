@@ -93,4 +93,13 @@ class ScheduleFlowStoreTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->store->write($this->compiled(), new Flow());
 	}
+
+	public function testAFlowNamedForTheSlugIsFound(): void {
+		$flow = new Flow();
+		$flow->setName('crm: nightly');
+		$this->mapper->method('findAllFlows')->willReturn([$flow]);
+
+		$this->assertTrue($this->store->hasFlowsNamedFor('crm'));
+		$this->assertFalse($this->store->hasFlowsNamedFor('cr'));
+	}
 }

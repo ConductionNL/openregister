@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
-use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

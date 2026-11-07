@@ -310,6 +310,14 @@ given, and SHALL always end with the uuid ascending as the tiebreaker.
 - **THEN** every page holds the same uuids in the same order on both paths
 - @e2e exclude {path selection is internal to the mapper; covered by MagicMapperSequentialOrderTest}
 
+#### Scenario: a field no schema has
+
+- **GIVEN** a multi-schema search whose `_order` names `_foo`, or a property under another spelling than its own
+- **WHEN** it runs
+- **THEN** that field is left out, as on a search of one schema, and the search answers
+- **AND** a property only some batches project orders those batches, and is null in the others
+- @e2e exclude {the statement is internal to the mapper; covered by MagicMapperUnionBatchGoldenTest}
+
 #### Scenario: no order asked
 
 - **GIVEN** a multi-schema search with no `_order` and no search term

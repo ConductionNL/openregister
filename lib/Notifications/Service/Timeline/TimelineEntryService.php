@@ -13,7 +13,7 @@
  * because the object read is where RBAC, multitenancy and the published
  * predicate are enforced, and a service that looks its own object up invites a
  * caller to skip that. It does not write the comment either: a note is still a
- * Nextcloud comment and {@see \OCA\OpenRegister\Service\NoteService} still owns
+ * Nextcloud comment and {@see \OCA\OpenRegister\Files\Service\NoteService} still owns
  * it.
  *
  * SPDX-License-Identifier: EUPL-1.2

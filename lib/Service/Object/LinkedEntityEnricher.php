@@ -128,7 +128,7 @@ class LinkedEntityEnricher {
 
 			try {
 				// Raw SQL: foreign Mail-app table (see class docblock).
-				$sql = 'SELECT subject, `from` AS sender, sent_at FROM oc_mail_messages WHERE id = ? LIMIT 1';
+				$sql = 'SELECT subject, `from` AS sender, sent_at FROM *PREFIX*mail_messages WHERE id = ? LIMIT 1';
 				$stmt = $this->db->prepare($sql);
 				$stmt->execute([(int)$messageId]);
 				$row = $stmt->fetch();
@@ -168,7 +168,7 @@ class LinkedEntityEnricher {
 		foreach ($ids as $id) {
 			try {
 				// Raw SQL: foreign DAV/Contacts table (see class docblock).
-				$sql = 'SELECT carddata FROM oc_cards WHERE uid = ? LIMIT 1';
+				$sql = 'SELECT carddata FROM *PREFIX*cards WHERE uid = ? LIMIT 1';
 				$stmt = $this->db->prepare($sql);
 				$stmt->execute([$id]);
 				$row = $stmt->fetch();
@@ -313,7 +313,7 @@ class LinkedEntityEnricher {
 
 		try {
 			// Raw SQL: foreign DAV/Calendar table (see class docblock).
-			$stmt = $this->db->prepare('SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1');
+			$stmt = $this->db->prepare('SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1');
 			$stmt->execute([(int)$parts[0], $parts[1]]);
 			$row = $stmt->fetch();
 		} catch (\Exception $e) {
@@ -342,7 +342,7 @@ class LinkedEntityEnricher {
 		foreach ($ids as $id) {
 			try {
 				// Raw SQL: foreign Talk-app table (see class docblock).
-				$sql = 'SELECT name, type FROM oc_talk_rooms WHERE token = ? LIMIT 1';
+				$sql = 'SELECT name, type FROM *PREFIX*talk_rooms WHERE token = ? LIMIT 1';
 				$stmt = $this->db->prepare($sql);
 				$stmt->execute([$id]);
 				$row = $stmt->fetch();
@@ -391,9 +391,9 @@ class LinkedEntityEnricher {
 			try {
 				// Raw SQL: foreign Deck-app tables joined together (see class docblock).
 				$sql = 'SELECT c.title, b.title AS board_title, s.title AS stack_title
-                         FROM oc_deck_cards c
-                         JOIN oc_deck_stacks s ON c.stack_id = s.id
-                         JOIN oc_deck_boards b ON s.board_id = b.id
+                         FROM *PREFIX*deck_cards c
+                         JOIN *PREFIX*deck_stacks s ON c.stack_id = s.id
+                         JOIN *PREFIX*deck_boards b ON s.board_id = b.id
                          WHERE c.id = ? AND b.id = ?
                          LIMIT 1';
 				$stmt = $this->db->prepare($sql);

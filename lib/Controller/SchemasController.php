@@ -39,6 +39,8 @@ use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -1878,7 +1880,14 @@ class SchemasController extends Controller {
 	 */
 	private function cascadeDeleteSchema(Schema $schema): JSONResponse {
 		$schemaId = (int)$schema->getId();
-		$result = $this->getSchemaDeletionService()->cascadeDeleteSchema(schema: $schema);
+
+		try {
+			$result = $this->getSchemaDeletionService()->cascadeDeleteSchema(schema: $schema);
+		} catch (ObjectStateWriteException $e) {
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
+		} catch (LockedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: LockedException::HTTP_STATUS);
+		}
 
 		$this->invalidateSchemaCaches(schemaId: $schemaId);
 
