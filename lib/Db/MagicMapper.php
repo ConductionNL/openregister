@@ -6345,6 +6345,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		Schema $schema,
 		?ObjectEntity $oldEntity = null,
 	): ObjectEntity {
+		$this->refusePartialRead(entity: $entity);
+
 		// Use provided oldEntity or fetch from database.
 		$oldObject = $oldEntity;
 		if ($oldEntity === null) {
@@ -6431,6 +6433,26 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// ~5.9 MB of serialised backtrace per occurrence. On every object update.
 		return $entity;
 	}//end updateObjectEntity()
+
+	/**
+	 * Refuse to write back an entity that holds only part of its row.
+	 *
+	 * A write replaces the whole row, so the columns such an entity never read would be
+	 * emptied: owner, organisation, version, relations, status, retention, created date.
+	 *
+	 * @param ObjectEntity $entity The entity about to be written.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the entity holds only part of its row.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function refusePartialRead(ObjectEntity $entity): void {
+		if ($entity instanceof PartialObjectEntity) {
+			throw new Exception('Cannot write object ' . $entity->getUuid() . ' back: it was read without its metadata.');
+		}
+	}//end refusePartialRead()
 
 	/**
 	 * Ask the delete guards whether an object may be deleted.
@@ -6736,6 +6758,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function softDeleteSingleFullRow(ObjectEntity $entity): bool {
 		try {
+			$this->refusePartialRead(entity: $entity);
 			$register = $this->registerMapper->find((int)$entity->getRegister(), _rbac: false, _multitenancy: false);
 			$schema = $this->schemaMapper->find((int)$entity->getSchema(), _rbac: false, _multitenancy: false);
 			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
@@ -7621,7 +7644,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return null;
 		}
 
-		$entity = new ObjectEntity();
+		$entity = new PartialObjectEntity();
 		$entity->setUuid($row['_uuid']);
 
 		$this->applyRowMetadata(entity: $entity, row: $row);
