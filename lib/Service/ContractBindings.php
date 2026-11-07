@@ -89,6 +89,7 @@ final class ContractBindings {
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		GitHubClientInterface::class => GitHubHandler::class,
+		LinkedEntityServiceInterface::class => LinkedEntityService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
 		ObjectCalendarEventsInterface::class => CalendarEventService::class,
