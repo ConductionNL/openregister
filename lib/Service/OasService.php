@@ -411,13 +411,13 @@ class OasService implements OasServiceInterface {
 	/**
 	 * Build the report and the RBAC annotator the generation uses.
 	 *
-	 * @param PropertyRbacHandler|null $propertyRbac Withholds a property the caller may not read.
+	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a property the caller may not read.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
-	private function wireCollaborators(?PropertyRbacHandler $propertyRbac): void {
+	private function wireCollaborators(?PropertyRbacHandlerInterface $propertyRbac): void {
 		$this->report = new OasValidationReport();
 		$this->rbacAnnotator = new OasRbacAnnotator(
 			registerMapper: $this->registerMapper,
