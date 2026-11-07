@@ -49,12 +49,12 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import DatabaseOffOutline from 'vue-material-design-icons/DatabaseOffOutline.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
+import { fetchFileTab } from './fileTabFetch.js'
 
 export default {
 	name: 'RegisterObjectsTab',
@@ -107,33 +107,16 @@ export default {
 		 * @spec exclude API passthrough loading file-referencing objects; object contract owned by object capability
 		 */
 		async fetchObjects() {
-			this.loading = true
-			this.error = false
-			this.errorMessage = ''
 			this.objects = []
-
-			try {
-				const url = generateUrl(
-					'/apps/openregister/api/files/{fileId}/objects',
-					{
-						fileId: this.fileId,
-					},
-				)
-				const response = await axios.get(url)
-
-				if (response.data?.success) {
-					this.objects = response.data.data || []
-				} else {
-					this.error = true
-					this.errorMessage =
-						response.data?.error || t('openregister', 'Unknown error')
-				}
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message
-				console.error('[RegisterObjectsTab] Failed to fetch objects:', err)
-			} finally {
-				this.loading = false
+			const failure = await fetchFileTab(
+				this,
+				'/apps/openregister/api/files/{fileId}/objects',
+				(data) => {
+					this.objects = data || []
+				},
+			)
+			if (failure) {
+				console.error('[RegisterObjectsTab] Failed to fetch objects:', failure)
 			}
 		},
 
