@@ -217,7 +217,6 @@ class GraphQLReferenceValidationIntegrationTest extends TestCase {
 			$this->targetSchema,
 			['title' => 'GraphQL valid target'],
 			null,
-			null,
 			false,
 			false
 		);
@@ -251,7 +250,6 @@ class GraphQLReferenceValidationIntegrationTest extends TestCase {
 			$this->targetSchema,
 			['title' => 'GraphQL update target'],
 			null,
-			null,
 			false,
 			false
 		);
@@ -261,7 +259,6 @@ class GraphQLReferenceValidationIntegrationTest extends TestCase {
 			$this->testRegister,
 			$this->referrerSchema,
 			['title' => 'GraphQL referrer V1', 'targetUuid' => $target->getUuid()],
-			null,
 			null,
 			false,
 			false

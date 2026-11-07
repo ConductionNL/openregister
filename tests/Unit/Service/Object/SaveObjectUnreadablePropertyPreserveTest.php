@@ -146,7 +146,7 @@ class SaveObjectUnreadablePropertyPreserveTest extends TestCase {
 
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
 		/** @var ObjectEntity $prepared */
-		$prepared = $method->invokeArgs($this->handler, [$entity, $schema, $data, [], null, null]);
+		$prepared = $method->invokeArgs($this->handler, [$entity, $schema, $data, [], null]);
 
 		return $prepared->getObject();
 	}

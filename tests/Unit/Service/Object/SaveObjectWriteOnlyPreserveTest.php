@@ -147,7 +147,7 @@ class SaveObjectWriteOnlyPreserveTest extends TestCase {
 		/** @var ObjectEntity $prepared */
 		$prepared = $method->invokeArgs(
 			$this->handler,
-			[$existing, $schema, $data, [], null, null]
+			[$existing, $schema, $data, [], null]
 		);
 
 		return $prepared->getObject();

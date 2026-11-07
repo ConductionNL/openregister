@@ -291,7 +291,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
         $saver = $this->createMock(SaveObject::class);
         $saver->method('saveObject')->willReturnCallback(
             function (...$args) use ($case): ObjectEntity {
-                $this->record('saveObject', array_slice($args, 0, 9));
+                $this->record('saveObject', array_slice($args, 0, 8));
                 if (($case['cert'] ?? null) === 'throw') {
                     throw new RuntimeException('cert refused');
                 }

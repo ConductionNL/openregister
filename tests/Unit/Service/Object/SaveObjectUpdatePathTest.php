@@ -241,7 +241,6 @@ final class SaveObjectUpdatePathTest extends TestCase {
 			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
 			uuid: self::UUID,
-			folderId: ($args['folderId'] ?? null),
 			_rbac: ($args['_rbac'] ?? true),
 			persist: ($args['persist'] ?? true),
 			silent: ($args['silent'] ?? false),

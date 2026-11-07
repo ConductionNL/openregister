@@ -126,7 +126,6 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 			schema: (($case['ids'] ?? false) === true) ? '7' : $schema,
 			data: $case['data'],
 			existingObject: $existing,
-			folderId: null,
 			silent: ($case['silent'] ?? false),
 			oldObject: $old
 		);

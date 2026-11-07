@@ -4783,7 +4783,7 @@ class SaveObjectTest extends TestCase {
 		[$entity, $schema] = $this->slugEntity('hello-world');
 		$data = ['title' => 'A Completely New Title'];
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, [], null]);
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, []]);
 		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [[], $data]]);
 
 		$this->assertSame('hello-world', $entity->getSlug(), 'the stored slug is the freeze reference');

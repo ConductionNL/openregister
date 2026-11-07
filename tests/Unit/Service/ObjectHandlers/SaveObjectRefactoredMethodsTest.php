@@ -640,7 +640,6 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 			$this->mockSchema,
 			$data,
 			$uuid,
-			null,
 			false,
 			false,
 			true,
