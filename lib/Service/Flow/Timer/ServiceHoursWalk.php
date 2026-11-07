@@ -56,6 +56,8 @@ final class ServiceHoursWalk {
 	 * @param int               $minutes The open minutes to consume, > 0.
 	 *
 	 * @return DateTimeImmutable|null The moment, or null when the walk's bound is reached first.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function dueAfter(DateTimeImmutable $moment, int $minutes): ?DateTimeImmutable {
 		$day = $moment;
@@ -84,6 +86,8 @@ final class ServiceHoursWalk {
 	 * @param DateTimeImmutable $end   The later moment, in the calendar's zone.
 	 *
 	 * @return int|null The minutes, or null when the span exceeds the walk's bound.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function minutesBetween(DateTimeImmutable $start, DateTimeImmutable $end): ?int {
 		$span = [$start->getTimestamp(), $end->getTimestamp()];
