@@ -27,6 +27,7 @@ namespace Unit\Service\Timeline;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryDerivations;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
@@ -104,9 +105,7 @@ class TimelineWriteServiceTest extends TestCase {
 		$this->service = new TimelineWriteService(
 			$this->notes,
 			$this->entries,
-			$this->references,
-			$this->mentions,
-			$this->blocks,
+			new TimelineEntryDerivations(references: $this->references, mentions: $this->mentions, blocks: $this->blocks),
 			$this->createMock(LoggerInterface::class)
 		);
 	}
