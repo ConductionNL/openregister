@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`bulk dialogs DOM golden purge: busy 1`] = `
-"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" canclose="false">
+"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -78,7 +78,7 @@ exports[`bulk dialogs DOM golden purge: busy 1`] = `
 exports[`bulk dialogs DOM golden purge: closed 1`] = `"<!--v-if-->"`;
 
 exports[`bulk dialogs DOM golden purge: failed 1`] = `
-"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" canclose="false">
+"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -101,7 +101,7 @@ exports[`bulk dialogs DOM golden purge: failed 1`] = `
 `;
 
 exports[`bulk dialogs DOM golden purge: finished 1`] = `
-"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" canclose="false">
+"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -124,7 +124,7 @@ exports[`bulk dialogs DOM golden purge: finished 1`] = `
 `;
 
 exports[`bulk dialogs DOM golden purge: nothingSelected 1`] = `
-"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:0}" size="normal" canclose="false">
+"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:0}" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -160,7 +160,7 @@ exports[`bulk dialogs DOM golden purge: nothingSelected 1`] = `
 `;
 
 exports[`bulk dialogs DOM golden purge: review 1`] = `
-"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" canclose="false">
+"<x-ncdialog name="Purge {count} objects from database {&quot;count&quot;:4}" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -235,7 +235,7 @@ exports[`bulk dialogs DOM golden purge: review 1`] = `
 `;
 
 exports[`bulk dialogs DOM golden restore: busy 1`] = `
-"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" canclose="false">
+"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -312,7 +312,7 @@ exports[`bulk dialogs DOM golden restore: busy 1`] = `
 exports[`bulk dialogs DOM golden restore: closed 1`] = `"<!--v-if-->"`;
 
 exports[`bulk dialogs DOM golden restore: failed 1`] = `
-"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" canclose="false">
+"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -335,7 +335,7 @@ exports[`bulk dialogs DOM golden restore: failed 1`] = `
 `;
 
 exports[`bulk dialogs DOM golden restore: finished 1`] = `
-"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" canclose="false">
+"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -358,7 +358,7 @@ exports[`bulk dialogs DOM golden restore: finished 1`] = `
 `;
 
 exports[`bulk dialogs DOM golden restore: nothingSelected 1`] = `
-"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:0}" size="normal" canclose="false">
+"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:0}" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -394,7 +394,7 @@ exports[`bulk dialogs DOM golden restore: nothingSelected 1`] = `
 `;
 
 exports[`bulk dialogs DOM golden restore: review 1`] = `
-"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" canclose="false">
+"<x-ncdialog name="Restore {count} objects {&quot;count&quot;:4}" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>

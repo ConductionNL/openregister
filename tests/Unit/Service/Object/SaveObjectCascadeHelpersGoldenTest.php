@@ -41,6 +41,11 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses \OCA\OpenRegister\Formats\UuidFormat
@@ -163,7 +168,10 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$schema->setProperties($properties);
 
 		$extra = $method === 'cascadeObjects' ? [$stored] : [];
-		$answer = (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data, ...$extra);
+		$answer = match ($method) {
+			'handleInverseRelationsWriteBack' => RelationCalls::handleInverseRelationsWriteBack($handler, [$parent, $schema, $data]),
+			default => (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data, ...$extra),
+		};
 		$orphans = (new ReflectionClass(SaveObject::class))->getProperty('pendingOrphans')->getValue($handler);
 
 		return ['answer' => $answer, 'trace' => $this->trace, 'orphans' => $orphans];

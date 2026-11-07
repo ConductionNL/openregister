@@ -471,7 +471,7 @@ exports[`EditSource golden introspect: thrownBare 1`] = `
 `;
 
 exports[`EditSource golden opens on a internal source: dom 1`] = `
-"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -534,7 +534,7 @@ exports[`EditSource golden opens on a internal source: form 1`] = `
 `;
 
 exports[`EditSource golden opens on a mysql source: dom 1`] = `
-"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -628,7 +628,7 @@ exports[`EditSource golden opens on a mysql source: form 1`] = `
 `;
 
 exports[`EditSource golden opens on a noDriver source: dom 1`] = `
-"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -715,7 +715,7 @@ exports[`EditSource golden opens on a noDriver source: form 1`] = `
 `;
 
 exports[`EditSource golden opens on a none source: dom 1`] = `
-"<x-ncdialog name="Add Source" size="normal" canclose="false">
+"<x-ncdialog name="Add Source" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -777,7 +777,7 @@ exports[`EditSource golden opens on a none source: form 1`] = `
 `;
 
 exports[`EditSource golden opens on a sqlite source: dom 1`] = `
-"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -861,7 +861,7 @@ exports[`EditSource golden opens on a sqlite source: form 1`] = `
 `;
 
 exports[`EditSource golden opens on a unknownType source: dom 1`] = `
-"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -923,7 +923,7 @@ exports[`EditSource golden opens on a unknownType source: form 1`] = `
 `;
 
 exports[`EditSource golden renders the result notes 1`] = `
-"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -977,7 +977,7 @@ exports[`EditSource golden renders the result notes 1`] = `
 `;
 
 exports[`EditSource golden renders the result notes 2`] = `
-"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -1036,7 +1036,7 @@ exports[`EditSource golden renders the result notes 2`] = `
 `;
 
 exports[`EditSource golden renders the result notes 3`] = `
-"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>
@@ -1095,7 +1095,7 @@ exports[`EditSource golden renders the result notes 3`] = `
 `;
 
 exports[`EditSource golden renders the result notes 4`] = `
-"<x-ncdialog name="Edit Source" size="normal" canclose="false">
+"<x-ncdialog name="Edit Source" size="normal" noclose="">
   <slot-actions>
     <x-ncbutton data-on="onClick">
       <slot-icon>

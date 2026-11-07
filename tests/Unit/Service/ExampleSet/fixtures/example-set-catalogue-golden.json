@@ -1,0 +1,1826 @@
+{
+    "full plan": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "beta",
+                "openregister"
+            ],
+            "other": [
+                "openregister"
+            ]
+        },
+        "plan": {
+            "set": "demo",
+            "title": "Demo",
+            "timezone": "Europe/Amsterdam",
+            "cast": {
+                "people": {
+                    "sanne": {
+                        "key": "sanne",
+                        "uid": "sanne.devries",
+                        "displayName": "Sanne de Vries",
+                        "email": "sanne@demo.example",
+                        "bsn": "999994001",
+                        "address": {
+                            "number": 14,
+                            "street": "Lindelaan"
+                        },
+                        "contactsUid": "example-set-demo-sanne"
+                    },
+                    "esra": {
+                        "key": "esra",
+                        "uid": "esra.demir",
+                        "displayName": "Esra Demir",
+                        "groups": [
+                            "staff"
+                        ],
+                        "contactsUid": "example-set-demo-esra"
+                    }
+                },
+                "organisations": {
+                    "shop": {
+                        "key": "shop",
+                        "name": "Slagerij",
+                        "kvk": "00001001",
+                        "contactsUid": "example-set-demo-shop"
+                    }
+                },
+                "groups": {
+                    "staff": {
+                        "key": "staff",
+                        "gid": "demo-staff",
+                        "displayName": "Staff"
+                    }
+                },
+                "entries": {
+                    "sanne": {
+                        "key": "sanne",
+                        "uid": "sanne.devries",
+                        "displayName": "Sanne de Vries",
+                        "email": "sanne@demo.example",
+                        "bsn": "999994001",
+                        "address": {
+                            "number": 14,
+                            "street": "Lindelaan"
+                        },
+                        "contactsUid": "example-set-demo-sanne"
+                    },
+                    "esra": {
+                        "key": "esra",
+                        "uid": "esra.demir",
+                        "displayName": "Esra Demir",
+                        "groups": [
+                            "staff"
+                        ],
+                        "contactsUid": "example-set-demo-esra"
+                    },
+                    "shop": {
+                        "key": "shop",
+                        "name": "Slagerij",
+                        "kvk": "00001001",
+                        "contactsUid": "example-set-demo-shop"
+                    },
+                    "staff": {
+                        "key": "staff",
+                        "gid": "demo-staff",
+                        "displayName": "Staff"
+                    }
+                }
+            },
+            "requires": {
+                "plain": {
+                    "mock": false
+                },
+                "mocked": {
+                    "mock": true
+                },
+                "real": {
+                    "mock": false
+                }
+            },
+            "organisations": [],
+            "fragments": [
+                {
+                    "app": "openregister",
+                    "file": "openregister/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/openregister/lib/Settings/example-sets",
+                    "objects": [
+                        {
+                            "key": "one",
+                            "register": "r",
+                            "schema": "s",
+                            "data": {
+                                "a": 1
+                            }
+                        }
+                    ],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [
+                        {
+                            "key": "plain",
+                            "value": "x",
+                            "generate": false,
+                            "type": "string",
+                            "atLeast": false
+                        },
+                        {
+                            "key": "gen",
+                            "value": "",
+                            "generate": true,
+                            "type": "string",
+                            "atLeast": false
+                        },
+                        {
+                            "key": "num",
+                            "value": "12",
+                            "generate": false,
+                            "type": "int",
+                            "atLeast": false
+                        },
+                        {
+                            "key": "floor",
+                            "value": "{{now.year}}",
+                            "generate": false,
+                            "type": "int",
+                            "atLeast": true
+                        },
+                        {
+                            "key": "neg",
+                            "value": -3,
+                            "generate": false,
+                            "type": "int",
+                            "atLeast": false
+                        }
+                    ],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": [
+                        {
+                            "key": "arch",
+                            "data": {
+                                "register": "r"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "app": "beta",
+                    "file": "beta/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/beta/lib/Settings/example-sets",
+                    "objects": [],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                },
+                {
+                    "app": "alpha",
+                    "file": "alpha/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/alpha/lib/Settings/example-sets",
+                    "objects": [
+                        {
+                            "key": "one",
+                            "register": "r",
+                            "schema": "s",
+                            "data": {
+                                "a": 1
+                            }
+                        },
+                        {
+                            "key": "withFiles",
+                            "register": "r",
+                            "schema": "s",
+                            "data": [],
+                            "files": [
+                                {
+                                    "path": "a/b.pdf"
+                                },
+                                {
+                                    "path": "c.txt"
+                                }
+                            ]
+                        },
+                        {
+                            "key": "later",
+                            "register": "r",
+                            "schema": "s",
+                            "data": []
+                        }
+                    ],
+                    "changes": [
+                        {
+                            "key": "ch",
+                            "register": "r",
+                            "schema": "s",
+                            "where": {
+                                "a": 1
+                            },
+                            "set": {
+                                "b": 2
+                            }
+                        },
+                        {
+                            "key": "ch2",
+                            "register": "r",
+                            "schema": "s",
+                            "object": "one",
+                            "append": {
+                                "x": [
+                                    1
+                                ]
+                            }
+                        }
+                    ],
+                    "groups": [
+                        {
+                            "gid": "g1"
+                        }
+                    ],
+                    "serviceAccounts": [
+                        {
+                            "key": "bot",
+                            "uid": "svc.bot-1",
+                            "displayName": "svc.bot-1",
+                            "groups": []
+                        },
+                        {
+                            "key": "bot2",
+                            "uid": "svc_2",
+                            "displayName": "Bot",
+                            "groups": [
+                                "x",
+                                "5"
+                            ]
+                        }
+                    ],
+                    "appConfig": [],
+                    "userPreferences": [
+                        {
+                            "user": "u",
+                            "key": "k",
+                            "value": "3"
+                        },
+                        {
+                            "user": "u",
+                            "key": "k2",
+                            "value": "1"
+                        }
+                    ],
+                    "tasks": [
+                        {
+                            "key": "t1",
+                            "data": {
+                                "title": "T"
+                            }
+                        },
+                        {
+                            "key": "t2",
+                            "data": []
+                        }
+                    ],
+                    "views": [
+                        {
+                            "key": "v1",
+                            "data": []
+                        }
+                    ],
+                    "watchers": [
+                        {
+                            "key": "w1",
+                            "data": {
+                                "x": 1
+                            }
+                        }
+                    ],
+                    "parties": [
+                        {
+                            "key": "p1",
+                            "data": []
+                        }
+                    ],
+                    "notes": [
+                        {
+                            "key": "n1",
+                            "data": []
+                        }
+                    ],
+                    "readStates": [
+                        {
+                            "key": "rs1",
+                            "data": []
+                        }
+                    ],
+                    "flows": [
+                        {
+                            "key": "f1",
+                            "data": []
+                        }
+                    ],
+                    "exportRuns": [
+                        {
+                            "key": "e1",
+                            "data": []
+                        }
+                    ],
+                    "deckCards": [
+                        {
+                            "key": "d1",
+                            "data": []
+                        }
+                    ],
+                    "appointments": [
+                        {
+                            "key": "ap1",
+                            "data": []
+                        }
+                    ],
+                    "casePlans": [
+                        {
+                            "key": "cp1",
+                            "data": []
+                        }
+                    ],
+                    "collectivesPages": [
+                        {
+                            "key": "cl1",
+                            "data": []
+                        }
+                    ],
+                    "talkConversations": [
+                        {
+                            "key": "tc1",
+                            "data": []
+                        }
+                    ],
+                    "auditEntries": [
+                        {
+                            "key": "au1",
+                            "data": []
+                        }
+                    ],
+                    "timelineEntries": [
+                        {
+                            "key": "tl1",
+                            "data": []
+                        }
+                    ],
+                    "emailLinks": [
+                        {
+                            "key": "el1",
+                            "data": []
+                        }
+                    ],
+                    "accessLinks": [
+                        {
+                            "key": "al1",
+                            "data": []
+                        }
+                    ],
+                    "grants": [
+                        {
+                            "key": "gr1",
+                            "data": []
+                        }
+                    ],
+                    "archival": []
+                }
+            ],
+            "skipped": [
+                "ghost"
+            ]
+        }
+    },
+    "cast without contactsUid on groups, explicit uid kept": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "plan": {
+            "set": "demo",
+            "title": "demo",
+            "timezone": "UTC",
+            "cast": {
+                "people": {
+                    "p": {
+                        "key": "p",
+                        "contactsUid": "mine"
+                    },
+                    "q": {
+                        "key": "q",
+                        "contactsUid": "example-set-demo-q"
+                    }
+                },
+                "organisations": {
+                    "o": {
+                        "key": "o",
+                        "contactsUid": "example-set-demo-o"
+                    }
+                },
+                "groups": {
+                    "g": {
+                        "key": "g"
+                    }
+                },
+                "entries": {
+                    "p": {
+                        "key": "p",
+                        "contactsUid": "mine"
+                    },
+                    "q": {
+                        "key": "q",
+                        "contactsUid": "example-set-demo-q"
+                    },
+                    "o": {
+                        "key": "o",
+                        "contactsUid": "example-set-demo-o"
+                    },
+                    "g": {
+                        "key": "g"
+                    }
+                }
+            },
+            "requires": [],
+            "organisations": [],
+            "fragments": [
+                {
+                    "app": "openregister",
+                    "file": "openregister/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/openregister/lib/Settings/example-sets",
+                    "objects": [],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                }
+            ],
+            "skipped": []
+        }
+    },
+    "bad set id": {
+        "sets": [],
+        "error": "\"../etc\" is not a set id: use lower-case letters, digits and dashes."
+    },
+    "uppercase set id": {
+        "sets": [],
+        "error": "\"Demo\" is not a set id: use lower-case letters, digits and dashes."
+    },
+    "no cast file": {
+        "sets": {
+            "demo": [
+                "alpha"
+            ]
+        },
+        "error": "There is no example set \"demo\": OpenRegister ships no lib/Settings/example-sets/demo.json with a cast."
+    },
+    "cast not an array": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "There is no example set \"demo\": OpenRegister ships no lib/Settings/example-sets/demo.json with a cast."
+    },
+    "invalid json": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json is not valid JSON: Syntax error"
+    },
+    "json scalar": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json is not valid JSON: No error"
+    },
+    "cast outside openregister": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json carries a cast. The cast of a set lives once, in OpenRegister; refer to its members with {{cast:key.field}}."
+    },
+    "cast key missing": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: every cast entry needs a key of its own; \"\" in people is missing or used twice."
+    },
+    "cast key twice across parts": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: every cast entry needs a key of its own; \"a\" in groups is missing or used twice."
+    },
+    "cast entry not array": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: every cast entry needs a key of its own; \"\" in organisations is missing or used twice."
+    },
+    "part not a list": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.d/x.json: a part may only add lists; \"after\" belongs in the main file."
+    },
+    "part map value": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.d/x.json: a part may only add lists; \"objects\" belongs in the main file."
+    },
+    "part invalid json": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/bad.json is not valid JSON: Syntax error"
+    },
+    "object key twice": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: the key \"one\" is used twice."
+    },
+    "object and change share key": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: the key \"one\" is used twice."
+    },
+    "object without key": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "object not an array": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "object without register": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "object without schema": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "object without data": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "file absolute": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "file dotdot": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "file dotdot end": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "file dots in name": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "plan": {
+            "set": "demo",
+            "title": "Demo",
+            "timezone": "Europe/Amsterdam",
+            "cast": {
+                "people": {
+                    "sanne": {
+                        "key": "sanne",
+                        "uid": "sanne.devries",
+                        "displayName": "Sanne de Vries",
+                        "email": "sanne@demo.example",
+                        "bsn": "999994001",
+                        "address": {
+                            "number": 14,
+                            "street": "Lindelaan"
+                        },
+                        "contactsUid": "example-set-demo-sanne"
+                    },
+                    "esra": {
+                        "key": "esra",
+                        "uid": "esra.demir",
+                        "displayName": "Esra Demir",
+                        "groups": [
+                            "staff"
+                        ],
+                        "contactsUid": "example-set-demo-esra"
+                    }
+                },
+                "organisations": {
+                    "shop": {
+                        "key": "shop",
+                        "name": "Slagerij",
+                        "kvk": "00001001",
+                        "contactsUid": "example-set-demo-shop"
+                    }
+                },
+                "groups": {
+                    "staff": {
+                        "key": "staff",
+                        "gid": "demo-staff",
+                        "displayName": "Staff"
+                    }
+                },
+                "entries": {
+                    "sanne": {
+                        "key": "sanne",
+                        "uid": "sanne.devries",
+                        "displayName": "Sanne de Vries",
+                        "email": "sanne@demo.example",
+                        "bsn": "999994001",
+                        "address": {
+                            "number": 14,
+                            "street": "Lindelaan"
+                        },
+                        "contactsUid": "example-set-demo-sanne"
+                    },
+                    "esra": {
+                        "key": "esra",
+                        "uid": "esra.demir",
+                        "displayName": "Esra Demir",
+                        "groups": [
+                            "staff"
+                        ],
+                        "contactsUid": "example-set-demo-esra"
+                    },
+                    "shop": {
+                        "key": "shop",
+                        "name": "Slagerij",
+                        "kvk": "00001001",
+                        "contactsUid": "example-set-demo-shop"
+                    },
+                    "staff": {
+                        "key": "staff",
+                        "gid": "demo-staff",
+                        "displayName": "Staff"
+                    }
+                }
+            },
+            "requires": [],
+            "organisations": [],
+            "fragments": [
+                {
+                    "app": "openregister",
+                    "file": "openregister/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/openregister/lib/Settings/example-sets",
+                    "objects": [],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                },
+                {
+                    "app": "alpha",
+                    "file": "alpha/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/alpha/lib/Settings/example-sets",
+                    "objects": [
+                        {
+                            "files": [
+                                {
+                                    "path": "a/..b"
+                                }
+                            ],
+                            "key": "one",
+                            "register": "r",
+                            "schema": "s",
+                            "data": {
+                                "a": 1
+                            }
+                        }
+                    ],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                }
+            ],
+            "skipped": []
+        }
+    },
+    "file backslash": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "file nul": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "file empty path": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "file not array": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: object 0 needs a key, a register, a schema, data, and files with a relative path inside the fragment's folder."
+    },
+    "change without where or object": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: change 0 needs a key, a register, a schema, a where or an object, and a set or an append."
+    },
+    "change without set or append": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: change 0 needs a key, a register, a schema, a where or an object, and a set or an append."
+    },
+    "change object not string": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: change 0 needs a key, a register, a schema, a where or an object, and a set or an append."
+    },
+    "keyed row without key": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: task 0 needs a key and its fields (data)."
+    },
+    "keyed row empty key": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: view 0 needs a key and its fields (data)."
+    },
+    "keyed row int key": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: note 0 needs a key and its fields (data)."
+    },
+    "keyed row without data": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: grant 0 needs a key and its fields (data)."
+    },
+    "keyed row twice": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: read state key \"g\" is used twice."
+    },
+    "keyed row same key in two lists": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "plan": {
+            "set": "demo",
+            "title": "Demo",
+            "timezone": "Europe/Amsterdam",
+            "cast": {
+                "people": {
+                    "sanne": {
+                        "key": "sanne",
+                        "uid": "sanne.devries",
+                        "displayName": "Sanne de Vries",
+                        "email": "sanne@demo.example",
+                        "bsn": "999994001",
+                        "address": {
+                            "number": 14,
+                            "street": "Lindelaan"
+                        },
+                        "contactsUid": "example-set-demo-sanne"
+                    },
+                    "esra": {
+                        "key": "esra",
+                        "uid": "esra.demir",
+                        "displayName": "Esra Demir",
+                        "groups": [
+                            "staff"
+                        ],
+                        "contactsUid": "example-set-demo-esra"
+                    }
+                },
+                "organisations": {
+                    "shop": {
+                        "key": "shop",
+                        "name": "Slagerij",
+                        "kvk": "00001001",
+                        "contactsUid": "example-set-demo-shop"
+                    }
+                },
+                "groups": {
+                    "staff": {
+                        "key": "staff",
+                        "gid": "demo-staff",
+                        "displayName": "Staff"
+                    }
+                },
+                "entries": {
+                    "sanne": {
+                        "key": "sanne",
+                        "uid": "sanne.devries",
+                        "displayName": "Sanne de Vries",
+                        "email": "sanne@demo.example",
+                        "bsn": "999994001",
+                        "address": {
+                            "number": 14,
+                            "street": "Lindelaan"
+                        },
+                        "contactsUid": "example-set-demo-sanne"
+                    },
+                    "esra": {
+                        "key": "esra",
+                        "uid": "esra.demir",
+                        "displayName": "Esra Demir",
+                        "groups": [
+                            "staff"
+                        ],
+                        "contactsUid": "example-set-demo-esra"
+                    },
+                    "shop": {
+                        "key": "shop",
+                        "name": "Slagerij",
+                        "kvk": "00001001",
+                        "contactsUid": "example-set-demo-shop"
+                    },
+                    "staff": {
+                        "key": "staff",
+                        "gid": "demo-staff",
+                        "displayName": "Staff"
+                    }
+                }
+            },
+            "requires": [],
+            "organisations": [],
+            "fragments": [
+                {
+                    "app": "openregister",
+                    "file": "openregister/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/openregister/lib/Settings/example-sets",
+                    "objects": [],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                },
+                {
+                    "app": "alpha",
+                    "file": "alpha/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/alpha/lib/Settings/example-sets",
+                    "objects": [],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [],
+                    "userPreferences": [],
+                    "tasks": [
+                        {
+                            "key": "g",
+                            "data": []
+                        }
+                    ],
+                    "views": [
+                        {
+                            "key": "g",
+                            "data": []
+                        }
+                    ],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                }
+            ],
+            "skipped": []
+        }
+    },
+    "archival outside openregister": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: archival is OpenRegister's own setting; only OpenRegister's fragment may write it."
+    },
+    "archival bad row": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: archival setting 0 needs a key and its fields (data)."
+    },
+    "service account without key": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: service account 0 needs a key and an account id of lower-case letters, digits, dots, dashes or underscores."
+    },
+    "service account bad uid": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: service account 0 needs a key and an account id of lower-case letters, digits, dots, dashes or underscores."
+    },
+    "service account no uid": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: service account 0 needs a key and an account id of lower-case letters, digits, dots, dashes or underscores."
+    },
+    "service account twice across apps": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "beta",
+                "openregister"
+            ]
+        },
+        "error": "beta/lib/Settings/example-sets/demo.json: the service account key \"b\" is used twice in this set."
+    },
+    "service account uses cast key": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: the service account key \"sanne\" is used twice in this set."
+    },
+    "app config for another app": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: app config 0 is for \"beta\"; a fragment sets only its own app's config."
+    },
+    "app config without key": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: app config 0 needs a key and a value, or generate: true."
+    },
+    "app config empty key": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: app config 0 needs a key and a value, or generate: true."
+    },
+    "app config without value": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: app config 0 needs a key and a value, or generate: true."
+    },
+    "app config array value": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: app config 0 needs a key and a value, or generate: true."
+    },
+    "app config generate not true": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: app config 0 needs a key and a value, or generate: true."
+    },
+    "app config bad type": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: app config 0 has type \"bool\"; a set writes string or int."
+    },
+    "app config int not int": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: app config 0 (\"k\") is an integer; its value is not."
+    },
+    "app config int generated": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "plan": {
+            "set": "demo",
+            "title": "Demo",
+            "timezone": "Europe/Amsterdam",
+            "cast": {
+                "people": {
+                    "sanne": {
+                        "key": "sanne",
+                        "uid": "sanne.devries",
+                        "displayName": "Sanne de Vries",
+                        "email": "sanne@demo.example",
+                        "bsn": "999994001",
+                        "address": {
+                            "number": 14,
+                            "street": "Lindelaan"
+                        },
+                        "contactsUid": "example-set-demo-sanne"
+                    },
+                    "esra": {
+                        "key": "esra",
+                        "uid": "esra.demir",
+                        "displayName": "Esra Demir",
+                        "groups": [
+                            "staff"
+                        ],
+                        "contactsUid": "example-set-demo-esra"
+                    }
+                },
+                "organisations": {
+                    "shop": {
+                        "key": "shop",
+                        "name": "Slagerij",
+                        "kvk": "00001001",
+                        "contactsUid": "example-set-demo-shop"
+                    }
+                },
+                "groups": {
+                    "staff": {
+                        "key": "staff",
+                        "gid": "demo-staff",
+                        "displayName": "Staff"
+                    }
+                },
+                "entries": {
+                    "sanne": {
+                        "key": "sanne",
+                        "uid": "sanne.devries",
+                        "displayName": "Sanne de Vries",
+                        "email": "sanne@demo.example",
+                        "bsn": "999994001",
+                        "address": {
+                            "number": 14,
+                            "street": "Lindelaan"
+                        },
+                        "contactsUid": "example-set-demo-sanne"
+                    },
+                    "esra": {
+                        "key": "esra",
+                        "uid": "esra.demir",
+                        "displayName": "Esra Demir",
+                        "groups": [
+                            "staff"
+                        ],
+                        "contactsUid": "example-set-demo-esra"
+                    },
+                    "shop": {
+                        "key": "shop",
+                        "name": "Slagerij",
+                        "kvk": "00001001",
+                        "contactsUid": "example-set-demo-shop"
+                    },
+                    "staff": {
+                        "key": "staff",
+                        "gid": "demo-staff",
+                        "displayName": "Staff"
+                    }
+                }
+            },
+            "requires": [],
+            "organisations": [],
+            "fragments": [
+                {
+                    "app": "openregister",
+                    "file": "openregister/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/openregister/lib/Settings/example-sets",
+                    "objects": [],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                },
+                {
+                    "app": "alpha",
+                    "file": "alpha/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/alpha/lib/Settings/example-sets",
+                    "objects": [],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [
+                        {
+                            "key": "k",
+                            "value": "",
+                            "generate": true,
+                            "type": "int",
+                            "atLeast": false
+                        }
+                    ],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                }
+            ],
+            "skipped": []
+        }
+    },
+    "app config atLeast generated": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: app config 0 (\"k\") is atLeast; only a written int can be a floor."
+    },
+    "app config atLeast string": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: app config 0 (\"k\") is atLeast; only a written int can be a floor."
+    },
+    "app config atLeast not true": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "plan": {
+            "set": "demo",
+            "title": "Demo",
+            "timezone": "Europe/Amsterdam",
+            "cast": {
+                "people": {
+                    "sanne": {
+                        "key": "sanne",
+                        "uid": "sanne.devries",
+                        "displayName": "Sanne de Vries",
+                        "email": "sanne@demo.example",
+                        "bsn": "999994001",
+                        "address": {
+                            "number": 14,
+                            "street": "Lindelaan"
+                        },
+                        "contactsUid": "example-set-demo-sanne"
+                    },
+                    "esra": {
+                        "key": "esra",
+                        "uid": "esra.demir",
+                        "displayName": "Esra Demir",
+                        "groups": [
+                            "staff"
+                        ],
+                        "contactsUid": "example-set-demo-esra"
+                    }
+                },
+                "organisations": {
+                    "shop": {
+                        "key": "shop",
+                        "name": "Slagerij",
+                        "kvk": "00001001",
+                        "contactsUid": "example-set-demo-shop"
+                    }
+                },
+                "groups": {
+                    "staff": {
+                        "key": "staff",
+                        "gid": "demo-staff",
+                        "displayName": "Staff"
+                    }
+                },
+                "entries": {
+                    "sanne": {
+                        "key": "sanne",
+                        "uid": "sanne.devries",
+                        "displayName": "Sanne de Vries",
+                        "email": "sanne@demo.example",
+                        "bsn": "999994001",
+                        "address": {
+                            "number": 14,
+                            "street": "Lindelaan"
+                        },
+                        "contactsUid": "example-set-demo-sanne"
+                    },
+                    "esra": {
+                        "key": "esra",
+                        "uid": "esra.demir",
+                        "displayName": "Esra Demir",
+                        "groups": [
+                            "staff"
+                        ],
+                        "contactsUid": "example-set-demo-esra"
+                    },
+                    "shop": {
+                        "key": "shop",
+                        "name": "Slagerij",
+                        "kvk": "00001001",
+                        "contactsUid": "example-set-demo-shop"
+                    },
+                    "staff": {
+                        "key": "staff",
+                        "gid": "demo-staff",
+                        "displayName": "Staff"
+                    }
+                }
+            },
+            "requires": [],
+            "organisations": [],
+            "fragments": [
+                {
+                    "app": "openregister",
+                    "file": "openregister/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/openregister/lib/Settings/example-sets",
+                    "objects": [],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                },
+                {
+                    "app": "alpha",
+                    "file": "alpha/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/alpha/lib/Settings/example-sets",
+                    "objects": [],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [
+                        {
+                            "key": "k",
+                            "value": "1",
+                            "generate": false,
+                            "type": "int",
+                            "atLeast": false
+                        }
+                    ],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                }
+            ],
+            "skipped": []
+        }
+    },
+    "user preference for another app": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: user preference 0 is for \"beta\"; a fragment sets only its own app's preferences."
+    },
+    "user preference without user": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: user preference 0 needs a user, a key and a value."
+    },
+    "user preference empty key": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: user preference 0 needs a user, a key and a value."
+    },
+    "user preference null value": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "openregister"
+            ]
+        },
+        "error": "alpha/lib/Settings/example-sets/demo.json: user preference 0 needs a user, a key and a value."
+    },
+    "requires empty": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: requires 0 needs a register slug, or {\"register\": \"<slug>\", \"mock\": true}."
+    },
+    "requires mock not bool": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: requires 0 needs a register slug, or {\"register\": \"<slug>\", \"mock\": true}."
+    },
+    "requires int": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: requires 0 needs a register slug, or {\"register\": \"<slug>\", \"mock\": true}."
+    },
+    "organisations": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "plan": {
+            "set": "demo",
+            "title": "demo",
+            "timezone": "UTC",
+            "cast": {
+                "people": {
+                    "a": {
+                        "key": "a",
+                        "uid": "ua",
+                        "contactsUid": "example-set-demo-a"
+                    },
+                    "b": {
+                        "key": "b",
+                        "contactsUid": "example-set-demo-b"
+                    }
+                },
+                "organisations": [],
+                "groups": [],
+                "entries": {
+                    "a": {
+                        "key": "a",
+                        "uid": "ua",
+                        "contactsUid": "example-set-demo-a"
+                    },
+                    "b": {
+                        "key": "b",
+                        "contactsUid": "example-set-demo-b"
+                    }
+                }
+            },
+            "requires": [],
+            "organisations": [
+                {
+                    "key": "o",
+                    "name": "Org",
+                    "slug": "org",
+                    "description": "d",
+                    "type": "t",
+                    "contactEmail": "e",
+                    "quota": {
+                        "storage": 1,
+                        "requests": 0,
+                        "bandwidth": 2,
+                        "users": 3,
+                        "objects": 4,
+                        "objectsSchema": "sch"
+                    },
+                    "members": [
+                        "ua"
+                    ]
+                },
+                {
+                    "key": "p",
+                    "name": "P",
+                    "slug": "p",
+                    "description": "",
+                    "type": "",
+                    "contactEmail": "",
+                    "quota": [],
+                    "members": []
+                }
+            ],
+            "fragments": [
+                {
+                    "app": "openregister",
+                    "file": "openregister/lib/Settings/example-sets/demo.json",
+                    "dir": "<root>/openregister/lib/Settings/example-sets",
+                    "objects": [],
+                    "changes": [],
+                    "groups": [],
+                    "serviceAccounts": [],
+                    "appConfig": [],
+                    "userPreferences": [],
+                    "tasks": [],
+                    "views": [],
+                    "watchers": [],
+                    "parties": [],
+                    "notes": [],
+                    "readStates": [],
+                    "flows": [],
+                    "exportRuns": [],
+                    "deckCards": [],
+                    "appointments": [],
+                    "casePlans": [],
+                    "collectivesPages": [],
+                    "talkConversations": [],
+                    "auditEntries": [],
+                    "timelineEntries": [],
+                    "emailLinks": [],
+                    "accessLinks": [],
+                    "grants": [],
+                    "archival": []
+                }
+            ],
+            "skipped": []
+        }
+    },
+    "organisation without slug": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: OpenRegister organisation 0 needs a key, a name and a slug."
+    },
+    "organisation bad quota": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: OpenRegister organisation \"s\": quota \"users\" must be storage, requests, bandwidth, users or objects with a whole number, or objectsSchema with a schema slug."
+    },
+    "organisation unknown quota": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: OpenRegister organisation \"s\": quota \"objectsSchema\" must be storage, requests, bandwidth, users or objects with a whole number, or objectsSchema with a schema slug."
+    },
+    "organisation member without account": {
+        "sets": {
+            "demo": [
+                "openregister"
+            ]
+        },
+        "error": "openregister/lib/Settings/example-sets/demo.json: OpenRegister organisation \"s\": member \"b\" is not a cast person with an account."
+    },
+    "order cycle": {
+        "sets": {
+            "demo": [
+                "alpha",
+                "beta",
+                "openregister"
+            ]
+        },
+        "error": "The fragments of this set wait on each other in a cycle through alpha, beta. Fix the \"after\" lists of these apps; nothing was written."
+    }
+}

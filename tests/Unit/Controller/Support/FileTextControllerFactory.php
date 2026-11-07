@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
-use OCA\OpenRegister\Controller\FileTextController;
+use OCA\OpenRegister\Files\Controller\FileTextController;
 
 /**
  * Builds FileTextController from its services as separate arguments, wrapped into its constructor bundles.
@@ -35,35 +35,35 @@ final class FileTextControllerFactory {
 	public static function args(
 		string $appName,
 		\OCP\IRequest $request,
-		\OCA\OpenRegister\Service\TextExtractionService $textExtractor,
+		\OCA\OpenRegister\Files\Service\TextExtractionService $textExtractor,
 		\OCA\OpenRegister\Service\FileService $fileService,
 		\OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
 		\Psr\Log\LoggerInterface $logger,
-		\OCA\OpenRegister\Service\File\ManualEntityService $manualEntityService,
+		\OCA\OpenRegister\Files\Service\File\ManualEntityService $manualEntityService,
 		\OCP\IUserSession $userSession,
 		\OCP\Files\IRootFolder $rootFolder,
 		\OCP\IGroupManager $groupManager,
-		?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
+		?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
 	): array {
 		return [
 			$appName,
 			$request,
-			new \OCA\OpenRegister\Controller\Support\FileTextControllerServices(
+			new \OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices(
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
 					userSession: $userSession,
 					groupManager: $groupManager,
 					logger: $logger ?? new \Psr\Log\NullLogger(),
 				),
-				mappers: new \OCA\OpenRegister\Controller\Support\FileTextMappers(
+				mappers: new \OCA\OpenRegister\Files\Controller\Support\FileTextMappers(
 					entityRelationMapper: $entityRelationMapper,
 				),
-				domain: new \OCA\OpenRegister\Controller\Support\FileTextDomain(
+				domain: new \OCA\OpenRegister\Files\Controller\Support\FileTextDomain(
 					textExtractor: $textExtractor,
 					fileService: $fileService,
 					manualEntityService: $manualEntityService,
 					fileReadScope: $fileReadScope,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\FileTextPlatform(
+				platform: new \OCA\OpenRegister\Files\Controller\Support\FileTextPlatform(
 					rootFolder: $rootFolder,
 				),
 			),

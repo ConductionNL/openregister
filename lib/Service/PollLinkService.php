@@ -361,7 +361,7 @@ class PollLinkService {
 
 			// OCP\IDBConnection::lastInsertId(string $table) requires the table; a zero
 			// id falls through to the explicit throw below.
-			$pollId = (int)$this->db->lastInsertId('oc_polls_polls_id_seq');
+			$pollId = (int)$this->db->lastInsertId('*PREFIX*polls_polls_id_seq');
 
 			if ($pollId === 0) {
 				throw new Exception('Failed to retrieve created poll id', 500);

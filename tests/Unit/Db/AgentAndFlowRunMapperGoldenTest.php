@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -36,7 +36,7 @@ use ReflectionClass;
 use ReflectionNamedType;
 
 /**
- * @covers \OCA\OpenRegister\Db\AgentMapper
+ * @covers \OCA\OpenRegister\Mcp\Db\AgentMapper
  * @covers \OCA\OpenRegister\Db\FlowRunMapper
  * @uses   \OCA\OpenRegister\Db\QueryPage
  */

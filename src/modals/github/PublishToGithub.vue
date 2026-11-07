@@ -4,7 +4,7 @@
 		:name="modalName"
 		:title="copy.title"
 		size="large"
-		:canClose="!loading"
+		:noClose="loading"
 		@update:open="closeModal">
 		<NcNoteCard v-if="success" type="success">
 			<p v-for="(line, index) in successMessage.split('\n')" :key="index">

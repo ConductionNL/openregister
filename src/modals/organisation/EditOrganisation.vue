@@ -11,7 +11,6 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 				: t('openregister', 'Create Organisation')
 		"
 		size="large"
-		:canClose="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
 			<p>
@@ -67,53 +66,27 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 								"
 								:rows="4" />
 
-							<div class="groups-select-container">
-								<label class="groups-label">{{
-									t('openregister', 'Nextcloud Groups')
-								}}</label>
-								<NcSelect
-									v-model="selectedGroups"
-									inputLabel="Selected Groups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									label="name"
-									trackBy="id"
-									:multiple="true"
-									:labelOutside="true"
-									:filterable="false"
-									:placeholder="
-										t('openregister', 'Search groups...')
-									"
-									@searchChange="searchGroups"
-									@update:modelValue="updateGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{
-												name
-											}}</span>
-										</div>
-									</template>
-									<template #no-options>
-										<span v-if="loadingGroups">{{
-											t('openregister', 'Loading groups...')
-										}}</span>
-										<span v-else>{{
-											t(
-												'openregister',
-												'No groups found. Try a different search.',
-											)
-										}}</span>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'Only members of selected groups can access this organisation',
-										)
-									}}
-								</p>
-							</div>
+							<GroupSelect
+								v-model="selectedGroups"
+								:label="t('openregister', 'Nextcloud Groups')"
+								:options="availableGroups"
+								:disabled="loading"
+								:loading="loadingGroups"
+								:placeholder="t('openregister', 'Search groups...')"
+								:emptyText="
+									t(
+										'openregister',
+										'No groups found. Try a different search.',
+									)
+								"
+								:hint="
+									t(
+										'openregister',
+										'Only members of selected groups can access this organisation',
+									)
+								"
+								@searchChange="searchGroups"
+								@update:modelValue="updateGroups" />
 
 							<NcCheckboxRadioSwitch
 								v-model="organisationItem.active"
@@ -298,7 +271,6 @@ import {
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
@@ -310,6 +282,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import RbacTable from '../../components/RbacTable.vue'
+import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import OrganisationMembers from './OrganisationMembers.vue'
@@ -388,10 +361,10 @@ function postLeave(uuid, userId) {
 export default {
 	name: 'EditOrganisation',
 	components: {
+		GroupSelect,
 		NcDialog,
 		NcTextField,
 		NcTextArea,
-		NcSelect,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
@@ -989,12 +962,6 @@ export default {
 
 .create-another-checkbox {
 	margin-right: auto;
-}
-
-@include groups-select-container-rules-2;
-
-.group-name {
-	font-weight: 500;
 }
 
 @include security-section;

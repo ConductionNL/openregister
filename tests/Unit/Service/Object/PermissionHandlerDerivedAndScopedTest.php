@@ -65,6 +65,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerDerivedAndScopedTest extends TestCase {
 
@@ -241,7 +243,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$this->assertTrue(
 			$handler->hasPermission(
 				schema: $this->schemaWith(
-					['read' => [['group' => 'waarnemers', 'until' => '2099-01-01T00:00:00+01:00']]]
+					['read' => [['group' => 'waarnemers', 'until' => date('c', strtotime('+10 years'))]]]
 				),
 				action: 'read',
 				userId: 'ana'
@@ -268,7 +270,7 @@ class PermissionHandlerDerivedAndScopedTest extends TestCase {
 		$this->assertTrue(
 			$granted->hasPermission(
 				schema: $this->schemaWith(
-					['read' => [['user' => 'ana', 'until' => '2099-01-01T00:00:00+01:00']]]
+					['read' => [['user' => 'ana', 'until' => date('c', strtotime('+10 years'))]]]
 				),
 				action: 'read',
 				userId: 'ana'

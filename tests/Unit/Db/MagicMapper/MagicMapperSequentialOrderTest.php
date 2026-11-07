@@ -260,6 +260,7 @@ class MagicMapperSequentialOrderTest extends TestCase {
 			'a search term: the score, then the uuid' => [['_search' => 'x']],
 			'relevance asked by name' => [['_search' => 'x', '_order' => ['_relevance' => 'DESC']]],
 			'an unknown metadata key is dropped' => [['_order' => ['@self.bogus' => 'ASC', 'title' => 'DESC']]],
+			'an unknown field is dropped' => [['_order' => ['_foo' => 'ASC', 'nope' => 'ASC', 'title' => 'DESC']]],
 		];
 	}//end orders()
 

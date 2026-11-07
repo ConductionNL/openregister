@@ -75,8 +75,12 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -107,8 +111,6 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SaveObjects {
-	use RelationDetectionTrait;
-
 	/**
 	 * Maximum number of audit entries materialised into AuditTrail entities
 	 * and persisted per insertAuditTrails() call. Bounds peak memory: a save
@@ -295,7 +297,7 @@ class SaveObjects {
 		}
 
 		// Generate analysis and cache.
-		$analysis = $this->performComprehensiveSchemaAnalysis(schema: $schema);
+		$analysis = (new BulkSchemaAnalysis())->analyse(schema: $schema);
 		self::$schemaAnalysisCache[$schemaId] = $analysis;
 
 		return $analysis;
@@ -1803,18 +1805,8 @@ class SaveObjects {
 		$schemaCache = [];
 		$schemaAnalysis = [];
 
-		$schemaIds = [];
-		foreach ($objects as $object) {
-			$selfData = $object['@self'] ?? [];
-			$schemaId = $selfData['schema'] ?? null;
-			if ($schemaId !== null && in_array($schemaId, $schemaIds) === false) {
-				$schemaIds[] = $schemaId;
-			}
-		}
-
-		// PERFORMANCE OPTIMIZATION: Load and analyze all schemas with caching.
 		// NO ERROR SUPPRESSION: Let schema loading errors bubble up immediately!
-		foreach ($schemaIds as $schemaId) {
+		foreach ($this->distinctSchemaIds(objects: $objects) as $schemaId) {
 			$schema = $this->loadSchemaWithCache(schemaId: $schemaId);
 			$schemaCache[$schemaId] = $schema;
 			$schemaAnalysis[$schemaId] = $this->getSchemaAnalysisWithCache(schema: $schema);
@@ -1824,10 +1816,32 @@ class SaveObjects {
 	}//end groupAndLoadSchemas()
 
 	/**
+	 * The schema ids the objects name in @self, once each (loosely compared), in first-seen order.
+	 *
+	 * @param array $objects The objects.
+	 *
+	 * @return array The schema ids; every value but null counts.
+	 */
+	private function distinctSchemaIds(array $objects): array {
+		$schemaIds = [];
+		foreach ($objects as $object) {
+			$schemaId = ($object['@self']['schema'] ?? null);
+			if ($schemaId !== null && in_array($schemaId, $schemaIds) === false) {
+				$schemaIds[] = $schemaId;
+			}
+		}
+
+		return $schemaIds;
+	}//end distinctSchemaIds()
+
+	/**
 	 * Prepare a single object in a mixed-schema bulk save operation
 	 *
 	 * Handles ID generation, metadata hydration, relation scanning, and
 	 * pre-validation cascading for an individual object within a mixed-schema batch.
+	 * A row whose @self schema is false passes through unchanged, to be caught in the
+	 * transformation; any other error bubbles up. Hydrated metadata goes to @self and
+	 * the top level (for bulk SQL).
 	 *
 	 * @param array $object The raw object data with @self metadata
 	 * @param array $schemaCache The schema cache indexed by schema ID
@@ -1839,47 +1853,56 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function prepareMixedSchemaObject(array $object, array $schemaCache): array {
-		// NO ERROR SUPPRESSION: Let object processing errors bubble up immediately!
-		$selfData = $object['@self'] ?? [];
-		$schemaId = $selfData['schema'] ?? null;
-
-		// Allow objects without schema ID to pass through - they'll be caught in transformation.
+		$schemaId = ($object['@self']['schema'] ?? null);
 		if ($schemaId === false) {
 			return $object;
 		}
 
-		// Schema validation - direct error if not found in cache.
+		$schema = $this->cachedPreparationSchema(schemaId: $schemaId, schemaCache: $schemaCache);
+		$object = $this->withGeneratedSelfId(object: $object);
+		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
+		$selfData = $this->applyHydratedMetadata(selfData: ($object['@self'] ?? []), object: $object, tempEntity: $tempEntity);
+		$selfData['relations'] = (new BulkRelationScanner())->scan(data: $tempEntity->getObject(), run: new BulkRelationRun(schema: $schema));
+		$object['@self'] = $selfData;
+
+		return $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id'])[0];
+	}//end prepareMixedSchemaObject()
+
+	/**
+	 * The schema a mixed-schema row names, from the preparation's schema cache.
+	 *
+	 * @param mixed $schemaId    The row's @self schema.
+	 * @param array $schemaCache The loaded schemas by id.
+	 *
+	 * @return Schema
+	 *
+	 * @throws Exception When the schema is not in the cache.
+	 */
+	private function cachedPreparationSchema(mixed $schemaId, array $schemaCache): Schema {
 		if (isset($schemaCache[$schemaId]) === false) {
 			throw new Exception("Schema {$schemaId} not found in cache during preparation");
 		}
 
-		$schema = $schemaCache[$schemaId];
+		return $schemaCache[$schemaId];
+	}//end cachedPreparationSchema()
 
-		// Accept any non-empty string as ID, generate UUID if not provided.
-		$providedId = $selfData['id'] ?? null;
+	/**
+	 * The object with a generated uuid as its @self id when it has none, or only whitespace, or "0".
+	 *
+	 * @param array $object The object.
+	 *
+	 * @return array The object.
+	 */
+	private function withGeneratedSelfId(array $object): array {
+		$selfData = ($object['@self'] ?? []);
+		$providedId = ($selfData['id'] ?? null);
 		if ($providedId === null || empty(trim($providedId)) === true) {
 			$selfData['id'] = Uuid::v4()->toRfc4122();
 			$object['@self'] = $selfData;
 		}
 
-		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
-
-		// Extract hydrated metadata back to object's @self data AND top level (for bulk SQL).
-		$selfData = $object['@self'] ?? [];
-		$selfData = $this->applyHydratedMetadata(selfData: $selfData, object: $object, tempEntity: $tempEntity);
-
-		// RELATIONS EXTRACTION: Scan the object data for relations (UUIDs and URLs).
-		$relationData = $tempEntity->getObject();
-		$relations = $this->scanForRelations(data: $relationData, prefix: '', schema: $schema);
-		$selfData['relations'] = $relations;
-
-		$object['@self'] = $selfData;
-
-		// Handle pre-validation cascading for inversedBy properties.
-		[$processedObject] = $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id']);
-
-		return $processedObject;
-	}//end prepareMixedSchemaObject()
+		return $object;
+	}//end withGeneratedSelfId()
 
 	/**
 	 * PERFORMANCE OPTIMIZED: Prepare objects for single-schema bulk operations
@@ -1981,38 +2004,61 @@ class SaveObjects {
 		Register|string|int $register,
 		Schema|string|int $schema,
 	): array {
-		$registerId = $register;
-		if ($register instanceof Register === true) {
-			$registerId = $register->getId();
-		}
-
-		if ($register instanceof Register) {
-			self::$registerCache[$registerId] = $register;
-		}
-
-		if ($register instanceof Register === false) {
-			$register = $this->loadRegisterWithCache(registerId: $registerId);
-		}
-
-		$schemaId = $schema;
-		if ($schema instanceof Schema === true) {
-			$schemaId = $schema->getId();
-		}
-
-		if ($schema instanceof Schema) {
-			$schemaObj = $schema;
-			self::$schemaCache[$schemaId] = $schemaObj;
-		}
-
-		if ($schema instanceof Schema === false) {
-			$schemaObj = $this->loadSchemaWithCache(schemaId: $schemaId);
-		}
-
-		$schemaCache = [$schemaId => $schemaObj];
+		$registerId = self::contextId(entity: $register);
+		$schemaId = self::contextId(entity: $schema);
+		$register = $this->contextRegister(register: $register);
+		$schemaObj = $this->contextSchema(schema: $schema);
 		$schemaAnalysis = [$schemaId => $this->getSchemaAnalysisWithCache(schema: $schemaObj)];
 
-		return [$registerId, $register, $schemaId, $schemaObj, $schemaCache, $schemaAnalysis];
+		return [$registerId, $register, $schemaId, $schemaObj, [$schemaId => $schemaObj], $schemaAnalysis];
 	}//end loadAndValidateSchemaContext()
+
+	/**
+	 * The id a caller's register or schema argument stands for: the entity's id, or the argument itself.
+	 *
+	 * @param Register|Schema|string|int $entity The argument.
+	 *
+	 * @return string|int
+	 */
+	private static function contextId(Register|Schema|string|int $entity): string|int {
+		if ($entity instanceof Register || $entity instanceof Schema) {
+			return $entity->getId();
+		}
+
+		return $entity;
+	}//end contextId()
+
+	/**
+	 * The caller's register: a given entity is cached under its id, an id is loaded through the cache.
+	 *
+	 * @param Register|string|int $register The argument.
+	 *
+	 * @return Register
+	 */
+	private function contextRegister(Register|string|int $register): Register {
+		if ($register instanceof Register) {
+			self::$registerCache[$register->getId()] = $register;
+			return $register;
+		}
+
+		return $this->loadRegisterWithCache(registerId: $register);
+	}//end contextRegister()
+
+	/**
+	 * The caller's schema: a given entity is cached under its id, an id is loaded through the cache.
+	 *
+	 * @param Schema|string|int $schema The argument.
+	 *
+	 * @return Schema
+	 */
+	private function contextSchema(Schema|string|int $schema): Schema {
+		if ($schema instanceof Schema) {
+			self::$schemaCache[$schema->getId()] = $schema;
+			return $schema;
+		}
+
+		return $this->loadSchemaWithCache(schemaId: $schema);
+	}//end contextSchema()
 
 	/**
 	 * Prepare a single object for single-schema bulk save
@@ -2037,7 +2083,7 @@ class SaveObjects {
 		// `image` / `slug` property is not mistaken for the magic-table column of
 		// the same name (openregister#2781).
 		$businessData = $this->extractBusinessData(object: $object, schema: $defaults->schema);
-		$selfData['relations'] = $this->scanForRelations(data: $businessData, prefix: '', schema: $defaults->schema);
+		$selfData['relations'] = (new BulkRelationScanner())->scan(data: $businessData, run: new BulkRelationRun(schema: $defaults->schema));
 		$this->logBulkRelationScan(selfData: $selfData, businessData: $businessData);
 
 		// Store the clean business data in the database object column.
@@ -2152,7 +2198,6 @@ class SaveObjects {
 				'has_@self' => isset($object['@self']),
 				'@self_keys' => $selfKeys,
 				'has_object_property' => isset($object['object']),
-				'sample_data' => array_slice($object, 0, 3, true),
 			]
 		);
 	}//end logBulkObjectStructure()
@@ -2172,7 +2217,6 @@ class SaveObjects {
 				'uuid' => $selfData['uuid'] ?? 'unknown',
 				'relationCount' => count($selfData['relations']),
 				'businessDataKeys' => array_keys($businessData),
-				'relationsPreview' => array_slice($selfData['relations'], 0, 5, true),
 			]
 		);
 	}//end logBulkRelationScan()
@@ -2343,26 +2387,79 @@ class SaveObjects {
 			return [];
 		}
 
+		$context = $this->withCallEntities(context: $context);
+		$targets = [];
+		foreach ($this->eventCandidates(rows: $transformedObjects, context: $context) as $key => $candidate) {
+			if ($this->rowRules->bulkWriteEvents->appliesTo(schema: $candidate->schema, register: $candidate->register) === true) {
+				$targets[$key] = true;
+			}
+		}
+
+		return $targets;
+	}//end bulkEventTargets()
+
+	/**
+	 * The bulkEventTargets context with the register and schema the caller named loaded.
+	 *
+	 * @param array $context The bulkEventTargets context.
+	 *
+	 * @return array The context, `register` and `schema` now an entity or null.
+	 */
+	private function withCallEntities(array $context): array {
 		$context['register'] = $this->callEntity(target: $context['register'], kind: Register::class);
 		$context['schema']   = $this->callEntity(target: $context['schema'], kind: Schema::class);
-		$targets = [];
-		$asked   = [];
-		foreach ($transformedObjects as $objData) {
-			$schema   = ($context['schema'] ?? ($context['schemas'][$objData['schema'] ?? ''] ?? null));
-			$register = ($context['register'] ?? $this->eventRegister(registerId: ($objData['register'] ?? null)));
-			$key      = ((string)($register?->getId() ?? ($objData['register'] ?? ''))) . '/' . ((string)$schema?->getId());
-			if (isset($asked[$key]) === true || $schema instanceof Schema === false) {
+		return $context;
+	}//end withCallEntities()
+
+	/**
+	 * The first candidate of every "registerId/schemaId" key in the chunk that has a schema, in row order.
+	 *
+	 * @param array $rows    The chunk, after the guards.
+	 * @param array $context The bulkEventTargets context, with the caller's register and schema loaded.
+	 *
+	 * @return \Generator<string, BulkEventCandidate>
+	 */
+	private function eventCandidates(array $rows, array $context): \Generator {
+		$asked = [];
+		foreach ($rows as $objData) {
+			$candidate = $this->eventCandidate(objData: $objData, context: $context);
+			$key       = $candidate->key();
+			if (isset($asked[$key]) === true || $candidate->schema instanceof Schema === false) {
 				continue;
 			}
 
 			$asked[$key] = true;
-			if ($this->rowRules->bulkWriteEvents->appliesTo(schema: $schema, register: $register) === true) {
-				$targets[$key] = true;
-			}
-		}//end foreach
+			yield $key => $candidate;
+		}
+	}//end eventCandidates()
 
-		return $targets;
-	}//end bulkEventTargets()
+	/**
+	 * The schema and register one chunk row is written to: the caller's first, the row's own where the caller named none.
+	 *
+	 * @param array $objData The chunk row.
+	 * @param array $context The bulkEventTargets context, with the caller's register and schema loaded.
+	 *
+	 * @return BulkEventCandidate
+	 */
+	private function eventCandidate(array $objData, array $context): BulkEventCandidate {
+		return new BulkEventCandidate(
+			schema: $this->eventSchema(objData: $objData, context: $context),
+			register: ($context['register'] ?? $this->eventRegister(registerId: ($objData['register'] ?? null))),
+			rowRegisterId: ($objData['register'] ?? null)
+		);
+	}//end eventCandidate()
+
+	/**
+	 * The schema one chunk row is written to: the caller's, else the row's own from the schema cache.
+	 *
+	 * @param array $objData The chunk row.
+	 * @param array $context The bulkEventTargets context, with the caller's schema loaded.
+	 *
+	 * @return mixed The schema; null when neither names one.
+	 */
+	private function eventSchema(array $objData, array $context): mixed {
+		return ($context['schema'] ?? ($context['schemas'][$objData['schema'] ?? ''] ?? null));
+	}//end eventSchema()
 
 	/**
 	 * The register or schema the caller named, loaded; null when it named none or it does not load.
@@ -2377,20 +2474,32 @@ class SaveObjects {
 			return $target;
 		}
 
-		if ($target === null || $target === 0 || $target === '0' || $target === '' || is_object($target) === true) {
+		if (in_array($target, [null, 0, '0', ''], true) === true || is_object($target) === true) {
 			return null;
 		}
 
 		try {
-			if ($kind === Register::class) {
-				return $this->loadRegisterWithCache(registerId: $target);
-			}
-
-			return $this->loadSchemaWithCache(schemaId: $target);
+			return $this->loadCallEntity(target: $target, kind: $kind);
 		} catch (\Throwable $e) {
 			return null;
 		}
 	}//end callEntity()
+
+	/**
+	 * Load the register or schema a caller named by id.
+	 *
+	 * @param string|int   $target The id.
+	 * @param class-string $kind   Register::class or Schema::class.
+	 *
+	 * @return Register|Schema
+	 */
+	private function loadCallEntity(string|int $target, string $kind): Register|Schema {
+		if ($kind === Register::class) {
+			return $this->loadRegisterWithCache(registerId: $target);
+		}
+
+		return $this->loadSchemaWithCache(schemaId: $target);
+	}//end loadCallEntity()
 
 	/**
 	 * The register a chunk row names, from the register cache the preparation step filled.
@@ -3171,119 +3280,6 @@ class SaveObjects {
 	}//end classifyLegacyResults()
 
 	/**
-	 * Perform comprehensive schema analysis for bulk operations
-	 *
-	 * PERFORMANCE OPTIMIZATION: This method analyzes schemas once and caches all needed information
-	 * for the entire bulk operation, including metadata field mapping, inverse relation properties,
-	 * validation requirements, and property configurations. This eliminates redundant schema analysis.
-	 *
-	 * @param Schema $schema Schema to analyze
-	 *
-	 * @return array Comprehensive analysis containing:
-	 *               - metadataFields: Array of metadata field mappings
-	 *               - inverseProperties: Array of properties with inverse relations
-	 *               - validationRequired: Whether hard validation is enabled
-	 *               - properties: Cached schema properties
-	 *               - configuration: Cached schema configuration
-	 *
-	 * @psalm-return   array<string, mixed>
-	 * @phpstan-return array<string, mixed>
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function performComprehensiveSchemaAnalysis(Schema $schema): array {
-		$config = $schema->getConfiguration();
-		$properties = $schema->getProperties();
-
-		$analysis = [
-			'metadataFields' => [],
-			'inverseProperties' => [],
-			'validationRequired' => $schema->getHardValidation(),
-			'properties' => $properties,
-			'configuration' => $config,
-		];
-
-		// PERFORMANCE OPTIMIZATION: Analyze metadata field mappings once.
-		// COMPREHENSIVE METADATA FIELD SUPPORT: Include all supported metadata fields.
-		$metadataFieldMap = [
-			'name' => $config['objectNameField'] ?? null,
-			'description' => $config['objectDescriptionField'] ?? null,
-			'summary' => $config['objectSummaryField'] ?? null,
-			'image' => $config['objectImageField'] ?? null,
-			'slug' => $config['objectSlugField'] ?? null,
-		];
-
-		$analysis['metadataFields'] = array_filter(
-			$metadataFieldMap,
-			function ($field) {
-				return !empty($field);
-			}
-		);
-
-		// PERFORMANCE OPTIMIZATION: Analyze inverse relation properties once.
-		foreach ($properties as $propertyName => $propertyConfig) {
-			$items = $propertyConfig['items'] ?? [];
-
-			// Check for inversedBy at property level (single object relations).
-			$inversedBy = $propertyConfig['inversedBy'] ?? null;
-			$rawWriteBack = $propertyConfig['writeBack'] ?? false;
-			$writeBack = $this->castToBoolean(value: $rawWriteBack);
-
-			// Schema analysis: process writeBack boolean casting.
-			// Check for inversedBy in array items (array of object relations).
-			// CRITICAL FIX: Preserve property-level writeBack if it's true.
-			if ($inversedBy === null && isset($items['inversedBy']) === true) {
-				$inversedBy = $items['inversedBy'];
-				$rawItemsWriteBack = $items['writeBack'] ?? false;
-				$itemsWriteBack = $this->castToBoolean(value: $rawItemsWriteBack);
-
-				// Use the higher value: if property writeBack is true, keep it.
-				$finalWriteBack = $writeBack || $itemsWriteBack;
-
-				// Items logic: combine property and items writeBack values.
-				$writeBack = $finalWriteBack;
-			}
-
-			if ($inversedBy !== null) {
-				$analysis['inverseProperties'][$propertyName] = [
-					'inversedBy' => $inversedBy,
-					'writeBack' => $writeBack,
-					'isArray' => $propertyConfig['type'] === 'array',
-				];
-			}
-		}//end foreach
-
-		return $analysis;
-	}//end performComprehensiveSchemaAnalysis()
-
-	/**
-	 * Cast mixed values to proper boolean
-	 *
-	 * Handles string "true"/"false", integers 1/0, and actual booleans
-	 *
-	 * @param mixed $value The value to cast to boolean
-	 *
-	 * @return bool The boolean value
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function castToBoolean($value): bool {
-		if (is_bool($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === true) {
-			return strtolower(trim($value)) === 'true';
-		}
-
-		if (is_numeric($value) === true) {
-			return (bool)$value;
-		}
-
-		return (bool)$value;
-	}//end castToBoolean()
-
-	/**
 	 * Handle bulk inverse relations using cached schema analysis
 	 *
 	 * PERFORMANCE OPTIMIZATION: This method uses pre-analyzed inverse relation properties
@@ -3504,7 +3500,6 @@ class SaveObjects {
 				[
 					'available_keys' => array_keys($object),
 					'has_object_property' => isset($object['object']),
-					'sample_data' => array_slice($object, 0, 3, true),
 				]
 			);
 
@@ -3527,7 +3522,7 @@ class SaveObjects {
 				);
 			} elseif (isset($schemaCache[$selfData['schema']]) === true) {
 				$schema = $schemaCache[$selfData['schema']];
-				$relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schema);
+				$relations = (new BulkRelationScanner())->scan(data: $businessData, run: new BulkRelationRun(schema: $schema));
 				$selfData['relations'] = $relations;
 
 				$this->logger->debug(
@@ -3535,7 +3530,6 @@ class SaveObjects {
 					[
 						'uuid' => $selfData['uuid'] ?? 'unknown',
 						'relationCount' => count($relations),
-						'relations' => array_slice($relations, 0, 3, true),
 					]
 				);
 			}//end if
@@ -3567,18 +3561,8 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function generateObjectIdentifiers(array $selfData, array $object): array {
-		// Auto-wire @self metadata with proper UUID validation and generation.
-		// Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
-		// Default: generate new UUID.
-		$providedId = $object['id'] ?? $selfData['id'] ?? null;
-		$selfData['uuid'] = Uuid::v4()->toRfc4122();
-		$selfData['id'] = $selfData['uuid'];
-
-		// Override: accept any non-empty string as identifier.
-		if ($providedId !== null && empty(trim($providedId)) === false) {
-			$selfData['uuid'] = $providedId;
-			$selfData['id'] = $providedId;
-		}
+		// The same id rule as the single-schema preparation: CSV 'id' column first, then @self.id.
+		$selfData = $this->withBulkObjectId(selfData: $selfData, object: $object);
 
 		// CRITICAL FIX: Use register and schema from method parameters if not provided in object data.
 		$selfData['register'] = $selfData['register'] ?? $object['register'] ?? null;
@@ -3752,7 +3736,6 @@ class SaveObjects {
 				),
 				'kept_as_schema_properties' => array_values(array_intersect($kept, array_keys($object))),
 				'remaining_keys' => array_keys($businessData),
-				'business_data_sample' => array_slice($businessData, 0, 3, true),
 			]
 		);
 
@@ -3792,7 +3775,7 @@ class SaveObjects {
 				$this->logger->error(
 					'Object reconstruction failed: Missing UUID after bulk save operation',
 					[
-						'objectData' => $objData,
+						'objectKeys' => array_keys($objData),
 						'error' => 'UUID missing in saved object data',
 						'context' => 'reconstructSavedObjects',
 					]
@@ -3834,205 +3817,6 @@ class SaveObjects {
 
 		return $savedObjects;
 	}//end reconstructSavedObjects()
-
-	/**
-	 * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
-	 *
-	 * This method checks schema properties for relation types:
-	 * - Properties with type 'text' and format 'uuid', 'uri', or 'url'
-	 * - Properties with type 'object' that contain string values (always treated as relations)
-	 * - Properties with type 'array' of objects that contain string values
-	 *
-	 * This is ported from SaveObject.php to provide consistent relation handling
-	 * for bulk operations.
-	 *
-	 * @param array $data The object data to scan
-	 * @param string $prefix The current prefix for dot notation (used in recursion)
-	 * @param Schema|null $schema The schema to check property definitions against
-	 *
-	 * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive relation scanning across nested structures
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
-		$relations = [];
-
-		// NO ERROR SUPPRESSION: Let relation scanning errors bubble up immediately!
-		// Get schema properties if available.
-		$schemaProperties = null;
-		if ($schema !== null) {
-			// NO ERROR SUPPRESSION: Let schema property parsing errors bubble up immediately!
-			$schemaProperties = $schema->getProperties();
-		}
-
-		foreach ($data as $key => $value) {
-			// Skip if key is not a string or is empty.
-			if (is_string($key) === false || empty($key) === true) {
-				continue;
-			}
-
-			$currentPath = $key;
-			if ($prefix !== '') {
-				$currentPath = $prefix . '.' . $key;
-			}
-
-			$propertyRelations = $this->scanPropertyForRelation(
-				key: $key,
-				value: $value,
-				currentPath: $currentPath,
-				schemaProperties: $schemaProperties,
-				schema: $schema
-			);
-			$relations = array_merge($relations, $propertyRelations);
-		}//end foreach
-
-		return $relations;
-	}//end scanForRelations()
-
-	/**
-	 * Scan a single property value for relations (UUIDs and URLs)
-	 *
-	 * Checks the property type and delegates to the appropriate handler
-	 * for arrays, nested objects, or scalar string values.
-	 *
-	 * @param string $key The property key name
-	 * @param mixed $value The property value to scan
-	 * @param string $currentPath The current dot-notation path
-	 * @param array|null $schemaProperties The schema properties definition
-	 * @param Schema|null $schema The schema for recursive scanning
-	 *
-	 * @return array Relations found in this property
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function scanPropertyForRelation(
-		string $key,
-		mixed $value,
-		string $currentPath,
-		?array $schemaProperties,
-		?Schema $schema,
-	): array {
-		if (is_array($value) === true && empty($value) === false) {
-			return $this->scanArrayForRelations(
-				key: $key,
-				value: $value,
-				currentPath: $currentPath,
-				schemaProperties: $schemaProperties,
-				schema: $schema
-			);
-		}
-
-		if (is_string($value) === true && empty($value) === false && trim($value) !== '') {
-			return $this->scanStringForRelation(
-				key: $key,
-				value: $value,
-				currentPath: $currentPath,
-				schemaProperties: $schemaProperties
-			);
-		}
-
-		return [];
-	}//end scanPropertyForRelation()
-
-	/**
-	 * Scan an array value for relations by iterating its items
-	 *
-	 * Handles both arrays of objects (schema-typed) and generic arrays,
-	 * recursing into nested structures and identifying string references.
-	 *
-	 * @param string $key The property key name
-	 * @param array $value The array value to scan
-	 * @param string $currentPath The current dot-notation path
-	 * @param array|null $schemaProperties The schema properties definition
-	 * @param Schema|null $schema The schema for recursive scanning
-	 *
-	 * @return array Relations found in the array items
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Array scanning requires type-checking each element
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function scanArrayForRelations(
-		string $key,
-		array $value,
-		string $currentPath,
-		?array $schemaProperties,
-		?Schema $schema,
-	): array {
-		$relations = [];
-
-		// Check if this is an array property in the schema.
-		$propertyConfig = $schemaProperties[$key] ?? null;
-		$isArrayOfObjects = $propertyConfig !== null
-						  && ($propertyConfig['type'] ?? '') === 'array'
-						  && isset($propertyConfig['items']['type'])
-						  && $propertyConfig['items']['type'] === 'object';
-
-		foreach ($value as $index => $item) {
-			if (is_array($item) === true) {
-				// Recursively scan nested arrays/objects.
-				$itemRelations = $this->scanForRelations(
-					data: $item,
-					prefix: $currentPath . '.' . $index,
-					schema: $schema
-				);
-				$relations = array_merge($relations, $itemRelations);
-				continue;
-			}
-
-			if (is_string($item) === false || empty($item) === true) {
-				continue;
-			}
-
-			if ($isArrayOfObjects === true) {
-				// String values in object arrays are always treated as relations.
-				$relations[$currentPath . '.' . $index] = $item;
-				continue;
-			}
-
-			// For non-object arrays, record only genuine references.
-			if ($this->isRecordableReference(value: $item) === true) {
-				$relations[$currentPath . '.' . $index] = $item;
-			}
-		}//end foreach
-
-		return $relations;
-	}//end scanArrayForRelations()
-
-	/**
-	 * Check if a string property value is a relation based on schema config or reference patterns
-	 *
-	 * Uses schema property type/format to determine relation status first,
-	 * then falls back to reference pattern matching.
-	 *
-	 * @param string $key The property key name
-	 * @param string $value The string value to check
-	 * @param string $currentPath The current dot-notation path
-	 * @param array|null $schemaProperties The schema properties definition
-	 *
-	 * @return array Relations found (empty array or single-element array)
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function scanStringForRelation(
-		string $key,
-		string $value,
-		string $currentPath,
-		?array $schemaProperties,
-	): array {
-		$propertyConfig = null;
-		if ($schemaProperties !== null && isset($schemaProperties[$key]) === true) {
-			$propertyConfig = $schemaProperties[$key];
-		}
-
-		if ($this->isRecordableReference(value: $value, propertyConfig: $propertyConfig) === true) {
-			return [$currentPath => $value];
-		}
-
-		return [];
-	}//end scanStringForRelation()
 
 	/**
 	 * Drop the decision-table rows the single save would have refused.

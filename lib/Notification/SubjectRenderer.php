@@ -51,7 +51,7 @@ abstract class SubjectRenderer {
 	abstract public function render(INotification $notification, IL10N $l): ?INotification;
 
 	/**
-	 * A new primary action on the notification, labelled; the caller sets its link and adds it.
+	 * A new primary action on the notification, labelled; the caller sets its link and adds it as parsed.
 	 *
 	 * @param INotification $notification The notification being prepared
 	 * @param string $label The action label
@@ -61,11 +61,13 @@ abstract class SubjectRenderer {
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	protected function primaryAction(INotification $notification, string $label): IAction {
-		return $notification->createAction()->setLabel($label)->setPrimary(true);
+		return $notification->createAction()->setParsedLabel($label)->setPrimary(true);
 	}//end primaryAction()
 
 	/**
 	 * Set the app icon on a prepared notification.
+	 *
+	 * Nextcloud refuses an icon that is not an absolute URL.
 	 *
 	 * @param INotification $notification The notification being prepared
 	 *
@@ -75,7 +77,7 @@ abstract class SubjectRenderer {
 	 */
 	protected function withAppIcon(INotification $notification): INotification {
 		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+			$this->urlGenerator->getAbsoluteURL($this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg'))
 		);
 
 		return $notification;

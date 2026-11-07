@@ -9,12 +9,12 @@ namespace Unit\Service\Chat;
 
 use LLPhant\Chat\FunctionInfo\FunctionInfo;
 use LLPhant\Chat\Message as LLPhantMessage;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
-use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
-use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Tool\StreamingToolInstanceWrapper;
+use OCA\OpenRegister\Mcp\Tool\StreamingToolInstanceWrapper;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

@@ -517,7 +517,7 @@ export default {
 		}
 	}
 
-	.no-schemas {
+	.no-views {
 		display: flex;
 		flex-direction: column;
 		align-items: center;

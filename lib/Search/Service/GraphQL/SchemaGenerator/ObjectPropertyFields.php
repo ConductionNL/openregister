@@ -51,7 +51,7 @@ class ObjectPropertyFields {
 		$fields = [];
 
 		foreach (($schema->getProperties() ?? []) as $name => $property) {
-			if (is_array(value: $property) === false) {
+			if (is_array(value: $property) === false || $this->typeMapper->mayCarryField(schema: $schema, property: (string)$name) === false) {
 				continue;
 			}
 

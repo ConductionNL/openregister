@@ -27,6 +27,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Tests\Unit\Service\Object\ReferenceValidationCalls;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -38,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Tests\Unit\Service\Object\RelationCalls;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
@@ -223,6 +225,14 @@ class SaveObjectCoverageTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $method, array $args = []) {
+		if (in_array($method, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$method}($this->saveObject, $args);
+		}
+
+		if ($method === 'validateReferences' || $method === 'validateReferenceExists') {
+			return ReferenceValidationCalls::{$method}($this->saveObject, $args);
+		}
+
 		$m = $this->reflection->getMethod($method);
 		$m->setAccessible(true);
 		return $m->invokeArgs($this->saveObject, $args);

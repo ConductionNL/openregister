@@ -16,7 +16,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 					})
 		"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<div v-if="success !== null" class="form-group">
 			<NcNoteCard v-if="success" type="success">
 				<p>

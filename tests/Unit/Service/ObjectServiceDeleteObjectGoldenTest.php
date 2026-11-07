@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -68,9 +69,11 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses   \OCA\OpenRegister\Service\Object\RetentionDestruction
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
  * @uses   \OCA\OpenRegister\Service\Object\DraftCallerRule
@@ -84,6 +87,11 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class ObjectServiceDeleteObjectGoldenTest extends TestCase {
+
+	/**
+	 * Whether the running scenario is a retention sweep.
+	 */
+	private bool $sweeping = false;
 
 	private const FIXTURE = __DIR__ . '/fixtures/object-service-delete-object-golden.json';
 
@@ -199,6 +207,7 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 			$currentUser = $this->user(uid: $call['user']);
 		}
 
+		$this->sweeping = ($call['sweep'] ?? false);
 		try {
 			$result = ['returned' => $service->deleteObject(
 				uuid: self::U1,
@@ -342,6 +351,7 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 		$deleteHandler = $this->createMock(DeleteObject::class);
 		$deleteHandler->method('deleteObject')->willReturnCallback(
 			function (Register|int|string|null $register, Schema|int|string|null $schema, string $uuid, ?string $originalObjectId = null, bool $_rbac = true, bool $_multitenancy = true, bool $scoped = false, ?ObjectEntity $preResolved = null, bool $permanent = false): bool {
+				$this->assertSame($this->sweeping, (new RetentionDestruction())->isRunning());
 				$this->calls[] = [
 					'deleteHandler' => $uuid,
 					'register'      => $register instanceof Register ? $register->getId() : $register,

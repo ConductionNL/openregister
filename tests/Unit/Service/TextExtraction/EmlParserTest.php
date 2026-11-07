@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
-use OCA\OpenRegister\Service\TextExtraction\EmlAttachment;
-use OCA\OpenRegister\Service\TextExtraction\EmlBody;
-use OCA\OpenRegister\Service\TextExtraction\EmlParser;
-use OCA\OpenRegister\Service\TextExtraction\EmlStructure;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlAttachment;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlBody;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

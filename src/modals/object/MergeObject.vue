@@ -9,7 +9,7 @@ import {
 </script>
 
 <template>
-	<NcDialog name="Merge Objects" size="large" :canClose="false">
+	<NcDialog name="Merge Objects" size="large" noClose>
 		<!-- Register and Schema Information -->
 		<div class="detail-grid">
 			<div class="detail-item">
@@ -658,6 +658,7 @@ import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
+import { refreshObjectLists } from './selectedObjectsDialog.js'
 
 /**
  * The outgoing relations of an object, from its `@self` relations or its
@@ -1034,20 +1035,24 @@ export default {
 					}
 				})
 
-				// Use the object store method for consistent API handling
-				const result = await objectStore.mergeObjects({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
-					sourceObjectId: this.sourceObject['@self'].id,
-					target: this.selectedTargetObject['@self'].id,
-					object: finalMergedData,
-					fileAction: this.fileAction,
-					relationAction: this.relationAction,
-					referenceAction: this.referenceAction,
-				})
+				const result = await objectStore.mergeObjects(
+					objectStore.currentType,
+					this.sourceObject['@self'].id,
+					{
+						target: this.selectedTargetObject['@self'].id,
+						object: finalMergedData,
+						fileAction: this.fileAction,
+						relationAction: this.relationAction,
+						referenceAction: this.referenceAction,
+					},
+				)
+				if (!result) {
+					throw new Error(objectStore.lifecycleError?.message)
+				}
 
-				this.mergeResult = result.data
+				this.mergeResult = result
 				this.step = 3
+				refreshObjectLists()
 			} catch (error) {
 				console.error('Error performing merge:', error)
 				this.mergeResult = {
@@ -1484,14 +1489,7 @@ export default {
 	font-weight: bold;
 }
 
-.error-text {
-	color: var(--color-error);
-}
-
-.warning-text {
-	color: var(--color-warning);
-}
-
+@include error-text-rules;
 
 @media (prefers-reduced-motion: reduce) {
 	.object-item {

@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\IAppConfig;
@@ -61,7 +61,7 @@ abstract class AbstractTextExtractionJob extends QueuedJob {
 	 * @param ITimeFactory $time Time factory for parent class
 	 * @param IAppConfig $config Application configuration service
 	 * @param LoggerInterface $logger Logger service
-	 * @param TextExtractionService $textExtractor Text extraction service
+	 * @param TextExtractionServiceInterface $textExtractor Text extraction service
 	 *
 	 * @return void
 	 */
@@ -69,7 +69,7 @@ abstract class AbstractTextExtractionJob extends QueuedJob {
 		ITimeFactory $time,
 		protected readonly IAppConfig $config,
 		protected readonly LoggerInterface $logger,
-		protected readonly TextExtractionService $textExtractor,
+		protected readonly TextExtractionServiceInterface $textExtractor,
 	) {
 		parent::__construct(time: $time);
 	}//end __construct()

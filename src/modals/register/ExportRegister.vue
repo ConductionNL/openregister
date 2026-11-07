@@ -11,7 +11,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		name="export-register-dialog"
 		:title="t('openregister', 'Export Objects')"
 		size="small"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>

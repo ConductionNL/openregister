@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		name="Remove User"
-		:canClose="!removing"
+		:noClose="removing"
 		class="remove-user-dialog"
 		@closing="$emit('cancel')">
 		<p>

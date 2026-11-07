@@ -32,21 +32,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 
 /**
- * @covers \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler
+ * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
  * @uses \OCA\OpenRegister\Formats\BsnFormat
- * @uses \OCA\OpenRegister\Service\TextExtraction\PatternSet\NlPatternSet
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet
  */
 class BsnDetectionTest extends TestCase {
 

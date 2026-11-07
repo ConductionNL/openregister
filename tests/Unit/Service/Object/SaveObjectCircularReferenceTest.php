@@ -95,6 +95,7 @@ class SaveObjectCircularReferenceTest extends TestCase {
 		$args = array_values($args);
 		$calls = $this->saveCalls(handler: $handler);
 		return match ($methodName) {
+			'validateReferences', 'validateReferenceExists' => ReferenceValidationCalls::{$methodName}($handler, $args),
 			'pushSaveCallFrame' => $calls->push(new SaveCallFrame($args[0], $args[1], $args[2])),
 			'popSaveCallFrame' => $calls->pop($args[0]),
 			'detectCircularReference' => self::frameArrays(frames: $calls->cycleThrough($args[0])),

@@ -436,14 +436,16 @@ class ImportPreviewService {
 			);
 
 			$refused = $this->refusalsIn(batch: $batch, invalid: ($result['invalid'] ?? []));
-			foreach ($refused as $key => $reason) {
-				$batch[$key]->setReason('The write failed: '.$reason);
-				$this->stampFailed(preview: $preview, row: $batch[$key]);
+			if ($refused !== null) {
+				foreach ($refused as $key => $reason) {
+					$batch[$key]->setReason('The write failed: '.$reason);
+					$this->stampFailed(preview: $preview, row: $batch[$key]);
+				}
+
+				$this->stampApplied(preview: $preview, rows: array_diff_key($batch, $refused));
+
+				return;
 			}
-
-			$this->stampApplied(preview: $preview, rows: array_diff_key($batch, $refused));
-
-			return;
 		} catch (Throwable $exception) {
 			// A batch that threw says nothing about which row was at fault, and
 			// a per-row outcome is the whole point of a previewed import. Walk
@@ -505,15 +507,16 @@ class ImportPreviewService {
 	 * @param array<int, ImportPreviewRow> $batch   The rows sent.
 	 * @param array<int, mixed>            $invalid The refused items of the save result.
 	 *
-	 * @return array<int, string> The reasons, keyed like the batch.
+	 * @return array<int, string>|null The reasons, keyed like the batch, or null when a
+	 *                                 refusal matches no row, so no row can be stamped as written.
 	 */
-	private function refusalsIn(array $batch, array $invalid): array {
+	private function refusalsIn(array $batch, array $invalid): ?array {
 		$refused = [];
 		foreach ($invalid as $item) {
 			$key = self::batchKeyOf(batch: $batch, object: ($item['object'] ?? $item));
 			if ($key === null) {
 				$this->logger->warning(message: '[ImportPreviewService] A refused row matches no row of its batch');
-				continue;
+				return null;
 			}
 
 			$refused[$key] = (string)($item['error'] ?? 'Validation failed');

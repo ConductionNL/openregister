@@ -3,7 +3,6 @@
 		v-if="navigationStore.modal === 'viewWebhookLog'"
 		:name="t('openregister', 'Webhook Log Details')"
 		size="large"
-		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<div v-if="logItem" class="logDetailsContainer">

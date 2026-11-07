@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
-use OCA\OpenRegister\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;

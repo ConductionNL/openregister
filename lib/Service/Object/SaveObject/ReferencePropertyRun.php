@@ -79,9 +79,34 @@ final class ReferencePropertyRun {
 	public string $ref = '';
 
 	/**
+	 * The reference value being validated.
+	 *
+	 * @var string
+	 */
+	public string $uuid = '';
+
+	/**
 	 * The register the referenced objects live in.
 	 *
 	 * @var string|null
 	 */
 	public ?string $targetRegister = null;
+
+	/**
+	 * A pass over the data of one write.
+	 *
+	 * @param array       $data     The object data being validated.
+	 * @param string|null $register The object's register id.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	public static function forSave(array $data, ?string $register): self {
+		$run = new self();
+		$run->data = $data;
+		$run->register = $register;
+
+		return $run;
+	}//end forSave()
 }//end class

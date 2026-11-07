@@ -94,3 +94,32 @@ export function copyPayload(object, pattern) {
 	renameCopy(objectToCopy, copyName(object, pattern))
 	return objectToCopy
 }
+
+/**
+ * Save a copy of each row named by `ids`, one after the other. Each copy is
+ * made from a deep clone, because stripping the metadata reaches into `@self`.
+ *
+ * @param {object} request The copy.
+ * @param {Array<object>} request.rows The rows on the page.
+ * @param {Array<string>} request.ids The ids to copy.
+ * @param {Function} request.nameOf The name of a copy of a row.
+ * @param {Function} request.save Saves a copy; resolves to a falsy value when it was not saved.
+ * @return {Promise<{success: boolean, successfulIds: Array<string>, failedIds: Array<string>}>}
+ * @spec exclude client-side helper for the bulk copy on the object list
+ */
+export async function copyRows({ rows, ids, nameOf, save }) {
+	const successfulIds = []
+	const failedIds = []
+	for (const id of ids) {
+		const row = rows.find((candidate) => String(candidate.id) === String(id))
+		let saved = null
+		if (row) {
+			const copy = withoutOriginalMetadata(JSON.parse(JSON.stringify(row)))
+			renameCopy(copy, nameOf(row))
+			saved = await save(copy)
+		}
+		const outcome = saved ? successfulIds : failedIds
+		outcome.push(id)
+	}
+	return { success: failedIds.length === 0, successfulIds, failedIds }
+}

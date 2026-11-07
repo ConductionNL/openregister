@@ -28,21 +28,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtraction\EmlParser;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
-use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
-use OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor;
-use OCA\OpenRegister\Service\TextExtraction\WordExtractor;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
+use OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor;
+use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
@@ -50,11 +50,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenRegister\Service\TextExtractionService
- * @uses \OCA\OpenRegister\Db\Chunk
- * @uses \OCA\OpenRegister\Service\TextExtraction\PdfExtractor
- * @uses \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor
- * @uses \OCA\OpenRegister\Service\TextExtraction\WordExtractor
+ * @covers \OCA\OpenRegister\Files\Service\TextExtractionService
+ * @uses \OCA\OpenRegister\Files\Db\Chunk
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor
  */
 class ExtractFileEntityTypesTest extends TestCase {
 

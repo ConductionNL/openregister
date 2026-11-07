@@ -37,6 +37,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Dto\BulkSaveOutcome;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -841,6 +843,10 @@ class BulkController extends Controller {
 					'hard_delete' => $hardDelete,
 				]
 			);
+		} catch (ObjectStateWriteException $e) {
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
+		} catch (LockedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: LockedException::HTTP_STATUS);
 		} catch (ArchivalImmutableException $e) {
 			// The schema holds legally retained records. Caught ahead of the generic
 			// handler below, which would have reported a deliberate refusal as a 500.
@@ -925,6 +931,10 @@ class BulkController extends Controller {
 					'hard_delete' => $hardDelete,
 				]
 			);
+		} catch (ObjectStateWriteException $e) {
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
+		} catch (LockedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: LockedException::HTTP_STATUS);
 		} catch (ArchivalImmutableException $e) {
 			// The schema holds legally retained records. Caught ahead of the generic
 			// handler below, which would have reported a deliberate refusal as a 500.
@@ -993,6 +1003,10 @@ class BulkController extends Controller {
 					'hard_delete' => $hardDelete,
 				]
 			);
+		} catch (ObjectStateWriteException $e) {
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
+		} catch (LockedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: LockedException::HTTP_STATUS);
 		} catch (ArchivalImmutableException $e) {
 			// A schema of the register holds legally retained records, and the whole
 			// request was refused before any row was touched. A deliberate refusal,

@@ -39,9 +39,14 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Notification\Notifier
  * @covers \OCA\OpenRegister\Notification\SubjectRenderer
+ * @covers \OCA\OpenRegister\Notification\SubjectRenderers
  * @covers \OCA\OpenRegister\Notification\ArchivalSubjectRenderer
  * @covers \OCA\OpenRegister\Notification\ReportSubjectRenderer
  * @covers \OCA\OpenRegister\Notification\WorkSubjectRenderer
+ * @covers \OCA\OpenRegister\Notification\AccessSubjectRenderer
+ * @covers \OCA\OpenRegister\Notification\DelegationConsentRenderer
+ * @covers \OCA\OpenRegister\Notification\ConsentPromptDraft
+ * @covers \OCA\OpenRegister\Notification\DisplayNames
  */
 class NotifierRenderGoldenTest extends TestCase {
 
@@ -89,6 +94,7 @@ class NotifierRenderGoldenTest extends TestCase {
 			'threshold' => 3, 'count' => 9, 'schema' => 'Sch', 'daysLeft' => 5, 'action' => 'read', 'endsAt' => '2031-01-02',
 			'folder' => 'Audit exports/x/', 'filename' => 'a.csv', 'mode' => 'email', 'emailFailureReason' => 'smtp', 'reportName' => 'Rep',
 		],
+		'text flag' => ['secret' => 'yes', 'oldValue' => 'a', 'newValue' => 'b'],
 		'plain' => [
 			'setting' => 'Set', 'status' => 'failed', 'operator' => 'lte', 'view' => 'Vw', 'count' => 1, 'threshold' => 3, 'pendingCount' => 1,
 			'skippedCount' => 1, 'mode' => 'files', 'folder' => 'R', 'filename' => 'r.csv', 'reason' => 'Why', 'objectTitle' => 'Obj',
@@ -102,7 +108,7 @@ class NotifierRenderGoldenTest extends TestCase {
 	 * @var array<string, array{known: bool, edited: bool, rendered: array<string, string>|null}>
 	 */
 	private const TEMPLATES = [
-		'object_ownership_changed' => ['known' => true, 'edited' => true, 'rendered' => ['subject' => 'Edited subject', 'body' => 'Edited body']],
+		'credential_relink_needed' => ['known' => true, 'edited' => true, 'rendered' => ['subject' => 'Edited subject', 'body' => 'Edited body']],
 		'view_alert_crossed' => ['known' => true, 'edited' => true, 'rendered' => null],
 		'form_unpublished' => ['known' => true, 'edited' => true, 'rendered' => ['subject' => '', 'body' => 'Empty subject']],
 		'timeline_mention' => ['known' => true, 'edited' => false, 'rendered' => ['subject' => 'Not edited', 'body' => 'Not edited']],
@@ -111,6 +117,8 @@ class NotifierRenderGoldenTest extends TestCase {
 
 	/**
 	 * Every call made while rendering one subject with one parameter set.
+	 *
+	 * A message overwritten by the next call is left out: only the last one is ever read.
 	 *
 	 * @param string $subject The notification subject.
 	 * @param array<string, mixed> $parameters The subject parameters.
@@ -121,7 +129,12 @@ class NotifierRenderGoldenTest extends TestCase {
 	private function render(string $subject, array $parameters, bool $withCollaborators = false): array {
 		$calls = [];
 		$record = static function (string $who, string $method, array $args) use (&$calls): void {
-			$calls[] = $who . '.' . $method . ' ' . json_encode($args, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+			$line = $who . '.' . $method . ' ' . json_encode($args, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+			if ($method === 'setParsedMessage' && str_starts_with((string)end($calls), 'notification.setParsedMessage') === true) {
+				array_pop($calls);
+			}
+
+			$calls[] = $line;
 		};
 		$notification = $this->createMock(INotification::class);
 		$notification->method('getApp')->willReturn('openregister');
@@ -173,7 +186,7 @@ class NotifierRenderGoldenTest extends TestCase {
 	}
 
 	/**
-	 * A user manager that knows bob by name, eve by a blank name, and nobody else.
+	 * A user manager that knows bob by name, eve by a blank name, and answers for an empty uid too.
 	 *
 	 * @return IUserManager
 	 */
@@ -184,7 +197,7 @@ class NotifierRenderGoldenTest extends TestCase {
 		$eve->method('getDisplayName')->willReturn('  ');
 		$users = $this->createMock(IUserManager::class);
 		$users->method('get')->willReturnCallback(
-			static fn (string $uid): ?IUser => ['bob' => $bob, 'eve' => $eve][$uid] ?? null
+			static fn (string $uid): ?IUser => ['bob' => $bob, 'eve' => $eve, '' => $bob][$uid] ?? null
 		);
 
 		return $users;
@@ -225,6 +238,8 @@ class NotifierRenderGoldenTest extends TestCase {
 
 			$actual[$subject]['collaborators'] = $this->render(subject: $subject, parameters: self::PARAMETERS['full'], withCollaborators: true);
 			$actual[$subject]['blank name'] = $this->render(subject: $subject, parameters: ['principal' => 'eve', 'newOwner' => 'eve'], withCollaborators: true);
+			$actual[$subject]['known user'] = $this->render(subject: $subject, parameters: ['principal' => 'bob', 'newOwner' => 'bob'], withCollaborators: true);
+			$actual[$subject]['no user'] = $this->render(subject: $subject, parameters: ['principal' => '', 'newOwner' => ''], withCollaborators: true);
 			$actual[$subject]['unknown user'] = $this->render(subject: $subject, parameters: ['principal' => 'zed', 'newOwner' => 'zed'], withCollaborators: true);
 		}
 

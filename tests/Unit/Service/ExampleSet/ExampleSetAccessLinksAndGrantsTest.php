@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use ArrayObject;
 use DateTime;
+use DateTimeImmutable;
+use DateTimeZone;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -69,6 +71,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	/** @var IUser|null The active user of the fake session. */
 	private ?IUser $activeUser = null;
 
+	/** @var DateTimeImmutable|null The day today() answers for this test. */
+	private ?DateTimeImmutable $startDay = null;
+
 	/** @var array<int, string|null> The active user each mint guard call saw. */
 	private array $guardSaw = [];
 
@@ -104,6 +109,27 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * The link service holds an expiry against the real clock, so this suite plays on the real day.
+	 *
+	 * @return DateTimeImmutable Noon on the day this test started.
+	 */
+	protected function today(): DateTimeImmutable {
+		$this->startDay ??= new DateTimeImmutable('today 12:00', new DateTimeZone('Europe/Amsterdam'));
+		return $this->startDay;
+	}
+
+	/**
+	 * A day relative to today().
+	 *
+	 * @param int $days Days after today, negative for before.
+	 *
+	 * @return string The day as Y-m-d.
+	 */
+	private function daysAhead(int $days): string {
+		return $this->today()->modify(sprintf('%+d days', $days))->format('Y-m-d');
+	}
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->store->offer(register: 'dossiq', schema: 'case');
@@ -151,7 +177,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'esra.demir', actual: $link->getCreatedBy());
 		$this->assertSame(expected: 'Sanne de Vries', actual: $link->getLabel());
 		$this->assertSame(expected: 'read', actual: $link->getCapabilities());
-		$this->assertSame(expected: '2036-10-10 23:59', actual: $this->local(moment: $link->getExpiresAt()));
+		$this->assertSame(expected: $this->daysAhead(days: 3650).' 23:59', actual: $this->local(moment: $link->getExpiresAt()));
 		$this->assertSame(expected: $this->caseId(), actual: $link->getSubjectId());
 		$this->assertSame(expected: ['esra.demir'], actual: $this->guardSaw, message: 'the mint guard decided for Esra');
 		$this->assertNull(actual: $this->activeUser, message: 'nobody is left signed in');
@@ -206,7 +232,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$new = array_values($this->links)[0];
 		$this->assertNotSame(expected: $old->getId(), actual: $new->getId());
 		$this->assertNull(actual: $new->getRevokedAt());
-		$this->assertSame(expected: '2036-10-15 23:59', actual: $this->local(moment: $new->getExpiresAt()));
+		$this->assertSame(expected: $this->daysAhead(days: 3655).' 23:59', actual: $this->local(moment: $new->getExpiresAt()));
 		$this->assertSame(expected: $new->getId(), actual: $this->record->read(set: 'demo')['accessLinks']['alpha/link-sanne']['id']);
 	}//end testARefreshMintsTheLinkAgainFromTheRefreshDay()
 
@@ -351,8 +377,8 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'esra.demir', actual: $share['sharedBy']);
 		$this->assertSame(expected: IShare::TYPE_GROUP, actual: $share['shareType']);
 		$this->assertSame(expected: 'demo-staff', actual: $share['sharedWith']);
-		$this->assertSame(expected: '2026-10-27', actual: $share['expiration']->format('Y-m-d'));
-		$this->assertSame(expected: '2026-09-17 10:00', actual: $this->local(moment: $share['shareTime']));
+		$this->assertSame(expected: $this->daysAhead(days: 14), actual: $share['expiration']->format('Y-m-d'));
+		$this->assertSame(expected: $this->daysAhead(days: -26).' 10:00', actual: $this->local(moment: $share['shareTime']));
 		$this->assertSame(expected: ['esra.demir'], actual: $this->sharedAs);
 		$this->assertNull(actual: $this->activeUser);
 		$first = array_keys($this->shares)[0];

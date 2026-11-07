@@ -32,8 +32,10 @@ use GraphQL\Type\SchemaConfig;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectTypes;
+use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaCaller;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntryFields;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IUserSession;
 
 /**
@@ -67,10 +69,12 @@ class SchemaGenerator {
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param IUserSession $userSession The session that says who is asking
+	 * @param PropertyRbacHandler $propertyRbac Decides which properties that caller may read
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IUserSession $userSession,
+		private readonly PropertyRbacHandler $propertyRbac,
 	) {
 	}//end __construct()
 
@@ -97,7 +101,7 @@ class SchemaGenerator {
 	 */
 	public function generate(): Schema {
 		$schemas = $this->loadSchemas();
-		$this->objectTypes = new ObjectTypes(schemas: $schemas, userSession: $this->userSession);
+		$this->objectTypes = new ObjectTypes(schemas: $schemas, caller: $this->caller());
 
 		$entryFields = new SchemaEntryFields(typeMapper: $this->objectTypes->typeMapper(), resolver: $this->resolver);
 		foreach ($schemas as $schema) {
@@ -127,10 +131,21 @@ class SchemaGenerator {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	public function getObjectType(RegisterSchema $schema): ObjectType {
-		$this->objectTypes ??= new ObjectTypes(schemas: [], userSession: $this->userSession);
+		$this->objectTypes ??= new ObjectTypes(schemas: [], caller: $this->caller());
 
 		return $this->objectTypes->forSchema(schema: $schema);
 	}//end getObjectType()
+
+	/**
+	 * Who the generated schema is for.
+	 *
+	 * @return SchemaCaller The caller
+	 *
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
+	 */
+	private function caller(): SchemaCaller {
+		return new SchemaCaller(session: $this->userSession, propertyRbac: $this->propertyRbac);
+	}//end caller()
 
 	/**
 	 * Load all schemas of the graph.

@@ -131,6 +131,32 @@ class AggregateVisibility {
 	}//end maySummarise()
 
 	/**
+	 * Whether this caller could read this property on some row.
+	 *
+	 * An output field cannot come and go per row, so a generated type keeps a property
+	 * a conditional rule may show this caller. Fails closed, as maySummarise() does.
+	 *
+	 * @param Schema $schema   The schema the property belongs to.
+	 * @param string $property The property name.
+	 *
+	 * @return bool Whether some row could show it.
+	 *
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
+	 */
+	public function mayReadOnSomeRow(Schema $schema, string $property): bool {
+		if ($schema->getPropertyAuthorization($property) === null) {
+			return true;
+		}
+
+		try {
+			return $this->rbac?->couldReadProperty(schema: $schema, property: $property) === true;
+		} catch (Throwable $e) {
+			$this->warn(property: $property, reason: $e->getMessage());
+			return false;
+		}
+	}//end mayReadOnSomeRow()
+
+	/**
 	 * Whether this property is explicit-reveal and the caller is not trusted
 	 * code: its values leave OpenRegister only as their mask.
 	 *

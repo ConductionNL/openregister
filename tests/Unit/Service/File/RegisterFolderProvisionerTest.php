@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\Folder;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -33,7 +33,7 @@ use RuntimeException;
 use stdClass;
 
 /**
- * @covers \OCA\OpenRegister\Service\File\RegisterFolderProvisioner
+ * @covers \OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner
  * @uses \OCA\OpenRegister\Db\Register
  */
 class RegisterFolderProvisionerTest extends TestCase {

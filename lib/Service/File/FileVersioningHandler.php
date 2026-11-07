@@ -31,6 +31,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 
 /**
  * Handles file versioning operations.
@@ -90,71 +91,17 @@ class FileVersioningHandler {
 	 * @return array{versions: array, warning?: string} Version listing.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	public function listVersions(File $file): array {
 		if ($this->isVersioningEnabled() === false) {
-			$this->logger->info(
-				message: '[FileVersioningHandler] files_versions app is not enabled',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'versions' => [],
-				'warning' => 'File versioning is not enabled on this instance',
-			];
+			return $this->disabledListing();
 		}
 
 		try {
-			// Get the current version as the first entry.
-			$versions = [];
-			$versions[] = [
-				'versionId' => 'current',
-				'timestamp' => (new DateTime())->setTimestamp($file->getMTime())->format('c'),
-				'size' => $file->getSize(),
-				'author' => $this->getCurrentUserId(),
-				'authorDisplayName' => $this->getCurrentUserId(),
-				'label' => null,
-				'isCurrent' => true,
-			];
-
-			// Attempt to load version backend if available.
-			// Nextcloud's IVersionManager is in OCA\Files_Versions namespace.
-			if (class_exists('OCA\Files_Versions\Versions\IVersionManager') === true) {
-				$versionManager = $this->container->get('OCA\Files_Versions\Versions\IVersionManager');
-				$user = $this->versionUser(file: $file);
-				if ($versionManager !== null && $user !== null) {
-					$fileVersions = $versionManager->getVersionsForFile($user, $file);
-					foreach ($fileVersions as $version) {
-						$label = null;
-						if (method_exists($version, 'getLabel') === true) {
-							$label = $version->getLabel();
-						}
-
-						$versions[] = [
-							'versionId' => 'v-' . $version->getTimestamp(),
-							'timestamp' => (new DateTime())->setTimestamp($version->getTimestamp())->format('c'),
-							'size' => $version->getSize(),
-							'author' => $version->getSourceFileName(),
-							'authorDisplayName' => $version->getSourceFileName(),
-							'label' => $label,
-							'isCurrent' => false,
-						];
-					}
-				}
-			}//end if
-
-			return ['versions' => $versions];
+			return ['versions' => $this->collectVersions(file: $file)];
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[FileVersioningHandler] Failed to list versions: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return [
-				'versions' => [],
-				'warning' => 'Failed to retrieve file versions: ' . $e->getMessage(),
-			];
-		}//end try
+			return $this->failedListing(e: $e);
+		}
 	}//end listVersions()
 
 	/**
@@ -168,48 +115,232 @@ class FileVersioningHandler {
 	 * @throws Exception If versioning is not enabled or version not found.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	public function restoreVersion(File $file, string $versionId): bool {
 		if ($this->isVersioningEnabled() === false) {
 			throw new Exception('File versioning is not enabled on this instance');
 		}
 
-		// Parse the timestamp from the version ID.
+		$timestamp = $this->versionTimestamp(versionId: $versionId);
+		try {
+			$this->rollbackTo(file: $file, timestamp: $timestamp);
+			$this->logRestored(file: $file, versionId: $versionId);
+			return true;
+		} catch (Exception $e) {
+			$this->logRestoreFailure(e: $e);
+			throw $e;
+		}
+	}//end restoreVersion()
+
+	/**
+	 * The listing returned when files_versions is disabled, logged at info.
+	 *
+	 * @return array{versions: array, warning: string}
+	 */
+	private function disabledListing(): array {
+		$this->logger->info(
+			message: '[FileVersioningHandler] files_versions app is not enabled',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return ['versions' => [], 'warning' => 'File versioning is not enabled on this instance'];
+	}//end disabledListing()
+
+	/**
+	 * The listing returned when reading versions failed, logged as a warning.
+	 *
+	 * @param Exception $e The failure.
+	 *
+	 * @return array{versions: array, warning: string}
+	 */
+	private function failedListing(Exception $e): array {
+		$this->logger->warning(
+			message: '[FileVersioningHandler] Failed to list versions: ' . $e->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return ['versions' => [], 'warning' => 'Failed to retrieve file versions: ' . $e->getMessage()];
+	}//end failedListing()
+
+	/**
+	 * Log a successful restore at info.
+	 *
+	 * @param File   $file      The file.
+	 * @param string $versionId The version identifier as requested.
+	 *
+	 * @return void
+	 */
+	private function logRestored(File $file, string $versionId): void {
+		$this->logger->info(
+			message: "[FileVersioningHandler] Restored version {$versionId} for file {$file->getName()}",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logRestored()
+
+	/**
+	 * Log a failed restore as an error.
+	 *
+	 * @param Exception $e The failure.
+	 *
+	 * @return void
+	 */
+	private function logRestoreFailure(Exception $e): void {
+		$this->logger->error(
+			message: '[FileVersioningHandler] Failed to restore version: ' . $e->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logRestoreFailure()
+
+	/**
+	 * The current version first, then the versions the files_versions backend holds.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private function collectVersions(File $file): array {
+		$versions = [$this->currentVersionEntry(file: $file)];
+		$backend = $this->backendVersions(file: $file);
+		foreach (($backend['versions'] ?? []) as $version) {
+			$versions[] = $this->versionEntry(version: $version);
+		}
+
+		return $versions;
+	}//end collectVersions()
+
+	/**
+	 * The listing entry for the file as it is now.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function currentVersionEntry(File $file): array {
+		return [
+			'versionId' => 'current',
+			'timestamp' => $this->isoTime(timestamp: $file->getMTime()),
+			'size' => $file->getSize(),
+			'author' => $this->getCurrentUserId(),
+			'authorDisplayName' => $this->getCurrentUserId(),
+			'label' => null,
+			'isCurrent' => true,
+		];
+	}//end currentVersionEntry()
+
+	/**
+	 * The listing entry for one stored version.
+	 *
+	 * @param object $version A files_versions version.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function versionEntry(object $version): array {
+		$label = null;
+		if (method_exists($version, 'getLabel') === true) {
+			$label = $version->getLabel();
+		}
+
+		return [
+			'versionId' => 'v-' . $version->getTimestamp(),
+			'timestamp' => $this->isoTime(timestamp: $version->getTimestamp()),
+			'size' => $version->getSize(),
+			'author' => $version->getSourceFileName(),
+			'authorDisplayName' => $version->getSourceFileName(),
+			'label' => $label,
+			'isCurrent' => false,
+		];
+	}//end versionEntry()
+
+	/**
+	 * A Unix timestamp as an ISO 8601 date in the default timezone.
+	 *
+	 * @param int $timestamp The timestamp.
+	 *
+	 * @return string
+	 */
+	private function isoTime(int $timestamp): string {
+		return (new DateTime())->setTimestamp($timestamp)->format('c');
+	}//end isoTime()
+
+	/**
+	 * The timestamp a version id names.
+	 *
+	 * @param string $versionId The version identifier (e.g., "v-1710892800").
+	 *
+	 * @return int The timestamp.
+	 *
+	 * @throws Exception When the id does not name a positive timestamp.
+	 */
+	private function versionTimestamp(string $versionId): int {
 		$timestamp = (int)str_replace('v-', '', $versionId);
 		if ($timestamp <= 0) {
 			throw new Exception('Invalid version ID format');
 		}
 
-		try {
-			if (class_exists('OCA\Files_Versions\Versions\IVersionManager') === true) {
-				$versionManager = $this->container->get('OCA\Files_Versions\Versions\IVersionManager');
-				$user = $this->versionUser(file: $file);
-				if ($versionManager !== null && $user !== null) {
-					$fileVersions = $versionManager->getVersionsForFile($user, $file);
-					foreach ($fileVersions as $version) {
-						if ($version->getTimestamp() === $timestamp) {
-							$versionManager->rollback($version);
-							$this->logger->info(
-								message: "[FileVersioningHandler] Restored version {$versionId} for file {$file->getName()}",
-								context: ['file' => __FILE__, 'line' => __LINE__]
-							);
-							return true;
-						}
-					}
-				}
-			}
+		return $timestamp;
+	}//end versionTimestamp()
 
+	/**
+	 * Roll the file back to the first stored version with the given timestamp.
+	 *
+	 * @param File $file      The file.
+	 * @param int  $timestamp The version timestamp.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When no such version is found, or the backend fails.
+	 */
+	private function rollbackTo(File $file, int $timestamp): void {
+		$backend = $this->backendVersions(file: $file);
+		$version = $this->versionAt(versions: ($backend['versions'] ?? []), timestamp: $timestamp);
+		if ($backend === null || $version === null) {
 			throw new Exception('Version not found');
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[FileVersioningHandler] Failed to restore version: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			throw $e;
-		}//end try
-	}//end restoreVersion()
+		}
+
+		$backend['manager']->rollback($version);
+	}//end rollbackTo()
+
+	/**
+	 * The first version with the given timestamp, or null.
+	 *
+	 * @param iterable<object> $versions  The stored versions.
+	 * @param int              $timestamp The timestamp.
+	 *
+	 * @return object|null
+	 */
+	private function versionAt(iterable $versions, int $timestamp): ?object {
+		foreach ($versions as $version) {
+			if ($version->getTimestamp() === $timestamp) {
+				return $version;
+			}
+		}
+
+		return null;
+	}//end versionAt()
+
+	/**
+	 * The files_versions manager and the file's stored versions, or null when
+	 * the manager or a user to ask as is unavailable.
+	 *
+	 * Nextcloud's IVersionManager is in the OCA\Files_Versions namespace.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return array{manager: object, versions: iterable<object>}|null
+	 */
+	private function backendVersions(File $file): ?array {
+		if (class_exists('OCA\Files_Versions\Versions\IVersionManager') === false) {
+			return null;
+		}
+
+		$versionManager = $this->container->get('OCA\Files_Versions\Versions\IVersionManager');
+		$user = $this->versionUser(file: $file);
+		if ($versionManager === null || $user === null) {
+			return null;
+		}
+
+		return ['manager' => $versionManager, 'versions' => $versionManager->getVersionsForFile($user, $file)];
+	}//end backendVersions()
 
 	/**
 	 * The account to ask Nextcloud for a file's versions as.

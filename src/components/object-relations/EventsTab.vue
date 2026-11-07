@@ -26,14 +26,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load linked events')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Calendar app missing (HTTP 501 graceful degradation) -->
 		<NcEmptyContent
@@ -108,12 +104,12 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
 import CalendarPlus from 'vue-material-design-icons/CalendarPlus.vue'
 import CalendarRemove from 'vue-material-design-icons/CalendarRemove.vue'
 import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
 import { useEventRelationsStore } from '../../store/modules/object-relations/events.js'
 import { storeRelationTab } from './relationTab.js'
 
@@ -133,10 +129,10 @@ export default {
 	name: 'EventsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcButton,
-		AlertCircleOutline,
 		CalendarOutline,
 		CalendarPlus,
 		CalendarRemove,

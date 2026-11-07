@@ -8,7 +8,6 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 	<NcDialog
 		name="Analyze Schema Properties"
 		size="large"
-		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>

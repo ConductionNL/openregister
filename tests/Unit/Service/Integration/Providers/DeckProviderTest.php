@@ -179,6 +179,51 @@ class DeckProviderTest extends TestCase {
 		$this->assertSame(99, $result['cardId']);
 	}//end testCreateCreatesAndLinksWhenBoardStackPresent()
 
+	public function testCreateDefaultsTheTitleAndLeavesAbsentDetailsNull(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService
+			->expects($this->once())
+			->method('createAndLinkCard')
+			->with(
+				(new LinkTarget('obj-uuid', 5))->inSchema(6),
+				(new CardDraft('Untitled', 2))->onBoard(1)->withDetails(null, null)
+			)
+			->willReturn($this->buildDeckLink(1));
+
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+
+		$provider->create('5', '6', 'obj-uuid', ['boardId' => 1, 'stackId' => 2]);
+	}//end testCreateDefaultsTheTitleAndLeavesAbsentDetailsNull()
+
+	public function testCreateNeedsBothBoardAndStack(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->expects($this->never())->method('createAndLinkCard');
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+
+		foreach ([['boardId' => 1], ['stackId' => 2]] as $payload) {
+			try {
+				$provider->create('5', '6', 'obj-uuid', $payload);
+				$this->fail('expected a refusal');
+			} catch (Exception $e) {
+				$this->assertSame('Either cardId or boardId+stackId is required', $e->getMessage());
+				$this->assertSame(400, $e->getCode());
+			}
+		}
+	}//end testCreateNeedsBothBoardAndStack()
+
+	public function testCreatePrefersAnExistingCardOverBoardData(): void {
+		$linkService = $this->createMock(DeckLinkService::class);
+		$linkService->expects($this->never())->method('createAndLinkCard');
+		$linkService
+			->expects($this->once())
+			->method('linkCard')
+			->with(target: (new LinkTarget('obj-uuid', 5))->inSchema(6), cardId: 9)
+			->willReturn($this->buildDeckLink(9));
+		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());
+
+		$provider->create('5', '6', 'obj-uuid', ['cardId' => '9', 'boardId' => 1, 'stackId' => 2]);
+	}//end testCreatePrefersAnExistingCardOverBoardData()
+
 	public function testCreateThrowsWhenPayloadMissing(): void {
 		$linkService = $this->createMock(DeckLinkService::class);
 		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());

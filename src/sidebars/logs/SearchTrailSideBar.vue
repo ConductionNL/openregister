@@ -50,35 +50,12 @@ import {
 						</template>
 					</NcSelect>
 				</div>
-				<div class="filterGroup">
-					<label for="userSelect">{{ t('openregister', 'Users') }}</label>
-					<NcSelect
-						id="userSelect"
-						v-model="selectedUsers"
-						:options="userOptions"
-						:placeholder="t('openregister', 'All users')"
-						:inputLabel="t('openregister', 'Users')"
-						:multiple="true"
-						:clearable="true"
-						@update:modelValue="applyFilters">
-						<template #option="{ label }">
-							{{ label }}
-						</template>
-					</NcSelect>
-				</div>
-				<div class="filterGroup">
-					<label>{{ t('openregister', 'Date Range') }}</label>
-					<NcDateTimePickerNative
-						v-model="dateFrom"
-						:label="t('openregister', 'From date')"
-						type="datetime-local"
-						@update:modelValue="applyFilters" />
-					<NcDateTimePickerNative
-						v-model="dateTo"
-						:label="t('openregister', 'To date')"
-						type="datetime-local"
-						@update:modelValue="applyFilters" />
-				</div>
+				<TrailUserDateFields
+					v-model:users="selectedUsers"
+					v-model:dateFrom="dateFrom"
+					v-model:dateTo="dateTo"
+					:userOptions="userOptions"
+					@change="applyFilters" />
 				<div class="filterGroup">
 					<label for="searchTermFilter">{{
 						t('openregister', 'Search Term')
@@ -436,12 +413,10 @@ import {
 </template>
 
 <script>
-import ScopeFilterFields from '../ScopeFilterFields.vue'
 import {
 	NcAppSidebar,
 	NcAppSidebarTab,
 	NcButton,
-	NcDateTimePickerNative,
 	NcListItem,
 	NcLoadingIcon,
 	NcNoteCard,
@@ -455,6 +430,8 @@ import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
+import ScopeFilterFields from '../ScopeFilterFields.vue'
+import TrailUserDateFields from './TrailUserDateFields.vue'
 import eventBus from '../../eventBus.js'
 import {
 	addDateRange,
@@ -548,6 +525,7 @@ const RANGE_FILTERS = Object.keys(ROUTE_FIELDS)
 export default {
 	name: 'SearchTrailSideBar',
 	components: {
+		TrailUserDateFields,
 		ScopeFilterFields,
 		NcAppSidebar,
 		NcAppSidebarTab,
@@ -555,7 +533,6 @@ export default {
 		NcNoteCard,
 		NcButton,
 		NcListItem,
-		NcDateTimePickerNative,
 		NcTextField,
 		NcLoadingIcon,
 		FilterOutline,
@@ -1127,13 +1104,7 @@ export default {
 	color: var(--color-error);
 }
 
-.filter-hint {
-	margin: 8px 16px;
-}
-
-.statsSection {
-	padding: 16px;
-}
+@include filter-hint-rules;
 
 .statGrid {
 	display: grid;

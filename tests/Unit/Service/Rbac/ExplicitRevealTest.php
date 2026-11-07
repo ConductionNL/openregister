@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\Mcp\McpResourcesService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
@@ -49,6 +49,7 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Support\OrderParameter
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
  * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
@@ -58,7 +59,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
- * @uses \OCA\OpenRegister\Service\Mcp\McpResourcesService
+ * @uses \OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService
  * @uses \OCA\OpenRegister\Service\Rbac\RevealCollector
  * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
@@ -261,7 +262,15 @@ class ExplicitRevealTest extends TestCase {
 	 */
 	public function testFilterAndSortOnItAreRefused(): void {
 		$reveal = new ExplicitReveal();
-		foreach ([['citizenServiceNumber' => self::BSN], ['_order' => ['citizenServiceNumber' => 'asc']], ['_order' => '{"citizenServiceNumber":"desc"}']] as $query) {
+		$queries = [
+			['citizenServiceNumber' => self::BSN],
+			['_order' => ['citizenServiceNumber' => 'asc']],
+			['_order' => '{"citizenServiceNumber":"desc"}'],
+			['_order' => ['citizenServiceNumber']],
+			['_order' => '[{"field":"citizenServiceNumber","direction":"DESC"}]'],
+			['_order' => 'citizenServiceNumber:desc'],
+		];
+		foreach ($queries as $query) {
 			try {
 				$reveal->refuseOracleQuery(query: $query, schema: $this->schema());
 				$this->fail('refused: ' . json_encode($query));

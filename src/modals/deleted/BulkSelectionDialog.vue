@@ -1,5 +1,5 @@
 <template>
-	<NcDialog :name="name" size="normal" :canClose="false">
+	<NcDialog :name="name" size="normal" noClose>
 		<!-- Object Selection Review -->
 		<div v-if="success === null" :class="stepClass">
 			<h3 class="step-title">

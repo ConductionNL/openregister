@@ -15,8 +15,8 @@ declare(strict_types=1);
 namespace Unit\Service\File;
 
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
-use OCA\OpenRegister\Service\File\FileSharingHandler;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCP\Files\Lock\ILockManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;

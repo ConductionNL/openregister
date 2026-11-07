@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		name="Clear Cache"
-		:canClose="!clearing"
+		:noClose="clearing"
 		@closing="$emit('close')">
 		<div class="dialog-content">
 			<h3>🗑️ Clear Cache</h3>

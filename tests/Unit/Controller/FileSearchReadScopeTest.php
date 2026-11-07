@@ -19,9 +19,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileSearchController;
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Service\File\FileReadScope;
+use OCA\OpenRegister\Files\Controller\FileSearchController;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\Files\File;
 use OCP\Files\Folder;

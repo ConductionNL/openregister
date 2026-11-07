@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Import\ImportValueCaster;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
@@ -1389,47 +1390,27 @@ class ImportServiceTest extends TestCase {
 	// =========================================================================
 
 	public function testTransformDateTimeValueMySqlFormat(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformDateTimeValue');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '2025-01-01 12:30:00');
+		$result = $this->callCaster('dateTime', '2025-01-01 12:30:00');
 		$this->assertSame('2025-01-01 12:30:00', $result);
 	}
 
 	public function testTransformDateTimeValueIso8601WithTimezone(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformDateTimeValue');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '2025-01-01T00:00:00+00:00');
+		$result = $this->callCaster('dateTime', '2025-01-01T00:00:00+00:00');
 		$this->assertSame('2025-01-01 00:00:00', $result);
 	}
 
 	public function testTransformDateTimeValueIso8601WithoutTimezone(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformDateTimeValue');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '2025-06-15T14:30:00');
+		$result = $this->callCaster('dateTime', '2025-06-15T14:30:00');
 		$this->assertSame('2025-06-15 14:30:00', $result);
 	}
 
 	public function testTransformDateTimeValueDateOnly(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformDateTimeValue');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '2025-01-01');
+		$result = $this->callCaster('dateTime', '2025-01-01');
 		$this->assertSame('2025-01-01 00:00:00', $result);
 	}
 
 	public function testTransformDateTimeValuePassThrough(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformDateTimeValue');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, 'not-a-date');
+		$result = $this->callCaster('dateTime', 'not-a-date');
 		$this->assertSame('not-a-date', $result);
 	}
 
@@ -1438,59 +1419,35 @@ class ImportServiceTest extends TestCase {
 	// =========================================================================
 
 	public function testTransformSelfPropertyPublished(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformSelfProperty');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, 'published', '2025-01-01');
+		$result = $this->callCaster('castSelfProperty', 'published', '2025-01-01');
 		$this->assertSame('2025-01-01 00:00:00', $result);
 	}
 
 	public function testTransformSelfPropertyCreated(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformSelfProperty');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, 'created', '2025-01-01T12:00:00+00:00');
+		$result = $this->callCaster('castSelfProperty', 'created', '2025-01-01T12:00:00+00:00');
 		$this->assertSame('2025-01-01 12:00:00', $result);
 	}
 
 	public function testTransformSelfPropertyUpdated(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformSelfProperty');
-		$method->setAccessible(true);
-
 		// BUG-SVC-5: offset-bearing timestamps are normalised to UTC before the
 		// offset is stripped. +02:00 10:30 is 08:30 UTC.
-		$result = $method->invoke($this->service, 'updated', '2025-03-15T10:30:00+02:00');
+		$result = $this->callCaster('castSelfProperty', 'updated', '2025-03-15T10:30:00+02:00');
 		$this->assertSame('2025-03-15 08:30:00', $result);
 	}
 
 	public function testTransformSelfPropertyOrganisationValidUuid(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformSelfProperty');
-		$method->setAccessible(true);
-
 		$uuid = '12345678-1234-1234-1234-123456789abc';
-		$result = $method->invoke($this->service, 'organisation', $uuid);
+		$result = $this->callCaster('castSelfProperty', 'organisation', $uuid);
 		$this->assertSame($uuid, $result);
 	}
 
 	public function testTransformSelfPropertyOrganisationInvalidUuid(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformSelfProperty');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, 'organisation', 'some-slug');
+		$result = $this->callCaster('castSelfProperty', 'organisation', 'some-slug');
 		$this->assertSame('some-slug', $result);
 	}
 
 	public function testTransformSelfPropertyOther(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformSelfProperty');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, 'owner', 'admin');
+		$result = $this->callCaster('castSelfProperty', 'owner', 'admin');
 		$this->assertSame('admin', $result);
 	}
 
@@ -1499,183 +1456,123 @@ class ImportServiceTest extends TestCase {
 	// =========================================================================
 
 	public function testTransformValueByTypeInteger(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '42', ['type' => 'integer']);
+		$result = $this->callCaster('cast', '42', ['type' => 'integer']);
 		$this->assertSame(42, $result);
 	}
 
 	public function testTransformValueByTypeNumber(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '3.14', ['type' => 'number']);
+		$result = $this->callCaster('cast', '3.14', ['type' => 'number']);
 		$this->assertSame(3.14, $result);
 	}
 
 	public function testTransformValueByTypeBoolean(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
-		$this->assertTrue($method->invoke($this->service, 'true', ['type' => 'boolean']));
-		$this->assertTrue($method->invoke($this->service, '1', ['type' => 'boolean']));
-		$this->assertTrue($method->invoke($this->service, 'yes', ['type' => 'boolean']));
-		$this->assertTrue($method->invoke($this->service, 'on', ['type' => 'boolean']));
-		$this->assertTrue($method->invoke($this->service, 'enabled', ['type' => 'boolean']));
-		$this->assertFalse($method->invoke($this->service, 'false', ['type' => 'boolean']));
-		$this->assertFalse($method->invoke($this->service, '0', ['type' => 'boolean']));
-		$this->assertFalse($method->invoke($this->service, 'no', ['type' => 'boolean']));
+		$this->assertTrue($this->callCaster('cast', 'true', ['type' => 'boolean']));
+		$this->assertTrue($this->callCaster('cast', '1', ['type' => 'boolean']));
+		$this->assertTrue($this->callCaster('cast', 'yes', ['type' => 'boolean']));
+		$this->assertTrue($this->callCaster('cast', 'on', ['type' => 'boolean']));
+		$this->assertTrue($this->callCaster('cast', 'enabled', ['type' => 'boolean']));
+		$this->assertFalse($this->callCaster('cast', 'false', ['type' => 'boolean']));
+		$this->assertFalse($this->callCaster('cast', '0', ['type' => 'boolean']));
+		$this->assertFalse($this->callCaster('cast', 'no', ['type' => 'boolean']));
 	}
 
 	public function testTransformValueByTypeBooleanAlreadyBool(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
 		// stringToBoolean handles actual bools.
-		$this->assertTrue($method->invoke($this->service, true, ['type' => 'boolean']));
-		$this->assertFalse($method->invoke($this->service, false, ['type' => 'boolean']));
+		$this->assertTrue($this->callCaster('cast', true, ['type' => 'boolean']));
+		$this->assertFalse($this->callCaster('cast', false, ['type' => 'boolean']));
 	}
 
 	public function testTransformValueByTypeArray(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
 		// JSON array.
-		$result = $method->invoke($this->service, '["a","b","c"]', ['type' => 'array']);
+		$result = $this->callCaster('cast', '["a","b","c"]', ['type' => 'array']);
 		$this->assertSame(['a', 'b', 'c'], $result);
 
 		// Comma-separated.
-		$result = $method->invoke($this->service, 'a,b,c', ['type' => 'array']);
+		$result = $this->callCaster('cast', 'a,b,c', ['type' => 'array']);
 		$this->assertSame(['a', 'b', 'c'], $result);
 
 		// Single value.
-		$result = $method->invoke($this->service, 'single', ['type' => 'array']);
+		$result = $this->callCaster('cast', 'single', ['type' => 'array']);
 		$this->assertSame(['single'], $result);
 
 		// Empty string.
-		$result = $method->invoke($this->service, '', ['type' => 'array']);
+		$result = $this->callCaster('cast', '', ['type' => 'array']);
 		$this->assertSame('', $result);  // Empty returns as-is.
 
 		// Already array.
-		$result = $method->invoke($this->service, ['x', 'y'], ['type' => 'array']);
+		$result = $this->callCaster('cast', ['x', 'y'], ['type' => 'array']);
 		$this->assertSame(['x', 'y'], $result);
 	}
 
 	public function testTransformValueByTypeArrayQuotedValues(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '"a","b","c"', ['type' => 'array']);
+		$result = $this->callCaster('cast', '"a","b","c"', ['type' => 'array']);
 		$this->assertSame(['a', 'b', 'c'], $result);
 
 		// Single quotes.
-		$result = $method->invoke($this->service, "'x','y'", ['type' => 'array']);
+		$result = $this->callCaster('cast', "'x','y'", ['type' => 'array']);
 		$this->assertSame(['x', 'y'], $result);
 	}
 
 	public function testTransformValueByTypeArrayNonStringNonArray(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
 		// Non-string, non-array value should be wrapped in array.
-		$result = $method->invoke($this->service, 42, ['type' => 'array']);
+		$result = $this->callCaster('cast', 42, ['type' => 'array']);
 		$this->assertSame([42], $result);
 	}
 
 	public function testTransformValueByTypeObject(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
 		// JSON object.
-		$result = $method->invoke($this->service, '{"key":"value"}', ['type' => 'object']);
+		$result = $this->callCaster('cast', '{"key":"value"}', ['type' => 'object']);
 		$this->assertSame(['key' => 'value'], $result);
 
 		// Non-JSON string.
-		$result = $method->invoke($this->service, 'plain-string', ['type' => 'object']);
+		$result = $this->callCaster('cast', 'plain-string', ['type' => 'object']);
 		$this->assertSame(['value' => 'plain-string'], $result);
 
 		// Already array.
-		$result = $method->invoke($this->service, ['existing' => 'data'], ['type' => 'object']);
+		$result = $this->callCaster('cast', ['existing' => 'data'], ['type' => 'object']);
 		$this->assertSame(['existing' => 'data'], $result);
 	}
 
 	public function testTransformValueByTypeObjectRelatedObject(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
 		$propertyDef = [
 			'type' => 'object',
 			'objectConfiguration' => ['handling' => 'related-object'],
 		];
 
-		$result = $method->invoke($this->service, 'uuid-123', $propertyDef);
+		$result = $this->callCaster('cast', 'uuid-123', $propertyDef);
 		$this->assertSame('uuid-123', $result);
 	}
 
 	public function testTransformValueByTypeDefaultString(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, 42, ['type' => 'string']);
+		$result = $this->callCaster('cast', 42, ['type' => 'string']);
 		$this->assertSame('42', $result);
 	}
 
 	public function testTransformValueByTypeNullValue(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, null, ['type' => 'integer']);
+		$result = $this->callCaster('cast', null, ['type' => 'integer']);
 		$this->assertNull($result);
 	}
 
 	public function testTransformValueByTypeEmptyStringValue(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '', ['type' => 'integer']);
+		$result = $this->callCaster('cast', '', ['type' => 'integer']);
 		$this->assertSame('', $result);
 	}
 
 	public function testTransformValueByTypeNoTypeKey(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
 		// Property def without explicit type should default to string.
-		$result = $method->invoke($this->service, 123, []);
+		$result = $this->callCaster('cast', 123, []);
 		$this->assertSame('123', $result);
 	}
 
 	public function testTransformValueByTypeObjectInvalidJson(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
 		// Invalid JSON that looks like JSON (starts with { ends with }).
-		$result = $method->invoke($this->service, '{not valid json}', ['type' => 'object']);
+		$result = $this->callCaster('cast', '{not valid json}', ['type' => 'object']);
 		$this->assertSame(['value' => '{not valid json}'], $result);
 	}
 
 	public function testTransformValueByTypeArrayInvalidJson(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformValueByType');
-		$method->setAccessible(true);
-
 		// Invalid JSON that looks like a JSON array.
-		$result = $method->invoke($this->service, '[not valid json]', ['type' => 'array']);
+		$result = $this->callCaster('cast', '[not valid json]', ['type' => 'array']);
 		// Falls through to single-value wrapping since JSON decode fails.
 		$this->assertSame(['[not valid json]'], $result);
 	}
@@ -1773,10 +1670,6 @@ class ImportServiceTest extends TestCase {
 	// =========================================================================
 
 	public function testTransformObjectBySchema(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformObjectBySchema');
-		$method->setAccessible(true);
-
 		$schema = $this->createSchema(1, [
 			'count' => ['type' => 'integer'],
 			'active' => ['type' => 'boolean'],
@@ -1789,7 +1682,7 @@ class ImportServiceTest extends TestCase {
 			'unknown' => 'keep-as-is',
 		];
 
-		$result = $method->invoke($this->service, $objectData, $schema);
+		$result = $this->callCasterSchema($objectData, $schema);
 
 		$this->assertSame(42, $result['count']);
 		$this->assertTrue($result['active']);
@@ -1798,10 +1691,6 @@ class ImportServiceTest extends TestCase {
 	}
 
 	public function testTransformObjectBySchemaWithAllTypes(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('transformObjectBySchema');
-		$method->setAccessible(true);
-
 		$schema = $this->createSchema(1, [
 			'name' => ['type' => 'string'],
 			'age' => ['type' => 'integer'],
@@ -1821,7 +1710,7 @@ class ImportServiceTest extends TestCase {
 			'meta' => '{"key":"val"}',
 		];
 
-		$result = $method->invoke($this->service, $objectData, $schema);
+		$result = $this->callCasterSchema($objectData, $schema);
 
 		$this->assertSame('123', $result['name']);
 		$this->assertSame(25, $result['age']);
@@ -2321,65 +2210,37 @@ class ImportServiceTest extends TestCase {
 	// =========================================================================
 
 	public function testStringToArrayWithEmptyString(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToArray');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '');
+		$result = $this->callCaster('arrayValue', '');
 		$this->assertSame([], $result);
 	}
 
 	public function testStringToArrayWithWhitespaceOnly(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToArray');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '   ');
+		$result = $this->callCaster('arrayValue', '   ');
 		$this->assertSame([], $result);
 	}
 
 	public function testStringToArrayWithJsonArray(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToArray');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '[1, 2, 3]');
+		$result = $this->callCaster('arrayValue', '[1, 2, 3]');
 		$this->assertSame([1, 2, 3], $result);
 	}
 
 	public function testStringToArrayWithCommaSeparated(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToArray');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, 'a, b, c');
+		$result = $this->callCaster('arrayValue', 'a, b, c');
 		$this->assertSame(['a', 'b', 'c'], $result);
 	}
 
 	public function testStringToArrayWithSingleValue(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToArray');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, 'single');
+		$result = $this->callCaster('arrayValue', 'single');
 		$this->assertSame(['single'], $result);
 	}
 
 	public function testStringToArrayWithExistingArray(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToArray');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, ['a', 'b']);
+		$result = $this->callCaster('arrayValue', ['a', 'b']);
 		$this->assertSame(['a', 'b'], $result);
 	}
 
 	public function testStringToArrayWithNonStringNonArray(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToArray');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, 42);
+		$result = $this->callCaster('arrayValue', 42);
 		$this->assertSame([42], $result);
 	}
 
@@ -2388,49 +2249,29 @@ class ImportServiceTest extends TestCase {
 	// =========================================================================
 
 	public function testStringToObjectWithValidJson(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToObject');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '{"name":"John","age":30}');
+		$result = $this->callCasterObject('{"name":"John","age":30}');
 		$this->assertSame(['name' => 'John', 'age' => 30], $result);
 	}
 
 	public function testStringToObjectWithInvalidJson(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToObject');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, '{invalid}');
+		$result = $this->callCasterObject('{invalid}');
 		$this->assertSame(['value' => '{invalid}'], $result);
 	}
 
 	public function testStringToObjectWithPlainString(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToObject');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, 'hello world');
+		$result = $this->callCasterObject('hello world');
 		$this->assertSame(['value' => 'hello world'], $result);
 	}
 
 	public function testStringToObjectWithExistingArray(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToObject');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->service, ['key' => 'val']);
+		$result = $this->callCasterObject(['key' => 'val']);
 		$this->assertSame(['key' => 'val'], $result);
 	}
 
 	public function testStringToObjectWithStdClass(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToObject');
-		$method->setAccessible(true);
-
 		$obj = new \stdClass();
 		$obj->name = 'test';
-		$result = $method->invoke($this->service, $obj);
+		$result = $this->callCasterObject($obj);
 		$this->assertSame('test', $result->name);
 	}
 
@@ -2439,27 +2280,23 @@ class ImportServiceTest extends TestCase {
 	// =========================================================================
 
 	public function testStringToBooleanWithVariousInputs(): void {
-		$ref = new ReflectionClass($this->service);
-		$method = $ref->getMethod('stringToBoolean');
-		$method->setAccessible(true);
-
 		// True values.
-		$this->assertTrue($method->invoke($this->service, 'TRUE'));
-		$this->assertTrue($method->invoke($this->service, 'True'));
-		$this->assertTrue($method->invoke($this->service, ' true '));
-		$this->assertTrue($method->invoke($this->service, 'YES'));
-		$this->assertTrue($method->invoke($this->service, 'ON'));
-		$this->assertTrue($method->invoke($this->service, 'ENABLED'));
+		$this->assertTrue($this->callCaster('booleanValue', 'TRUE'));
+		$this->assertTrue($this->callCaster('booleanValue', 'True'));
+		$this->assertTrue($this->callCaster('booleanValue', ' true '));
+		$this->assertTrue($this->callCaster('booleanValue', 'YES'));
+		$this->assertTrue($this->callCaster('booleanValue', 'ON'));
+		$this->assertTrue($this->callCaster('booleanValue', 'ENABLED'));
 
 		// False values.
-		$this->assertFalse($method->invoke($this->service, 'false'));
-		$this->assertFalse($method->invoke($this->service, 'off'));
-		$this->assertFalse($method->invoke($this->service, 'disabled'));
-		$this->assertFalse($method->invoke($this->service, 'random'));
+		$this->assertFalse($this->callCaster('booleanValue', 'false'));
+		$this->assertFalse($this->callCaster('booleanValue', 'off'));
+		$this->assertFalse($this->callCaster('booleanValue', 'disabled'));
+		$this->assertFalse($this->callCaster('booleanValue', 'random'));
 
 		// Bool values.
-		$this->assertTrue($method->invoke($this->service, true));
-		$this->assertFalse($method->invoke($this->service, false));
+		$this->assertTrue($this->callCaster('booleanValue', true));
+		$this->assertFalse($this->callCaster('booleanValue', false));
 	}
 
 	// =========================================================================
@@ -2576,5 +2413,40 @@ class ImportServiceTest extends TestCase {
 		} finally {
 			@unlink($tmpFile);
 		}
+	}
+
+	/**
+	 * Call a method of the value caster, private ones included.
+	 *
+	 * @param string $name    The method
+	 * @param mixed  ...$args The arguments
+	 *
+	 * @return mixed The result
+	 */
+	private function callCaster(string $name, mixed ...$args): mixed {
+		return (new \ReflectionMethod(ImportValueCaster::class, $name))->invoke(new ImportValueCaster(), ...$args);
+	}
+
+	/**
+	 * Cast a value as a plain object property.
+	 *
+	 * @param mixed $value The value
+	 *
+	 * @return mixed The result
+	 */
+	private function callCasterObject(mixed $value): mixed {
+		return $this->callCaster('objectValue', $value, []);
+	}
+
+	/**
+	 * Cast an object by a schema's properties.
+	 *
+	 * @param array<string, mixed> $object The object
+	 * @param Schema               $schema The schema
+	 *
+	 * @return array<string, mixed> The result
+	 */
+	private function callCasterSchema(array $object, Schema $schema): array {
+		return (new ImportValueCaster())->castObject(objectData: $object, properties: $schema->getProperties());
 	}
 }

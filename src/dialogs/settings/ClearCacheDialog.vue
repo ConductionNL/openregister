@@ -2,7 +2,7 @@
 	<NcDialog
 		:open="open"
 		name="Clear Cache"
-		:canClose="!clearing"
+		:noClose="clearing"
 		@closing="$emit('closing')">
 		<div class="clear-cache-dialog">
 			<div class="clear-cache-options">

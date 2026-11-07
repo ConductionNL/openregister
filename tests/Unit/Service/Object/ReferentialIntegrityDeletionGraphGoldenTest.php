@@ -32,6 +32,7 @@ use RuntimeException;
  * a soft-deleted dependent, a lookup that fails and a chain deeper than the depth limit and an unknown onDelete value. Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Dto\DeletionAnalysis
@@ -42,6 +43,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode
  * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep
  * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk
+ * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityDeletionGraphGoldenTest extends TestCase {
 

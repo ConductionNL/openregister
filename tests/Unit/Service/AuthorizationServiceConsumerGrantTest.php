@@ -58,13 +58,16 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 
 	private const API_KEY = 'consumer-api-key';
 
-	private const GRANT = [
-		'verbs' => ['read'],
-		'schemas' => ['zaak'],
-		'expiresAt' => '2099-01-01T00:00:00+00:00',
-	];
-
 	private const BLOCK = ['read' => ['leveranciers'], 'update' => ['leveranciers']];
+
+	/**
+	 * A grant for reading zaak, ten years from running out.
+	 *
+	 * @return array{verbs: list<string>, schemas: list<string>, expiresAt: string}
+	 */
+	private function grant(): array {
+		return ['verbs' => ['read'], 'schemas' => ['zaak'], 'expiresAt' => date('c', strtotime('+10 years'))];
+	}//end grant()
 
 	/**
 	 * The real service with the given grant source wired in.
@@ -207,7 +210,7 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 	public function testAnApiKeyConsumerIsRefusedWhatItsGrantExcludes(): void {
 		$grants = new TokenGrantSource();
 
-		$this->service($grants)->authorizeApiKey(self::API_KEY, [], $this->consumers(self::GRANT));
+		$this->service($grants)->authorizeApiKey(self::API_KEY, [], $this->consumers($this->grant()));
 
 		$this->assertFalse($this->permits($grants, 'update'), 'the grant excludes update');
 		$this->assertTrue($this->permits($grants, 'read'), 'the verb the grant holds still works');
@@ -239,10 +242,10 @@ class AuthorizationServiceConsumerGrantTest extends TestCase {
 	 */
 	public function testJwtAndApiKeyBindTheSameGrant(): void {
 		$viaJwt = new TokenGrantSource();
-		$this->service($viaJwt)->authorizeJwt($this->bearer(), $this->consumers(self::GRANT));
+		$this->service($viaJwt)->authorizeJwt($this->bearer(), $this->consumers($this->grant()));
 
 		$viaKey = new TokenGrantSource();
-		$this->service($viaKey)->authorizeApiKey(self::API_KEY, [], $this->consumers(self::GRANT));
+		$this->service($viaKey)->authorizeApiKey(self::API_KEY, [], $this->consumers($this->grant()));
 
 		$this->assertNotNull($viaJwt->current());
 		$this->assertSame('c0ffee00-0000-4000-8000-000000000001', $viaJwt->current()->tokenId);

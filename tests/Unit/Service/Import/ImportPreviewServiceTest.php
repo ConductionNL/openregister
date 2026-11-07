@@ -500,6 +500,36 @@ final class ImportPreviewServiceTest extends TestCase {
 		$this->assertSame('The write failed: Object is locked by bob', $kept->getReason());
 	}
 
+	public function testARefusalMatchingNoRowCountsAsFailedAndIsNotStampedAsWritten(): void {
+		$this->matchResolver->method('resolve')->willReturn([]);
+
+		$path = $this->csv("bsn,naam\n111,Jansen\n222,Pietersen\n");
+		$preview = $this->service->preview($this->params($path, ConflictPolicy::UPSERT));
+		$kept = $this->decisionFor(2);
+		$keptId = $kept->getPayload()['@self']['id'];
+
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->willReturn(['invalid' => [['object' => ['name' => 'no id'], 'error' => 'Object is locked by bob']]]);
+		$this->objectService->expects($this->exactly(2))
+			->method('saveObject')
+			->willReturnCallback(
+				function (array $object) use ($keptId): \OCA\OpenRegister\Db\ObjectEntity {
+					if ($object['@self']['id'] === $keptId) {
+						throw new \RuntimeException('Object is locked by bob');
+					}
+
+					return new \OCA\OpenRegister\Db\ObjectEntity();
+				}
+			);
+
+		$this->service->commit($preview, hash_file('sha256', $path));
+
+		$this->assertSame(1, $preview->getApplied());
+		$this->assertSame(1, $preview->getFailed());
+		$this->assertSame('The write failed: Object is locked by bob', $kept->getReason());
+	}
+
 	public function testACreateRowCarriesAStableUuidSoARetryCannotDuplicateIt(): void {
 		// writeBatch() hands the batch to saveObjects() and, on a throw, walks
 		// the batch row by row on the stated assumption that a throw means

@@ -69,7 +69,7 @@ class WorkSubjectRenderer extends SubjectRenderer {
 
 		if (($parameters['configurationId'] ?? null) !== null) {
 			$url = $this->urlGenerator->linkToRouteAbsolute(routeName: 'openregister.dashboard.page') . '#/configurations/' . $parameters['configurationId'];
-			$notification->addAction($this->primaryAction(notification: $notification, label: $l->t('View'))->setLink(link: $url, requestType: 'GET'));
+			$notification->addParsedAction($this->primaryAction(notification: $notification, label: $l->t('View'))->setLink(link: $url, requestType: 'GET'));
 		}
 
 		return $notification;

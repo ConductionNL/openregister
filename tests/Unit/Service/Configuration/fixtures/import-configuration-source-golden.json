@@ -1,0 +1,328 @@
+{
+    "null": {
+        "fresh": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": null,
+            "githubBranch": null,
+            "githubPath": null,
+            "updated": []
+        },
+        "preset": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": "org/old",
+            "githubBranch": "old-branch",
+            "githubPath": null,
+            "updated": []
+        }
+    },
+    "empty": {
+        "fresh": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": null,
+            "githubBranch": null,
+            "githubPath": null,
+            "updated": []
+        },
+        "preset": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": "org/old",
+            "githubBranch": "old-branch",
+            "githubPath": null,
+            "updated": []
+        }
+    },
+    "string": {
+        "fresh": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": null,
+            "githubBranch": null,
+            "githubPath": null,
+            "updated": []
+        },
+        "preset": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": "org/old",
+            "githubBranch": "old-branch",
+            "githubPath": null,
+            "updated": []
+        }
+    },
+    "integer": {
+        "fresh": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": null,
+            "githubBranch": null,
+            "githubPath": null,
+            "updated": []
+        },
+        "preset": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": "org/old",
+            "githubBranch": "old-branch",
+            "githubPath": null,
+            "updated": []
+        }
+    },
+    "flat": {
+        "fresh": {
+            "sourceType": "github",
+            "sourceUrl": "https://example.org/a.json",
+            "githubRepo": "org/flat",
+            "githubBranch": "main",
+            "githubPath": "flat.json",
+            "updated": {
+                "sourceType": true,
+                "sourceUrl": true,
+                "githubRepo": true,
+                "githubBranch": true,
+                "githubPath": true
+            }
+        },
+        "preset": {
+            "sourceType": "github",
+            "sourceUrl": "https://example.org/a.json",
+            "githubRepo": "org/flat",
+            "githubBranch": "main",
+            "githubPath": "flat.json",
+            "updated": {
+                "sourceType": true,
+                "sourceUrl": true,
+                "githubRepo": true,
+                "githubBranch": true,
+                "githubPath": true
+            }
+        }
+    },
+    "flat partial": {
+        "fresh": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": "org/only",
+            "githubBranch": null,
+            "githubPath": null,
+            "updated": {
+                "githubRepo": true
+            }
+        },
+        "preset": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": "org/only",
+            "githubBranch": "old-branch",
+            "githubPath": null,
+            "updated": {
+                "githubRepo": true
+            }
+        }
+    },
+    "flat empty strings": {
+        "fresh": {
+            "sourceType": "",
+            "sourceUrl": null,
+            "githubRepo": null,
+            "githubBranch": "",
+            "githubPath": "",
+            "updated": {
+                "sourceType": true,
+                "githubBranch": true,
+                "githubPath": true
+            }
+        },
+        "preset": {
+            "sourceType": "",
+            "sourceUrl": null,
+            "githubRepo": "org/old",
+            "githubBranch": "",
+            "githubPath": "",
+            "updated": {
+                "sourceType": true,
+                "githubBranch": true,
+                "githubPath": true
+            }
+        }
+    },
+    "nested": {
+        "fresh": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": "org/nested",
+            "githubBranch": "dev",
+            "githubPath": "nested.json",
+            "updated": {
+                "githubRepo": true,
+                "githubBranch": true,
+                "githubPath": true
+            }
+        },
+        "preset": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": "org/nested",
+            "githubBranch": "dev",
+            "githubPath": "nested.json",
+            "updated": {
+                "githubRepo": true,
+                "githubBranch": true,
+                "githubPath": true
+            }
+        }
+    },
+    "nested wins over flat": {
+        "fresh": {
+            "sourceType": "github",
+            "sourceUrl": "https://example.org/a.json",
+            "githubRepo": "org/nested",
+            "githubBranch": null,
+            "githubPath": null,
+            "updated": {
+                "sourceType": true,
+                "sourceUrl": true,
+                "githubRepo": true
+            }
+        },
+        "preset": {
+            "sourceType": "github",
+            "sourceUrl": "https://example.org/a.json",
+            "githubRepo": "org/nested",
+            "githubBranch": "old-branch",
+            "githubPath": null,
+            "updated": {
+                "sourceType": true,
+                "sourceUrl": true,
+                "githubRepo": true
+            }
+        }
+    },
+    "nested empty array": {
+        "fresh": {
+            "sourceType": "github",
+            "sourceUrl": "https://example.org/a.json",
+            "githubRepo": null,
+            "githubBranch": null,
+            "githubPath": null,
+            "updated": {
+                "sourceType": true,
+                "sourceUrl": true
+            }
+        },
+        "preset": {
+            "sourceType": "github",
+            "sourceUrl": "https://example.org/a.json",
+            "githubRepo": "org/old",
+            "githubBranch": "old-branch",
+            "githubPath": null,
+            "updated": {
+                "sourceType": true,
+                "sourceUrl": true
+            }
+        }
+    },
+    "nested null": {
+        "fresh": {
+            "sourceType": "github",
+            "sourceUrl": "https://example.org/a.json",
+            "githubRepo": "org/flat",
+            "githubBranch": "main",
+            "githubPath": "flat.json",
+            "updated": {
+                "sourceType": true,
+                "sourceUrl": true,
+                "githubRepo": true,
+                "githubBranch": true,
+                "githubPath": true
+            }
+        },
+        "preset": {
+            "sourceType": "github",
+            "sourceUrl": "https://example.org/a.json",
+            "githubRepo": "org/flat",
+            "githubBranch": "main",
+            "githubPath": "flat.json",
+            "updated": {
+                "sourceType": true,
+                "sourceUrl": true,
+                "githubRepo": true,
+                "githubBranch": true,
+                "githubPath": true
+            }
+        }
+    },
+    "nested string": {
+        "fresh": {
+            "sourceType": "github",
+            "sourceUrl": "https://example.org/a.json",
+            "githubRepo": "org/flat",
+            "githubBranch": "main",
+            "githubPath": "flat.json",
+            "updated": {
+                "sourceType": true,
+                "sourceUrl": true,
+                "githubRepo": true,
+                "githubBranch": true,
+                "githubPath": true
+            }
+        },
+        "preset": {
+            "sourceType": "github",
+            "sourceUrl": "https://example.org/a.json",
+            "githubRepo": "org/flat",
+            "githubBranch": "main",
+            "githubPath": "flat.json",
+            "updated": {
+                "sourceType": true,
+                "sourceUrl": true,
+                "githubRepo": true,
+                "githubBranch": true,
+                "githubPath": true
+            }
+        }
+    },
+    "nested with flat names": {
+        "fresh": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": null,
+            "githubBranch": null,
+            "githubPath": "p.json",
+            "updated": {
+                "githubPath": true
+            }
+        },
+        "preset": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": "org/old",
+            "githubBranch": "old-branch",
+            "githubPath": "p.json",
+            "updated": {
+                "githubPath": true
+            }
+        }
+    },
+    "list": {
+        "fresh": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": null,
+            "githubBranch": null,
+            "githubPath": null,
+            "updated": []
+        },
+        "preset": {
+            "sourceType": null,
+            "sourceUrl": null,
+            "githubRepo": "org/old",
+            "githubBranch": "old-branch",
+            "githubPath": null,
+            "updated": []
+        }
+    }
+}
