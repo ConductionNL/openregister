@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\MigrationService;
+use OCA\OpenRegister\Service\MigrationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -34,14 +34,14 @@ class MigrationController extends Controller {
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request object.
-	 * @param MigrationService $migrationService Migration service.
+	 * @param MigrationServiceInterface $migrationService Migration service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly MigrationService $migrationService,
+		private readonly MigrationServiceInterface $migrationService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

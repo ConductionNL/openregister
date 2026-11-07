@@ -44,7 +44,7 @@ use Throwable;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
-class FormDefinitionResolver {
+class FormDefinitionResolver implements FormDefinitionResolverInterface {
 
 	/**
 	 * Constructor.
