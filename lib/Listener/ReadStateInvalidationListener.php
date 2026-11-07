@@ -72,32 +72,43 @@ final class ReadStateInvalidationListener implements IEventListener {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function handle(Event $event): void {
-		if (($event instanceof ObjectUpdatedEvent) === false) {
+		if ($event instanceof ObjectUpdatedEvent) {
+			try {
+				$this->invalidateIfSubstantive(event: $event);
+			} catch (\Throwable $e) {
+				$this->logger->debug(
+					sprintf('[ReadStateInvalidationListener] invalidation skipped: %s', $e->getMessage())
+				);
+			}
+		}
+
+	}//end handle()
+
+	/**
+	 * Mark the object unread for everyone but the actor, when the change is substantive.
+	 *
+	 * @param ObjectUpdatedEvent $event The committed update.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	private function invalidateIfSubstantive(ObjectUpdatedEvent $event): void {
+		$new = $event->getNewObject();
+		$uuid = (string)$new->getUuid();
+		if ($uuid === '') {
 			return;
 		}
 
-		try {
-			$new = $event->getNewObject();
-			$uuid = (string)$new->getUuid();
-			if ($uuid === '') {
-				return;
-			}
+		if ($this->evaluator->isSubstantive(new: $new, old: $event->getOldObject()) === false) {
+			// A technical touch or a recomputed value. Nobody has anything
+			// new to see, so nobody's badge lights up.
+			return;
+		}
 
-			if ($this->evaluator->isSubstantive(new: $new, old: $event->getOldObject()) === false) {
-				// A technical touch or a recomputed value. Nobody has anything
-				// new to see, so nobody's badge lights up.
-				return;
-			}
-
-			$this->readState->invalidate(
-				objectUuid: $uuid,
-				actorUid: $this->userSession->getUser()?->getUID()
-			);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf('[ReadStateInvalidationListener] invalidation skipped: %s', $e->getMessage())
-			);
-		}//end try
-
-	}//end handle()
+		$this->readState->invalidate(
+			objectUuid: $uuid,
+			actorUid: $this->userSession->getUser()?->getUID()
+		);
+	}//end invalidateIfSubstantive()
 }//end class
