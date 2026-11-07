@@ -46,6 +46,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
  * @covers \OCA\OpenRegister\Service\Flow\Timer\EscalationRule
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
  */
 class EscalationLadderServiceTest extends TestCase {
