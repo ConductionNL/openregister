@@ -47,10 +47,12 @@ final class DbRegistrar {
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
 		FlowRunMapperInterface::class => FlowRunMapper::class,
 		MagicMapperInterface::class => MagicMapper::class,
+		MappingMapperInterface::class => MappingMapper::class,
 		OrganisationMapperInterface::class => OrganisationMapper::class,
 		RegisterMapperInterface::class => RegisterMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,
+		WebhookMapperInterface::class => WebhookMapper::class,
 	];
 
 	/**

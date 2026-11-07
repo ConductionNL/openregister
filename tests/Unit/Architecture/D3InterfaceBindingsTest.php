@@ -35,11 +35,15 @@ use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
 use OCA\OpenRegister\Service\CollectiveLinkService;
 use OCA\OpenRegister\Service\CollectiveLinkServiceInterface;
+use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\ContactServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\CospendLinkServiceInterface;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\DeckCardServiceInterface;
+use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\DeckLinkServiceInterface;
 use OCA\OpenRegister\Service\DemoDataService;
 use OCA\OpenRegister\Service\DemoDataServiceInterface;
 use OCA\OpenRegister\Service\EmailLinkService;
@@ -74,8 +78,10 @@ final class D3InterfaceBindingsTest extends TestCase {
 		BulkTranslationService::class => [BulkTranslationServiceInterface::class, ContractBindings::class, 'Service'],
 		CalendarLinkService::class => [CalendarLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		CollectiveLinkService::class => [CollectiveLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		ContactService::class => [ContactServiceInterface::class, ContractBindings::class, 'Service'],
 		CospendLinkService::class => [CospendLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		DeckCardService::class => [DeckCardServiceInterface::class, ContractBindings::class, 'Service'],
+		DeckLinkService::class => [DeckLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		DemoDataService::class => [DemoDataServiceInterface::class, ContractBindings::class, 'Service'],
 		EmailLinkService::class => [EmailLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		EndpointService::class => [EndpointServiceInterface::class, ContractBindings::class, 'Service'],
