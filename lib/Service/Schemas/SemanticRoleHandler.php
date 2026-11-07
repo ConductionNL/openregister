@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Schemas;
 /**
  * Reads, validates and resolves the semantic roles and help text a schema declares.
  */
-class SemanticRoleHandler {
+class SemanticRoleHandler implements SemanticRoleHandlerInterface {
 
 	/**
 	 * The property annotation naming a semantic role.

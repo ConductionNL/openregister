@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Operations;
 
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 
 /**
@@ -48,7 +48,7 @@ interface OperationsJobsServiceInterface {
 		?string $jobClass = null,
 		?string $outcome = null,
 		?int $windowHours = null,
-		int $limit = JobRunMapper::DEFAULT_LIMIT,
+		int $limit = JobRunMapperInterface::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array;
 

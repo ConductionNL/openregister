@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
@@ -40,13 +40,13 @@ final readonly class RoutingFlowNodes {
 	 * Bundle the nodes.
 	 *
 	 * @param MergeNodeInterface $merge The built-in "Merge" node.
-	 * @param LoopNode $loop The built-in "Loop over items" node.
+	 * @param LoopNodeInterface $loop The built-in "Loop over items" node.
 	 * @param SubFlowNodeInterface $subFlow The built-in "Run a flow" node.
 	 * @param RouterNodeInterface $router The built-in "Route items" node.
 	 */
 	public function __construct(
 		private MergeNodeInterface $merge,
-		private LoopNode $loop,
+		private LoopNodeInterface $loop,
 		private SubFlowNodeInterface $subFlow,
 		private RouterNodeInterface $router,
 	) {

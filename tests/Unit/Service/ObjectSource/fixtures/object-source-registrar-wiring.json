@@ -171,12 +171,12 @@
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\DbalObjectSourceProvider": {
         "asked": [
-            "OCA\\OpenRegister\\Db\\SourceMapper",
+            "OCA\\OpenRegister\\Db\\SourceMapperInterface",
             "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
             "Psr\\Log\\LoggerInterface"
         ],
         "params": {
-            "sourceMapper": "OCA\\OpenRegister\\Db\\SourceMapper",
+            "sourceMapper": "OCA\\OpenRegister\\Db\\SourceMapperInterface",
             "connectionFactory": "OCA\\OpenRegister\\Service\\Dbal\\DbalConnectionFactory",
             "logger": "Psr\\Log\\LoggerInterface"
         }

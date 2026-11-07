@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Relation;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
-use OCA\OpenRegister\Db\ObjectRelationMapper;
+use OCA\OpenRegister\Db\ObjectRelationMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -55,7 +55,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectRelationMapper $mapper The relation row mapper.
+	 * @param ObjectRelationMapperInterface $mapper The relation row mapper.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas.
 	 * @param RelationTypeResolver $relationTypes Resolves what a relation is called.
 	 * @param LoggerInterface $logger Logger.
@@ -64,7 +64,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function __construct(
-		private readonly ObjectRelationMapper $mapper,
+		private readonly ObjectRelationMapperInterface $mapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RelationTypeResolver $relationTypes,
 		private readonly LoggerInterface $logger,

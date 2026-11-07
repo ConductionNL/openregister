@@ -33,9 +33,9 @@ use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\Rules\ConditionTracer;
+use OCA\OpenRegister\Service\Rules\ConditionTracerInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
-use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -81,8 +81,8 @@ class LifecycleValidationListener implements IEventListener {
 	 * @param IUserSession                         $userSession        Current user session.
 	 * @param PermissionHandler                    $permissionHandler  RBAC handler used to evaluate declarative per-transition authorization.
 	 * @param LifecycleConditionEvaluatorInterface $conditionEvaluator Decides whether a transition `condition` lets it through.
-	 * @param ConditionTracer                      $conditionTracer    Names the operand that decided a condition.
-	 * @param RuleRunRecorder                      $ruleRuns           Records each condition's verdict for the rule inventory.
+	 * @param ConditionTracerInterface                      $conditionTracer    Names the operand that decided a condition.
+	 * @param RuleRunRecorderInterface                      $ruleRuns           Records each condition's verdict for the rule inventory.
 	 *
 	 * @return void
 	 *
@@ -94,8 +94,8 @@ class LifecycleValidationListener implements IEventListener {
 		private readonly IUserSession $userSession,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly LifecycleConditionEvaluatorInterface $conditionEvaluator,
-		private readonly ConditionTracer $conditionTracer,
-		private readonly RuleRunRecorder $ruleRuns,
+		private readonly ConditionTracerInterface $conditionTracer,
+		private readonly RuleRunRecorderInterface $ruleRuns,
 	) {
 	}//end __construct()
 

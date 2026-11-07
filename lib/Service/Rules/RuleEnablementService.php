@@ -52,14 +52,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-final class RuleEnablementService {
-
-	/**
-	 * The refusal when the rule id names nothing the schema declares.
-	 *
-	 * @var string
-	 */
-	public const CODE_UNKNOWN_RULE = 'rule-unknown';
+final class RuleEnablementService implements RuleEnablementServiceInterface {
 
 	/**
 	 * The refusal when the switch could not be written.

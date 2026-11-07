@@ -23,6 +23,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
+use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
+use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Case\CasePlanTimerRearm;
+use OCA\OpenRegister\Service\Case\CasePlanTimerRearmInterface;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNodeInterface;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
@@ -36,6 +48,18 @@ use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
@@ -44,6 +68,40 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
+use OCA\OpenRegister\Service\Rules\ConditionTracer;
+use OCA\OpenRegister\Service\Rules\ConditionTracerInterface;
+use OCA\OpenRegister\Service\Rules\RuleEnablementService;
+use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleInventoryService;
+use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleReplayService;
+use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
+use OCA\OpenRegister\Service\Rules\RuleTrialService;
+use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
+use OCA\OpenRegister\Service\Task\TaskFormCompletion;
+use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
+use OCA\OpenRegister\Service\Task\TaskFormResolver;
+use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
+use OCA\OpenRegister\Service\Task\TaskProjectionService;
+use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
+use OCA\OpenRegister\Service\Task\TaskSubjectLocatorInterface;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -67,24 +125,60 @@ final class D12InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
+		CaseAdvanceNode::class => [CaseAdvanceNodeInterface::class, ContractBindings::class],
+		CaseOpenNode::class => [CaseOpenNodeInterface::class, ContractBindings::class],
+		CasePlanItemTimers::class => [CasePlanItemTimersInterface::class, ContractBindings::class],
+		CasePlanService::class => [CasePlanServiceInterface::class, ContractBindings::class],
+		CasePlanTimerRearm::class => [CasePlanTimerRearmInterface::class, ContractBindings::class],
+		ConditionTracer::class => [ConditionTracerInterface::class, ContractBindings::class],
+		EndNode::class => [EndNodeInterface::class, ContractBindings::class],
+		ExtendingFormDeclaration::class => [ExtendingFormDeclarationInterface::class, ContractBindings::class],
+		FacetResultCacheClearer::class => [FacetResultCacheClearerInterface::class, ContractBindings::class],
 		FlowLocator::class => [FlowLocatorInterface::class, ContractBindings::class],
 		FlowNodeRegistry::class => [FlowNodeRegistryInterface::class, ContractBindings::class],
 		FlowRunMigrationService::class => [FlowRunMigrationServiceInterface::class, ContractBindings::class],
 		FlowService::class => [FlowServiceInterface::class, ContractBindings::class],
 		FlowTriggerValidator::class => [FlowTriggerValidatorInterface::class, ContractBindings::class],
 		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
+		LoopNode::class => [LoopNodeInterface::class, ContractBindings::class],
 		ObjectActionBulk::class => [ObjectActionBulkInterface::class, ContractBindings::class],
 		ObjectActionDefinitions::class => [ObjectActionDefinitionsInterface::class, ContractBindings::class],
 		ObjectActionList::class => [ObjectActionListInterface::class, ContractBindings::class],
 		ObjectActionRunner::class => [ObjectActionRunnerInterface::class, ContractBindings::class],
+		PropertyVocabulary::class => [PropertyVocabularyInterface::class, ContractBindings::class],
+		RuleEnablementService::class => [RuleEnablementServiceInterface::class, ContractBindings::class],
+		RuleInventoryService::class => [RuleInventoryServiceInterface::class, ContractBindings::class],
+		RuleReplayService::class => [RuleReplayServiceInterface::class, ContractBindings::class],
+		RuleRunRecorder::class => [RuleRunRecorderInterface::class, ContractBindings::class],
+		RuleTrialService::class => [RuleTrialServiceInterface::class, ContractBindings::class],
+		SchemaCacheHandler::class => [SchemaCacheHandlerInterface::class, ContractBindings::class],
+		SemanticRoleHandler::class => [SemanticRoleHandlerInterface::class, ContractBindings::class],
+		SendEmailNode::class => [SendEmailNodeInterface::class, ContractBindings::class],
+		SendNotificationNode::class => [SendNotificationNodeInterface::class, ContractBindings::class],
+		SendTalkMessageNode::class => [SendTalkMessageNodeInterface::class, ContractBindings::class],
+		TaskFormCompletion::class => [TaskFormCompletionInterface::class, ContractBindings::class],
+		TaskFormResolver::class => [TaskFormResolverInterface::class, ContractBindings::class],
+		TaskProjectionService::class => [TaskProjectionServiceInterface::class, ContractBindings::class],
+		TaskSubjectLocator::class => [TaskSubjectLocatorInterface::class, ContractBindings::class],
+		TaskVtodoWriteBackGate::class => [TaskVtodoWriteBackGateInterface::class, ContractBindings::class],
+		TriggerManualNode::class => [TriggerManualNodeInterface::class, ContractBindings::class],
+		UniqueConstraintEvaluator::class => [UniqueConstraintEvaluatorInterface::class, ContractBindings::class],
+		ZaaktypeCaseSkeletonMapper::class => [ZaaktypeCaseSkeletonMapperInterface::class, ContractBindings::class],
 	];
 
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
+	 * Both are Db code that constructs the class with `new` (the schema entity
+	 * and a schema-mapper refusal helper are not container-built); they are
+	 * left as they are.
+	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [];
+	private const KEPT_CALLERS = [
+		ExtendingFormDeclaration::class => ['Db/SchemaMapper/PropertyDeclarationRefusals.php'],
+		UniqueConstraintEvaluator::class => ['Db/Schema.php'],
+	];
 
 	/**
 	 * The class, its interface and its registrar, one case per class.

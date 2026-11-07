@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Rules\RuleEnablementService;
-use OCA\OpenRegister\Service\Rules\RuleInventoryService;
-use OCA\OpenRegister\Service\Rules\RuleTrialService;
+use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 
 /**
@@ -36,17 +36,17 @@ final class RulesDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param RuleInventoryService  $inventory  Derives the rule list.
-	 * @param RuleTrialService      $trials     Evaluates a rule without committing.
-	 * @param RuleEnablementService $enablement Switches a rule off and on.
+	 * @param RuleInventoryServiceInterface  $inventory  Derives the rule list.
+	 * @param RuleTrialServiceInterface      $trials     Evaluates a rule without committing.
+	 * @param RuleEnablementServiceInterface $enablement Switches a rule off and on.
 	 * @param RuleVocabulary        $vocabulary The published kinds, verdicts and actions.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
-		public readonly RuleInventoryService $inventory,
-		public readonly RuleTrialService $trials,
-		public readonly RuleEnablementService $enablement,
+		public readonly RuleInventoryServiceInterface $inventory,
+		public readonly RuleTrialServiceInterface $trials,
+		public readonly RuleEnablementServiceInterface $enablement,
 		public readonly RuleVocabulary $vocabulary,
 	) {
 	}//end __construct()

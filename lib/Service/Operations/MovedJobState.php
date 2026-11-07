@@ -22,11 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Operations;
 
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 
 /**
  * Besides Nextcloud's job list, OpenRegister keys two things by job class: the
- * administered schedule (JobScheduleService) and the run log (JobRunMapper).
+ * administered schedule (JobScheduleService) and the run log (JobRunMapperInterface).
  * When a job class moves, both follow it, so the schedule an administrator set
  * and the run history stay with the job.
  */
@@ -36,11 +36,11 @@ class MovedJobState {
 	 * Constructor.
 	 *
 	 * @param JobScheduleService $schedules The administered schedules.
-	 * @param JobRunMapper       $runs      The run log.
+	 * @param JobRunMapperInterface       $runs      The run log.
 	 */
 	public function __construct(
 		private readonly JobScheduleService $schedules,
-		private readonly JobRunMapper $runs,
+		private readonly JobRunMapperInterface $runs,
 	) {
 	}//end __construct()
 

@@ -46,7 +46,14 @@ use UnexpectedValueException;
 /**
  * Starts the flow when someone runs it.
  */
-class TriggerManualNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class TriggerManualNode implements
+	IFlowNode,
+	TriggerManualNodeInterface,
+	IFlowNodeConfigKeys,
+	IFlowTriggerNode,
+	IFlowNodeTaxonomy,
+	IFlowSideEffectFree
+{
 	/**
 	 * Constructor.
 	 *

@@ -48,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-final class ConditionTracer {
+final class ConditionTracer implements ConditionTracerInterface {
 
 	/**
 	 * The JSONLogic operators whose falseness a reference operand explains.

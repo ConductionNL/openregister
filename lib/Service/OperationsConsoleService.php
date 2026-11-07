@@ -52,7 +52,7 @@ use DateTime;
 use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
 use OCA\OpenRegister\BackgroundJob\RecordsItsRuns;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
@@ -136,9 +136,9 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	/**
 	 * The bulk job records.
 	 *
-	 * @var BulkJobMapper
+	 * @var BulkJobMapperInterface
 	 */
-	private readonly BulkJobMapper $bulkJobs;
+	private readonly BulkJobMapperInterface $bulkJobs;
 
 	/**
 	 * Nextcloud's registered background jobs.

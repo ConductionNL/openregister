@@ -24,8 +24,8 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
 
 /**
  * Schema caches, exploration and versioning.
@@ -36,16 +36,16 @@ final class SchemaServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SchemaCacheHandler         $schemaCacheService The schema cache.
-	 * @param FacetResultCacheClearer    $facetResults       Clears the facet result caches.
+	 * @param SchemaCacheHandlerInterface         $schemaCacheService The schema cache.
+	 * @param FacetResultCacheClearerInterface    $facetResults       Clears the facet result caches.
 	 * @param SchemaExplorationInterface $schemaService      The schema exploration service.
 	 * @param SchemaVersioningService    $versioning         The schema versioning service.
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function __construct(
-		public readonly SchemaCacheHandler $schemaCacheService,
-		public readonly FacetResultCacheClearer $facetResults,
+		public readonly SchemaCacheHandlerInterface $schemaCacheService,
+		public readonly FacetResultCacheClearerInterface $facetResults,
 		public readonly SchemaExplorationInterface $schemaService,
 		public readonly SchemaVersioningService $versioning,
 	) {

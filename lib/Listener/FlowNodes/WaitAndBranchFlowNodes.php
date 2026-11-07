@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 
@@ -42,13 +42,13 @@ final readonly class WaitAndBranchFlowNodes {
 	 * @param WaitNodeInterface $wait The built-in "Wait" node.
 	 * @param AwaitSignalNodeInterface $awaitSignal The built-in "Wait for an answer" node.
 	 * @param SwitchNode $switch The built-in "Switch" node.
-	 * @param EndNode $end The built-in "End" node.
+	 * @param EndNodeInterface $end The built-in "End" node.
 	 */
 	public function __construct(
 		private WaitNodeInterface $wait,
 		private AwaitSignalNodeInterface $awaitSignal,
 		private SwitchNode $switch,
-		private EndNode $end,
+		private EndNodeInterface $end,
 	) {
 	}//end __construct()
 

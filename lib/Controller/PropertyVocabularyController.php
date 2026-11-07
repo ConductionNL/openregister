@@ -27,8 +27,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
-use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -45,8 +45,8 @@ class PropertyVocabularyController extends Controller {
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param PropertyVocabulary $vocabulary The published vocabulary.
-	 * @param ExtendingFormDeclaration $declarations The extending-form declaration reader.
+	 * @param PropertyVocabularyInterface $vocabulary The published vocabulary.
+	 * @param ExtendingFormDeclarationInterface $declarations The extending-form declaration reader.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup, for the declared narrowings.
 	 *
 	 * @return void
@@ -54,8 +54,8 @@ class PropertyVocabularyController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PropertyVocabulary $vocabulary,
-		private readonly ExtendingFormDeclaration $declarations,
+		private readonly PropertyVocabularyInterface $vocabulary,
+		private readonly ExtendingFormDeclarationInterface $declarations,
 		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -124,10 +124,10 @@ class PropertyVocabularyController extends Controller {
 		return new JSONResponse(
 			[
 				'declarations' => $rows,
-				'annotation' => ExtendingFormDeclaration::ANNOTATION,
+				'annotation' => ExtendingFormDeclarationInterface::ANNOTATION,
 				'vocabularyKeys' => $this->vocabulary->keys(),
-				'sourceAliases' => ExtendingFormDeclaration::SOURCE_ALIASES,
-				'formRoles' => ExtendingFormDeclaration::FORM_ROLES,
+				'sourceAliases' => ExtendingFormDeclarationInterface::SOURCE_ALIASES,
+				'formRoles' => ExtendingFormDeclarationInterface::FORM_ROLES,
 				'counts' => ['declarations' => count($rows)],
 			]
 		);

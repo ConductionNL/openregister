@@ -56,17 +56,7 @@ use OCA\OpenRegister\Service\Flow\FlowTriggerDerivation;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-final class RuleInventoryService {
-
-	/**
-	 * How long a rule may go unevaluated before the inventory says so.
-	 *
-	 * Ninety days is the window the change names, and it is a default rather
-	 * than a constant of nature: the caller may ask for another.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_IDLE_DAYS = 90;
+final class RuleInventoryService implements RuleInventoryServiceInterface {
 
 	/**
 	 * Reads a declaration's scope and applies the inventory's scope filter.

@@ -41,7 +41,7 @@ use UnexpectedValueException;
 /**
  * Batches an item list into slices of a configured size.
  */
-class LoopNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class LoopNode implements IFlowNode, LoopNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	/**
 	 * Constructor.
 	 *

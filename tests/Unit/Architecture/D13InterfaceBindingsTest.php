@@ -24,6 +24,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Db\ApplicationMapper;
+use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
+use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointLogMapperInterface;
@@ -31,10 +37,16 @@ use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Db\EndpointMapperInterface;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
+use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
+use OCA\OpenRegister\Db\ObjectRelationMapper;
+use OCA\OpenRegister\Db\ObjectRelationMapperInterface;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
+use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Db\SyncRecordMapper;
 use OCA\OpenRegister\Db\SyncRecordMapperInterface;
 use OCA\OpenRegister\Db\WebhookLogMapper;
@@ -67,13 +79,19 @@ final class D13InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		ApplicationMapper::class => [ApplicationMapperInterface::class, DbRegistrar::class],
+		BulkJobMapper::class => [BulkJobMapperInterface::class, DbRegistrar::class],
+		BulkJobMemberMapper::class => [BulkJobMemberMapperInterface::class, DbRegistrar::class],
 		DraftActivation::class => [DraftActivationInterface::class, ContractBindings::class],
 		DraftExpiry::class => [DraftExpiryInterface::class, ContractBindings::class],
 		EndpointLogMapper::class => [EndpointLogMapperInterface::class, DbRegistrar::class],
 		EndpointMapper::class => [EndpointMapperInterface::class, DbRegistrar::class],
 		FlowTriggerMapper::class => [FlowTriggerMapperInterface::class, DbRegistrar::class],
+		JobRunMapper::class => [JobRunMapperInterface::class, DbRegistrar::class],
 		MagicTableHandler::class => [MagicTableHandlerInterface::class, DbRegistrar::class],
+		ObjectRelationMapper::class => [ObjectRelationMapperInterface::class, DbRegistrar::class],
 		RuleRunSummaryMapper::class => [RuleRunSummaryMapperInterface::class, DbRegistrar::class],
+		SourceMapper::class => [SourceMapperInterface::class, DbRegistrar::class],
 		SyncRecordMapper::class => [SyncRecordMapperInterface::class, DbRegistrar::class],
 		WebhookLogMapper::class => [WebhookLogMapperInterface::class, DbRegistrar::class],
 	];

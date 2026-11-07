@@ -40,7 +40,7 @@ use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
-use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\SequenceServiceInterface;
@@ -72,7 +72,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 * @param SequenceServiceInterface $sequences Atomic running-number reservation service.
-	 * @param RuleRunRecorder $ruleRuns Records each calculation's verdict for the rule inventory.
+	 * @param RuleRunRecorderInterface $ruleRuns Records each calculation's verdict for the rule inventory.
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 *
 	 * @return void
@@ -88,7 +88,7 @@ class CalculationOnSaveListener implements IEventListener {
 		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 		private readonly SequenceServiceInterface $sequences,
-		private readonly RuleRunRecorder $ruleRuns,
+		private readonly RuleRunRecorderInterface $ruleRuns,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
