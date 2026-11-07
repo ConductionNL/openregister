@@ -4,16 +4,20 @@
 			<!-- Header -->
 			<FilterToggleHeader
 				:title="t('openregister', 'Webhooks')"
-				:description="t('openregister', 'Manage webhooks for event-driven integrations')"
+				:description="
+					t(
+						'openregister',
+						'Manage webhooks for event-driven integrations',
+					)
+				"
 				:sidebarOpen="sidebarOpen"
 				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span v-if="webhooksList.length" class="viewTotalCount">
-						{{
-							t(
+			<ListActionsBar
+				:summary="
+					webhooksList.length
+						? t(
 								'openregister',
 								'Showing {showing} of {total} webhooks',
 								{
@@ -21,26 +25,16 @@
 									total: totalWebhooks,
 								},
 							)
-						}}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcButton variant="primary" @click="openCreateDialog">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						{{ t('openregister', 'Create Webhook') }}
-					</NcButton>
-					<NcActions :forceName="true" :inline="1" menuName="Actions">
-						<NcActionButton closeAfterClick @click="refreshWebhooks">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						: ''
+				"
+				:actions="[refreshAction(refreshWebhooks)]">
+				<NcButton variant="primary" @click="openCreateDialog">
+					<template #icon>
+						<Plus :size="20" />
+					</template>
+					{{ t('openregister', 'Create Webhook') }}
+				</NcButton>
+			</ListActionsBar>
 
 			<!-- Webhooks Table -->
 			<div class="tableContainer" :class="{ 'is-loading': loading }">
@@ -126,55 +120,7 @@
 								{{ formatSuccessRate(webhook) }}
 							</td>
 							<td class="column-actions">
-								<NcActions>
-									<NcActionButton
-										closeAfterClick
-										@click="editWebhook(webhook)">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										{{ t('openregister', 'Edit') }}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										@click="testWebhook(webhook.id)">
-										<template #icon>
-											<PlayOutline :size="20" />
-										</template>
-										{{ t('openregister', 'Test') }}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										@click="viewLogs(webhook.id)">
-										<template #icon>
-											<FileDocumentOutline :size="20" />
-										</template>
-										{{ t('openregister', 'View Logs') }}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										@click="toggleWebhook(webhook)">
-										<template #icon>
-											<PauseCircleOutline
-												v-if="webhook.enabled"
-												:size="20" />
-											<PlayOutline v-else :size="20" />
-										</template>
-										{{
-											webhook.enabled
-												? t('openregister', 'Disable')
-												: t('openregister', 'Enable')
-										}}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										@click="deleteWebhook(webhook.id)">
-										<template #icon>
-											<DeleteOutline :size="20" />
-										</template>
-										{{ t('openregister', 'Delete') }}
-									</NcActionButton>
-								</NcActions>
+								<ActionMenu :actions="webhookActions(webhook)" />
 							</td>
 						</tr>
 					</tbody>
@@ -210,8 +156,6 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
-	NcActionButton,
-	NcActions,
 	NcAppContent,
 	NcButton,
 	NcEmptyContent,
@@ -220,14 +164,16 @@ import {
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
 import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import OffsetPager from '../../components/shared/OffsetPager.vue'
 import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
+import { editAction, refreshAction } from '../../services/menuActions.js'
 import { navigationStore, webhookStore } from '../../store/store.js'
 import { offsetPaging } from '../offsetPaging.js'
 
@@ -237,22 +183,16 @@ import { offsetPaging } from '../offsetPaging.js'
 export default {
 	name: 'WebhooksIndex',
 	components: {
+		ActionMenu,
+		ListActionsBar,
 		OffsetPager,
 		FilterToggleHeader,
 		NcAppContent,
-		NcActions,
-		NcActionButton,
 		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		Webhook,
-		Refresh,
-		PlayOutline,
-		PauseCircleOutline,
-		Pencil,
-		DeleteOutline,
 		Plus,
-		FileDocumentOutline,
 		WebhooksSidebar,
 	},
 
@@ -361,6 +301,44 @@ export default {
 	},
 
 	methods: {
+		refreshAction,
+
+		/**
+		 * The row menu of a webhook.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} webhook The webhook
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		webhookActions(webhook) {
+			return [
+				editAction(() => this.editWebhook(webhook)),
+				{
+					label: t('openregister', 'Test'),
+					icon: PlayOutline,
+					run: () => this.testWebhook(webhook.id),
+				},
+				{
+					label: t('openregister', 'View Logs'),
+					icon: FileDocumentOutline,
+					run: () => this.viewLogs(webhook.id),
+				},
+				{
+					label: webhook.enabled
+						? t('openregister', 'Disable')
+						: t('openregister', 'Enable'),
+
+					icon: webhook.enabled ? PauseCircleOutline : PlayOutline,
+					run: () => this.toggleWebhook(webhook),
+				},
+				{
+					label: t('openregister', 'Delete'),
+					icon: DeleteOutline,
+					run: () => this.deleteWebhook(webhook.id),
+				},
+			]
+		},
+
 		t,
 
 		/**
@@ -578,16 +556,6 @@ export default {
 
 @include view-container-2;
 
-
-@include view-actions-bar;
-@include view-info;
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-@include view-actions;
-
 @include table-container-2-rules;
 
 .webhooksTable tbody tr:hover {
@@ -685,5 +653,4 @@ export default {
 	width: 80px;
 	text-align: right;
 }
-
 </style>

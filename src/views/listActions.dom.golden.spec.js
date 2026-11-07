@@ -34,23 +34,42 @@ jest.mock('@conduction/nextcloud-vue', () => ({
 	__esModule: true,
 	CnIndexPage: mockIndexPage(),
 }))
-jest.mock('vue-material-design-icons/AccountMultiplePlus.vue', () => mockIcon('AccountMultiplePlus'))
+jest.mock('vue-material-design-icons/AccountMultiplePlus.vue', () =>
+	mockIcon('AccountMultiplePlus'),
+)
 jest.mock('vue-material-design-icons/AccountPlus.vue', () => mockIcon('AccountPlus'))
 jest.mock('vue-material-design-icons/Api.vue', () => mockIcon('Api'))
-jest.mock('vue-material-design-icons/ApplicationOutline.vue', () => mockIcon('ApplicationOutline'))
+jest.mock('vue-material-design-icons/ApplicationOutline.vue', () =>
+	mockIcon('ApplicationOutline'),
+)
 jest.mock('vue-material-design-icons/Check.vue', () => mockIcon('Check'))
-jest.mock('vue-material-design-icons/CloudUploadOutline.vue', () => mockIcon('CloudUploadOutline'))
+jest.mock('vue-material-design-icons/CloudUploadOutline.vue', () =>
+	mockIcon('CloudUploadOutline'),
+)
 jest.mock('vue-material-design-icons/CogOutline.vue', () => mockIcon('CogOutline'))
-jest.mock('vue-material-design-icons/DatabaseArrowRightOutline.vue', () => mockIcon('DatabaseArrowRightOutline'))
-jest.mock('vue-material-design-icons/DotsHorizontal.vue', () => mockIcon('DotsHorizontal'))
+jest.mock('vue-material-design-icons/DatabaseArrowRightOutline.vue', () =>
+	mockIcon('DatabaseArrowRightOutline'),
+)
+jest.mock('vue-material-design-icons/DotsHorizontal.vue', () =>
+	mockIcon('DotsHorizontal'),
+)
 jest.mock('vue-material-design-icons/Download.vue', () => mockIcon('Download'))
 jest.mock('vue-material-design-icons/Eye.vue', () => mockIcon('Eye'))
-jest.mock('vue-material-design-icons/InformationOutline.vue', () => mockIcon('InformationOutline'))
-jest.mock('vue-material-design-icons/OfficeBuilding.vue', () => mockIcon('OfficeBuilding'))
+jest.mock('vue-material-design-icons/InformationOutline.vue', () =>
+	mockIcon('InformationOutline'),
+)
+jest.mock('vue-material-design-icons/OfficeBuilding.vue', () =>
+	mockIcon('OfficeBuilding'),
+)
 jest.mock('vue-material-design-icons/OpenInNew.vue', () => mockIcon('OpenInNew'))
 jest.mock('vue-material-design-icons/Pencil.vue', () => mockIcon('Pencil'))
-jest.mock('vue-material-design-icons/SwapHorizontal.vue', () => mockIcon('SwapHorizontal'))
-jest.mock('vue-material-design-icons/TrashCanOutline.vue', () => mockIcon('TrashCanOutline'))
+jest.mock('vue-material-design-icons/Refresh.vue', () => mockIcon('Refresh'))
+jest.mock('vue-material-design-icons/SwapHorizontal.vue', () =>
+	mockIcon('SwapHorizontal'),
+)
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () =>
+	mockIcon('TrashCanOutline'),
+)
 jest.mock('vue-material-design-icons/Upload.vue', () => mockIcon('Upload'))
 jest.mock('../modals/organisation/SwitchOrganisationModal.vue', () => ({
 	__esModule: true,
@@ -168,7 +187,8 @@ function mockStores() {
 				get(target, key) {
 					if (typeof key !== 'string' || key === 'then') return undefined
 					if (key in target) return target[key]
-					if (key === 'userStats') return { list: [], total: 2, active: { uuid: 'o2' } }
+					if (key === 'userStats')
+						return { list: [], total: 2, active: { uuid: 'o2' } }
 					if (/^(?!refresh).*List$/.test(key)) return []
 					return (...args) => {
 						globalThis.listLog.push([`${name}.${key}`, ...args.map(arg)])
@@ -200,7 +220,14 @@ const PAGES = {
 		rows: [
 			{ id: 1, uuid: 'o1', title: 'Plain', users: [] },
 			{ id: 2, uuid: 'o2', title: 'Active', owner: 'system', users: [] },
-			{ id: 3, uuid: 'o3', title: 'Site', website: 'https://example.org', owner: 'me', users: [] },
+			{
+				id: 3,
+				uuid: 'o3',
+				title: 'Site',
+				website: 'https://example.org',
+				owner: 'me',
+				users: [],
+			},
 		],
 	},
 	registers: {
@@ -223,7 +250,11 @@ const PAGES = {
  * @return {string} The markup
  */
 function markup(wrapper) {
-	return wrapper.html().replace(/<!--.*?-->/g, '').replace(/^\s*\n|^\s+/gm, '')
+	return wrapper
+		.html()
+		.replace(/<!--.*?-->/g, '')
+		.replace(/ class=""/g, '')
+		.replace(/^\s*\n|^\s+/gm, '')
 }
 
 describe('list page action menus golden', () => {
@@ -237,7 +268,9 @@ describe('list page action menus golden', () => {
 				config: {
 					globalProperties: {
 						$route: { query: {}, path: '/' },
-						$router: { push: (path) => globalThis.listLog.push(['push', path]) },
+						$router: {
+							push: (path) => globalThis.listLog.push(['push', path]),
+						},
 					},
 				},
 			},
