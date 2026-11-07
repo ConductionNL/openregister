@@ -44,6 +44,8 @@ use OCA\OpenRegister\Service\Form\FormSubmitService;
 use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
+use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -71,6 +73,7 @@ final class D7InterfaceBindingsTest extends TestCase {
 		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],
 		FormSubmitService::class => [FormSubmitServiceInterface::class, ContractBindings::class],
 		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
+		HandoffService::class => [HandoffServiceInterface::class, ContractBindings::class],
 	];
 
 	/**
