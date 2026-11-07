@@ -24,7 +24,6 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Exception\FlowTimerValidationException;
 
 /**
  * The unit and roll vocabulary and the SLA operations of {@see SlaCalculator}.
@@ -100,7 +99,7 @@ interface SlaCalculatorInterface {
 	 *
 	 * @return array{value: int, unit: string} The normalised SLA.
 	 *
-	 * @throws FlowTimerValidationException When the shape, the range or the unit is refused.
+	 * @throws \OCA\OpenRegister\Exception\FlowTimerValidationException When the shape, the range or the unit is refused.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
@@ -113,7 +112,7 @@ interface SlaCalculatorInterface {
 	 *
 	 * @return string The unit.
 	 *
-	 * @throws FlowTimerValidationException On an unknown unit.
+	 * @throws \OCA\OpenRegister\Exception\FlowTimerValidationException On an unknown unit.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
@@ -147,7 +146,10 @@ interface SlaCalculatorInterface {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
-	public function add(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar, ?WalkCollector $collector = null): DateTimeImmutable;
+	public function add(
+		DateTimeInterface $from, float $value, string $unit,
+		?WorkingCalendar $calendar, ?WalkCollector $collector = null
+	): DateTimeImmutable;
 
 	/**
 	 * Subtract an amount of business time from an instant.
@@ -207,7 +209,7 @@ interface SlaCalculatorInterface {
 	 *
 	 * @return float The working hours between the two instants.
 	 *
-	 * @throws FlowTimerValidationException When the interval is longer than the walk allows.
+	 * @throws \OCA\OpenRegister\Exception\FlowTimerValidationException When the interval is longer than the walk allows.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
