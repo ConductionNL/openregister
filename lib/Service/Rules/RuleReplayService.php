@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\BulkAction\ApplyRuleAction;
+use OCA\OpenRegister\BulkAction\ApplyRuleActionInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -155,7 +155,7 @@ final class RuleReplayService {
 		$this->ceiling->assert(rule: $rule, count: $count);
 
 		$job = $this->jobs->create(
-			actionId: ApplyRuleAction::ID,
+			actionId: ApplyRuleActionInterface::ID,
 			parameters: ['schema' => (string)($schema->getSlug() ?? (string)$schema->getId()), 'ruleId' => $ruleId],
 			selection: $selection,
 			justification: $justification,

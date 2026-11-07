@@ -32,8 +32,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
-use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
@@ -91,18 +91,18 @@ class StateFieldRuleListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
-	 * @param StateFieldRuleResolver $resolver Resolves the rules that apply to this object and user.
-	 * @param StateConditionEvaluator $stateConditions Evaluates a state's entry and exit conditions.
-	 * @param RuleRunRecorder $ruleRuns Records a refusal for the rule run log.
-	 * @param LoggerInterface $logger PSR logger for lookup failures.
+	 * @param SchemaMapperInterface            $schemaMapper    Resolves the object's schema.
+	 * @param StateFieldRuleResolverInterface  $resolver        Resolves the rules that apply to this object and user.
+	 * @param StateConditionEvaluatorInterface $stateConditions Evaluates a state's entry and exit conditions.
+	 * @param RuleRunRecorder                  $ruleRuns        Records a refusal for the rule run log.
+	 * @param LoggerInterface                  $logger          PSR logger for lookup failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly StateFieldRuleResolver $resolver,
-		private readonly StateConditionEvaluator $stateConditions,
+		private readonly StateFieldRuleResolverInterface $resolver,
+		private readonly StateConditionEvaluatorInterface $stateConditions,
 		private readonly RuleRunRecorder $ruleRuns,
 		private readonly LoggerInterface $logger,
 	) {
