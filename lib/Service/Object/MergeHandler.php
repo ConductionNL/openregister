@@ -334,26 +334,32 @@ class MergeHandler {
 				continue;
 			}
 
-			$updatedReferences[] = $this->saveRedirectedReference(object: $referencingObject);
+			$updatedReferences[] = $this->saveRedirectedReference(uuid: (string)$referencingObject->getUuid(), run: $run);
 		}
 
 		return $updatedReferences;
 	}//end redirectReferences()
 
 	/**
-	 * Save a redirected referencing object in its own register and schema.
+	 * Redirect the stored row of a referencing object and save it in its own register and schema.
 	 *
-	 * @param ObjectEntity $object The referencing object
+	 * The relation search fills only name and data, and an update writes the whole
+	 * row, so the row that is written back is read here.
+	 *
+	 * @param string   $uuid The referencing object's uuid
+	 * @param MergeRun $run  The merge
 	 *
 	 * @return array{objectId: string|null, title: string|null} The updated reference
 	 */
-	private function saveRedirectedReference(ObjectEntity $object): array {
+	private function saveRedirectedReference(string $uuid, MergeRun $run): array {
 		$refContext = $this->objectEntityMapper->findAcrossAllSources(
-			identifier: $object->getUuid(),
+			identifier: $uuid,
 			includeDeleted: false,
 			_rbac: false,
 			_multitenancy: false
 		);
+		$object = $refContext['object'];
+		$this->redirectReference(object: $object, run: $run);
 		$this->objectEntityMapper->update(
 			entity: $object,
 			register: $refContext['register'],
