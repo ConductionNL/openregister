@@ -262,6 +262,7 @@ final class ContractBindings {
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
 		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
 		LinkedEntityServiceInterface::class => LinkedEntityService::class,
+		ManifestServiceInterface::class => ManifestService::class,
 		MapLinkServiceInterface::class => MapLinkService::class,
 		MapNodeInterface::class => MapNode::class,
 		MappingServiceInterface::class => MappingService::class,
