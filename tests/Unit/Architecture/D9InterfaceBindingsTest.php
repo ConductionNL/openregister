@@ -41,12 +41,19 @@ use OCA\OpenRegister\BulkAction\SetPropertiesActionInterface;
 use OCA\OpenRegister\ContextChat\ContentProvider;
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
 use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
+use OCA\OpenRegister\Files\FilesRegistrar;
+use OCA\OpenRegister\Files\Service\UploadService;
+use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -87,6 +94,16 @@ final class D9InterfaceBindingsTest extends TestCase {
 			ContextChatRegistrar::class,
 			[],
 		],
+		GeoFilterApplier::class => [
+			GeoFilterApplierInterface::class,
+			SearchRegistrar::class,
+			[],
+		],
+		GeoFilterParser::class => [
+			GeoFilterParserInterface::class,
+			SearchRegistrar::class,
+			[],
+		],
 		RestorePriorValuesAction::class => [
 			RestorePriorValuesActionInterface::class,
 			BulkActionRegistrar::class,
@@ -123,6 +140,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 			[
 				'lib/Db/SchemaMapper/RecordAnnotationRefusals.php',
 			],
+		],
+		UploadService::class => [
+			UploadServiceInterface::class,
+			FilesRegistrar::class,
+			[],
 		],
 		VectorizationService::class => [
 			VectorizationServiceInterface::class,

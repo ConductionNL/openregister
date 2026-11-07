@@ -513,6 +513,7 @@ import Table from 'vue-material-design-icons/Table.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
+import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
 
 const JSON_HEADERS = {
 	'Content-Type': 'application/json',
@@ -984,20 +985,8 @@ export default {
 		 * @spec exclude API fetch + browser file-download UI plumbing; OAS contract owned by openapi-generation capability
 		 */
 		async downloadOas() {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.item.id}/oas`
 			try {
-				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-					type: 'application/json',
-				})
-				const downloadLink = document.createElement('a')
-				downloadLink.href = URL.createObjectURL(blob)
-				downloadLink.download = `${this.item.title.toLowerCase()}-api-specification.json`
-				document.body.appendChild(downloadLink)
-				downloadLink.click()
-				document.body.removeChild(downloadLink)
-				URL.revokeObjectURL(downloadLink.href)
+				await downloadRegisterOas(this.item)
 			} catch (error) {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
@@ -1008,12 +997,7 @@ export default {
 		 * @spec exclude window.open to external Redoc viewer, UI plumbing
 		 */
 		viewOasDoc() {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.item.id}/oas`
-			window.open(
-				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
-				'_blank',
-			)
+			viewRegisterOas(this.item.id)
 		},
 
 		/**
