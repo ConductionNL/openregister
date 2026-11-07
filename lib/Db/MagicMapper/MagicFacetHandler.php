@@ -120,6 +120,29 @@ class MagicFacetHandler {
 	private const MAX_FACET_BUCKETS = 10000;
 
 	/**
+	 * PostgreSQL TO_CHAR pattern of each date histogram interval.
+	 */
+	private const PG_DATE_FORMATS = [
+		'day' => 'YYYY-MM-DD',
+		'week' => 'IYYY-IW',
+		'month' => 'YYYY-MM',
+		'year' => 'YYYY',
+		'quarter' => 'YYYY-"Q"Q',
+	];
+
+	/**
+	 * MariaDB/MySQL DATE_FORMAT pattern of each date histogram interval but quarter.
+	 *
+	 * Week is ISO year + ISO week, matching PostgreSQL IYYY-IW.
+	 */
+	private const MYSQL_DATE_FORMATS = [
+		'day' => '%Y-%m-%d',
+		'week' => '%x-%v',
+		'year' => '%Y',
+		'month' => '%Y-%m',
+	];
+
+	/**
 	 * Metadata column prefix used in MagicMapper tables.
 	 */
 	private const METADATA_PREFIX = '_';
@@ -2181,20 +2204,7 @@ class MagicFacetHandler {
 	 * @return string PostgreSQL TO_CHAR date format string.
 	 */
 	private function getDateFormatForInterval(string $interval): string {
-		switch ($interval) {
-			case 'day':
-				return 'YYYY-MM-DD';
-			case 'week':
-				return 'IYYY-IW';
-			case 'month':
-				return 'YYYY-MM';
-			case 'year':
-				return 'YYYY';
-			case 'quarter':
-				return 'YYYY-"Q"Q';
-			default:
-				return 'YYYY-MM';
-		}
+		return self::PG_DATE_FORMATS[$interval] ?? 'YYYY-MM';
 	}//end getDateFormatForInterval()
 
 	/**
@@ -2217,9 +2227,7 @@ class MagicFacetHandler {
 	 * @return string The full SQL expression that evaluates to the bucket key string.
 	 */
 	private function buildDateKeyExpr(string $field, string $interval): string {
-		$isPostgres = $this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-
-		if ($isPostgres === true) {
+		if ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
 			$pgFormat = $this->getDateFormatForInterval(interval: $interval);
 			return "TO_CHAR({$field}, '{$pgFormat}')";
 		}
@@ -2230,23 +2238,7 @@ class MagicFacetHandler {
 			return "CONCAT(YEAR({$field}), '-Q', QUARTER({$field}))";
 		}
 
-		switch ($interval) {
-			case 'day':
-				$myFormat = '%Y-%m-%d';
-				break;
-			case 'week':
-				// ISO year + ISO week — matches PostgreSQL IYYY-IW.
-				$myFormat = '%x-%v';
-				break;
-			case 'year':
-				$myFormat = '%Y';
-				break;
-			case 'month':
-			default:
-				$myFormat = '%Y-%m';
-				break;
-		}
-
+		$myFormat = self::MYSQL_DATE_FORMATS[$interval] ?? '%Y-%m';
 		return "DATE_FORMAT({$field}, '{$myFormat}')";
 	}//end buildDateKeyExpr()
 
