@@ -70,6 +70,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class FederatedShare extends Entity implements JsonSerializable {
 	use JsonFieldsTrait;
+	use OrganisationFieldTrait;
 	use HydrateEmptyJsonAsNullTrait;
 
 	/**
@@ -213,27 +214,6 @@ class FederatedShare extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * Get the local owning organisation UUID.
-	 *
-	 * @return string|null The organisation UUID.
-	 */
-	public function getOrganisation(): ?string {
-		return $this->organisation;
-	}//end getOrganisation()
-
-	/**
-	 * Set the local owning organisation UUID.
-	 *
-	 * @param string|null $organisation The organisation UUID.
-	 *
-	 * @return void
-	 */
-	public function setOrganisation(?string $organisation): void {
-		$this->organisation = $organisation;
-		$this->markFieldUpdated(attribute: 'organisation');
-	}//end setOrganisation()
 
 	/**
 	 * Serialize the entity to a JSON-ready array.
