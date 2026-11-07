@@ -59,6 +59,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
  * @covers \OCA\OpenRegister\Files\Service\File\FileAuditHandler
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @uses \OCA\OpenRegister\Db\AuditTrail
