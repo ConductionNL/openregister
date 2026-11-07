@@ -273,7 +273,6 @@ class ApplicationsController extends Controller {
 	 */
 	public function update(int $id): JSONResponse {
 		try {
-			// Remove internal parameters and immutable fields.
 			$data = $this->request->getParams();
 			unset($data['_route'], $data['id'], $data['organisation'], $data['owner'], $data['created']);
 			$application = $this->applicationService->update(id: $id, data: $data);
