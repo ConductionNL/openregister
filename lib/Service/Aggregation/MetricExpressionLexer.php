@@ -35,6 +35,22 @@ use RuntimeException;
 class MetricExpressionLexer {
 
 	/**
+	 * The characters trim() strips by default, which the lexer skips between tokens.
+	 */
+	private const BLANK = " \t\n\r\0\x0B";
+
+	/**
+	 * The characters of a numeric literal: the digits that ctype_digit() accepts, and the dot.
+	 */
+	private const NUMBER_CHARACTERS = '0123456789.';
+
+	/**
+	 * The refusal for a character outside the grammar; `%s` is the character.
+	 */
+	private const OUTSIDE_GRAMMAR = 'Metric expression contains "%s", which is not part of the grammar. '
+		.'Allowed: metric aliases, numbers, + - * / ( ) and min()/max().';
+
+	/**
 	 * Split the source into tokens, refusing any character outside the grammar.
 	 *
 	 * @param string $expression The expression source.
@@ -47,65 +63,86 @@ class MetricExpressionLexer {
 	 */
 	public function tokenise(string $expression): array {
 		$tokens = [];
-		$len    = strlen($expression);
-		$pos    = 0;
+		$pos    = $this->skipBlank(expression: $expression, from: 0);
 
-		while ($pos < $len) {
-			$ch = $expression[$pos];
-
-			if (trim($ch) === '') {
-				$pos++;
-				continue;
-			}
-
-			if (str_contains('+-*/(),', $ch) === true) {
-				$tokens[] = ['type' => $ch, 'value' => $ch];
-				$pos++;
-				continue;
-			}
-
-			if (ctype_digit($ch) === true || $ch === '.') {
-				$end      = $this->scanNumber(expression: $expression, from: $pos, len: $len);
-				$tokens[] = ['type' => 'number', 'value' => substr($expression, $pos, ($end - $pos))];
-				$pos      = $end;
-				continue;
-			}
-
-			if (ctype_alpha($ch) === true || $ch === '_') {
-				$end      = $this->scanIdentifier(expression: $expression, from: $pos, len: $len);
-				$tokens[] = ['type' => 'ident', 'value' => substr($expression, $pos, ($end - $pos))];
-				$pos      = $end;
-				continue;
-			}
-
-			throw new RuntimeException(
-				sprintf(
-					'Metric expression contains "%s", which is not part of the grammar. '
-					.'Allowed: metric aliases, numbers, + - * / ( ) and min()/max().',
-					$ch
-				)
-			);
-		}//end while
+		while ($pos < strlen($expression)) {
+			$token    = $this->tokenAt(expression: $expression, pos: $pos);
+			$tokens[] = $token;
+			$pos      = $this->skipBlank(expression: $expression, from: ($pos + strlen($token['value'])));
+		}
 
 		return $tokens;
 	}//end tokenise()
+
+	/**
+	 * Advance past whitespace and return the first non-blank offset.
+	 *
+	 * @param string $expression The source.
+	 * @param int    $from       Offset to start from.
+	 *
+	 * @return int The first non-blank offset, or the length of the source.
+	 */
+	private function skipBlank(string $expression, int $from): int {
+		return ($from + strspn($expression, self::BLANK, $from));
+	}//end skipBlank()
+
+	/**
+	 * Read the token that starts at a non-blank offset.
+	 *
+	 * @param string $expression The source.
+	 * @param int    $pos        Offset of the token's first character.
+	 *
+	 * @return array{type: string, value: string} The token.
+	 *
+	 * @throws RuntimeException On a character the grammar does not contain.
+	 */
+	private function tokenAt(string $expression, int $pos): array {
+		$ch = $expression[$pos];
+		if (str_contains('+-*/(),', $ch) === true) {
+			return ['type' => $ch, 'value' => $ch];
+		}
+
+		$literal = $this->literalAt(expression: $expression, pos: $pos);
+		if ($literal === null) {
+			throw new RuntimeException(sprintf(self::OUTSIDE_GRAMMAR, $ch));
+		}
+
+		return $literal;
+	}//end tokenAt()
+
+	/**
+	 * Read the number or identifier that starts at an offset, if one does.
+	 *
+	 * @param string $expression The source.
+	 * @param int    $pos        Offset of the literal's first character.
+	 *
+	 * @return array{type: string, value: string}|null The token, or null when no literal starts here.
+	 */
+	private function literalAt(string $expression, int $pos): ?array {
+		$ch = $expression[$pos];
+		if (ctype_digit($ch) === true || $ch === '.') {
+			$end = $this->scanNumber(expression: $expression, from: $pos);
+			return ['type' => 'number', 'value' => substr($expression, $pos, ($end - $pos))];
+		}
+
+		if (ctype_alpha($ch) === true || $ch === '_') {
+			$end = $this->scanIdentifier(expression: $expression, from: $pos);
+			return ['type' => 'ident', 'value' => substr($expression, $pos, ($end - $pos))];
+		}
+
+		return null;
+	}//end literalAt()
 
 	/**
 	 * Advance past a numeric literal and return the end offset.
 	 *
 	 * @param string $expression The source.
 	 * @param int    $from       Offset of the first digit or dot.
-	 * @param int    $len        Length of the source.
 	 *
 	 * @return int Offset one past the literal.
 	 */
-	private function scanNumber(string $expression, int $from, int $len): int {
-		$end = $from;
-		while ($end < $len && (ctype_digit($expression[$end]) === true || $expression[$end] === '.')) {
-			$end++;
-		}
-
-		return $end;
+	private function scanNumber(string $expression, int $from): int {
+		return ($from + strspn($expression, self::NUMBER_CHARACTERS, $from));
 	}//end scanNumber()
 
 	/**
@@ -113,13 +150,12 @@ class MetricExpressionLexer {
 	 *
 	 * @param string $expression The source.
 	 * @param int    $from       Offset of the first character.
-	 * @param int    $len        Length of the source.
 	 *
 	 * @return int Offset one past the identifier.
 	 */
-	private function scanIdentifier(string $expression, int $from, int $len): int {
+	private function scanIdentifier(string $expression, int $from): int {
 		$end = $from;
-		while ($end < $len && (ctype_alnum($expression[$end]) === true || $expression[$end] === '_')) {
+		while ($end < strlen($expression) && (ctype_alnum($expression[$end]) === true || $expression[$end] === '_')) {
 			$end++;
 		}
 
