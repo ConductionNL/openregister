@@ -140,6 +140,11 @@ class FlowBpmnImporter {
 	/**
 	 * The shared body of {@see self::import()} and {@see self::importStrictly()}.
 	 *
+	 * 🔴 THE SCHEMA STEP COMES BEFORE THE MAPPING, NOT BESIDE IT. Every verdict
+	 * the mapping gives reads a construct and says what became of it; run that
+	 * over a document that is not BPMN and the author is told their process is
+	 * unsupported when what is wrong is their XML.
+	 *
 	 * @param string  $xml    The file.
 	 * @param boolean $strict Whether a refusal fails the whole import.
 	 *
@@ -152,40 +157,99 @@ class FlowBpmnImporter {
 	 */
 	private function read(string $xml, bool $strict): array {
 		$document = $this->parse(xml: $xml);
-
-		// 🔴 THE SCHEMA STEP COMES BEFORE THE MAPPING, NOT BESIDE IT. Every
-		// verdict below reads a construct and says what became of it; run that
-		// over a document that is not BPMN and the author is told their
-		// process is unsupported when what is wrong is their XML.
 		$this->validator->assertValid(document: $document);
 
+		$xpath = $this->xpathOf(document: $document);
+		$process = $this->singleProcess(xpath: $xpath);
+
+		$pass = new BpmnImportPass(xpath: $xpath, report: new BpmnMappingReport());
+		$flow = $this->flowOf(pass: $pass, process: $process);
+		$this->refuseWhenStrict(report: $pass->report, strict: $strict);
+
+		return ['flow' => $flow, 'report' => $pass->report];
+	}//end read()
+
+	/**
+	 * An xpath over the document with every namespace the importer reads.
+	 *
+	 * @param DOMDocument $document The validated document.
+	 *
+	 * @return DOMXPath The xpath.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function xpathOf(DOMDocument $document): DOMXPath {
 		$xpath = new DOMXPath($document);
 		$xpath->registerNamespace('bpmn', FlowBpmnExporter::NS_BPMN);
 		$xpath->registerNamespace('bpmndi', FlowBpmnExporter::NS_BPMNDI);
 		$xpath->registerNamespace('dc', FlowBpmnExporter::NS_DC);
 		$xpath->registerNamespace(BpmnVocabulary::EXTENSION_PREFIX, BpmnVocabulary::EXTENSION_NS);
 
+		return $xpath;
+	}//end xpathOf()
+
+	/**
+	 * The file's one bpmn:process element.
+	 *
+	 * More than one is declared as a refusal in the vocabulary, and raised
+	 * here rather than reported, because there is no single flow to attach a
+	 * report to: importing the first would silently pick one.
+	 *
+	 * @param DOMXPath $xpath The xpath.
+	 *
+	 * @return DOMNode|null The process element.
+	 *
+	 * @throws BpmnImportRefused When the file declares no process, or several.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function singleProcess(DOMXPath $xpath): ?DOMNode {
 		$processes = $xpath->query('//bpmn:process');
 		if ($processes === false || $processes->length === 0) {
 			throw new BpmnImportRefused(message: 'The file declares no bpmn:process, so there is no flow in it.');
 		}
 
 		if ($processes->length > 1) {
-			// Declared as a refusal in the vocabulary, and raised here rather
-			// than reported, because there is no single flow to attach a
-			// report to: importing the first would silently pick one.
 			throw new BpmnImportRefused(message: BpmnVocabulary::REFUSED['process:multiple']);
 		}
 
-		$report = new BpmnMappingReport();
-		$positions = $this->layout->positions(xpath: $xpath);
+		return $processes->item(0);
+	}//end singleProcess()
 
-		['nodes' => $nodes, 'edges' => $edges] = $this->graphOf(
-			xpath: $xpath,
-			process: $processes->item(0),
-			report: $report
-		);
+	/**
+	 * The flow document one process element describes, laid out.
+	 *
+	 * @param BpmnImportPass $pass    The xpath and the report.
+	 * @param DOMNode|null   $process The single bpmn:process element.
+	 *
+	 * @return array<string, mixed> The flow document.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function flowOf(BpmnImportPass $pass, ?DOMNode $process): array {
+		$positions = $this->layout->positions(xpath: $pass->xpath);
+		$graph = $this->graphOf(pass: $pass, process: $process);
 
+		return [
+			'name' => $this->nameOf(process: $process),
+			'nodes' => $this->layout->laidOut(nodes: $graph['nodes'], positions: $positions),
+			'edges' => $graph['edges'],
+		];
+	}//end flowOf()
+
+	/**
+	 * Refuse the import when strict was asked for and anything was refused.
+	 *
+	 * @param BpmnMappingReport $report The finished report.
+	 * @param boolean           $strict Whether a refusal fails the whole import.
+	 *
+	 * @return void
+	 *
+	 * @throws BpmnImportRefused When strict meets a refusal.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function refuseWhenStrict(BpmnMappingReport $report, bool $strict): void {
 		if ($strict === true && $report->failsStrict() === true) {
 			throw new BpmnImportRefused(
 				message: 'The file contains constructs this importer refuses, and strict was requested, so no flow was created.',
@@ -193,15 +257,7 @@ class FlowBpmnImporter {
 			);
 		}
 
-		return [
-			'flow' => [
-				'name' => $this->nameOf(process: $processes->item(0)),
-				'nodes' => $this->layout->laidOut(nodes: $nodes, positions: $positions),
-				'edges' => $edges,
-			],
-			'report' => $report,
-		];
-	}//end read()
+	}//end refuseWhenStrict()
 
 	/**
 	 * The nodes and edges one process element declares.
@@ -211,173 +267,89 @@ class FlowBpmnImporter {
 	 * refuses, because a refusal without a report tells an author nothing
 	 * about the rest of their file.
 	 *
-	 * @param DOMXPath          $xpath   The xpath, with the BPMN namespaces registered.
-	 * @param DOMNode|null      $process The single bpmn:process element.
-	 * @param BpmnMappingReport $report  The report, written to as constructs are read.
+	 * @param BpmnImportPass $pass    The xpath and the report, written to as constructs are read.
+	 * @param DOMNode|null   $process The single bpmn:process element.
 	 *
 	 * @return array{nodes: array<int, array<string, mixed>>, edges: array<int, array<string, mixed>>} The graph.
 	 *
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
-	private function graphOf(DOMXPath $xpath, ?DOMNode $process, BpmnMappingReport $report): array {
+	private function graphOf(BpmnImportPass $pass, ?DOMNode $process): array {
 		$nodes = [];
 		$edges = [];
-
-		$children = $xpath->query('./*', $process);
-		if ($children === false) {
-			$children = [];
-		}
-
-		foreach ($children as $child) {
-			if (($child instanceof DOMElement) === false) {
-				continue;
-			}
-
+		foreach ($pass->childElements(process: $process) as $child) {
 			if ($child->localName === 'sequenceFlow') {
 				$edges[] = $this->edgeFrom(element: $child);
 				continue;
 			}
 
-			$node = $this->nodeFrom(element: $child, xpath: $xpath, report: $report);
-			if ($node !== null) {
-				$nodes[] = $node;
-			}
+			$nodes[] = $this->nodeFrom(element: $child, pass: $pass);
 		}
 
-		return [
-			'nodes' => $nodes,
-			'edges' => $edges,
-		];
+		return ['nodes' => array_values(array_filter($nodes)), 'edges' => $edges];
 	}//end graphOf()
 
 	/**
 	 * One node, and its entry in the report.
 	 *
-	 * @param DOMElement          $element The element.
-	 * @param DOMXPath            $xpath   The xpath.
-	 * @param BpmnMappingReport   $report  The report.
+	 * @param DOMElement     $element The element.
+	 * @param BpmnImportPass $pass    The xpath and the report.
 	 *
 	 * @return array<string, mixed>|null The node, or null when it is dropped.
 	 */
-	private function nodeFrom(DOMElement $element, DOMXPath $xpath, BpmnMappingReport $report): ?array {
+	private function nodeFrom(DOMElement $element, BpmnImportPass $pass): ?array {
 		$id = trim($element->getAttribute('id'));
-		$kind = $this->kindOf(element: $element, xpath: $xpath);
-		$reading = $this->vocabulary->readingFor(element: $kind);
-
-		// 🔑 THE EXTENSION ELEMENT WINS over the element kind. An
-		// `exclusiveGateway` cannot say whether it was a `switch` or a `route`,
-		// and the vocabulary's reverse table has to pick one — so our own files
-		// carry the answer and the mapping is only consulted for files that do
-		// not.
-		$declared = $this->extensionType(element: $element, xpath: $xpath);
-		$type = $reading['type'];
-		if ($declared !== '') {
-			$type = $declared;
-		}
-
-		$verdict = $reading['verdict'];
-		$action = $reading['note'];
-		if ($declared !== '') {
-			$verdict = BpmnMappingReport::MAPPED;
-			$action = '';
-		}
-
-		$report->record(elementId: $id, kind: $kind, verdict: $verdict, action: $action);
-
-		if ($verdict === BpmnMappingReport::REFUSED) {
+		$mapping = $this->mappingFor(element: $element, pass: $pass);
+		$pass->report->record(elementId: $id, kind: $mapping['kind'], verdict: $mapping['verdict'], action: $mapping['action']);
+		if ($mapping['verdict'] === BpmnMappingReport::REFUSED) {
 			return null;
 		}
 
-		$node = [
-			'id' => $id,
-			'name' => trim($element->getAttribute('name')),
-			'type' => $type,
-		];
+		$node = ['id' => $id, 'name' => trim($element->getAttribute('name')), 'type' => $mapping['type']];
 
-		$config = $this->extensionConfig(element: $element, xpath: $xpath);
+		return $this->withConfig(node: $node, config: $pass->extensionConfig(element: $element));
+	}//end nodeFrom()
+
+	/**
+	 * The node with its declared config, when the element declares one.
+	 *
+	 * @param array<string, mixed>      $node   The node.
+	 * @param array<string, mixed>|null $config The declared config, or null.
+	 *
+	 * @return array<string, mixed> The node.
+	 */
+	private function withConfig(array $node, ?array $config): array {
 		if ($config !== null) {
 			$node['config'] = $config;
 		}
 
 		return $node;
-	}//end nodeFrom()
+	}//end withConfig()
 
 	/**
-	 * The vocabulary kind for one element, event definition included.
+	 * What one element maps to: its kind, type, verdict and the action it needs.
 	 *
-	 * @param DOMElement $element The element.
-	 * @param DOMXPath   $xpath   The xpath.
+	 * 🔑 THE EXTENSION ELEMENT WINS over the element kind. An
+	 * `exclusiveGateway` cannot say whether it was a `switch` or a `route`, and
+	 * the vocabulary's reverse table has to pick one — so our own files carry
+	 * the answer and the mapping is only consulted for files that do not.
 	 *
-	 * @return string The kind.
+	 * @param DOMElement     $element The element.
+	 * @param BpmnImportPass $pass    The xpath and the report.
+	 *
+	 * @return array{kind: string, type: string, verdict: string, action: string} The mapping.
 	 */
-	private function kindOf(DOMElement $element, DOMXPath $xpath): string {
-		$local = (string)$element->localName;
+	private function mappingFor(DOMElement $element, BpmnImportPass $pass): array {
+		$kind = $pass->kindOf(element: $element);
+		$reading = $this->vocabulary->readingFor(element: $kind);
 
-		foreach (['timer', 'message', 'conditional', 'terminate'] as $definition) {
-			$found = $xpath->query('./bpmn:' . $definition . 'EventDefinition', $element);
-			if ($found !== false && $found->length > 0) {
-				if ($local === 'startEvent') {
-					return ($definition . 'StartEvent');
-				}
-
-				if ($local === 'endEvent') {
-					return ($definition . 'EndEvent');
-				}
-
-				return ($local . ':' . $definition);
-			}
+		$declared = $pass->extensionType(element: $element);
+		if ($declared !== '') {
+			return ['kind' => $kind, 'type' => $declared, 'verdict' => BpmnMappingReport::MAPPED, 'action' => ''];
 		}
 
-		return $local;
-	}//end kindOf()
-
-	/**
-	 * The openregister type an element declares, or an empty string.
-	 *
-	 * @param DOMElement $element The element.
-	 * @param DOMXPath   $xpath   The xpath.
-	 *
-	 * @return string The type.
-	 */
-	private function extensionType(DOMElement $element, DOMXPath $xpath): string {
-		$found = $xpath->query(
-			'./bpmn:extensionElements/' . BpmnVocabulary::EXTENSION_PREFIX . ':' . BpmnVocabulary::ELEMENT_TYPE,
-			$element
-		);
-
-		if ($found === false || $found->length === 0) {
-			return '';
-		}
-
-		return trim((string)$found->item(0)->textContent);
-	}//end extensionType()
-
-	/**
-	 * The openregister config an element declares, or null.
-	 *
-	 * @param DOMElement $element The element.
-	 * @param DOMXPath   $xpath   The xpath.
-	 *
-	 * @return array<string, mixed>|null The config.
-	 */
-	private function extensionConfig(DOMElement $element, DOMXPath $xpath): ?array {
-		$found = $xpath->query(
-			'./bpmn:extensionElements/' . BpmnVocabulary::EXTENSION_PREFIX . ':' . BpmnVocabulary::ELEMENT_CONFIG,
-			$element
-		);
-
-		if ($found === false || $found->length === 0) {
-			return null;
-		}
-
-		$decoded = json_decode((string)$found->item(0)->textContent, true);
-
-		if (is_array($decoded) === true) {
-			return $decoded;
-		}
-
-		return null;
-	}//end extensionConfig()
+		return ['kind' => $kind, 'type' => $reading['type'], 'verdict' => $reading['verdict'], 'action' => $reading['note']];
+	}//end mappingFor()
 
 	/**
 	 * One sequence flow as an edge.
@@ -404,11 +376,11 @@ class FlowBpmnImporter {
 	/**
 	 * The process name, or an empty string.
 	 *
-	 * @param mixed $process The process element.
+	 * @param DOMNode|null $process The process element.
 	 *
 	 * @return string The name.
 	 */
-	private function nameOf(mixed $process): string {
+	private function nameOf(?DOMNode $process): string {
 		if (($process instanceof DOMElement) === false) {
 			return '';
 		}
@@ -430,30 +402,54 @@ class FlowBpmnImporter {
 			throw new BpmnImportRefused(message: 'The file is empty.');
 		}
 
+		$document = new DOMDocument();
+		$errors = $this->loadQuietly(document: $document, xml: $xml);
+		if ($errors !== null) {
+			throw new BpmnImportRefused(message: sprintf('The file could not be read: %s', $this->firstError(errors: $errors)));
+		}
+
+		return $document;
+	}//end parse()
+
+	/**
+	 * Load the XML into the document with libxml's errors captured, not raised.
+	 *
+	 * 🔴 EXTERNAL ENTITIES STAY OFF. A BPMN file is somebody else's document,
+	 * uploaded; parsing one with entity substitution on is an XXE read of the
+	 * server's filesystem dressed as a process import.
+	 *
+	 * @param DOMDocument $document The empty document to load into.
+	 * @param string      $xml      The file.
+	 *
+	 * @return array<int, \LibXMLError>|null The libxml errors when it did not load, null when it did.
+	 */
+	private function loadQuietly(DOMDocument $document, string $xml): ?array {
 		$previous = libxml_use_internal_errors(true);
 		libxml_clear_errors();
-
-		$document = new DOMDocument();
-		// 🔴 EXTERNAL ENTITIES STAY OFF. A BPMN file is somebody else's
-		// document, uploaded; parsing one with entity substitution on is an
-		// XXE read of the server's filesystem dressed as a process import.
 		$loaded = $document->loadXML($xml, LIBXML_NONET);
-
 		$errors = libxml_get_errors();
 		libxml_clear_errors();
 		libxml_use_internal_errors($previous);
 
 		if ($loaded === false) {
-			$first = 'the document is not well-formed XML';
-			if ($errors !== []) {
-				$first = trim((string)$errors[0]->message);
-			}
-
-			throw new BpmnImportRefused(
-				message: sprintf('The file could not be read: %s', $first)
-			);
+			return $errors;
 		}
 
-		return $document;
-	}//end parse()
+		return null;
+	}//end loadQuietly()
+
+	/**
+	 * The first libxml error's message, or a generic one when there is none.
+	 *
+	 * @param array<int, \LibXMLError> $errors The errors.
+	 *
+	 * @return string The message.
+	 */
+	private function firstError(array $errors): string {
+		if ($errors === []) {
+			return 'the document is not well-formed XML';
+		}
+
+		return trim((string)$errors[0]->message);
+	}//end firstError()
 }//end class
