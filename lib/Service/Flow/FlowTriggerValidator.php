@@ -68,7 +68,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class FlowTriggerValidator {
+class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 
 	/**
 	 * The trigger-config key recording WHO asserted the delegation.

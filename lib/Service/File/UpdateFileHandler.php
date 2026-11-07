@@ -26,14 +26,10 @@ use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\InvalidPathException;
-use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
-use OCP\SystemTag\ISystemTagManager;
-use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 
 /**
  * Handles file update operations with Single Responsibility.
@@ -77,26 +73,16 @@ class UpdateFileHandler {
 	/**
 	 * Constructor for UpdateFileHandler.
 	 *
-	 * @param IRootFolder $rootFolder Root folder for file operations.
-	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler.
-	 * @param FileValidationHandler $fileValidHandler File validation handler.
-	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
-	 * @param ReadFileHandler $readFileHandler Read file handler.
-	 * @param ISystemTagManager $systemTagManager System tag manager.
-	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper.
+	 * @param UpdateFileLocator $locator Finds the file by id, in the object folder or in the user folder.
+	 * @param UpdateFileGuards $guards Screens executable content, checks and transfers ownership.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param \OCA\OpenRegister\Files\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         description / category / labels writes.
 	 *                                                         Null-safe so legacy fixtures keep working.
 	 */
 	public function __construct(
-		private readonly IRootFolder $rootFolder,
-		private readonly FolderManagementHandler $folderMgmtHandler,
-		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandler $fileOwnershipHandler,
-		private readonly ReadFileHandler $readFileHandler,
-		private readonly ISystemTagManager $systemTagManager,
-		private readonly ISystemTagObjectMapper $systemTagMapper,
+		private readonly UpdateFileLocator $locator,
+		private readonly UpdateFileGuards $guards,
 		private readonly LoggerInterface $logger,
 		private readonly ?\OCA\OpenRegister\Files\Db\FileMapperInterface $fileMapper = null,
 	) {
@@ -255,7 +241,7 @@ class UpdateFileHandler {
 		);
 
 		if ($object !== null) {
-			$file = $this->readFileHandler->getFile(object: $object, file: $fileId);
+			$file = $this->locator->readFileHandler->getFile(object: $object, file: $fileId);
 			if ($file !== null) {
 				$fileName = $file->getName();
 				$foundId = $file->getId();
@@ -268,7 +254,7 @@ class UpdateFileHandler {
 		}
 
 		try {
-			$nodes = $this->folderMgmtHandler->getOpenRegisterUserFolder()->getById($fileId);
+			$nodes = $this->locator->folderMgmtHandler->getOpenRegisterUserFolder()->getById($fileId);
 			if (empty($nodes) === true) {
 				$this->logger->error(
 					message: "[UpdateFileHandler] updateFile: No file found with ID: $fileId",
@@ -351,7 +337,7 @@ class UpdateFileHandler {
 	 */
 	private function findInObjectFolder(ObjectEntity $object, array $pathInfo): ?Node {
 		try {
-			$objectFolder = $this->folderMgmtHandler->getObjectFolder($object);
+			$objectFolder = $this->locator->folderMgmtHandler->getObjectFolder($object);
 			if ($objectFolder === null) {
 				$this->logger->warning(
 					message: '[UpdateFileHandler] updateFile: Could not get object folder for object ID: ' . $object->getId(),
@@ -464,7 +450,7 @@ class UpdateFileHandler {
 
 		$userFolder = null;
 		try {
-			$userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
+			$userFolder = $this->locator->folderMgmtHandler->getOpenRegisterUserFolder();
 			$file = $userFolder->get(path: $filePath);
 			$fileId = $file->getId();
 			$this->logger->debug(
@@ -614,11 +600,11 @@ class UpdateFileHandler {
 			rewind($content);
 		}
 
-		$this->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $execCheckBytes);
+		$this->guards->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $execCheckBytes);
 
 		// Reaching the file (owned or shared) is not enough: writing also needs write
 		// permission. NC enforces it on putContent(); this fails fast with a clear message.
-		$this->fileValidHandler->checkOwnership($file);
+		$this->guards->fileValidHandler->checkOwnership($file);
 		if ($file->isUpdateable() === false) {
 			throw new NotPermittedException("File {$file->getName()} is not writable by the current session");
 		}
@@ -629,7 +615,7 @@ class UpdateFileHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		$this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
+		$this->guards->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
 	}//end writeContent()
 
 	/**

@@ -27,6 +27,11 @@ use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListenerInterface;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Listener\UniqueConstraintListenerInterface;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
+use OCA\OpenRegister\Mcp\McpRegistrar;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;
@@ -55,20 +60,26 @@ final class D14InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
+		ContextChatSubmissionListener::class => [ContextChatSubmissionListenerInterface::class, McpRegistrar::class],
 		GeoFeatureCollectionBuilder::class => [GeoFeatureCollectionBuilderInterface::class, SearchRegistrar::class],
 		SchemaFlowImportListener::class => [SchemaFlowImportListenerInterface::class, ListenerRegistrar::class],
 		SearchIndexMaintenance::class => [SearchIndexMaintenanceInterface::class, SearchRegistrar::class],
+		ToolRegistry::class => [ToolRegistryInterface::class, McpRegistrar::class],
 		UniqueConstraintListener::class => [UniqueConstraintListenerInterface::class, ListenerRegistrar::class],
 	];
 
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * None: every outside caller types against the interface.
+	 * ListenerRegistrar registers ContextChatSubmissionListener as the listener of the
+	 * object created, updated and deleted events. Moving those three lines would change
+	 * the order listeners run in, so the registration is kept as it is.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [];
+	private const KEPT_CALLERS = [
+		ContextChatSubmissionListener::class => ['Listener/ListenerRegistrar.php'],
+	];
 
 	/**
 	 * One case per class.

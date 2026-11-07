@@ -73,7 +73,7 @@ use Throwable;
  *
  * @spec openspec/specs/context-chat-provider/spec.md
  */
-class ContextChatSubmissionListener implements IEventListener {
+class ContextChatSubmissionListener implements IEventListener, ContextChatSubmissionListenerInterface {
 
 	/**
 	 * Request-scoped cache of "seen" (logged in at least once) user ids,

@@ -29,7 +29,7 @@ class McpRegistrarTest extends TestCase
             $expected[] = ['alias' => $contract, 'target' => $service];
         }
 
-        $this->assertCount(3, $expected);
+        $this->assertCount(5, $expected);
         $this->assertSame(expected: $expected, actual: $context->aliases);
     }//end testEveryInterfaceIsBoundToItsImplementation()
 }//end class
