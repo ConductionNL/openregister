@@ -1,0 +1,1504 @@
+{
+    "conditionDialect": {
+        "scalar": {
+            "wellFormed": true,
+            "valid": false,
+            "holdsA7": true,
+            "holdsEmpty": true
+        },
+        "string": {
+            "wellFormed": true,
+            "valid": false,
+            "holdsA7": true,
+            "holdsEmpty": true
+        },
+        "null": {
+            "wellFormed": true,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "empty": {
+            "wellFormed": true,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "list": {
+            "wellFormed": true,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "bad list": {
+            "wellFormed": false,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "two keys": {
+            "wellFormed": false,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "unknown op": {
+            "wellFormed": false,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "lit": {
+            "wellFormed": true,
+            "valid": true,
+            "holdsA7": true,
+            "holdsEmpty": true
+        },
+        "dict ok": {
+            "wellFormed": true,
+            "valid": true,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "dict named": {
+            "wellFormed": true,
+            "valid": true,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "dict scalar": {
+            "wellFormed": false,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "dict bad": {
+            "wellFormed": false,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "nested ok": {
+            "wellFormed": false,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "nested bad": {
+            "wellFormed": false,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "shared and": {
+            "wellFormed": true,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "jsonlogic": {
+            "wellFormed": false,
+            "valid": true,
+            "holdsA7": true,
+            "holdsEmpty": false
+        },
+        "jsonlogic invalid": {
+            "wellFormed": false,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "jsonlogic unknown": {
+            "wellFormed": false,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "ast eq": {
+            "wellFormed": true,
+            "valid": true,
+            "holdsA7": true,
+            "holdsEmpty": false
+        },
+        "ast throws": {
+            "wellFormed": false,
+            "valid": false,
+            "holdsA7": false,
+            "holdsEmpty": false
+        },
+        "ops": {
+            "and": [
+                false,
+                false
+            ],
+            "gt": [
+                true,
+                true
+            ],
+            ">": [
+                false,
+                false
+            ],
+            "lit": [
+                true,
+                true
+            ],
+            "nope": [
+                false,
+                false
+            ],
+            "if": [
+                false,
+                false
+            ],
+            "prop": [
+                true,
+                true
+            ]
+        }
+    },
+    "dependentValueTable": {
+        "no properties": {
+            "declaresAny": false,
+            "tablesOf": [],
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "no annotation": {
+            "declaresAny": false,
+            "tablesOf": [],
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "not an array": {
+            "declaresAny": true,
+            "tablesOf": [],
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "empty": {
+            "declaresAny": true,
+            "tablesOf": [],
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "no controlledBy": {
+            "declaresAny": true,
+            "tablesOf": [],
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "empty controlledBy": {
+            "declaresAny": true,
+            "tablesOf": [],
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "self controlled": {
+            "declaresAny": true,
+            "tablesOf": {
+                "resultaat": {
+                    "controlledBy": "resultaat",
+                    "allowed": {
+                        "a": [
+                            "x"
+                        ]
+                    }
+                }
+            },
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "unknown property": {
+            "declaresAny": true,
+            "tablesOf": {
+                "resultaat": {
+                    "controlledBy": "ontbreekt",
+                    "allowed": {
+                        "a": [
+                            "x"
+                        ]
+                    }
+                }
+            },
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "no allowed": {
+            "declaresAny": true,
+            "tablesOf": [],
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "empty allowed": {
+            "declaresAny": true,
+            "tablesOf": {
+                "resultaat": {
+                    "controlledBy": "zaaktype",
+                    "allowed": []
+                }
+            },
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "sound": {
+            "declaresAny": true,
+            "tablesOf": {
+                "resultaat": {
+                    "controlledBy": "zaaktype",
+                    "allowed": {
+                        "a": [
+                            "x"
+                        ],
+                        "b": [
+                            "y",
+                            "7"
+                        ],
+                        "3": [
+                            "x"
+                        ]
+                    }
+                }
+            },
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [
+                    {
+                        "property": "resultaat",
+                        "controlledBy": "zaaktype",
+                        "value": "x",
+                        "controllingValue": "b",
+                        "message": "\"resultaat\" cannot be \"x\" while \"zaaktype\" is \"b\". Allowed: y, 7."
+                    }
+                ],
+                "stored controlling": [
+                    {
+                        "property": "resultaat",
+                        "controlledBy": "zaaktype",
+                        "value": "y",
+                        "controllingValue": "a",
+                        "message": "\"resultaat\" cannot be \"y\" while \"zaaktype\" is \"a\". Allowed: x."
+                    }
+                ],
+                "stored refused": [
+                    {
+                        "property": "resultaat",
+                        "controlledBy": "zaaktype",
+                        "value": "q",
+                        "controllingValue": "a",
+                        "message": "\"resultaat\" cannot be \"q\" while \"zaaktype\" is \"a\". Allowed: x."
+                    }
+                ],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": [
+                    {
+                        "property": "resultaat",
+                        "controlledBy": "zaaktype",
+                        "value": "y",
+                        "controllingValue": "3",
+                        "message": "\"resultaat\" cannot be \"y\" while \"zaaktype\" is \"3\". Allowed: x."
+                    }
+                ]
+            }
+        },
+        "scalar pairs": {
+            "declaresAny": true,
+            "tablesOf": {
+                "resultaat": {
+                    "controlledBy": "zaaktype",
+                    "allowed": {
+                        "a": [
+                            "x",
+                            "",
+                            "1.5",
+                            "1"
+                        ]
+                    }
+                }
+            },
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [
+                    {
+                        "property": "resultaat",
+                        "controlledBy": "zaaktype",
+                        "value": "y",
+                        "controllingValue": "a",
+                        "message": "\"resultaat\" cannot be \"y\" while \"zaaktype\" is \"a\". Allowed: x, , 1.5, 1."
+                    }
+                ],
+                "stored refused": [
+                    {
+                        "property": "resultaat",
+                        "controlledBy": "zaaktype",
+                        "value": "q",
+                        "controllingValue": "a",
+                        "message": "\"resultaat\" cannot be \"q\" while \"zaaktype\" is \"a\". Allowed: x, , 1.5, 1."
+                    }
+                ],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "own enum absent": {
+            "declaresAny": true,
+            "tablesOf": {
+                "resultaat": {
+                    "controlledBy": "zaaktype",
+                    "allowed": {
+                        "zz": [
+                            "anything"
+                        ]
+                    }
+                }
+            },
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [
+                    {
+                        "property": "resultaat",
+                        "controlledBy": "zaaktype",
+                        "value": "q",
+                        "controllingValue": "zz",
+                        "message": "\"resultaat\" cannot be \"q\" while \"zaaktype\" is \"zz\". Allowed: anything."
+                    }
+                ],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "own enum not scalar": {
+            "declaresAny": true,
+            "tablesOf": {
+                "resultaat": {
+                    "controlledBy": "zaaktype",
+                    "allowed": {
+                        "a": [
+                            "q"
+                        ]
+                    }
+                }
+            },
+            "violations": {
+                "empty": [],
+                "allowed": [
+                    {
+                        "property": "resultaat",
+                        "controlledBy": "zaaktype",
+                        "value": "x",
+                        "controllingValue": "a",
+                        "message": "\"resultaat\" cannot be \"x\" while \"zaaktype\" is \"a\". Allowed: q."
+                    }
+                ],
+                "refused": [],
+                "stored controlling": [
+                    {
+                        "property": "resultaat",
+                        "controlledBy": "zaaktype",
+                        "value": "y",
+                        "controllingValue": "a",
+                        "message": "\"resultaat\" cannot be \"y\" while \"zaaktype\" is \"a\". Allowed: q."
+                    }
+                ],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "controlled by unconstrained": {
+            "declaresAny": true,
+            "tablesOf": {
+                "resultaat": {
+                    "controlledBy": "vrij",
+                    "allowed": {
+                        "q": [
+                            "x",
+                            "w"
+                        ]
+                    }
+                }
+            },
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        },
+        "two tables": {
+            "declaresAny": true,
+            "tablesOf": {
+                "a": {
+                    "controlledBy": "zaaktype",
+                    "allowed": {
+                        "a": [
+                            "1",
+                            "2"
+                        ]
+                    }
+                },
+                "c": {
+                    "controlledBy": "zaaktype",
+                    "allowed": {
+                        "a": [
+                            "3"
+                        ]
+                    }
+                }
+            },
+            "violations": {
+                "empty": [],
+                "allowed": [],
+                "refused": [],
+                "stored controlling": [],
+                "stored refused": [
+                    {
+                        "property": "a",
+                        "controlledBy": "zaaktype",
+                        "value": "5",
+                        "controllingValue": "a",
+                        "message": "\"a\" cannot be \"5\" while \"zaaktype\" is \"a\". Allowed: 1, 2."
+                    }
+                ],
+                "unlisted controlling": [],
+                "non scalar value": [],
+                "non scalar controlling": [],
+                "empty value": [],
+                "numeric controlling": []
+            }
+        }
+    },
+    "dependentValueValidator": {
+        "no properties": [],
+        "properties not array": [],
+        "no annotation": [],
+        "not an array": [
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"resultaat\": x-openregister-dependent-values must be an object with \"controlledBy\" and \"allowed\"."
+            }
+        ],
+        "empty": [
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"resultaat\": x-openregister-dependent-values must be an object with \"controlledBy\" and \"allowed\"."
+            }
+        ],
+        "no controlledBy": [
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"resultaat\": \"controlledBy\" must name a property."
+            }
+        ],
+        "empty controlledBy": [
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"resultaat\": \"controlledBy\" must name a property."
+            }
+        ],
+        "self controlled": [
+            {
+                "code": "dependent-values-self-controlled",
+                "message": "Property \"resultaat\" cannot control its own allowed values."
+            }
+        ],
+        "unknown property": [
+            {
+                "code": "dependent-values-unknown-property",
+                "message": "Property \"resultaat\": \"controlledBy\" names \"ontbreekt\", which this schema does not declare."
+            }
+        ],
+        "no allowed": [
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"resultaat\": \"allowed\" must pair at least one value of \"zaaktype\" with the values it permits."
+            }
+        ],
+        "empty allowed": [
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"resultaat\": \"allowed\" must pair at least one value of \"zaaktype\" with the values it permits."
+            }
+        ],
+        "sound": [],
+        "bad pairs": [
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"resultaat\": \"a\" must be paired with a non-empty list of allowed values."
+            },
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"resultaat\": \"b\" must be paired with a non-empty list of allowed values."
+            },
+            {
+                "code": "dependent-values-unknown-controlling-value",
+                "message": "Property \"resultaat\": \"c\" is not a value \"zaaktype\" can take."
+            },
+            {
+                "code": "dependent-values-unknown-value",
+                "message": "Property \"resultaat\": \"z\" is not a value \"resultaat\" can take, so pairing it with \"c\" allows a value the property already refuses."
+            },
+            {
+                "code": "dependent-values-unknown-value",
+                "message": "Property \"resultaat\": \"array\" is not a value \"resultaat\" can take, so pairing it with \"c\" allows a value the property already refuses."
+            },
+            {
+                "code": "dependent-values-unknown-value",
+                "message": "Property \"resultaat\": \"NULL\" is not a value \"resultaat\" can take, so pairing it with \"c\" allows a value the property already refuses."
+            },
+            {
+                "code": "dependent-values-unknown-value",
+                "message": "Property \"resultaat\": \"1.5\" is not a value \"resultaat\" can take, so pairing it with \"c\" allows a value the property already refuses."
+            },
+            {
+                "code": "dependent-values-unknown-value",
+                "message": "Property \"resultaat\": \"1\" is not a value \"resultaat\" can take, so pairing it with \"c\" allows a value the property already refuses."
+            },
+            {
+                "code": "dependent-values-unknown-controlling-value",
+                "message": "Property \"resultaat\": \"x\" is not a value \"zaaktype\" can take."
+            }
+        ],
+        "scalar pairs": [
+            {
+                "code": "dependent-values-unknown-value",
+                "message": "Property \"resultaat\": \"NULL\" is not a value \"resultaat\" can take, so pairing it with \"a\" allows a value the property already refuses."
+            },
+            {
+                "code": "dependent-values-unknown-value",
+                "message": "Property \"resultaat\": \"1.5\" is not a value \"resultaat\" can take, so pairing it with \"a\" allows a value the property already refuses."
+            },
+            {
+                "code": "dependent-values-unknown-value",
+                "message": "Property \"resultaat\": \"1\" is not a value \"resultaat\" can take, so pairing it with \"a\" allows a value the property already refuses."
+            },
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"resultaat\": \"b\" must be paired with a non-empty list of allowed values."
+            }
+        ],
+        "own enum absent": [
+            {
+                "code": "dependent-values-unknown-controlling-value",
+                "message": "Property \"resultaat\": \"zz\" is not a value \"zaaktype\" can take."
+            }
+        ],
+        "own enum not scalar": [],
+        "controlled by unconstrained": [
+            {
+                "code": "dependent-values-unknown-value",
+                "message": "Property \"resultaat\": \"w\" is not a value \"resultaat\" can take, so pairing it with \"q\" allows a value the property already refuses."
+            }
+        ],
+        "two tables": [
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"b\": x-openregister-dependent-values must be an object with \"controlledBy\" and \"allowed\"."
+            },
+            {
+                "code": "dependent-values-malformed",
+                "message": "Property \"c\": \"b\" must be paired with a non-empty list of allowed values."
+            }
+        ]
+    },
+    "descriptor": {
+        "full": {
+            "id": "lifecycleCondition:bezwaar:sluiten",
+            "kind": "lifecycleCondition",
+            "schema": "bezwaar",
+            "key": "sluiten",
+            "label": "Sluiten",
+            "source": "x-openregister-lifecycle.transitions.sluiten.condition",
+            "enabled": false,
+            "actions": [
+                "refuseTransition"
+            ],
+            "condition": {
+                ">": [
+                    {
+                        "var": "bedrag"
+                    },
+                    5
+                ]
+            },
+            "maxObjects": 12,
+            "scope": {
+                "property": "zaaktype",
+                "value": "a"
+            },
+            "order": 3
+        },
+        "minimal": {
+            "id": "other::k",
+            "kind": "other",
+            "schema": "",
+            "key": "k",
+            "label": "l",
+            "source": "s",
+            "enabled": true,
+            "actions": [],
+            "condition": null,
+            "maxObjects": null,
+            "scope": null,
+            "order": 99
+        },
+        "idFor": "flow:zaak:uuid-1",
+        "getters": [
+            "lifecycleCondition:bezwaar:sluiten",
+            "lifecycleCondition",
+            "bezwaar",
+            "sluiten",
+            false,
+            {
+                ">": [
+                    {
+                        "var": "bedrag"
+                    },
+                    5
+                ]
+            },
+            12,
+            {
+                "property": "zaaktype",
+                "value": "a"
+            }
+        ]
+    },
+    "expressionDefaults": {
+        "validate": [
+            {
+                "code": "default-expression-malformed",
+                "message": "Property \"scalarExpression\": x-openregister-default-expression must be a JSON-AST expression such as {\"dateAdd\": [{\"prop\": \"ontvangstdatum\"}, 42, \"days\"]}."
+            },
+            {
+                "code": "default-expression-malformed",
+                "message": "Property \"emptyExpression\": x-openregister-default-expression must be a JSON-AST expression such as {\"dateAdd\": [{\"prop\": \"ontvangstdatum\"}, 42, \"days\"]}."
+            },
+            {
+                "code": "default-expression-malformed",
+                "message": "Property \"unknownOperator\": x-openregister-default-expression must be a JSON-AST expression such as {\"dateAdd\": [{\"prop\": \"ontvangstdatum\"}, 42, \"days\"]}."
+            },
+            {
+                "code": "default-expression-and-literal",
+                "message": "Property \"two\" declares both a literal \"default\" and x-openregister-default-expression, and no rule says which wins. Keep one."
+            }
+        ],
+        "validateEmpty": [],
+        "declaresAny": [
+            true,
+            false,
+            false,
+            false
+        ],
+        "apply": {
+            "nothing supplied": {
+                "z": 1,
+                "a": {
+                    "derived": {
+                        "ok": 1
+                    },
+                    "from": {
+                        "z": 1
+                    }
+                },
+                "b": {
+                    "derived": {
+                        "ok": 2
+                    },
+                    "from": {
+                        "z": 1
+                    }
+                },
+                "0": {
+                    "derived": {
+                        "ok": 3
+                    },
+                    "from": {
+                        "z": 1
+                    }
+                }
+            },
+            "supplied": {
+                "a": "given",
+                "b": {
+                    "derived": {
+                        "ok": 2
+                    },
+                    "from": {
+                        "a": "given",
+                        "b": "",
+                        "5": null
+                    }
+                },
+                "0": null,
+                "1": {
+                    "derived": {
+                        "ok": 3
+                    },
+                    "from": {
+                        "a": "given",
+                        "b": "",
+                        "5": null
+                    }
+                }
+            },
+            "all supplied": {
+                "a": 1,
+                "b": 0,
+                "5": false
+            },
+            "none declared": {
+                "q": 1
+            }
+        },
+        "refusal": {
+            "throw": [
+                "OCA\\OpenRegister\\Service\\Rules\\ExpressionDefaultException",
+                "The default for \"p\" could not be evaluated: kapot. The object was not created.",
+                422
+            ],
+            "nothing": [
+                "OCA\\OpenRegister\\Service\\Rules\\ExpressionDefaultException",
+                "The default for \"p\" evaluated to nothing, so it was not written as empty. The object was not created.",
+                422
+            ]
+        }
+    },
+    "trace": {
+        "rendered": {
+            "true": "true",
+            "false": "false",
+            "null": "null",
+            "int": "12",
+            "float": "1.5",
+            "string": "abc",
+            "exactly limit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "long": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé…",
+            "array": "{\"a\":1,\"b\":[true]}",
+            "unrenderable": "unrenderable"
+        },
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        },
+        "firedMessage": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "ok"
+        },
+        "errored": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "broken"
+        },
+        "full": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "12",
+            "message": "said"
+        }
+    },
+    "valueSources": {
+        "registry": {
+            "scalar": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": 5
+                },
+                "logged": []
+            },
+            "plain": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "eq": [
+                            {
+                                "prop": "a"
+                            },
+                            1
+                        ]
+                    }
+                },
+                "logged": []
+            },
+            "source": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": true,
+                    "node": "value-of-env:HOST"
+                },
+                "logged": []
+            },
+            "nested": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "eq": [
+                            "value-of-env:HOST",
+                            "value-of-env:PORT"
+                        ],
+                        "x": 1
+                    }
+                },
+                "logged": []
+            },
+            "not a reference": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": "nocolon"
+                    }
+                },
+                "logged": []
+            },
+            "not a string": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": 5
+                    }
+                },
+                "logged": []
+            },
+            "two keys": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": "env:HOST",
+                        "x": 1
+                    }
+                },
+                "logged": []
+            },
+            "refused": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": false,
+                    "node": null
+                },
+                "logged": [
+                    [
+                        "[ExpressionValueSources] Value source {reference} was refused; the condition does not hold.",
+                        {
+                            "reference": "env:REFUSED",
+                            "refusal": "RuntimeException"
+                        }
+                    ]
+                ]
+            }
+        },
+        "absent": {
+            "scalar": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": 5
+                },
+                "logged": []
+            },
+            "plain": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "eq": [
+                            {
+                                "prop": "a"
+                            },
+                            1
+                        ]
+                    }
+                },
+                "logged": []
+            },
+            "source": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": false,
+                    "node": null
+                },
+                "logged": [
+                    [
+                        "[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.",
+                        {
+                            "reference": "env:HOST"
+                        }
+                    ]
+                ]
+            },
+            "nested": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": false,
+                    "node": null
+                },
+                "logged": [
+                    [
+                        "[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.",
+                        {
+                            "reference": "env:HOST"
+                        }
+                    ]
+                ]
+            },
+            "not a reference": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": "nocolon"
+                    }
+                },
+                "logged": []
+            },
+            "not a string": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": 5
+                    }
+                },
+                "logged": []
+            },
+            "two keys": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": "env:HOST",
+                        "x": 1
+                    }
+                },
+                "logged": []
+            },
+            "refused": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": false,
+                    "node": null
+                },
+                "logged": [
+                    [
+                        "[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.",
+                        {
+                            "reference": "env:OK"
+                        }
+                    ]
+                ]
+            }
+        },
+        "not resolvable": {
+            "scalar": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": 5
+                },
+                "logged": []
+            },
+            "plain": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "eq": [
+                            {
+                                "prop": "a"
+                            },
+                            1
+                        ]
+                    }
+                },
+                "logged": []
+            },
+            "source": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": false,
+                    "node": null
+                },
+                "logged": [
+                    [
+                        "[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.",
+                        {
+                            "reference": "env:HOST"
+                        }
+                    ]
+                ]
+            },
+            "nested": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": false,
+                    "node": null
+                },
+                "logged": [
+                    [
+                        "[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.",
+                        {
+                            "reference": "env:HOST"
+                        }
+                    ]
+                ]
+            },
+            "not a reference": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": "nocolon"
+                    }
+                },
+                "logged": []
+            },
+            "not a string": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": 5
+                    }
+                },
+                "logged": []
+            },
+            "two keys": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": "env:HOST",
+                        "x": 1
+                    }
+                },
+                "logged": []
+            },
+            "refused": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": false,
+                    "node": null
+                },
+                "logged": [
+                    [
+                        "[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.",
+                        {
+                            "reference": "env:OK"
+                        }
+                    ]
+                ]
+            }
+        },
+        "throws": {
+            "scalar": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": 5
+                },
+                "logged": []
+            },
+            "plain": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "eq": [
+                            {
+                                "prop": "a"
+                            },
+                            1
+                        ]
+                    }
+                },
+                "logged": []
+            },
+            "source": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": false,
+                    "node": null
+                },
+                "logged": [
+                    [
+                        "[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.",
+                        {
+                            "reference": "env:HOST"
+                        }
+                    ]
+                ]
+            },
+            "nested": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": false,
+                    "node": null
+                },
+                "logged": [
+                    [
+                        "[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.",
+                        {
+                            "reference": "env:HOST"
+                        }
+                    ]
+                ]
+            },
+            "not a reference": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": "nocolon"
+                    }
+                },
+                "logged": []
+            },
+            "not a string": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": 5
+                    }
+                },
+                "logged": []
+            },
+            "two keys": {
+                "mentions": false,
+                "substitute": {
+                    "resolved": true,
+                    "node": {
+                        "source": "env:HOST",
+                        "x": 1
+                    }
+                },
+                "logged": []
+            },
+            "refused": {
+                "mentions": true,
+                "substitute": {
+                    "resolved": false,
+                    "node": null
+                },
+                "logged": [
+                    [
+                        "[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.",
+                        {
+                            "reference": "env:OK"
+                        }
+                    ]
+                ]
+            }
+        }
+    },
+    "vocabulary": {
+        "all": {
+            "kinds": [
+                {
+                    "kind": "calculation",
+                    "order": 1,
+                    "source": "x-openregister-calculations",
+                    "actions": [
+                        "setValue"
+                    ],
+                    "description": "Derives a value from the object and writes it before the object is stored."
+                },
+                {
+                    "kind": "stateFieldRule",
+                    "order": 2,
+                    "source": "x-openregister-lifecycle.states",
+                    "actions": [
+                        "hideField",
+                        "readOnlyField",
+                        "requireField"
+                    ],
+                    "description": "Hides, freezes or requires a property while the object is in one state."
+                },
+                {
+                    "kind": "lifecycleCondition",
+                    "order": 3,
+                    "source": "x-openregister-lifecycle.transitions",
+                    "actions": [
+                        "refuseTransition"
+                    ],
+                    "description": "Decides whether a transition may proceed, and refuses it when it may not."
+                },
+                {
+                    "kind": "administeredValidation",
+                    "order": 4,
+                    "source": "x-openregister-validations",
+                    "actions": [
+                        "refuseWrite"
+                    ],
+                    "description": "Refuses or warns about a write, in the sentence the administrator wrote."
+                },
+                {
+                    "kind": "flow",
+                    "order": 5,
+                    "source": "openregister_flow_triggers",
+                    "actions": [
+                        "runFlow"
+                    ],
+                    "description": "Runs a flow after the object is stored."
+                }
+            ],
+            "verdicts": [
+                {
+                    "verdict": "fired",
+                    "description": "The rule ran and did what it declares."
+                },
+                {
+                    "verdict": "no_match",
+                    "description": "The rule was evaluated and its condition did not hold."
+                },
+                {
+                    "verdict": "refused",
+                    "description": "The rule held and refused the write it was guarding."
+                },
+                {
+                    "verdict": "error",
+                    "description": "The rule could not be evaluated."
+                }
+            ],
+            "actions": [
+                {
+                    "action": "setValue",
+                    "description": "Writes a value onto the object being saved."
+                },
+                {
+                    "action": "hideField",
+                    "description": "Keeps a property out of the rendered object."
+                },
+                {
+                    "action": "readOnlyField",
+                    "description": "Renders a property but refuses a change to it."
+                },
+                {
+                    "action": "requireField",
+                    "description": "Refuses a save that leaves a property empty."
+                },
+                {
+                    "action": "refuseTransition",
+                    "description": "Refuses the transition the condition guards."
+                },
+                {
+                    "action": "refuseWrite",
+                    "description": "Refuses the write, in the sentence the administrator wrote."
+                },
+                {
+                    "action": "runFlow",
+                    "description": "Starts a flow run."
+                }
+            ]
+        },
+        "orders": {
+            "calculation": 1,
+            "stateFieldRule": 2,
+            "lifecycleCondition": 3,
+            "administeredValidation": 4,
+            "flow": 5,
+            "unknown": 99
+        },
+        "verdicts": {
+            "fired": true,
+            "no_match": true,
+            "refused": true,
+            "error": true,
+            "nope": false,
+            "": false
+        },
+        "KINDS": {
+            "calculation": {
+                "order": 1,
+                "source": "x-openregister-calculations",
+                "actions": [
+                    "setValue"
+                ],
+                "description": "Derives a value from the object and writes it before the object is stored."
+            },
+            "stateFieldRule": {
+                "order": 2,
+                "source": "x-openregister-lifecycle.states",
+                "actions": [
+                    "hideField",
+                    "readOnlyField",
+                    "requireField"
+                ],
+                "description": "Hides, freezes or requires a property while the object is in one state."
+            },
+            "lifecycleCondition": {
+                "order": 3,
+                "source": "x-openregister-lifecycle.transitions",
+                "actions": [
+                    "refuseTransition"
+                ],
+                "description": "Decides whether a transition may proceed, and refuses it when it may not."
+            },
+            "administeredValidation": {
+                "order": 4,
+                "source": "x-openregister-validations",
+                "actions": [
+                    "refuseWrite"
+                ],
+                "description": "Refuses or warns about a write, in the sentence the administrator wrote."
+            },
+            "flow": {
+                "order": 5,
+                "source": "openregister_flow_triggers",
+                "actions": [
+                    "runFlow"
+                ],
+                "description": "Runs a flow after the object is stored."
+            }
+        },
+        "VERDICTS": {
+            "fired": "The rule ran and did what it declares.",
+            "no_match": "The rule was evaluated and its condition did not hold.",
+            "refused": "The rule held and refused the write it was guarding.",
+            "error": "The rule could not be evaluated."
+        },
+        "ACTIONS": {
+            "setValue": "Writes a value onto the object being saved.",
+            "hideField": "Keeps a property out of the rendered object.",
+            "readOnlyField": "Renders a property but refuses a change to it.",
+            "requireField": "Refuses a save that leaves a property empty.",
+            "refuseTransition": "Refuses the transition the condition guards.",
+            "refuseWrite": "Refuses the write, in the sentence the administrator wrote.",
+            "runFlow": "Starts a flow run."
+        }
+    }
+}
