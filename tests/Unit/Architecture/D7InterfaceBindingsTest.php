@@ -38,6 +38,10 @@ use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
@@ -69,6 +73,8 @@ final class D7InterfaceBindingsTest extends TestCase {
 	private const HIDDEN = [
 		AggregateReferenceResolver::class => [AggregateReferenceResolverInterface::class, ContractBindings::class],
 		CalculationTrialService::class => [CalculationTrialServiceInterface::class, ContractBindings::class],
+		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
+		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
 		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
 		FormDestinationValidator::class => [FormDestinationValidatorInterface::class, ContractBindings::class],
 		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],
