@@ -77,6 +77,16 @@ use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutorInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -108,6 +118,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppSettingsInterface::class => SettingsService::class,
+		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
@@ -123,6 +134,8 @@ final class ContractBindings {
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
+		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
+		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		MigrationServiceInterface::class => MigrationService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
@@ -138,6 +151,8 @@ final class ContractBindings {
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		SequenceServiceInterface::class => SequenceService::class,
+		StateConditionEvaluatorInterface::class => StateConditionEvaluator::class,
+		StateFieldRuleResolverInterface::class => StateFieldRuleResolver::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,

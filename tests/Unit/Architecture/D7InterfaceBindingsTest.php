@@ -42,6 +42,16 @@ use OCA\OpenRegister\Service\Form\FormSubmitService;
 use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutorInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -61,6 +71,7 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		AutoTransitionSelector::class => [AutoTransitionSelectorInterface::class, ContractBindings::class],
 		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
 		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
 		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
@@ -68,6 +79,10 @@ final class D7InterfaceBindingsTest extends TestCase {
 		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],
 		FormSubmitService::class => [FormSubmitServiceInterface::class, ContractBindings::class],
 		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
+		LifecycleActionExecutor::class => [LifecycleActionExecutorInterface::class, ContractBindings::class],
+		LifecycleConditionEvaluator::class => [LifecycleConditionEvaluatorInterface::class, ContractBindings::class],
+		StateConditionEvaluator::class => [StateConditionEvaluatorInterface::class, ContractBindings::class],
+		StateFieldRuleResolver::class => [StateFieldRuleResolverInterface::class, ContractBindings::class],
 	];
 
 	/**

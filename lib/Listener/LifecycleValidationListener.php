@@ -30,7 +30,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
@@ -76,13 +76,13 @@ class LifecycleValidationListener implements IEventListener {
 	/**
 	 * Wire collaborators used to validate transitions and run guards.
 	 *
-	 * @param LifecycleEditReader $edits Reads the edit and the transition it amounts to.
-	 * @param LifecycleGuardRegistry $guardRegistry Registry resolving guard ids to instances.
-	 * @param IUserSession $userSession Current user session.
-	 * @param PermissionHandler $permissionHandler RBAC handler used to evaluate declarative per-transition authorization.
-	 * @param LifecycleConditionEvaluator $conditionEvaluator Decides whether a transition `condition` lets it through.
-	 * @param ConditionTracer $conditionTracer Names the operand that decided a condition.
-	 * @param RuleRunRecorder $ruleRuns Records each condition's verdict for the rule inventory.
+	 * @param LifecycleEditReader                  $edits              Reads the edit and the transition it amounts to.
+	 * @param LifecycleGuardRegistry               $guardRegistry      Registry resolving guard ids to instances.
+	 * @param IUserSession                         $userSession        Current user session.
+	 * @param PermissionHandler                    $permissionHandler  RBAC handler used to evaluate declarative per-transition authorization.
+	 * @param LifecycleConditionEvaluatorInterface $conditionEvaluator Decides whether a transition `condition` lets it through.
+	 * @param ConditionTracer                      $conditionTracer    Names the operand that decided a condition.
+	 * @param RuleRunRecorder                      $ruleRuns           Records each condition's verdict for the rule inventory.
 	 *
 	 * @return void
 	 *
@@ -93,7 +93,7 @@ class LifecycleValidationListener implements IEventListener {
 		private readonly LifecycleGuardRegistry $guardRegistry,
 		private readonly IUserSession $userSession,
 		private readonly PermissionHandler $permissionHandler,
-		private readonly LifecycleConditionEvaluator $conditionEvaluator,
+		private readonly LifecycleConditionEvaluatorInterface $conditionEvaluator,
 		private readonly ConditionTracer $conditionTracer,
 		private readonly RuleRunRecorder $ruleRuns,
 	) {
