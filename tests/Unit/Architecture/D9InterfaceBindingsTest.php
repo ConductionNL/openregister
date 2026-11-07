@@ -25,6 +25,9 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
+use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -46,6 +49,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: array<int, string>}>
 	 */
 	private const HIDDEN = [
+		TimeseriesRequestValidator::class => [
+			TimeseriesRequestValidatorInterface::class,
+			SearchRegistrar::class,
+			[],
+		],
 		UploadService::class => [
 			UploadServiceInterface::class,
 			FilesRegistrar::class,
