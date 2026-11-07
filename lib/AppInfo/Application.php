@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppInfo;
 
+use OCA\OpenRegister\AppHost\AppHostRegistrar;
 use OCA\OpenRegister\AppHost\FeatureToggleRegistrar;
 use OCA\OpenRegister\AppHost\ObservabilityRegistrar;
 use OCA\OpenRegister\Capabilities\CapabilityRegistrar;
@@ -144,6 +145,7 @@ class Application extends App implements IBootstrap {
 		ClassAliasMap::fromFile()->apply(context: $context);
 
 		FeatureToggleRegistrar::register(context: $context);
+		AppHostRegistrar::register(context: $context);
 		ServiceRegistrar::register(context: $context);
 		SearchRegistrar::register(context: $context);
 		FilesRegistrar::register(context: $context);
