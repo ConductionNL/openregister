@@ -36,6 +36,8 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -75,6 +77,13 @@ class MagicMapperSearchIdsTest extends TestCase {
 	private ?array $tableRows = null;
 
 	/**
+	 * The doelbinding guard the mapper is given, a permissive mock when null.
+	 *
+	 * @var PurposeGuard|null
+	 */
+	private ?PurposeGuard $purposeGuard = null;
+
+	/**
 	 * A mapper whose table search and count record their query.
 	 *
 	 * @return MagicMapper The mapper.
@@ -85,6 +94,7 @@ class MagicMapperSearchIdsTest extends TestCase {
 			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
 			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+			PurposeGuard::class => ($this->purposeGuard ?? $this->createMock(PurposeGuard::class)),
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
@@ -393,6 +403,23 @@ class MagicMapperSearchIdsTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testQueryIdsOnATableThatNeedsAPurposeAreRefused(): void {
+		$this->purposeGuard = $this->createMock(PurposeGuard::class);
+		$this->purposeGuard->expects($this->once())->method('enforce')
+			->with($this->callback(static fn ($register): bool => $register->getId() === 7), $this->callback(static fn ($schema): bool => $schema->getId() === 9))
+			->willThrowException(new PurposeRefusedException(rule: PurposeRefusedException::RULE_MISSING, reason: 'no purpose', purpose: null));
+		$mapper = $this->mapper();
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturn([$this->locatedRow()]);
+
+		try {
+			$query = ['_ids' => ['located']];
+			$mapper->searchObjectsPaginated(searchQuery: $query, countQuery: $query);
+			$this->fail('The search ran.');
+		} catch (PurposeRefusedException $refusal) {
+			$this->assertSame([], $this->tableQueries);
+		}
+	}//end testQueryIdsOnATableThatNeedsAPurposeAreRefused()
+
 	public function testARelationSearchWithoutATableIsAnsweredByTheTable(): void {
 		$located = $this->locatedRow();
 		$mapper  = $this->mapper();

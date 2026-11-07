@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -120,6 +122,21 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testATextSearchLeavesOutTheTablesItMayNotRead(): void {
+		$case = [
+			'search'  => ['_search' => 'zaak'],
+			'pairs'   => [['registerId' => 1, 'schemaId' => 2], ['registerId' => 1, 'schemaId' => 3]],
+			'refused' => [2],
+		];
+		$this->runCase(case: $case);
+
+		$across = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'searchAcross ')));
+		$this->assertCount(1, $across);
+		$this->assertStringContainsString('"schema":"schema:3"', $across[0]);
+		$this->assertStringNotContainsString('schema:2', $across[0]);
+		$this->assertCount(1, array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
+	}//end testATextSearchLeavesOutTheTablesItMayNotRead()
+
 	public function testEveryCaseIsRecorded(): void {
 		$expected = require __DIR__.'/fixtures/search-objects-paginated.php';
 		$this->assertSame(expected: array_keys(self::cases()), actual: array_keys($expected));
@@ -252,6 +269,7 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 			'registerMapper' => $this->registerMapper(),
 			'schemaMapper'   => $this->schemaMapper(),
 			'rbacHandler'    => $rbac,
+			'container'      => $this->container(refused: ($case['refused'] ?? [])),
 		];
 		foreach ($collaborators as $name => $value) {
 			(new ReflectionProperty(MagicMapper::class, $name))->setValue($mapper, $value);
@@ -259,6 +277,24 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 
 		return $mapper;
 	}//end mapper()
+
+	/**
+	 * A container that hands out a doelbinding guard which refuses only the given schemas.
+	 *
+	 * @param array<int, int> $refused The ids of the schemas a read may not run on.
+	 *
+	 * @return ContainerInterface
+	 */
+	private function container(array $refused): ContainerInterface {
+		$guard = $this->createMock(originalClassName: PurposeGuard::class);
+		$guard->method('allows')->willReturnCallback(
+			static fn ($register, $schema): bool => in_array($schema->getId(), $refused, true) === false
+		);
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
+		$container->method('get')->willReturnCallback(static fn (string $id) => ($id === PurposeGuard::class) ? $guard : null);
+
+		return $container;
+	}//end container()
 
 	/**
 	 * Record a call and return its answer.

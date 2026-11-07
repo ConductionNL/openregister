@@ -39,6 +39,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use DateTime;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
@@ -9959,8 +9961,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$searchQuery = $request['search'];
 		$queryIds    = $searchQuery['_ids'] ?? null;
 		if (is_array($queryIds) === true && count($queryIds) > 0) {
-			$idResults = $this->findMultipleAcrossAllMagicTables(uuids: $queryIds, includeDeleted: false);
-			return $this->searchTablesOfRows(rows: $idResults, request: $request);
+			$pairs = $this->tablesOfRows(rows: $this->findMultipleAcrossAllMagicTables(uuids: $queryIds, includeDeleted: false));
+			$this->purposeBoundTables()->refuseUnbound(pairs: $pairs);
+			return $this->searchTables(pairs: $pairs, request: $request);
 		}
 
 		$unscoped = ($scope['registerId'] === null && $scope['schemaId'] === null);
@@ -9968,7 +9971,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$relationsContains = $searchQuery['_relations_contains'] ?? null;
 		if ($unscoped === true && is_string($relationsContains) === true && empty($relationsContains) === false) {
 			$relResults = $this->findByRelationAcrossAllMagicTables(uuid: $relationsContains, includeDeleted: false);
-			return $this->searchTablesOfRows(rows: $relResults, request: $request);
+			return $this->searchTables(pairs: $this->tablesOfRows(rows: $relResults), request: $request);
 		}
 
 		$searchTerm = $searchQuery['_search'] ?? null;
@@ -10237,20 +10240,19 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end owningRegisterForSchema()
 
 	/**
-	 * The search, run on the tables that hold the given rows.
+	 * The search, run on the tables that hold the rows a cross-table scan found.
 	 *
 	 * A cross-table scan applies no read rules, so its rows only name the
 	 * tables; the answer comes from the search of those tables.
 	 *
-	 * @param ObjectEntity[] $rows    The rows a cross-table scan found.
-	 * @param array          $request The search request: queries and flags
+	 * @param array $pairs   The register and schema of each table.
+	 * @param array $request The search request: queries and flags
 	 *
 	 * @return array{results: array, total: int, registers: array, schemas: array}
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
 	 */
-	private function searchTablesOfRows(array $rows, array $request): array {
-		$pairs   = $this->tablesOfRows(rows: $rows);
+	private function searchTables(array $pairs, array $request): array {
 		$query   = array_replace($request['search'], ['_rbac' => $request['rbac'], '_multitenancy' => $request['multitenancy']]);
 		$results = $this->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
 
@@ -10258,7 +10260,18 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			'results' => $results,
 			'total'   => $this->countAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs),
 		] + $this->serialisedTablesOfPage(results: $results, pairs: $pairs);
-	}//end searchTablesOfRows()
+	}//end searchTables()
+
+	/**
+	 * The purpose rule of each table, for a search that finds its own tables.
+	 *
+	 * @return PurposeBoundTables
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function purposeBoundTables(): PurposeBoundTables {
+		return new PurposeBoundTables(guard: $this->container->get(PurposeGuard::class));
+	}//end purposeBoundTables()
 
 	/**
 	 * The register and schema of every table the rows come from, each table once.
@@ -10347,6 +10360,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$registerSchemaPairs = [];
 
 		$idPairs = $this->getAllRegisterSchemaPairs();
+		$tables  = $this->purposeBoundTables();
 
 		foreach ($idPairs as $idPair) {
 			try {
@@ -10355,6 +10369,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 				$register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
 				$schema = $this->schemaMapper->find($schId, _multitenancy: false, _rbac: false);
+				if ($tables->readable(pairs: [['register' => $register, 'schema' => $schema]]) === []) {
+					continue;
+				}
 
 				if (isset($registersCache[$regId]) === false) {
 					$registersCache[$regId] = $register->jsonSerialize();

@@ -955,14 +955,24 @@ class ObjectsController extends Controller {
 				schema: ($resolved['schemaEntity'] ?? null)
 			);
 		} catch (\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal) {
-			return new JSONResponse(
-				data: $refusal->toResponseBody(),
-				statusCode: $refusal->getStatusCode()
-			);
+			return self::purposeRefusal(refusal: $refusal);
 		}
 
 		return null;
 	}//end refuseUnboundPurpose()
+
+	/**
+	 * The answer to a read refused for want of a purpose.
+	 *
+	 * @param \OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal The refusal.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private static function purposeRefusal(\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal): JSONResponse {
+		return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+	}//end purposeRefusal()
 
 	/**
 	 * Resolve a register/schema path pair to numeric ids.
@@ -2768,6 +2778,8 @@ class ObjectsController extends Controller {
 			$result = $objectService->searchObjectsPaginated($query);
 		} catch (NotAuthorizedException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		} catch (\OCA\OpenRegister\Service\Audit\PurposeRefusedException $refusal) {
+			return self::purposeRefusal(refusal: $refusal);
 		}
 
 		if ($this->wantsEmptyValues() === false && is_array(($result['results'] ?? null)) === true) {
