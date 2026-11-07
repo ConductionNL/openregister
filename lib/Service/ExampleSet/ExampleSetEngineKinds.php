@@ -29,15 +29,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
-use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
-
 /**
  * Tasks and saved views of an example set, together.
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
- *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) It holds one writer per fragment part; each is a separate kind, so the count grows with the parts.
  */
 class ExampleSetEngineKinds {
 	/**
@@ -47,52 +42,48 @@ class ExampleSetEngineKinds {
 	public const BEFORE_CHANGES = ['flows', 'accessLinks', 'grants'];
 
 	/**
-	 * Constructor.
+	 * Each part, in the order its rows are checked, written, proved and deleted, with the word for one row. The parts
+	 * after the tasks may quote one (`{{task:key.uuid}}`), so the tasks come first.
+	 */
+	private const NOUNS = [
+		'tasks'             => 'task',
+		'views'             => 'view',
+		'watchers'          => 'watcher',
+		'parties'           => 'party',
+		'notes'             => 'note',
+		'readStates'        => 'read state',
+		'flows'             => 'flow',
+		'exportRuns'        => 'export',
+		'archival'          => 'archival setting',
+		'deckCards'         => 'deck card',
+		'appointments'      => 'appointment',
+		'casePlans'         => 'case plan',
+		'collectivesPages'  => 'collectives page',
+		'talkConversations' => 'talk conversation',
+		'auditEntries'      => 'audit entry',
+		'timelineEntries'   => 'timeline entry',
+		'emailLinks'        => 'email link',
+		'accessLinks'       => 'access link',
+		'grants'            => 'grant',
+	];
+
+	/**
+	 * Constructor; a writer a bundle leaves out refuses its rows.
 	 *
-	 * @param ExampleSetTasks|null $tasks Writes the tasks a fragment puts on its objects; null refuses them.
-	 * @param ExampleSetViews|null $views Writes the saved views a fragment declares; null refuses them.
-	 * @param ExampleSetWatchers|null $watchers Writes the follows a fragment declares; null refuses them.
-	 * @param ExampleSetParties|null $parties Writes the party links a fragment declares; null refuses them.
-	 * @param ExampleSetNotes|null $notes Writes the notes a fragment leaves on its objects; null refuses them.
-	 * @param ExampleSetReadStates|null $readStates Writes the objects a fragment's accounts opened; null refuses them.
-	 * @param ExampleSetFlows|null $flows Writes the flows a fragment ships; null refuses them.
-	 * @param ExampleSetExportRuns|null $exportRuns Writes the exports a fragment gives its accounts; null refuses them.
-	 * @param ExampleSetArchival|null $archival Writes the destruction-list keys of the archival setting; null refuses them.
-	 * @param ExampleSetDeckCards|null $deckCards Writes the Deck cards a fragment puts on its objects; null refuses them.
-	 * @param ExampleSetAppointments|null $appointments Writes the appointments a fragment puts on its objects; null refuses them.
-	 * @param ExampleSetCasePlans|null $casePlans Writes the case plans a fragment puts on its objects; null refuses them.
-	 * @param ExampleSetCollectivesPages|null $collectivesPages Writes the Collectives pages a fragment ships; null refuses them.
-	 * @param ExampleSetTalkConversations|null $talkConversations Writes the Talk conversations a fragment puts on its objects; null refuses them.
-	 * @param ExampleSetAuditEntries|null $auditEntries Writes the history a fragment gives its objects; null refuses it.
-	 * @param ExampleSetTimelineEntries|null $timelineEntries Writes the timeline a fragment gives its objects; null refuses it.
-	 * @param ExampleSetEmailLinks|null $emailLinks Writes the mail a fragment links to its objects; null refuses it.
-	 * @param ExampleSetAccessLinks|null $accessLinks Mints the access links a fragment puts on its objects; null refuses them.
-	 * @param ExampleSetGrants|null $grants Makes the grants a fragment puts on its objects; null refuses them.
+	 * @param ExampleSetWorkRowKinds    $work    Writes the tasks, notes, read states and follows.
+	 * @param ExampleSetOwnRowKinds     $own     Writes the saved views, flows and case plans.
+	 * @param ExampleSetLinkRowKinds    $links   Writes the party links, email links, access links and grants.
+	 * @param ExampleSetAppRowKinds     $apps    Writes the Deck cards, appointments, Collectives pages and Talk conversations.
+	 * @param ExampleSetHistoryRowKinds $history Writes the exports, the archival setting, audit and timeline entries.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One optional writer per fragment part, so a part an OpenRegister lacks is refused, not crashed on.
 	 */
 	public function __construct(
-		private readonly ?ExampleSetTasks $tasks=null,
-		private readonly ?ExampleSetViews $views=null,
-		private readonly ?ExampleSetWatchers $watchers=null,
-		private readonly ?ExampleSetParties $parties=null,
-		private readonly ?ExampleSetNotes $notes=null,
-		private readonly ?ExampleSetReadStates $readStates=null,
-		private readonly ?ExampleSetFlows $flows=null,
-		private readonly ?ExampleSetExportRuns $exportRuns=null,
-		private readonly ?ExampleSetArchival $archival=null,
-		private readonly ?ExampleSetDeckCards $deckCards=null,
-		private readonly ?ExampleSetAppointments $appointments=null,
-		private readonly ?ExampleSetCasePlans $casePlans=null,
-		private readonly ?ExampleSetCollectivesPages $collectivesPages=null,
-		private readonly ?ExampleSetTalkConversations $talkConversations=null,
-		private readonly ?ExampleSetAuditEntries $auditEntries=null,
-		private readonly ?ExampleSetTimelineEntries $timelineEntries=null,
-		private readonly ?ExampleSetEmailLinks $emailLinks=null,
-		private readonly ?ExampleSetAccessLinks $accessLinks=null,
-		private readonly ?ExampleSetGrants $grants=null,
+		private readonly ExampleSetWorkRowKinds $work=new ExampleSetWorkRowKinds(),
+		private readonly ExampleSetOwnRowKinds $own=new ExampleSetOwnRowKinds(),
+		private readonly ExampleSetLinkRowKinds $links=new ExampleSetLinkRowKinds(),
+		private readonly ExampleSetAppRowKinds $apps=new ExampleSetAppRowKinds(),
+		private readonly ExampleSetHistoryRowKinds $history=new ExampleSetHistoryRowKinds(),
 	) {
 	}//end __construct()
 
@@ -113,10 +104,7 @@ class ExampleSetEngineKinds {
 		$context['tasks'] = $values->tasksOf(fragment: $fragment, record: null);
 		foreach ($this->kinds() as $part => [$rows, $noun]) {
 			if ($rows === null) {
-				foreach (($fragment[$part] ?? []) as $entry) {
-					$refusals[] = $fragment['file'].': '.$noun.' "'.$entry['key'].'": this OpenRegister cannot write '.$part;
-				}
-
+				$refusals = array_merge($refusals, $this->absentRefusals(fragment: $fragment, part: $part, noun: $noun));
 				continue;
 			}
 
@@ -125,6 +113,24 @@ class ExampleSetEngineKinds {
 
 		return $refusals;
 	}//end check()
+
+	/**
+	 * One refusal per row of a part this OpenRegister has no writer for.
+	 *
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param string               $part     The part.
+	 * @param string               $noun     The word for one row.
+	 *
+	 * @return array<int, string>
+	 */
+	private function absentRefusals(array $fragment, string $part, string $noun): array {
+		$refusals = [];
+		foreach (($fragment[$part] ?? []) as $entry) {
+			$refusals[] = $fragment['file'].': '.$noun.' "'.$entry['key'].'": this OpenRegister cannot write '.$part;
+		}
+
+		return $refusals;
+	}//end absentRefusals()
 
 	/**
 	 * Where a fragment quotes an access link's address (`{{accessLink:key.url}}`) other than as the text of a change's
@@ -139,12 +145,7 @@ class ExampleSetEngineKinds {
 	private function addressRefusals(array $fragment): array {
 		$parts = array_diff_key($fragment, ['app' => true, 'file' => true, 'dir' => true, 'changes' => true]);
 		foreach ((array) ($fragment['changes'] ?? []) as $index => $change) {
-			$parts['changes'][$index] = array_diff_key((array) $change, ['set' => true]);
-			foreach ((array) ($change['set'] ?? []) as $path => $value) {
-				if (is_string($value) === false) {
-					$parts['changes'][$index]['set'][$path] = $value;
-				}
-			}
+			$parts['changes'][$index] = $this->withoutSetText(change: (array) $change);
 		}
 
 		$refusals = [];
@@ -159,6 +160,24 @@ class ExampleSetEngineKinds {
 	}//end addressRefusals()
 
 	/**
+	 * A change without the text of its `set` fields, the one place an access link's address may be quoted.
+	 *
+	 * @param array<string, mixed> $change The declared change.
+	 *
+	 * @return array<string, mixed> The change; `set` keeps only its fields that are not text.
+	 */
+	private function withoutSetText(array $change): array {
+		$kept = array_diff_key($change, ['set' => true]);
+		foreach ((array) ($change['set'] ?? []) as $path => $value) {
+			if (is_string($value) === false) {
+				$kept['set'][$path] = $value;
+			}
+		}
+
+		return $kept;
+	}//end withoutSetText()
+
+	/**
 	 * Whether a declared value holds `{{accessLink:key.url}}` anywhere inside it.
 	 *
 	 * @param mixed $value The declared value.
@@ -166,20 +185,29 @@ class ExampleSetEngineKinds {
 	 * @return bool
 	 */
 	private function quotesAddress(mixed $value): bool {
-		if (is_string($value) === true) {
-			return preg_match('/\{\{\s*accessLink:[^}]*\.url\s*\}\}/', $value) === 1;
+		if (is_array($value) === true) {
+			return $this->anyQuotesAddress(values: $value);
 		}
 
-		if (is_array($value) === true) {
-			foreach ($value as $key => $item) {
-				if ($this->quotesAddress(value: $key) === true || $this->quotesAddress(value: $item) === true) {
-					return true;
-				}
+		return is_string($value) === true && preg_match('/\{\{\s*accessLink:[^}]*\.url\s*\}\}/', $value) === 1;
+	}//end quotesAddress()
+
+	/**
+	 * Whether any key or item of a declared list or map holds `{{accessLink:key.url}}`.
+	 *
+	 * @param array<mixed> $values The declared list or map.
+	 *
+	 * @return bool
+	 */
+	private function anyQuotesAddress(array $values): bool {
+		foreach ($values as $key => $item) {
+			if ($this->quotesAddress(value: $key) === true || $this->quotesAddress(value: $item) === true) {
+				return true;
 			}
 		}
 
 		return false;
-	}//end quotesAddress()
+	}//end anyQuotesAddress()
 
 	/**
 	 * Write the tasks and views of one fragment that the record does not hold.
@@ -254,7 +282,7 @@ class ExampleSetEngineKinds {
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-change-may-quote-an-access-link-of-its-fragment
 	 */
 	public function accessLinksOf(array $fragment, ?array $record): array {
-		return ($this->accessLinks?->placeholders(fragment: $fragment, record: $record) ?? []);
+		return ($this->links->accessLinks?->placeholders(fragment: $fragment, record: $record) ?? []);
 	}//end accessLinksOf()
 
 	/**
@@ -294,13 +322,9 @@ class ExampleSetEngineKinds {
 	public function delete(array &$record, array &$report, callable $written): void {
 		foreach ($this->kinds() as $part => [$rows, $noun]) {
 			foreach (array_reverse(($record[$part] ?? []), true) as $name => $entry) {
-				if ($rows === null) {
-					$report['failed'][] = $noun.' '.$name.': this OpenRegister cannot delete '.$part;
-					continue;
-				}
-
-				if ($rows->revert(entry: $entry) === 'failed') {
-					$report['failed'][] = $noun.' '.$name;
+				$failure = $this->deleteRow(rows: $rows, entry: $entry, part: $part);
+				if ($failure !== null) {
+					$report['failed'][] = $noun.' '.$name.$failure;
 					continue;
 				}
 
@@ -312,31 +336,39 @@ class ExampleSetEngineKinds {
 	}//end delete()
 
 	/**
+	 * Delete one row the set wrote: null when it is gone, else what follows its name under `failed`.
+	 *
+	 * @param ExampleSetEngineRows|null $rows  The part's writer, null when this OpenRegister has none.
+	 * @param array<string, mixed>      $entry The record entry.
+	 * @param string                    $part  The part.
+	 *
+	 * @return string|null
+	 */
+	private function deleteRow(?ExampleSetEngineRows $rows, array $entry, string $part): ?string {
+		if ($rows === null) {
+			return ': this OpenRegister cannot delete '.$part;
+		}
+
+		if ($rows->revert(entry: $entry) === 'failed') {
+			return '';
+		}
+
+		return null;
+	}//end deleteRow()
+
+	/**
 	 * Each kind by its part: the writer (null when absent) and the word for one row.
 	 *
 	 * @return array<string, array{0: ExampleSetEngineRows|null, 1: string}>
 	 */
 	private function kinds(): array {
-		return [
-			'tasks'      => [$this->tasks, 'task'],
-			'views'      => [$this->views, 'view'],
-			'watchers'   => [$this->watchers, 'watcher'],
-			'parties'    => [$this->parties, 'party'],
-			'notes'      => [$this->notes, 'note'],
-			'readStates' => [$this->readStates, 'read state'],
-			'flows'      => [$this->flows, 'flow'],
-			'exportRuns' => [$this->exportRuns, 'export'],
-			'archival'   => [$this->archival, 'archival setting'],
-			'deckCards'  => [$this->deckCards, 'deck card'],
-			'appointments' => [$this->appointments, 'appointment'],
-			'casePlans'  => [$this->casePlans, 'case plan'],
-			'collectivesPages' => [$this->collectivesPages, 'collectives page'],
-			'talkConversations' => [$this->talkConversations, 'talk conversation'],
-			'auditEntries' => [$this->auditEntries, 'audit entry'],
-			'timelineEntries' => [$this->timelineEntries, 'timeline entry'],
-			'emailLinks' => [$this->emailLinks, 'email link'],
-			'accessLinks' => [$this->accessLinks, 'access link'],
-			'grants'     => [$this->grants, 'grant'],
-		];
+		$writers = ($this->work->writers() + $this->own->writers() + $this->links->writers() + $this->apps->writers()
+			+ $this->history->writers());
+		$kinds   = [];
+		foreach (self::NOUNS as $part => $noun) {
+			$kinds[$part] = [$writers[$part], $noun];
+		}
+
+		return $kinds;
 	}//end kinds()
 }//end class
