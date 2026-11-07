@@ -43,7 +43,6 @@ use OCA\OpenRegister\Db\MultiTenancyTrait;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapper;
 
 /**
  * ViewMapper handles database operations for View entities
