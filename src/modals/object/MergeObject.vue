@@ -9,7 +9,7 @@ import {
 </script>
 
 <template>
-	<NcDialog name="Merge Objects" size="large" :canClose="false">
+	<NcDialog name="Merge Objects" size="large" noClose>
 		<!-- Register and Schema Information -->
 		<div class="detail-grid">
 			<div class="detail-item">
@@ -1484,14 +1484,7 @@ export default {
 	font-weight: bold;
 }
 
-.error-text {
-	color: var(--color-error);
-}
-
-.warning-text {
-	color: var(--color-warning);
-}
-
+@include error-text-rules;
 
 @media (prefers-reduced-motion: reduce) {
 	.object-item {

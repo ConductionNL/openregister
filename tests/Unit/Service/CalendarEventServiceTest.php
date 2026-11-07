@@ -104,6 +104,57 @@ class CalendarEventServiceTest extends TestCase {
 		$this->assertSame(5, $events[0]['registerId']);
 	}
 
+	public function testDeleteEventRefusesACalendarOfSomebodyElse(): void {
+		$this->setupUser();
+		$this->calDavBackend->method('getCalendarById')->willReturn(['principaluri' => 'principals/users/somebody-else']);
+		$this->calDavBackend->expects($this->never())->method('deleteCalendarObject');
+
+		$this->expectExceptionCode(404);
+		$this->service->deleteEvent('7', 'event.ics');
+	}
+
+	public function testDeleteEventRefusesAnUnknownCalendar(): void {
+		$this->setupUser();
+		$this->calDavBackend->method('getCalendarById')->willReturn(null);
+		$this->calDavBackend->expects($this->never())->method('deleteCalendarObject');
+
+		$this->expectExceptionCode(404);
+		$this->service->deleteEvent('7', 'event.ics');
+	}
+
+	/**
+	 * A user with calendar 1 holding one event linked to `abc-123`.
+	 *
+	 * @return void
+	 */
+	private function setupOneLinkedEvent(): void {
+		$this->setupUser();
+		$this->setupCalendar();
+		$this->calDavBackend->method('getCalendarObjects')->willReturn([['uri' => 'event1.ics']]);
+		$this->calDavBackend->method('getCalendarObject')->willReturn(['calendardata' => $this->buildVevent('abc-123')]);
+	}
+
+	public function testRequireEventOfAcceptsAnEventLinkedToTheObject(): void {
+		$this->setupOneLinkedEvent();
+
+		$this->service->requireEventOf('abc-123', '1', 'event1.ics');
+		$this->addToAssertionCount(1);
+	}
+
+	public function testRequireEventOfRefusesAnEventOfAnotherObject(): void {
+		$this->setupOneLinkedEvent();
+
+		$this->expectExceptionCode(404);
+		$this->service->requireEventOf('other', '1', 'event1.ics');
+	}
+
+	public function testRequireEventOfRefusesACalendarThatIsNotTheCallers(): void {
+		$this->setupOneLinkedEvent();
+
+		$this->expectExceptionCode(404);
+		$this->service->requireEventOf('abc-123', '99', 'event1.ics');
+	}
+
 	public function testGetEventsForObjectSkipsNonMatching(): void {
 		$this->setupUser();
 		$this->setupCalendar();
@@ -212,6 +263,8 @@ class CalendarEventServiceTest extends TestCase {
 	 */
 	public function testDeleteEventRemovesTheCalendarObject(): void {
 		$this->setupUser();
+		$this->calDavBackend->method('getCalendarById')->willReturn(['principaluri' => 'principals/users/admin']);
+		$this->setupUser();
 
 		$this->calDavBackend->method('getCalendarObject')
 			->with(1, 'event1.ics')
@@ -227,6 +280,8 @@ class CalendarEventServiceTest extends TestCase {
 	}
 
 	public function testDeleteEventThrowsWhenNotFound(): void {
+		$this->setupUser();
+		$this->calDavBackend->method('getCalendarById')->willReturn(['principaluri' => 'principals/users/admin']);
 		$this->setupUser();
 
 		$this->calDavBackend->method('getCalendarObject')->willReturn(null);

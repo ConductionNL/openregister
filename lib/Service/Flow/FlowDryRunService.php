@@ -212,6 +212,7 @@ class FlowDryRunService {
 				'type' => (string)($entry['type'] ?? ''),
 				'label' => ($nodes[$nodeId]['label'] ?? ''),
 				'status' => (string)($entry['status'] ?? ''),
+				'error' => ($entry['error'] ?? null),
 				'itemsIn' => (int)($entry['itemsIn'] ?? 0),
 				'itemsOut' => (int)($entry['itemsOut'] ?? 0),
 				'preview' => ($nodes[$nodeId]['preview'] ?? null),

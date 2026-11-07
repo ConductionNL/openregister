@@ -427,7 +427,7 @@ class ImportPreviewService {
 		}
 
 		try {
-			$this->objectService->saveObjects(
+			$result = $this->objectService->saveObjects(
 				objects: $objects,
 				register: $register,
 				schema: $schema,
@@ -435,9 +435,17 @@ class ImportPreviewService {
 				events: false
 			);
 
-			$this->stampApplied(preview: $preview, rows: $batch);
+			$refused = $this->refusalsIn(batch: $batch, invalid: ($result['invalid'] ?? []));
+			if ($refused !== null) {
+				foreach ($refused as $key => $reason) {
+					$batch[$key]->setReason('The write failed: '.$reason);
+					$this->stampFailed(preview: $preview, row: $batch[$key]);
+				}
 
-			return;
+				$this->stampApplied(preview: $preview, rows: array_diff_key($batch, $refused));
+
+				return;
+			}
 		} catch (Throwable $exception) {
 			// A batch that threw says nothing about which row was at fault, and
 			// a per-row outcome is the whole point of a previewed import. Walk
@@ -489,11 +497,77 @@ class ImportPreviewService {
 			$this->stampApplied(preview: $preview, rows: [$row]);
 		} catch (Throwable $exception) {
 			$row->setReason('The write failed: '.$exception->getMessage());
-			$row->setAppliedAt(new DateTime());
-			$this->rowMapper->persist(row: $row);
-			$preview->setFailed(($preview->getFailed() + 1));
+			$this->stampFailed(preview: $preview, row: $row);
 		}//end try
 	}//end writeRow()
+
+	/**
+	 * The reason per batch row that the bulk save refused.
+	 *
+	 * @param array<int, ImportPreviewRow> $batch   The rows sent.
+	 * @param array<int, mixed>            $invalid The refused items of the save result.
+	 *
+	 * @return array<int, string>|null The reasons, keyed like the batch, or null when a
+	 *                                 refusal matches no row, so no row can be stamped as written.
+	 */
+	private function refusalsIn(array $batch, array $invalid): ?array {
+		$refused = [];
+		foreach ($invalid as $item) {
+			$key = self::batchKeyOf(batch: $batch, object: ($item['object'] ?? $item));
+			if ($key === null) {
+				$this->logger->warning(message: '[ImportPreviewService] A refused row matches no row of its batch');
+				return null;
+			}
+
+			$refused[$key] = (string)($item['error'] ?? 'Validation failed');
+		}
+
+		return $refused;
+	}//end refusalsIn()
+
+	/**
+	 * The batch row a refused object came from. Every written payload carries its id.
+	 *
+	 * @param array<int, ImportPreviewRow> $batch  The rows sent.
+	 * @param array<string, mixed>         $object The refused object.
+	 *
+	 * @return int|null The row's key, or null.
+	 */
+	private static function batchKeyOf(array $batch, array $object): ?int {
+		$id = self::objectId(object: $object);
+		foreach ($batch as $key => $row) {
+			if ($id !== null && self::objectId(object: ($row->getPayload() ?? [])) === $id) {
+				return $key;
+			}
+		}
+
+		return null;
+	}//end batchKeyOf()
+
+	/**
+	 * The id an object names, in any of the shapes a payload carries it.
+	 *
+	 * @param array<string, mixed> $object The object.
+	 *
+	 * @return mixed The id, or null.
+	 */
+	private static function objectId(array $object): mixed {
+		return ($object['id'] ?? $object['@self']['id'] ?? $object['uuid'] ?? null);
+	}//end objectId()
+
+	/**
+	 * Stamp a row that was not written, with the reason it already carries.
+	 *
+	 * @param ImportPreview    $preview The preview being committed.
+	 * @param ImportPreviewRow $row     The row.
+	 *
+	 * @return void
+	 */
+	private function stampFailed(ImportPreview $preview, ImportPreviewRow $row): void {
+		$row->setAppliedAt(new DateTime());
+		$this->rowMapper->persist(row: $row);
+		$preview->setFailed(($preview->getFailed() + 1));
+	}//end stampFailed()
 
 	/**
 	 * Stamp rows as written, which is what a retry reads.

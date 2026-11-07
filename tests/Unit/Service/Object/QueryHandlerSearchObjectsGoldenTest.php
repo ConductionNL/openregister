@@ -254,15 +254,12 @@ class QueryHandlerSearchObjectsGoldenTest extends TestCase {
 
 		return new QueryHandler(
 			objectMapper: $mapper,
-			getHandler: $this->createMock(GetObject::class),
 			renderHandler: $render,
 			searchQueryHandler: $searchQuery,
 			facetHandler: $this->createMock(FacetHandler::class),
 			performanceHandler: $performance,
 			contentSearchHandler: $this->createMock(ContentSearchHandler::class),
 			container: $container,
-			logger: $this->createMock(LoggerInterface::class),
-			request: $this->createMock(IRequest::class),
 			referenceResolver: $resolver
 		);
 	}//end handler()

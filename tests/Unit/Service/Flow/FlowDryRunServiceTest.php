@@ -39,12 +39,14 @@ class FlowDryRunServiceTest extends TestCase {
 	private DryRunPureNode $switch;
 	private ObjectService $objects;
 	private FlowDryRunService $service;
+	private FlowNodeRegistry $registry;
+	private FlowService $flows;
 
 	protected function setUp(): void {
 		$this->mail = new DryRunCountingNode('mail');
 		$this->switch = new DryRunPureNode('switch');
 		$set = new DryRunPureNode('set');
-		$nodes = ['mail' => $this->mail, 'switch' => $this->switch, 'set' => $set];
+		$nodes = ['mail' => $this->mail, 'switch' => $this->switch, 'set' => $set, 'strict' => new DryRunRefusingNode('strict')];
 
 		$registry = $this->createMock(FlowNodeRegistry::class);
 		$registry->method('get')->willReturnCallback(static fn (string $type): IFlowNode => $nodes[$type]);
@@ -58,8 +60,9 @@ class FlowDryRunServiceTest extends TestCase {
 			return new Flow();
 		});
 
-		$locator = $this->createMock(FlowLocator::class);
-		$locator->method('resolveFlow')->willReturn([
+		$this->registry = $registry;
+		$this->flows = $flows;
+		$this->service = $this->serviceWalking(document: [
 			'id' => 'f1',
 			'nodes' => [
 				[
@@ -79,15 +82,27 @@ class FlowDryRunServiceTest extends TestCase {
 				['id' => 'e2', 'from' => 'check', 'fromExit' => 'small', 'to' => 'mark'],
 			],
 		]);
+	}
+
+	/**
+	 * A service whose flow is the given document.
+	 *
+	 * @param array $document The flow document.
+	 *
+	 * @return FlowDryRunService
+	 */
+	private function serviceWalking(array $document): FlowDryRunService {
+		$locator = $this->createMock(FlowLocator::class);
+		$locator->method('resolveFlow')->willReturn($document);
 
 		$this->objects = $this->createMock(ObjectService::class);
 
-		$this->service = new FlowDryRunService(
-			flows: $flows,
+		return new FlowDryRunService(
+			flows: $this->flows,
 			locator: $locator,
 			objects: $this->objects,
 			engine: new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class)),
-			registry: $registry
+			registry: $this->registry
 		);
 	}
 
@@ -126,6 +141,21 @@ class FlowDryRunServiceTest extends TestCase {
 
 		self::assertSame(['check', 'mark'], array_column($result['steps'], 'nodeId'));
 		self::assertTrue($result['steps'][1]['preview']['performed']);
+	}
+
+	public function testReportsAStepThatRefusesItsConfigurationAsTheRealRunWould(): void {
+		$service = $this->serviceWalking(document: [
+			'id' => 'f1',
+			'nodes' => [['id' => 'write', 'type' => 'strict', 'label' => 'Write the work order']],
+			'edges' => [],
+		]);
+
+		$result = $service->dryRunPayload(flowId: 'f1', payload: ['amount' => 5000]);
+
+		self::assertSame('failed', $result['status']);
+		self::assertSame('An object-write step needs an operation.', $result['error']);
+		self::assertSame('failed', $result['steps'][0]['status']);
+		self::assertSame('An object-write step needs an operation.', $result['steps'][0]['error']);
 	}
 
 	public function testRefusesAFlowTheCallerCannotSee(): void {

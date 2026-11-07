@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
+use OCA\OpenRegister\Tests\Unit\Architecture\ControllerSources;
 
 /**
  * Records every public action of every *LinksController under a fixed set of
@@ -123,6 +124,11 @@ class LinksControllersGoldenTest extends TestCase {
 			return $mock;
 		}
 
+		if ($class === \OCA\OpenRegister\Service\Object\PermissionHandler::class) {
+			$mock->method('hasPermission')->willReturn(true);
+			return $mock;
+		}
+
 		if (in_array($class, [ObjectService::class, \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class], true) === true) {
 			if ($context['scenario'] === 'missing') {
 				$mock->method('getObject')->willReturn(null);
@@ -132,6 +138,7 @@ class LinksControllersGoldenTest extends TestCase {
 				$mock->method('getObject')->willReturn($context['object']);
 			}
 
+			$mock->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
 			return $mock;
 		}
 
@@ -168,8 +175,13 @@ class LinksControllersGoldenTest extends TestCase {
 	 */
 	public static function caseProvider(): array {
 		$cases = [];
-		foreach (glob(__DIR__ . '/../../../lib/Controller/*LinksController.php') as $file) {
-			$class = 'OCA\\OpenRegister\\Controller\\' . basename($file, '.php');
+		foreach (ControllerSources::controllers() as $file) {
+			if (str_ends_with($file, 'LinksController.php') === false) {
+				continue;
+			}
+
+			$relative = substr($file, (strpos($file, '/lib/') + 5), -4);
+			$class = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $relative);
 			if (in_array(basename($file, '.php'), self::NOT_LINK_ACTIONS, true) === true) {
 				continue;
 			}

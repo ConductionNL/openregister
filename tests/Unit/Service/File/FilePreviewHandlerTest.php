@@ -6,7 +6,7 @@ namespace Unit\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
-use OCA\OpenRegister\Service\File\PreviewSize;
+use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCP\Files\File;
 use OCP\Files\SimpleFS\ISimpleFile;
 use OCP\IPreview;
