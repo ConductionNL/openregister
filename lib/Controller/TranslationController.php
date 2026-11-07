@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
-use OCA\OpenRegister\Service\BulkTranslationService;
+use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -74,9 +74,9 @@ class TranslationController extends Controller {
 	/**
 	 * The bulk translation service.
 	 *
-	 * @var BulkTranslationService
+	 * @var BulkTranslationServiceInterface
 	 */
-	private readonly BulkTranslationService $bulkService;
+	private readonly BulkTranslationServiceInterface $bulkService;
 
 	/**
 	 * Constructor.

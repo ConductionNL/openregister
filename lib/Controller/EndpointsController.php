@@ -28,7 +28,7 @@ use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
-use OCA\OpenRegister\Service\EndpointService;
+use OCA\OpenRegister\Service\EndpointServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -81,9 +81,9 @@ class EndpointsController extends Controller {
 	 *
 	 * Handles endpoint testing and execution logic.
 	 *
-	 * @var EndpointService Endpoint service instance
+	 * @var EndpointServiceInterface Endpoint service instance
 	 */
-	private readonly EndpointService $endpointService;
+	private readonly EndpointServiceInterface $endpointService;
 
 	/**
 	 * Endpoint log mapper for log operations
@@ -120,7 +120,7 @@ class EndpointsController extends Controller {
 	 * @param IRequest $request HTTP request object
 	 * @param EndpointMapper $endpointMapper Endpoint mapper for database operations
 	 * @param EndpointLogMapper $endpointLogMapper Endpoint log mapper for log operations
-	 * @param EndpointService $endpointService Endpoint service for business logic
+	 * @param EndpointServiceInterface $endpointService Endpoint service for business logic
 	 * @param ControllerSession $session Session, group manager and logger.
 	 *
 	 * @return void
@@ -130,7 +130,7 @@ class EndpointsController extends Controller {
 		IRequest $request,
 		EndpointMapper $endpointMapper,
 		EndpointLogMapper $endpointLogMapper,
-		EndpointService $endpointService,
+		EndpointServiceInterface $endpointService,
 		ControllerSession $session,
 	) {
 		// Call parent constructor to initialize base controller.
