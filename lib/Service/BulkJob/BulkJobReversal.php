@@ -43,7 +43,7 @@ use OCA\OpenRegister\Exception\BulkJobRefusedException;
 /**
  * Class BulkJobReversal
  */
-class BulkJobReversal {
+class BulkJobReversal implements BulkJobReversalInterface {
 
 	/**
 	 * Constructor.
