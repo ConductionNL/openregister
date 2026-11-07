@@ -48,23 +48,41 @@ jest.mock('vue-material-design-icons/Check.vue', () => mockIcon('Check'))
 jest.mock('vue-material-design-icons/ContentCopy.vue', () => mockIcon('ContentCopy'))
 jest.mock('vue-material-design-icons/ContentSave.vue', () => mockIcon('ContentSave'))
 jest.mock('vue-material-design-icons/Delete.vue', () => mockIcon('Delete'))
-jest.mock('vue-material-design-icons/ExclamationThick.vue', () => mockIcon('ExclamationThick'))
+jest.mock('vue-material-design-icons/ExclamationThick.vue', () =>
+	mockIcon('ExclamationThick'),
+)
 jest.mock('vue-material-design-icons/Eye.vue', () => mockIcon('Eye'))
 jest.mock('vue-material-design-icons/FileOutline.vue', () => mockIcon('FileOutline'))
-jest.mock('vue-material-design-icons/FormatListChecks.vue', () => mockIcon('FormatListChecks'))
+jest.mock('vue-material-design-icons/FormatListChecks.vue', () =>
+	mockIcon('FormatListChecks'),
+)
 jest.mock('vue-material-design-icons/LockOutline.vue', () => mockIcon('LockOutline'))
 jest.mock('vue-material-design-icons/OpenInNew.vue', () => mockIcon('OpenInNew'))
 jest.mock('vue-material-design-icons/Plus.vue', () => mockIcon('Plus'))
 jest.mock('vue-material-design-icons/Tag.vue', () => mockIcon('Tag'))
-jest.mock('vue-material-design-icons/TextBoxOutline.vue', () => mockIcon('TextBoxOutline'))
+jest.mock('vue-material-design-icons/TextBoxOutline.vue', () =>
+	mockIcon('TextBoxOutline'),
+)
 jest.mock('vue-material-design-icons/Upload.vue', () => mockIcon('Upload'))
-jest.mock('../../components/i18n/TranslationFieldEditor.vue', () => mockIcon('TranslationFieldEditor'))
-jest.mock('../../components/object-relations/ContactsTab.vue', () => mockIcon('ContactsTab'))
+jest.mock('../../components/i18n/TranslationFieldEditor.vue', () =>
+	mockIcon('TranslationFieldEditor'),
+)
+jest.mock('../../components/object-relations/ContactsTab.vue', () =>
+	mockIcon('ContactsTab'),
+)
 jest.mock('../../components/object-relations/DeckTab.vue', () => mockIcon('DeckTab'))
-jest.mock('../../components/object-relations/EmailsTab.vue', () => mockIcon('EmailsTab'))
-jest.mock('../../components/object-relations/EventsTab.vue', () => mockIcon('EventsTab'))
-jest.mock('../../components/object-relations/RelationsTab.vue', () => mockIcon('RelationsTab'))
-jest.mock('../../components/PaginationComponent.vue', () => mockIcon('PaginationComponent'))
+jest.mock('../../components/object-relations/EmailsTab.vue', () =>
+	mockIcon('EmailsTab'),
+)
+jest.mock('../../components/object-relations/EventsTab.vue', () =>
+	mockIcon('EventsTab'),
+)
+jest.mock('../../components/object-relations/RelationsTab.vue', () =>
+	mockIcon('RelationsTab'),
+)
+jest.mock('../../components/PaginationComponent.vue', () =>
+	mockIcon('PaginationComponent'),
+)
 jest.mock('../../components/tabs/AppTab.vue', () => mockTab())
 jest.mock('../../components/tabs/AppTabs.vue', () => mockIcon('AppTabs'))
 
@@ -80,7 +98,11 @@ function mockStores() {
 		const target = reactive(state)
 		return new Proxy(target, {
 			get(obj, key) {
-				if (typeof key === 'string' && !key.startsWith('__v') && !(key in obj)) {
+				if (
+					typeof key === 'string'
+					&& !key.startsWith('__v')
+					&& !(key in obj)
+				) {
 					obj[key] = jest.fn(() => Promise.resolve(null))
 				}
 				return obj[key]
