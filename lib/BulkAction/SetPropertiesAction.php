@@ -33,7 +33,7 @@ use InvalidArgumentException;
 /**
  * The built-in bulk attribute write.
  */
-class SetPropertiesAction extends AbstractPropertyWriteAction {
+class SetPropertiesAction extends AbstractPropertyWriteAction implements SetPropertiesActionInterface {
 
 	/**
 	 * The action id.
