@@ -43,6 +43,8 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * A declared action that does NOT match the edit is ignored rather than
  * trusted. The declaration only says which of several equally valid
  * transitions the caller meant; it must never make an undeclared move legal.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class LifecycleTransitionResolver {
 
@@ -71,22 +73,37 @@ class LifecycleTransitionResolver {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function resolve(array $transitions, string $uuid, string $oldValue, string $newValue): ?array {
-		$declared = $this->context->declaredFor(uuid: $uuid);
-		if ($declared !== null) {
-			$spec = ($transitions[$declared] ?? null);
+		foreach ($this->candidates(transitions: $transitions, uuid: $uuid) as $candidate) {
+			$spec = $candidate[1];
 			if (is_array($spec) === true && $this->moves(spec: $spec, oldValue: $oldValue, newValue: $newValue) === true) {
-				return [$declared, $spec];
-			}
-		}
-
-		foreach ($transitions as $action => $spec) {
-			if (is_array($spec) === true && $this->moves(spec: $spec, oldValue: $oldValue, newValue: $newValue) === true) {
-				return [(string)$action, $spec];
+				return [(string)$candidate[0], $spec];
 			}
 		}
 
 		return null;
 	}//end resolve()
+
+	/**
+	 * The (action, spec) pairs to try, in order: the declared action first, then every transition.
+	 *
+	 * @param array<string, mixed> $transitions The annotation's transition map.
+	 * @param string $uuid The object's uuid, for the declared-action lookup.
+	 *
+	 * @return list<array{0: int|string, 1: mixed}> The candidates.
+	 */
+	private function candidates(array $transitions, string $uuid): array {
+		$candidates = [];
+		$declared = $this->context->declaredFor(uuid: $uuid);
+		if ($declared !== null) {
+			$candidates[] = [$declared, ($transitions[$declared] ?? null)];
+		}
+
+		foreach ($transitions as $action => $spec) {
+			$candidates[] = [$action, $spec];
+		}
+
+		return $candidates;
+	}//end candidates()
 
 	/**
 	 * Whether a transition moves the lifecycle value from `old` to `new`.

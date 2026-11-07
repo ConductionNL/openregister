@@ -409,12 +409,7 @@ class AutoTransitionPass {
 	 */
 	private function step(array $record): ?ObjectEntity {
 		$uuid = $record['uuid'];
-		$decision = $this->runner->decide(
-			uuid: $uuid,
-			register: $record['register'],
-			schema: $record['schema'],
-			previous: ($this->previous[$uuid] ?? [])
-		);
+		$decision = $this->decide(record: $record);
 		if ($decision === null) {
 			return null;
 		}
@@ -429,6 +424,22 @@ class AutoTransitionPass {
 	}//end step()
 
 	/**
+	 * Ask the runner for the object's next move, against the state that started the pass.
+	 *
+	 * @param array{uuid: string, register: string, schema: string, inside: bool} $record What the listener recorded.
+	 *
+	 * @return AutoTransitionDecision|null The decided move, or null.
+	 */
+	private function decide(array $record): ?AutoTransitionDecision {
+		return $this->runner->decide(
+			uuid: $record['uuid'],
+			register: $record['register'],
+			schema: $record['schema'],
+			previous: ($this->previous[$record['uuid']] ?? [])
+		);
+	}//end decide()
+
+	/**
 	 * Count the move in the object's lineage and fire it inside the ambient frame.
 	 *
 	 * A record made outside any boundary is queued, whatever the declared mode.
@@ -440,9 +451,7 @@ class AutoTransitionPass {
 	 */
 	private function advance(array $record, AutoTransitionDecision $decision): ?ObjectEntity {
 		$uuid = $record['uuid'];
-		$this->lineage[$uuid]['visited'][$decision->candidate->to] = true;
-		$this->lineage[$uuid]['moves']++;
-		$this->lineage[$uuid]['applied'][] = $decision->candidate->action;
+		$this->countMove(uuid: $uuid, candidate: $decision->candidate);
 
 		$this->applying = $decision->candidate->action;
 		try {
@@ -455,6 +464,20 @@ class AutoTransitionPass {
 			$this->applying = null;
 		}
 	}//end advance()
+
+	/**
+	 * Record a move about to be made in the object's lineage.
+	 *
+	 * @param string                  $uuid      The object's uuid.
+	 * @param AutoTransitionCandidate $candidate The move.
+	 *
+	 * @return void
+	 */
+	private function countMove(string $uuid, AutoTransitionCandidate $candidate): void {
+		$this->lineage[$uuid]['visited'][$candidate->to] = true;
+		$this->lineage[$uuid]['moves']++;
+		$this->lineage[$uuid]['applied'][] = $candidate->action;
+	}//end countMove()
 
 	/**
 	 * Start this object's lineage at the state it is in now.

@@ -47,6 +47,8 @@ use Throwable;
  * Reads the referenced row behind a lifecycle value and answers whether it ends.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class LifecycleFinalStateResolver {
 
@@ -136,22 +138,8 @@ class LifecycleFinalStateResolver {
 	 * @return bool True when the property is true.
 	 */
 	private function read(string $from, string $field, string $state): bool {
-		try {
-			// Read as the system: see the file header for why terminality must
-			// not depend on the actor who made the transition.
-			$resolved = $this->objects->findAcrossAllSources(
-				identifier: $state,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $error) {
-			$this->logger->warning(
-				'[LifecycleFinalStateResolver] lifecycle value "' . $state
-				. '" resolves to no ' . $from . ' row, so nothing can say whether it is an end: '
-				. $error->getMessage()
-			);
-
+		$resolved = $this->fetch(from: $from, state: $state);
+		if ($resolved === null) {
 			return false;
 		}
 
@@ -164,18 +152,60 @@ class LifecycleFinalStateResolver {
 			return false;
 		}
 
-		$data = ($resolved['object']->getObject() ?? []);
-		if (is_array($data) === false || array_key_exists($field, $data) === false) {
+		return $this->flagOn(row: $resolved['object'], from: $from, reference: ['field' => $field, 'state' => $state]);
+	}//end read()
+
+	/**
+	 * Look the row behind a lifecycle value up, as the system.
+	 *
+	 * @param string $from  The schema the referenced row belongs to, for the log line.
+	 * @param string $state The lifecycle value, which identifies the row.
+	 *
+	 * @return array<string, mixed>|null The lookup's answer, or null when it found no row.
+	 */
+	private function fetch(string $from, string $state): ?array {
+		try {
+			// Read as the system: see the file header for why terminality must
+			// not depend on the actor who made the transition.
+			return $this->objects->findAcrossAllSources(
+				identifier: $state,
+				includeDeleted: false,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $error) {
+			$this->logger->warning(
+				'[LifecycleFinalStateResolver] lifecycle value "' . $state
+				. '" resolves to no ' . $from . ' row, so nothing can say whether it is an end: '
+				. $error->getMessage()
+			);
+
+			return null;
+		}
+	}//end fetch()
+
+	/**
+	 * Read the named property off the resolved row, reporting a row that declares none.
+	 *
+	 * @param mixed                               $row       The resolved object entity.
+	 * @param string                              $from      The schema the row belongs to, for the log line.
+	 * @param array{field: string, state: string} $reference The property to read and the lifecycle value.
+	 *
+	 * @return bool True when the property is true.
+	 */
+	private function flagOn(mixed $row, string $from, array $reference): bool {
+		$data = ($row->getObject() ?? []);
+		if (is_array($data) === false || array_key_exists($reference['field'], $data) === false) {
 			$this->logger->warning(
 				'[LifecycleFinalStateResolver] the ' . $from . ' row behind lifecycle value "'
-				. $state . '" declares no "' . $field . '" property.'
+				. $reference['state'] . '" declares no "' . $reference['field'] . '" property.'
 			);
 
 			return false;
 		}
 
-		return $this->truthy(value: $data[$field]);
-	}//end read()
+		return $this->truthy(value: $data[$reference['field']]);
+	}//end flagOn()
 
 	/**
 	 * Is the resolved row's schema the one the annotation named?
