@@ -84,12 +84,12 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedRooms',
 		],
 		'forms' => [
-			'class' => \OCA\OpenRegister\Service\FormLinkService::class,
+			'class' => \OCA\OpenRegister\Service\FormLinkServiceInterface::class,
 			'available' => null,
 			'method' => 'getLinkedForms',
 		],
 		'maps' => [
-			'class' => \OCA\OpenRegister\Service\MapLinkService::class,
+			'class' => \OCA\OpenRegister\Service\MapLinkServiceInterface::class,
 			'available' => 'isMapsAvailable',
 			'method' => 'getLinkedPois',
 		],
@@ -129,12 +129,12 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedReports',
 		],
 		'flow' => [
-			'class' => \OCA\OpenRegister\Service\FlowLinkService::class,
+			'class' => \OCA\OpenRegister\Service\FlowLinkServiceInterface::class,
 			'available' => 'isFlowAvailable',
 			'method' => 'getLinkedOperations',
 		],
 		'openproject' => [
-			'class' => \OCA\OpenRegister\Service\OpenProjectLinkService::class,
+			'class' => \OCA\OpenRegister\Service\OpenProjectLinkServiceInterface::class,
 			'available' => 'isOpenConnectorAvailable',
 			'method' => 'getLinkedWorkPackages',
 		],
