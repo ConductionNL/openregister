@@ -1,0 +1,1882 @@
+{
+    "7z": {
+        "sniffBinaryContentType": "application/x-7z-compressed",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "bzip2": {
+        "sniffBinaryContentType": "application/x-bzip2",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "elf": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": "Linux/Unix executable (ELF)",
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "empty": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "flac": {
+        "sniffBinaryContentType": "audio/flac",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "flv": {
+        "sniffBinaryContentType": "video/x-flv",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "ftyp-elsewhere": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "gif87": {
+        "sniffBinaryContentType": "image/gif",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "gif89": {
+        "sniffBinaryContentType": "image/gif",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "gzip": {
+        "sniffBinaryContentType": "application/gzip",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "ico": {
+        "sniffBinaryContentType": "image/vnd.microsoft.icon",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "java": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": "Java class file",
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "jpeg": {
+        "sniffBinaryContentType": "image/jpeg",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "mkv": {
+        "sniffBinaryContentType": "video/x-matroska",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "mp3": {
+        "sniffBinaryContentType": "audio/mpeg",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "mp4": {
+        "sniffBinaryContentType": "video/mp4",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "mp4-short": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "mz": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": "Windows executable (PE/EXE)",
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "ogg": {
+        "sniffBinaryContentType": "application/ogg",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "ole": {
+        "sniffBinaryContentType": "application/x-ole-storage",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "pdf": {
+        "sniffBinaryContentType": "application/pdf",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "php-past-prefix": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "php-short": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "php-tag": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "php-upper": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": true,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "png": {
+        "sniffBinaryContentType": "image/png",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "psd": {
+        "sniffBinaryContentType": "image/vnd.adobe.photoshop",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "rar": {
+        "sniffBinaryContentType": "application/vnd.rar",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "riff": {
+        "sniffBinaryContentType": "application/x-riff",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "shebang": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": "Shell script",
+        "hasScriptShebang": true,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "shebang-space": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "sqlite": {
+        "sniffBinaryContentType": "application/vnd.sqlite3",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "text": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "tiff-be": {
+        "sniffBinaryContentType": "image/tiff",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "tiff-le": {
+        "sniffBinaryContentType": "image/tiff",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "xml": {
+        "sniffBinaryContentType": null,
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "xz": {
+        "sniffBinaryContentType": "application/x-xz",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "zip": {
+        "sniffBinaryContentType": "application/zip",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "zip-empty": {
+        "sniffBinaryContentType": "application/zip",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    },
+    "zip-spanned": {
+        "sniffBinaryContentType": "application/zip",
+        "matchExecutableSignature": null,
+        "hasScriptShebang": false,
+        "byName": {
+            "a.txt": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.PHTML": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.svg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.png": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "a.pdf": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            },
+            "noext": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": true,
+                "hasAlwaysScannedExtension": true
+            },
+            "a.php.jpg": {
+                "containsEmbeddedPhpTag": false,
+                "shouldScanForEmbeddedPhp": false,
+                "hasAlwaysScannedExtension": false
+            }
+        }
+    }
+}

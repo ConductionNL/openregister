@@ -25,6 +25,9 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
+use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -49,6 +52,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 		RiskLevelService::class => [
 			RiskLevelServiceInterface::class,
 			FilesRegistrar::class,
+			[],
+		],
+		TimeseriesRequestValidator::class => [
+			TimeseriesRequestValidatorInterface::class,
+			SearchRegistrar::class,
 			[],
 		],
 	];
