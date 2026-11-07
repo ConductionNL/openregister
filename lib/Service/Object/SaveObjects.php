@@ -88,6 +88,7 @@ use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -3186,25 +3187,45 @@ class SaveObjects {
 		$createdEntities = ($sideEffects['created'] ?? []);
 		$updatedEntities = ($sideEffects['updated'] ?? []);
 
-		// `$_audit === false` is the bulk mirror of the single-object path's
-		// `silent` flag: a caller that opts out of auditing per object keeps
-		// that choice when it moves to the bulk path.
-		if ($this->auditTrailMapper !== null && $_audit === true) {
-			$auditEntries = $this->chunkAuditEntries(created: $createdEntities, updated: $updatedEntities);
-			$this->insertAuditEntries(auditEntries: $auditEntries);
+		if ($this->writesChunkAudit(audit: $_audit) === true) {
+			$this->insertAuditEntries(auditEntries: $this->chunkAuditEntries(created: $createdEntities, updated: $updatedEntities));
 		}
 
-		// A system operation withholds lifecycle events, exactly as the
-		// single-object path does in MagicMapper::suppressLifecycleEvents().
-		if ($_events !== true || $this->eventDispatcher === null
-			|| \OCA\OpenRegister\Service\SystemOperationContext::isActive() === true
-		) {
+		if ($this->dispatchesChunkEvents(events: $_events) === false) {
 			return;
 		}
 
 		$this->dispatchCreatedEvents(createdEntities: $createdEntities);
 		$this->dispatchUpdatedEvents(updatedEntities: $updatedEntities);
 	}//end emitChunkSideEffects()
+
+	/**
+	 * Whether the chunk's audit trail is written: an audit mapper is wired and the caller did not opt out.
+	 *
+	 * `$audit === false` is the bulk mirror of the single-object path's `silent` flag: a caller
+	 * that opts out of auditing per object keeps that choice when it moves to the bulk path.
+	 *
+	 * @param bool $audit Whether the caller asked for audit trail rows.
+	 *
+	 * @return bool
+	 */
+	private function writesChunkAudit(bool $audit): bool {
+		return $this->auditTrailMapper !== null && $audit === true;
+	}//end writesChunkAudit()
+
+	/**
+	 * Whether the chunk's lifecycle events are dispatched: asked for, a dispatcher wired, and no system operation.
+	 *
+	 * A system operation withholds lifecycle events, exactly as the single-object
+	 * path does in MagicMapper::suppressLifecycleEvents().
+	 *
+	 * @param bool $events Whether the caller asked for lifecycle events.
+	 *
+	 * @return bool
+	 */
+	private function dispatchesChunkEvents(bool $events): bool {
+		return $events === true && $this->eventDispatcher !== null && SystemOperationContext::isActive() === false;
+	}//end dispatchesChunkEvents()
 
 	/**
 	 * The audit entries of one bulk chunk: a `create` entry per created object
@@ -3898,43 +3919,76 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function hydrateObjectMetadataFields(array $selfData): array {
-		// SECURITY (BUG-OBJ-15): mirror single-save setSelfMetadata()/applyOwnerAttribution().
-		// Owner is ALWAYS stamped to the session user and a client-supplied @self.owner is
-		// ignored — accepting it would let any bulk caller forge object ownership. Only when
-		// there is no session user (background/system context) do we fall back to the
-		// (possibly client-supplied) value so system imports keep working.
 		$currentUser = $this->userSession->getUser();
-		if ($currentUser !== null) {
-			$selfData['owner'] = $currentUser->getUID();
-		} elseif (isset($selfData['owner']) === false || empty($selfData['owner']) === true) {
-			$selfData['owner'] = null;
-		}
+		$selfData['owner'] = self::stampedOwner(selfData: $selfData, currentUser: $currentUser);
 
 		// SECURITY (BUG-OBJ-15): a client-supplied @self.organisation is only honoured when the
 		// caller is an admin OR is a verified member of that organisation. Otherwise we fall back
 		// to the caller's active organisation via getOrganisationForNewEntity() — preventing
 		// cross-tenant data injection through the bulk endpoint.
-		$requestedOrganisation = $selfData['organisation'] ?? null;
-		$acceptOrganisation = false;
-		if (empty($requestedOrganisation) === false) {
-			$isAdmin = $currentUser !== null
-				&& $this->groupManager !== null
-				&& $this->groupManager->isAdmin($currentUser->getUID()) === true;
-
-			if ($isAdmin === true
-				|| $this->organisationService->hasAccessToOrganisation((string)$requestedOrganisation) === true
-			) {
-				$acceptOrganisation = true;
-			}
-		}
-
-		if ($acceptOrganisation === false) {
+		if ($this->callerMayClaimOrganisation(requested: ($selfData['organisation'] ?? null), currentUser: $currentUser) === false) {
 			// NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
 			$selfData['organisation'] = $this->organisationService->getOrganisationForNewEntity();
 		}
 
 		return $selfData;
 	}//end hydrateObjectMetadataFields()
+
+	/**
+	 * The owner a bulk row is stamped with.
+	 *
+	 * SECURITY (BUG-OBJ-15): mirror single-save setSelfMetadata()/applyOwnerAttribution().
+	 * Owner is ALWAYS stamped to the session user and a client-supplied @self.owner is
+	 * ignored — accepting it would let any bulk caller forge object ownership. Only when
+	 * there is no session user (background/system context) do we fall back to the
+	 * (possibly client-supplied) value so system imports keep working; an empty one is null.
+	 *
+	 * @param array      $selfData    The @self metadata array.
+	 * @param IUser|null $currentUser The session user.
+	 *
+	 * @return mixed
+	 */
+	private static function stampedOwner(array $selfData, ?IUser $currentUser): mixed {
+		if ($currentUser !== null) {
+			return $currentUser->getUID();
+		}
+
+		if (isset($selfData['owner']) === false || empty($selfData['owner']) === true) {
+			return null;
+		}
+
+		return $selfData['owner'];
+	}//end stampedOwner()
+
+	/**
+	 * Whether the caller may keep the organisation the row asks for: an administrator, or a verified member of it.
+	 *
+	 * @param mixed      $requested   The client-supplied @self.organisation.
+	 * @param IUser|null $currentUser The session user.
+	 *
+	 * @return bool False when the row asks for none.
+	 */
+	private function callerMayClaimOrganisation(mixed $requested, ?IUser $currentUser): bool {
+		if (empty($requested) === true) {
+			return false;
+		}
+
+		return $this->sessionUserIsAdmin(currentUser: $currentUser) === true
+			|| $this->organisationService->hasAccessToOrganisation((string) $requested) === true;
+	}//end callerMayClaimOrganisation()
+
+	/**
+	 * Whether the session user is an administrator; false without a user or a group manager.
+	 *
+	 * @param IUser|null $currentUser The session user.
+	 *
+	 * @return bool
+	 */
+	private function sessionUserIsAdmin(?IUser $currentUser): bool {
+		return $currentUser !== null
+			&& $this->groupManager !== null
+			&& $this->groupManager->isAdmin($currentUser->getUID()) === true;
+	}//end sessionUserIsAdmin()
 
 	/**
 	 * Extract business data from an object, separating it from metadata fields
