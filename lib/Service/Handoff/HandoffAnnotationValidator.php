@@ -59,6 +59,23 @@ class HandoffAnnotationValidator {
 	public const UNAVAILABLE_MODES = ['hide', 'queue'];
 
 	/**
+	 * The rules for an entry's `onSuccess` block.
+	 *
+	 * @var HandoffSuccessUpdateChecks
+	 */
+	private readonly HandoffSuccessUpdateChecks $onSuccessChecks;
+
+	/**
+	 * Constructor.
+	 *
+	 * Takes no arguments: annotation validators are constructed with `new` in
+	 * the SchemaMapper save path.
+	 */
+	public function __construct() {
+		$this->onSuccessChecks = new HandoffSuccessUpdateChecks();
+	}//end __construct()
+
+	/**
 	 * Validate the annotation.
 	 *
 	 * Expects the annotation at top-level alongside `properties` (the shape
@@ -70,8 +87,6 @@ class HandoffAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> Aggregated errors (empty = valid).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Aggregating every dialect rule in one pass is inherent.
-	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: `x-openregister-handoff` declarative dialect)
 	 */
@@ -82,363 +97,259 @@ class HandoffAnnotationValidator {
 
 		$annotation = $schema['x-openregister-handoff'];
 		if (is_array($annotation) === false) {
-			return [
-				[
-					'code' => 'handoff-bad-annotation',
-					'message' => 'x-openregister-handoff must be an array of handoff entries.',
-				],
-			];
+			return [$this->error(code: 'handoff-bad-annotation', message: 'x-openregister-handoff must be an array of handoff entries.')];
 		}
 
-		$properties = ($schema['properties'] ?? []);
-		if (is_array($properties) === false) {
-			$properties = [];
-		}
-
-		$lifecycleStates = $this->lifecycleStates(schema: $schema);
-
-		$errors = [];
-		$seenIds = [];
-		foreach (array_values($annotation) as $index => $entry) {
-			if (is_array($entry) === false) {
-				$errors[] = [
-					'code' => 'handoff-bad-annotation',
-					'message' => sprintf('x-openregister-handoff entry %d must be an object.', $index),
-				];
-				continue;
-			}
-
-			$entryId = $this->validateId(entry: $entry, index: $index, seenIds: $seenIds, errors: $errors);
-			$this->validateTargetType(entry: $entry, entryId: $entryId, errors: $errors);
-			$this->validateTrigger(entry: $entry, entryId: $entryId, lifecycleStates: $lifecycleStates, errors: $errors);
-			$this->validateMapping(entry: $entry, entryId: $entryId, errors: $errors);
-			$this->validateWhenUnavailable(entry: $entry, entryId: $entryId, errors: $errors);
-			$this->validateOnSuccess(entry: $entry, entryId: $entryId, properties: $properties, errors: $errors);
-		}//end foreach
-
-		return $errors;
+		return $this->entriesErrors(entries: array_values($annotation), schema: $schema);
 	}//end validate()
 
 	/**
-	 * Validate + register an entry's `id` (unique, slug-like).
+	 * The errors of every entry, in entry order.
 	 *
-	 * @param array<string, mixed> $entry The handoff entry.
-	 * @param int $index The entry's position (for messages when id is unusable).
-	 * @param array<string, bool> $seenIds Ids seen so far (by reference).
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
+	 * @param array<int, mixed>    $entries The annotation's entries.
+	 * @param array<string, mixed> $schema  The schema shape they belong to.
 	 *
-	 * @return string The entry id (or a positional placeholder for messages).
+	 * @return array<int, array{code: string, message: string}> Aggregated errors.
+	 */
+	private function entriesErrors(array $entries, array $schema): array {
+		$properties = $this->ownProperties(schema: $schema);
+		$lifecycleStates = $this->lifecycleStates(schema: $schema);
+		$errors = [];
+		foreach ($entries as $index => $raw) {
+			$entry = new HandoffAnnotationEntry(entry: $raw, index: $index, lifecycleStates: $lifecycleStates, properties: $properties);
+			array_push($errors, ...$this->entryErrors(entry: $entry, earlier: array_slice($entries, 0, $index)));
+		}
+
+		return $errors;
+	}//end entriesErrors()
+
+	/**
+	 * The errors of one entry, rule by rule.
+	 *
+	 * @param HandoffAnnotationEntry $entry   The entry.
+	 * @param array<int, mixed>      $earlier The entries before it (for duplicate ids).
+	 *
+	 * @return array<int, array{code: string, message: string}> The entry's errors.
+	 */
+	private function entryErrors(HandoffAnnotationEntry $entry, array $earlier): array {
+		if ($entry->isObject() === false) {
+			return [$this->error(code: 'handoff-bad-annotation', message: sprintf('x-openregister-handoff entry %d must be an object.', $entry->index))];
+		}
+
+		return array_merge(
+			$this->idErrors(entry: $entry, earlier: $earlier),
+			$this->targetTypeErrors(entry: $entry),
+			$this->triggerErrors(entry: $entry),
+			$this->mappingChecksFor(entry: $entry)->errors(entry: $entry),
+			$this->whenUnavailableErrors(entry: $entry),
+			$this->onSuccessChecks->errors(entry: $entry)
+		);
+	}//end entryErrors()
+
+	/**
+	 * Validate an entry's `id` (slug-like, and unique among the entries before it).
+	 *
+	 * @param HandoffAnnotationEntry $entry   The entry.
+	 * @param array<int, mixed>      $earlier The entries before it.
+	 *
+	 * @return array<int, array{code: string, message: string}> The id errors.
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: `x-openregister-handoff` declarative dialect)
 	 */
-	private function validateId(array $entry, int $index, array &$seenIds, array &$errors): string {
-		$id = ($entry['id'] ?? null);
-		if (is_string($id) === false || preg_match('/^[a-z0-9][a-z0-9-]*$/', $id) !== 1) {
-			$errors[] = [
-				'code' => 'handoff-bad-id',
-				'message' => sprintf(
-					'x-openregister-handoff entry %d must declare a slug-like `id` (lowercase letters, digits, hyphens).',
-					$index
-				),
-			];
-			return sprintf('entry-%d', $index);
+	private function idErrors(HandoffAnnotationEntry $entry, array $earlier): array {
+		$id = $entry->validId();
+		if ($id === null) {
+			$format = 'x-openregister-handoff entry %d must declare a slug-like `id` (lowercase letters, digits, hyphens).';
+			return [$this->error(code: 'handoff-bad-id', message: sprintf($format, $entry->index))];
 		}
 
-		if (isset($seenIds[$id]) === true) {
-			$errors[] = [
-				'code' => 'handoff-duplicate-id',
-				'message' => sprintf('x-openregister-handoff id "%s" is declared more than once.', $id),
-			];
+		if ($this->declaresId(entries: $earlier, id: $id) === true) {
+			return [$this->error(code: 'handoff-duplicate-id', message: sprintf('x-openregister-handoff id "%s" is declared more than once.', $id))];
 		}
 
-		$seenIds[$id] = true;
-		return $id;
-	}//end validateId()
+		return [];
+	}//end idErrors()
+
+	/**
+	 * Whether any of the given entries is an object declaring this id.
+	 *
+	 * @param array<int, mixed> $entries The entries to search.
+	 * @param string            $id      The id.
+	 *
+	 * @return bool True when the id is already taken.
+	 */
+	private function declaresId(array $entries, string $id): bool {
+		foreach ($entries as $entry) {
+			if (is_array($entry) === true && ($entry['id'] ?? null) === $id) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end declaresId()
 
 	/**
 	 * Validate `targetSemanticType` is an absolute URI.
 	 *
-	 * @param array<string, mixed> $entry The handoff entry.
-	 * @param string $entryId The entry id (for messages).
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
+	 * @param HandoffAnnotationEntry $entry The entry.
 	 *
-	 * @return void
+	 * @return array<int, array{code: string, message: string}> The target errors.
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Scenario: Target kind URI is malformed)
 	 */
-	private function validateTargetType(array $entry, string $entryId, array &$errors): void {
-		$target = ($entry['targetSemanticType'] ?? null);
-		if (is_string($target) === true
-			&& filter_var($target, FILTER_VALIDATE_URL) !== false
-			&& preg_match('/^https?:\/\//', $target) === 1
-		) {
-			return;
+	private function targetTypeErrors(HandoffAnnotationEntry $entry): array {
+		if ($this->isAbsoluteUri(value: $entry->field(key: 'targetSemanticType')) === true) {
+			return [];
 		}
 
-		$errors[] = [
-			'code' => 'handoff-bad-target-type',
-			'message' => sprintf(
-				'Handoff "%s": `targetSemanticType` must be an absolute kind URI (e.g. "%sCase").',
-				$entryId,
-				HandoffKindContracts::NAMESPACE_URI
-			),
-		];
+		$message = sprintf('`targetSemanticType` must be an absolute kind URI (e.g. "%sCase").', HandoffKindContracts::NAMESPACE_URI);
+		return [$entry->fault(code: 'handoff-bad-target-type', message: $message)];
+	}//end targetTypeErrors()
 
-	}//end validateTargetType()
+	/**
+	 * Whether a value is an absolute http(s) URL.
+	 *
+	 * @param mixed $value The candidate.
+	 *
+	 * @return bool True for an absolute http(s) URL.
+	 */
+	private function isAbsoluteUri(mixed $value): bool {
+		return is_string($value) === true
+			&& filter_var($value, FILTER_VALIDATE_URL) !== false
+			&& preg_match('/^https?:\/\//', $value) === 1;
+	}//end isAbsoluteUri()
 
 	/**
 	 * Validate the `trigger` field: `manual` or `lifecycle:<state>` where the
 	 * state exists in the schema's declared lifecycle enum.
 	 *
-	 * @param array<string, mixed> $entry The handoff entry.
-	 * @param string $entryId The entry id (for messages).
-	 * @param array<int, string>|null $lifecycleStates Declared lifecycle states (null = no lifecycle declared).
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
+	 * @param HandoffAnnotationEntry $entry The entry.
 	 *
-	 * @return void
+	 * @return array<int, array{code: string, message: string}> The trigger errors.
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: `x-openregister-handoff` declarative dialect)
 	 */
-	private function validateTrigger(array $entry, string $entryId, ?array $lifecycleStates, array &$errors): void {
-		$trigger = ($entry['trigger'] ?? 'manual');
+	private function triggerErrors(HandoffAnnotationEntry $entry): array {
+		$fault = $this->triggerFault(entry: $entry);
+		if ($fault === null) {
+			return [];
+		}
+
+		return [$entry->fault(code: 'handoff-bad-trigger', message: $fault)];
+	}//end triggerErrors()
+
+	/**
+	 * What is wrong with an entry's trigger, if anything.
+	 *
+	 * @param HandoffAnnotationEntry $entry The entry.
+	 *
+	 * @return string|null The fault, or null for `manual` or a declared lifecycle state.
+	 */
+	private function triggerFault(HandoffAnnotationEntry $entry): ?string {
+		$trigger = $entry->field(key: 'trigger', default: 'manual');
 		if ($trigger === 'manual') {
-			return;
+			return null;
 		}
 
 		if (is_string($trigger) === false || str_starts_with($trigger, 'lifecycle:') === false) {
-			$errors[] = [
-				'code' => 'handoff-bad-trigger',
-				'message' => sprintf('Handoff "%s": `trigger` must be "manual" or "lifecycle:<state>".', $entryId),
-			];
-			return;
+			return '`trigger` must be "manual" or "lifecycle:<state>".';
 		}
 
-		$state = substr($trigger, strlen('lifecycle:'));
+		return $this->lifecycleStateFault(entry: $entry, state: substr($trigger, strlen('lifecycle:')));
+	}//end triggerFault()
+
+	/**
+	 * What is wrong with a lifecycle trigger's state, if anything.
+	 *
+	 * @param HandoffAnnotationEntry $entry The entry (for the declared lifecycle states).
+	 * @param string                 $state The state the trigger names.
+	 *
+	 * @return string|null The fault, or null when the state is declared.
+	 */
+	private function lifecycleStateFault(HandoffAnnotationEntry $entry, string $state): ?string {
 		if ($state === '') {
-			$errors[] = [
-				'code' => 'handoff-bad-trigger',
-				'message' => sprintf('Handoff "%s": lifecycle trigger must name a state ("lifecycle:<state>").', $entryId),
-			];
-			return;
+			return 'lifecycle trigger must name a state ("lifecycle:<state>").';
 		}
 
-		if ($lifecycleStates === null) {
-			$errors[] = [
-				'code' => 'handoff-bad-trigger',
-				'message' => sprintf(
-					'Handoff "%s": trigger "lifecycle:%s" requires the schema to declare x-openregister-lifecycle.',
-					$entryId,
-					$state
-				),
-			];
-			return;
+		if ($entry->lifecycleStates === null) {
+			return sprintf('trigger "lifecycle:%s" requires the schema to declare x-openregister-lifecycle.', $state);
 		}
 
-		if (in_array($state, $lifecycleStates, true) === false) {
-			$errors[] = [
-				'code' => 'handoff-bad-trigger',
-				'message' => sprintf(
-					'Handoff "%s": lifecycle state "%s" is not declared in the schema\'s lifecycle enum (%s).',
-					$entryId,
-					$state,
-					implode(', ', $lifecycleStates)
-				),
-			];
+		if (in_array($state, $entry->lifecycleStates, true) === false) {
+			return sprintf('lifecycle state "%s" is not declared in the schema\'s lifecycle enum (%s).', $state, implode(', ', $entry->lifecycleStates));
 		}
 
-	}//end validateTrigger()
-
-	/**
-	 * Validate the mapping: keys within the target kind's contract fields,
-	 * every mandatory field mapped, expression kinds within the allowed five.
-	 *
-	 * @param array<string, mixed> $entry The handoff entry.
-	 * @param string $entryId The entry id (for messages).
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-	 *   (Scenario: Unknown mapping expression kind is rejected)
-	 */
-	private function validateMapping(array $entry, string $entryId, array &$errors): void {
-		$mapping = ($entry['mapping'] ?? null);
-		if (is_array($mapping) === false || $mapping === []) {
-			$errors[] = [
-				'code' => 'handoff-bad-annotation',
-				'message' => sprintf('Handoff "%s": a non-empty `mapping` object is required.', $entryId),
-			];
-			return;
-		}
-
-		$kindUri = (string)($entry['targetSemanticType'] ?? '');
-		$isContractKind = HandoffKindContracts::isContractKind($kindUri);
-		$allFields = HandoffKindContracts::allFields($kindUri);
-
-		foreach ($mapping as $field => $expression) {
-			if ($isContractKind === true && in_array((string)$field, $allFields, true) === false) {
-				$errors[] = [
-					'code' => 'handoff-unknown-mapping-field',
-					'message' => sprintf(
-						'Handoff "%s": mapping field "%s" is not part of the "%s" contract (fields: %s).',
-						$entryId,
-						(string)$field,
-						$kindUri,
-						implode(', ', $allFields)
-					),
-				];
-			}
-
-			$this->validateExpression(expression: $expression, field: (string)$field, entryId: $entryId, errors: $errors);
-		}
-
-		if ($isContractKind === true) {
-			$missing = array_diff(HandoffKindContracts::mandatoryFields($kindUri), array_map('strval', array_keys($mapping)));
-			if ($missing !== []) {
-				$errors[] = [
-					'code' => 'handoff-missing-mandatory-field',
-					'message' => sprintf(
-						'Handoff "%s": mandatory "%s" contract field(s) not mapped: %s.',
-						$entryId,
-						$kindUri,
-						implode(', ', $missing)
-					),
-				];
-			}
-		}
-
-	}//end validateMapping()
-
-	/**
-	 * Validate one mapping expression uses exactly one of the five kinds.
-	 *
-	 * @param mixed $expression The mapping expression value.
-	 * @param string $field The contract field being mapped.
-	 * @param string $entryId The entry id (for messages).
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-	 *   (Scenario: Unknown mapping expression kind is rejected)
-	 */
-	private function validateExpression(mixed $expression, string $field, string $entryId, array &$errors): void {
-		if (is_array($expression) === false) {
-			$errors[] = [
-				'code' => 'handoff-bad-mapping-expression',
-				'message' => sprintf(
-					'Handoff "%s": mapping for "%s" must be an object using one of: %s.',
-					$entryId,
-					$field,
-					implode(', ', self::EXPRESSION_KINDS)
-				),
-			];
-			return;
-		}
-
-		$kinds = array_values(array_intersect(array_map('strval', array_keys($expression)), self::EXPRESSION_KINDS));
-		// `default` is an allowed modifier alongside `from`; every other key
-		// must be one of the five expression kinds.
-		$unknown = array_diff(array_map('strval', array_keys($expression)), self::EXPRESSION_KINDS, ['default']);
-
-		if (count($kinds) !== 1 || $unknown !== []) {
-			$offending = 'none';
-			if ($unknown !== []) {
-				$offending = implode(', ', $unknown);
-			}
-
-			$errors[] = [
-				'code' => 'handoff-bad-mapping-expression',
-				'message' => sprintf(
-					'Handoff "%s": mapping for "%s" must use exactly one expression kind of [%s]; offending key(s): %s.',
-					$entryId,
-					$field,
-					implode(', ', self::EXPRESSION_KINDS),
-					$offending
-				),
-			];
-		}
-
-	}//end validateExpression()
+		return null;
+	}//end lifecycleStateFault()
 
 	/**
 	 * Validate `whenUnavailable` when present.
 	 *
-	 * @param array<string, mixed> $entry The handoff entry.
-	 * @param string $entryId The entry id (for messages).
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
+	 * @param HandoffAnnotationEntry $entry The entry.
 	 *
-	 * @return void
+	 * @return array<int, array{code: string, message: string}> The degradation-mode errors.
 	 *
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: Graceful degradation when no provider implements the kind)
 	 */
-	private function validateWhenUnavailable(array $entry, string $entryId, array &$errors): void {
-		$mode = ($entry['whenUnavailable'] ?? 'hide');
-		if (in_array($mode, self::UNAVAILABLE_MODES, true) === true) {
-			return;
+	private function whenUnavailableErrors(HandoffAnnotationEntry $entry): array {
+		if (in_array($entry->field(key: 'whenUnavailable', default: 'hide'), self::UNAVAILABLE_MODES, true) === true) {
+			return [];
 		}
 
-		$errors[] = [
-			'code' => 'handoff-bad-when-unavailable',
-			'message' => sprintf(
-				'Handoff "%s": `whenUnavailable` must be one of [%s].',
-				$entryId,
-				implode(', ', self::UNAVAILABLE_MODES)
-			),
-		];
-
-	}//end validateWhenUnavailable()
+		$message = sprintf('`whenUnavailable` must be one of [%s].', implode(', ', self::UNAVAILABLE_MODES));
+		return [$entry->fault(code: 'handoff-bad-when-unavailable', message: $message)];
+	}//end whenUnavailableErrors()
 
 	/**
-	 * Validate `onSuccess.set` keys exist on the source schema.
+	 * The mapping rules bound to the contract of the entry's target kind.
 	 *
-	 * @param array<string, mixed> $entry The handoff entry.
-	 * @param string $entryId The entry id (for messages).
-	 * @param array<string, mixed> $properties The source schema's properties map.
-	 * @param array<int, array{code: string, message: string}> $errors Error accumulator (by reference).
+	 * @param HandoffAnnotationEntry $entry The entry.
 	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-	 *   (Scenario: `onSuccess.set` names a property missing from the source schema)
+	 * @return HandoffMappingChecks The rules for its `mapping` block.
 	 */
-	private function validateOnSuccess(array $entry, string $entryId, array $properties, array &$errors): void {
-		$onSuccess = ($entry['onSuccess'] ?? null);
-		if ($onSuccess === null) {
-			return;
+	private function mappingChecksFor(HandoffAnnotationEntry $entry): HandoffMappingChecks {
+		$kindUri = $entry->kindUri();
+		$contract = new HandoffKindContract(
+			kindUri: $kindUri,
+			isContractKind: HandoffKindContracts::isContractKind($kindUri),
+			allFields: HandoffKindContracts::allFields($kindUri),
+			mandatoryFields: HandoffKindContracts::mandatoryFields($kindUri)
+		);
+
+		return new HandoffMappingChecks(contract: $contract);
+	}//end mappingChecksFor()
+
+	/**
+	 * Build one error entry.
+	 *
+	 * @param string $code    The error code.
+	 * @param string $message The human-readable message.
+	 *
+	 * @return array{code: string, message: string} The error.
+	 */
+	private function error(string $code, string $message): array {
+		return ['code' => $code, 'message' => $message];
+	}//end error()
+
+	/**
+	 * The schema's own properties map, or an empty map when it is malformed.
+	 *
+	 * @param array<string, mixed> $schema The schema shape.
+	 *
+	 * @return array<string, mixed> The properties map.
+	 */
+	private function ownProperties(array $schema): array {
+		$properties = ($schema['properties'] ?? []);
+		if (is_array($properties) === false) {
+			return [];
 		}
 
-		$set = null;
-		if (is_array($onSuccess) === true) {
-			$set = ($onSuccess['set'] ?? null);
-		}
-
-		if (is_array($set) === false || $set === []) {
-			$errors[] = [
-				'code' => 'handoff-bad-success-update',
-				'message' => sprintf('Handoff "%s": `onSuccess` must carry a non-empty `set` map.', $entryId),
-			];
-			return;
-		}
-
-		foreach (array_keys($set) as $property) {
-			if (array_key_exists((string)$property, $properties) === false) {
-				$errors[] = [
-					'code' => 'handoff-bad-success-update',
-					'message' => sprintf(
-						'Handoff "%s": onSuccess.set names property "%s" which the source schema does not define.',
-						$entryId,
-						(string)$property
-					),
-				];
-			}
-		}
-
-	}//end validateOnSuccess()
+		return $properties;
+	}//end ownProperties()
 
 	/**
 	 * Extract the schema's declared lifecycle states (the lifecycle field's
@@ -452,7 +363,40 @@ class HandoffAnnotationValidator {
 	 *   (Requirement: `x-openregister-handoff` declarative dialect)
 	 */
 	private function lifecycleStates(array $schema): ?array {
-		$lifecycle = ($schema['x-openregister-lifecycle'] ?? null);
+		$field = $this->lifecycleField(lifecycle: ($schema['x-openregister-lifecycle'] ?? null));
+		if ($field === null) {
+			return null;
+		}
+
+		return $this->enumOf(schema: $schema, field: $field);
+	}//end lifecycleStates()
+
+	/**
+	 * The `enum` of one schema property, as strings.
+	 *
+	 * @param array<string, mixed> $schema The schema shape.
+	 * @param string               $field  The property name.
+	 *
+	 * @return array<int, string>|null The enum values, or null when the property declares none.
+	 */
+	private function enumOf(array $schema, string $field): ?array {
+		$properties = ($schema['properties'] ?? []);
+		$enum = ($properties[$field]['enum'] ?? null);
+		if (is_array($enum) === false) {
+			return null;
+		}
+
+		return array_values(array_map('strval', $enum));
+	}//end enumOf()
+
+	/**
+	 * The property a lifecycle annotation drives, from `field` or else `property`.
+	 *
+	 * @param mixed $lifecycle The raw `x-openregister-lifecycle` value.
+	 *
+	 * @return string|null The property name, or null when the annotation names none.
+	 */
+	private function lifecycleField(mixed $lifecycle): ?string {
 		if (is_array($lifecycle) === false) {
 			return null;
 		}
@@ -462,12 +406,6 @@ class HandoffAnnotationValidator {
 			return null;
 		}
 
-		$properties = ($schema['properties'] ?? []);
-		$enum = ($properties[$field]['enum'] ?? null);
-		if (is_array($enum) === false) {
-			return null;
-		}
-
-		return array_values(array_map('strval', $enum));
-	}//end lifecycleStates()
+		return $field;
+	}//end lifecycleField()
 }//end class
