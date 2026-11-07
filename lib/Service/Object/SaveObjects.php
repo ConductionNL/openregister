@@ -1805,18 +1805,8 @@ class SaveObjects {
 		$schemaCache = [];
 		$schemaAnalysis = [];
 
-		$schemaIds = [];
-		foreach ($objects as $object) {
-			$selfData = $object['@self'] ?? [];
-			$schemaId = $selfData['schema'] ?? null;
-			if ($schemaId !== null && in_array($schemaId, $schemaIds) === false) {
-				$schemaIds[] = $schemaId;
-			}
-		}
-
-		// PERFORMANCE OPTIMIZATION: Load and analyze all schemas with caching.
 		// NO ERROR SUPPRESSION: Let schema loading errors bubble up immediately!
-		foreach ($schemaIds as $schemaId) {
+		foreach ($this->distinctSchemaIds(objects: $objects) as $schemaId) {
 			$schema = $this->loadSchemaWithCache(schemaId: $schemaId);
 			$schemaCache[$schemaId] = $schema;
 			$schemaAnalysis[$schemaId] = $this->getSchemaAnalysisWithCache(schema: $schema);
@@ -1826,10 +1816,32 @@ class SaveObjects {
 	}//end groupAndLoadSchemas()
 
 	/**
+	 * The schema ids the objects name in @self, once each (loosely compared), in first-seen order.
+	 *
+	 * @param array $objects The objects.
+	 *
+	 * @return array The schema ids; every value but null counts.
+	 */
+	private function distinctSchemaIds(array $objects): array {
+		$schemaIds = [];
+		foreach ($objects as $object) {
+			$schemaId = ($object['@self']['schema'] ?? null);
+			if ($schemaId !== null && in_array($schemaId, $schemaIds) === false) {
+				$schemaIds[] = $schemaId;
+			}
+		}
+
+		return $schemaIds;
+	}//end distinctSchemaIds()
+
+	/**
 	 * Prepare a single object in a mixed-schema bulk save operation
 	 *
 	 * Handles ID generation, metadata hydration, relation scanning, and
 	 * pre-validation cascading for an individual object within a mixed-schema batch.
+	 * A row whose @self schema is false passes through unchanged, to be caught in the
+	 * transformation; any other error bubbles up. Hydrated metadata goes to @self and
+	 * the top level (for bulk SQL).
 	 *
 	 * @param array $object The raw object data with @self metadata
 	 * @param array $schemaCache The schema cache indexed by schema ID
@@ -1841,47 +1853,56 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function prepareMixedSchemaObject(array $object, array $schemaCache): array {
-		// NO ERROR SUPPRESSION: Let object processing errors bubble up immediately!
-		$selfData = $object['@self'] ?? [];
-		$schemaId = $selfData['schema'] ?? null;
-
-		// Allow objects without schema ID to pass through - they'll be caught in transformation.
+		$schemaId = ($object['@self']['schema'] ?? null);
 		if ($schemaId === false) {
 			return $object;
 		}
 
-		// Schema validation - direct error if not found in cache.
+		$schema = $this->cachedPreparationSchema(schemaId: $schemaId, schemaCache: $schemaCache);
+		$object = $this->withGeneratedSelfId(object: $object);
+		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
+		$selfData = $this->applyHydratedMetadata(selfData: ($object['@self'] ?? []), object: $object, tempEntity: $tempEntity);
+		$selfData['relations'] = (new BulkRelationScanner())->scan(data: $tempEntity->getObject(), run: new BulkRelationRun(schema: $schema));
+		$object['@self'] = $selfData;
+
+		return $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id'])[0];
+	}//end prepareMixedSchemaObject()
+
+	/**
+	 * The schema a mixed-schema row names, from the preparation's schema cache.
+	 *
+	 * @param mixed $schemaId    The row's @self schema.
+	 * @param array $schemaCache The loaded schemas by id.
+	 *
+	 * @return Schema
+	 *
+	 * @throws Exception When the schema is not in the cache.
+	 */
+	private function cachedPreparationSchema(mixed $schemaId, array $schemaCache): Schema {
 		if (isset($schemaCache[$schemaId]) === false) {
 			throw new Exception("Schema {$schemaId} not found in cache during preparation");
 		}
 
-		$schema = $schemaCache[$schemaId];
+		return $schemaCache[$schemaId];
+	}//end cachedPreparationSchema()
 
-		// Accept any non-empty string as ID, generate UUID if not provided.
-		$providedId = $selfData['id'] ?? null;
+	/**
+	 * The object with a generated uuid as its @self id when it has none, or only whitespace, or "0".
+	 *
+	 * @param array $object The object.
+	 *
+	 * @return array The object.
+	 */
+	private function withGeneratedSelfId(array $object): array {
+		$selfData = ($object['@self'] ?? []);
+		$providedId = ($selfData['id'] ?? null);
 		if ($providedId === null || empty(trim($providedId)) === true) {
 			$selfData['id'] = Uuid::v4()->toRfc4122();
 			$object['@self'] = $selfData;
 		}
 
-		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
-
-		// Extract hydrated metadata back to object's @self data AND top level (for bulk SQL).
-		$selfData = $object['@self'] ?? [];
-		$selfData = $this->applyHydratedMetadata(selfData: $selfData, object: $object, tempEntity: $tempEntity);
-
-		// RELATIONS EXTRACTION: Scan the object data for relations (UUIDs and URLs).
-		$relationData = $tempEntity->getObject();
-		$relations = (new BulkRelationScanner())->scan(data: $relationData, run: new BulkRelationRun(schema: $schema));
-		$selfData['relations'] = $relations;
-
-		$object['@self'] = $selfData;
-
-		// Handle pre-validation cascading for inversedBy properties.
-		[$processedObject] = $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id']);
-
-		return $processedObject;
-	}//end prepareMixedSchemaObject()
+		return $object;
+	}//end withGeneratedSelfId()
 
 	/**
 	 * PERFORMANCE OPTIMIZED: Prepare objects for single-schema bulk operations
