@@ -44,7 +44,7 @@ use Throwable;
 /**
  * Reserves the next running number for a (register, schema, scope) triple.
  */
-class SequenceService {
+class SequenceService implements SequenceServiceInterface {
 	/**
 	 * Wire the sequence mapper and DB connection used for the reservation transaction.
 	 *

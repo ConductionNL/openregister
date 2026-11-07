@@ -30,6 +30,10 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
@@ -60,6 +64,8 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 */
 	private const HIDDEN = [
 		DatabaseIntrospectionService::class => [DatabaseIntrospectionServiceInterface::class, ContractBindings::class],
+		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
+		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
 		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
 		FormDestinationValidator::class => [FormDestinationValidatorInterface::class, ContractBindings::class],
 		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],

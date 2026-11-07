@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
-use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
+use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -103,9 +103,9 @@ class SourcesController extends Controller {
 	/**
 	 * Harvest pipeline orchestrator
 	 *
-	 * @var HarvestPipelineService
+	 * @var HarvestPipelineServiceInterface
 	 */
-	private readonly HarvestPipelineService $pipeline;
+	private readonly HarvestPipelineServiceInterface $pipeline;
 
 	/**
 	 * Opens read-only DBAL connections for database sources
