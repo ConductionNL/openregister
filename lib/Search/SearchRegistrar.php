@@ -28,6 +28,8 @@ use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
@@ -38,6 +40,8 @@ use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -67,10 +71,12 @@ final class SearchRegistrar {
 	public const BINDINGS = [
 		VectorEmbeddingsInterface::class => VectorEmbeddings::class,
 		EmbeddingGeneratorInterface::class => VectorEmbeddings::class,
+		GeoFeatureCollectionBuilderInterface::class => GeoFeatureCollectionBuilder::class,
 		GeoFilterApplierInterface::class => GeoFilterApplier::class,
 		GeoFilterParserInterface::class => GeoFilterParser::class,
 		MetricsRetentionInterface::class => MetricsService::class,
 		PlaceholderResolverInterface::class => PlaceholderResolver::class,
+		SearchIndexMaintenanceInterface::class => SearchIndexMaintenance::class,
 		DuplicateDetectionServiceInterface::class => DuplicateDetectionService::class,
 		UniqueHintAnnotationValidatorInterface::class => UniqueHintAnnotationValidator::class,
 		TimeseriesRequestValidatorInterface::class => TimeseriesRequestValidator::class,

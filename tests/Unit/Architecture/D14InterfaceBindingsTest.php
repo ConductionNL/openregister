@@ -27,6 +27,11 @@ use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Listener\SchemaFlowImportListenerInterface;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Listener\UniqueConstraintListenerInterface;
+use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -50,7 +55,9 @@ final class D14InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
+		GeoFeatureCollectionBuilder::class => [GeoFeatureCollectionBuilderInterface::class, SearchRegistrar::class],
 		SchemaFlowImportListener::class => [SchemaFlowImportListenerInterface::class, ListenerRegistrar::class],
+		SearchIndexMaintenance::class => [SearchIndexMaintenanceInterface::class, SearchRegistrar::class],
 		UniqueConstraintListener::class => [UniqueConstraintListenerInterface::class, ListenerRegistrar::class],
 	];
 

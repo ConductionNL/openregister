@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Search\Service\Geo;
 /**
  * Builds GeoJSON FeatureCollections and WFS-compatible envelopes.
  */
-class GeoFeatureCollectionBuilder {
+class GeoFeatureCollectionBuilder implements GeoFeatureCollectionBuilderInterface {
 
 	/**
 	 * GeoJSON geometry types recognised when scanning a row.
