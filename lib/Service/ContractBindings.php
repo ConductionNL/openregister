@@ -55,6 +55,8 @@ use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
@@ -89,6 +91,7 @@ final class ContractBindings {
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		GitHubClientInterface::class => GitHubHandler::class,
+		GitLabHandlerInterface::class => GitLabHandler::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
 		ObjectCalendarEventsInterface::class => CalendarEventService::class,
