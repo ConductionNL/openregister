@@ -37,6 +37,9 @@ use PHPUnit\Framework\TestCase;
  * UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper
+ * @covers \OCA\OpenRegister\Service\Case\ZaaktypeSkeletonDraft
+ * @covers \OCA\OpenRegister\Service\Case\ZaaktypeStageBuilder
+ * @covers \OCA\OpenRegister\Service\Case\ZaaktypeRoleMapper
  */
 class ZaaktypeCaseSkeletonMapperGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/zaaktype-skeleton-golden.json';
