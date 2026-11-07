@@ -33,9 +33,7 @@ namespace OCA\OpenRegister\Service\Case;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\CaseItem;
-use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -55,17 +53,13 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param UnarmedTimerMarkers $markers The items that lack their statutory timer.
-	 * @param CaseItemMapper $items The plan-item table.
-	 * @param FlowTimerMapper $timerRows Reads the timers an item already has.
+	 * @param CaseRearmSources $sources The markers, the plan-item table and the timers an item already has.
 	 * @param CasePlanItemTimers $timers Arms the timer.
 	 * @param CasePlanService $plans Enforces an expiry that passed meanwhile.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly UnarmedTimerMarkers $markers,
-		private readonly CaseItemMapper $items,
-		private readonly FlowTimerMapper $timerRows,
+		private readonly CaseRearmSources $sources,
 		private readonly CasePlanItemTimers $timers,
 		private readonly CasePlanService $plans,
 		private readonly LoggerInterface $logger,
@@ -85,7 +79,7 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 	public function run(?DateTimeInterface $now = null): array {
 		$moment = DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable());
 		$result = ['armed' => 0, 'enforced' => 0, 'dropped' => 0, 'failed' => 0];
-		foreach (array_keys($this->markers->all()) as $uuid) {
+		foreach (array_keys($this->sources->markers->all()) as $uuid) {
 			$result[$this->settle(itemUuid: (string)$uuid, now: $moment)]++;
 		}
 
@@ -123,7 +117,7 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 	 */
 	private function rearm(string $itemUuid, DateTimeImmutable $now): string {
 		try {
-			$item = $this->items->findByUuid(uuid: $itemUuid);
+			$item = $this->sources->items->findByUuid(uuid: $itemUuid);
 		} catch (DoesNotExistException) {
 			return $this->drop(itemUuid: $itemUuid);
 		}
@@ -153,7 +147,7 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 			return $this->enforce(itemUuid: $itemUuid);
 		}
 
-		$this->markers->remove(itemUuid: $itemUuid);
+		$this->sources->markers->remove(itemUuid: $itemUuid);
 		if ($outcome === CasePlanItemTimers::REARM_ARMED) {
 			return 'armed';
 		}
@@ -170,7 +164,7 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 	 */
 	private function enforce(string $itemUuid): string {
 		if ($this->plans->onTimerExpired(itemUuid: $itemUuid, timerUuid: self::CAUSE_REF) === true) {
-			$this->markers->remove(itemUuid: $itemUuid);
+			$this->sources->markers->remove(itemUuid: $itemUuid);
 
 			return 'enforced';
 		}
@@ -191,7 +185,7 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 	 * @return string `dropped`.
 	 */
 	private function drop(string $itemUuid): string {
-		$this->markers->remove(itemUuid: $itemUuid);
+		$this->sources->markers->remove(itemUuid: $itemUuid);
 
 		return 'dropped';
 	}//end drop()
@@ -205,7 +199,7 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 	 */
 	private function needsNothingMore(string $itemUuid): bool {
 		try {
-			return $this->items->findByUuid(uuid: $itemUuid)->isInTerminalState() === true;
+			return $this->sources->items->findByUuid(uuid: $itemUuid)->isInTerminalState() === true;
 		} catch (DoesNotExistException) {
 			return true;
 		}
@@ -219,7 +213,7 @@ class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 	 * @return bool
 	 */
 	private function hasOpenExpiry(CaseItem $item): bool {
-		$open = $this->timerRows->findBySubject(
+		$open = $this->sources->timerRows->findBySubject(
 			subjectType: CasePlanItemTimers::SUBJECT_TYPE,
 			subjectUuid: (string)$item->getUuid(),
 			states: [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED]
