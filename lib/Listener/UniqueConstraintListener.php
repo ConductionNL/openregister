@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -69,13 +69,13 @@ class UniqueConstraintListener implements IEventListener, UniqueConstraintListen
 	 *
 	 * @param UniqueConstraintEvaluatorInterface $evaluator Reads and describes the constraints.
 	 * @param SchemaMapperInterface $schemas Resolves the schema an object belongs to.
-	 * @param MagicMapperInterface $objects Finds the objects already holding a combination.
+	 * @param MagicObjectSearchInterface $objects Finds the objects already holding a combination.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly UniqueConstraintEvaluatorInterface $evaluator,
 		private readonly SchemaMapperInterface $schemas,
-		private readonly MagicMapperInterface $objects,
+		private readonly MagicObjectSearchInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 
