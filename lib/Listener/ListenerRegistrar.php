@@ -24,6 +24,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -480,6 +481,8 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectDeletingEvent::class, FrozenObjectDeleteGuardListener::class);
 		$context->registerEventListener(ObjectDeletingEvent::class, ObjectStateDeleteGuardListener::class);
 
+		self::registerLeavingGuards(context: $context);
+
 		// Named uniqueness constraints — a `refuse` constraint stops the write
 		// naming the combination and the conflicting object; a `report` one
 		// lets it through and records the breach on the object's validation
@@ -522,6 +525,18 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectUpdatedEvent::class, ObjectMetricsListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, ObjectMetricsListener::class);
 	}//end registerSaveRuleListeners()
+
+	/**
+	 * A move takes the row away without a delete: a calendar or a code-list value others hold is refused there as well.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerLeavingGuards(IRegistrationContext $context): void {
+		$context->registerEventListener(ObjectLeavingEvent::class, WorkingCalendarDeleteGuardListener::class);
+		$context->registerEventListener(ObjectLeavingEvent::class, ConceptDeleteGuardListener::class);
+	}//end registerLeavingGuards()
 
 	/**
 	 * What follows a write: reported content, notifications, cache eviction, projections, handoffs and pruning.

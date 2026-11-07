@@ -49,6 +49,8 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -87,12 +89,14 @@ class MoveObject {
 	 * @param ValidateObjectInterface   $validator Validation against a schema.
 	 * @param AuditTrailMapperInterface $audit    The audit trail.
 	 * @param LoggerInterface  $logger   The logger.
+	 * @param IEventDispatcher $events   Asks the guards of values other records hold.
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objects,
 		private readonly ValidateObjectInterface $validator,
 		private readonly AuditTrailMapperInterface $audit,
 		private readonly LoggerInterface $logger,
+		private readonly IEventDispatcher $events,
 	) {
 	}//end __construct()
 
@@ -193,7 +197,7 @@ class MoveObject {
 			return $this->refusal(move: $move, error: 'This object does not live at the address it is being moved from.');
 		}
 
-		$kept = $this->keptReason(move: $move);
+		$kept = $this->keptReason(object: $object, actor: $actor);
 		if ($kept !== null) {
 			return $this->refusal(move: $move, error: $kept);
 		}
@@ -226,18 +230,40 @@ class MoveObject {
 	 * Why the object has to stay where it is, or null when it may leave.
 	 *
 	 * The source row goes without delete events, so the delete guards never see it.
+	 * A caller that changes the data before the move asks with the stored object:
+	 * the guards read what the row holds now.
 	 *
-	 * @param ObjectMove $move The move.
+	 * @param ObjectEntity $object The object, as stored at its source.
+	 * @param string       $actor  Who asked.
 	 *
 	 * @return string|null The reason.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
 	 */
-	private function keptReason(ObjectMove $move): ?string {
-		if ($move->object->isLockedBySomeoneElse(userId: $move->actor) === true) {
+	public function keptReason(ObjectEntity $object, string $actor): ?string {
+		if ($object->isLockedBySomeoneElse(userId: $actor) === true) {
 			return 'This object is locked by someone else, so it was not moved.';
 		}
 
-		return (new FileWriteGuard())->refusalFor(object: $move->object)?->getMessage();
+		return ((new FileWriteGuard())->refusalFor(object: $object)?->getMessage() ?? $this->heldReason(object: $object));
 	}//end keptReason()
+
+	/**
+	 * The refusal of a guard for a value other records still need here, or null.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return string|null The reason.
+	 */
+	private function heldReason(ObjectEntity $object): ?string {
+		$event = new ObjectLeavingEvent(object: $object);
+		$this->events->dispatchTyped($event);
+		if ($event->isPropagationStopped() === false) {
+			return null;
+		}
+
+		return (string)($event->getErrors()['message'] ?? 'Other records still need this object where it is, so it was not moved.');
+	}//end heldReason()
 
 	/**
 	 * Whether the object lives at the source address, the only table its old row is removed from.

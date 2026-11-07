@@ -171,6 +171,7 @@ class MigrationHandler {
 			$this->assertInSource(sourceObject: $sourceObject, run: $run);
 
 			$stored = $this->storedObject(sourceObject: $sourceObject, run: $run);
+			$this->assertMayLeave(stored: $stored);
 			$sourceData = $stored->getObject();
 			$mappedData = $this->dataManipHandler->mapObjectProperties(
 				sourceData: $sourceData,
@@ -229,6 +230,26 @@ class MigrationHandler {
 			_multitenancy: false
 		);
 	}//end storedObject()
+
+	/**
+	 * Refuse an object that has to stay, asked before the mapping changes what it holds.
+	 *
+	 * A migration names no actor, so it holds no lock.
+	 *
+	 * @param ObjectEntity $stored The object as stored in the source table.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the object has to stay.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function assertMayLeave(ObjectEntity $stored): void {
+		$kept = $this->mover->keptReason(object: $stored, actor: '');
+		if ($kept !== null) {
+			throw new InvalidArgumentException($kept);
+		}
+	}//end assertMayLeave()
 
 	/**
 	 * Move the object with its mapped data: one row at the target, none left in the source.

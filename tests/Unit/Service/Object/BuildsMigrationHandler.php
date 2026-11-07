@@ -17,6 +17,7 @@ use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\ValidationResult;
 use Psr\Log\LoggerInterface;
 
@@ -50,7 +51,7 @@ trait BuildsMigrationHandler {
 			objectMapper: $mapper,
 			utilityHandler: $utility,
 			dataManipHandler: $dataManip,
-			mover: new MoveObject(objects: $mapper, validator: $validator, audit: $audit, logger: $logger),
+			mover: new MoveObject(objects: $mapper, validator: $validator, audit: $audit, logger: $logger, events: $this->createStub(IEventDispatcher::class)),
 			relationScanner: $this->createMock(SaveObject::class),
 			auditTrail: $audit,
 			logger: $logger

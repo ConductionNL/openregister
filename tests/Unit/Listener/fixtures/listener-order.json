@@ -114,6 +114,10 @@
 		"OCA\\OpenRegister\\Listener\\FrozenObjectDeleteGuardListener",
 		"OCA\\OpenRegister\\Listener\\ObjectStateDeleteGuardListener"
 	],
+	"OCA\\OpenRegister\\Event\\ObjectLeavingEvent": [
+		"OCA\\OpenRegister\\Listener\\WorkingCalendarDeleteGuardListener",
+		"OCA\\OpenRegister\\Listener\\ConceptDeleteGuardListener"
+	],
 	"OCA\\OpenRegister\\Event\\ObjectLockedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener"
