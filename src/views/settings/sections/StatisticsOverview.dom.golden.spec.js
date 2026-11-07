@@ -32,8 +32,12 @@ jest.mock('../../../dialogs/settings/RebaseConfirmationDialog.vue', () =>
 jest.mock('vue-material-design-icons/CheckCircle.vue', () =>
 	require('../../__mocks__/goldenDom.js').stubModule('CheckCircle'),
 )
-jest.mock('vue-material-design-icons/Delete.vue', () => require('../../__mocks__/goldenDom.js').stubModule('Delete'))
-jest.mock('vue-material-design-icons/Refresh.vue', () => require('../../__mocks__/goldenDom.js').stubModule('Refresh'))
+jest.mock('vue-material-design-icons/Delete.vue', () =>
+	require('../../__mocks__/goldenDom.js').stubModule('Delete'),
+)
+jest.mock('vue-material-design-icons/Refresh.vue', () =>
+	require('../../__mocks__/goldenDom.js').stubModule('Refresh'),
+)
 jest.mock('../../../store/settings.js', () => {
 	const useSettingsStore = () => globalThis.mockSettingsStore
 	useSettingsStore.$id = 'settings'
@@ -127,14 +131,27 @@ function section(state) {
  * @return {Array} The buttons
  */
 function buttons(wrapper, text) {
-	return wrapper.findAllComponents({ name: 'NcButton' }).filter((button) => button.text().includes(text))
+	return wrapper
+		.findAllComponents({ name: 'NcButton' })
+		.filter((button) => button.text().includes(text))
 }
 
 describe('statistics overview', () => {
 	it.each([
 		['with warnings and data', {}],
-		['while loading and busy', { loading: true, rebasing: true, massValidating: true, clearingAuditTrails: true }],
-		['while clearing each kind', { clearingBlobObjects: true, clearingSearchTrails: true }],
+		[
+			'while loading and busy',
+			{
+				loading: true,
+				rebasing: true,
+				massValidating: true,
+				clearingAuditTrails: true,
+			},
+		],
+		[
+			'while clearing each kind',
+			{ clearingBlobObjects: true, clearingSearchTrails: true },
+		],
 		[
 			'without warnings or data',
 			{
@@ -168,12 +185,15 @@ describe('statistics overview', () => {
 				},
 			},
 		],
-		['with every dialog open', {
-			showRebaseConfirmation: true,
-			showClearAuditTrailsConfirmation: true,
-			showClearSearchTrailsConfirmation: true,
-			showClearBlobObjectsConfirmation: true,
-		}],
+		[
+			'with every dialog open',
+			{
+				showRebaseConfirmation: true,
+				showClearAuditTrailsConfirmation: true,
+				showClearSearchTrailsConfirmation: true,
+				showClearBlobObjectsConfirmation: true,
+			},
+		],
 	])('renders %s', (name, state) => {
 		const html = normalise(section(state))
 		expect(html).toContain('stats-table')
