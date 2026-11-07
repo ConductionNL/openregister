@@ -87,7 +87,7 @@ class GitHubRequestValidator {
 			return null;
 		}
 
-		return new JSONResponse(['error' => 'repo_invalid_format'], Http::STATUS_BAD_REQUEST);
+		return $this->badRequest(error: 'repo_invalid_format');
 	}//end validateRepoFormat()
 
 	/**
@@ -104,7 +104,7 @@ class GitHubRequestValidator {
 			return null;
 		}
 
-		return new JSONResponse(['error' => 'per_page_out_of_range'], Http::STATUS_BAD_REQUEST);
+		return $this->badRequest(error: 'per_page_out_of_range');
 	}//end validatePerPage()
 
 	/**
@@ -122,7 +122,7 @@ class GitHubRequestValidator {
 			return null;
 		}
 
-		return new JSONResponse(['error' => 'title_invalid_length'], Http::STATUS_BAD_REQUEST);
+		return $this->badRequest(error: 'title_invalid_length');
 	}//end validateTitleLength()
 
 	/**
@@ -139,7 +139,7 @@ class GitHubRequestValidator {
 			return null;
 		}
 
-		return new JSONResponse(['error' => 'body_invalid_length'], Http::STATUS_BAD_REQUEST);
+		return $this->badRequest(error: 'body_invalid_length');
 	}//end validateBodyLength()
 
 	/**
@@ -156,15 +156,11 @@ class GitHubRequestValidator {
 			return null;
 		}
 
-		if (strlen($specRef) > self::SPECREF_MAX_LENGTH) {
-			return new JSONResponse(['error' => 'specref_invalid_format'], Http::STATUS_BAD_REQUEST);
+		if (strlen($specRef) > self::SPECREF_MAX_LENGTH || preg_match(self::SPECREF_REGEX, $specRef) !== 1) {
+			return $this->badRequest(error: 'specref_invalid_format');
 		}
 
-		if (preg_match(self::SPECREF_REGEX, $specRef) === 1) {
-			return null;
-		}
-
-		return new JSONResponse(['error' => 'specref_invalid_format'], Http::STATUS_BAD_REQUEST);
+		return null;
 	}//end validateSpecRef()
 
 	/**
@@ -181,7 +177,7 @@ class GitHubRequestValidator {
 			return null;
 		}
 
-		return new JSONResponse(['error' => 'sort_invalid_value'], Http::STATUS_BAD_REQUEST);
+		return $this->badRequest(error: 'sort_invalid_value');
 	}//end validateSort()
 
 	/**
@@ -198,20 +194,54 @@ class GitHubRequestValidator {
 			return null;
 		}
 
+		$error = $this->labelsError(labels: $labels);
+		if ($error === null) {
+			return null;
+		}
+
+		return $this->badRequest(error: $error);
+	}//end validateLabels()
+
+	/**
+	 * The error code of a non-empty label list: too many labels, or one that is invalid.
+	 *
+	 * @param array<string> $labels Parsed label list.
+	 *
+	 * @return string|null The error code, or null when the list is valid.
+	 */
+	private function labelsError(array $labels): ?string {
 		if (count($labels) > self::LABELS_MAX_COUNT) {
-			return new JSONResponse(['error' => 'labels_too_many'], Http::STATUS_BAD_REQUEST);
+			return 'labels_too_many';
 		}
 
 		foreach ($labels as $label) {
-			if (strlen($label) > self::LABEL_MAX_LENGTH) {
-				return new JSONResponse(['error' => 'labels_invalid_format'], Http::STATUS_BAD_REQUEST);
-			}
-
-			if (preg_match(self::LABEL_REGEX, $label) !== 1) {
-				return new JSONResponse(['error' => 'labels_invalid_format'], Http::STATUS_BAD_REQUEST);
+			if ($this->isValidLabel(label: $label) === false) {
+				return 'labels_invalid_format';
 			}
 		}
 
 		return null;
-	}//end validateLabels()
+	}//end labelsError()
+
+	/**
+	 * Whether one label is at most LABEL_MAX_LENGTH long and matches LABEL_REGEX.
+	 *
+	 * @param string $label One label name.
+	 *
+	 * @return bool
+	 */
+	private function isValidLabel(string $label): bool {
+		return strlen($label) <= self::LABEL_MAX_LENGTH && preg_match(self::LABEL_REGEX, $label) === 1;
+	}//end isValidLabel()
+
+	/**
+	 * A 400 response carrying the error code.
+	 *
+	 * @param string $error The error code.
+	 *
+	 * @return JSONResponse
+	 */
+	private function badRequest(string $error): JSONResponse {
+		return new JSONResponse(['error' => $error], Http::STATUS_BAD_REQUEST);
+	}//end badRequest()
 }//end class
