@@ -204,7 +204,7 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 		// THE BATCH IS ASKED FOR THE ORDINARY CHILD ONLY. If the retained child
 		// appeared in this list, the cascade would already have reached for it.
 		$this->objectMapper->expects($this->once())
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->with(
 				$this->equalTo(['child-ordinary']),
 				$this->equalTo(false)
@@ -266,7 +266,7 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAllArchivalCascadeDeletesNothingAndReportsEveryChild(): void {
-		$this->objectMapper->expects($this->never())->method('findMultipleAcrossAllMagicTables');
+		$this->objectMapper->expects($this->never())->method('findStoredAcrossAllMagicTables');
 		$this->objectMapper->expects($this->never())->method('softDeleteMultipleObjectEntities');
 		$this->objectMapper->expects($this->never())->method('deleteObjects');
 
@@ -326,7 +326,7 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 	 */
 	public function testAnOrdinaryCascadeReportsAnEmptyRetainedList(): void {
 		$ordinary = $this->entity('child-ordinary', self::SCHEMA_ORDINARY);
-		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$ordinary]);
+		$this->objectMapper->method('findStoredAcrossAllMagicTables')->willReturn([$ordinary]);
 		$this->objectMapper->method('softDeleteMultipleObjectEntities')->willReturnArgument(0);
 
 		$analysis = new DeletionAnalysis(

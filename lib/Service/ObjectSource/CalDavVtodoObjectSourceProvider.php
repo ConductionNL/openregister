@@ -43,7 +43,33 @@ use Throwable;
  */
 class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 
+	use AnyAppInstalledCheck;
 	use CountsThroughFindAll;
+
+	/**
+	 * Apps whose presence enables CalDAV VTODO reads. VTODOs live in the
+	 * user's CalDAV calendars served by the CORE `dav` app — the
+	 * `tasks`/`calendar` apps are only optional UIs, so `dav` comes first
+	 * with tasks/calendar as positive signals too.
+	 *
+	 * @var list<string>
+	 */
+	private const ENABLING_APPS = ['dav', 'tasks', 'calendar'];
+
+	/**
+	 * The core object fields: field => [VTODO key, default when absent].
+	 *
+	 * @var array<string, array{0: string, 1: string|null}>
+	 */
+	private const CORE_FIELDS = [
+		'title' => ['summary', ''],
+		'description' => ['description', ''],
+		'status' => ['status', ''],
+		'dueDate' => ['due', null],
+		'completed' => ['completed', null],
+		'priority' => ['priority', null],
+	];
+
 	/**
 	 * Constructor.
 	 *
@@ -74,28 +100,6 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * {@inheritDoc}
 	 *
-	 * Enabled when CalDAV is available. VTODOs live in the user's CalDAV
-	 * calendars served by the CORE `dav` app — the `tasks`/`calendar` apps are
-	 * only optional UIs, so this checks `dav` (with tasks/calendar as positive
-	 * signals too).
-	 *
-	 * @return bool True when CalDAV VTODO reads are available.
-	 *
-	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.2
-	 */
-	public function isEnabled(): bool {
-		try {
-			return ($this->appManager->isInstalled('dav') === true
-				|| $this->appManager->isInstalled('tasks') === true
-				|| $this->appManager->isInstalled('calendar') === true);
-		} catch (Throwable $e) {
-			return false;
-		}
-	}//end isEnabled()
-
-	/**
-	 * {@inheritDoc}
-	 *
 	 * @param Register $register The register.
 	 * @param Schema $schema The sourced schema.
 	 * @param string $id The VTODO id (calendar-object uri) or uid.
@@ -106,13 +110,11 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		foreach ($this->readTasks(config: $config, limit: 1000, offset: 0) as $task) {
-			if ($this->matchesScope(task: $task, register: $register, schema: $schema, config: $config) === false) {
-				continue;
-			}
-
-			if ((string)($task['id'] ?? '') === $id || (string)($task['uid'] ?? '') === $id) {
-				return $this->toObjectEntity(register: $register, schema: $schema, task: $task);
+		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
+		$scope   = new VtodoScope(binding: $binding, config: $config);
+		foreach ($this->readTasks(query: ['limit' => 1000]) as $task) {
+			if ($scope->admits(task: $task) === true && $this->hasId(task: $task, id: $id) === true) {
+				return $this->toObjectEntity(binding: $binding, task: $task);
 			}
 		}
 
@@ -132,122 +134,96 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$limit = ($query['limit'] ?? 200);
-		$offset = ($query['offset'] ?? 0);
-		$status = ($query['filters']['status'] ?? null);
-
+		$binding = new SourcedObjectBinding(register: $register, schema: $schema);
+		$scope   = new VtodoScope(binding: $binding, config: $config);
 		$objects = [];
-		foreach ($this->readTasks(config: $config, limit: (int)$limit, offset: (int)$offset, status: $status) as $task) {
-			if ($this->matchesScope(task: $task, register: $register, schema: $schema, config: $config) === false) {
-				continue;
+		foreach ($this->readTasks(query: $query) as $task) {
+			if ($scope->admits(task: $task) === true) {
+				$objects[] = $this->toObjectEntity(binding: $binding, task: $task);
 			}
-
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, task: $task);
 		}
 
 		return $objects;
 	}//end findAll()
 
 	/**
-	 * Whether a VTODO is in scope for the bound schema.
-	 *
-	 * By default a sourced schema only surfaces VTODOs whose X-OPENREGISTER link
-	 * points at the bound register AND schema, so each projection shows only its
-	 * own tasks (not every VTODO the user owns). Config escape hatches:
-	 *  - `unscoped: true` — surface all of the user's VTODOs (no link filter);
-	 *  - `register` (int) / `schema` (int) — scope to a different register/schema
-	 *    than the bound one;
-	 *  - `schemas` (int[]) — scope to VTODOs linked to ANY of these schema ids.
+	 * Whether a VTODO answers to an id: its calendar-object uri or its uid.
 	 *
 	 * @param array<string, mixed> $task The VTODO task array.
-	 * @param Register $register The bound register.
-	 * @param Schema $schema The bound schema.
-	 * @param array<string, mixed> $config The object-source config block.
+	 * @param string               $id   The requested id.
 	 *
-	 * @return bool True when the task is in scope.
-	 *
-	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
+	 * @return bool True when the task has that id.
 	 */
-	private function matchesScope(array $task, Register $register, Schema $schema, array $config): bool {
-		if (($config['unscoped'] ?? false) === true) {
-			return true;
-		}
-
-		$wantRegister = (int)($config['register'] ?? $register->getId());
-		if ((int)($task['registerId'] ?? 0) !== $wantRegister) {
-			return false;
-		}
-
-		$wantSchemas = $config['schemas'] ?? null;
-		if (is_array($wantSchemas) === true && empty($wantSchemas) === false) {
-			return in_array((int)($task['schemaId'] ?? 0), array_map('intval', $wantSchemas), true);
-		}
-
-		$wantSchema = (int)($config['schema'] ?? $schema->getId());
-		return ((int)($task['schemaId'] ?? 0) === $wantSchema);
-	}//end matchesScope()
+	private function hasId(array $task, string $id): bool {
+		return (string)($task['id'] ?? '') === $id || (string)($task['uid'] ?? '') === $id;
+	}//end hasId()
 
 	/**
 	 * Read VTODO task arrays for the acting user, failing closed to an empty list.
 	 *
-	 * @param array<string, mixed> $config The object-source config block.
-	 * @param int $limit Maximum tasks to read.
-	 * @param int $offset Tasks to skip.
-	 * @param string|null $status Optional status filter.
+	 * @param array<string, mixed> $query Query: `limit` (200), `offset` (0), `filters.status`.
 	 *
 	 * @return array<int, array<string, mixed>> The task arrays.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $config reserved for calendar/collection selection.
-	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
 	 */
-	private function readTasks(array $config, int $limit, int $offset, ?string $status = null): array {
+	private function readTasks(array $query): array {
+		$status = $this->statusFilter(query: $query);
+		$limit  = (int)($query['limit'] ?? 200);
+		$offset = (int)($query['offset'] ?? 0);
 		try {
 			$result = $this->taskService->getAllUserTasks(status: $status, limit: $limit, offset: $offset);
 			return array_values($result['results']);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[ObjectSource:caldav-vtodo] could not read VTODOs: ' . $e->getMessage()
-			);
+			$this->logger->warning('[ObjectSource:caldav-vtodo] could not read VTODOs: ' . $e->getMessage());
 			return [];
 		}
 	}//end readTasks()
 
 	/**
+	 * The query's status filter.
+	 *
+	 * @param array<string, mixed> $query The findAll() query.
+	 *
+	 * @return string|null The status, or null for every status.
+	 */
+	private function statusFilter(array $query): ?string {
+		return ($query['filters']['status'] ?? null);
+	}//end statusFilter()
+
+	/**
 	 * Map a VTODO task array onto a non-persisted virtual ObjectEntity.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $task The TaskService VTODO array.
+	 * @param SourcedObjectBinding $binding The bound register and schema.
+	 * @param array<string, mixed> $task    The TaskService VTODO array.
 	 *
 	 * @return ObjectEntity The virtual object (never saved).
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-5.1
 	 */
-	private function toObjectEntity(Register $register, Schema $schema, array $task): ObjectEntity {
-		$uuid = (string)($task['uid'] ?? $task['id'] ?? '');
+	private function toObjectEntity(SourcedObjectBinding $binding, array $task): ObjectEntity {
+		return $binding->toEntity(uuid: (string)($task['uid'] ?? $task['id'] ?? ''), data: $this->taskData(task: $task));
+	}//end toObjectEntity()
 
-		$data = [
-			'title' => ($task['summary'] ?? ''),
-			'description' => ($task['description'] ?? ''),
-			'status' => ($task['status'] ?? ''),
-			'dueDate' => ($task['due'] ?? null),
-			'completed' => ($task['completed'] ?? null),
-			'priority' => ($task['priority'] ?? null),
-		];
+	/**
+	 * The object data of a VTODO: the core fields, then any non-core schema
+	 * fields round-tripped via X-OPENREGISTER-DATA (e.g. assignee), so the
+	 * projection is faithful to the bound schema.
+	 *
+	 * @param array<string, mixed> $task The TaskService VTODO array.
+	 *
+	 * @return array<string, mixed> The object data.
+	 */
+	private function taskData(array $task): array {
+		$data = [];
+		foreach (self::CORE_FIELDS as $field => [$key, $default]) {
+			$data[$field] = ($task[$key] ?? $default);
+		}
 
-		// Merge non-core schema fields round-tripped via X-OPENREGISTER-DATA
-		// (e.g. assignee), so the projection is faithful to the bound schema.
 		if (empty($task['fields']) === false && is_array($task['fields']) === true) {
 			$data = array_merge($data, $task['fields']);
 		}
 
-		$entity = new ObjectEntity();
-		$entity->setUuid($uuid);
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($data);
-
-		return $entity;
-	}//end toObjectEntity()
+		return $data;
+	}//end taskData()
 }//end class

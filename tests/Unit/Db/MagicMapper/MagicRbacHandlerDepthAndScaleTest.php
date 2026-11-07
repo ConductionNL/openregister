@@ -66,6 +66,7 @@ use Psr\Log\NullLogger;
  * Tasks 4.2 and 6.3: the tree of depth five, and the tree of 100,000.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\MagicMapper\RbacResolvers

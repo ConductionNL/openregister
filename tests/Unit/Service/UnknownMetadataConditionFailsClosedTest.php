@@ -57,6 +57,7 @@ use RuntimeException;
  * Unknown metadata in a stored rule: deny denies, allow does not grant, logged once.
  *
  * @covers \OCA\OpenRegister\Service\ConditionMatcher
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\RbacPermissionCheck

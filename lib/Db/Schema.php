@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\Schema\InversedByNormaliser;
+use OCA\OpenRegister\Db\Schema\SchemaPropertyDocument;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use JsonSerializable;
 use OCA\OpenRegister\Exception\CalendarDateKindException;
@@ -1186,7 +1188,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		// Validate and normalize inversedBy properties to ensure they are strings.
 		// TODO: Move writeBack, removeAfterWriteBack, and inversedBy
 		// from items property to configuration property.
-		$this->normalizeInversedByProperties();
+		$this->properties = (new InversedByNormaliser())->normalised(properties: $this->properties);
 
 		return $validator->validateProperties($this->properties);
 	}//end validateProperties()
@@ -1996,71 +1998,6 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end getAuthorizedGroups()
 
 	/**
-	 * Normalize inversedBy properties to ensure they are always strings
-	 *
-	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 */
-	private function normalizeInversedByProperties(): void {
-		if (empty($this->properties) === true) {
-			return;
-		}
-
-		foreach ($this->properties as $propertyName => $property) {
-			// Handle regular object properties.
-			// TODO: Move writeBack, removeAfterWriteBack, and inversedBy
-			// from items property to configuration property.
-			if (($property['inversedBy'] ?? null) !== null) {
-				$inversedById = ($property['inversedBy']['id'] ?? null);
-				if (is_array($property['inversedBy']) === true && $inversedById !== null) {
-					// Legacy object format: {"id": "fieldName"} → normalize to string.
-					$this->properties[$propertyName]['inversedBy'] = $property['inversedBy']['id'];
-					continue;
-				}
-
-				// Allow arrays of strings (multi-field inversedBy, e.g., ["moduleA", "moduleB"]).
-				if (is_array($property['inversedBy']) === true
-					&& array_is_list($property['inversedBy']) === true
-				) {
-					continue;
-				}
-
-				if (is_string($property['inversedBy']) === false) {
-					// Remove invalid inversedBy if it's not a string, array of strings, or object with id.
-					unset($this->properties[$propertyName]['inversedBy']);
-				}
-			}
-
-			// Handle array items with inversedBy.
-			// TODO: Move writeBack, removeAfterWriteBack, and inversedBy
-			// from items property to configuration property.
-			if (($property['items']['inversedBy'] ?? null) !== null) {
-				$itemsInversedById = ($property['items']['inversedBy']['id'] ?? null);
-				if (is_array($property['items']['inversedBy']) === true && $itemsInversedById !== null) {
-					// Legacy object format: {"id": "fieldName"} → normalize to string.
-					$this->properties[$propertyName]['items']['inversedBy'] = $property['items']['inversedBy']['id'];
-					continue;
-				}
-
-				// Allow arrays of strings (multi-field inversedBy, e.g., ["moduleA", "moduleB"]).
-				if (is_array($property['items']['inversedBy']) === true
-					&& array_is_list($property['items']['inversedBy']) === true
-				) {
-					continue;
-				}
-
-				if (is_string($property['items']['inversedBy']) === false) {
-					// Remove invalid inversedBy if it's not a string, array of strings, or object with id.
-					unset($this->properties[$propertyName]['items']['inversedBy']);
-				}
-			}
-		}//end foreach
-	}//end normalizeInversedByProperties()
-
-	/**
 	 * Hydrate the entity with data from an array
 	 *
 	 * Sets entity properties based on input array values
@@ -2071,119 +2008,181 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @throws \Exception If property validation fails
 	 *
 	 * @return static Returns $this for method chaining
-	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Hydration requires handling many optional fields
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function hydrate(array $object, ?PropertyValidatorHandler $validator = null): static {
-		$jsonFields = $this->getJsonFields();
-
-		// A draft is written by the draft routes only. An import, a PUT body or a
-		// re-imported export carrying `draft` would otherwise set a pending edit
-		// nobody asked for (modelling-schema-draft).
-		unset($object['draft']);
-
-		if (isset($object['metadata']) === false) {
-			$object['metadata'] = [];
-		}
-
-		// Default required to empty array if not provided.
-		// This ensures validation works correctly.
-		if (isset($object['required']) === false) {
-			$object['required'] = [];
-		}
-
-		// Default hardValidation to true if not explicitly provided.
-		// This ensures schemas validate by default unless explicitly disabled.
-		if (isset($object['hardValidation']) === false) {
-			$object['hardValidation'] = true;
-		}
-
-		$object = $this->foldTopLevelAnnotations(object: $object);
-		$object = $this->withExactKeysOnly(object: $this->foldTopLevelExportable(object: $object));
+		$object = $this->withExactKeysOnly(
+			object: $this->foldTopLevelExportable(
+				object: $this->foldTopLevelAnnotations(object: self::withHydrateDefaults(object: $object))
+			)
+		);
 
 		foreach ($object as $key => $value) {
-			// Special handling for 'required' field - must always be an array, never NULL.
-			if ($key === 'required') {
-				if ($value === null || $value === []) {
-					$value = [];
-				}
+			$this->hydrateField(field: $key, value: $value);
+		}
 
-				$this->setRequired(required: $value);
-				continue;
-			}
+		$this->validateHydrated(object: $object, validator: $validator);
 
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
+		return $this;
+	}//end hydrate()
 
-			// Force hardValidation to be set explicitly to override database default.
-			// The database column defaults to 0/false, but we want schemas to validate by default.
-			if ($key === 'hardValidation') {
-				// Explicitly set the value and mark as updated to ensure it persists to database.
-				$this->hardValidation = (bool)$value;
-				$this->markFieldUpdated(attribute: 'hardValidation');
-				continue;
-			}
-
-			// Use special validation for configuration.
-			if ($key === 'configuration') {
-				try {
-					// If it's a JSON string, decode it first.
-					if (is_string($value) === true) {
-						$decoded = json_decode($value, true);
-						// Default to null, only use decoded if valid JSON.
-						$value = null;
-						if (json_last_error() === JSON_ERROR_NONE) {
-							$value = $decoded;
-						}
-					}
-
-					$this->setConfiguration(configuration: $value);
-				} catch (\Exception $exception) {
-					// Silently ignore invalid configuration and set to null.
-					$this->configuration = null;
-					$this->markFieldUpdated(attribute: 'configuration');
-				}
-
-				continue;
-			}//end if
-
-			// Convert datetime strings to DateTime objects for datetime fields.
-			if (in_array($key, ['created', 'updated', 'deleted'], true) === true) {
-				if (is_string($value) === true && $value !== '') {
-					try {
-						$value = new DateTime($value);
-					} catch (Exception $e) {
-						// If parsing fails, set to null.
-						$value = null;
-					}
-				} elseif ($value !== null && ($value instanceof DateTime) === false) {
-					$value = null;
-				}
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}//end foreach
-
-		// Validate properties if validator is provided.
+	/**
+	 * Validate the properties and the authorization block the input declared.
+	 *
+	 * @param array<string, mixed>          $object    The input.
+	 * @param PropertyValidatorHandler|null $validator The property validator.
+	 *
+	 * @throws \Exception If validation fails.
+	 *
+	 * @return void
+	 */
+	private function validateHydrated(array $object, ?PropertyValidatorHandler $validator): void {
 		if ($validator !== null && (($object['properties'] ?? null) !== null)) {
 			$this->validateProperties(validator: $validator);
 		}
 
-		// Validate authorization structure.
 		if (($object['authorization'] ?? null) !== null) {
 			$this->validateAuthorization();
 		}
+	}//end validateHydrated()
 
-		return $this;
-	}//end hydrate()
+	/**
+	 * The input with `draft` dropped and the fields every schema hydrates.
+	 *
+	 * A draft is written by the draft routes only: an import, a PUT body or a
+	 * re-imported export carrying `draft` would otherwise set a pending edit
+	 * nobody asked for (modelling-schema-draft). `required` always exists so
+	 * validation works, and `hardValidation` defaults to true so schemas
+	 * validate unless explicitly disabled.
+	 *
+	 * @param array<string, mixed> $object The input.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withHydrateDefaults(array $object): array {
+		unset($object['draft']);
+
+		$object['metadata'] = ($object['metadata'] ?? []);
+		$object['required'] = ($object['required'] ?? []);
+		$object['hardValidation'] = ($object['hardValidation'] ?? true);
+
+		return $object;
+	}//end withHydrateDefaults()
+
+	/**
+	 * Hydrate one field; `required` must always be an array, never NULL.
+	 *
+	 * @param string $field The field name.
+	 * @param mixed  $value The value.
+	 *
+	 * @return void
+	 */
+	private function hydrateField(string $field, mixed $value): void {
+		if ($field === 'required') {
+			$this->setRequired(required: $value);
+			return;
+		}
+
+		if ($value === [] && in_array($field, $this->getJsonFields()) === true) {
+			$value = null;
+		}
+
+		match ($field) {
+			'hardValidation' => $this->hydrateHardValidation(value: $value),
+			'configuration' => $this->hydrateConfiguration(value: $value),
+			'created', 'updated', 'deleted' => $this->hydrateBySetter(field: $field, value: self::dateOrNull(value: $value)),
+			default => $this->hydrateBySetter(field: $field, value: $value),
+		};
+	}//end hydrateField()
+
+	/**
+	 * Set `hardValidation` explicitly and mark it updated: the database column
+	 * defaults to 0/false, but schemas validate by default.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return void
+	 */
+	private function hydrateHardValidation(mixed $value): void {
+		$this->hardValidation = (bool)$value;
+		$this->markFieldUpdated(attribute: 'hardValidation');
+	}//end hydrateHardValidation()
+
+	/**
+	 * Set the configuration through its validation; invalid input becomes null.
+	 *
+	 * @param mixed $value The configuration, or its JSON text.
+	 *
+	 * @return void
+	 */
+	private function hydrateConfiguration(mixed $value): void {
+		try {
+			$this->setConfiguration(configuration: self::decodedConfiguration(value: $value));
+		} catch (\Exception $exception) {
+			$this->configuration = null;
+			$this->markFieldUpdated(attribute: 'configuration');
+		}
+	}//end hydrateConfiguration()
+
+	/**
+	 * A configuration given as JSON text decoded, null when the text is invalid.
+	 *
+	 * @param mixed $value The configuration.
+	 *
+	 * @return mixed
+	 */
+	private static function decodedConfiguration(mixed $value): mixed {
+		if (is_string($value) === false) {
+			return $value;
+		}
+
+		$decoded = json_decode($value, true);
+		if (json_last_error() === JSON_ERROR_NONE) {
+			return $decoded;
+		}
+
+		return null;
+	}//end decodedConfiguration()
+
+	/**
+	 * A datetime field's value as a DateTime; anything unusable becomes null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return DateTime|null
+	 */
+	private static function dateOrNull(mixed $value): ?DateTime {
+		if ($value instanceof DateTime) {
+			return $value;
+		}
+
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
+
+		try {
+			return new DateTime($value);
+		} catch (Exception $e) {
+			return null;
+		}
+	}//end dateOrNull()
+
+	/**
+	 * Hydrate a field through its setter, ignoring what the setter refuses.
+	 *
+	 * @param string $field The field name.
+	 * @param mixed  $value The value.
+	 *
+	 * @return void
+	 */
+	private function hydrateBySetter(string $field, mixed $value): void {
+		$method = 'set' . ucfirst($field);
+
+		try {
+			$this->$method($value);
+		} catch (\Exception $exception) {
+			// Silently ignore invalid properties.
+		}
+	}//end hydrateBySetter()
 
 	/**
 	 * Serializes the schema to an array
@@ -2203,41 +2202,23 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *     groups: array<string, list<string>>|null, authorization: array|null,
 	 *     deleted: null|string, configuration: array|null|string,
 	 *     allOf: array|null, oneOf: array|null, anyOf: array|null}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function jsonSerialize(): array {
-		$required = ($this->required ?? []);
-		$properties = [];
+		return array_merge(
+			$this->serialisedIdentity(),
+			$this->serialisedContent(),
+			$this->serialisedOwnership(),
+			$this->serialisedComposition(),
+			$this->serialisedLinks()
+		);
+	}//end jsonSerialize()
 
-		if (($this->properties ?? null) !== null) {
-			foreach ($this->properties ?? [] as $propertyKey => $property) {
-				$isRequired = (isset($property['required']) && $property['required'] === true);
-				$notInRequired = in_array($propertyKey, $required) === false;
-
-				if ($isRequired === true && $notInRequired === true) {
-					$required[] = $propertyKey;
-				}
-
-				$properties[$propertyKey] = $property;
-			}
-		}
-
-		$updated = null;
-		if ($this->updated !== null) {
-			$updated = $this->updated->format('c');
-		}
-
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
-
-		$deleted = null;
-		if ($this->deleted !== null) {
-			$deleted = $this->deleted->format('c');
-		}
-
+	/**
+	 * The identity fields of the serialised schema.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function serialisedIdentity(): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -2248,8 +2229,18 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'version' => $this->version,
 			'summary' => $this->summary,
 			'icon' => $this->icon,
-			'required' => $required,
-			'properties' => $properties,
+		];
+	}//end serialisedIdentity()
+
+	/**
+	 * The content and behaviour fields of the serialised schema.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function serialisedContent(): array {
+		return [
+			'required' => $this->requiredWithFlaggedProperties(),
+			'properties' => ($this->properties ?? []),
 			'archive' => $this->archive,
 			'source' => $this->source,
 			'hardValidation' => $this->hardValidation,
@@ -2257,9 +2248,35 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'appendOnly' => $this->appendOnly,
 			'searchable' => $this->searchable,
 			'smartPickerEnabled' => $this->smartPickerEnabled,
+		];
+	}//end serialisedContent()
+
+	/**
+	 * The `required` list plus every property flagged `required: true`.
+	 *
+	 * @return array<int, string>
+	 */
+	private function requiredWithFlaggedProperties(): array {
+		$required = ($this->required ?? []);
+		foreach (($this->properties ?? []) as $propertyKey => $property) {
+			if (($property['required'] ?? null) === true && in_array($propertyKey, $required) === false) {
+				$required[] = $propertyKey;
+			}
+		}
+
+		return $required;
+	}//end requiredWithFlaggedProperties()
+
+	/**
+	 * The dates and ownership fields of the serialised schema.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function serialisedOwnership(): array {
+		return [
 			// @todo: should be refactored to strict.
-			'updated' => $updated,
-			'created' => $created,
+			'updated' => $this->updated?->format('c'),
+			'created' => $this->created?->format('c'),
 			'maxDepth' => $this->maxDepth,
 			'owner' => $this->owner,
 			'application' => $this->application,
@@ -2267,7 +2284,17 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'groups' => $this->groups,
 			'authorization' => $this->authorization,
 			'sharedWith' => ($this->sharedWith ?? []),
-			'deleted' => $deleted,
+			'deleted' => $this->deleted?->format('c'),
+		];
+	}//end serialisedOwnership()
+
+	/**
+	 * The configuration and composition fields of the serialised schema.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function serialisedComposition(): array {
+		return [
 			'configuration' => $this->configuration,
 			// Mirror of `configuration.exportable`, the one place the flag is
 			// stored, served at the top level too because that is where the
@@ -2278,6 +2305,16 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'anyOf' => $this->anyOf,
 			'facets' => $this->facets,
 			'hooks' => $this->hooks,
+		];
+	}//end serialisedComposition()
+
+	/**
+	 * The linked-entity blocks and the draft of the serialised schema.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function serialisedLinks(): array {
+		return [
 			'_mail' => $this->mail,
 			'_contacts' => $this->contacts,
 			'_notes' => $this->notes,
@@ -2287,7 +2324,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'_deck' => $this->deck,
 			'draft' => $this->draft,
 		];
-	}//end jsonSerialize()
+	}//end serialisedLinks()
 
 	/**
 	 * Converts schema to an object representation
@@ -2297,8 +2334,6 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @param IURLGenerator $urlGenerator The URL generator for URLs in the schema
 	 *
 	 * @return stdClass A standard object representation of the schema
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function getSchemaObject(IURLGenerator $urlGenerator): stdClass {
 		$schema = new stdClass();
@@ -2309,64 +2344,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		$schema->required = $this->required;
 		$schema->{'$schema'} = 'https://json-schema.org/draft/2020-12/schema';
 		$schema->{'$id'} = $urlGenerator->getBaseUrl() . '/apps/openregister/api/v1/schemas/' . $this->uuid;
-		$schema->properties = new stdClass();
-
-		foreach ($this->properties ?? [] as $propertyName => $property) {
-			if (($property['properties'] ?? null) !== null) {
-				$nestedProperties = new stdClass();
-				$nestedProperty = new stdClass();
-				$nestedProperty->type = 'object';
-				$nestedProperty->title = $property['title'];
-				$nestedProperty->required = [];
-
-				// No null guard on $property['properties']: this arm is only
-				// entered for a nested object, which always carries one.
-				foreach ($property['properties'] as $subName => $subProperty) {
-					$isRequired = (($subProperty['required'] ?? null) !== null);
-					if ($isRequired === true && ($subProperty['required'] === true) === true) {
-						$nestedProperty->required[] = $subName;
-					}
-
-					$nestedProp = new stdClass();
-					foreach ($subProperty as $key => $value) {
-						if ($key === 'oneOf' && empty($value) === true) {
-							continue;
-						}
-
-						$nestedProp->{$key} = $value;
-					}
-
-					$nestedProperties->{$subName} = $nestedProp;
-				}
-
-				$nestedProperty->properties = $nestedProperties;
-				$schema->properties->{$propertyName} = $nestedProperty;
-				continue;
-			}//end if
-
-			$prop = new stdClass();
-			foreach ($property as $key => $value) {
-				// A value-carrying key keeps its falsy value; '' is not one of them,
-				// being what the property form ships for a default nobody filled in.
-				$carriesValue = (in_array($key, self::VALUE_CARRYING_PROPERTY_KEYS, true) === true && $value !== '');
-
-				// Skip 'required' property on this level.
-				if ($key !== 'required' && ($carriesValue === true || empty($value) === false)) {
-					$prop->{$key} = $value;
-				}
-			}
-
-			// Mark computed properties as readOnly in JSON Schema / OpenAPI
-			// output. Both engines count: the Twig `computed` marker and the
-			// JSON-AST `calculation` key a property form forwards.
-			$isComputed = (isset($property['computed']) === true && is_array($property['computed']) === true);
-			$isCalculated = (isset($property['calculation']) === true && is_array($property['calculation']) === true);
-			if ($isComputed === true || $isCalculated === true) {
-				$prop->readOnly = true;
-			}
-
-			$schema->properties->{$propertyName} = $prop;
-		}//end foreach
+		$schema->properties = (new SchemaPropertyDocument())->render(properties: ($this->properties ?? []));
 
 		return $schema;
 	}//end getSchemaObject()
@@ -2853,28 +2831,39 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return void
 	 */
 	public function setConfiguration($configuration): void {
-		if ($configuration === null) {
-			$this->configuration = null;
-			$this->markFieldUpdated(attribute: 'configuration');
-			return;
+		$validated = null;
+		if ($configuration !== null) {
+			$validated = $this->validatedConfiguration(configuration: $configuration);
 		}
 
-		$parsedConfig = $this->parseConfigurationInput(configuration: $configuration);
-		if ($parsedConfig === null) {
-			$this->configuration = null;
-			$this->markFieldUpdated(attribute: 'configuration');
-			return;
-		}
-
-		$validatedConfig = $this->validateConfigurationArray(configuration: $parsedConfig);
-
-		$this->configuration = null;
-		if (empty($validatedConfig) === false) {
-			$this->configuration = $validatedConfig;
-		}
-
+		$this->configuration = $validated;
 		$this->markFieldUpdated(attribute: 'configuration');
 	}//end setConfiguration()
+
+	/**
+	 * Parse and validate a configuration input; null when it does not parse or nothing in it is kept.
+	 *
+	 * A validator that throws leaves the stored configuration as it was: the caller assigns only after this returns.
+	 *
+	 * @param mixed $configuration The configuration array or JSON string.
+	 *
+	 * @throws \InvalidArgumentException If a key that must fail the whole save is invalid
+	 *
+	 * @return array|null The validated configuration.
+	 */
+	private function validatedConfiguration(mixed $configuration): ?array {
+		$parsed = $this->parseConfigurationInput(configuration: $configuration);
+		if ($parsed === null) {
+			return null;
+		}
+
+		$validated = $this->validateConfigurationArray(configuration: $parsed);
+		if (empty($validated) === true) {
+			return null;
+		}
+
+		return $validated;
+	}//end validatedConfiguration()
 
 	/**
 	 * Parse configuration input into an array
@@ -3224,12 +3213,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	/**
 	 * Validate the tag, linked-type and mail-template keys, stored as given.
 	 *
-	 * @param string $key   Configuration key.
-	 * @param mixed  $value Raw value for the key.
+	 * @param string $key   The configuration key.
+	 * @param mixed  $value The value given for that key.
 	 *
-	 * @throws \InvalidArgumentException If the value is invalid for the key.
+	 * @throws \InvalidArgumentException If the tags, linked types or mail template are invalid.
 	 *
-	 * @return bool True when the key is one of these and its value passed.
+	 * @return bool Whether the key is one of these three (its value then passed).
 	 */
 	private function validatesShapedConfigurationValue(string $key, mixed $value): bool {
 		if ($key === 'allowedTags') {
@@ -3242,13 +3231,27 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			return true;
 		}
 
-		if ($key === 'mailObjectTemplate') {
-			$this->validateMailObjectTemplateValue(value: $value);
-			return true;
+		return $this->validatesMailTemplateConfigurationValue(key: $key, value: $value);
+	}//end validatesShapedConfigurationValue()
+
+	/**
+	 * Check `mailObjectTemplate`, which is stored as given once it passes.
+	 *
+	 * @param string $key   The key being validated.
+	 * @param mixed  $value What the configuration gives for it.
+	 *
+	 * @throws \InvalidArgumentException If the template is not a flat map of scalars.
+	 *
+	 * @return bool Whether the key was `mailObjectTemplate`.
+	 */
+	private function validatesMailTemplateConfigurationValue(string $key, mixed $value): bool {
+		if ($key !== 'mailObjectTemplate') {
+			return false;
 		}
 
-		return false;
-	}//end validatesShapedConfigurationValue()
+		$this->validateMailObjectTemplateValue(value: $value);
+		return true;
+	}//end validatesMailTemplateConfigurationValue()
 
 	/**
 	 * Validate a key whose value is normalised before it is stored.
@@ -3257,28 +3260,20 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * and acted on by DraftExpiryJob. Absent or null means the default of 30
 	 * days, so null is not stored.
 	 *
-	 * @param string $key   Configuration key.
-	 * @param mixed  $value Raw value for the key.
+	 * @param string $key   The configuration key.
+	 * @param mixed  $value The value given for that key.
 	 *
-	 * @throws \InvalidArgumentException If the value is invalid for the key.
+	 * @throws \InvalidArgumentException If the value cannot be normalised.
 	 *
-	 * @return array<int, mixed> The value to store as a one-element list; empty when the key is not stored.
+	 * @return array<int, mixed> The normalised value as a one-element list; empty when nothing is stored for the key.
 	 */
 	private function convertedConfigurationValue(string $key, mixed $value): array {
 		if ($key === 'draftLifetimeDays') {
-			if ($value === null) {
-				return [];
-			}
-
-			return [$this->validateDraftLifetimeValue(value: $value)];
+			return $this->draftLifetimeEntry(value: $value);
 		}
 
-		if ($key === 'linkRoles') {
-			return [$this->validateLinkRolesValue(value: $value)];
-		}
-
-		if ($key === 'partyKinds') {
-			return [$this->validatePartyKindsValue(value: $value)];
+		if ($key === 'linkRoles' || $key === 'partyKinds') {
+			return [$this->validateVocabularyValue(key: $key, value: $value)];
 		}
 
 		if ($key === self::WRITEONLY_PATHS_ANNOTATION) {
@@ -3287,6 +3282,41 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return $this->annotationConfigurationValue(key: $key, value: $value);
 	}//end convertedConfigurationValue()
+
+	/**
+	 * The `draftLifetimeDays` value to store, as a one-element list; empty for null, which means the default.
+	 *
+	 * @param mixed $value Raw value for the key.
+	 *
+	 * @throws \InvalidArgumentException If the value is invalid.
+	 *
+	 * @return array<int, int|false>
+	 */
+	private function draftLifetimeEntry(mixed $value): array {
+		if ($value === null) {
+			return [];
+		}
+
+		return [$this->validateDraftLifetimeValue(value: $value)];
+	}//end draftLifetimeEntry()
+
+	/**
+	 * Validate `linkRoles` or `partyKinds`.
+	 *
+	 * @param string $key   `linkRoles` or `partyKinds`.
+	 * @param mixed  $value Raw value for the key.
+	 *
+	 * @throws \InvalidArgumentException If the value is not a list of valid entries.
+	 *
+	 * @return array<int, array<string, mixed>> The normalised entries.
+	 */
+	private function validateVocabularyValue(string $key, mixed $value): array {
+		if ($key === 'linkRoles') {
+			return $this->validateLinkRolesValue(value: $value);
+		}
+
+		return $this->validatePartyKindsValue(value: $value);
+	}//end validateVocabularyValue()
 
 	/**
 	 * Keep a declared `x-openregister-*` annotation; record an unknown one.
@@ -3336,16 +3366,28 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			return false;
 		}
 
-		if (is_string($value) === true && preg_match('/^[1-9][0-9]*$/', $value) === 1) {
-			$value = (int)$value;
-		}
-
+		$value = $this->wholeDaysFromText(value: $value);
 		if (is_int($value) === false || $value < 1) {
 			throw new InvalidArgumentException('draftLifetimeDays must be a whole number of days, 1 or more, or false to keep drafts');
 		}
 
 		return $value;
 	}//end validateDraftLifetimeValue()
+
+	/**
+	 * A text of digits without a leading zero read as its number; any other value as it is.
+	 *
+	 * @param mixed $value The raw value.
+	 *
+	 * @return mixed
+	 */
+	private function wholeDaysFromText(mixed $value): mixed {
+		if (is_string($value) === true && preg_match('/^[1-9][0-9]*$/', $value) === 1) {
+			return (int)$value;
+		}
+
+		return $value;
+	}//end wholeDaysFromText()
 
 	/**
 	 * Dropped `x-openregister-*` annotation keys collected during the most
@@ -3406,16 +3448,10 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			return;
 		}
 
-		if (empty($config['dtstart']) === true) {
-			throw new InvalidArgumentException(
-				'calendarProvider.dtstart is required when calendar provider is enabled'
-			);
-		}
-
-		if (empty($config['titleTemplate']) === true) {
-			throw new InvalidArgumentException(
-				'calendarProvider.titleTemplate is required when calendar provider is enabled'
-			);
+		foreach (['dtstart', 'titleTemplate'] as $field) {
+			if (empty($config[$field]) === true) {
+				throw new InvalidArgumentException('calendarProvider.'.$field.' is required when calendar provider is enabled');
+			}
 		}
 	}//end validateCalendarProviderConfig()
 
@@ -3467,12 +3503,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return void
 	 */
 	private function validateAllowedTagsValue(mixed $value): void {
-		if ($value === null) {
+		if ($this->isAbsentConfig(value: $value, refusal: "Configuration 'allowedTags' must be an array or null") === true) {
 			return;
-		}
-
-		if (is_array($value) === false) {
-			throw new InvalidArgumentException("Configuration 'allowedTags' must be an array or null");
 		}
 
 		foreach ($value as $tag) {
@@ -3481,6 +3513,28 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			}
 		}
 	}//end validateAllowedTagsValue()
+
+	/**
+	 * Whether an optional configuration value is absent (null); a value that is neither null nor an array is refused.
+	 *
+	 * @param mixed  $value   The configured value.
+	 * @param string $refusal The message to refuse a value that is no array with.
+	 *
+	 * @throws \InvalidArgumentException If the value is neither null nor an array.
+	 *
+	 * @return bool True for null, false for an array.
+	 */
+	private function isAbsentConfig(mixed $value, string $refusal): bool {
+		if ($value === null) {
+			return true;
+		}
+
+		if (is_array($value) === false) {
+			throw new InvalidArgumentException($refusal);
+		}
+
+		return false;
+	}//end isAbsentConfig()
 
 	/**
 	 * Declared `x-openregister-*` annotation keys.
@@ -3736,28 +3790,88 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
 	 */
 	private function validateLinkRolesValue(mixed $value): array {
+		return $this->validateVocabulary(value: $value, vocabulary: ['config' => 'linkRoles', 'noun' => 'roles']);
+	}//end validateLinkRolesValue()
+
+	/**
+	 * Validate and normalise a list of vocabulary entries (`linkRoles`, `partyKinds`): each with a usable key, no key twice.
+	 *
+	 * @param mixed                                $value      The configured value.
+	 * @param array{config: string, noun: string} $vocabulary The configuration key, and the plural noun for its entries.
+	 *
+	 * @return array<int, array<string, mixed>> The normalised entries.
+	 *
+	 * @throws InvalidArgumentException When the value is not a list of valid entries.
+	 */
+	private function validateVocabulary(mixed $value, array $vocabulary): array {
 		if (is_array($value) === false || array_is_list($value) === false) {
-			throw new InvalidArgumentException("Configuration 'linkRoles' must be a list of roles");
+			throw new InvalidArgumentException("Configuration '" . $vocabulary['config'] . "' must be a list of " . $vocabulary['noun']);
 		}
 
 		$entries = [];
-		$seen = [];
 		foreach ($value as $entry) {
-			$normalised = self::normaliseLinkRole(entry: $entry);
-			if ($normalised === null) {
-				throw new InvalidArgumentException("Each 'linkRoles' entry needs a non-empty key of at most 64 characters");
-			}
-
-			if (isset($seen[$normalised['key']]) === true) {
-				throw new InvalidArgumentException("'linkRoles' names the key '" . $normalised['key'] . "' twice");
-			}
-
-			$seen[$normalised['key']] = true;
-			$entries[] = $normalised;
+			$entries[] = $this->vocabularyEntry(entry: $entry, vocabulary: $vocabulary + ['entries' => $entries]);
 		}
 
 		return $entries;
-	}//end validateLinkRolesValue()
+	}//end validateVocabulary()
+
+	/**
+	 * One vocabulary entry, normalised; refused when it has no usable key or repeats an earlier key.
+	 *
+	 * @param mixed                $entry      The configured entry.
+	 * @param array<string, mixed> $vocabulary The `config` key, and the `entries` accepted before this one.
+	 *
+	 * @return array<string, mixed> The normalised entry.
+	 *
+	 * @throws InvalidArgumentException When the entry has no usable key or repeats one.
+	 */
+	private function vocabularyEntry(mixed $entry, array $vocabulary): array {
+		$normalised = self::normaliseVocabularyEntry(config: $vocabulary['config'], entry: $entry);
+		if ($normalised === null) {
+			throw new InvalidArgumentException("Each '" . $vocabulary['config'] . "' entry needs a non-empty key of at most 64 characters");
+		}
+
+		if (in_array($normalised['key'], array_column($vocabulary['entries'], 'key'), true) === true) {
+			throw new InvalidArgumentException("'" . $vocabulary['config'] . "' names the key '" . $normalised['key'] . "' twice");
+		}
+
+		return $normalised;
+	}//end vocabularyEntry()
+
+	/**
+	 * One entry of a vocabulary, normalised as that vocabulary normalises it; null when it has no usable key.
+	 *
+	 * @param string $config `linkRoles` or `partyKinds`.
+	 * @param mixed  $entry  The configured entry.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private static function normaliseVocabularyEntry(string $config, mixed $entry): ?array {
+		if ($config === 'partyKinds') {
+			return self::normalisePartyKind(entry: $entry);
+		}
+
+		return self::normaliseLinkRole(entry: $entry);
+	}//end normaliseVocabularyEntry()
+
+	/**
+	 * The usable entries of a stored vocabulary, normalised; [] when the configuration holds no list for it.
+	 *
+	 * @param string $config `linkRoles` or `partyKinds`.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function configuredVocabulary(string $config): array {
+		$configured = $this->configuration[$config] ?? null;
+		if (is_array($configured) === false) {
+			return [];
+		}
+
+		$entries = array_map(static fn (mixed $entry): ?array => self::normaliseVocabularyEntry(config: $config, entry: $entry), $configured);
+
+		return array_values(array_filter($entries, static fn (?array $entry): bool => $entry !== null));
+	}//end configuredVocabulary()
 
 	/**
 	 * One `linkRoles` entry as `{key, label, description?}`, or null when it has no usable key.
@@ -3771,6 +3885,22 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			$entry = ['key' => $entry, 'label' => $entry];
 		}
 
+		$key = self::entryKey(entry: $entry);
+		if ($key === null) {
+			return null;
+		}
+
+		return self::withDescription(normalised: ['key' => $key, 'label' => self::entryLabel(entry: $entry, key: $key)], entry: $entry);
+	}//end normaliseLinkRole()
+
+	/**
+	 * The trimmed key of a vocabulary entry, or null when the entry is no array or its key is empty or over 64 characters.
+	 *
+	 * @param mixed $entry The entry.
+	 *
+	 * @return string|null
+	 */
+	private static function entryKey(mixed $entry): ?string {
 		if (is_array($entry) === false) {
 			return null;
 		}
@@ -3780,19 +3910,42 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			return null;
 		}
 
+		return $key;
+	}//end entryKey()
+
+	/**
+	 * The trimmed label of a vocabulary entry, its key when it has none.
+	 *
+	 * @param array<string, mixed> $entry The entry.
+	 * @param string               $key   The entry's key.
+	 *
+	 * @return string
+	 */
+	private static function entryLabel(array $entry, string $key): string {
 		$label = trim((string)($entry['label'] ?? ''));
 		if ($label === '') {
-			$label = $key;
+			return $key;
 		}
 
-		$normalised = ['key' => $key, 'label' => $label];
+		return $label;
+	}//end entryLabel()
+
+	/**
+	 * A normalised entry with the entry's trimmed description, when it has one.
+	 *
+	 * @param array<string, string> $normalised The normalised key and label.
+	 * @param array<string, mixed>  $entry      The entry.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function withDescription(array $normalised, array $entry): array {
 		$description = trim((string)($entry['description'] ?? ''));
 		if ($description !== '') {
 			$normalised['description'] = $description;
 		}
 
 		return $normalised;
-	}//end normaliseLinkRole()
+	}//end withDescription()
 
 	/**
 	 * The roles a person can hold on an object of this schema, [] when the schema declares none.
@@ -3802,20 +3955,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
 	 */
 	public function getLinkRoles(): array {
-		$configured = $this->configuration['linkRoles'] ?? null;
-		if (is_array($configured) === false) {
-			return [];
-		}
-
-		$entries = [];
-		foreach ($configured as $entry) {
-			$normalised = self::normaliseLinkRole(entry: $entry);
-			if ($normalised !== null) {
-				$entries[] = $normalised;
-			}
-		}
-
-		return $entries;
+		return $this->configuredVocabulary(config: 'linkRoles');
 	}//end getLinkRoles()
 
 	/**
@@ -3842,27 +3982,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	private function validatePartyKindsValue(mixed $value): array {
-		if (is_array($value) === false || array_is_list($value) === false) {
-			throw new InvalidArgumentException("Configuration 'partyKinds' must be a list of party kinds");
-		}
-
-		$entries = [];
-		$seen = [];
-		foreach ($value as $entry) {
-			$normalised = self::normalisePartyKind(entry: $entry);
-			if ($normalised === null) {
-				throw new InvalidArgumentException("Each 'partyKinds' entry needs a non-empty key of at most 64 characters");
-			}
-
-			if (isset($seen[$normalised['key']]) === true) {
-				throw new InvalidArgumentException("'partyKinds' names the key '" . $normalised['key'] . "' twice");
-			}
-
-			$seen[$normalised['key']] = true;
-			$entries[] = $normalised;
-		}
-
-		return $entries;
+		return $this->validateVocabulary(value: $value, vocabulary: ['config' => 'partyKinds', 'noun' => 'party kinds']);
 	}//end validatePartyKindsValue()
 
 	/**
@@ -3923,20 +4043,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function getPartyKinds(): array {
-		$configured = $this->configuration['partyKinds'] ?? null;
-		if (is_array($configured) === false) {
-			return [];
-		}
-
-		$entries = [];
-		foreach ($configured as $entry) {
-			$normalised = self::normalisePartyKind(entry: $entry);
-			if ($normalised !== null) {
-				$entries[] = $normalised;
-			}
-		}
-
-		return $entries;
+		return $this->configuredVocabulary(config: 'partyKinds');
 	}//end getPartyKinds()
 
 	/**
@@ -3983,34 +4090,39 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
 	 */
 	private function validateLinkedTypesValue(mixed $value): void {
-		if ($value === null) {
+		if ($this->isAbsentConfig(value: $value, refusal: "Configuration 'linkedTypes' must be an array or null") === true) {
 			return;
 		}
 
-		if (is_array($value) === false) {
-			throw new InvalidArgumentException("Configuration 'linkedTypes' must be an array or null");
-		}
-
-		$registryIds = $this->resolveIntegrationRegistryIds();
-		$legacyIds = self::legacyLinkedTypeIds();
-
+		$known = ['registry' => $this->resolveIntegrationRegistryIds(), 'legacy' => self::legacyLinkedTypeIds()];
 		foreach ($value as $type) {
-			if (is_string($type) === false) {
-				throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
-			}
-
-			$valid = in_array($type, $legacyIds, true)
-				|| in_array($type, $registryIds, true);
-
-			if ($valid === false) {
-				$combined = array_unique(array_merge($legacyIds, $registryIds));
-				sort($combined);
-				throw new InvalidArgumentException(
-					"Invalid linked type '$type'. Valid values: " . implode(', ', $combined)
-				);
-			}
+			$this->assertLinkedType(type: $type, known: $known);
 		}
 	}//end validateLinkedTypesValue()
+
+	/**
+	 * Refuse a linked type that is no string, or that neither the legacy allow-list nor the registry knows.
+	 *
+	 * @param mixed                                                      $type  One configured linked type.
+	 * @param array{registry: array<int, string>, legacy: array<int, string>} $known The registry ids and the legacy ids.
+	 *
+	 * @throws InvalidArgumentException If the type is not valid.
+	 *
+	 * @return void
+	 */
+	private function assertLinkedType(mixed $type, array $known): void {
+		if (is_string($type) === false) {
+			throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
+		}
+
+		if (in_array($type, $known['legacy'], true) === true || in_array($type, $known['registry'], true) === true) {
+			return;
+		}
+
+		$combined = array_unique(array_merge($known['legacy'], $known['registry']));
+		sort($combined);
+		throw new InvalidArgumentException("Invalid linked type '$type'. Valid values: " . implode(', ', $combined));
+	}//end assertLinkedType()
 
 	/**
 	 * Validate the mailObjectTemplate configuration value
@@ -4027,24 +4139,34 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return void
 	 */
 	private function validateMailObjectTemplateValue(mixed $value): void {
-		if ($value === null) {
+		if ($this->isAbsentConfig(value: $value, refusal: "Configuration 'mailObjectTemplate' must be an object or null") === true) {
 			return;
 		}
 
-		if (is_array($value) === false) {
-			throw new InvalidArgumentException("Configuration 'mailObjectTemplate' must be an object or null");
-		}
-
 		foreach ($value as $field => $template) {
-			if (is_string($field) === false || $field === '') {
-				throw new InvalidArgumentException("All keys in 'mailObjectTemplate' must be non-empty property names");
-			}
-
-			if (is_scalar($template) === false) {
-				throw new InvalidArgumentException("Value for '$field' in 'mailObjectTemplate' must be a scalar");
-			}
+			$this->assertMailTemplateField(field: $field, template: $template);
 		}
 	}//end validateMailObjectTemplateValue()
+
+	/**
+	 * Refuse a mail-template field that is no property name, or whose value is no scalar.
+	 *
+	 * @param int|string $field    The template's key.
+	 * @param mixed      $template The template's value.
+	 *
+	 * @throws InvalidArgumentException If the field or its value is not valid.
+	 *
+	 * @return void
+	 */
+	private function assertMailTemplateField(int|string $field, mixed $template): void {
+		if (is_string($field) === false || $field === '') {
+			throw new InvalidArgumentException("All keys in 'mailObjectTemplate' must be non-empty property names");
+		}
+
+		if (is_scalar($template) === false) {
+			throw new InvalidArgumentException("Value for '$field' in 'mailObjectTemplate' must be a scalar");
+		}
+	}//end assertMailTemplateField()
 
 	/**
 	 * Legacy linked-type id allow-list — internal implementation detail.

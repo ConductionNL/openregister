@@ -103,46 +103,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			</template>
 
 			<template #row-actions="{ row }">
-				<NcActions>
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton closeAfterClick @click="viewDetails(row)">
-						<template #icon>
-							<Eye :size="20" />
-						</template>
-						{{ t('openregister', 'View Details') }}
-					</NcActionButton>
-					<NcActionButton
-						v-if="hasChanges(row)"
-						closeAfterClick
-						@click="viewChanges(row)">
-						<template #icon>
-							<CompareHorizontal :size="20" />
-						</template>
-						{{ t('openregister', 'View Changes') }}
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="copyData(row)">
-						<template #icon>
-							<Check
-								v-if="copyStates[row.id]"
-								:size="20"
-								class="copySuccessIcon" />
-							<ContentCopy v-else :size="20" />
-						</template>
-						{{
-							copyStates[row.id]
-								? t('openregister', 'Copied!')
-								: t('openregister', 'Copy Data')
-						}}
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="deleteAuditTrail(row)">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="auditTrailActions(row)" />
 			</template>
 
 			<template #empty>
@@ -180,21 +141,21 @@ import Check from 'vue-material-design-icons/Check.vue'
 import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
 import eventBus from '../../eventBus.js'
 import { AUDIT_SORT_FIELDS, headerSortOf } from '../../services/listSort.js'
 
 export default {
 	name: 'AuditTrailIndex',
 	components: {
+		ActionMenu,
 		NcAppContent,
 		NcEmptyContent,
-		NcActions,
 		NcActionButton,
 		NcDateTime,
 		CnIndexPage,
@@ -205,10 +166,6 @@ export default {
 		Eye,
 		Plus,
 		Pencil,
-		CompareHorizontal,
-		ContentCopy,
-		Check,
-		DotsHorizontal,
 	},
 
 	data() {
@@ -364,6 +321,44 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The row menu of an audit trail.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The audit trail
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		auditTrailActions(row) {
+			const copied = this.copyStates[row.id]
+			return [
+				{
+					label: t('openregister', 'View Details'),
+					icon: Eye,
+					run: () => this.viewDetails(row),
+				},
+				{
+					label: t('openregister', 'View Changes'),
+					icon: CompareHorizontal,
+					run: () => this.viewChanges(row),
+					hidden: !this.hasChanges(row),
+				},
+				{
+					label: copied
+						? t('openregister', 'Copied!')
+						: t('openregister', 'Copy Data'),
+
+					icon: copied ? Check : ContentCopy,
+					iconClass: copied ? 'copySuccessIcon' : undefined,
+					run: () => this.copyData(row),
+				},
+				{
+					label: t('openregister', 'Delete'),
+					icon: Delete,
+					run: () => this.deleteAuditTrail(row),
+				},
+			]
+		},
+
 		/**
 		 * Load audit trails from API
 		 *

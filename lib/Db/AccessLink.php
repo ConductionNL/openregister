@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -48,9 +49,7 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUuid(?string $uuid)
  * @method string|null getAnchor()
  * @method void setAnchor(?string $anchor)
- * @method string|null getSubjectType()
  * @method void setSubjectType(?string $subjectType)
- * @method string|null getSubjectId()
  * @method void setSubjectId(?string $subjectId)
  * @method string|null getCapabilities()
  * @method void setCapabilities(?string $capabilities)
@@ -77,7 +76,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
  */
-class AccessLink extends Entity implements JsonSerializable {
+class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface {
 
 	/**
 	 * A link over one object.
@@ -263,6 +262,28 @@ class AccessLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'lastUsedAt', type: 'datetime');
 		$this->addType(fieldName: 'useCount', type: 'integer');
 	}//end __construct()
+
+	/**
+	 * The kind of subject the link opens.
+	 *
+	 * @return string|null The subject type.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+	 */
+	public function getSubjectType(): ?string {
+		return $this->subjectType;
+	}//end getSubjectType()
+
+	/**
+	 * The identifier of the subject the link opens.
+	 *
+	 * @return string|null The subject id.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+	 */
+	public function getSubjectId(): ?string {
+		return $this->subjectId;
+	}//end getSubjectId()
 
 	/**
 	 * Whether this link still answers at the given moment.

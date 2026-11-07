@@ -77,6 +77,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class SaveObjectReferenceExistsTest extends TestCase {
 

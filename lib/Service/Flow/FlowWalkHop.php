@@ -33,18 +33,14 @@ final class FlowWalkHop extends FlowHop {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowWalkPass      $pass       The pass this hop belongs to.
-	 * @param object            $transition The transition being fired.
-	 * @param array             $step       The step behind the transition.
-	 * @param array<int, mixed> $itemsIn    The items on the transition's input place(s).
+	 * @param FlowWalkPass $pass The pass the hop belongs to.
+	 * @param FlowHopPlan  $plan The transition, its step and its items.
 	 */
 	public function __construct(
 		public readonly FlowWalkPass $pass,
-		object $transition,
-		array $step,
-		array $itemsIn,
+		FlowHopPlan $plan,
 	) {
-		parent::__construct(owner: $pass, transition: $transition, step: $step, itemsIn: $itemsIn);
+		parent::__construct(owner: $pass, plan: $plan);
 	}//end __construct()
 
 	/**
@@ -60,14 +56,7 @@ final class FlowWalkHop extends FlowHop {
 	public function stopped(FlowStop $stop): array {
 		$this->pass->log[] = $this->stoppedEntry(stop: $stop);
 
-		$status = FlowEngine::STATUS_STOPPED;
-		$error = null;
-		if ($stop->isError() === true) {
-			$status = FlowEngine::STATUS_FAILED;
-			$error = $stop->getMessage();
-		}
-
-		return $this->pass->result(status: $status) + ['error' => $error];
+		return $this->pass->result(status: $stop->runStatus()) + ['error' => $stop->runError()];
 	}//end stopped()
 
 	/**

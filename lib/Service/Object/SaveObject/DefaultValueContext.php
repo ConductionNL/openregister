@@ -22,24 +22,38 @@
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Db\ObjectEntity;
+
 /**
- * What templated default values of one save render against: the merged object data and the schema properties.
+ * What templated default values render against: the data, and the schema properties.
  *
  * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
  */
 final class DefaultValueContext {
 
 	/**
-	 * The stored object data with the incoming data on top.
-	 *
-	 * @var array
+	 * @param array $data             The incoming data.
+	 * @param array $twigContext      What templates see.
+	 * @param array $schemaProperties The schema's property definitions.
 	 */
-	public array $twigContext = [];
+	public function __construct(
+		public readonly array $data,
+		public array $twigContext,
+		public array $schemaProperties = [],
+	) {
+	}//end __construct()
 
 	/**
-	 * The schema's property definitions.
+	 * The context of a save: templates see the stored object with the incoming data on top.
 	 *
-	 * @var array
+	 * @param ObjectEntity $objectEntity The object being saved.
+	 * @param array        $data         The incoming data.
+	 *
+	 * @return self The context.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	public array $schemaProperties = [];
+	public static function ofSave(ObjectEntity $objectEntity, array $data): self {
+		return new self(data: $data, twigContext: array_merge($objectEntity->getObjectArray(), $data));
+	}//end ofSave()
 }//end class

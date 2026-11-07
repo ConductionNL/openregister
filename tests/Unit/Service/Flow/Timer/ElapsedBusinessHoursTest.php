@@ -37,6 +37,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
  */
 class ElapsedBusinessHoursTest extends TestCase {
 	/**

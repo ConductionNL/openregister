@@ -117,16 +117,17 @@ class FilesControllerObjectAccessTest extends TestCase {
 	 *
 	 * @param string        $uid    The acting user.
 	 * @param array<string> $groups Their groups.
+	 * @param bool          $signedIn False leaves the session without a user.
 	 *
 	 * @return FilesController
 	 */
-	private function controllerAs(string $uid, array $groups): FilesController {
+	private function controllerAs(string $uid, array $groups, bool $signedIn = true): FilesController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($uid);
 		$user->method('getDisplayName')->willReturn(ucfirst($uid));
 
 		$userSession = $this->createMock(IUserSession::class);
-		$userSession->method('getUser')->willReturn($user);
+		$userSession->method('getUser')->willReturn($signedIn === true ? $user : null);
 
 		$userManager = $this->createMock(IUserManager::class);
 		$userManager->method('get')->willReturn($user);
@@ -364,6 +365,17 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame([], $issued);
 	}//end testAPersonWithoutAccessGetsNoToken()
+
+	public function testAnAnonymousCallerGetsNoToken(): void {
+		$issued = [];
+		$this->arrangeOffice($issued);
+
+		$response = $this->controllerAs('admin', ['admin'], signedIn: false)
+			->office(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 77);
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame([], $issued);
+	}//end testAnAnonymousCallerGetsNoToken()
 
 	public function testTheOfficePagePostsAnEditTokenForAnUpdateHolder(): void {
 		$issued = [];
