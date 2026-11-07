@@ -171,6 +171,22 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 	}//end runCase()
 
 	/**
+	 * The rows of a cross-table search: none without tables, else the stored rows or a marker.
+	 *
+	 * @param array                     $pairs  The searched tables
+	 * @param array<string, ObjectEntity> $stored The stored rows
+	 *
+	 * @return array
+	 */
+	private function acrossRows(array $pairs, array $stored): array {
+		if ($pairs === []) {
+			return [];
+		}
+
+		return (array_values($stored) ?: ['union-row']);
+	}//end acrossRows()
+
+	/**
 	 * A mapper whose table-level calls are recorded and answered by the case.
 	 *
 	 * @param array<string, mixed> $case   The case
@@ -189,6 +205,7 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 					'findMultipleAcrossAllMagicTables',
 					'findByRelationAcrossAllMagicTables',
 					'searchAcrossMultipleTables',
+					'countAcrossMultipleTables',
 					'getAllRegisterSchemaPairs',
 				]
 			)
@@ -211,7 +228,10 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 			fn (...$args): array => $this->record(name: 'findByRelation', args: $args, answer: array_values($stored))
 		);
 		$mapper->method('searchAcrossMultipleTables')->willReturnCallback(
-			fn (...$args): array => $this->record(name: 'searchAcross', args: $args, answer: ['union-row'])
+			fn (...$args): array => $this->record(name: 'searchAcross', args: $args, answer: $this->acrossRows(pairs: $args[1], stored: $stored))
+		);
+		$mapper->method('countAcrossMultipleTables')->willReturnCallback(
+			fn (...$args): int => $this->record(name: 'countAcross', args: $args, answer: (10 * count($args[1])))
 		);
 		$mapper->method('getAllRegisterSchemaPairs')->willReturnCallback(
 			fn (): array => $this->record(

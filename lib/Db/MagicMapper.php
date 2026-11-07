@@ -9937,7 +9937,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$queryIds    = $searchQuery['_ids'] ?? null;
 		if (is_array($queryIds) === true && count($queryIds) > 0) {
 			$idResults = $this->findMultipleAcrossAllMagicTables(uuids: $queryIds, includeDeleted: false);
-			return $this->getGlobalSearchResult(results: $idResults, searchQuery: $searchQuery, _rbac: $request['rbac']);
+			return $this->searchTablesOfRows(rows: $idResults, request: $request);
 		}
 
 		$unscoped = ($scope['registerId'] === null && $scope['schemaId'] === null);
@@ -9945,7 +9945,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$relationsContains = $searchQuery['_relations_contains'] ?? null;
 		if ($unscoped === true && is_string($relationsContains) === true && empty($relationsContains) === false) {
 			$relResults = $this->findByRelationAcrossAllMagicTables(uuid: $relationsContains, includeDeleted: false);
-			return $this->getGlobalSearchResult(results: $relResults, searchQuery: $searchQuery, _rbac: $request['rbac']);
+			return $this->searchTablesOfRows(rows: $relResults, request: $request);
 		}
 
 		$searchTerm = $searchQuery['_search'] ?? null;
@@ -10214,159 +10214,90 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end owningRegisterForSchema()
 
 	/**
-	 * Filter objects by schema RBAC permissions.
+	 * The search, run on the tables that hold the given rows.
 	 *
-	 * @param array $objects Array of ObjectEntity objects to filter.
-	 * @param array $schemasCache Cache of schema data by ID.
-	 * @param bool $_rbac Whether RBAC is enabled.
+	 * A cross-table scan applies no read rules, so its rows only name the
+	 * tables; the answer comes from the search of those tables.
 	 *
-	 * @return array Filtered array of ObjectEntity objects.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 */
-	private function filterBySchemaRbac(array $objects, array &$schemasCache, bool $_rbac): array {
-		if ($_rbac === false) {
-			return $objects;
-		}
-
-		if ($this->rbacHandler->isAdmin() === true) {
-			return $objects;
-		}
-
-		$schemaEntityCache = [];
-		$filtered = [];
-
-		foreach ($objects as $object) {
-			if (($object instanceof ObjectEntity) === false) {
-				$filtered[] = $object;
-				continue;
-			}
-
-			$schemaId = $object->getSchema();
-
-			if ($schemaId === null) {
-				$filtered[] = $object;
-				continue;
-			}
-
-			if (isset($schemaEntityCache[$schemaId]) === false) {
-				try {
-					$schema = $this->schemaMapper->find((int)$schemaId, _multitenancy: false, _rbac: false);
-					$schemaEntityCache[$schemaId] = $schema;
-
-					if (isset($schemasCache[$schemaId]) === false) {
-						$schemasCache[$schemaId] = $schema->jsonSerialize();
-					}
-				} catch (\Exception $e) {
-					continue;
-				}
-			}
-
-			$schema = $schemaEntityCache[$schemaId];
-
-			$objectData = $object->getMatchEnvelope();
-
-			if ($this->rbacHandler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: $object->getOwner(),
-				objectData: $objectData,
-				objectAuthorization: $object->getAuthorization(),
-				objectUuid: $object->getUuid()
-			) === true
-			) {
-				$filtered[] = $object;
-			}
-		}//end foreach
-
-		return $filtered;
-	}//end filterBySchemaRbac()
-
-	/**
-	 * Build a global search result with register/schema caches, RBAC filtering, and pagination.
-	 *
-	 * @param array $results Array of ObjectEntity results from the storage search.
-	 * @param array $searchQuery The original search query parameters (for _limit/_offset).
-	 * @param bool $_rbac Whether to apply RBAC filtering.
+	 * @param ObjectEntity[] $rows    The rows a cross-table scan found.
+	 * @param array          $request The search request: queries and flags
 	 *
 	 * @return array{results: array, total: int, registers: array, schemas: array}
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
 	 */
-	private function getGlobalSearchResult(array $results, array $searchQuery, bool $_rbac): array {
-		$registersCache = [];
-		$schemasCache = [];
-
-		foreach ($results as $result) {
-			if (($result instanceof ObjectEntity) === false) {
-				continue;
-			}
-
-			$regId = $result->getRegister();
-			$schId = $result->getSchema();
-
-			if ($regId !== null && isset($registersCache[$regId]) === false) {
-				try {
-					$reg = $this->registerMapper->find(id: (int)$regId, _multitenancy: false, _rbac: false);
-					$registersCache[$reg->getId()] = $reg->jsonSerialize();
-				} catch (\Exception $e) {
-					// Skip if register not found.
-				}
-			}
-
-			if ($schId !== null && isset($schemasCache[$schId]) === false) {
-				try {
-					$sch = $this->schemaMapper->find((int)$schId, _multitenancy: false, _rbac: false);
-					$schemasCache[$sch->getId()] = $sch->jsonSerialize();
-				} catch (\Exception $e) {
-					// Skip if schema not found.
-				}
-			}
-		}//end foreach
-
-		$results = $this->filterBySchemaRbac(objects: $results, schemasCache: $schemasCache, _rbac: $_rbac);
-
-		$total = count($results);
-
-		// A `_recent` page over no register or schema: history order before
-		// paging, `@self.viewedAt` on the page (`recently-opened-means-opened`).
-		$recentViews = RecentLensOrder::views(query: $searchQuery);
-		if ($recentViews !== null && RecentLensOrder::ordersPage(query: $searchQuery) === true) {
-			$results = RecentLensOrder::sort(objects: $results, views: $recentViews);
-		}
-
-		$limit = $searchQuery['_limit'] ?? 1000;
-		$offset = $searchQuery['_offset'] ?? 0;
-		$results = array_slice($results, $offset, $limit);
-		if ($recentViews !== null) {
-			RecentLensOrder::stamp(objects: $results, views: $recentViews);
-		}
-
-		$finalSchemaIds = [];
-		$finalRegisterIds = [];
-		foreach ($results as $object) {
-			$schId = $object->getSchema();
-			$regId = $object->getRegister();
-			if ($schId !== null) {
-				$finalSchemaIds[$schId] = true;
-			}
-
-			if ($regId !== null) {
-				$finalRegisterIds[$regId] = true;
-			}
-		}
-
-		$schemasCache = array_intersect_key($schemasCache, $finalSchemaIds);
-		$registersCache = array_intersect_key($registersCache, $finalRegisterIds);
+	private function searchTablesOfRows(array $rows, array $request): array {
+		$pairs   = $this->tablesOfRows(rows: $rows);
+		$query   = array_replace($request['search'], ['_rbac' => $request['rbac'], '_multitenancy' => $request['multitenancy']]);
+		$results = $this->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
 
 		return [
 			'results' => $results,
-			'total' => $total,
-			'registers' => $registersCache,
-			'schemas' => $schemasCache,
-		];
-	}//end getGlobalSearchResult()
+			'total'   => $this->countAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs),
+		] + $this->serialisedTablesOfPage(results: $results, pairs: $pairs);
+	}//end searchTablesOfRows()
+
+	/**
+	 * The register and schema of every table the rows come from, each table once.
+	 *
+	 * @param ObjectEntity[] $rows The rows.
+	 *
+	 * @return list<array{register: Register, schema: Schema}> The pairs.
+	 */
+	private function tablesOfRows(array $rows): array {
+		$pairs = [];
+		foreach ($rows as $row) {
+			$table = $row->getRegister().'_'.$row->getSchema();
+			if (array_key_exists($table, $pairs) === false) {
+				$pairs[$table] = $this->tableOfRow(row: $row);
+			}
+		}
+
+		return array_values(array_filter($pairs));
+	}//end tablesOfRows()
+
+	/**
+	 * The register and schema of a row, or null when one of them is gone.
+	 *
+	 * @param ObjectEntity $row The row.
+	 *
+	 * @return array{register: Register, schema: Schema}|null The pair.
+	 */
+	private function tableOfRow(ObjectEntity $row): ?array {
+		try {
+			return [
+				'register' => $this->registerMapper->find((int)$row->getRegister(), _multitenancy: false, _rbac: false),
+				'schema'   => $this->schemaMapper->find((int)$row->getSchema(), _multitenancy: false, _rbac: false),
+			];
+		} catch (\Exception $e) {
+			return null;
+		}
+	}//end tableOfRow()
+
+	/**
+	 * The serialised registers and schemas of the rows on a page, and no others.
+	 *
+	 * @param array $results The page.
+	 * @param array $pairs   The searched tables.
+	 *
+	 * @return array{registers: array, schemas: array}
+	 */
+	private function serialisedTablesOfPage(array $results, array $pairs): array {
+		$onPage = [];
+		foreach ($results as $row) {
+			$onPage[$row->getRegister().'_'.$row->getSchema()] = true;
+		}
+
+		$tables = ['registers' => [], 'schemas' => []];
+		foreach ($pairs as $pair) {
+			if (isset($onPage[$pair['register']->getId().'_'.$pair['schema']->getId()]) === true) {
+				$tables['registers'][$pair['register']->getId()] = $pair['register']->jsonSerialize();
+				$tables['schemas'][$pair['schema']->getId()]     = $pair['schema']->jsonSerialize();
+			}
+		}
+
+		return $tables;
+	}//end serialisedTablesOfPage()
 
 	/**
 	 * Search for objects across ALL magic tables using a text search term.

@@ -756,6 +756,8 @@ return array (
     array (
       0 => 'register find [404,false,false]',
       1 => 'findMultiple [["u1"],false,null]',
+      2 => 'searchAcross [{"register":404,"schema":2,"_search":"x","_ids":["u1"],"_rbac":true,"_multitenancy":true},[]]',
+      3 => 'countAcross [{"register":404,"schema":2,"_search":"x","_ids":["u1"],"_rbac":true,"_multitenancy":true},[]]',
     ),
     'log' => 
     array (
@@ -2069,6 +2071,8 @@ return array (
       2 => 'schema find [2,[],false,false]',
       3 => 'register find [5,false,false]',
       4 => 'schema find [3,[],false,false]',
+      5 => 'searchAcross [{"_ids":["u1","u2"],"_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"},{"register":"register:5","schema":"schema:3"}]]',
+      6 => 'countAcross [{"_ids":["u1","u2"],"_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"},{"register":"register:5","schema":"schema:3"}]]',
     ),
     'log' => 
     array (
@@ -2080,7 +2084,7 @@ return array (
         0 => 'object:u1',
         1 => 'object:u2',
       ),
-      'total' => 2,
+      'total' => 20,
       'registers' => 
       array (
         1 => 
@@ -2333,6 +2337,8 @@ return array (
       1 => 'findMultiple [["u1"],false,null]',
       2 => 'register find [1,false,false]',
       3 => 'schema find [2,[],false,false]',
+      4 => 'searchAcross [{"_ids":["u1"],"register":404,"schema":2,"_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
+      5 => 'countAcross [{"_ids":["u1"],"register":404,"schema":2,"_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
     ),
     'log' => 
     array (
@@ -2344,7 +2350,7 @@ return array (
       array (
         0 => 'object:u1',
       ),
-      'total' => 1,
+      'total' => 10,
       'registers' => 
       array (
         1 => 
@@ -2501,6 +2507,8 @@ return array (
       0 => 'findByRelation ["rel-1",false]',
       1 => 'register find [1,false,false]',
       2 => 'schema find [2,[],false,false]',
+      3 => 'searchAcross [{"_relations_contains":"rel-1","_rbac":false,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
+      4 => 'countAcross [{"_relations_contains":"rel-1","_rbac":false,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
     ),
     'log' => 
     array (
@@ -2511,7 +2519,7 @@ return array (
       array (
         0 => 'object:r1',
       ),
-      'total' => 1,
+      'total' => 10,
       'registers' => 
       array (
         1 => 
@@ -2940,6 +2948,8 @@ return array (
     'calls' => 
     array (
       0 => 'findMultiple [["u1"],false,null]',
+      1 => 'searchAcross [{"_ids":["u1"],"_relations_contains":"r","_search":"s","_rbac":true,"_multitenancy":true},[]]',
+      2 => 'countAcross [{"_ids":["u1"],"_relations_contains":"r","_search":"s","_rbac":true,"_multitenancy":true},[]]',
     ),
     'log' => 
     array (

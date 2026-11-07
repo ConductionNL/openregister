@@ -413,9 +413,8 @@ class ContentSearchHandler {
 	/**
 	 * The caller's query with paging and scope stripped, ready to be aimed at
 	 * one table with `_ids`. The restriction travels as `_ids` on the
-	 * single-table path; a `_ids` key on an UNSCOPED query would switch
-	 * MagicMapper to its id-lookup path, which ignores `_search`, so the scope
-	 * keys are always set by the caller before use.
+	 * single-table path, so the scope keys are always set by the caller before
+	 * use.
 	 *
 	 * @param array $query The original search query.
 	 *
