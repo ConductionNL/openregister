@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Settings;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SettingsDirectory;
+use OCA\OpenRegister\Service\Settings\ConfigurationSettingsSupport;
 use OCA\OpenRegister\Service\Settings\OwnSettingsChangeRecorder;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -91,14 +93,9 @@ class ConfigurationSettingsHandlerAccessGoldenTest extends TestCase {
 
 		return new ConfigurationSettingsHandler(
 			$appConfig,
-			$groups,
-			$users,
-			$organisations,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IAppManager::class),
-			'openregister',
-			$announcer,
-			$changeRecorder
+			new SettingsDirectory($groups, $users, $organisations),
+			new ConfigurationSettingsSupport($this->createMock(LoggerInterface::class), $this->createMock(IAppManager::class), $announcer, $changeRecorder),
+			'openregister'
 		);
 	}//end handler()
 
