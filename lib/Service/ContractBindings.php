@@ -59,6 +59,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
@@ -88,6 +90,7 @@ final class ContractBindings {
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
+		FlowTimerSweepInterface::class => FlowTimerSweep::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
