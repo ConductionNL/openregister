@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
@@ -98,6 +99,21 @@ use Symfony\Component\Uid\Uuid;
  * @spec openspec/specs/openapi-generation/spec.md
  */
 class RegistersController extends Controller {
+
+	/**
+	 * The boolean import flags and their defaults.
+	 *
+	 * @var array<string, bool>
+	 */
+	private const IMPORT_FLAG_DEFAULTS = [
+		'includeObjects' => false,
+		'validation' => false,
+		'events' => false,
+		'publish' => false,
+		'enrich' => true,
+		'dryRun' => false,
+		'historic' => false,
+	];
 
 	/**
 	 * Configuration service for handling import/export operations
@@ -1077,41 +1093,65 @@ class RegistersController extends Controller {
 				return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
 			}
 
-			// Importing can create schemas, registers and objects, so it is gated on
-			// manage permission for the target register (admin-only without a manage
-			// rule). A missing register defers its 404: an admin's JSON register
-			// bundle may auto-create it (REQ-IMP-AC-01).
-			$register = $this->findImportRegister(id: $id);
-			if ($register !== null && $this->checkRegisterManagePermission(register: $register) === false) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to manage this register'],
-					statusCode: 403
-				);
-			}
-
-			$type = $this->resolveImportType(uploadedFile: $uploadedFile);
-			if ($this->isImportRegisterMissing(register: $register, type: $type) === true) {
-				return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
-			}
-
-			$options = $this->readImportOptions();
-			if ($options instanceof JSONResponse) {
-				return $options;
-			}
-
-			$options += ['id' => $id, 'force' => $force, 'type' => $type, 'register' => $register, 'file' => $uploadedFile];
-			$this->logImportOptions(options: $options);
-
-			$summary = $this->runImport(options: $options);
-			if ($summary instanceof JSONResponse) {
-				return $summary;
-			}
-
-			return $this->importSuccessResponse(summary: $summary);
+			return $this->importUpload(target: ['id' => $id, 'force' => $force, 'file' => $uploadedFile]);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end import()
+
+	/**
+	 * Hold an upload to the target register's rights, then import it.
+	 *
+	 * Importing can create schemas, registers and objects, so it is gated on manage
+	 * permission for the target register (admin-only without a manage rule). A
+	 * missing register defers its 404: an admin's JSON register bundle may
+	 * auto-create it (REQ-IMP-AC-01).
+	 *
+	 * @param array{id: int|string, force: bool, file: array} $target The register asked for, the force flag and the upload.
+	 *
+	 * @return JSONResponse The import result or a refusal.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importUpload(array $target): JSONResponse {
+		$register = $this->findImportRegister(id: $target['id']);
+		if ($register !== null && $this->checkRegisterManagePermission(register: $register) === false) {
+			return new JSONResponse(data: ['error' => 'User does not have permission to manage this register'], statusCode: 403);
+		}
+
+		$type = $this->resolveImportType(uploadedFile: $target['file']);
+		if ($this->isImportRegisterMissing(register: $register, type: $type) === true) {
+			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+		}
+
+		return $this->importAllowedUpload(target: $target + ['type' => $type, 'register' => $register]);
+	}//end importUpload()
+
+	/**
+	 * Read the import options and run an import the caller may make.
+	 *
+	 * @param array $target The upload, the force flag, the type and the register.
+	 *
+	 * @return JSONResponse The import result or a refusal.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importAllowedUpload(array $target): JSONResponse {
+		$options = $this->readImportOptions();
+		if ($options instanceof JSONResponse) {
+			return $options;
+		}
+
+		$options += $target;
+		$this->logImportOptions(options: $options);
+
+		$summary = $this->runImport(options: $options);
+		if ($summary instanceof JSONResponse) {
+			return $summary;
+		}
+
+		return $this->importSuccessResponse(summary: $summary);
+	}//end importAllowedUpload()
 
 	/**
 	 * Find the register an import targets, or null when it does not exist yet.
@@ -1198,25 +1238,45 @@ class RegistersController extends Controller {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function jsonImportType(array $uploadedFile): string {
-		$peekRaw = '';
-		if (is_readable((string)($uploadedFile['tmp_name'] ?? '')) === true) {
-			$peekRaw = (string)file_get_contents($uploadedFile['tmp_name']);
-		}
-
-		$peek = json_decode($peekRaw, true);
-		if (is_array($peek) === false) {
-			return 'configuration';
-		}
-
-		if (array_is_list($peek) === true
-			|| (isset($peek['results']) === true && is_array($peek['results']) === true)
-			|| (isset($peek['components']['registers']) === true && is_array($peek['components']['registers']) === true)
-		) {
+		$peek = json_decode($this->readableUpload(uploadedFile: $uploadedFile), true);
+		if (is_array($peek) === true && $this->holdsObjectsOrRegisters(peek: $peek) === true) {
 			return 'json';
 		}
 
 		return 'configuration';
 	}//end jsonImportType()
+
+	/**
+	 * The content of an upload, empty when it cannot be read.
+	 *
+	 * @param array $uploadedFile The uploaded file entry
+	 *
+	 * @return string The content
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function readableUpload(array $uploadedFile): string {
+		if (is_readable((string)($uploadedFile['tmp_name'] ?? '')) === false) {
+			return '';
+		}
+
+		return (string)file_get_contents($uploadedFile['tmp_name']);
+	}//end readableUpload()
+
+	/**
+	 * Whether decoded JSON is an object list, a results envelope or a register bundle.
+	 *
+	 * @param array $peek The decoded upload
+	 *
+	 * @return bool True when the object importer takes it
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function holdsObjectsOrRegisters(array $peek): bool {
+		return array_is_list($peek) === true
+			|| is_array($peek['results'] ?? null) === true
+			|| is_array($peek['components']['registers'] ?? null) === true;
+	}//end holdsObjectsOrRegisters()
 
 	/**
 	 * Read the import flags and the optional migration pack from the request.
@@ -1229,19 +1289,10 @@ class RegistersController extends Controller {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function readImportOptions(): array|JSONResponse {
-		$options = [
-			'includeObjects' => $this->parseBooleanParam(paramName: 'includeObjects', default: false),
-			'validation' => $this->parseBooleanParam(paramName: 'validation', default: false),
-			'events' => $this->parseBooleanParam(paramName: 'events', default: false),
-			'publish' => $this->parseBooleanParam(paramName: 'publish', default: false),
-			'enrich' => $this->parseBooleanParam(paramName: 'enrich', default: true),
-			'dryRun' => $this->parseBooleanParam(paramName: 'dryRun', default: false),
-			'historic' => $this->parseBooleanParam(paramName: 'historic', default: false),
-			'pack' => null,
-		];
+		$options = $this->importFlags() + ['pack' => null];
 
 		$packId = $this->request->getParam('packId');
-		if ($packId === null || $packId === '') {
+		if ($this->isBlank(value: $packId) === true) {
 			return $options;
 		}
 
@@ -1253,6 +1304,35 @@ class RegistersController extends Controller {
 
 		return $options;
 	}//end readImportOptions()
+
+	/**
+	 * The import flags the request sets, each with its default.
+	 *
+	 * @return array<string, bool> The flags
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importFlags(): array {
+		$flags = [];
+		foreach (self::IMPORT_FLAG_DEFAULTS as $name => $default) {
+			$flags[$name] = $this->parseBooleanParam(paramName: $name, default: $default);
+		}
+
+		return $flags;
+	}//end importFlags()
+
+	/**
+	 * Whether a request parameter is absent or empty.
+	 *
+	 * @param mixed $value The parameter
+	 *
+	 * @return bool True for null and the empty string
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function isBlank(mixed $value): bool {
+		return $value === null || $value === '';
+	}//end isBlank()
 
 	/**
 	 * Log the import options at debug level.
@@ -1388,11 +1468,8 @@ class RegistersController extends Controller {
 	 */
 	private function importCsv(array $options): array|JSONResponse {
 		$schemaId = $this->request->getParam('schema');
-		if ($schemaId === null || $schemaId === '') {
-			return new JSONResponse(
-				data: ['error' => 'Schema parameter is required for CSV imports.'],
-				statusCode: 400
-			);
+		if ($this->isBlank(value: $schemaId) === true) {
+			return new JSONResponse(data: ['error' => 'Schema parameter is required for CSV imports.'], statusCode: 400);
 		}
 
 		$schema = $this->schemaMapper->find($schemaId);
@@ -1423,25 +1500,12 @@ class RegistersController extends Controller {
 	 */
 	private function importJsonObjects(array $options): array|JSONResponse {
 		$peek = json_decode((string)file_get_contents($options['file']['tmp_name']), true);
-		$isBundle = $this->isRegisterBundle(peek: $peek);
-
-		$schemaId = $this->request->getParam('schema');
-		if (($schemaId === null || $schemaId === '') && $isBundle === false) {
-			$list = ($peek['results'] ?? $peek);
-			$schemaId = ($list[0]['@self']['schema'] ?? null);
+		$schemaId = $this->jsonImportSchemaId(peek: $peek);
+		if ($this->isBlank(value: $schemaId) === true && $this->isRegisterBundle(peek: $peek) === false) {
+			return new JSONResponse(data: ['error' => 'Could not determine schema for JSON import; pass a schema parameter.'], statusCode: 400);
 		}
 
-		if (($schemaId === null || $schemaId === '') && $isBundle === false) {
-			return new JSONResponse(
-				data: ['error' => 'Could not determine schema for JSON import; pass a schema parameter.'],
-				statusCode: 400
-			);
-		}
-
-		$schema = null;
-		if ($schemaId !== null && $schemaId !== '') {
-			$schema = $this->schemaMapper->find($schemaId);
-		}
+		$schema = $this->jsonImportSchema(schemaId: $schemaId);
 
 		return $this->importService->importFromJson(
 			...$this->rowImportArguments(options: $options),
@@ -1451,6 +1515,48 @@ class RegistersController extends Controller {
 			registerSlug: (string)$options['id']
 		);
 	}//end importJsonObjects()
+
+	/**
+	 * The schema a JSON import names: the parameter, else the first object's `@self.schema`.
+	 *
+	 * A register bundle carries its own schemas, so only the parameter counts for it.
+	 *
+	 * @param mixed $peek The decoded upload
+	 *
+	 * @return mixed The schema id, blank when there is none
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function jsonImportSchemaId(mixed $peek): mixed {
+		$schemaId = $this->request->getParam('schema');
+		if ($this->isBlank(value: $schemaId) === false || $this->isRegisterBundle(peek: $peek) === true) {
+			return $schemaId;
+		}
+
+		$list = ($peek['results'] ?? $peek);
+
+		return ($list[0]['@self']['schema'] ?? null);
+	}//end jsonImportSchemaId()
+
+	/**
+	 * The schema entity of a JSON import, if it names one.
+	 *
+	 * @param mixed $schemaId The schema id, or blank
+	 *
+	 * @return Schema|null The schema
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the schema does not exist
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If several schemas match
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function jsonImportSchema(mixed $schemaId): ?Schema {
+		if ($this->isBlank(value: $schemaId) === true) {
+			return null;
+		}
+
+		return $this->schemaMapper->find($schemaId);
+	}//end jsonImportSchema()
 
 	/**
 	 * Whether decoded JSON is a register bundle with at least one register.
@@ -1480,31 +1586,55 @@ class RegistersController extends Controller {
 	 */
 	private function importConfigurationBundle(array $options): array|JSONResponse {
 		if ($options['pack'] !== null) {
-			return new JSONResponse(
-				data: ['error' => 'packId only applies to CSV/JSON row imports, not configuration bundle imports.'],
-				statusCode: 400
-			);
+			return new JSONResponse(data: ['error' => 'packId only applies to CSV/JSON row imports, not configuration bundle imports.'], statusCode: 400);
 		}
 
-		$jsonData = $this->configurationService->getUploadedJson(
-			data: $this->request->getParams(),
-			uploadedFiles: [$options['file']]
-		);
-		if ($jsonData instanceof JSONResponse) {
-			return $jsonData;
-		}
-
-		$refusal = $this->bundleRefusal(register: $options['register'], bundle: $jsonData);
-		if ($refusal !== null) {
-			return $refusal;
+		$bundle = $this->allowedBundle(options: $options);
+		if ($bundle instanceof JSONResponse) {
+			return $bundle;
 		}
 
 		// The importer falls back to the app id a bundle names; here the register decides.
-		unset($jsonData['appId']);
+		unset($bundle['appId']);
 
+		return $this->storeBundle(options: $options, bundle: $bundle);
+	}//end importConfigurationBundle()
+
+	/**
+	 * The uploaded bundle, when the caller may import it into this register.
+	 *
+	 * @param array $options The import options
+	 *
+	 * @return array|JSONResponse The bundle, or an error response
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function allowedBundle(array $options): array|JSONResponse {
+		$bundle = $this->configurationService->getUploadedJson(
+			data: $this->request->getParams(),
+			uploadedFiles: [$options['file']]
+		);
+		if ($bundle instanceof JSONResponse) {
+			return $bundle;
+		}
+
+		return ($this->bundleRefusal(register: $options['register'], bundle: $bundle) ?? $bundle);
+	}//end allowedBundle()
+
+	/**
+	 * Import a bundle and summarise it; schemas it created join the register.
+	 *
+	 * @param array                $options The import options
+	 * @param array<string, mixed> $bundle  The bundle
+	 *
+	 * @return array The summary
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function storeBundle(array $options, array $bundle): array {
 		// ImportFromJson takes a Configuration entity; this endpoint has none to pass.
 		$result = $this->configurationService->importFromJson(
-			data: $jsonData,
+			data: $bundle,
 			configuration: null,
 			owner: $this->userSession->getUser()?->getUID(),
 			appId: $options['register']->getApplication(),
@@ -1519,7 +1649,7 @@ class RegistersController extends Controller {
 		}
 
 		return $summary;
-	}//end importConfigurationBundle()
+	}//end storeBundle()
 
 	/**
 	 * Refuse a bundle that reaches outside the register for a caller who is not an administrator.
@@ -1557,33 +1687,38 @@ class RegistersController extends Controller {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function configurationImportSummary(array $result, Register $register): array {
-		$summary = [
-			'configuration' => [
-				'created' => [],
-				'updated' => [],
-				'unchanged' => [],
-				'errors' => [],
-			],
-		];
-		if (($result['objects'] ?? null) === null || is_array($result['objects']) === false) {
-			return $summary;
+		$created = [];
+		if (is_array($result['objects'] ?? null) === true) {
+			foreach ($result['objects'] as $object) {
+				$created[] = $this->createdImportEntry(object: $object, register: $register);
+			}
 		}
 
-		foreach ($result['objects'] as $object) {
-			$summary['configuration']['created'][] = [
-				'id' => $object->getId(),
-				'uuid' => $object->getUuid(),
-				'sheet' => 'configuration',
-				'register' => [
-					'id' => $register->getId(),
-					'name' => $register->getTitle(),
-				],
-				'schema' => null,
-			];
-		}
-
-		return $summary;
+		return ['configuration' => ['created' => $created, 'updated' => [], 'unchanged' => [], 'errors' => []]];
 	}//end configurationImportSummary()
+
+	/**
+	 * The summary entry of an object a configuration import created.
+	 *
+	 * @param object   $object   The object
+	 * @param Register $register The register the import targeted
+	 *
+	 * @return array The entry
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function createdImportEntry(object $object, Register $register): array {
+		return [
+			'id' => $object->getId(),
+			'uuid' => $object->getUuid(),
+			'sheet' => 'configuration',
+			'register' => [
+				'id' => $register->getId(),
+				'name' => $register->getTitle(),
+			],
+			'schema' => null,
+		];
+	}//end createdImportEntry()
 
 	/**
 	 * Add the schemas a configuration import created to the target register.
