@@ -27,6 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobService;
+use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
@@ -69,6 +73,8 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		BulkJobReversal::class => [BulkJobReversalInterface::class, ContractBindings::class],
+		BulkJobService::class => [BulkJobServiceInterface::class, ContractBindings::class],
 		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
 		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
 		FederatedConfigService::class => [FederatedConfigServiceInterface::class, ContractBindings::class],
