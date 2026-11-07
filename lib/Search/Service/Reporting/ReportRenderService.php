@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Search\Service\Reporting;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use Psr\Log\LoggerInterface;
 
@@ -60,7 +60,7 @@ class ReportRenderService {
 	/**
 	 * Constructor.
 	 *
-	 * @param AggregationRunner $aggregationRunner Server-side aggregation runner.
+	 * @param AggregationRunnerInterface $aggregationRunner Server-side aggregation runner.
 	 * @param GraphQLService $graphqlService GraphQL executor.
 	 * @param SpreadsheetReportWriter $spreadsheetWriter CSV / XLSX / ODS writer.
 	 * @param HtmlReportWriter $htmlWriter HTML writer.
@@ -68,7 +68,7 @@ class ReportRenderService {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly AggregationRunner $aggregationRunner,
+		private readonly AggregationRunnerInterface $aggregationRunner,
 		private readonly GraphQLService $graphqlService,
 		private readonly SpreadsheetReportWriter $spreadsheetWriter,
 		private readonly HtmlReportWriter $htmlWriter,
