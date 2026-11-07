@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -65,13 +65,13 @@ class FlowTimerWorker extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Job scheduling clock (kept by the base Job as $this->time).
-	 * @param FlowTimerSweep $sweep The two range scans and what they fire.
+	 * @param FlowTimerSweepInterface $sweep The two range scans and what they fire.
 	 * @param IAppConfig $appConfig Holds the batch limit override.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FlowTimerSweep $sweep,
+		private readonly FlowTimerSweepInterface $sweep,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {

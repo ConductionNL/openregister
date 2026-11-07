@@ -48,9 +48,21 @@ final class D5InterfaceBindingsTest extends TestCase {
 		'OCA\OpenRegister\Service\PersonLinkService' => ['OCA\OpenRegister\Service\PersonLinkServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\PhotoLinkService' => ['OCA\OpenRegister\Service\PhotoLinkServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\PollLinkService' => ['OCA\OpenRegister\Service\PollLinkServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\RegisterSchemaLinkageRepairService' => [
+			'OCA\OpenRegister\Service\RegisterSchemaLinkageRepairServiceInterface',
+			ContractBindings::class,
+		],
+		'OCA\OpenRegister\Service\SchemaApplicationMigrator' => [
+			'OCA\OpenRegister\Service\SchemaApplicationMigratorInterface',
+			ContractBindings::class,
+		],
 		'OCA\OpenRegister\Service\SearchTrailService' => ['OCA\OpenRegister\Service\SearchTrailServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\SemanticTypeResolver' => ['OCA\OpenRegister\Service\SemanticTypeResolverInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\SequenceService' => ['OCA\OpenRegister\Service\SequenceServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\SharedSchemaDedupeService' => [
+			'OCA\OpenRegister\Service\SharedSchemaDedupeServiceInterface',
+			ContractBindings::class,
+		],
 		'OCA\OpenRegister\Service\TalkLinkService' => ['OCA\OpenRegister\Service\TalkLinkServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\TimeTrackerLinkService' => ['OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\XwikiLinkService' => ['OCA\OpenRegister\Service\XwikiLinkServiceInterface', ContractBindings::class],

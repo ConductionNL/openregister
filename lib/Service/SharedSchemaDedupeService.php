@@ -60,7 +60,7 @@ use Throwable;
  *
  * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
  */
-class SharedSchemaDedupeService {
+class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 
 	/**
 	 * Constructor.
