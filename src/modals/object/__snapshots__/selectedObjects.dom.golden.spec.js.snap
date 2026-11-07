@@ -166,16 +166,8 @@ exports[`selected objects in MassValidateObjects removes the object whose button
     "c",
   ],
   "stored": [
-    {
-      "@self": {
-        "id": "a",
-        "name": "Named",
-      },
-      "id": "a",
-    },
-    {
-      "id": "c",
-    },
+    "a",
+    "c",
   ],
 }
 `;
@@ -260,20 +252,8 @@ exports[`selected objects in MigrationObject removes the object whose button is 
     "c",
   ],
   "stored": [
-    {
-      "@self": {
-        "id": "a",
-        "name": "Named",
-      },
-      "id": "a",
-    },
-    {
-      "id": "b",
-      "title": "Titled",
-    },
-    {
-      "id": "c",
-    },
+    "a",
+    "c",
   ],
 }
 `;

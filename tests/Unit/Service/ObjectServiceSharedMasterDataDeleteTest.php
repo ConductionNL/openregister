@@ -78,6 +78,7 @@ use Psr\Log\LoggerInterface;
  * does for a consumer of shared master data, and the delete handler records what reaches it.
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
+ * @uses   \OCA\OpenRegister\Service\Object\AccessFlags
  * @uses   \OCA\OpenRegister\Service\Object\BulkCacheInvalidator
  * @uses   \OCA\OpenRegister\Service\Object\ObjectCacheInvalidator
  * @uses   \OCA\OpenRegister\Service\Object\ReferencePreviewInvalidation

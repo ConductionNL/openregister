@@ -189,6 +189,15 @@ class MoveObject {
 			return $this->refusal(move: $move, error: 'This object is already there.');
 		}
 
+		if ($this->isAtSource(move: $move) === false) {
+			return $this->refusal(move: $move, error: 'This object does not live at the address it is being moved from.');
+		}
+
+		$kept = $this->keptReason(move: $move);
+		if ($kept !== null) {
+			return $this->refusal(move: $move, error: $kept);
+		}
+
 		$verdict = $this->fits(object: $object, target: $targetSchema);
 		if ($verdict['fits'] === false) {
 			return $move->answer(moved: false, errors: $verdict['errors']);
@@ -214,6 +223,39 @@ class MoveObject {
 	}//end move()
 
 	/**
+	 * Why the object has to stay where it is, or null when it may leave.
+	 *
+	 * The source row goes without delete events, so the delete guards never see it.
+	 *
+	 * @param ObjectMove $move The move.
+	 *
+	 * @return string|null The reason.
+	 */
+	private function keptReason(ObjectMove $move): ?string {
+		if ($move->object->isLockedBySomeoneElse(userId: $move->actor) === true) {
+			return 'This object is locked by someone else, so it was not moved.';
+		}
+
+		return (new FileWriteGuard())->refusalFor(object: $move->object)?->getMessage();
+	}//end keptReason()
+
+	/**
+	 * Whether the object lives at the source address, the only table its old row is removed from.
+	 *
+	 * @param ObjectMove $move The move.
+	 *
+	 * @return bool False when the move would leave the object readable at two addresses.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	private function isAtSource(ObjectMove $move): bool {
+		$source = $move->source->ids();
+
+		return (int)$move->object->getRegister() === (int)$source['register']
+			&& (int)$move->object->getSchema() === (int)$source['schema'];
+	}//end isAtSource()
+
+	/**
 	 * Write the object at its target address.
 	 *
 	 * WRITE FIRST. See the class docblock: a failure here leaves the object
@@ -227,14 +269,17 @@ class MoveObject {
 	 */
 	private function writeAtTarget(ObjectMove $move): ?string {
 		$object = $move->object;
+		$before = clone $object;
 		try {
 			$sourceSlug = $this->assignTargetSlug(object: $object, targetRegister: $move->target->register, targetSchema: $move->target->schema);
 			$object->setRegister((string)$move->target->register->getId());
 			$object->setSchema((string)$move->target->schema->getId());
-			$this->objects->updateObjectEntity(
+			// The old entity is given: the target table has no row to read it from.
+			$this->objects->update(
 				entity: $object,
 				register: $move->target->register,
-				schema: $move->target->schema
+				schema: $move->target->schema,
+				oldEntity: $before
 			);
 		} catch (Throwable $e) {
 			// Put the entity back the way it was in memory, so a caller that

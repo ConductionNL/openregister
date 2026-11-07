@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Golden test for MagicMapper::findByRelationBatchInSchema(), findByRelationUsingRelationsColumn()
- * and findByLinkedEntity().
+ * Golden test for MagicMapper::findByRelationBatchInSchema(), findByRelationUsingRelationsColumn(),
+ * findByRelation() and findByLinkedEntity().
  *
  * Records the statements the batch inverse-relation lookup prepares and binds,
  * its log lines and the objects it returns, per platform, signed-in state,
@@ -41,6 +41,7 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicRelationSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
@@ -67,11 +68,13 @@ class MagicMapperRelationBatchGoldenTest extends TestCase {
 				$cases["{$platform} / {$s} / relations only"] = ['batch', $platform, $signedIn, [['u-1', 'u-2'], 7, 3, 'owner', []], null];
 				$cases["{$platform} / {$s} / extra fields"] = ['batch', $platform, $signedIn, [['u-1'], 7, 3, 'owner', ['parentOrg', 'contact']], null];
 				$cases["{$platform} / {$s} / relations column"] = ['column', $platform, $signedIn, ['u-1'], null];
+				$cases["{$platform} / {$s} / any table"] = ['relation', $platform, $signedIn, ['u-1'], null];
 			}
 
 			$cases["{$platform} / table missing"] = ['batch', $platform, true, [['u-1'], 7, 3, 'owner', []], 'missing'];
 			$cases["{$platform} / query fails"] = ['batch', $platform, false, [['u-1', 'u-2'], 7, 3, 'owner', ['x']], 'query'];
 			$cases["{$platform} / relations column / query fails"] = ['column', $platform, true, ['u-1'], 'query'];
+			$cases["{$platform} / any table / query fails"] = ['relation', $platform, true, ['u-1'], 'query'];
 			$cases["{$platform} / linked entity"] = ['linked', $platform, true, [7, 'owner_col', 'e-1'], null];
 			$cases["{$platform} / linked entity / query fails"] = ['linked', $platform, true, [7, 'owner_col', 'e-1'], 'query'];
 			$cases["{$platform} / linked entity / no table"] = ['linked', $platform, true, [99, 'owner_col', 'e-1'], null];
@@ -79,6 +82,7 @@ class MagicMapperRelationBatchGoldenTest extends TestCase {
 
 		$cases['empty uuids'] = ['batch', 'pg', true, [[], 7, 3, 'owner', []], null];
 		$cases['relations column / empty uuid'] = ['column', 'pg', true, [''], null];
+		$cases['any table / empty uuid'] = ['relation', 'pg', true, [''], null];
 
 		return $cases;
 	}//end cases()
@@ -95,6 +99,8 @@ class MagicMapperRelationBatchGoldenTest extends TestCase {
 				$found = $mapper->findByLinkedEntity(...$args);
 			} elseif ($method === 'column') {
 				$found = $mapper->findByRelationUsingRelationsColumn(...$args);
+			} elseif ($method === 'relation') {
+				$found = $mapper->findByRelation(...$args);
 			} else {
 				$found = $mapper->findByRelationBatchInSchema(...$args);
 			}

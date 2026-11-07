@@ -23,29 +23,53 @@ jest.mock('@nextcloud/dialogs', () => ({
 	showSuccess: jest.fn(),
 }))
 jest.mock('@nextcloud/l10n', () => ({
-	t: (app, text, vars) => (vars ? `t:${text} ${JSON.stringify(vars)}` : `t:${text}`),
+	t: (app, text, vars) =>
+		vars ? `t:${text} ${JSON.stringify(vars)}` : `t:${text}`,
 	translate: (app, text) => `t:${text}`,
 }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
 jest.mock('@nextcloud/vue', () => mockLibrary())
-jest.mock('vue-material-design-icons/AccountOutline.vue', () => mockModule('AccountOutline'))
-jest.mock('vue-material-design-icons/AlertCircleOutline.vue', () => mockModule('AlertCircleOutline'))
+jest.mock('vue-material-design-icons/AccountOutline.vue', () =>
+	mockModule('AccountOutline'),
+)
+jest.mock('vue-material-design-icons/AlertCircleOutline.vue', () =>
+	mockModule('AlertCircleOutline'),
+)
 jest.mock('vue-material-design-icons/ArrowLeft.vue', () => mockModule('ArrowLeft'))
-jest.mock('vue-material-design-icons/DeleteOutline.vue', () => mockModule('DeleteOutline'))
-jest.mock('vue-material-design-icons/DotsHorizontal.vue', () => mockModule('DotsHorizontal'))
+jest.mock('vue-material-design-icons/DeleteOutline.vue', () =>
+	mockModule('DeleteOutline'),
+)
+jest.mock('vue-material-design-icons/DotsHorizontal.vue', () =>
+	mockModule('DotsHorizontal'),
+)
 jest.mock('vue-material-design-icons/Eye.vue', () => mockModule('Eye'))
 jest.mock('vue-material-design-icons/EyeOutline.vue', () => mockModule('EyeOutline'))
-jest.mock('vue-material-design-icons/FileDocumentOutline.vue', () => mockModule('FileDocumentOutline'))
-jest.mock('vue-material-design-icons/FileOutline.vue', () => mockModule('FileOutline'))
-jest.mock('vue-material-design-icons/FilterVariant.vue', () => mockModule('FilterVariant'))
-jest.mock('vue-material-design-icons/PauseCircleOutline.vue', () => mockModule('PauseCircleOutline'))
+jest.mock('vue-material-design-icons/FileDocumentOutline.vue', () =>
+	mockModule('FileDocumentOutline'),
+)
+jest.mock('vue-material-design-icons/FileOutline.vue', () =>
+	mockModule('FileOutline'),
+)
+jest.mock('vue-material-design-icons/FilterVariant.vue', () =>
+	mockModule('FilterVariant'),
+)
+jest.mock('vue-material-design-icons/PauseCircleOutline.vue', () =>
+	mockModule('PauseCircleOutline'),
+)
 jest.mock('vue-material-design-icons/Pencil.vue', () => mockModule('Pencil'))
-jest.mock('vue-material-design-icons/PlayOutline.vue', () => mockModule('PlayOutline'))
+jest.mock('vue-material-design-icons/PlayOutline.vue', () =>
+	mockModule('PlayOutline'),
+)
 jest.mock('vue-material-design-icons/Plus.vue', () => mockModule('Plus'))
 jest.mock('vue-material-design-icons/Refresh.vue', () => mockModule('Refresh'))
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () =>
+	mockModule('TrashCanOutline'),
+)
 jest.mock('vue-material-design-icons/Webhook.vue', () => mockModule('Webhook'))
 jest.mock('../components/FilesSidebar.vue', () => mockModule('FilesSidebar'))
-jest.mock('../components/PaginationComponent.vue', () => mockModule('PaginationComponent'))
+jest.mock('../components/PaginationComponent.vue', () =>
+	mockModule('PaginationComponent'),
+)
 jest.mock('../components/WebhooksSidebar.vue', () => mockModule('WebhooksSidebar'))
 jest.mock('../eventBus.js', () => ({
 	__esModule: true,
@@ -114,22 +138,89 @@ function mockStub(name) {
 				attrs,
 				Object.keys(this.$slots)
 					.sort()
-					.map((slot) => render(`slot-${slot}`, this.$slots[slot]({ option: {} }))),
+					.map((slot) =>
+						render(`slot-${slot}`, this.$slots[slot]({ option: {} })),
+					),
 			)
 		},
 	}
 }
 
 const PAGES = {
-	entities: { component: EntitiesIndex },
-	files: { component: FilesIndex, total: 'totalFiles', load: 'loadFiles' },
+	entities: {
+		component: EntitiesIndex,
+		rows: {
+			entitiesList: [{ id: 1, type: 'person', value: 'Jan', category: 'pii' }],
+			totalEntities: 1,
+			selectedEntities: [1],
+		},
+	},
+	files: {
+		component: FilesIndex,
+		total: 'totalFiles',
+		load: 'loadFiles',
+		rows: {
+			filesList: [
+				{
+					id: 1,
+					fileName: 'a.pdf',
+					extractionStatus: 'failed',
+					extractionError: 'bad',
+				},
+				{ id: 2, fileName: 'b.pdf', extractionStatus: 'completed' },
+			],
+			totalFiles: 2,
+		},
+	},
 	templates: {
 		component: TemplatesIndex,
 		total: 'totalTemplates',
 		load: 'loadTemplates',
+		rows: {
+			templatesList: [{ id: 1, name: 'Letter', type: 'docx' }],
+			totalTemplates: 1,
+		},
 	},
-	webhooks: { component: WebhooksIndex, total: 'totalWebhooks' },
-	webhookLogs: { component: WebhookLogsIndex, total: 'totalLogs', load: 'loadLogs' },
+	webhooks: {
+		component: WebhooksIndex,
+		total: 'totalWebhooks',
+		webhooks: [
+			{
+				id: 1,
+				name: 'On',
+				url: 'https://a.example',
+				method: 'POST',
+				enabled: true,
+			},
+			{
+				id: 2,
+				name: 'Off',
+				url: 'https://b.example',
+				method: 'POST',
+				enabled: false,
+			},
+		],
+	},
+	webhookLogs: {
+		component: WebhookLogsIndex,
+		total: 'totalLogs',
+		load: 'loadLogs',
+		rows: { logsList: [{ id: 1, webhookId: 1, success: true }], totalLogs: 1 },
+	},
+}
+
+const RECORDED =
+	/^(refresh(?!Action)|retry|show|view|edit|test|toggle(?!Sidebar|Sort)|delete)/
+const calls = []
+
+/**
+ * A call argument for the record: rows by id.
+ *
+ * @param {*} value The argument
+ * @return {*} The id of a row, else the value
+ */
+function summary(value) {
+	return value?.id ?? value
 }
 
 /**
@@ -143,6 +234,9 @@ async function open(page) {
 	const methods = { ...page.component.methods }
 	if (page.load) {
 		methods[page.load] = () => log.push(page.load)
+	}
+	for (const name of Object.keys(methods).filter((key) => RECORDED.test(key))) {
+		methods[name] = (...args) => calls.push([name, ...args.map(summary)])
 	}
 	const wrapper = mount(
 		{ ...page.component, methods, mounted: undefined },
@@ -180,6 +274,42 @@ function part(wrapper, selector) {
 		.join('\n')
 	expect(html).not.toBe('')
 	return html
+}
+
+/**
+ * The page body with the menu chrome left out: the toggle's name and icon are
+ * those of a closed menu and differ per wrapper, its entries are what counts.
+ *
+ * @param {object} wrapper The mounted page
+ * @return {string} The markup
+ */
+function body(wrapper) {
+	return part(wrapper, '.viewContainer')
+		.replace(/<x-ncactions[^>]*>/g, '<x-ncactions>')
+		.replace(
+			/<slot-icon>\s*<x-dotshorizontal[^>]*><\/x-dotshorizontal>\s*<\/slot-icon>/g,
+			'',
+		)
+		.replace(/ class=""/g, '')
+		.replace(/\s+/g, ' ')
+		.replace(/> ?</g, '>\n<')
+}
+
+/**
+ * Runs every menu entry on the page and logs what it reaches.
+ *
+ * @param {object} wrapper The mounted page
+ * @return {Promise<Array>} Per entry its text and the page methods it called
+ */
+async function clicks(wrapper) {
+	const seen = []
+	const entries = wrapper.findAllComponents({ name: 'NcActionButton' })
+	for (const entry of entries) {
+		calls.length = 0
+		await entry.vm.$attrs.onClick()
+		seen.push([entry.text(), ...calls])
+	}
+	return seen
 }
 
 /**
@@ -250,6 +380,29 @@ describe.each(Object.keys(PAGES))('list page %s', (name) => {
 			}
 		}
 		expect({ seen, log }).toMatchSnapshot()
+	})
+
+	it('renders loading, empty and filled, and its menus reach the page', async () => {
+		if (!entry.rows && !entry.webhooks) return
+		const store = jest.requireMock('../store/store.js').webhookStore
+		store.webhookList = []
+		const { vm, wrapper } = await open(entry)
+		const shown = {}
+		vm.loading = true
+		await flushPromises()
+		shown.loading = body(wrapper)
+		vm.loading = false
+		await flushPromises()
+		shown.empty = body(wrapper)
+		store.webhookList = entry.webhooks || []
+		const filled = await open(entry)
+		Object.assign(filled.vm, entry.rows || {})
+		filled.vm.loading = false
+		await flushPromises()
+		shown.filled = body(filled.wrapper)
+		expect(shown.filled).toContain('x-ncactionbutton')
+		expect(shown).toMatchSnapshot()
+		expect(await clicks(filled.wrapper)).toMatchSnapshot()
 	})
 
 	it('hides the pager on one page', async () => {

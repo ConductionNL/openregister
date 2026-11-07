@@ -4,31 +4,32 @@ exports[`list page action menus golden applications 1`] = `
 "<x-ncappcontent>
 <slot-default>
 <x-index>
-<x-bar></x-bar>
+<x-bar>
+</x-bar>
 <x-card>
 <div class="card">
 <div class="cardHeader">
 <h2>
-<x-applicationoutline size="20"></x-applicationoutline>
+<x-applicationoutline size="20">
+</x-applicationoutline>
 </h2>
-<x-ncactions primary="true" menuname="t:Actions">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Edit</slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
-<x-pencil size="20"></x-pencil>
+<x-pencil size="20">
+</x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Delete</slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
-<x-trashcanoutline size="20"></x-trashcanoutline>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </div>
 <div class="applicationDetails">
@@ -38,24 +39,23 @@ exports[`list page action menus golden applications 1`] = `
 </div>
 </x-card>
 <x-row>
-<x-ncactions primary="false">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Edit</slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
-<x-pencil size="20"></x-pencil>
+<x-pencil size="20">
+</x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Delete</slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
-<x-trashcanoutline size="20"></x-trashcanoutline>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </x-row>
 </x-index>
@@ -66,7 +66,7 @@ exports[`list page action menus golden applications 1`] = `
 exports[`list page action menus golden applications 2`] = `
 [
   [
-    "t:Edit",
+    "Edit",
     [
       "applicationStore.setApplicationItem",
       1,
@@ -77,7 +77,7 @@ exports[`list page action menus golden applications 2`] = `
     ],
   ],
   [
-    "t:Delete",
+    "Delete",
     [
       "applicationStore.setApplicationItem",
       1,
@@ -88,7 +88,7 @@ exports[`list page action menus golden applications 2`] = `
     ],
   ],
   [
-    "t:Edit",
+    "Edit",
     [
       "applicationStore.setApplicationItem",
       1,
@@ -99,7 +99,7 @@ exports[`list page action menus golden applications 2`] = `
     ],
   ],
   [
-    "t:Delete",
+    "Delete",
     [
       "applicationStore.setApplicationItem",
       1,
@@ -107,6 +107,898 @@ exports[`list page action menus golden applications 2`] = `
     [
       "navigationStore.setDialog",
       "deleteApplication",
+    ],
+  ],
+]
+`;
+
+exports[`list page action menus golden auditTrails 1`] = `
+"<x-ncappcontent>
+<slot-default>
+<x-index>
+<x-bar>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Export</slot-default>
+<slot-icon>
+<x-download size="20">
+</x-download>
+</slot-icon>
+</x-ncactionbutton>
+</x-bar>
+<x-card>
+</x-card>
+<x-row>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> View Details</slot-default>
+<slot-icon>
+<x-eye size="20">
+</x-eye>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> View Changes</slot-default>
+<slot-icon>
+<x-comparehorizontal size="20">
+</x-comparehorizontal>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Copy Data</slot-default>
+<slot-icon>
+<x-contentcopy size="20">
+</x-contentcopy>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Delete</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</x-row>
+<x-card>
+</x-card>
+<x-row>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> View Details</slot-default>
+<slot-icon>
+<x-eye size="20">
+</x-eye>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Copy Data</slot-default>
+<slot-icon>
+<x-contentcopy size="20">
+</x-contentcopy>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Delete</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</x-row>
+</x-index>
+</slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`list page action menus golden auditTrails 2`] = `
+[
+  [
+    "t:Export",
+  ],
+  [
+    "t:View Details",
+    [
+      "auditTrailStore.setAuditTrailItem",
+      1,
+    ],
+    [
+      "navigationStore.setDialog",
+      "auditTrailDetails",
+    ],
+  ],
+  [
+    "t:View Changes",
+    [
+      "auditTrailStore.setAuditTrailItem",
+      1,
+    ],
+    [
+      "navigationStore.setDialog",
+      "auditTrailChanges",
+    ],
+  ],
+  [
+    "t:Copy Data",
+  ],
+  [
+    "Delete",
+    [
+      "auditTrailStore.setAuditTrailItem",
+      1,
+    ],
+    [
+      "navigationStore.setDialog",
+      "deleteAuditTrail",
+    ],
+  ],
+  [
+    "t:View Details",
+    [
+      "auditTrailStore.setAuditTrailItem",
+      2,
+    ],
+    [
+      "navigationStore.setDialog",
+      "auditTrailDetails",
+    ],
+  ],
+  [
+    "t:Copy Data",
+  ],
+  [
+    "Delete",
+    [
+      "auditTrailStore.setAuditTrailItem",
+      2,
+    ],
+    [
+      "navigationStore.setDialog",
+      "deleteAuditTrail",
+    ],
+  ],
+]
+`;
+
+exports[`list page action menus golden card 1`] = `
+"<div class="configurationCard configurationCard--imported configurationCard--local">
+<div class="cardHeader">
+<h2>
+<x-cogoutline size="20">
+</x-cogoutline> Local <span class="configBadge configBadge--local">
+<x-checkcircle size="16">
+</x-checkcircle> t:Local</span>
+</h2>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> View</slot-default>
+<slot-icon>
+<x-eye size="20">
+</x-eye>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Export</slot-default>
+<slot-icon>
+<x-download size="20">
+</x-download>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Publish</slot-default>
+<slot-icon>
+<x-clouduploadoutline size="20">
+</x-clouduploadoutline>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+<div class="configurationDetails">
+<div class="cardMeta">
+<span class="metaItem">
+<x-cloud size="16">
+</x-cloud> Local</span>
+</div>
+</div>
+</div>"
+`;
+
+exports[`list page action menus golden card 2`] = `
+[
+  [
+    "View",
+  ],
+  [
+    "Edit",
+  ],
+  [
+    "Export",
+  ],
+  [
+    "Publish",
+    [
+      "configurationStore.setConfigurationItem",
+      1,
+    ],
+    [
+      "navigationStore.setModal",
+      "publishConfiguration",
+    ],
+  ],
+  [
+    "Delete",
+  ],
+]
+`;
+
+exports[`list page action menus golden cardDiscovered 1`] = `
+"<div class="configurationCard">
+<div class="cardHeader">
+<h2>
+<x-cogoutline size="20">
+</x-cogoutline> Found <span class="configBadge configBadge--app">x</span>
+<span class="configBadge configBadge--discovered">
+<x-magnify size="16">
+</x-magnify> Discovered </span>
+</h2>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Import</slot-default>
+<slot-icon>
+<x-cloudupload size="20">
+</x-cloudupload>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+<div class="configurationDetails">
+<div class="cardMeta">
+<a href="https://github.com/a/b" target="_blank" rel="noopener noreferrer" class="metaItem metaLink">
+<x-sourcebranch size="16">
+</x-sourcebranch> a/b </a>
+</div>
+</div>
+</div>"
+`;
+
+exports[`list page action menus golden cardDiscovered 2`] = `
+[
+  [
+    "Import",
+  ],
+]
+`;
+
+exports[`list page action menus golden cardRemote 1`] = `
+"<div class="configurationCard configurationCard--imported configurationCard--external">
+<div class="cardHeader">
+<h2>
+<x-cogoutline size="20">
+</x-cogoutline> Remote <span class="configBadge configBadge--external">
+<x-cloud size="16">
+</x-cloud> External </span>
+<span class="configBadge configBadge--update">
+<x-update size="16">
+</x-update> Update Available </span>
+</h2>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> View</slot-default>
+<slot-icon>
+<x-eye size="20">
+</x-eye>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Preview Update</slot-default>
+<slot-icon>
+<x-eyeoutline size="20">
+</x-eyeoutline>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Check Version</slot-default>
+<slot-icon>
+<x-sync size="20">
+</x-sync>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Export</slot-default>
+<slot-icon>
+<x-download size="20">
+</x-download>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+<div class="configurationDetails">
+<div class="cardMeta">
+<span class="metaItem">
+<x-cloud size="16">
+</x-cloud> GitHub</span>
+<span class="metaItem">
+<x-tag size="16">
+</x-tag> v1</span>
+<span class="metaItem">
+<x-update size="16">
+</x-update> v2 available </span>
+</div>
+</div>
+</div>"
+`;
+
+exports[`list page action menus golden cardRemote 2`] = `
+[
+  [
+    "View",
+  ],
+  [
+    "Preview Update",
+  ],
+  [
+    "Check Version",
+  ],
+  [
+    "Edit",
+  ],
+  [
+    "Export",
+  ],
+  [
+    "Delete",
+  ],
+]
+`;
+
+exports[`list page action menus golden configurations 1`] = `
+"<x-ncappcontent>
+<slot-default>
+<div class="viewContainer">
+<div class="viewHeader">
+<h1 class="viewHeaderTitleIndented">t:Configurations</h1>
+<p>t:Manage your system configurations and settings</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+<span class="viewTotalCount">t:Showing {showing} of {total} configurations{"showing":2,"total":2}</span>
+</div>
+<div class="viewActions">
+<div class="viewModeSwitchContainer">
+<x-nccheckboxradioswitch modelvalue="table" title="See configurations as cards" buttonvariant="true" name="view_mode_radio" type="radio" buttonvariantgrouped="horizontal" value="cards">
+<slot-default> Cards</slot-default>
+</x-nccheckboxradioswitch>
+<x-nccheckboxradioswitch modelvalue="table" title="See configurations as a table" buttonvariant="true" name="view_mode_radio" type="radio" buttonvariantgrouped="horizontal" value="table">
+<slot-default> Table</slot-default>
+</x-nccheckboxradioswitch>
+</div>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Create Configuration</slot-default>
+<slot-icon>
+<x-plus size="20">
+</x-plus>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Import Configuration</slot-default>
+<slot-icon>
+<x-cloudupload size="20">
+</x-cloudupload>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div>
+<div class="viewTableContainer">
+<table class="viewTable">
+<thead>
+<tr>
+<th class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" indeterminate="false" aria-label="t:Select All">
+</x-nccheckboxradioswitch>
+</th>
+<th scope="col">t:Title</th>
+<th scope="col">t:Source</th>
+<th scope="col">t:Local Version</th>
+<th scope="col">t:Remote Version</th>
+<th scope="col">t:Status</th>
+<th scope="col">t:Updated</th>
+<th scope="col" class="tableColumnActions">t:Actions</th>
+</tr>
+</thead>
+<tbody>
+<tr class="viewTableRow">
+<td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="configuration-row-title-1">
+</x-nccheckboxradioswitch>
+</td>
+<td id="configuration-row-title-1" class="tableColumnTitle">
+<div class="titleContent">
+<strong>Local</strong>
+</div>
+</td>
+<td>Local</td>
+<td>-</td>
+<td>-</td>
+<td>
+<div class="statusPillsContainer">
+<span class="configBadge configBadge--external">
+<x-cloud size="16">
+</x-cloud> External </span>
+</div>
+</td>
+<td>-</td>
+<td class="tableColumnActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> View</slot-default>
+<slot-icon>
+<x-eye size="20">
+</x-eye>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Export</slot-default>
+<slot-icon>
+<x-download size="20">
+</x-download>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</td>
+</tr>
+<tr class="viewTableRow">
+<td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="configuration-row-title-2">
+</x-nccheckboxradioswitch>
+</td>
+<td id="configuration-row-title-2" class="tableColumnTitle">
+<div class="titleContent">
+<strong>Remote</strong>
+</div>
+</td>
+<td>GitHub</td>
+<td>1</td>
+<td>2</td>
+<td>
+<div class="statusPillsContainer">
+<span class="configBadge configBadge--external">
+<x-cloud size="16">
+</x-cloud> External </span>
+<span class="configBadge configBadge--update">
+<x-update size="16">
+</x-update> Update Available </span>
+</div>
+</td>
+<td>-</td>
+<td class="tableColumnActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> View</slot-default>
+<slot-icon>
+<x-eye size="20">
+</x-eye>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Check Version</slot-default>
+<slot-icon>
+<x-sync size="20">
+</x-sync>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Preview Update</slot-default>
+<slot-icon>
+<x-eyeoutline size="20">
+</x-eyeoutline>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Export</slot-default>
+<slot-icon>
+<x-download size="20">
+</x-download>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`list page action menus golden configurations 2`] = `
+[
+  [
+    "Create Configuration",
+    [
+      "configurationStore.setConfigurationItem",
+      null,
+    ],
+    [
+      "navigationStore.setModal",
+      "editConfiguration",
+    ],
+  ],
+  [
+    "Import Configuration",
+    [
+      "navigationStore.setModal",
+      "importConfiguration",
+    ],
+  ],
+  [
+    "Refresh",
+    [
+      "configurationStore.refreshConfigurationList",
+    ],
+  ],
+  [
+    "View",
+    [
+      "configurationStore.setConfigurationItem",
+      1,
+    ],
+    [
+      "navigationStore.setModal",
+      "viewConfiguration",
+    ],
+  ],
+  [
+    "Edit",
+    [
+      "configurationStore.setConfigurationItem",
+      1,
+    ],
+    [
+      "navigationStore.setModal",
+      "editConfiguration",
+    ],
+  ],
+  [
+    "Export",
+    [
+      "configurationStore.setConfigurationItem",
+      1,
+    ],
+    [
+      "navigationStore.setModal",
+      "exportConfiguration",
+    ],
+  ],
+  [
+    "Delete",
+    [
+      "configurationStore.setConfigurationItem",
+      1,
+    ],
+    [
+      "navigationStore.setDialog",
+      "deleteConfiguration",
+    ],
+  ],
+  [
+    "View",
+    [
+      "configurationStore.setConfigurationItem",
+      2,
+    ],
+    [
+      "navigationStore.setModal",
+      "viewConfiguration",
+    ],
+  ],
+  [
+    "Edit",
+    [
+      "configurationStore.setConfigurationItem",
+      2,
+    ],
+    [
+      "navigationStore.setModal",
+      "editConfiguration",
+    ],
+  ],
+  [
+    "Check Version",
+  ],
+  [
+    "Preview Update",
+    [
+      "configurationStore.setConfigurationItem",
+      2,
+    ],
+    [
+      "navigationStore.setModal",
+      "previewConfiguration",
+    ],
+  ],
+  [
+    "Export",
+    [
+      "configurationStore.setConfigurationItem",
+      2,
+    ],
+    [
+      "navigationStore.setModal",
+      "exportConfiguration",
+    ],
+  ],
+  [
+    "Delete",
+    [
+      "configurationStore.setConfigurationItem",
+      2,
+    ],
+    [
+      "navigationStore.setDialog",
+      "deleteConfiguration",
+    ],
+  ],
+]
+`;
+
+exports[`list page action menus golden deleted 1`] = `
+"<x-ncappcontent>
+<slot-default>
+<div class="viewContainer">
+<div class="viewHeader">
+<h1 class="viewHeaderTitleIndented">t:Soft Deleted Items</h1>
+<p>t:Manage and restore soft deleted items from your registers</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+<span class="viewTotalCount">t:Showing {showing} of {total} deleted items{"showing":1,"total":1}</span>
+</div>
+<div class="viewActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton disabled="true" closeafterclick="">
+<slot-default> Restore</slot-default>
+<slot-icon>
+<x-restore size="20">
+</x-restore>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton disabled="true" closeafterclick="">
+<slot-default> Purge</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+<slot-icon>
+<x-formatlistchecks size="20">
+</x-formatlistchecks>
+</slot-icon>
+</x-ncactions>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="viewTableContainer">
+<table class="viewTable itemsTable">
+<thead>
+<tr>
+<th class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" indeterminate="false" aria-label="t:Select All">
+</x-nccheckboxradioswitch>
+</th>
+<th scope="col">t:Title</th>
+<th scope="col" class="tableColumnConstrained">t:Register</th>
+<th scope="col" class="tableColumnConstrained">t:Schema</th>
+<th scope="col">t:Deleted Date</th>
+<th scope="col">t:Deleted By</th>
+<th scope="col">t:Destroyable from</th>
+<th scope="col" class="tableColumnConstrained">t:Days left</th>
+<th scope="col" class="tableColumnActions">t:Actions</th>
+</tr>
+</thead>
+<tbody>
+<tr class="viewTableRow itemRow table-row-selectable">
+<td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="deleted-row-title-1">
+</x-nccheckboxradioswitch>
+</td>
+<td id="deleted-row-title-1" class="tableColumnTitle">
+<div class="titleContent">
+<strong>1</strong>
+</div>
+</td>
+<td class="tableColumnConstrained">t:Unknown Register</td>
+<td class="tableColumnConstrained">t:Unknown Schema</td>
+<td>
+<span>t:Unknown</span>
+</td>
+<td>t:Unknown</td>
+<td>
+<span>t:No purge date set</span>
+</td>
+<td class="tableColumnConstrained">t:Unknown</td>
+<td class="tableColumnActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Restore</slot-default>
+<slot-icon>
+<x-restore size="20">
+</x-restore>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Permanently Delete</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`list page action menus golden deleted 2`] = `
+[
+  [
+    "Restore",
+  ],
+  [
+    "Purge",
+  ],
+  [
+    "Refresh",
+    [
+      "deletedStore.fetchDeleted",
+    ],
+    [
+      "registerStore.refreshRegisterList",
+    ],
+    [
+      "schemaStore.refreshSchemaList",
+    ],
+  ],
+  [
+    "t:Restore",
+    [
+      "deletedStore.setSelectedForBulkAction",
+      [
+        {
+          "@self": {
+            "deleted": {},
+            "id": "d1",
+          },
+          "id": 1,
+          "uuid": "d1",
+        },
+      ],
+    ],
+    [
+      "navigationStore.setDialog",
+      "restoreMultiple",
+    ],
+  ],
+  [
+    "t:Permanently Delete",
+    [
+      "deletedStore.setSelectedForBulkAction",
+      [
+        {
+          "@self": {
+            "deleted": {},
+            "id": "d1",
+          },
+          "id": 1,
+          "uuid": "d1",
+        },
+      ],
+    ],
+    [
+      "navigationStore.setDialog",
+      "permanentlyDeleteMultiple",
     ],
   ],
 ]
@@ -120,7 +1012,8 @@ exports[`list page action menus golden organisations 1`] = `
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Add User to Organisation</slot-default>
 <slot-icon>
-<x-accountplus size="20"></x-accountplus>
+<x-accountplus size="20">
+</x-accountplus>
 </slot-icon>
 </x-ncactionbutton>
 </x-bar>
@@ -128,238 +1021,265 @@ exports[`list page action menus golden organisations 1`] = `
 <div class="card">
 <div class="cardHeader">
 <h2>
-<x-officebuilding size="20"></x-officebuilding>
+<x-officebuilding size="20">
+</x-officebuilding>
 </h2>
-<x-ncactions primary="true" menuname="t:Actions">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View</slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
-<x-eye size="20"></x-eye>
+<x-eye size="20">
+</x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Set as Active</slot-default>
 <slot-icon>
-<x-check size="20"></x-check>
+<x-check size="20">
+</x-check>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Add User</slot-default>
 <slot-icon>
-<x-accountmultipleplus size="20"></x-accountmultipleplus>
+<x-accountmultipleplus size="20">
+</x-accountmultipleplus>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </div>
 <div class="organisationInfo">
 <div class="organisationStats">
-<div class="stat"><span class="statLabel">t:Members:</span><span class="statValue">0</span></div>
-<div class="stat"><span class="statLabel">t:Owner:</span><span class="statValue">System</span></div>
+<div class="stat">
+<span class="statLabel">t:Members:</span>
+<span class="statValue">0</span>
+</div>
+<div class="stat">
+<span class="statLabel">t:Owner:</span>
+<span class="statValue">System</span>
+</div>
 </div>
 </div>
 </div>
 </x-card>
 <x-row>
-<x-ncactions primary="false">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View</slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
-<x-eye size="20"></x-eye>
+<x-eye size="20">
+</x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Set as Active</slot-default>
 <slot-icon>
-<x-check size="20"></x-check>
+<x-check size="20">
+</x-check>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Add User</slot-default>
 <slot-icon>
-<x-accountmultipleplus size="20"></x-accountmultipleplus>
+<x-accountmultipleplus size="20">
+</x-accountmultipleplus>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </x-row>
 <x-card>
 <div class="card active-org-card">
 <div class="cardHeader">
 <h2>
-<x-officebuilding size="20"></x-officebuilding>
+<x-officebuilding size="20">
+</x-officebuilding>
 <span class="activeBadge">t:Active</span>
 </h2>
-<x-ncactions primary="true" menuname="t:Actions">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View</slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
-<x-eye size="20"></x-eye>
+<x-eye size="20">
+</x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Edit</slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
-<x-pencil size="20"></x-pencil>
+<x-pencil size="20">
+</x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Add User</slot-default>
 <slot-icon>
-<x-accountmultipleplus size="20"></x-accountmultipleplus>
+<x-accountmultipleplus size="20">
+</x-accountmultipleplus>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </div>
 <div class="organisationInfo">
 <div class="organisationStats">
-<div class="stat"><span class="statLabel">t:Members:</span><span class="statValue">0</span></div>
-<div class="stat"><span class="statLabel">t:Owner:</span><span class="statValue">system</span></div>
+<div class="stat">
+<span class="statLabel">t:Members:</span>
+<span class="statValue">0</span>
+</div>
+<div class="stat">
+<span class="statLabel">t:Owner:</span>
+<span class="statValue">system</span>
+</div>
 </div>
 </div>
 </div>
 </x-card>
 <x-row>
-<x-ncactions primary="false">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View</slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
-<x-eye size="20"></x-eye>
+<x-eye size="20">
+</x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Edit</slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
-<x-pencil size="20"></x-pencil>
+<x-pencil size="20">
+</x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Add User</slot-default>
 <slot-icon>
-<x-accountmultipleplus size="20"></x-accountmultipleplus>
+<x-accountmultipleplus size="20">
+</x-accountmultipleplus>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </x-row>
 <x-card>
 <div class="card">
 <div class="cardHeader">
 <h2>
-<x-officebuilding size="20"></x-officebuilding>
+<x-officebuilding size="20">
+</x-officebuilding>
 </h2>
-<x-ncactions primary="true" menuname="t:Actions">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View</slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
-<x-eye size="20"></x-eye>
+<x-eye size="20">
+</x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Set as Active</slot-default>
 <slot-icon>
-<x-check size="20"></x-check>
+<x-check size="20">
+</x-check>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Edit</slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
-<x-pencil size="20"></x-pencil>
+<x-pencil size="20">
+</x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Go to organisation</slot-default>
 <slot-icon>
-<x-openinnew size="20"></x-openinnew>
+<x-openinnew size="20">
+</x-openinnew>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Add User</slot-default>
 <slot-icon>
-<x-accountmultipleplus size="20"></x-accountmultipleplus>
+<x-accountmultipleplus size="20">
+</x-accountmultipleplus>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Delete</slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
-<x-trashcanoutline size="20"></x-trashcanoutline>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </div>
 <div class="organisationInfo">
 <div class="organisationStats">
-<div class="stat"><span class="statLabel">t:Members:</span><span class="statValue">0</span></div>
-<div class="stat"><span class="statLabel">t:Owner:</span><span class="statValue">me</span></div>
+<div class="stat">
+<span class="statLabel">t:Members:</span>
+<span class="statValue">0</span>
+</div>
+<div class="stat">
+<span class="statLabel">t:Owner:</span>
+<span class="statValue">me</span>
+</div>
 </div>
 </div>
 </div>
 </x-card>
 <x-row>
-<x-ncactions primary="false">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View</slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
-<x-eye size="20"></x-eye>
+<x-eye size="20">
+</x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Set as Active</slot-default>
 <slot-icon>
-<x-check size="20"></x-check>
+<x-check size="20">
+</x-check>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Edit</slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
-<x-pencil size="20"></x-pencil>
+<x-pencil size="20">
+</x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Go to organisation</slot-default>
 <slot-icon>
-<x-openinnew size="20"></x-openinnew>
+<x-openinnew size="20">
+</x-openinnew>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Add User</slot-default>
 <slot-icon>
-<x-accountmultipleplus size="20"></x-accountmultipleplus>
+<x-accountmultipleplus size="20">
+</x-accountmultipleplus>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Delete</slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
-<x-trashcanoutline size="20"></x-trashcanoutline>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </x-row>
 </x-index>
@@ -377,7 +1297,7 @@ exports[`list page action menus golden organisations 2`] = `
     ],
   ],
   [
-    "t:View",
+    "View",
     [
       "open",
       "https://www.softwarecatalogus.nl/publicatie/1",
@@ -404,7 +1324,7 @@ exports[`list page action menus golden organisations 2`] = `
     ],
   ],
   [
-    "t:View",
+    "View",
     [
       "open",
       "https://www.softwarecatalogus.nl/publicatie/1",
@@ -431,14 +1351,14 @@ exports[`list page action menus golden organisations 2`] = `
     ],
   ],
   [
-    "t:View",
+    "View",
     [
       "open",
       "https://www.softwarecatalogus.nl/publicatie/2",
     ],
   ],
   [
-    "t:Edit",
+    "Edit",
     [
       "organisationStore.setOrganisationItem",
       2,
@@ -462,14 +1382,14 @@ exports[`list page action menus golden organisations 2`] = `
     ],
   ],
   [
-    "t:View",
+    "View",
     [
       "open",
       "https://www.softwarecatalogus.nl/publicatie/2",
     ],
   ],
   [
-    "t:Edit",
+    "Edit",
     [
       "organisationStore.setOrganisationItem",
       2,
@@ -493,7 +1413,7 @@ exports[`list page action menus golden organisations 2`] = `
     ],
   ],
   [
-    "t:View",
+    "View",
     [
       "open",
       "https://www.softwarecatalogus.nl/publicatie/3",
@@ -507,7 +1427,7 @@ exports[`list page action menus golden organisations 2`] = `
     ],
   ],
   [
-    "t:Edit",
+    "Edit",
     [
       "organisationStore.setOrganisationItem",
       3,
@@ -538,7 +1458,7 @@ exports[`list page action menus golden organisations 2`] = `
     ],
   ],
   [
-    "t:Delete",
+    "Delete",
     [
       "organisationStore.setOrganisationItem",
       3,
@@ -549,7 +1469,7 @@ exports[`list page action menus golden organisations 2`] = `
     ],
   ],
   [
-    "t:View",
+    "View",
     [
       "open",
       "https://www.softwarecatalogus.nl/publicatie/3",
@@ -563,7 +1483,7 @@ exports[`list page action menus golden organisations 2`] = `
     ],
   ],
   [
-    "t:Edit",
+    "Edit",
     [
       "organisationStore.setOrganisationItem",
       3,
@@ -594,7 +1514,7 @@ exports[`list page action menus golden organisations 2`] = `
     ],
   ],
   [
-    "t:Delete",
+    "Delete",
     [
       "organisationStore.setOrganisationItem",
       3,
@@ -615,126 +1535,137 @@ exports[`list page action menus golden registers 1`] = `
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Import</slot-default>
 <slot-icon>
-<x-upload size="20"></x-upload>
+<x-upload size="20">
+</x-upload>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View APIs</slot-default>
+<slot-default> View APIs</slot-default>
 <slot-icon>
-<x-api size="20"></x-api>
+<x-api size="20">
+</x-api>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Warmup Names Cache</slot-default>
 <slot-icon>
-<x-clouduploadoutline size="20"></x-clouduploadoutline>
+<x-clouduploadoutline size="20">
+</x-clouduploadoutline>
 </slot-icon>
 </x-ncactionbutton>
 </x-bar>
 <x-card>
 </x-card>
 <x-row>
-<x-ncactions primary="false">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton title="" closeafterclick="" disabled="false">
-<slot-default> t:Edit</slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
-<x-pencil size="20"></x-pencil>
+<x-pencil size="20">
+</x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Publish OAS</slot-default>
 <slot-icon>
-<x-clouduploadoutline size="20"></x-clouduploadoutline>
+<x-clouduploadoutline size="20">
+</x-clouduploadoutline>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Import</slot-default>
 <slot-icon>
-<x-upload size="20"></x-upload>
+<x-upload size="20">
+</x-upload>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View API Documentation</slot-default>
+<slot-default> View API Documentation</slot-default>
 <slot-icon>
-<x-api size="20"></x-api>
+<x-api size="20">
+</x-api>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Download API Specification</slot-default>
 <slot-icon>
-<x-download size="20"></x-download>
+<x-download size="20">
+</x-download>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton title="" closeafterclick="" disabled="false">
-<slot-default> t:Delete</slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
-<x-trashcanoutline size="20"></x-trashcanoutline>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View Details</slot-default>
+<slot-default> View Details</slot-default>
 <slot-icon>
-<x-informationoutline size="20"></x-informationoutline>
+<x-informationoutline size="20">
+</x-informationoutline>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </x-row>
 <x-card>
 </x-card>
 <x-row>
-<x-ncactions primary="false">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton title="" closeafterclick="" disabled="false">
-<slot-default> t:Edit</slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
-<x-pencil size="20"></x-pencil>
+<x-pencil size="20">
+</x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Publish OAS</slot-default>
 <slot-icon>
-<x-clouduploadoutline size="20"></x-clouduploadoutline>
+<x-clouduploadoutline size="20">
+</x-clouduploadoutline>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Import</slot-default>
 <slot-icon>
-<x-upload size="20"></x-upload>
+<x-upload size="20">
+</x-upload>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View API Documentation</slot-default>
+<slot-default> View API Documentation</slot-default>
 <slot-icon>
-<x-api size="20"></x-api>
+<x-api size="20">
+</x-api>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
 <slot-default> t:Download API Specification</slot-default>
 <slot-icon>
-<x-download size="20"></x-download>
+<x-download size="20">
+</x-download>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton title="t:Cannot delete: objects are still attached" closeafterclick="" disabled="true">
-<slot-default> t:Delete</slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
-<x-trashcanoutline size="20"></x-trashcanoutline>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View Details</slot-default>
+<slot-default> View Details</slot-default>
 <slot-icon>
-<x-informationoutline size="20"></x-informationoutline>
+<x-informationoutline size="20">
+</x-informationoutline>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </x-row>
 </x-index>
@@ -766,7 +1697,7 @@ exports[`list page action menus golden registers 2`] = `
     "t:Warmup Names Cache",
   ],
   [
-    "t:Edit",
+    "Edit",
     [
       "openFormDialog",
       1,
@@ -813,7 +1744,7 @@ exports[`list page action menus golden registers 2`] = `
     ],
   ],
   [
-    "t:Delete",
+    "Delete",
     [
       "registerStore.setRegisterItem",
       1,
@@ -835,7 +1766,7 @@ exports[`list page action menus golden registers 2`] = `
     ],
   ],
   [
-    "t:Edit",
+    "Edit",
     [
       "openFormDialog",
       2,
@@ -882,7 +1813,7 @@ exports[`list page action menus golden registers 2`] = `
     ],
   ],
   [
-    "t:Delete",
+    "Delete",
     [
       "registerStore.setRegisterItem",
       2,
@@ -906,76 +1837,398 @@ exports[`list page action menus golden registers 2`] = `
 ]
 `;
 
+exports[`list page action menus golden schemas 1`] = `
+"<x-ncappcontent>
+<slot-default>
+<x-index>
+<x-bar>
+</x-bar>
+<x-card>
+</x-card>
+<x-row>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton title="" closeafterclick="" disabled="false">
+<slot-default> Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton title="" closeafterclick="" disabled="false">
+<slot-default> Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</x-row>
+<x-card>
+</x-card>
+<x-row>
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton title="" closeafterclick="" disabled="false">
+<slot-default> Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton title="Cannot delete: objects are still attached" closeafterclick="" disabled="true">
+<slot-default> Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</x-row>
+</x-index>
+</slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`list page action menus golden schemas 2`] = `
+[
+  [
+    "Edit",
+    [
+      "schemaStore.setSchemaItem",
+      1,
+    ],
+    [
+      "navigationStore.setModal",
+      "editSchema",
+    ],
+  ],
+  [
+    "Delete",
+    [
+      "schemaStore.setSchemaItem",
+      1,
+    ],
+    [
+      "navigationStore.setDialog",
+      "deleteSchema",
+    ],
+  ],
+  [
+    "Edit",
+    [
+      "schemaStore.setSchemaItem",
+      2,
+    ],
+    [
+      "navigationStore.setModal",
+      "editSchema",
+    ],
+  ],
+  [
+    "Delete",
+    [
+      "schemaStore.setSchemaItem",
+      2,
+    ],
+    [
+      "navigationStore.setDialog",
+      "deleteSchema",
+    ],
+  ],
+]
+`;
+
+exports[`list page action menus golden searchTrails 1`] = `
+"<x-ncappcontent>
+<slot-default>
+<div class="viewContainer">
+<div class="viewHeader">
+<h1 class="viewHeaderTitleIndented">t:Search Trails</h1>
+<p>View and analyze search trail logs with advanced filtering and analytics capabilities</p>
+</div>
+<div class="viewActionsBar">
+<div class="viewInfo">
+<span class="viewTotalCount">t:Showing {showing} of {total} search trail entries{"showing":2,"total":2}</span>
+</div>
+<div class="viewActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Cleanup Old Trails</slot-default>
+<slot-icon>
+<x-broom size="20">
+</x-broom>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> Refresh</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="viewTableContainer">
+<table class="viewTable searchTrailsTable">
+<thead>
+<tr>
+<th class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" indeterminate="false" aria-label="t:Select All">
+</x-nccheckboxradioswitch>
+</th>
+<th scope="col" class="searchTermColumn">t:Search Term</th>
+<th scope="col" class="timestampColumn">t:Timestamp</th>
+<th scope="col" class="tableColumnConstrained">t:Register</th>
+<th scope="col" class="tableColumnConstrained">t:Schema</th>
+<th scope="col" class="tableColumnConstrained">t:User</th>
+<th scope="col" class="tableColumnConstrained">t:Results</th>
+<th scope="col" class="tableColumnConstrained">t:Execution Time</th>
+<th scope="col" class="tableColumnActions">t:Actions</th>
+</tr>
+</thead>
+<tbody>
+<tr class="viewTableRow searchTrailRow">
+<td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="search-trail-row-term-1">
+</x-nccheckboxradioswitch>
+</td>
+<td id="search-trail-row-term-1" class="searchTermColumn">
+<span class="searchTermText">a</span>
+</td>
+<td class="timestampColumn">
+</td>
+<td class="tableColumnConstrained">-</td>
+<td class="tableColumnConstrained">-</td>
+<td class="tableColumnConstrained">-</td>
+<td class="tableColumnConstrained">
+<span class="error-text">0</span>
+</td>
+<td class="tableColumnConstrained">
+<span class="executionTime">-</span>
+</td>
+<td class="tableColumnActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> View Details</slot-default>
+<slot-icon>
+<x-eye size="20">
+</x-eye>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton closeafterclick="">
+<slot-default> t:Rerun Search</slot-default>
+<slot-icon>
+<x-refresh size="20">
+</x-refresh>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton class="deleteAction" closeafterclick="">
+<slot-default> Delete</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</td>
+</tr>
+<tr class="viewTableRow searchTrailRow">
+<td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="search-trail-row-term-2">
+</x-nccheckboxradioswitch>
+</td>
+<td id="search-trail-row-term-2" class="searchTermColumn">
+<span class="searchTermText">-</span>
+</td>
+<td class="timestampColumn">
+</td>
+<td class="tableColumnConstrained">-</td>
+<td class="tableColumnConstrained">-</td>
+<td class="tableColumnConstrained">-</td>
+<td class="tableColumnConstrained">
+<span class="error-text">0</span>
+</td>
+<td class="tableColumnConstrained">
+<span class="executionTime">-</span>
+</td>
+<td class="tableColumnActions">
+<x-ncactions>
+<slot-default>
+<x-ncactionbutton closeafterclick="">
+<slot-default> View Details</slot-default>
+<slot-icon>
+<x-eye size="20">
+</x-eye>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton class="deleteAction" closeafterclick="">
+<slot-default> Delete</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`list page action menus golden searchTrails 2`] = `
+[
+  [
+    "t:Cleanup Old Trails",
+  ],
+  [
+    "Refresh",
+    [
+      "searchTrailStore.refreshSearchTrailList",
+    ],
+  ],
+  [
+    "t:View Details",
+    [
+      "info",
+      "t:Search Trail Details",
+    ],
+  ],
+  [
+    "t:Rerun Search",
+    [
+      "push",
+      {
+        "name": "search",
+        "query": {
+          "q": "a",
+          "register": undefined,
+          "schema": undefined,
+        },
+      },
+    ],
+  ],
+  [
+    "Delete",
+    [
+      "searchTrailStore.setSearchTrailItem",
+      1,
+    ],
+    [
+      "navigationStore.setDialog",
+      "deleteSearchTrail",
+    ],
+  ],
+  [
+    "t:View Details",
+    [
+      "info",
+      "t:Search Trail Details",
+    ],
+  ],
+  [
+    "Delete",
+    [
+      "searchTrailStore.setSearchTrailItem",
+      2,
+    ],
+    [
+      "navigationStore.setDialog",
+      "deleteSearchTrail",
+    ],
+  ],
+]
+`;
+
 exports[`list page action menus golden sources 1`] = `
 "<x-ncappcontent>
 <slot-default>
 <x-index>
-<x-bar></x-bar>
+<x-bar>
+</x-bar>
 <x-card>
 <div class="card">
 <div class="cardHeader">
 <h2>
-<x-databasearrowrightoutline size="20"></x-databasearrowrightoutline> Source
-</h2>
-<x-ncactions primary="true" menuname="t:Actions">
+<x-databasearrowrightoutline size="20">
+</x-databasearrowrightoutline> Source </h2>
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View</slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
-<x-eye size="20"></x-eye>
+<x-eye size="20">
+</x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Edit</slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
-<x-pencil size="20"></x-pencil>
+<x-pencil size="20">
+</x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Delete</slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
-<x-trashcanoutline size="20"></x-trashcanoutline>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </div>
 <div class="sourceDetails">
 <div class="sourceInfo">
-<div class="sourceInfoItem"><strong>t:Type:</strong><span>internal</span></div>
-<div class="sourceInfoItem"><strong>t:Registers:</strong><span>-</span></div>
+<div class="sourceInfoItem">
+<strong>t:Type:</strong>
+<span>internal</span>
+</div>
+<div class="sourceInfoItem">
+<strong>t:Registers:</strong>
+<span>-</span>
+</div>
 </div>
 </div>
 </div>
 </x-card>
 <x-row>
-<x-ncactions primary="false">
+<x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:View</slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
-<x-eye size="20"></x-eye>
+<x-eye size="20">
+</x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Edit</slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
-<x-pencil size="20"></x-pencil>
+<x-pencil size="20">
+</x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> t:Delete</slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
-<x-trashcanoutline size="20"></x-trashcanoutline>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
 </slot-icon>
 </x-ncactionbutton>
 </slot-default>
-<slot-icon>
-<x-dotshorizontal size="20"></x-dotshorizontal>
-</slot-icon>
 </x-ncactions>
 </x-row>
 </x-index>
@@ -986,7 +2239,7 @@ exports[`list page action menus golden sources 1`] = `
 exports[`list page action menus golden sources 2`] = `
 [
   [
-    "t:View",
+    "View",
     [
       "sourceStore.setSourceItem",
       1,
@@ -997,7 +2250,7 @@ exports[`list page action menus golden sources 2`] = `
     ],
   ],
   [
-    "t:Edit",
+    "Edit",
     [
       "sourceStore.setSourceItem",
       1,
@@ -1008,7 +2261,7 @@ exports[`list page action menus golden sources 2`] = `
     ],
   ],
   [
-    "t:Delete",
+    "Delete",
     [
       "sourceStore.setSourceItem",
       1,
@@ -1019,7 +2272,7 @@ exports[`list page action menus golden sources 2`] = `
     ],
   ],
   [
-    "t:View",
+    "View",
     [
       "sourceStore.setSourceItem",
       1,
@@ -1030,7 +2283,7 @@ exports[`list page action menus golden sources 2`] = `
     ],
   ],
   [
-    "t:Edit",
+    "Edit",
     [
       "sourceStore.setSourceItem",
       1,
@@ -1041,7 +2294,7 @@ exports[`list page action menus golden sources 2`] = `
     ],
   ],
   [
-    "t:Delete",
+    "Delete",
     [
       "sourceStore.setSourceItem",
       1,

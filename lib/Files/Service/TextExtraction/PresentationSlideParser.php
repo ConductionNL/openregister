@@ -40,7 +40,6 @@ use DOMElement;
  * Reads title, body, pictures and notes out of PresentationML slide XML.
  *
  * @psalm-type SlideImage = array{target: string, external: bool, name: string, description: string}
- * @psalm-type SlideContent = array{titles: list<string>, body: list<string>, images: list<SlideImage>}
  *
  * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-title-and-its-body-text-in-shape-order-req-pptx-002
  */
@@ -66,6 +65,20 @@ class PresentationSlideParser {
 	 * @var list<string>
 	 */
 	private const FURNITURE_TYPES = ['sldNum', 'dt', 'ftr', 'hdr', 'sldImg'];
+
+	/**
+	 * Reads the paragraphs of a text body.
+	 *
+	 * @var SlideParagraphReader
+	 */
+	private readonly SlideParagraphReader $paragraphReader;
+
+	/**
+	 * Build the parser with its paragraph reader.
+	 */
+	public function __construct() {
+		$this->paragraphReader = new SlideParagraphReader();
+	}//end __construct()
 
 	/**
 	 * The relationship ids of the slides, in the order the deck presents them.
@@ -97,17 +110,17 @@ class PresentationSlideParser {
 	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-image-references-in-shape-order-req-pptx-004
 	 */
 	public function parseSlide(DOMDocument $slide, array $relationships): array {
-		$content = ['titles' => [], 'body' => [], 'images' => []];
+		$walk = new SlideWalk(relationships: $relationships);
 		$tree = $this->firstDescendant(element: $slide, localName: 'spTree');
 		if ($tree !== null) {
-			$this->walk(container: $tree, relationships: $relationships, content: $content, depth: 0);
+			$this->walk(container: $tree, walk: $walk);
 		}
 
 		return [
 			'hidden' => in_array((string)$slide->documentElement?->getAttribute('show'), ['0', 'false'], true),
-			'title' => implode(' ', $content['titles']),
-			'body' => $content['body'],
-			'images' => $content['images'],
+			'title' => implode(' ', $walk->titles),
+			'body' => $walk->body,
+			'images' => $walk->images,
 		];
 	}//end parseSlide()
 
@@ -131,7 +144,7 @@ class PresentationSlideParser {
 				continue;
 			}
 
-			array_push($paragraphs, ...$this->paragraphs(textBody: $this->child(parent: $shape, localName: 'txBody')));
+			array_push($paragraphs, ...$this->shapeParagraphs(parent: $shape));
 		}
 
 		return implode("\n", $paragraphs);
@@ -141,91 +154,136 @@ class PresentationSlideParser {
 	 * Walk the shapes of a container (the shape tree or a group) in order.
 	 *
 	 * @param DOMElement $container The shape tree, a group, or a markup-compatibility branch.
-	 * @param array<string, array{type: string, target: string, external: bool}> $relationships The slide's relationships.
-	 * @param SlideContent $content The accumulated content, extended in place.
-	 * @param int $depth How many groups deep this container sits.
+	 * @param SlideWalk  $walk      The walk state, extended in place.
 	 *
 	 * @return void
 	 */
-	private function walk(DOMElement $container, array $relationships, array &$content, int $depth): void {
-		if ($depth > self::MAX_GROUP_DEPTH) {
+	private function walk(DOMElement $container, SlideWalk $walk): void {
+		if ($walk->depth > self::MAX_GROUP_DEPTH) {
 			return;
 		}
 
 		foreach ($container->childNodes as $child) {
 			if ($child instanceof DOMElement) {
-				$this->visit(shape: $child, relationships: $relationships, content: $content, depth: $depth);
+				$this->visit(shape: $child, walk: $walk);
 			}
 		}
 	}//end walk()
 
 	/**
-	 * Take what one shape contributes: text, table cells, a picture, or a nested walk.
+	 * Walk a nested container one group deeper.
 	 *
-	 * @param DOMElement $shape The shape element.
-	 * @param array<string, array{type: string, target: string, external: bool}> $relationships The slide's relationships.
-	 * @param SlideContent $content The accumulated content, extended in place.
-	 * @param int $depth How many groups deep the shape sits.
+	 * @param DOMElement $container The group or markup-compatibility branch.
+	 * @param SlideWalk  $walk      The walk state, extended in place.
 	 *
 	 * @return void
 	 */
-	private function visit(DOMElement $shape, array $relationships, array &$content, int $depth): void {
-		if ($shape->localName === 'sp') {
-			$this->collectText(shape: $shape, content: $content);
+	private function descend(DOMElement $container, SlideWalk $walk): void {
+		$walk->depth++;
+		$this->walk(container: $container, walk: $walk);
+		$walk->depth--;
+	}//end descend()
+
+	/**
+	 * Take what one shape contributes: text, table cells, a picture, or a nested walk.
+	 *
+	 * @param DOMElement $shape The shape element.
+	 * @param SlideWalk  $walk  The walk state, extended in place.
+	 *
+	 * @return void
+	 */
+	private function visit(DOMElement $shape, SlideWalk $walk): void {
+		if (in_array($shape->localName, ['sp', 'pic', 'graphicFrame'], true) === true) {
+			$this->collectLeaf(shape: $shape, walk: $walk);
 			return;
 		}
 
 		if ($shape->localName === 'grpSp') {
-			$this->walk(container: $shape, relationships: $relationships, content: $content, depth: ($depth + 1));
-			return;
-		}
-
-		if ($shape->localName === 'graphicFrame') {
-			foreach ($shape->getElementsByTagNameNS('*', 'tc') as $cell) {
-				array_push($content['body'], ...$this->paragraphs(textBody: $this->child(parent: $cell, localName: 'txBody')));
-			}
-
-			return;
-		}
-
-		if ($shape->localName === 'pic') {
-			$content['images'][] = $this->picture(picture: $shape, relationships: $relationships);
+			$this->descend(container: $shape, walk: $walk);
 			return;
 		}
 
 		if ($shape->localName === 'AlternateContent') {
-			// Take one branch only, so the same shape is never read twice.
-			$branch = ($this->child(parent: $shape, localName: 'Fallback') ?? $this->child(parent: $shape, localName: 'Choice'));
-			if ($branch !== null) {
-				$this->walk(container: $branch, relationships: $relationships, content: $content, depth: ($depth + 1));
-			}
+			$this->descendAlternate(alternate: $shape, walk: $walk);
 		}
 	}//end visit()
+
+	/**
+	 * Take what a leaf shape contributes: text, a picture, or table cells.
+	 *
+	 * @param DOMElement $shape A `sp`, `pic` or `graphicFrame` element.
+	 * @param SlideWalk  $walk  The walk state, extended in place.
+	 *
+	 * @return void
+	 */
+	private function collectLeaf(DOMElement $shape, SlideWalk $walk): void {
+		if ($shape->localName === 'sp') {
+			$this->collectText(shape: $shape, walk: $walk);
+			return;
+		}
+
+		if ($shape->localName === 'pic') {
+			$walk->images[] = $this->picture(picture: $shape, relationships: $walk->relationships);
+			return;
+		}
+
+		foreach ($shape->getElementsByTagNameNS('*', 'tc') as $cell) {
+			array_push($walk->body, ...$this->shapeParagraphs(parent: $cell));
+		}
+	}//end collectLeaf()
+
+	/**
+	 * Walk one branch of a markup-compatibility block: the fallback, else the choice.
+	 *
+	 * Taking one branch only means the same shape is never read twice.
+	 *
+	 * @param DOMElement $alternate An `AlternateContent` element.
+	 * @param SlideWalk  $walk      The walk state, extended in place.
+	 *
+	 * @return void
+	 */
+	private function descendAlternate(DOMElement $alternate, SlideWalk $walk): void {
+		$branch = ($this->child(parent: $alternate, localName: 'Fallback') ?? $this->child(parent: $alternate, localName: 'Choice'));
+		if ($branch !== null) {
+			$this->descend(container: $branch, walk: $walk);
+		}
+	}//end descendAlternate()
 
 	/**
 	 * Add a text shape's paragraphs to the title or the body; skip page furniture.
 	 *
 	 * @param DOMElement $shape A `sp` element.
-	 * @param SlideContent $content The accumulated content, extended in place.
+	 * @param SlideWalk  $walk  The walk state, extended in place.
 	 *
 	 * @return void
 	 */
-	private function collectText(DOMElement $shape, array &$content): void {
+	private function collectText(DOMElement $shape, SlideWalk $walk): void {
 		$type = $this->placeholderType(shape: $shape);
 		if (in_array($type, self::FURNITURE_TYPES, true) === true) {
 			return;
 		}
 
-		$paragraphs = $this->paragraphs(textBody: $this->child(parent: $shape, localName: 'txBody'));
+		$paragraphs = $this->shapeParagraphs(parent: $shape);
 		if (in_array($type, self::TITLE_TYPES, true) === false) {
-			array_push($content['body'], ...$paragraphs);
+			array_push($walk->body, ...$paragraphs);
 			return;
 		}
 
 		if ($paragraphs !== []) {
-			$content['titles'][] = implode(' ', $paragraphs);
+			$walk->titles[] = implode(' ', $paragraphs);
 		}
 	}//end collectText()
+
+	/**
+	 * The paragraphs of an element's direct `txBody` child.
+	 *
+	 * @param DOMElement $parent A shape or table cell.
+	 *
+	 * @return list<string>
+	 */
+	private function shapeParagraphs(DOMElement $parent): array {
+		return $this->paragraphReader->read(textBody: $this->child(parent: $parent, localName: 'txBody'));
+	}//end shapeParagraphs()
 
 	/**
 	 * A picture's package path (or link), whether it is linked, its name and its alt text.
@@ -250,55 +308,6 @@ class PresentationSlideParser {
 			'description' => (string)$properties?->getAttribute('descr'),
 		];
 	}//end picture()
-
-	/**
-	 * The non-empty paragraphs of a text body, runs joined and whitespace collapsed.
-	 *
-	 * @param DOMElement|null $textBody A `txBody` element, or null.
-	 *
-	 * @return list<string>
-	 */
-	private function paragraphs(?DOMElement $textBody): array {
-		if ($textBody === null) {
-			return [];
-		}
-
-		$paragraphs = [];
-		foreach ($textBody->childNodes as $child) {
-			if (($child instanceof DOMElement) === false || $child->localName !== 'p') {
-				continue;
-			}
-
-			$text = $this->paragraphText(paragraph: $child);
-			if ($text !== '') {
-				$paragraphs[] = $text;
-			}
-		}
-
-		return $paragraphs;
-	}//end paragraphs()
-
-	/**
-	 * The text of one paragraph: every text run in order, a line break as a space.
-	 *
-	 * @param DOMElement $paragraph A `p` element.
-	 *
-	 * @return string
-	 */
-	private function paragraphText(DOMElement $paragraph): string {
-		$text = '';
-		foreach ($paragraph->getElementsByTagNameNS('*', '*') as $node) {
-			if ($node->localName === 't') {
-				$text .= $node->textContent;
-			}
-
-			if ($node->localName === 'br') {
-				$text .= ' ';
-			}
-		}
-
-		return trim((string)preg_replace('/\s+/u', ' ', $text));
-	}//end paragraphText()
 
 	/**
 	 * A shape's placeholder type, '' for a plain shape or an untyped placeholder.
@@ -330,15 +339,32 @@ class PresentationSlideParser {
 		}
 
 		foreach ($localNames as $localName) {
-			foreach ($element->attributes as $attribute) {
-				if ($attribute->localName === $localName && str_ends_with((string)$attribute->namespaceURI, '/relationships') === true) {
-					return (string)$attribute->value;
-				}
+			$value = $this->relationshipAttributeNamed(element: $element, localName: $localName);
+			if ($value !== null) {
+				return $value;
 			}
 		}
 
 		return '';
 	}//end relationshipAttribute()
+
+	/**
+	 * The value of one relationship-namespace attribute, in either OOXML flavour.
+	 *
+	 * @param DOMElement $element   The element.
+	 * @param string     $localName The attribute local name.
+	 *
+	 * @return string|null The value, or null when the attribute is absent.
+	 */
+	private function relationshipAttributeNamed(DOMElement $element, string $localName): ?string {
+		foreach ($element->attributes as $attribute) {
+			if ($attribute->localName === $localName && str_ends_with((string)$attribute->namespaceURI, '/relationships') === true) {
+				return (string)$attribute->value;
+			}
+		}
+
+		return null;
+	}//end relationshipAttributeNamed()
 
 	/**
 	 * The first direct child with the given local name, or null.

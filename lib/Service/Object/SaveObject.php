@@ -35,7 +35,6 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -52,8 +51,12 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeItem;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRules;
 use OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\InverseRelations;
+use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
@@ -75,7 +78,6 @@ use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanner;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamRun;
-use OCA\OpenRegister\Service\Object\SaveObject\WriteBackSettings;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
@@ -665,6 +667,24 @@ class SaveObject implements SaveObjectInterface {
 	}//end lookups()
 
 	/**
+	 * The inverse relation writer of this save handler.
+	 *
+	 * @return InverseRelations
+	 */
+	private function inverseRelations(): InverseRelations {
+		return new InverseRelations(objects: $this->objectEntityMapper, schemas: $this->schemaMapper, logger: $this->logger);
+	}//end inverseRelations()
+
+	/**
+	 * The write-back of this save handler.
+	 *
+	 * @return InverseWriteBack
+	 */
+	private function inverseWriteBack(): InverseWriteBack {
+		return new InverseWriteBack(objects: $this->objectEntityMapper, saver: $this, lookups: $this->lookups(), urls: $this->urlGenerator);
+	}//end inverseWriteBack()
+
+	/**
 	 * The relation scanner of this save handler.
 	 *
 	 * @return RelationScanner
@@ -797,242 +817,6 @@ class SaveObject implements SaveObjectInterface {
 	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
 		return $this->relationScanner()->scan(data: $data, scan: new RelationScanRun(prefix: $prefix, schema: $schema));
 	}//end scanForRelations()
-
-	/**
-	 * Updates inverse relations on related objects (bidirectional relationship management).
-	 *
-	 * When an object references another object (e.g., contactpersoon references organisatie),
-	 * this method updates the referenced object's relations to include the referencing object.
-	 * This ensures bidirectional relationships are maintained.
-	 *
-	 * @param ObjectEntity $savedEntity The saved object that has relations
-	 * @param Register $register The register the saved entity belongs to
-	 * @param Schema $schema The schema the saved entity belongs to
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function updateInverseRelations(ObjectEntity $savedEntity, Register $register, Schema $schema): void {
-		$relations = $savedEntity->getRelations();
-
-		$relationsCount = 0;
-		if ($relations !== null) {
-			$relationsCount = count($relations);
-		}
-
-		$this->logger->debug(
-			message: '[SaveObject] updateInverseRelations called',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'savedObjectUuid' => $savedEntity->getUuid(),
-				'relationsCount' => $relationsCount,
-				'schemaId' => $schema->getId(),
-			]
-		);
-
-		if (empty($relations) === true) {
-			return;
-		}
-
-		$write = new InverseRelationWrite();
-		$write->savedUuid = $savedEntity->getUuid();
-		$write->register = $register;
-		$write->schema = $schema;
-		$write->schemaProperties = ($schema->getProperties() ?? []);
-
-		// Process each relation (key = property path, value = related UUID).
-		foreach ($relations as $propertyPath => $relatedUuid) {
-			if (is_string($relatedUuid) === false
-				|| UuidFormat::isCanonical(value: $relatedUuid) === false
-			) {
-				continue;
-			}
-
-			$write->propertyPath = (string)$propertyPath;
-			$write->relatedUuid = $relatedUuid;
-			$this->writeInverseRelation(write: $write);
-		}
-	}//end updateInverseRelations()
-
-	/**
-	 * Add the saved object to the relations of the one object a relation points at.
-	 *
-	 * A failure is logged and the next relation is processed.
-	 *
-	 * @param InverseRelationWrite $write The inverse relation write, on one relation.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function writeInverseRelation(InverseRelationWrite $write): void {
-		try {
-			$targetSchema = $this->inverseRelationTargetSchema(write: $write);
-			if ($targetSchema === null) {
-				return;
-			}
-
-			$relatedObject = $this->objectEntityMapper->find(
-				identifier: $write->relatedUuid,
-				register: $write->register,
-				schema: $targetSchema,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
-			$this->appendInverseRelation(write: $write, relatedObject: $relatedObject);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[SaveObject] Failed to update inverse relation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'savedUuid' => $write->savedUuid,
-					'relatedUuid' => $write->relatedUuid,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-	}//end writeInverseRelation()
-
-	/**
-	 * The schema a relation's property points at, or null when the property is no resolvable relation.
-	 *
-	 * @param InverseRelationWrite $write The inverse relation write, on one relation.
-	 *
-	 * @return Schema|null The target schema.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function inverseRelationTargetSchema(InverseRelationWrite $write): ?Schema {
-		$targetSchemaSlug = $this->inverseRelationTargetSlug(write: $write);
-		if ($targetSchemaSlug === null) {
-			return null;
-		}
-
-		try {
-			return $this->schemaMapper->find(
-				id: $targetSchemaSlug,
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[SaveObject] Could not resolve target schema',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'targetSchemaSlug' => $targetSchemaSlug,
-					'error' => $e->getMessage(),
-				]
-			);
-			return null;
-		}
-	}//end inverseRelationTargetSchema()
-
-	/**
-	 * The schema slug a relation's property references through its `$ref`, or null when there is none.
-	 *
-	 * Both `$ref` forms are in real use across the fleet's register
-	 * definitions: "#/components/schemas/organisation" (pointer) and
-	 * "organisation" (bare slug). A property with no `$ref` is not a relation
-	 * (`data`, `subject` and `payload` are free-form blobs) and is skipped
-	 * silently; a `$ref` that is authored but cannot be read is a warning,
-	 * because the declared relation will then quietly not be maintained.
-	 *
-	 * @param InverseRelationWrite $write The inverse relation write, on one relation.
-	 *
-	 * @return string|null The target schema slug.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function inverseRelationTargetSlug(InverseRelationWrite $write): ?string {
-		// The base property name (e.g., "organisation" from "organisatie.0").
-		$baseProperty = explode('.', $write->propertyPath)[0];
-		$propertyConfig = $write->schemaProperties[$baseProperty] ?? null;
-		if ($propertyConfig === null) {
-			$this->logger->debug(
-				message: '[SaveObject] No property config for relation',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $baseProperty]
-			);
-			return null;
-		}
-
-		// For arrays, the $ref is in items.$ref instead of directly on the property.
-		$ref = $propertyConfig['$ref'] ?? '';
-		if (empty($ref) === true && isset($propertyConfig['items']['$ref']) === true) {
-			$ref = $propertyConfig['items']['$ref'];
-		}
-
-		if (empty($ref) === true || is_string($ref) === false) {
-			return null;
-		}
-
-		if (preg_match('~^\#/components/schemas/(.+)$~', $ref, $matches) === 1) {
-			return $matches[1];
-		}
-
-		// Slug-shaped values only, so a URL or a malformed pointer is reported instead of looked up.
-		if (preg_match('~^[A-Za-z][A-Za-z0-9_-]*$~', $ref) === 1) {
-			return $ref;
-		}
-
-		$this->logger->warning(
-			message: '[SaveObject] Relation skipped: $ref is neither a "#/components/schemas/<slug>" pointer nor a bare schema slug',
-			context: [
-				'file'     => __FILE__,
-				'line'     => __LINE__,
-				'property' => $baseProperty,
-				'ref'      => $ref,
-				'schema'   => $write->schema->getSlug(),
-			]
-		);
-		return null;
-	}//end inverseRelationTargetSlug()
-
-	/**
-	 * Add the saved object's UUID to a related object's relations and store it, unless it is already there.
-	 *
-	 * @param InverseRelationWrite $write         The inverse relation write, on one relation.
-	 * @param ObjectEntity         $relatedObject The object the relation points at.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function appendInverseRelation(InverseRelationWrite $write, ObjectEntity $relatedObject): void {
-		$relatedRelations = $relatedObject->getRelations() ?? [];
-		if (in_array($write->savedUuid, $relatedRelations, true) === true) {
-			$this->logger->debug(
-				message: '[SaveObject] Object already in related object\'s relations',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'savedUuid' => $write->savedUuid,
-					'relatedUuid' => $write->relatedUuid,
-				]
-			);
-			return;
-		}
-
-		$relatedRelations[] = $write->savedUuid;
-		$relatedObject->setRelations($relatedRelations);
-		$relatedObject->setUpdated(new DateTime());
-		$this->objectEntityMapper->update($relatedObject);
-
-		$this->logger->debug(
-			message: '[SaveObject] Updated inverse relation',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'savedUuid' => $write->savedUuid,
-				'relatedUuid' => $write->relatedUuid,
-				'newRelationsCount' => count($relatedRelations),
-			]
-		);
-	}//end appendInverseRelation()
 
 	/**
 	 * Hydrates object metadata fields based on schema configuration.
@@ -1321,8 +1105,8 @@ class SaveObject implements SaveObjectInterface {
 		$run->stored = $stored;
 
 		// Single object properties first, then array properties, as each pass rewrites the data.
-		$objectProperties = array_filter($properties, fn (array $property) => self::isCascadedObjectProperty(property: $property));
-		$arrayObjProps = array_filter($properties, fn (array $property) => self::isCascadedArrayProperty(property: $property));
+		$objectProperties = array_filter($properties, fn (array $property) => CascadeRules::isObjectProperty(property: $property));
+		$arrayObjProps = array_filter($properties, fn (array $property) => CascadeRules::isArrayProperty(property: $property));
 		foreach ($objectProperties as $property => $definition) {
 			$run->property = $property;
 			$run->definition = $definition;
@@ -1337,78 +1121,6 @@ class SaveObject implements SaveObjectInterface {
 
 		return $run->data;
 	}//end cascadeObjects()
-
-	/**
-	 * Whether a single object property cascades: a `$ref` with inversedBy or cascade handling, and no writeBack.
-	 *
-	 * Properties with writeBack are handled by the write-back method. Objects
-	 * with only `$ref` and nested-object handling remain in the data.
-	 *
-	 * @param array $property The property definition.
-	 *
-	 * @return bool True when the property cascades.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isCascadedObjectProperty(array $property): bool {
-		$hasWriteBack = ($property['writeBack'] ?? null) !== null
-			&& $property['writeBack'] === true;
-		if ($hasWriteBack === true) {
-			return false;
-		}
-
-		$hasRef = ($property['$ref'] ?? null) !== null;
-		$hasInversedBy = isset($property['inversedBy']);
-		$hasCascadeHandling = isset($property['objectConfiguration']['handling'])
-			&& $property['objectConfiguration']['handling'] === 'cascade';
-
-		return $property['type'] === 'object' && $hasRef && ($hasInversedBy || $hasCascadeHandling);
-	}//end isCascadedObjectProperty()
-
-	/**
-	 * Whether an array property cascades: a `$ref` with inversedBy, cascade or relates handling, and no writeBack.
-	 *
-	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
-	 *
-	 * @param array $property The property definition.
-	 *
-	 * @return bool True when the property cascades.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isCascadedArrayProperty(array $property): bool {
-		$propWriteBack = ($property['writeBack'] ?? null) !== null
-			&& $property['writeBack'] === true;
-		$itemsWriteBack = ($property['items']['writeBack'] ?? null) !== null
-			&& $property['items']['writeBack'] === true;
-		if ($propWriteBack === true || $itemsWriteBack === true) {
-			return false;
-		}
-
-		$hasRef = isset($property['$ref']) || (($property['items']['$ref'] ?? null) !== null);
-		$hasInversedBy = isset($property['inversedBy'])
-			|| (($property['items']['inversedBy'] ?? null) !== null);
-		$hasCascade = self::cascadesOrRelates(property: $property);
-
-		return $property['type'] === 'array' && $hasRef && ($hasInversedBy || $hasCascade);
-	}//end isCascadedArrayProperty()
-
-	/**
-	 * Whether a property, or its items, declares cascade or relates handling.
-	 *
-	 * @param array $property The property definition.
-	 *
-	 * @return bool True when the property's objects cascade or are related.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function cascadesOrRelates(array $property): bool {
-		$objHandling = $property['objectConfiguration']['handling'] ?? null;
-		$itemsHandling = $property['items']['objectConfiguration']['handling'] ?? null;
-
-		return $objHandling === 'cascade' || ObjectHandling::relates($objHandling) === true
-			|| $itemsHandling === 'cascade' || ObjectHandling::relates($itemsHandling) === true;
-	}//end cascadesOrRelates()
 
 	/**
 	 * Cascade the single object of the run's property into its own object.
@@ -1448,42 +1160,13 @@ class SaveObject implements SaveObjectInterface {
 				definition: $run->definition,
 				object: $objectData
 			);
-			self::applySingleCascadeResult(run: $run, createdUuid: $createdUuid);
+			CascadeRules::applySingleResult(run: $run, createdUuid: $createdUuid);
 		} catch (NotAuthorizedException $e) {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
 		}
 	}//end cascadeObjectProperty()
-
-	/**
-	 * Put a cascaded single object's UUID in the parent, or drop the property when the child points back.
-	 *
-	 * @param CascadeRun  $run         The cascade pass, on the cascaded property.
-	 * @param string|null $createdUuid The UUID of the cascaded object.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function applySingleCascadeResult(CascadeRun $run, ?string $createdUuid): void {
-		$definition = $run->definition;
-		if (($definition['inversedBy'] ?? null) === null) {
-			// Without inversedBy: store the created object's UUID.
-			$run->data[$run->property] = $createdUuid;
-			return;
-		}
-
-		// With inversedBy: keep the property for write-back processing when writeBack is on.
-		if (($definition['writeBack'] ?? null) !== null && $definition['writeBack'] === true) {
-			$run->data[$run->property] = $createdUuid;
-		}
-
-		if (($definition['writeBack'] ?? null) === null || $definition['writeBack'] === false) {
-			// Remove the property (traditional cascading).
-			unset($run->data[$run->property]);
-		}
-	}//end applySingleCascadeResult()
 
 	/**
 	 * Cascade the objects of the run's array property, and queue what the parent no longer references.
@@ -1501,7 +1184,7 @@ class SaveObject implements SaveObjectInterface {
 			return;
 		}
 
-		self::classifyArrayCascade(run: $run);
+		CascadeRules::classifyArray(run: $run);
 
 		// Handle empty array: clean up all related objects and continue.
 		if (empty($run->data[$run->property]) === true) {
@@ -1522,37 +1205,13 @@ class SaveObject implements SaveObjectInterface {
 				return;
 			}
 
-			self::applyArrayCascadeResult(run: $run, createdUuids: $createdUuids);
+			CascadeRules::applyArrayResult(run: $run, createdUuids: $createdUuids);
 		} catch (NotAuthorizedException $e) {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
 		}
 	}//end cascadeArrayProperty()
-
-	/**
-	 * Record on the run whether the array property relates its objects, and which stored references may become orphans.
-	 *
-	 * Only what the stored parent referenced, under cascade or relates handling, can become an orphan.
-	 *
-	 * @param CascadeRun $run The cascade pass, on the array property.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function classifyArrayCascade(CascadeRun $run): void {
-		$objHandling = $run->definition['objectConfiguration']['handling'] ?? null;
-		$itemsHandling = $run->definition['items']['objectConfiguration']['handling'] ?? null;
-		$run->isRelated = ObjectHandling::relates($objHandling) === true || ObjectHandling::relates($itemsHandling) === true;
-		$isCascade = $objHandling === 'cascade' || $itemsHandling === 'cascade';
-
-		$run->oldUuids = [];
-		$stored = $run->stored[$run->property] ?? null;
-		if (($run->isRelated === true || $isCascade === true) && is_array($stored) === true) {
-			$run->oldUuids = array_values(array_filter($stored, 'is_string'));
-		}
-	}//end classifyArrayCascade()
 
 	/**
 	 * Queue references of the run's property for orphan cleanup after the parent is saved.
@@ -1593,7 +1252,7 @@ class SaveObject implements SaveObjectInterface {
 	private function applyRelatedCascadeResult(CascadeRun $run, array $createdUuids): void {
 		$existingUuids = array_filter(
 			$run->data[$run->property] ?? [],
-			fn ($item) => is_string($item) === true && self::isObjectIdentifier(value: $item) === true
+			fn ($item) => is_string($item) === true && CascadeItem::isObjectIdentifier(value: $item) === true
 		);
 
 		$run->data[$run->property] = array_values(array_unique(array_merge($existingUuids, $createdUuids)));
@@ -1605,39 +1264,6 @@ class SaveObject implements SaveObjectInterface {
 			);
 		}
 	}//end applyRelatedCascadeResult()
-
-	/**
-	 * Put cascaded array objects' UUIDs in the parent, or drop the property when the children point back.
-	 *
-	 * @param CascadeRun $run          The cascade pass, on the array property.
-	 * @param string[]   $createdUuids The UUIDs of the cascaded objects.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function applyArrayCascadeResult(CascadeRun $run, array $createdUuids): void {
-		$definition = $run->definition;
-		$hasInversedBy = ($definition['inversedBy'] ?? null) !== null;
-		$hasItemsInversedBy = (($definition['items']['inversedBy'] ?? null) !== null) === true;
-		if ($hasInversedBy === false && $hasItemsInversedBy === false) {
-			// Without inversedBy: store the created objects' UUIDs.
-			$run->data[$run->property] = $createdUuids;
-			return;
-		}
-
-		// With inversedBy: keep the property for write-back processing, else remove it.
-		$defWriteBack = ($definition['writeBack'] ?? null) !== null
-			&& $definition['writeBack'] === true;
-		$itemsWriteBack = isset($definition['items']['writeBack'])
-			&& $definition['items']['writeBack'] === true;
-		if ($defWriteBack === true || $itemsWriteBack === true) {
-			$run->data[$run->property] = $createdUuids;
-			return;
-		}
-
-		unset($run->data[$run->property]);
-	}//end applyArrayCascadeResult()
 
 	/**
 	 * Cascade multiple objects from an array of objects in the data.
@@ -1663,12 +1289,12 @@ class SaveObject implements SaveObjectInterface {
 			return [];
 		}
 
-		$validObjects = array_filter($propData, fn ($object): bool => self::isCascadeCandidate(object: $object));
+		$validObjects = array_filter($propData, fn ($object): bool => CascadeItem::isCandidate(object: $object));
 		if (empty($validObjects) === true) {
 			return [];
 		}
 
-		$definition = self::cascadeItemsDefinition(property: $property);
+		$definition = CascadeRules::itemsDefinition(property: $property);
 		if ($definition === null) {
 			return [];
 		}
@@ -1704,83 +1330,6 @@ class SaveObject implements SaveObjectInterface {
 
 		return $createdUuids;
 	}//end cascadeMultipleObjects()
-
-	/**
-	 * Whether an array item of a cascading property is a nested object or an object id.
-	 *
-	 * A nested object holding only an empty `id` is not; ids are uuids with or without
-	 * dashes, prefixed uuids and numeric ids.
-	 *
-	 * @param mixed $object The item.
-	 *
-	 * @return bool True when the item is cascaded or kept.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isCascadeCandidate(mixed $object): bool {
-		if (is_array($object) === true
-			&& empty($object) === false
-			&& (count($object) === 1
-			&& (($object['id'] ?? null) !== null)
-			&& empty($object['id']) === true) === false
-		) {
-			return true;
-		}
-
-		return is_string($object) === true && self::isObjectIdentifier(value: $object) === true;
-	}//end isCascadeCandidate()
-
-	/**
-	 * The item definition of an array property, carrying the property's `$ref`, `inversedBy`,
-	 * `register` and `objectConfiguration` down to its items.
-	 *
-	 * @param array $property The property definition.
-	 *
-	 * @return array|null The item definition, or null when it names no schema.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function cascadeItemsDefinition(array $property): ?array {
-		foreach (['$ref', 'inversedBy', 'register', 'objectConfiguration'] as $key) {
-			if (($property[$key] ?? null) !== null) {
-				$property['items'][$key] = $property[$key];
-			}
-		}
-
-		if (isset($property['items']['$ref']) === false) {
-			return null;
-		}
-
-		return $property['items'];
-	}//end cascadeItemsDefinition()
-
-	/**
-	 * Whether a value is the id of a stored object rather than a nested object.
-	 *
-	 * Accepts a uuid with or without dashes, a prefixed uuid (`id-<uuid>`) and a
-	 * numeric id.
-	 *
-	 * @param string $value The value to test.
-	 *
-	 * @return bool True when the value is an object identifier.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isObjectIdentifier(string $value): bool {
-		$patterns = [
-			'/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-			'/^[0-9a-f]{32}$/i',
-			'/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i',
-			'/^[0-9]+$/',
-		];
-		foreach ($patterns as $pattern) {
-			if (preg_match($pattern, $value) === 1) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isObjectIdentifier()
 
 	/**
 	 * Where the sub-objects of a cascading property live, and how one names its parent.
@@ -1840,10 +1389,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		// Skip if object is empty or doesn't contain actual data.
-		$hasOnlyEmptyId = count($object) === 1
-			&& (($object['id'] ?? null) !== null)
-			&& empty($object['id']) === true;
-		if (empty($object) === true || $hasOnlyEmptyId === true) {
+		if (empty($object) === true || CascadeItem::hasOnlyEmptyId(object: $object) === true) {
 			return null;
 		}
 
@@ -1854,13 +1400,13 @@ class SaveObject implements SaveObjectInterface {
 
 		// Only set inversedBy if it's configured (for relation-based cascading).
 		if (($definition['inversedBy'] ?? null) !== null) {
-			$object[$definition['inversedBy']] = self::withParentReference(
+			$object[$definition['inversedBy']] = CascadeItem::withParentReference(
 				current: $object[$definition['inversedBy']] ?? null,
 				parentId: $objectId
 			);
 		}
 
-		$register = self::cascadeRegister(definition: $definition, parentRegister: $objectEntity->getRegister());
+		$register = CascadeItem::register(definition: $definition, parentRegister: $objectEntity->getRegister());
 
 		// A nested inline object is always created. The save would take its `id` or
 		// `@self.id` as the row to write onto, looked up past the read filters.
@@ -1910,49 +1456,6 @@ class SaveObject implements SaveObjectInterface {
 
 		return $savedUuid;
 	}//end cascadeSingleObject()
-
-	/**
-	 * The inverse property value of a cascaded object once it names its parent.
-	 *
-	 * An array gains the parent id when missing; any other value is replaced by it.
-	 *
-	 * @param mixed  $current  The current inverse property value.
-	 * @param string $parentId The parent object's uuid.
-	 *
-	 * @return mixed The new value.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function withParentReference(mixed $current, string $parentId): mixed {
-		if (is_array($current) === false) {
-			return $parentId;
-		}
-
-		if (in_array($parentId, $current, true) === false) {
-			$current[] = $parentId;
-		}
-
-		return $current;
-	}//end withParentReference()
-
-	/**
-	 * The register a cascaded object is saved in: the definition's, else the parent's; an array gives its id.
-	 *
-	 * @param array $definition     The property definition.
-	 * @param mixed $parentRegister The parent object's register.
-	 *
-	 * @return mixed The register.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function cascadeRegister(array $definition, mixed $parentRegister): mixed {
-		$register = $definition['register'] ?? $parentRegister;
-		if (is_array($register) === true) {
-			$register = $register['id'] ?? $register;
-		}
-
-		return $register;
-	}//end cascadeRegister()
 
 	/**
 	 * Deletes orphaned related objects that are no longer referenced by the parent.
@@ -2145,248 +1648,6 @@ class SaveObject implements SaveObjectInterface {
 
 		return $data;
 	}//end fillMissingSchemaPropertiesWithNull()
-
-	/**
-	 * Handles inverse relations write-back by updating target objects to include reference to current object
-	 *
-	 * This method extends the existing inverse relations functionality to handle write operations.
-	 * When a property has `inversedBy` configuration and `writeBack: true`, this method will
-	 * update the target objects to include a reference back to the current object.
-	 *
-	 * For example, when creating a community with a list of deelnemers (participant UUIDs),
-	 * this method will update each participant's deelnames array to include the community's UUID.
-	 *
-	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
-	 *
-	 * @param ObjectEntity $objectEntity The current object being saved
-	 * @param Schema $schema The schema of the current object
-	 * @param array $data The data being saved
-	 *
-	 * @return array The data with write-back properties optionally removed
-	 * @throws Exception
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array {
-
-		try {
-			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
-			$properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
-		} catch (Exception $e) {
-			return $data;
-		}
-
-		$run = new CascadeRun();
-		$run->parent = $objectEntity;
-		$run->data = $data;
-		$writeBackProperties = array_filter($properties, fn (array $property) => self::isWriteBackProperty(property: $property));
-		foreach ($writeBackProperties as $propertyName => $definition) {
-			$run->property = $propertyName;
-			$run->definition = $definition;
-			$this->writeBackProperty(run: $run);
-		}
-
-		return $run->data;
-	}//end handleInverseRelationsWriteBack()
-
-	/**
-	 * Whether a property writes back: inversedBy with writeBack on the property, on its items, or on an array of objects.
-	 *
-	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
-	 *
-	 * @param array $property The property definition.
-	 *
-	 * @return bool True when the property writes back.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isWriteBackProperty(array $property): bool {
-		$hasInversedBy = ($property['inversedBy'] ?? null) !== null;
-		$hasWriteBack = (($property['writeBack'] ?? null) !== null)
-			&& $property['writeBack'] === true;
-		if ($hasInversedBy === true && $hasWriteBack === true) {
-			return true;
-		}
-
-		if ($property['type'] !== 'array' || (($property['items']['inversedBy'] ?? null) !== null) === false) {
-			return false;
-		}
-
-		$itemsWriteBack = (($property['items']['writeBack'] ?? null) !== null)
-			&& $property['items']['writeBack'] === true;
-
-		return $itemsWriteBack === true || $hasWriteBack === true;
-	}//end isWriteBackProperty()
-
-	/**
-	 * Write the source back into every target the run's property names, and drop the property when configured.
-	 *
-	 * @param CascadeRun $run The write-back pass, on one property.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function writeBackProperty(CascadeRun $run): void {
-		$targetUuids = ($run->data[$run->property] ?? null);
-		if ($targetUuids === null || empty($targetUuids) === true) {
-			return;
-		}
-
-		$settings = self::writeBackSettings(run: $run);
-		if (self::writeBackSettingsComplete(settings: $settings) === false) {
-			return;
-		}
-
-		$resolvedSchemaId = $this->resolveSchemaReference(reference: $settings->targetSchema);
-		if ($resolvedSchemaId === null) {
-			return;
-		}
-
-		$validUuids = self::writeBackTargetIds(targetUuids: $targetUuids);
-		if (empty($validUuids) === true) {
-			return;
-		}
-
-		foreach ($validUuids as $targetUuid) {
-			$this->writeBackToTarget(
-				reference: (string)$targetUuid,
-				link: [
-					'inverseProperty' => $settings->inverseProperty,
-					'register' => $settings->targetRegister,
-					'schema' => $resolvedSchemaId,
-					'source' => $run->parent->getUuid(),
-				]
-			);
-		}
-
-		if ($settings->removeFromSource === true) {
-			unset($run->data[$run->property]);
-		}
-	}//end writeBackProperty()
-
-	/**
-	 * The write-back settings of the run's property, from the property, its items, or an array of objects.
-	 *
-	 * The target register defaults to the source object's register.
-	 *
-	 * @param CascadeRun $run The write-back pass, on one property.
-	 *
-	 * @return WriteBackSettings The settings; empty when the property declares none.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function writeBackSettings(CascadeRun $run): WriteBackSettings {
-		$definition = $run->definition;
-		$settings = new WriteBackSettings();
-		$hasDefWriteBack = (($definition['writeBack'] ?? null) !== null)
-			&& $definition['writeBack'] === true;
-		$hasItemsInversedBy = ($definition['items']['inversedBy'] ?? null) !== null;
-		$hasItemsWriteBack = (($definition['items']['writeBack'] ?? null) !== null)
-			&& $definition['items']['writeBack'] === true;
-
-		// Where the inverse property and target schema come from, and where the register and removal flag come from.
-		$source = null;
-		$flags = $definition;
-		if (($definition['inversedBy'] ?? null) !== null && $hasDefWriteBack === true) {
-			$source = $definition;
-		} elseif ($hasItemsInversedBy === true && $hasItemsWriteBack === true) {
-			$source = $definition['items'];
-			$flags = $definition['items'];
-		} elseif ($hasItemsInversedBy === true && $hasDefWriteBack === true) {
-			$source = $definition['items'];
-		}
-
-		if ($source === null) {
-			return $settings;
-		}
-
-		$settings->inverseProperty = $source['inversedBy'];
-		$settings->targetSchema = $source['$ref'] ?? null;
-		$settings->targetRegister = $flags['register'] ?? $run->parent->getRegister();
-		$settings->removeFromSource = $flags['removeAfterWriteBack'] ?? false;
-
-		return $settings;
-	}//end writeBackSettings()
-
-	/**
-	 * Whether write-back settings name both an inverse property and a target schema.
-	 *
-	 * @param WriteBackSettings $settings The settings.
-	 *
-	 * @return bool True when both are set.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function writeBackSettingsComplete(WriteBackSettings $settings): bool {
-		$noInverseProperty = $settings->inverseProperty === false || $settings->inverseProperty === null;
-		$noTargetSchema = $settings->targetSchema === false || $settings->targetSchema === null;
-
-		return $noInverseProperty === false && $noTargetSchema === false;
-	}//end writeBackSettingsComplete()
-
-	/**
-	 * The target identifiers of a write-back value that are object identifiers.
-	 *
-	 * Supports standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
-	 *
-	 * @param mixed $targetUuids One identifier or a list of them.
-	 *
-	 * @return array The valid identifiers, keys kept.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function writeBackTargetIds(mixed $targetUuids): array {
-		if (is_array($targetUuids) === false) {
-			$targetUuids = [$targetUuids];
-		}
-
-		return array_filter(
-			$targetUuids,
-			fn ($uuid) => empty($uuid) === false && is_string($uuid) === true && trim($uuid) !== ''
-				&& self::isObjectIdentifier(value: $uuid) === true
-		);
-	}//end writeBackTargetIds()
-
-	/**
-	 * Add the source object to one target's inverse property and save the target.
-	 *
-	 * The target is saved by the uuid of the row found: the reference may be its
-	 * id, which as a uuid would name another row. A target that cannot be read or
-	 * saved does not stop the other targets.
-	 *
-	 * @param string $reference The target's uuid or id, as the source holds it.
-	 * @param array{inverseProperty: string, register: mixed, schema: mixed, source: string|null} $link The inverse relation.
-	 *
-	 * @return void
-	 */
-	private function writeBackToTarget(string $reference, array $link): void {
-		try {
-			$targetObject = $this->objectEntityMapper->find($reference);
-			$foundUuid = $targetObject->getUuid();
-			if ($foundUuid === null || $foundUuid === '') {
-				return;
-			}
-
-			$inverse = ($targetObject->getObject()[$link['inverseProperty']] ?? []);
-			if (is_array($inverse) === false) {
-				$inverse = [$inverse];
-			}
-
-			if (in_array($link['source'], $inverse, true) === false) {
-				$inverse[] = $link['source'];
-			}
-
-			$this->saveObject(
-				register: $link['register'],
-				schema: $link['schema'],
-				data: array_replace($targetObject->getObject(), [$link['inverseProperty'] => $inverse]),
-				uuid: $foundUuid
-			);
-		} catch (Exception $e) {
-			return;
-		}
-	}//end writeBackToTarget()
 
 	/**
 	 * Sanitizes empty strings and handles empty objects/arrays based on schema definitions.
@@ -3566,7 +2827,7 @@ class SaveObject implements SaveObjectInterface {
 		// the parent handles the relationship, and cascadeSingleObject already set
 		// the inversedBy property before saving.
 		if ($call->flags->silent === false) {
-			$this->updateInverseRelations(savedEntity: $savedEntity, register: $call->register, schema: $call->schema);
+			$this->inverseRelations()->update(saved: $savedEntity, write: new InverseRelationWrite(register: $call->register, schema: $call->schema));
 			\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INVERSE-RELATIONS');
 		}
 
@@ -4193,7 +3454,7 @@ class SaveObject implements SaveObjectInterface {
 		$this->validateTmloOnUpdate(existingObject: $existingObject, selfData: $selfData);
 
 		// NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again
-		// Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties
+		// Duplicate call would overwrite relations after the write-back removes properties
 		// Update object relations (result currently unused but operation has side effects).
 		try {
 			$existingObject->setRelations($this->scanForRelations(data: $preparedData, prefix: '', schema: $schema));
@@ -4946,7 +4207,10 @@ class SaveObject implements SaveObjectInterface {
 
 		// Apply cascading operations.
 		$data = $this->cascadeObjects(objectEntity: $objectEntity, schema: $schema, data: $data, stored: $stored);
-		$data = $this->handleInverseRelationsWriteBack(objectEntity: $objectEntity, schema: $schema, data: $data);
+		$writeBack = new CascadeRun();
+		$writeBack->parent = $objectEntity;
+		$writeBack->data = $data;
+		$data = $this->inverseWriteBack()->write(run: $writeBack, schema: $schema);
 
 		$data = $this->propertyDefaults()->forSave(
 			schema: $schema,
@@ -5114,7 +4378,7 @@ class SaveObject implements SaveObjectInterface {
 
 		// Bidirectional relations; skipped in silent mode (cascaded sub-objects) for performance.
 		if ($silent === false) {
-			$this->updateInverseRelations(savedEntity: $updatedEntity, register: $register, schema: $schema);
+			$this->inverseRelations()->update(saved: $updatedEntity, write: new InverseRelationWrite(register: $register, schema: $schema));
 		}
 
 		return $updatedEntity;

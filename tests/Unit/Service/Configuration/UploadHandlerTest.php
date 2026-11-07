@@ -247,6 +247,66 @@ class UploadHandlerTest extends TestCase {
 		$this->assertEquals(400, $result->getStatus());
 	}
 
+	/**
+	 * Content that parses to a single value rather than a structure.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function scalarContent(): array {
+		return [
+			'a JSON number' => ['5'],
+			'a JSON string' => ['"text"'],
+			'JSON true'     => ['true'],
+			'a YAML word'   => ['word'],
+		];
+	}
+
+	#[Test]
+	#[\PHPUnit\Framework\Attributes\DataProvider('scalarContent')]
+	public function testGetUploadedJsonReturnsErrorOnScalarFile(string $content): void {
+		$tmpFile = tempnam(sys_get_temp_dir(), 'test');
+		file_put_contents($tmpFile, $content);
+
+		$files = [
+			'file' => [
+				'name' => 'config.json',
+				'tmp_name' => $tmpFile,
+				'error' => UPLOAD_ERR_OK,
+			],
+		];
+
+		$result = $this->handler->getUploadedJson([], $files);
+		unlink($tmpFile);
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(400, $result->getStatus());
+	}
+
+	#[Test]
+	#[\PHPUnit\Framework\Attributes\DataProvider('scalarContent')]
+	public function testGetUploadedJsonReturnsErrorOnScalarUrlResponse(string $content): void {
+		$mockResponse = $this->createMock(\Psr\Http\Message\ResponseInterface::class);
+		$mockStream = $this->createMock(\Psr\Http\Message\StreamInterface::class);
+		$mockStream->method('getContents')->willReturn($content);
+		$mockResponse->method('getBody')->willReturn($mockStream);
+		$mockResponse->method('getHeaderLine')->with('Content-Type')->willReturn('text/plain');
+
+		$this->client->method('request')->willReturn($mockResponse);
+
+		$result = $this->handler->getUploadedJson(['url' => 'https://example.com/scalar'], null);
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(400, $result->getStatus());
+	}
+
+	#[Test]
+	public function testGetUploadedJsonReturnsErrorOnScalarJsonString(): void {
+		$result = $this->handler->getUploadedJson(['json' => '5'], null);
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertEquals(400, $result->getStatus());
+	}
+
 	// =========================================================================
 	// getUploadedJson — priority: file > url > json
 	// =========================================================================

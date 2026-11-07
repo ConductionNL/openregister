@@ -49,27 +49,11 @@
 				</div>
 
 				<!-- Actions Bar -->
-				<div class="viewActionsBar">
-					<div class="viewInfo">
-						<span class="viewTotalCount">
-							{{
-								t('openregister', 'Entity ID: {id}', {
-									id: entity.id,
-								})
-							}}
-						</span>
-					</div>
-					<div class="viewActions">
-						<NcActions :forceName="true" :inline="1" menuName="Actions">
-							<NcActionButton closeAfterClick @click="refreshEntity">
-								<template #icon>
-									<Refresh :size="20" />
-								</template>
-								{{ t('openregister', 'Refresh') }}
-							</NcActionButton>
-						</NcActions>
-					</div>
-				</div>
+				<ListActionsBar
+					:summary="
+						t('openregister', 'Entity ID: {id}', { id: entity.id })
+					"
+					:actions="[refreshAction(refreshEntity)]" />
 
 				<!-- Entity Information Card -->
 				<div class="card">
@@ -259,8 +243,6 @@ import { showError } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
-	NcActionButton,
-	NcActions,
 	NcAppContent,
 	NcButton,
 	NcEmptyContent,
@@ -275,6 +257,8 @@ import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.v
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import { refreshAction } from '../../services/menuActions.js'
 
 /**
  * Entity detail view showing entity information and relations
@@ -306,15 +290,13 @@ import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 export default {
 	name: 'EntityDetail',
 	components: {
+		ListActionsBar,
 		NcAppContent,
 		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
-		NcActions,
-		NcActionButton,
 		AccountOutline,
 		ArrowLeft,
-		Refresh,
 		AlertCircleOutline,
 		LinkVariantOff,
 		FileDocumentOutline,
@@ -338,6 +320,8 @@ export default {
 	},
 
 	methods: {
+		refreshAction,
+
 		t,
 
 		/**
@@ -491,16 +475,6 @@ export default {
 }
 
 @include view-header-p;
-
-@include view-actions-bar;
-
-@include view-info;
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-@include view-actions;
 
 .entityDetailContainer {
 	max-width: 1200px;

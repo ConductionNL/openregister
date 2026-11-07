@@ -25,42 +25,32 @@
 			</div>
 
 			<!-- Filters -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						{{
-							t(
-								'openregister',
-								'Showing {showing} of {total} log entries',
-								{
-									showing: logsList.length,
-									total: totalLogs,
-								},
-							)
-						}}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcSelect
-						v-model="selectedWebhookId"
-						:options="webhookOptions"
-						:placeholder="t('openregister', 'Filter by webhook')"
-						:clearable="true"
-						:labelOutside="true"
-						:inputLabel="t('openregister', 'Filter by webhook')"
-						@update:modelValue="handleWebhookFilterChange">
-						<template #option="{ option }">
-							{{ option.label }}
-						</template>
-					</NcSelect>
-					<NcButton variant="secondary" @click="refreshLogs">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcButton>
-				</div>
-			</div>
+			<ListActionsBar
+				:summary="
+					t('openregister', 'Showing {showing} of {total} log entries', {
+						showing: logsList.length,
+						total: totalLogs,
+					})
+				">
+				<NcSelect
+					v-model="selectedWebhookId"
+					:options="webhookOptions"
+					:placeholder="t('openregister', 'Filter by webhook')"
+					:clearable="true"
+					:labelOutside="true"
+					:inputLabel="t('openregister', 'Filter by webhook')"
+					@update:modelValue="handleWebhookFilterChange">
+					<template #option="{ option }">
+						{{ option.label }}
+					</template>
+				</NcSelect>
+				<NcButton variant="secondary" @click="refreshLogs">
+					<template #icon>
+						<Refresh :size="20" />
+					</template>
+					{{ t('openregister', 'Refresh') }}
+				</NcButton>
+			</ListActionsBar>
 
 			<!-- Logs Table -->
 			<div class="tableContainer" :class="{ 'is-loading': loading }">
@@ -210,6 +200,7 @@ import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import { navigationStore } from '../../store/store.js'
 
 /**
@@ -218,6 +209,7 @@ import { navigationStore } from '../../store/store.js'
 export default {
 	name: 'WebhookLogsIndex',
 	components: {
+		ListActionsBar,
 		NcAppContent,
 		NcActions,
 		NcActionButton,
@@ -498,16 +490,6 @@ export default {
 }
 
 @include view-header-title-rules;
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewActions {
-	display: flex;
-	gap: 8px;
-	align-items: center;
-}
 
 @include table-container-2-rules;
 

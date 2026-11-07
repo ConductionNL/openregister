@@ -45,6 +45,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileGuards
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileEditing
  * @uses \OCA\OpenRegister\Files\Controller\Support\FileTransfer
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileAccessCheck
  * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Event\FileCopiedEvent

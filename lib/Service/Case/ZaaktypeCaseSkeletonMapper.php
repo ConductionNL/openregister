@@ -46,8 +46,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Case;
 
-use OCA\OpenRegister\Db\CaseItem;
-
 /**
  * zaaktype -> draft skeleton + report.
  *
@@ -93,6 +91,89 @@ class ZaaktypeCaseSkeletonMapper {
 	];
 
 	/**
+	 * Statustype attributes that have no counterpart on a milestone.
+	 *
+	 * @var array<int, string>
+	 */
+	private const STATUS_EXTRAS = ['statustekst', 'informeren', 'toelichting', 'doorlooptijd', 'checklistitemStatustype'];
+
+	/**
+	 * Resultaattype archival terms carried as result metadata.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ARCHIVAL_TERMS = ['archiefnominatie', 'archiefactietermijn', 'brondatumArchiefprocedure', 'selectielijstklasse'];
+
+	/**
+	 * The fixed report lines: status, reason, action.
+	 */
+	private const NOTE_AUTHORIZATION = [
+		self::UNMAPPED,
+		'No zaaktype element says who may administer the plan.',
+		'Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act.',
+	];
+
+	private const NOTE_WRITE_THROUGH = [
+		self::APPROXIMATE,
+		'Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.',
+		'Check them against the zaak schema; rename or remove the mapping.',
+	];
+
+	private const NOTE_NO_STATUSES = [
+		self::UNMAPPED,
+		'The zaaktype carries no statustypen, so no milestones could be produced.',
+		'Add milestones by hand.',
+	];
+
+	public const NOTE_NOT_OBJECT = [self::UNMAPPED, 'Not an object.', 'Correct the source document.'];
+
+	private const NOTE_NO_VOLGNUMMER = [
+		self::APPROXIMATE,
+		'No `volgnummer`; the status was placed after every numbered one.',
+		'Move the milestone to its place in the sequence.',
+	];
+
+	private const NOTE_STATUS_EXTRA = [
+		self::UNMAPPED,
+		'A statustype attribute with no counterpart on a milestone.',
+		'Carry it in the milestone description if it matters to the caseworker.',
+	];
+
+	private const NOTE_NO_RESULTS = [
+		self::UNMAPPED,
+		'No resultaattypen, so the case has no constrained end-state set.',
+		'Declare `settings.results` by hand, or any result will be refused.',
+	];
+
+	private const NOTE_RESULT_UNNAMED = [self::UNMAPPED, 'No `omschrijving`.', 'Name the result.'];
+
+	private const NOTE_ARCHIVAL = [
+		self::CARRIED,
+		'Archival terms are carried as metadata; the archival capabilities act on them, not the case layer.',
+		'Nothing here; configure archival separately.',
+	];
+
+	private const NOTE_REST = [
+		self::UNMAPPED,
+		'The case-plan mapping has no counterpart for this zaaktype element.',
+		'Decide whether it belongs on the zaak schema, on a plan item, or nowhere; it was not carried.',
+	];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ZaaktypeStageBuilder $stages Builds the stage, human item and milestone of each status.
+	 * @param ZaaktypeRoleMapper   $roles  Maps the roltypen onto candidate roles.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 */
+	public function __construct(
+		private readonly ZaaktypeStageBuilder $stages = new ZaaktypeStageBuilder(),
+		private readonly ZaaktypeRoleMapper $roles = new ZaaktypeRoleMapper(),
+	) {
+	}//end __construct()
+
+	/**
 	 * Produce the draft skeleton and the report.
 	 *
 	 * @param array<string, mixed> $zaaktype The zaaktype document as stored.
@@ -102,8 +183,28 @@ class ZaaktypeCaseSkeletonMapper {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	public function map(array $zaaktype): array {
-		$report = [];
-		$settings = [
+		$draft = new ZaaktypeSkeletonDraft(settings: self::baseSettings(zaaktype: $zaaktype));
+		$draft->note(element: 'authorization', line: self::NOTE_AUTHORIZATION);
+		$draft->note(element: 'writeThrough', line: self::NOTE_WRITE_THROUGH);
+
+		$this->roles->mapRoles(zaaktype: $zaaktype, draft: $draft);
+		$this->mapResults(zaaktype: $zaaktype, draft: $draft);
+		$this->mapTerms(zaaktype: $zaaktype, draft: $draft);
+		$this->mapStatuses(zaaktype: $zaaktype, draft: $draft);
+		$this->reportRest(zaaktype: $zaaktype, draft: $draft);
+
+		return $draft->result();
+	}//end map()
+
+	/**
+	 * The plan settings every skeleton starts from: name, source and the assumed write-through.
+	 *
+	 * @param array<string, mixed> $zaaktype The document.
+	 *
+	 * @return array<string, mixed> The settings.
+	 */
+	private static function baseSettings(array $zaaktype): array {
+		return [
 			'name' => (string)($zaaktype['omschrijving'] ?? $zaaktype['identificatie'] ?? 'zaaktype'),
 			'source' => ['zaaktype' => (string)($zaaktype['url'] ?? $zaaktype['identificatie'] ?? '')],
 			'writeThrough' => [
@@ -113,438 +214,268 @@ class ZaaktypeCaseSkeletonMapper {
 				'resultAtField' => 'resultaatReachedAt',
 			],
 		];
-		$report[] = $this->entry(
-			element: 'authorization',
-			status: self::UNMAPPED,
-			reason: 'No zaaktype element says who may administer the plan.',
-			action: 'Declare `settings.authorization` (groups, user:<uid>, role:<name>) before publishing; until then only administrators may act.'
-		);
-		$report[] = $this->entry(
-			element: 'writeThrough',
-			status: self::APPROXIMATE,
-			reason: 'Field names `status`, `statusReachedAt`, `resultaat`, `resultaatReachedAt` were assumed for the write-through.',
-			action: 'Check them against the zaak schema; rename or remove the mapping.'
-		);
-
-		$behandelaar = $this->mapRoles(zaaktype: $zaaktype, settings: $settings, report: $report);
-		$this->mapResults(zaaktype: $zaaktype, settings: $settings, report: $report);
-		$terms = $this->mapTerms(zaaktype: $zaaktype, settings: $settings, report: $report);
-		$items = $this->mapStatuses(zaaktype: $zaaktype, behandelaar: $behandelaar, terms: $terms, report: $report);
-		$this->reportRest(zaaktype: $zaaktype, report: $report);
-
-		return [
-			'draft' => true,
-			'definition' => ['settings' => $settings, 'items' => $items],
-			'report' => $report,
-		];
-	}//end map()
+	}//end baseSettings()
 
 	/**
 	 * `statustypen` in `volgnummer` order -> milestones, each wrapped in a
 	 * stage with one human item, chained in sequence.
 	 *
-	 * @param array<string, mixed> $zaaktype The document.
-	 * @param string|null $behandelaar The behandelaar role name, when any.
-	 * @param array<string, string|null> $terms doorlooptijd / servicenorm.
-	 * @param array<int, array<string, string>> $report The report (by reference).
+	 * @param array<string, mixed>  $zaaktype The document.
+	 * @param ZaaktypeSkeletonDraft $draft    The skeleton being built.
 	 *
-	 * @return array<int, array<string, mixed>> The items.
+	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
-	private function mapStatuses(array $zaaktype, ?string $behandelaar, array $terms, array &$report): array {
+	private function mapStatuses(array $zaaktype, ZaaktypeSkeletonDraft $draft): void {
 		$statuses = ($zaaktype['statustypen'] ?? []);
 		if (is_array($statuses) === false || $statuses === []) {
-			$report[] = $this->entry(
-				element: 'statustypen',
-				status: self::UNMAPPED,
-				reason: 'The zaaktype carries no statustypen, so no milestones could be produced.',
-				action: 'Add milestones by hand.'
-			);
-
-			return [];
+			$draft->note(element: 'statustypen', line: self::NOTE_NO_STATUSES);
+			return;
 		}
 
-		$items = [];
-		$previousMilestone = null;
-		foreach ($this->orderStatuses(statuses: $statuses, report: $report) as $position => $status) {
-			$stage = $this->stageFor(status: $status, number: $position + 1, behandelaar: $behandelaar, terms: $terms, previousMilestone: $previousMilestone);
-			$items[] = $stage;
-			$previousMilestone = $stage['children'][1]['key'];
-			$this->reportStatus(status: $status, stage: $stage, report: $report);
+		foreach ($this->orderStatuses(statuses: $statuses, draft: $draft) as $status) {
+			$draft->items[] = $this->stages->stageFor(status: $status, draft: $draft);
+			$this->reportStatus(status: $status, draft: $draft);
 		}
-
-		return $items;
 	}//end mapStatuses()
 
 	/**
 	 * Numbered statuses in `volgnummer` order, unnumbered ones after them
 	 * (reported), non-objects dropped (reported).
 	 *
-	 * @param array<int, mixed> $statuses The statustypen as stored.
-	 * @param array<int, array<string, string>> $report The report (by reference).
+	 * @param array<int, mixed>     $statuses The statustypen as stored.
+	 * @param ZaaktypeSkeletonDraft $draft    The skeleton being built.
 	 *
 	 * @return array<int, array<string, mixed>> The ordered statuses.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
-	private function orderStatuses(array $statuses, array &$report): array {
-		$ordered = [];
-		$unnumbered = [];
+	private function orderStatuses(array $statuses, ZaaktypeSkeletonDraft $draft): array {
 		foreach ($statuses as $index => $status) {
-			if (is_array($status) === false) {
-				$report[] = $this->entry(
-					element: 'statustypen[' . (int)$index . ']',
-					status: self::UNMAPPED,
-					reason: 'Not an object.',
-					action: 'Correct the source document.'
-				);
-				continue;
+			$note = self::statusShapeNote(status: $status);
+			if ($note !== null) {
+				$draft->note(element: 'statustypen[' . (int)$index . ']', line: $note);
 			}
-
-			if (isset($status['volgnummer']) === false || is_numeric($status['volgnummer']) === false) {
-				$unnumbered[] = $status;
-				$report[] = $this->entry(
-					element: 'statustypen[' . (int)$index . ']',
-					status: self::APPROXIMATE,
-					reason: 'No `volgnummer`; the status was placed after every numbered one.',
-					action: 'Move the milestone to its place in the sequence.'
-				);
-				continue;
-			}
-
-			$ordered[] = $status;
 		}
 
-		usort($ordered, static fn (array $a, array $b): int => (int)$a['volgnummer'] <=> (int)$b['volgnummer']);
+		$numbered   = array_values(array_filter($statuses, static fn (mixed $status): bool => self::isNumbered(status: $status)));
+		$unnumbered = array_values(
+			array_filter($statuses, static fn (mixed $status): bool => is_array($status) === true && self::isNumbered(status: $status) === false)
+		);
+		usort($numbered, static fn (array $a, array $b): int => (int)$a['volgnummer'] <=> (int)$b['volgnummer']);
 
-		return array_merge($ordered, $unnumbered);
+		return array_merge($numbered, $unnumbered);
 	}//end orderStatuses()
 
 	/**
-	 * One status as a stage holding a placeholder human item and the milestone.
+	 * The report line for a status that is not an object or has no numeric `volgnummer`, or null.
 	 *
-	 * @param array<string, mixed> $status The statustype.
-	 * @param int $number Its position in the sequence, from 1.
-	 * @param string|null $behandelaar The behandelaar role, when any.
-	 * @param array<string, string|null> $terms doorlooptijd / servicenorm.
-	 * @param string|null $previousMilestone The milestone key this stage waits for.
+	 * @param mixed $status The statustype as stored.
 	 *
-	 * @return array<string, mixed> The stage node.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @return array{0: string, 1: string, 2: string}|null The line.
 	 */
-	private function stageFor(array $status, int $number, ?string $behandelaar, array $terms, ?string $previousMilestone): array {
-		$label = (string)($status['omschrijving'] ?? ('status ' . $number));
-		$slug = $this->slug(text: $label);
-		$stageKey = sprintf('fase-%d-%s', $number, $slug);
-		$taskKey = sprintf('behandel-%d-%s', $number, $slug);
-		$milestoneKey = sprintf('status-%d-%s', $number, $slug);
-
-		$task = [
-			'key' => $taskKey,
-			'type' => CaseItem::TYPE_HUMAN_TASK,
-			'name' => sprintf('Behandelen: %s', $label),
-			'required' => true,
-			'doorlooptijd' => $terms['doorlooptijd'],
-			'servicenorm' => $terms['servicenorm'],
-		];
-		if ($behandelaar !== null) {
-			$task['candidateRole'] = $behandelaar;
+	private static function statusShapeNote(mixed $status): ?array {
+		if (is_array($status) === false) {
+			return self::NOTE_NOT_OBJECT;
 		}
 
-		$entry = [];
-		if ($previousMilestone !== null) {
-			$entry = [['id' => $stageKey . ':entry', 'on' => ['event' => 'case.item.completed', 'item' => $previousMilestone]]];
+		if (self::isNumbered(status: $status) === false) {
+			return self::NOTE_NO_VOLGNUMMER;
 		}
 
-		return [
-			'key' => $stageKey,
-			'type' => CaseItem::TYPE_STAGE,
-			'name' => $label,
-			'required' => true,
-			'entryCriteria' => $entry,
-			'children' => [
-				$task,
-				[
-					'key' => $milestoneKey,
-					'type' => CaseItem::TYPE_MILESTONE,
-					'name' => $label,
-					'required' => true,
-					'entryCriteria' => [
-						['id' => $milestoneKey . ':entry', 'on' => ['event' => 'case.item.completed', 'item' => $taskKey]],
-					],
-				],
-			],
-		];
-	}//end stageFor()
+		return null;
+	}//end statusShapeNote()
+
+	/**
+	 * Whether a status is an object with a numeric `volgnummer`.
+	 *
+	 * @param mixed $status The statustype as stored.
+	 *
+	 * @return bool True when it is.
+	 */
+	private static function isNumbered(mixed $status): bool {
+		return is_array($status) === true && isset($status['volgnummer']) === true && is_numeric($status['volgnummer']) === true;
+	}//end isNumbered()
 
 	/**
 	 * Report the approximate wrapping of one status, and every attribute of
 	 * it that has no counterpart.
 	 *
-	 * @param array<string, mixed> $status The statustype.
-	 * @param array<string, mixed> $stage The stage it became.
-	 * @param array<int, array<string, string>> $report The report (by reference).
+	 * @param array<string, mixed>  $status The statustype.
+	 * @param ZaaktypeSkeletonDraft $draft  The skeleton being built, its last stage the one the status became.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
-	private function reportStatus(array $status, array $stage, array &$report): void {
+	private function reportStatus(array $status, ZaaktypeSkeletonDraft $draft): void {
 		$number = (string)($status['volgnummer'] ?? '-');
-		$report[] = $this->entry(
-			element: sprintf('statustypen (volgnummer %s)', $number),
-			status: self::APPROXIMATE,
-			reason: sprintf(
-				"Milestone '%s' was wrapped in stage '%s' with one required human item '%s' so the sequence does not complete itself on import.",
-				(string)$stage['children'][1]['key'],
-				(string)$stage['key'],
-				(string)$stage['children'][0]['key']
-			),
-			action: 'Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion.'
-		);
+		$draft->note(element: sprintf('statustypen (volgnummer %s)', $number), line: self::wrapNote(stage: $draft->lastStage()));
 
-		foreach (['statustekst', 'informeren', 'toelichting', 'doorlooptijd', 'checklistitemStatustype'] as $extra) {
+		foreach (self::STATUS_EXTRAS as $extra) {
 			if (isset($status[$extra]) === true && $status[$extra] !== '') {
-				$report[] = $this->entry(
-					element: sprintf('statustypen (volgnummer %s).%s', $number, $extra),
-					status: self::UNMAPPED,
-					reason: 'A statustype attribute with no counterpart on a milestone.',
-					action: 'Carry it in the milestone description if it matters to the caseworker.'
-				);
+				$draft->note(element: sprintf('statustypen (volgnummer %s).%s', $number, $extra), line: self::NOTE_STATUS_EXTRA);
 			}
 		}
 	}//end reportStatus()
 
 	/**
-	 * `roltypen` -> candidate roles; the behandelaar goes on the human items.
+	 * The report line explaining how a status was wrapped in a stage.
 	 *
-	 * @param array<string, mixed> $zaaktype The document.
-	 * @param array<string, mixed> $settings The settings (by reference).
-	 * @param array<int, array<string, string>> $report The report (by reference).
+	 * @param array<string, mixed> $stage The stage the status became.
 	 *
-	 * @return string|null The behandelaar role name, when one is declared.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @return array{0: string, 1: string, 2: string} The line.
 	 */
-	private function mapRoles(array $zaaktype, array &$settings, array &$report): ?string {
-		$roles = ($zaaktype['roltypen'] ?? []);
-		if (is_array($roles) === false || $roles === []) {
-			return null;
-		}
-
-		$behandelaar = null;
-		$settings['candidateRoles'] = [];
-		foreach ($roles as $index => $role) {
-			if (is_array($role) === false) {
-				$report[] = $this->entry(
-					element: 'roltypen[' . (int)$index . ']',
-					status: self::UNMAPPED,
-					reason: 'Not an object.',
-					action: 'Correct the source document.',
-				);
-				continue;
-			}
-
-			$name = trim((string)($role['omschrijving'] ?? ''));
-			$generic = trim((string)($role['omschrijvingGeneriek'] ?? ''));
-			if ($name === '') {
-				$report[] = $this->entry(
-					element: 'roltypen[' . (int)$index . ']',
-					status: self::UNMAPPED,
-					reason: 'No `omschrijving`.',
-					action: 'Name the role.',
-				);
-				continue;
-			}
-
-			$settings['candidateRoles'][] = ['role' => $name, 'generic' => $generic];
-			if ($generic === 'behandelaar' && $behandelaar === null) {
-				$behandelaar = $name;
-				$report[] = $this->entry(
-					element: sprintf("roltypen '%s'", $name),
-					status: self::MAPPED,
-					reason: 'The behandelaar role became the candidate role of every human item.',
-					action: sprintf("Make sure a group named '%s' exists, or the role will not resolve.", $name)
-				);
-				continue;
-			}
-
-			$report[] = $this->entry(
-				element: sprintf("roltypen '%s'", $name),
-				status: self::CARRIED,
-				reason: sprintf("Carried in settings.candidateRoles with generic designation '%s'; not placed on any item.", $generic),
-				action: 'Assign it as candidateRole to the items this role performs.'
-			);
-		}//end foreach
-
-		return $behandelaar;
-	}//end mapRoles()
+	private static function wrapNote(array $stage): array {
+		return [
+			self::APPROXIMATE,
+			sprintf(
+				"Milestone '%s' was wrapped in stage '%s' with one required human item '%s' so the sequence does not complete itself on import.",
+				(string)$stage['children'][1]['key'],
+				(string)$stage['key'],
+				(string)$stage['children'][0]['key']
+			),
+			'Replace the placeholder human item with the real work of this phase, or drop the stage and give the milestone a real entry criterion.',
+		];
+	}//end wrapNote()
 
 	/**
 	 * `resultaattypen` -> the constrained end-state set; archival terms carried.
 	 *
-	 * @param array<string, mixed> $zaaktype The document.
-	 * @param array<string, mixed> $settings The settings (by reference).
-	 * @param array<int, array<string, string>> $report The report (by reference).
+	 * @param array<string, mixed>  $zaaktype The document.
+	 * @param ZaaktypeSkeletonDraft $draft    The skeleton being built.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
-	private function mapResults(array $zaaktype, array &$settings, array &$report): void {
+	private function mapResults(array $zaaktype, ZaaktypeSkeletonDraft $draft): void {
 		$results = ($zaaktype['resultaattypen'] ?? []);
 		if (is_array($results) === false || $results === []) {
-			$report[] = $this->entry(
-				element: 'resultaattypen',
-				status: self::UNMAPPED,
-				reason: 'No resultaattypen, so the case has no constrained end-state set.',
-				action: 'Declare `settings.results` by hand, or any result will be refused.'
-			);
-
+			$draft->note(element: 'resultaattypen', line: self::NOTE_NO_RESULTS);
 			return;
 		}
 
-		$settings['results'] = [];
-		$settings['resultMetadata'] = [];
+		$draft->settings['results']        = [];
+		$draft->settings['resultMetadata'] = [];
 		foreach ($results as $index => $result) {
-			$name = '';
-			if (is_array($result) === true) {
-				$name = trim((string)($result['omschrijving'] ?? ''));
-			}
+			$this->placeResult(result: ['index' => (int)$index, 'declared' => $result], draft: $draft);
+		}
 
-			if ($name === '') {
-				$report[] = $this->entry(
-					element: 'resultaattypen[' . (int)$index . ']',
-					status: self::UNMAPPED,
-					reason: 'No `omschrijving`.',
-					action: 'Name the result.',
-				);
-				continue;
-			}
-
-			$settings['results'][] = $name;
-			$metadata = [];
-			foreach (['archiefnominatie', 'archiefactietermijn', 'brondatumArchiefprocedure', 'selectielijstklasse'] as $term) {
-				if (isset($result[$term]) === true) {
-					$metadata[$term] = $result[$term];
-				}
-			}
-
-			if ($metadata !== []) {
-				$settings['resultMetadata'][$name] = $metadata;
-				$report[] = $this->entry(
-					element: sprintf("resultaattypen '%s' archival terms", $name),
-					status: self::CARRIED,
-					reason: 'Archival terms are carried as metadata; the archival capabilities act on them, not the case layer.',
-					action: 'Nothing here; configure archival separately.'
-				);
-			}
-		}//end foreach
-
-		$report[] = $this->entry(
-			element: 'resultaattypen',
-			status: self::MAPPED,
-			reason: sprintf('%d result(s) became the constrained end-state set.', count($settings['results'])),
-			action: 'Completing the case with any other result is refused.'
-		);
+		$reason = sprintf('%d result(s) became the constrained end-state set.', count($draft->settings['results']));
+		$draft->note(element: 'resultaattypen', line: [self::MAPPED, $reason, 'Completing the case with any other result is refused.']);
 	}//end mapResults()
+
+	/**
+	 * Add one result to the end-state set and carry its archival terms, or report it unnamed.
+	 *
+	 * @param array{index: int, declared: mixed} $result The result's position and the resultaattype as stored.
+	 * @param ZaaktypeSkeletonDraft              $draft  The skeleton being built.
+	 *
+	 * @return void
+	 */
+	private function placeResult(array $result, ZaaktypeSkeletonDraft $draft): void {
+		$name = self::resultName(result: $result['declared']);
+		if ($name === '') {
+			$draft->note(element: 'resultaattypen[' . $result['index'] . ']', line: self::NOTE_RESULT_UNNAMED);
+			return;
+		}
+
+		$draft->settings['results'][] = $name;
+		$metadata = self::archivalTerms(result: $result['declared']);
+		if ($metadata !== []) {
+			$draft->settings['resultMetadata'][$name] = $metadata;
+			$draft->note(element: sprintf("resultaattypen '%s' archival terms", $name), line: self::NOTE_ARCHIVAL);
+		}
+	}//end placeResult()
+
+	/**
+	 * A result's trimmed `omschrijving`, or '' when it is not an object or has none.
+	 *
+	 * @param mixed $result The resultaattype as stored.
+	 *
+	 * @return string The name.
+	 */
+	private static function resultName(mixed $result): string {
+		if (is_array($result) === false) {
+			return '';
+		}
+
+		return trim((string)($result['omschrijving'] ?? ''));
+	}//end resultName()
+
+	/**
+	 * The archival terms a result declares, in the order {@see ARCHIVAL_TERMS} lists them.
+	 *
+	 * @param array<string, mixed> $result The resultaattype.
+	 *
+	 * @return array<string, mixed> The set terms.
+	 */
+	private static function archivalTerms(array $result): array {
+		$terms = [];
+		foreach (self::ARCHIVAL_TERMS as $term) {
+			if (isset($result[$term]) === true) {
+				$terms[$term] = $result[$term];
+			}
+		}
+
+		return $terms;
+	}//end archivalTerms()
 
 	/**
 	 * `doorlooptijd` / `servicenorm`: carried, not computed on.
 	 *
-	 * @param array<string, mixed> $zaaktype The document.
-	 * @param array<string, mixed> $settings The settings (by reference).
-	 * @param array<int, array<string, string>> $report The report (by reference).
+	 * @param array<string, mixed>  $zaaktype The document.
+	 * @param ZaaktypeSkeletonDraft $draft    The skeleton being built.
 	 *
-	 * @return array<string, string|null> The two terms.
+	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
-	private function mapTerms(array $zaaktype, array &$settings, array &$report): array {
-		$terms = [];
-		foreach (['doorlooptijd', 'servicenorm'] as $term) {
+	private function mapTerms(array $zaaktype, ZaaktypeSkeletonDraft $draft): void {
+		foreach (array_keys($draft->terms) as $term) {
 			$value = trim((string)($zaaktype[$term] ?? ''));
-			$terms[$term] = null;
 			if ($value === '') {
 				continue;
 			}
 
-			$terms[$term] = $value;
-			$settings[$term] = $value;
-			$report[] = $this->entry(
-				element: $term,
-				status: self::CARRIED,
-				reason: sprintf("'%s' is carried onto every human item and the settings; nothing computes on it here.", $value),
-				action: 'flow-business-timers acts on it; nothing to do in the case plan.'
-			);
+			$draft->terms[$term]    = $value;
+			$draft->settings[$term] = $value;
+			$reason = sprintf("'%s' is carried onto every human item and the settings; nothing computes on it here.", $value);
+			$draft->note(element: $term, line: [self::CARRIED, $reason, 'flow-business-timers acts on it; nothing to do in the case plan.']);
 		}
-
-		return $terms;
 	}//end mapTerms()
 
 	/**
 	 * Everything not handled is reported, never dropped silently.
 	 *
-	 * @param array<string, mixed> $zaaktype The document.
-	 * @param array<int, array<string, string>> $report The report (by reference).
+	 * @param array<string, mixed>  $zaaktype The document.
+	 * @param ZaaktypeSkeletonDraft $draft    The skeleton being built.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
-	private function reportRest(array $zaaktype, array &$report): void {
+	private function reportRest(array $zaaktype, ZaaktypeSkeletonDraft $draft): void {
 		foreach ($zaaktype as $element => $value) {
-			$name = (string)$element;
-			if (in_array($name, self::HANDLED, true) === true || in_array($name, self::IDENTITY, true) === true) {
-				continue;
+			if (self::isUnhandled(element: (string)$element, value: $value) === true) {
+				$draft->note(element: (string)$element, line: self::NOTE_REST);
 			}
-
-			if ($value === null || $value === '' || $value === []) {
-				continue;
-			}
-
-			$report[] = $this->entry(
-				element: $name,
-				status: self::UNMAPPED,
-				reason: 'The case-plan mapping has no counterpart for this zaaktype element.',
-				action: 'Decide whether it belongs on the zaak schema, on a plan item, or nowhere; it was not carried.'
-			);
 		}
 	}//end reportRest()
 
 	/**
-	 * One report line.
+	 * Whether a non-empty zaaktype element is neither consumed by the mapping nor part of its identity.
 	 *
-	 * @param string $element What.
-	 * @param string $status mapped | approximate | carried | unmapped.
-	 * @param string $reason Why.
-	 * @param string $action What the author should do.
+	 * @param string $element The element name.
+	 * @param mixed  $value   Its value.
 	 *
-	 * @return array<string, string> The line.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @return bool True when it must be reported.
 	 */
-	private function entry(string $element, string $status, string $reason, string $action): array {
-		return ['element' => $element, 'status' => $status, 'reason' => $reason, 'action' => $action];
-	}//end entry()
+	private static function isUnhandled(string $element, mixed $value): bool {
+		return in_array($element, [...self::HANDLED, ...self::IDENTITY], true) === false
+			&& in_array($value, [null, '', []], true) === false;
+	}//end isUnhandled()
 
-	/**
-	 * A key-safe slug of a label.
-	 *
-	 * @param string $text The label.
-	 *
-	 * @return string Lower-case letters, digits and dashes.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
-	 */
-	private function slug(string $text): string {
-		$slug = strtolower(trim((string)preg_replace('/[^A-Za-z0-9]+/', '-', $text), '-'));
-		if ($slug === '') {
-			return 'status';
-		}
-
-		return substr($slug, 0, 60);
-	}//end slug()
 }//end class

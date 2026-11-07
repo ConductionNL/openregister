@@ -230,69 +230,6 @@ class ImportHandlerTest extends TestCase {
 	// =========================================================================
 
 	// =========================================================================
-	// ensureArrayStructure()
-	// =========================================================================
-
-	/**
-	 * ensureArrayStructure() converts a flat stdClass to an array.
-	 */
-	public function testEnsureArrayStructureConvertsStdClass(): void {
-		$obj = new \stdClass();
-		$obj->key = 'val';
-		$obj->other = 42;
-
-		$result = $this->handler->ensureArrayStructure($obj);
-
-		$this->assertIsArray($result);
-		$this->assertSame('val', $result['key']);
-		$this->assertSame(42, $result['other']);
-
-	}//end testEnsureArrayStructureConvertsStdClass()
-
-	/**
-	 * ensureArrayStructure() recursively converts nested stdClass objects.
-	 */
-	public function testEnsureArrayStructureConvertsNestedObjects(): void {
-		$inner = new \stdClass();
-		$inner->deep = 'value';
-		$outer = new \stdClass();
-		$outer->child = $inner;
-
-		$result = $this->handler->ensureArrayStructure($outer);
-
-		$this->assertIsArray($result['child']);
-		$this->assertSame('value', $result['child']['deep']);
-
-	}//end testEnsureArrayStructureConvertsNestedObjects()
-
-	/**
-	 * ensureArrayStructure() leaves a plain array untouched.
-	 */
-	public function testEnsureArrayStructureLeavesArraysIntact(): void {
-		$input = ['a' => 1, 'b' => [2, 3]];
-		$result = $this->handler->ensureArrayStructure($input);
-
-		$this->assertSame($input, $result);
-
-	}//end testEnsureArrayStructureLeavesArraysIntact()
-
-	/**
-	 * ensureArrayStructure() handles arrays containing objects.
-	 */
-	public function testEnsureArrayStructureConvertsObjectsInsideArray(): void {
-		$obj = new \stdClass();
-		$obj->foo = 'bar';
-		$input = ['item' => $obj, 'plain' => 'text'];
-
-		$result = $this->handler->ensureArrayStructure($input);
-
-		$this->assertIsArray($result['item']);
-		$this->assertSame('bar', $result['item']['foo']);
-		$this->assertSame('text', $result['plain']);
-
-	}//end testEnsureArrayStructureConvertsObjectsInsideArray()
-
-	// =========================================================================
 	// getJSONfromFile()
 	// =========================================================================
 
@@ -3665,31 +3602,6 @@ class ImportHandlerTest extends TestCase {
 	// =========================================================================
 	// decode() — edge cases
 	// =========================================================================
-
-	/**
-	 * ensureArrayStructure() handles mixed array containing both objects and scalars.
-	 *
-	 * When an array contains objects nested alongside scalar values, the recursive
-	 * call should convert only the object entries while leaving scalars unchanged.
-	 */
-	public function testEnsureArrayStructureHandlesMixedArray(): void {
-		$inner = new \stdClass();
-		$inner->key = 'value';
-
-		$input = [
-			'scalar' => 42,
-			'nested' => $inner,
-			'list' => ['a', 'b'],
-		];
-
-		$result = $this->handler->ensureArrayStructure($input);
-
-		$this->assertSame(42, $result['scalar']);
-		$this->assertIsArray($result['nested']);
-		$this->assertSame('value', $result['nested']['key']);
-		$this->assertSame(['a', 'b'], $result['list']);
-
-	}//end testEnsureArrayStructureHandlesMixedArray()
 
 	// =========================================================================
 	// importFromJson() — result structure completeness
