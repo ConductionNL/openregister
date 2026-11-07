@@ -42,6 +42,7 @@ use LLPhant\Chat\OpenAIChat;
 use LLPhant\Exception\MissingFeatureException;
 use LLPhant\OllamaConfig;
 use LLPhant\OpenAIConfig;
+use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Mcp\Tool\StreamingToolInstanceWrapper;
@@ -144,7 +145,7 @@ class ResponseGenerationHandler {
 	 * @param array $messageHistory Array of LLPhantMessage objects.
 	 * @param Agent|null $agent Agent configuration (optional).
 	 * @param array $selectedTools Tools selected for this request (optional).
-	 * @param StreamYieldChannel|null $channel Streaming channel; when supplied the handler
+	 * @param ChatStreamChannelInterface|null $channel Streaming channel; when supplied the handler
 	 *                                         attempts the LLPhant streaming surface and
 	 *                                         forwards token / tool-call / tool-result
 	 *                                         events to the channel. When null the handler
@@ -168,7 +169,7 @@ class ResponseGenerationHandler {
 		array $messageHistory,
 		?Agent $agent,
 		array $selectedTools = [],
-		?StreamYieldChannel $channel = null,
+		?ChatStreamChannelInterface $channel = null,
 		array $cnAiContext = [],
 	): string {
 		$startTime = microtime(true);
@@ -625,7 +626,7 @@ class ResponseGenerationHandler {
 	 *
 	 * @param OpenAIChat|OllamaChat $chat Configured LLPhant chat instance.
 	 * @param array $messageHistory Array of LLPhantMessage objects.
-	 * @param StreamYieldChannel|null $channel Streaming channel, or null for blocking mode.
+	 * @param ChatStreamChannelInterface|null $channel Streaming channel, or null for blocking mode.
 	 * @param string $provider Provider identifier for log context.
 	 *
 	 * @return string Full assistant text (concatenation of streamed chunks
@@ -643,7 +644,7 @@ class ResponseGenerationHandler {
 	 *
 	 * @param array $functionInfoObjects LLPhant FunctionInfo[] from
 	 *                                   ToolManagementHandler::convertFunctionsToFunctionInfo.
-	 * @param StreamYieldChannel|null $channel Streaming channel, or null for blocking mode.
+	 * @param ChatStreamChannelInterface|null $channel Streaming channel, or null for blocking mode.
 	 *
 	 * @return array FunctionInfo[] with `$instance` rewritten when wrapping is active.
 	 *
@@ -652,7 +653,7 @@ class ResponseGenerationHandler {
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	private function wrapToolsForStreaming(array $functionInfoObjects, ?StreamYieldChannel $channel): array {
+	private function wrapToolsForStreaming(array $functionInfoObjects, ?ChatStreamChannelInterface $channel): array {
 		if ($channel === null) {
 			return $functionInfoObjects;
 		}
@@ -674,7 +675,7 @@ class ResponseGenerationHandler {
 	 *
 	 * @param OpenAIChat|OllamaChat $chat Configured chat client.
 	 * @param array $messageHistory LLPhant message history.
-	 * @param StreamYieldChannel|null $channel Optional streaming channel.
+	 * @param ChatStreamChannelInterface|null $channel Optional streaming channel.
 	 * @param string $provider Provider slug (for logging).
 	 *
 	 * @return string The assistant's textual response.
@@ -684,7 +685,7 @@ class ResponseGenerationHandler {
 	private function invokeChat(
 		OpenAIChat|OllamaChat $chat,
 		array $messageHistory,
-		?StreamYieldChannel $channel,
+		?ChatStreamChannelInterface $channel,
 		string $provider,
 	): string {
 		// Ollama-with-tools degrades to blocking. OllamaChat::generateChatStream
@@ -769,7 +770,7 @@ class ResponseGenerationHandler {
 	 *
 	 * @param OpenAIChat|OllamaChat $chat Configured chat instance.
 	 * @param array $messageHistory Array of LLPhantMessage objects.
-	 * @param StreamYieldChannel $channel Channel to forward chunks to.
+	 * @param ChatStreamChannelInterface $channel Channel to forward chunks to.
 	 *
 	 * @return string Assembled assistant text.
 	 *
@@ -780,7 +781,7 @@ class ResponseGenerationHandler {
 	private function streamChat(
 		OpenAIChat|OllamaChat $chat,
 		array $messageHistory,
-		StreamYieldChannel $channel,
+		ChatStreamChannelInterface $channel,
 	): string {
 		$stream = $chat->generateChatStream($messageHistory);
 		$assembled = '';

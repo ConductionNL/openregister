@@ -33,6 +33,8 @@ use Psr\Log\LoggerInterface;
  * The timestamp is replaced by a marker. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\SettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\DatabaseServerProfile
+ * @uses \OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics
  * @uses \OCA\OpenRegister\Controller\Support\SettingsStore
  * @uses \OCA\OpenRegister\Controller\Support\SettingsRuntime
  * @uses \OCA\OpenRegister\Controller\Support\SettingsControllerServices

@@ -35,6 +35,7 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetFieldLabel
  * @uses   \OCA\OpenRegister\Db\MagicMapper\FacetLabelLookup
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register

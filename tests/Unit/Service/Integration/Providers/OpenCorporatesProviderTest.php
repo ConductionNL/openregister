@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -162,7 +163,7 @@ class OpenCorporatesProviderTest extends TestCase {
 			)
 			->willReturn(['results' => ['companies' => []]]);
 
-		$result = $this->provider->searchCompanies('Bakery', 'nl', 999, 1);
+		$result = $this->provider->searchCompanies((new CompanySearch('Bakery', 999, 1))->narrowedBy(['jurisdiction' => 'nl']));
 		$this->assertSame(100, $result['limit']);
 		$this->assertSame(0, $result['total']);
 	}//end testSearchPassesJurisdictionAndClampsLimit()
@@ -175,7 +176,7 @@ class OpenCorporatesProviderTest extends TestCase {
 			)
 		);
 
-		$result = $this->provider->searchCompanies('Acme', null, 30, 1);
+		$result = $this->provider->searchCompanies(new CompanySearch('Acme', 30, 1));
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame('openconnector-source-missing', $result['cause']);
 		$this->assertSame([], $result['results']);

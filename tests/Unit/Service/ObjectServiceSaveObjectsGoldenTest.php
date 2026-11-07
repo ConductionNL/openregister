@@ -21,6 +21,7 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses   \OCA\OpenRegister\Service\Object\BulkCacheInvalidator
  * @uses   \OCA\OpenRegister\Service\Object\SavedScopeIds
  */

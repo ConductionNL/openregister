@@ -144,6 +144,19 @@ final class MigrationRun {
 	}//end addDetail()
 
 	/**
+	 * Add a warning about an object that did migrate.
+	 *
+	 * @param string $warning The warning.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function warn(string $warning): void {
+		$this->report['warnings'][] = $warning;
+	}//end warn()
+
+	/**
 	 * Report an id the batch load did not return.
 	 *
 	 * @param mixed $notFoundId The requested id.

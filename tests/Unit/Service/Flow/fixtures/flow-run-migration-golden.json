@@ -1,0 +1,616 @@
+{
+    "migrate renamed with timers": {
+        "result": {
+            "migrated": true,
+            "dryRun": false,
+            "run": "r1",
+            "from": 2,
+            "to": 3,
+            "marking": {
+                "assess": 1
+            },
+            "unmapped": [],
+            "reason": "renamed"
+        },
+        "calls": [
+            [
+                "update",
+                "r1",
+                3,
+                {
+                    "assess": 1
+                },
+                [
+                    {
+                        "type": "started"
+                    },
+                    {
+                        "type": "migrated",
+                        "fromVersion": 2,
+                        "toVersion": 3,
+                        "mapping": {
+                            "review": "assess"
+                        },
+                        "reason": "renamed",
+                        "actor": "anna"
+                    }
+                ]
+            ],
+            [
+                "findOpenByRun",
+                "r1"
+            ],
+            [
+                "supersede",
+                "timer-moved",
+                "migrated",
+                "anna"
+            ],
+            [
+                "supersede",
+                "timer-fails",
+                "migrated",
+                "anna"
+            ],
+            [
+                "log",
+                "error",
+                "[FlowRunMigrationService] run r1 migrated, but timer timer-fails could not be superseded: boom",
+                []
+            ],
+            [
+                "log",
+                "info",
+                "[FlowRunMigrationService] run r1 migrated from version 2 to 3 by anna",
+                {
+                    "timersSuperseded": 1
+                }
+            ]
+        ]
+    },
+    "migrate without mapping": {
+        "result": {
+            "migrated": true,
+            "dryRun": false,
+            "run": "r1",
+            "from": 2,
+            "to": 3,
+            "marking": {
+                "intake": 1
+            },
+            "unmapped": [],
+            "reason": "why"
+        },
+        "calls": [
+            [
+                "update",
+                "r1",
+                3,
+                {
+                    "intake": 1
+                },
+                [
+                    {
+                        "type": "migrated",
+                        "fromVersion": 2,
+                        "toVersion": 3,
+                        "mapping": [],
+                        "reason": "why",
+                        "actor": "anna"
+                    }
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[FlowRunMigrationService] run r1 migrated from version 2 to 3 by anna",
+                {
+                    "timersSuperseded": 0
+                }
+            ]
+        ]
+    },
+    "migrate blank reason": {
+        "result": {
+            "migrated": false,
+            "dryRun": false,
+            "run": "r1",
+            "from": null,
+            "to": 3,
+            "marking": [],
+            "unmapped": [],
+            "reason": "Say why this run is being moved to another version. The reason is kept on the run."
+        },
+        "calls": []
+    },
+    "migrate unknown run": {
+        "result": {
+            "migrated": false,
+            "dryRun": false,
+            "run": "nope",
+            "from": null,
+            "to": 3,
+            "marking": [],
+            "unmapped": [],
+            "reason": "That run could not be found, so nothing was migrated."
+        },
+        "calls": []
+    },
+    "migrate does not fit": {
+        "result": {
+            "migrated": false,
+            "dryRun": false,
+            "run": "r1",
+            "from": 2,
+            "to": 4,
+            "marking": [],
+            "unmapped": [
+                "review"
+            ],
+            "reason": "Version 4 has nowhere for this run to land: review. Map it to a node of the same kind, or leave the run where it is."
+        },
+        "calls": []
+    },
+    "migrate unknown version": {
+        "result": {
+            "migrated": false,
+            "dryRun": false,
+            "run": "r1",
+            "from": 2,
+            "to": 9,
+            "marking": [],
+            "unmapped": [],
+            "reason": "Version 9 of this flow could not be read, so nothing was migrated."
+        },
+        "calls": []
+    },
+    "migrate finished run": {
+        "result": {
+            "migrated": false,
+            "dryRun": false,
+            "run": "r1",
+            "from": 2,
+            "to": 3,
+            "marking": [],
+            "unmapped": [],
+            "reason": "This run is completed, so there is nothing left to move. Migrating a finished run would rewrite what already happened."
+        },
+        "calls": []
+    },
+    "preview fits": {
+        "result": {
+            "migrated": false,
+            "dryRun": true,
+            "run": "r1",
+            "from": 2,
+            "to": 3,
+            "marking": {
+                "assess": 1
+            },
+            "unmapped": [],
+            "reason": ""
+        },
+        "calls": []
+    },
+    "preview does not fit": {
+        "result": {
+            "migrated": false,
+            "dryRun": true,
+            "run": "r1",
+            "from": 2,
+            "to": 3,
+            "marking": [],
+            "unmapped": [
+                "review"
+            ],
+            "reason": "Version 3 has nowhere for this run to land: review. Map it to a node of the same kind, or leave the run where it is."
+        },
+        "calls": []
+    },
+    "runsOnVersion": {
+        "result": [
+            "a",
+            "d"
+        ],
+        "calls": [
+            [
+                "findAllRuns",
+                [
+                    "flow-1",
+                    null,
+                    7,
+                    0,
+                    null,
+                    [],
+                    null,
+                    []
+                ]
+            ]
+        ]
+    },
+    "migrateRunsOfVersion": {
+        "result": {
+            "migrated": 2,
+            "skipped": 1,
+            "results": [
+                {
+                    "migrated": false,
+                    "dryRun": false,
+                    "run": "a",
+                    "from": 2,
+                    "to": 4,
+                    "marking": [],
+                    "unmapped": [
+                        "review"
+                    ],
+                    "reason": "Version 4 has nowhere for this run to land: review. Map it to a node of the same kind, or leave the run where it is."
+                },
+                {
+                    "migrated": true,
+                    "dryRun": false,
+                    "run": "d",
+                    "from": 2,
+                    "to": 4,
+                    "marking": {
+                        "review": 1
+                    },
+                    "unmapped": [],
+                    "reason": "bulk"
+                },
+                {
+                    "migrated": true,
+                    "dryRun": false,
+                    "run": "e",
+                    "from": 2,
+                    "to": 4,
+                    "marking": {
+                        "intake": 1
+                    },
+                    "unmapped": [],
+                    "reason": "bulk"
+                }
+            ]
+        },
+        "calls": [
+            [
+                "findAllRuns",
+                [
+                    "flow-1",
+                    null,
+                    100,
+                    0,
+                    null,
+                    [],
+                    null,
+                    []
+                ]
+            ],
+            [
+                "update",
+                "d",
+                4,
+                {
+                    "review": 1
+                },
+                [
+                    {
+                        "type": "started"
+                    },
+                    {
+                        "type": "migrated",
+                        "fromVersion": 2,
+                        "toVersion": 4,
+                        "mapping": {
+                            "decide": "review"
+                        },
+                        "reason": "bulk",
+                        "actor": "bo"
+                    }
+                ]
+            ],
+            [
+                "findOpenByRun",
+                "d"
+            ],
+            [
+                "log",
+                "info",
+                "[FlowRunMigrationService] run d migrated from version 2 to 4 by bo",
+                {
+                    "timersSuperseded": 0
+                }
+            ],
+            [
+                "update",
+                "e",
+                4,
+                {
+                    "intake": 1
+                },
+                [
+                    {
+                        "type": "started"
+                    },
+                    {
+                        "type": "migrated",
+                        "fromVersion": 2,
+                        "toVersion": 4,
+                        "mapping": {
+                            "decide": "review"
+                        },
+                        "reason": "bulk",
+                        "actor": "bo"
+                    }
+                ]
+            ],
+            [
+                "findOpenByRun",
+                "e"
+            ],
+            [
+                "log",
+                "info",
+                "[FlowRunMigrationService] run e migrated from version 2 to 4 by bo",
+                {
+                    "timersSuperseded": 0
+                }
+            ]
+        ]
+    },
+    "subject store unreadable": {
+        "result": {
+            "migrated": false,
+            "reason": "The flow runs of this object could not be read, so nothing was migrated.",
+            "runs": []
+        },
+        "calls": []
+    },
+    "subject no runs": {
+        "result": {
+            "migrated": true,
+            "reason": "This object has no flow run in progress, so there was nothing to migrate.",
+            "runs": []
+        },
+        "calls": []
+    },
+    "subject only junk rows": {
+        "result": {
+            "migrated": true,
+            "reason": "This object has no flow run in progress, so there was nothing to migrate.",
+            "runs": []
+        },
+        "calls": []
+    },
+    "subject other flow, one run": {
+        "result": {
+            "migrated": false,
+            "reason": "This object has 1 flow run in progress on a different process. A run is moved between VERSIONS of one flow, never between flows, because two flows share no steps to map a token onto. Finish or stop the run first.",
+            "runs": []
+        },
+        "calls": []
+    },
+    "subject other flow, two runs": {
+        "result": {
+            "migrated": false,
+            "reason": "This object has 2 flow runs in progress on a different process. A run is moved between VERSIONS of one flow, never between flows, because two flows share no steps to map a token onto. Finish or stop the run first.",
+            "runs": []
+        },
+        "calls": []
+    },
+    "subject all move": {
+        "result": {
+            "migrated": true,
+            "reason": "Every run of this object moved to version 3.",
+            "runs": [
+                {
+                    "migrated": true,
+                    "dryRun": false,
+                    "run": "a",
+                    "from": 2,
+                    "to": 3,
+                    "marking": {
+                        "intake": 1
+                    },
+                    "unmapped": [],
+                    "reason": "Migrated with its subject by carl"
+                },
+                {
+                    "migrated": true,
+                    "dryRun": false,
+                    "run": "b",
+                    "from": 2,
+                    "to": 3,
+                    "marking": {
+                        "decide": 1
+                    },
+                    "unmapped": [],
+                    "reason": "Migrated with its subject by carl"
+                }
+            ]
+        },
+        "calls": [
+            [
+                "update",
+                "a",
+                3,
+                {
+                    "intake": 1
+                },
+                [
+                    {
+                        "type": "started"
+                    },
+                    {
+                        "type": "migrated",
+                        "fromVersion": 2,
+                        "toVersion": 3,
+                        "mapping": [],
+                        "reason": "Migrated with its subject by carl",
+                        "actor": "carl"
+                    }
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[FlowRunMigrationService] run a migrated from version 2 to 3 by carl",
+                {
+                    "timersSuperseded": 0
+                }
+            ],
+            [
+                "update",
+                "b",
+                3,
+                {
+                    "decide": 1
+                },
+                [
+                    {
+                        "type": "started"
+                    },
+                    {
+                        "type": "migrated",
+                        "fromVersion": 2,
+                        "toVersion": 3,
+                        "mapping": [],
+                        "reason": "Migrated with its subject by carl",
+                        "actor": "carl"
+                    }
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[FlowRunMigrationService] run b migrated from version 2 to 3 by carl",
+                {
+                    "timersSuperseded": 0
+                }
+            ]
+        ]
+    },
+    "subject one cannot move": {
+        "result": {
+            "migrated": false,
+            "reason": "Migrated with its subject by carl",
+            "runs": [
+                {
+                    "migrated": true,
+                    "dryRun": false,
+                    "run": "a",
+                    "from": 2,
+                    "to": 3,
+                    "marking": {
+                        "intake": 1
+                    },
+                    "unmapped": [],
+                    "reason": "Migrated with its subject by carl"
+                },
+                {
+                    "migrated": false,
+                    "dryRun": false,
+                    "run": "b",
+                    "from": 2,
+                    "to": 3,
+                    "marking": [],
+                    "unmapped": [
+                        "review"
+                    ],
+                    "reason": "Version 3 has nowhere for this run to land: review. Map it to a node of the same kind, or leave the run where it is."
+                }
+            ]
+        },
+        "calls": [
+            [
+                "update",
+                "a",
+                3,
+                {
+                    "intake": 1
+                },
+                [
+                    {
+                        "type": "started"
+                    },
+                    {
+                        "type": "migrated",
+                        "fromVersion": 2,
+                        "toVersion": 3,
+                        "mapping": [],
+                        "reason": "Migrated with its subject by carl",
+                        "actor": "carl"
+                    }
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[FlowRunMigrationService] run a migrated from version 2 to 3 by carl",
+                {
+                    "timersSuperseded": 0
+                }
+            ]
+        ]
+    },
+    "subject first missing": {
+        "result": {
+            "migrated": false,
+            "reason": "That run could not be found, so nothing was migrated.",
+            "runs": [
+                {
+                    "migrated": false,
+                    "dryRun": false,
+                    "run": "a",
+                    "from": null,
+                    "to": 3,
+                    "marking": [],
+                    "unmapped": [],
+                    "reason": "That run could not be found, so nothing was migrated."
+                },
+                {
+                    "migrated": true,
+                    "dryRun": false,
+                    "run": "b",
+                    "from": 2,
+                    "to": 3,
+                    "marking": {
+                        "intake": 1
+                    },
+                    "unmapped": [],
+                    "reason": "Migrated with its subject by carl"
+                }
+            ]
+        },
+        "calls": [
+            [
+                "update",
+                "b",
+                3,
+                {
+                    "intake": 1
+                },
+                [
+                    {
+                        "type": "started"
+                    },
+                    {
+                        "type": "migrated",
+                        "fromVersion": 2,
+                        "toVersion": 3,
+                        "mapping": [],
+                        "reason": "Migrated with its subject by carl",
+                        "actor": "carl"
+                    }
+                ]
+            ],
+            [
+                "log",
+                "info",
+                "[FlowRunMigrationService] run b migrated from version 2 to 3 by carl",
+                {
+                    "timersSuperseded": 0
+                }
+            ]
+        ]
+    }
+}
