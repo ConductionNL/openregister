@@ -79,8 +79,6 @@ interface BookmarkLinkServiceInterface {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function getLinkedBookmarks(string $objectUuid): array;
@@ -95,8 +93,6 @@ interface BookmarkLinkServiceInterface {
 	 * @param array<int,string>|null $tags Optional tag filter.
 	 *
 	 * @return array<int,array{id:int,title:string,url:string,description:string,tags:array<int,string>,added:?int}>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
@@ -115,9 +111,6 @@ interface BookmarkLinkServiceInterface {
 	 * @return BookmarkLink The persisted link row.
 	 *
 	 * @throws Exception On missing user, Bookmarks unavailable, or create failure.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
