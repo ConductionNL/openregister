@@ -41,7 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\JobRunRefusedException;
-use OCA\OpenRegister\Service\OperationsConsoleService;
+use OCA\OpenRegister\Service\OperationsConsoleServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCP\AppFramework\Controller;
@@ -61,12 +61,12 @@ class OperationsConsoleController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                         $appName     Application name.
-	 * @param IRequest                       $request     HTTP request.
-	 * @param OperationsConsoleService       $console     The read model.
-	 * @param OperationsJobsServiceInterface $jobsService The run history, run now and the schedule.
-	 * @param JobAlertServiceInterface       $alerts      The administered failure threshold.
-	 * @param IUserSession                   $userSession Names the administrator acting.
+	 * @param string                            $appName     Application name.
+	 * @param IRequest                          $request     HTTP request.
+	 * @param OperationsConsoleServiceInterface $console     The read model.
+	 * @param OperationsJobsServiceInterface    $jobsService The run history, run now and the schedule.
+	 * @param JobAlertServiceInterface          $alerts      The administered failure threshold.
+	 * @param IUserSession                      $userSession Names the administrator acting.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One console, one
 	 * controller: splitting it would put the operations surface behind two
@@ -75,7 +75,7 @@ class OperationsConsoleController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OperationsConsoleService $console,
+		private readonly OperationsConsoleServiceInterface $console,
 		private readonly OperationsJobsServiceInterface $jobsService,
 		private readonly JobAlertServiceInterface $alerts,
 		private readonly IUserSession $userSession,
@@ -93,7 +93,7 @@ class OperationsConsoleController extends Controller {
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
 		return new JSONResponse(
-			data: $this->console->panes(windowHours: $this->intParam(name: 'hours', fallback: OperationsConsoleService::DEFAULT_WINDOW_HOURS))
+			data: $this->console->panes(windowHours: $this->intParam(name: 'hours', fallback: OperationsConsoleServiceInterface::DEFAULT_WINDOW_HOURS))
 		);
 	}//end index()
 
@@ -136,7 +136,7 @@ class OperationsConsoleController extends Controller {
 	public function ruleRuns(): JSONResponse {
 		return new JSONResponse(
 			data: $this->console->ruleRuns(
-				windowHours: $this->intParam(name: 'hours', fallback: OperationsConsoleService::DEFAULT_WINDOW_HOURS),
+				windowHours: $this->intParam(name: 'hours', fallback: OperationsConsoleServiceInterface::DEFAULT_WINDOW_HOURS),
 				limit: $this->intParam(name: 'limit', fallback: 50)
 			)
 		);
