@@ -98,22 +98,7 @@ class FlowTimerWorker extends TimedJob {
 	protected function run($argument): void {
 		try {
 			$now = DateTimeImmutable::createFromInterface($this->time->getDateTime());
-			$result = $this->sweep->run(now: $now, batch: $this->batchLimit());
-
-			$quiet = ($result['expiriesFired'] === 0 && $result['rungsFired'] === 0 && $result['taskTimeouts'] === 0);
-			if ($quiet === false || $result['truncated'] === true || $result['errors'] > 0) {
-				$this->logger->info(
-					message: sprintf(
-						'[FlowTimerWorker] Fired %d expiry timer(s), %d escalation rung(s) and %d task timeout(s); truncated: %s; errors: %d',
-						$result['expiriesFired'],
-						$result['rungsFired'],
-						$result['taskTimeouts'],
-						var_export($result['truncated'], true),
-						$result['errors']
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__] + $result
-				);
-			}
+			$this->report(result: $this->sweep->run(now: $now, batch: $this->batchLimit()));
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowTimerWorker] Sweep pass failed: ' . $e->getMessage(),
@@ -122,6 +107,60 @@ class FlowTimerWorker extends TimedJob {
 		}//end try
 
 	}//end run()
+
+	/**
+	 * Log a pass that did work, hit the batch limit or met errors; stay quiet otherwise.
+	 *
+	 * @param array<string, mixed> $result The sweep tally.
+	 *
+	 * @return void
+	 */
+	private function report(array $result): void {
+		if ($this->isNoteworthy(result: $result) === false) {
+			return;
+		}
+
+		$this->logger->info(
+			message: $this->summary(result: $result),
+			context: ['file' => __FILE__, 'line' => __LINE__] + $result
+		);
+
+	}//end report()
+
+	/**
+	 * Whether a pass fired anything, was truncated or met errors.
+	 *
+	 * @param array<string, mixed> $result The sweep tally.
+	 *
+	 * @return bool
+	 */
+	private function isNoteworthy(array $result): bool {
+		return $result['expiriesFired'] !== 0
+			|| $result['rungsFired'] !== 0
+			|| $result['taskTimeouts'] !== 0
+			|| $result['truncated'] === true
+			|| $result['errors'] > 0;
+
+	}//end isNoteworthy()
+
+	/**
+	 * The one-line summary of a pass.
+	 *
+	 * @param array<string, mixed> $result The sweep tally.
+	 *
+	 * @return string
+	 */
+	private function summary(array $result): string {
+		return sprintf(
+			'[FlowTimerWorker] Fired %d expiry timer(s), %d escalation rung(s) and %d task timeout(s); truncated: %s; errors: %d',
+			$result['expiriesFired'],
+			$result['rungsFired'],
+			$result['taskTimeouts'],
+			var_export($result['truncated'], true),
+			$result['errors']
+		);
+
+	}//end summary()
 
 	/**
 	 * The batch limit: configured, else the default; never below one.
