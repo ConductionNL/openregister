@@ -215,7 +215,7 @@ class LlmSettingsControllerActionsGoldenTest extends TestCase {
 	/**
 	 * Build a backend result, or throw when the case asks for it.
 	 *
-	 * @param array<string, mixed> $case  The case options.
+	 * @param array<string, mixed> $case The case options.
 	 * @param array<string, mixed> $extra Fields merged after the success flag.
 	 *
 	 * @return array<string, mixed> The result.
@@ -231,7 +231,7 @@ class LlmSettingsControllerActionsGoldenTest extends TestCase {
 	/**
 	 * Compare a recording with the fixture, or rewrite it under UPDATE_GOLDEN=1.
 	 *
-	 * @param string               $key    The case name.
+	 * @param string $key The case name.
 	 * @param array<string, mixed> $actual The recording.
 	 *
 	 * @return void
