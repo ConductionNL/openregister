@@ -583,18 +583,33 @@ class RenderObject {
 		}
 
 		foreach ($rows as &$row) {
-			if ($row instanceof ObjectEntity === true) {
-				$this->translateEntityRow(row: $row);
-				continue;
-			}
-
-			if (is_array($row) === true) {
-				$row = $this->translateArrayRow(row: $row);
-			}
+			$row = $this->translatedRow(row: $row);
 		}
 
 		unset($row);
 	}//end resolveTranslationsForRows()
+
+	/**
+	 * One list row with its translations resolved; a row of another shape stays as it is.
+	 *
+	 * @param mixed $row The row.
+	 *
+	 * @return mixed The row.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function translatedRow(mixed $row): mixed {
+		if ($row instanceof ObjectEntity === true) {
+			$this->translateEntityRow(row: $row);
+			return $row;
+		}
+
+		if (is_array($row) === true) {
+			return $this->translateArrayRow(row: $row);
+		}
+
+		return $row;
+	}//end translatedRow()
 
 	/**
 	 * Resolve the translations of one entity row; without a known schema it stays as it is.
@@ -635,24 +650,53 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function translateArrayRow(array $row): array {
-		$schemaId = $row['@self']['schema'] ?? null;
-		$schema = null;
-		if (is_int($schemaId) === true || is_string($schemaId) === true) {
-			$schema = $this->getSchema(id: $schemaId);
-		}
-
+		$schema = $this->arrayRowSchema(row: $row);
 		if ($schema === null) {
 			return $row;
 		}
 
-		$registerId = $row['@self']['register'] ?? null;
-		$register = null;
-		if (is_int($registerId) === true || is_string($registerId) === true) {
-			$register = $this->getRegister(id: $registerId);
+		return $this->translationHandler->resolveTranslationsForRender(
+			objectData: $row,
+			schema: $schema,
+			register: $this->arrayRowRegister(row: $row)
+		);
+	}//end translateArrayRow()
+
+	/**
+	 * The schema a serialized row names in @self.
+	 *
+	 * @param array $row The row.
+	 *
+	 * @return Schema|null The schema, or null when the row names none that is known.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function arrayRowSchema(array $row): ?Schema {
+		$schemaId = ($row['@self']['schema'] ?? null);
+		if (is_int($schemaId) === true || is_string($schemaId) === true) {
+			return $this->getSchema(id: $schemaId);
 		}
 
-		return $this->translationHandler->resolveTranslationsForRender(objectData: $row, schema: $schema, register: $register);
-	}//end translateArrayRow()
+		return null;
+	}//end arrayRowSchema()
+
+	/**
+	 * The register a serialized row names in @self.
+	 *
+	 * @param array $row The row.
+	 *
+	 * @return Register|null The register, or null when the row names none that is known.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function arrayRowRegister(array $row): ?Register {
+		$registerId = ($row['@self']['register'] ?? null);
+		if (is_int($registerId) === true || is_string($registerId) === true) {
+			return $this->getRegister(id: $registerId);
+		}
+
+		return null;
+	}//end arrayRowRegister()
 
 	/**
 	 * Resolve the declared lenses on a batch of un-rendered list rows.
@@ -677,18 +721,34 @@ class RenderObject {
 		}
 
 		foreach ($rows as $row) {
-			if ($row instanceof ObjectEntity === false || $row->getSchema() === null) {
-				continue;
+			if ($row instanceof ObjectEntity === true) {
+				$this->applyLensToRow(row: $row, rbac: $_rbac);
 			}
-
-			$schema = $this->getSchema(id: $row->getSchema());
-			if ($schema === null || $schema->getLenses() === []) {
-				continue;
-			}
-
-			$row->setObject($this->applyLens(schema: $schema, objectData: ($row->getObject() ?? []), rbac: $_rbac));
 		}
 	}//end applyLensesToRows()
+
+	/**
+	 * Resolve one entity row's lenses; a row whose schema declares none stays as it is.
+	 *
+	 * @param ObjectEntity $row  The row, changed in place.
+	 * @param bool         $rbac Whether the reader's access to the referenced object is checked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lenses/spec.md
+	 */
+	private function applyLensToRow(ObjectEntity $row, bool $rbac): void {
+		if ($row->getSchema() === null) {
+			return;
+		}
+
+		$schema = $this->getSchema(id: $row->getSchema());
+		if ($schema === null || $schema->getLenses() === []) {
+			return;
+		}
+
+		$row->setObject($this->applyLens(schema: $schema, objectData: ($row->getObject() ?? []), rbac: $rbac));
+	}//end applyLensToRow()
 
 	/**
 	 * Redact write-only properties from cheap-path list rows (openregister#380, ocon#147).
@@ -1172,19 +1232,10 @@ class RenderObject {
 		}
 
 		// Magic-mapper rows expose the UUID at @self.id.
-		if (isset($row['@self']['id']) === true && is_string($row['@self']['id']) === true) {
-			return $row['@self']['id'];
-		}
+		$candidates = [($row['@self']['id'] ?? null), ($row['@self']['uuid'] ?? null), ($row['id'] ?? null)];
+		$uuids = array_filter($candidates, 'is_string');
 
-		if (isset($row['@self']['uuid']) === true && is_string($row['@self']['uuid']) === true) {
-			return $row['@self']['uuid'];
-		}
-
-		if (isset($row['id']) === true && is_string($row['id']) === true) {
-			return $row['id'];
-		}
-
-		return null;
+		return array_shift($uuids);
 	}//end extractRowUuid()
 
 	/**
@@ -1958,12 +2009,11 @@ class RenderObject {
 			$this->applyReadRule(rbac: $_rbac, multitenancy: $_multitenancy);
 		}
 
-		$this->primeRenderCaches(registers: $registers, schemas: $schemas, objects: $objects);
-
 		$context = new RenderContext(
 			$_extend, $depth, $filter, self::withIdentityFields(fields: $fields), $unset,
 			$registers, $schemas, $objects, self::withVisitedId(entity: $entity, visitedIds: $visitedIds), $_rbac
 		);
+		$this->primeRenderCaches(context: $context);
 
 		$rendered = $this->renderWithContext(entity: $entity, context: $context);
 		$this->renderedEntities ??= new WeakMap();
@@ -2066,27 +2116,33 @@ class RenderObject {
 	/**
 	 * Add preloaded registers, schemas and objects to the render caches.
 	 *
-	 * @param array|null $registers Preloaded registers keyed by id
-	 * @param array|null $schemas   Preloaded schemas keyed by id
-	 * @param array|null $objects   Preloaded objects keyed by id
+	 * @param RenderContext $context The render options, with the preloaded registers, schemas and objects
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function primeRenderCaches(?array $registers, ?array $schemas, ?array $objects): void {
-		foreach ($registers ?? [] as $id => $register) {
-			$this->registersCache[$id] = $register;
-		}
-
-		foreach ($schemas ?? [] as $id => $schema) {
-			$this->schemasCache[$id] = $schema;
-		}
-
-		foreach ($objects ?? [] as $id => $object) {
-			$this->objectsCache[$id] = $object;
-		}
+	private function primeRenderCaches(RenderContext $context): void {
+		self::primeCache(cache: $this->registersCache, entries: $context->registers);
+		self::primeCache(cache: $this->schemasCache, entries: $context->schemas);
+		self::primeCache(cache: $this->objectsCache, entries: $context->objects);
 	}//end primeRenderCaches()
+
+	/**
+	 * Add preloaded entries to one render cache.
+	 *
+	 * @param array      $cache   The cache, changed in place
+	 * @param array|null $entries The preloaded entries keyed by id
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function primeCache(array &$cache, ?array $entries): void {
+		foreach ($entries ?? [] as $id => $entry) {
+			$cache[$id] = $entry;
+		}
+	}//end primeCache()
 
 	/**
 	 * Whether this entity was already rendered on the current path.
@@ -2514,12 +2570,7 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private static function normalizeExtend(array|string|null $extend, array $objectData): ?array {
-		if (is_array($extend) === true && in_array('all', $extend, true) === true) {
-			$extend = self::expandExtendAll(extend: $extend, objectData: $objectData);
-		} elseif (is_string($extend) === true) {
-			$extend = explode(',', $extend);
-		}
-
+		$extend = self::expandedExtend(extend: $extend, objectData: $objectData);
 		if (is_array($extend) === false) {
 			return $extend;
 		}
@@ -2538,6 +2589,28 @@ class RenderObject {
 
 		return $extend;
 	}//end normalizeExtend()
+
+	/**
+	 * An extend parameter as a list: a string split on commas, `all` in a list expanded.
+	 *
+	 * @param array|string|null $extend     The extend parameter
+	 * @param array             $objectData The object data
+	 *
+	 * @return array|null
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function expandedExtend(array|string|null $extend, array $objectData): array|null {
+		if (is_string($extend) === true) {
+			return explode(',', $extend);
+		}
+
+		if (is_array($extend) === true && in_array('all', $extend, true) === true) {
+			return self::expandExtendAll(extend: $extend, objectData: $objectData);
+		}
+
+		return $extend;
+	}//end expandedExtend()
 
 	/**
 	 * Add every property whose value is not the object's id or origin id to the extend list.
@@ -2953,14 +3026,28 @@ class RenderObject {
 		}
 
 		try {
-			$completeness = $this->translationStatusService->completenessForObject((string) $entity->getUuid(), $schema);
-			if (count($completeness) > 0) {
-				$entity->setTranslationCompleteness($completeness);
-			}
+			$this->setTranslationCompleteness(entity: $entity, schema: $schema);
 		} catch (\Throwable $e) {
 			$this->logRenderFailure(failure: 'translation completeness lookup failed for', entity: $entity, error: $e);
 		}
 	}//end applyTranslationCompleteness()
+
+	/**
+	 * Set the completeness the translation status answers, when it has any.
+	 *
+	 * @param ObjectEntity $entity The rendered entity
+	 * @param Schema       $schema The object's schema
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function setTranslationCompleteness(ObjectEntity $entity, Schema $schema): void {
+		$completeness = $this->translationStatusService->completenessForObject((string) $entity->getUuid(), $schema);
+		if (count($completeness) > 0) {
+			$entity->setTranslationCompleteness($completeness);
+		}
+	}//end setTranslationCompleteness()
 
 	/**
 	 * Set the registry subscription state, only for a schema declaring `x-openregister-registry`.
@@ -2973,24 +3060,42 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function applyRegistryState(ObjectEntity $entity, ?Schema $schema): void {
-		if ($this->container === null || $schema === null || $entity->getUuid() === null) {
+		if ($schema === null || $entity->getUuid() === null) {
 			return;
 		}
 
 		try {
-			$registrySubscriptions = $this->container->get(RegistrySubscriptionService::class);
-			if ($registrySubscriptions->annotationFor(schema: $schema) === null) {
-				return;
-			}
-
-			$registryState = $registrySubscriptions->stateFor((string) $entity->getUuid());
-			if ($registryState !== null) {
-				$entity->setRegistryState($registryState);
-			}
+			$this->setRegistryState(entity: $entity, schema: $schema);
 		} catch (\Throwable $e) {
 			$this->logRenderFailure(failure: 'registry subscription state lookup failed for', entity: $entity, error: $e);
 		}
 	}//end applyRegistryState()
+
+	/**
+	 * Set the subscription state of an object whose schema declares a registry.
+	 *
+	 * @param ObjectEntity $entity The rendered entity
+	 * @param Schema       $schema The object's schema
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function setRegistryState(ObjectEntity $entity, Schema $schema): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$registrySubscriptions = $this->container->get(RegistrySubscriptionService::class);
+		if ($registrySubscriptions->annotationFor(schema: $schema) === null) {
+			return;
+		}
+
+		$registryState = $registrySubscriptions->stateFor((string) $entity->getUuid());
+		if ($registryState !== null) {
+			$entity->setRegistryState($registryState);
+		}
+	}//end setRegistryState()
 
 	/**
 	 * Log a render step that failed without failing the render.
@@ -4001,21 +4106,19 @@ class RenderObject {
 	 * @return int|null The shared register id.
 	 */
 	private function sharedRegisterIdOf(array $entities): ?int {
-		$shared = null;
+		$registerIds = [];
 		foreach ($entities as $entity) {
-			if ($entity instanceof ObjectEntity === false) {
-				continue;
+			if ($entity instanceof ObjectEntity === true) {
+				$registerIds[] = $this->registerIdOf(entity: $entity);
 			}
-
-			$registerId = $this->registerIdOf(entity: $entity);
-			if ($registerId === null || ($shared !== null && $shared !== $registerId)) {
-				return null;
-			}
-
-			$shared = $registerId;
 		}
 
-		return $shared;
+		$distinct = array_values(array_unique($registerIds));
+		if (count($distinct) !== 1) {
+			return null;
+		}
+
+		return $distinct[0];
 	}//end sharedRegisterIdOf()
 
 	/**
@@ -4352,48 +4455,87 @@ class RenderObject {
 			return $cleanSchemaRef;
 		}
 
-		// If it's a UUID, try to find the schema by UUID.
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef) === 1) {
-			try {
-				$schema = $this->schemaMapper->find($cleanSchemaRef);
-				return (string)$schema->getId();
-			} catch (\Exception $e) {
-				// If not found by UUID, continue with other methods.
-			}
+		// If all else fails, try to use the reference as-is.
+		return ($this->schemaIdByUuid(reference: $cleanSchemaRef)
+			?? $this->schemaIdByPath(reference: $cleanSchemaRef)
+			?? $this->schemaIdBySlug(slug: $cleanSchemaRef)
+			?? $cleanSchemaRef);
+	}//end resolveSchemaReference()
+
+	/**
+	 * The id of the schema a UUID names.
+	 *
+	 * @param string $reference The schema reference.
+	 *
+	 * @return string|null The id, or null when the reference is no UUID or no schema answers to it.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function schemaIdByUuid(string $reference): ?string {
+		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $reference) !== 1) {
+			return null;
 		}
 
-		// Handle JSON Schema path references (e.g., "#/components/schemas/organisatie").
-		if (str_contains($cleanSchemaRef, '/') === true) {
-			$lastSegment = basename($cleanSchemaRef);
-			// Remove any file extension or fragment.
-			$lastSegment = preg_replace('/\.[^.]*$/', '', $lastSegment);
-			$lastSegment = preg_replace('/#.*$/', '', $lastSegment);
+		try {
+			return (string)$this->schemaMapper->find($reference)->getId();
+		} catch (\Exception $e) {
+			return null;
+		}
+	}//end schemaIdByUuid()
 
-			// Try to find schema by slug (case-insensitive).
-			// Bypass RBAC and multi-tenancy since this is an internal schema resolution.
-			try {
-				$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
-				foreach ($schemas as $schema) {
-					if (strtolower($schema->getSlug() ?? '') === strtolower($lastSegment)) {
-						return (string)$schema->getId();
-					}
-				}
-			} catch (\Exception $e) {
-				// If not found by slug, continue.
-			}
+	/**
+	 * The id of the schema a JSON Schema path names by its last segment (e.g. "#/components/schemas/organisatie").
+	 *
+	 * Bypasses RBAC and multi-tenancy: this is an internal schema resolution.
+	 *
+	 * @param string $reference The schema reference.
+	 *
+	 * @return string|null The id, or null when the reference is no path or no slug matches, ignoring case.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function schemaIdByPath(string $reference): ?string {
+		if (str_contains($reference, '/') === false) {
+			return null;
 		}
 
-		// If it's a slug, try to find the schema by slug.
-		// Bypass RBAC and multi-tenancy since this is an internal schema resolution.
-		$schemas = $this->schemaMapper->findAll(filters: ['slug' => $cleanSchemaRef], _rbac: false, _multitenancy: false);
+		// Remove any file extension or fragment.
+		$lastSegment = preg_replace('/\.[^.]*$/', '', basename($reference));
+		$lastSegment = strtolower(preg_replace('/#.*$/', '', $lastSegment));
 
+		try {
+			$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+		} catch (\Exception $e) {
+			return null;
+		}
+
+		$matches = array_filter($schemas, static fn ($schema) => strtolower($schema->getSlug() ?? '') === $lastSegment);
+		if ($matches === []) {
+			return null;
+		}
+
+		return (string)reset($matches)->getId();
+	}//end schemaIdByPath()
+
+	/**
+	 * The id of the one schema with a slug.
+	 *
+	 * Bypasses RBAC and multi-tenancy: this is an internal schema resolution.
+	 *
+	 * @param string $slug The slug.
+	 *
+	 * @return string|null The id, or null unless exactly one schema has the slug.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function schemaIdBySlug(string $slug): ?string {
+		$schemas = $this->schemaMapper->findAll(filters: ['slug' => $slug], _rbac: false, _multitenancy: false);
 		if (count($schemas) === 1) {
 			return (string)array_shift($schemas)->getId();
 		}
 
-		// If all else fails, try to use the reference as-is.
-		return $cleanSchemaRef;
-	}//end resolveSchemaReference()
+		return null;
+	}//end schemaIdBySlug()
 
 	/**
 	 * Removes query parameters from a reference string.
