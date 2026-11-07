@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -51,12 +51,12 @@ class ExampleSetRemoveCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetRemover $remover Deletes what the record holds.
+	 * @param ExampleSetRemoverInterface $remover Deletes what the record holds.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExampleSetRemover $remover,
+		private readonly ExampleSetRemoverInterface $remover,
 	) {
 		parent::__construct();
 	}//end __construct()
