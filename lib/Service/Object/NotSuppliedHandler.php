@@ -130,9 +130,8 @@ class NotSuppliedHandler {
 				property: (string)$property,
 				reason: $reason,
 				object: $object,
-				properties: $properties,
-				reasons: $reasons
-			);
+				properties: $properties
+			) ?? $this->refuseReason(property: (string)$property, reason: $reason, reasons: $reasons);
 
 			if ($refusal !== null) {
 				$violations[] = $refusal;
@@ -149,13 +148,13 @@ class NotSuppliedHandler {
 	 * there, the property has to exist, it cannot also carry a value, and the
 	 * reason has to be one this schema administers. The first that fires is the
 	 * one returned, because a property refused for two reasons at once is a
-	 * message nobody can act on.
+	 * message nobody can act on. This unit checks the first three; the caller
+	 * asks refuseReason() for the fourth only when none of them fired.
 	 *
 	 * @param string $property The property named in the record.
 	 * @param mixed $reason The reason code it was marked with.
 	 * @param array $object The candidate object body.
 	 * @param array $properties The schema's declared properties.
-	 * @param array<string, string> $reasons The reasons this schema administers.
 	 *
 	 * @return array{property: string, code: string, message: string}|null The refusal, or null.
 	 *
@@ -166,7 +165,6 @@ class NotSuppliedHandler {
 		mixed $reason,
 		array $object,
 		array $properties,
-		array $reasons,
 	): ?array {
 		if (is_string($reason) === false || $reason === '') {
 			return [
@@ -192,6 +190,24 @@ class NotSuppliedHandler {
 			];
 		}
 
+		return null;
+	}//end refuseEntry()
+
+	/**
+	 * The fourth rule: the reason has to be one this schema administers.
+	 *
+	 * Only asked once refuseEntry() found nothing, so the reason is a
+	 * non-empty string here.
+	 *
+	 * @param string $property The property named in the record.
+	 * @param mixed $reason The reason code it was marked with.
+	 * @param array<string, string> $reasons The reasons this schema administers.
+	 *
+	 * @return array{property: string, code: string, message: string}|null The refusal, or null.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function refuseReason(string $property, mixed $reason, array $reasons): ?array {
 		if ($reasons === []) {
 			return [
 				'property' => $property,
@@ -211,7 +227,7 @@ class NotSuppliedHandler {
 		}
 
 		return null;
-	}//end refuseEntry()
+	}//end refuseReason()
 
 	/**
 	 * Whether the body answers a property at all.
