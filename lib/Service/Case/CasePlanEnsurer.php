@@ -521,27 +521,10 @@ class CasePlanEnsurer {
 			parentId: $parentId,
 			position: $position,
 			settings: $context['settings'],
-			origin: self::originOf(node: $node),
+			origin: $this->definitions->originOf(node: $node),
 			actor: (string)$context['actor']
 		);
 	}//end rowFor()
-
-	/**
-	 * Where a definition node comes from: discretionary, or defined.
-	 *
-	 * @param array<string, mixed> $node The validated node.
-	 *
-	 * @return string The origin.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
-	 */
-	private static function originOf(array $node): string {
-		if (($node['discretionary'] ?? false) === true) {
-			return CaseItem::ORIGIN_DISCRETIONARY;
-		}
-
-		return CaseItem::ORIGIN_DEFINED;
-	}//end originOf()
 
 	/**
 	 * Put the state a node carries on its unsaved row; a row that is past

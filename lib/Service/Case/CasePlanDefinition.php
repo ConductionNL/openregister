@@ -259,6 +259,24 @@ class CasePlanDefinition {
 	}//end rowFrom()
 
 	/**
+	 * Where a definition node comes from: a discretionary node waits to be
+	 * enabled, every other one is defined.
+	 *
+	 * @param array<string, mixed> $node The normalised node.
+	 *
+	 * @return string discretionary | defined.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 */
+	public function originOf(array $node): string {
+		if (($node['discretionary'] ?? false) === true) {
+			return CaseItem::ORIGIN_DISCRETIONARY;
+		}
+
+		return CaseItem::ORIGIN_DEFINED;
+	}//end originOf()
+
+	/**
 	 * A new row carrying the node's key, name and description.
 	 *
 	 * @param array<string, mixed> $node The normalised node.
