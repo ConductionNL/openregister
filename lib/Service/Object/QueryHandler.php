@@ -595,7 +595,8 @@ class QueryHandler {
 	private function renderListRows(array $query, array $searchResult, array $scope, ArrayObject $metrics): mixed {
 		$results       = $searchResult['results'];
 		$extend        = self::rowExtend(query: $query);
-		$needsRender   = self::needsRendering(query: $query, extend: $extend, schemas: $searchResult['schemas'] ?? []);
+		$renderNeed    = new SearchRenderNeed();
+		$needsRender   = $renderNeed->asked(query: $query, extend: $extend) || $renderNeed->declaredBy(schemas: ($searchResult['schemas'] ?? []));
 		if (is_array($results) === false) {
 			return $results;
 		}
@@ -642,72 +643,6 @@ class QueryHandler {
 			}
 		);
 	}//end rowExtend()
-
-	/**
-	 * Whether the rows need the full render pipeline.
-	 *
-	 * @param array $query   The search query
-	 * @param array $extend  The row extend list
-	 * @param array $schemas The schemas of the result, as entities or serialized arrays
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
-	 */
-	private static function needsRendering(array $query, array $extend, array $schemas): bool {
-		return empty($extend) === false
-			|| empty($query['_fields'] ?? null) === false
-			|| empty($query['_filter'] ?? null) === false
-			|| empty($query['_unset'] ?? null) === false
-			|| self::declaresPropertyAuthorization(schemas: $schemas) === true
-			|| self::declaresLenses(schemas: $schemas) === true;
-	}//end needsRendering()
-
-	/**
-	 * Whether any schema has property-level authorization.
-	 *
-	 * @param array $schemas Schema entities or serialized schema arrays
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
-	 */
-	private static function declaresPropertyAuthorization(array $schemas): bool {
-		foreach ($schemas as $schema) {
-			if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
-				if ($schema->hasPropertyAuthorization() === true) {
-					return true;
-				}
-
-				continue;
-			}
-
-			if (is_array($schema) === true && self::propertiesDeclareAuthorization(properties: $schema['properties'] ?? null) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end declaresPropertyAuthorization()
-
-	/**
-	 * Whether a serialized schema's properties carry a non-empty `authorization`.
-	 *
-	 * @param mixed $properties The `properties` of a serialized schema
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
-	 */
-	private static function propertiesDeclareAuthorization(mixed $properties): bool {
-		foreach ($properties ?? [] as $propertyConfig) {
-			if (is_array($propertyConfig) === true && empty($propertyConfig['authorization'] ?? null) === false) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end propertiesDeclareAuthorization()
 
 	/**
 	 * The cheap path for rows that skip renderEntities().
@@ -843,28 +778,4 @@ class QueryHandler {
 		return trim($term);
 	}//end plainSearchTerm()
 
-	/**
-	 * Whether any of the schemas declares a lens. A lens is resolved while an
-	 * object is rendered, so rows of such a schema take the render path, or a
-	 * list would answer without the values a single read shows.
-	 *
-	 * @param array<int|string, mixed> $schemas Schema entities or serialised schemas.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	public static function declaresLenses(array $schemas): bool {
-		foreach ($schemas as $schema) {
-			if ($schema instanceof \OCA\OpenRegister\Db\Schema && $schema->getLenses() !== []) {
-				return true;
-			}
-
-			if (is_array($schema) === true && empty($schema['configuration'][\OCA\OpenRegister\Db\Schema::LENS_ANNOTATION] ?? null) === false) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end declaresLenses()
 }//end class

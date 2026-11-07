@@ -20,6 +20,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Object\QueryHandler
  * @uses \OCA\OpenRegister\Service\Object\SearchPaging
  * @uses \OCA\OpenRegister\Service\Object\SearchResponseReports
+ * @uses \OCA\OpenRegister\Service\Object\SearchRenderNeed
  */
 class QueryHandlerCountScopeTest extends TestCase {
 	public function testACountUnderMultitenancyPassesTheActiveOrganisation(): void {
