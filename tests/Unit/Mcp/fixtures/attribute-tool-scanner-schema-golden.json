@@ -149,6 +149,43 @@
             }
         },
         {
+            "id": "demo.classUnions",
+            "name": "classUnions",
+            "description": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture::classUnions (no description declared).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "v": {
+                        "type": "object"
+                    },
+                    "n": {
+                        "type": [
+                            "object",
+                            "null"
+                        ]
+                    },
+                    "o": {
+                        "type": [
+                            "object",
+                            "integer"
+                        ]
+                    }
+                },
+                "required": [
+                    "v",
+                    "n",
+                    "o"
+                ]
+            },
+            "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+            "method": "classUnions",
+            "paramNames": [
+                "v",
+                "n",
+                "o"
+            ]
+        },
+        {
             "id": "demo.voidReturn",
             "name": "voidReturn",
             "description": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture::voidReturn (no description declared).",

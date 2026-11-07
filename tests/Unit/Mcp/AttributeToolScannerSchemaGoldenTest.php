@@ -65,6 +65,12 @@ class AttributeToolScannerSchemaFixture
     }
 
     #[McpTool]
+    public function classUnions(Countable|Stringable $v, Countable|Stringable|null $n, Countable|int $o): Countable|Stringable
+    {
+        return $v;
+    }
+
+    #[McpTool]
     public function voidReturn(): void
     {
     }
