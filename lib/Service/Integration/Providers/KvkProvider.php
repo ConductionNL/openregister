@@ -53,7 +53,6 @@ use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * KvK company-lookup integration provider — external, OpenConnector-backed.
@@ -65,6 +64,7 @@ use Throwable;
  */
 class KvkProvider extends AbstractIntegrationProvider {
 
+	use CompanySearchLeaf;
 	use ConnectorRoutedProviderTrait;
 
 	/**
@@ -85,6 +85,20 @@ class KvkProvider extends AbstractIntegrationProvider {
 	// rather than one spelling of it. Never compare it to an id directly —
 	// go through FleetAppId, or the comparison is false on half the fleet.
 	private const REQUIRED_APP = 'integriq';
+
+	/**
+	 * The KvK Zoeken API endpoint every lookup GETs.
+	 *
+	 * @var string
+	 */
+	private const SEARCH_PATH = 'zoeken';
+
+	/**
+	 * The KvK query names of the list() filters.
+	 *
+	 * @var array<string, string>
+	 */
+	private const LIST_PARAMS = ['search' => 'naam', 'limit' => 'aantal', 'page' => 'pagina'];
 
 	/**
 	 * Constructor.
@@ -176,30 +190,7 @@ class KvkProvider extends AbstractIntegrationProvider {
 	 *   object-independent so they are intentionally unused.
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$query = [];
-		$search = (string)($filters['_search'] ?? '');
-		if ($search !== '') {
-			$query['naam'] = $search;
-		}
-
-		$limit = (int)($filters['_limit'] ?? 0);
-		if ($limit > 0) {
-			$query['aantal'] = (string)min(100, $limit);
-		}
-
-		$page = (int)($filters['_page'] ?? 0);
-		if ($page > 0) {
-			$query['pagina'] = (string)$page;
-		}
-
-		$response = $this->router->call(
-			provider: $this,
-			method: 'GET',
-			path: 'zoeken',
-			options: ['query' => $query, 'headers' => ['Accept' => 'application/json']]
-		);
-
-		return $this->extractRows(response: $response);
+		return $this->extractRows(response: $this->searchCall(query: $this->listQuery(filters: $filters)));
 	}//end list()
 
 	/**
@@ -225,26 +216,7 @@ class KvkProvider extends AbstractIntegrationProvider {
 			return ['results' => [], 'total' => 0];
 		}
 
-		try {
-			$response = $this->router->call(
-				provider: $this,
-				method: 'GET',
-				path: 'zoeken',
-				options: [
-					'query' => ['kvkNummer' => $kvkNumber],
-					'headers' => ['Accept' => 'application/json'],
-				]
-			);
-		} catch (ProviderUnavailableException $e) {
-			return $this->degraded(cause: $e->getCause());
-		} catch (Throwable $e) {
-			$this->logger->warning('KvkProvider::lookupByKvkNumber failed: ' . $e->getMessage());
-			return $this->degraded(cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN);
-		}
-
-		$rows = $this->extractRows(response: $response);
-
-		return ['results' => $rows, 'total' => count($rows)];
+		return $this->lookup(params: ['kvkNummer' => $kvkNumber], lookup: new CompanyLookup(operation: 'KvkProvider::lookupByKvkNumber'));
 	}//end lookupByKvkNumber()
 
 	/**
@@ -279,56 +251,8 @@ class KvkProvider extends AbstractIntegrationProvider {
 		$params['aantal'] = (string)$limit;
 		$params['pagina'] = (string)$page;
 
-		try {
-			$response = $this->router->call(
-				provider: $this,
-				method: 'GET',
-				path: 'zoeken',
-				options: ['query' => $params, 'headers' => ['Accept' => 'application/json']]
-			);
-		} catch (ProviderUnavailableException $e) {
-			return $this->degraded(cause: $e->getCause(), limit: $limit, page: $page);
-		} catch (Throwable $e) {
-			$this->logger->warning('KvkProvider::searchCompanies failed: ' . $e->getMessage());
-			return $this->degraded(cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, limit: $limit, page: $page);
-		}
-
-		$rows = $this->extractRows(response: $response);
-
-		return [
-			'results' => $rows,
-			'total' => count($rows),
-			'limit' => $limit,
-			'page' => $page,
-		];
+		return $this->lookup(params: $params, lookup: new CompanyLookup(operation: 'KvkProvider::searchCompanies', limit: $limit, page: $page));
 	}//end searchCompanies()
-
-	/**
-	 * Build the degraded envelope mirroring the unconfigured-source
-	 * descriptor so the lookup shape stays stable across success +
-	 * degraded paths (AD-23).
-	 *
-	 * @param string $cause One of the ProviderUnavailableException CAUSE_* values.
-	 * @param int $limit Optional resolved limit (search paths).
-	 * @param int $page Optional resolved page (search paths).
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function degraded(string $cause, int $limit = 0, int $page = 0): array {
-		$state = [
-			'unavailable' => true,
-			'cause' => $cause,
-			'results' => [],
-			'total' => 0,
-		];
-
-		if ($limit > 0) {
-			$state['limit'] = $limit;
-			$state['page'] = $page;
-		}
-
-		return $state;
-	}//end degraded()
 
 	/**
 	 * Pull the result rows out of a KvK response envelope. KvK wraps search
@@ -340,7 +264,7 @@ class KvkProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	private function extractRows(array $response): array {
+	protected function extractRows(array $response): array {
 		$rows = [];
 		if (isset($response['resultaten']) === true && is_array($response['resultaten']) === true) {
 			$rows = $response['resultaten'];
@@ -348,13 +272,6 @@ class KvkProvider extends AbstractIntegrationProvider {
 			$rows = $response;
 		}
 
-		$out = [];
-		foreach ($rows as $row) {
-			if (is_array($row) === true) {
-				$out[] = $row;
-			}
-		}
-
-		return $out;
+		return $this->arrayRows(rows: $rows);
 	}//end extractRows()
 }//end class

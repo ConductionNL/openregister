@@ -52,7 +52,6 @@ use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * OpenCorporates company-search integration provider — external,
@@ -65,6 +64,7 @@ use Throwable;
  */
 class OpenCorporatesProvider extends AbstractIntegrationProvider {
 
+	use CompanySearchLeaf;
 	use ConnectorRoutedProviderTrait;
 
 	/**
@@ -85,6 +85,20 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	// rather than one spelling of it. Never compare it to an id directly —
 	// go through FleetAppId, or the comparison is false on half the fleet.
 	private const REQUIRED_APP = 'integriq';
+
+	/**
+	 * The OpenCorporates endpoint every search GETs.
+	 *
+	 * @var string
+	 */
+	private const SEARCH_PATH = 'companies/search';
+
+	/**
+	 * The OpenCorporates query names of the list() filters.
+	 *
+	 * @var array<string, string>
+	 */
+	private const LIST_PARAMS = ['search' => 'q', 'limit' => 'per_page', 'page' => 'page'];
 
 	/**
 	 * Constructor.
@@ -178,30 +192,7 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 *   object-independent so they are intentionally unused.
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$query = [];
-		$search = (string)($filters['_search'] ?? '');
-		if ($search !== '') {
-			$query['q'] = $search;
-		}
-
-		$limit = (int)($filters['_limit'] ?? 0);
-		if ($limit > 0) {
-			$query['per_page'] = (string)min(100, $limit);
-		}
-
-		$page = (int)($filters['_page'] ?? 0);
-		if ($page > 0) {
-			$query['page'] = (string)$page;
-		}
-
-		$response = $this->router->call(
-			provider: $this,
-			method: 'GET',
-			path: 'companies/search',
-			options: ['query' => $query, 'headers' => ['Accept' => 'application/json']]
-		);
-
-		return $this->extractRows(response: $response);
+		return $this->extractRows(response: $this->searchCall(query: $this->listQuery(filters: $filters)));
 	}//end list()
 
 	/**
@@ -225,67 +216,32 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	public function searchCompanies(string $query, ?string $jurisdiction = null, int $limit = 30, int $page = 1): array {
 		$limit = max(1, min(100, $limit));
 		$page = max(1, $page);
-
-		$params = [
-			'per_page' => (string)$limit,
-			'page' => (string)$page,
-			'order' => 'score',
-		];
+		$params = ['per_page' => (string)$limit, 'page' => (string)$page, 'order' => 'score'];
 
 		$query = trim($query);
 		if ($query !== '') {
 			$params['q'] = $query;
 		}
 
+		$lookup = new CompanyLookup(operation: 'OpenCorporatesProvider::searchCompanies', limit: $limit, page: $page);
+		return $this->lookup(params: $this->withJurisdiction(params: $params, jurisdiction: $jurisdiction), lookup: $lookup);
+	}//end searchCompanies()
+
+	/**
+	 * Add a non-blank jurisdiction filter (trimmed) to the search query.
+	 *
+	 * @param array<string, string> $params The query so far.
+	 * @param string|null $jurisdiction The jurisdiction code, or null.
+	 *
+	 * @return array<string, string> The query parameters.
+	 */
+	private function withJurisdiction(array $params, ?string $jurisdiction): array {
 		if ($jurisdiction !== null && trim($jurisdiction) !== '') {
 			$params['jurisdiction_code'] = trim($jurisdiction);
 		}
 
-		try {
-			$response = $this->router->call(
-				provider: $this,
-				method: 'GET',
-				path: 'companies/search',
-				options: ['query' => $params, 'headers' => ['Accept' => 'application/json']]
-			);
-		} catch (ProviderUnavailableException $e) {
-			return $this->degraded(cause: $e->getCause(), limit: $limit, page: $page);
-		} catch (Throwable $e) {
-			$this->logger->warning('OpenCorporatesProvider::searchCompanies failed: ' . $e->getMessage());
-			return $this->degraded(cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, limit: $limit, page: $page);
-		}
-
-		$rows = $this->extractRows(response: $response);
-
-		return [
-			'results' => $rows,
-			'total' => count($rows),
-			'limit' => $limit,
-			'page' => $page,
-		];
-	}//end searchCompanies()
-
-	/**
-	 * Build the degraded envelope mirroring the unconfigured-source
-	 * descriptor so the search shape stays stable across success +
-	 * degraded paths (AD-23).
-	 *
-	 * @param string $cause One of the ProviderUnavailableException CAUSE_* values.
-	 * @param int $limit Resolved limit.
-	 * @param int $page Resolved page.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function degraded(string $cause, int $limit, int $page): array {
-		return [
-			'unavailable' => true,
-			'cause' => $cause,
-			'results' => [],
-			'total' => 0,
-			'limit' => $limit,
-			'page' => $page,
-		];
-	}//end degraded()
+		return $params;
+	}//end withJurisdiction()
 
 	/**
 	 * Pull the company rows out of an OpenCorporates response envelope.
@@ -298,36 +254,48 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	private function extractRows(array $response): array {
-		$companies = $response['results']['companies'] ?? null;
+	protected function extractRows(array $response): array {
+		$companies = ($response['results']['companies'] ?? null);
 		if (is_array($companies) === true) {
-			$out = [];
-			foreach ($companies as $entry) {
-				if (is_array($entry) === false) {
-					continue;
-				}
-
-				if (isset($entry['company']) === true && is_array($entry['company']) === true) {
-					$out[] = $entry['company'];
-				} else {
-					$out[] = $entry;
-				}
-			}
-
-			return $out;
+			return $this->unwrapCompanies(entries: $companies);
 		}
 
 		if (array_is_list($response) === true) {
-			$out = [];
-			foreach ($response as $row) {
-				if (is_array($row) === true) {
-					$out[] = $row;
-				}
-			}
-
-			return $out;
+			return $this->arrayRows(rows: $response);
 		}
 
 		return [];
 	}//end extractRows()
+
+	/**
+	 * The company of each array entry: its `company` member when that is an
+	 * array, else the entry itself.
+	 *
+	 * @param array<mixed> $entries The `results.companies` entries.
+	 *
+	 * @return array<int, array<string, mixed>> The company rows.
+	 */
+	private function unwrapCompanies(array $entries): array {
+		$out = [];
+		foreach ($this->arrayRows(rows: $entries) as $entry) {
+			$out[] = $this->companyOf(entry: $entry);
+		}
+
+		return $out;
+	}//end unwrapCompanies()
+
+	/**
+	 * The `company` member of an entry when that is an array, else the entry.
+	 *
+	 * @param array<string, mixed> $entry A `results.companies` entry.
+	 *
+	 * @return array<string, mixed> The company row.
+	 */
+	private function companyOf(array $entry): array {
+		if (isset($entry['company']) === true && is_array($entry['company']) === true) {
+			return $entry['company'];
+		}
+
+		return $entry;
+	}//end companyOf()
 }//end class
