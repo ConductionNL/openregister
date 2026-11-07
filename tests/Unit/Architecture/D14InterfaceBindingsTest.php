@@ -29,6 +29,11 @@ use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -52,8 +57,10 @@ final class D14InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
+		GeoFeatureCollectionBuilder::class => [GeoFeatureCollectionBuilderInterface::class, SearchRegistrar::class],
 		NoteService::class => [NoteServiceInterface::class, FilesRegistrar::class],
 		RegisterFolderProvisioner::class => [RegisterFolderProvisionerInterface::class, FilesRegistrar::class],
+		SearchIndexMaintenance::class => [SearchIndexMaintenanceInterface::class, SearchRegistrar::class],
 		ShareUrlBuilder::class => [ShareUrlBuilderInterface::class, FilesRegistrar::class],
 	];
 
