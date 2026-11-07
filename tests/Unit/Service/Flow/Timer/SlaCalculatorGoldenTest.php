@@ -44,8 +44,8 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WalkCollector
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingDayRoll
- * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
- * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
  */
 class SlaCalculatorGoldenTest extends TestCase {
 
