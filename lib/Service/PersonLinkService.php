@@ -37,7 +37,7 @@ use Throwable;
  *
  * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md
  */
-class PersonLinkService {
+class PersonLinkService implements PersonLinkServiceInterface {
 
 	/**
 	 * @param ContactLinkMapper $links The link rows.

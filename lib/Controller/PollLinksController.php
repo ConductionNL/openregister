@@ -33,7 +33,7 @@ use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\PollLinkService;
+use OCA\OpenRegister\Service\PollLinkServiceInterface;
 use OCA\OpenRegister\Service\PollDraft;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -54,13 +54,13 @@ class PollLinksController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param PollLinkService $pollLinkService Backing service.
+	 * @param PollLinkServiceInterface $pollLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PollLinkService $pollLinkService,
+		private readonly PollLinkServiceInterface $pollLinkService,
 		private readonly ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
