@@ -86,67 +86,154 @@ final class FlowValueTemplate {
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
 	public static function renderTracked(mixed $value, array $json): array {
-		$unresolved = [];
-		$rendered = self::renderCollecting(value: $value, json: $json, unresolved: $unresolved);
+		$rendered = self::renderValue(value: $value, json: $json);
 
 		return [
-			'value' => $rendered,
-			'unresolved' => array_values(array_unique($unresolved)),
+			'value' => $rendered['value'],
+			'unresolved' => array_values(array_unique($rendered['unresolved'])),
 		];
 
 	}//end renderTracked()
 
 	/**
-	 * Render recursively, collecting the paths that came out empty.
+	 * Render a value — scalar, list or map — against an item's record.
 	 *
 	 * @param mixed $value The authored value.
 	 * @param array $json The item's record.
-	 * @param array<int, string> $unresolved Collects the empty placeholder paths.
 	 *
 	 * @return mixed The rendered value.
 	 */
-	private static function renderCollecting(mixed $value, array $json, array &$unresolved): mixed {
-		if (is_array($value) === true) {
-			$rendered = [];
-			foreach ($value as $key => $entry) {
-				$rendered[$key] = self::renderCollecting(value: $entry, json: $json, unresolved: $unresolved);
-			}
+	public static function render(mixed $value, array $json): mixed {
+		return self::renderValue(value: $value, json: $json)['value'];
 
-			return $rendered;
+	}//end render()
+
+	/**
+	 * Render recursively, alongside the placeholder paths that came out empty.
+	 *
+	 * A value that is not a string or an array is returned as it is.
+	 *
+	 * @param mixed $value The authored value.
+	 * @param array $json The item's record.
+	 *
+	 * @return array{value: mixed, unresolved: array<int, string>} The rendering.
+	 */
+	private static function renderValue(mixed $value, array $json): array {
+		if (is_array($value) === true) {
+			return self::renderEach(values: $value, json: $json);
 		}
 
 		if (is_string($value) === false) {
-			return $value;
+			return ['value' => $value, 'unresolved' => []];
 		}
 
+		return self::renderString(value: $value, json: $json);
+
+	}//end renderValue()
+
+	/**
+	 * Render every entry of a list or map, keeping its keys.
+	 *
+	 * @param array $values The authored entries.
+	 * @param array $json   The item's record.
+	 *
+	 * @return array{value: array, unresolved: array<int, string>} The rendering.
+	 */
+	private static function renderEach(array $values, array $json): array {
+		$rendered = [];
+		$unresolved = [];
+		foreach ($values as $key => $entry) {
+			$part = self::renderValue(value: $entry, json: $json);
+			$rendered[$key] = $part['value'];
+			$unresolved = array_merge($unresolved, $part['unresolved']);
+		}
+
+		return ['value' => $rendered, 'unresolved' => $unresolved];
+
+	}//end renderEach()
+
+	/**
+	 * Render one string.
+	 *
+	 * A string that is ONLY a placeholder keeps the resolved value's type, so
+	 * a counter stays a number and a list stays a list; any other string has
+	 * each placeholder substituted as text.
+	 *
+	 * @param string $value The authored string.
+	 * @param array  $json  The item's record.
+	 *
+	 * @return array{value: mixed, unresolved: array<int, string>} The rendering.
+	 */
+	private static function renderString(string $value, array $json): array {
 		$whole = [];
 		if (preg_match(self::WHOLE, $value, $whole) === 1) {
-			$resolved = self::valueAt(path: $whole[1], json: $json);
-			if (self::isEmptyValue(value: $resolved) === true) {
-				$unresolved[] = $whole[1];
-			}
-
-			return $resolved;
+			return self::resolve(path: $whole[1], json: $json);
 		}
 
-		return (string)preg_replace_callback(
+		return self::interpolate(value: $value, json: $json);
+
+	}//end renderString()
+
+	/**
+	 * Substitute every placeholder in a string as text.
+	 *
+	 * An array value is substituted as its JSON encoding.
+	 *
+	 * @param string $value The authored string.
+	 * @param array  $json  The item's record.
+	 *
+	 * @return array{value: string, unresolved: array<int, string>} The rendering.
+	 */
+	private static function interpolate(string $value, array $json): array {
+		$unresolved = [];
+		$text = (string)preg_replace_callback(
 			self::PLACEHOLDER,
 			static function (array $matches) use ($json, &$unresolved): string {
-				$resolved = self::valueAt(path: $matches[1], json: $json);
-				if (self::isEmptyValue(value: $resolved) === true) {
-					$unresolved[] = $matches[1];
-				}
-
-				if (is_array($resolved) === true) {
-					return (string)json_encode($resolved);
-				}
-
-				return (string)$resolved;
+				$part = self::resolve(path: $matches[1], json: $json);
+				$unresolved = array_merge($unresolved, $part['unresolved']);
+				return self::asText(value: $part['value']);
 			},
 			$value
 		);
 
-	}//end renderCollecting()
+		return ['value' => $text, 'unresolved' => $unresolved];
+
+	}//end interpolate()
+
+	/**
+	 * The value at one placeholder path, and the path when it came out empty.
+	 *
+	 * @param string $path The dotted path.
+	 * @param array  $json The item's record.
+	 *
+	 * @return array{value: mixed, unresolved: array<int, string>} The resolution.
+	 */
+	private static function resolve(string $path, array $json): array {
+		$value = self::valueAt(path: $path, json: $json);
+		$unresolved = [];
+		if (self::isEmptyValue(value: $value) === true) {
+			$unresolved[] = $path;
+		}
+
+		return ['value' => $value, 'unresolved' => $unresolved];
+
+	}//end resolve()
+
+	/**
+	 * A resolved value as it reads inside a longer string.
+	 *
+	 * @param mixed $value The resolved value.
+	 *
+	 * @return string The text: JSON for an array, the string cast otherwise.
+	 */
+	private static function asText(mixed $value): string {
+		if (is_array($value) === true) {
+			return (string)json_encode($value);
+		}
+
+		return (string)$value;
+
+	}//end asText()
 
 	/**
 	 * Whether a resolved value renders as nothing at all.
@@ -162,48 +249,6 @@ final class FlowValueTemplate {
 	private static function isEmptyValue(mixed $value): bool {
 		return ($value === null || $value === '');
 	}//end isEmptyValue()
-
-	/**
-	 * Render a value — scalar, list or map — against an item's record.
-	 *
-	 * @param mixed $value The authored value.
-	 * @param array $json The item's record.
-	 *
-	 * @return mixed The rendered value.
-	 */
-	public static function render(mixed $value, array $json): mixed {
-		if (is_array($value) === true) {
-			$rendered = [];
-			foreach ($value as $key => $entry) {
-				$rendered[$key] = self::render(value: $entry, json: $json);
-			}
-
-			return $rendered;
-		}
-
-		if (is_string($value) === false) {
-			return $value;
-		}
-
-		$whole = [];
-		if (preg_match(self::WHOLE, $value, $whole) === 1) {
-			return self::valueAt(path: $whole[1], json: $json);
-		}
-
-		return (string)preg_replace_callback(
-			self::PLACEHOLDER,
-			static function (array $matches) use ($json): string {
-				$resolved = self::valueAt(path: $matches[1], json: $json);
-				if (is_array($resolved) === true) {
-					return (string)json_encode($resolved);
-				}
-
-				return (string)$resolved;
-			},
-			$value
-		);
-
-	}//end render()
 
 	/**
 	 * The value at a dotted path, or null when the path is absent.
