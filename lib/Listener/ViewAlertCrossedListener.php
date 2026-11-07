@@ -88,25 +88,75 @@ class ViewAlertCrossedListener implements IEventListener {
 	public const USER_PREFIX = ViewAlert::USER_PREFIX;
 
 	/**
+	 * The engine's recipient resolver.
+	 *
+	 * @var NotificationRecipientResolverInterface
+	 */
+	private readonly NotificationRecipientResolverInterface $recipients;
+
+	/**
+	 * Nextcloud's notification manager.
+	 *
+	 * @var INotificationManager
+	 */
+	private readonly INotificationManager $notifications;
+
+	/**
+	 * The engine's email sender.
+	 *
+	 * @var EmailSenderInterface
+	 */
+	private readonly EmailSenderInterface $email;
+
+	/**
+	 * For each recipient's own language in an email.
+	 *
+	 * @var IFactory
+	 */
+	private readonly IFactory $l10nFactory;
+
+	/**
+	 * To read a recipient's language.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * For recipients and channels nothing could deliver to.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Re-checks at send time that a recipient may still read the view.
+	 *
+	 * @var ViewerReachResolver
+	 */
+	private readonly ViewerReachResolver $viewers;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param NotificationRecipientResolverInterface $recipients The engine's recipient resolver.
+	 * @param ViewAlertAudience    $audience      The recipient resolver and the read re-check.
 	 * @param INotificationManager $notifications Nextcloud's notification manager.
-	 * @param EmailSenderInterface $email The engine's email sender.
-	 * @param IFactory $l10nFactory For each recipient's own language in an email.
-	 * @param IUserManager $userManager To read a recipient's language.
-	 * @param LoggerInterface $logger For recipients and channels nothing could deliver to.
-	 * @param ViewerReachResolver $viewers Re-checks at send time that a recipient may still read the view.
+	 * @param ViewAlertMail        $mail          The email sender, the language factory and the user manager.
+	 * @param LoggerInterface      $logger        For recipients and channels nothing could deliver to.
 	 */
 	public function __construct(
-		private readonly NotificationRecipientResolverInterface $recipients,
-		private readonly INotificationManager $notifications,
-		private readonly EmailSenderInterface $email,
-		private readonly IFactory $l10nFactory,
-		private readonly IUserManager $userManager,
-		private readonly LoggerInterface $logger,
-		private readonly ViewerReachResolver $viewers,
+		ViewAlertAudience $audience,
+		INotificationManager $notifications,
+		ViewAlertMail $mail,
+		LoggerInterface $logger,
 	) {
+		$this->recipients = $audience->recipients;
+		$this->notifications = $notifications;
+		$this->email = $mail->email;
+		$this->l10nFactory = $mail->l10nFactory;
+		$this->userManager = $mail->userManager;
+		$this->logger = $logger;
+		$this->viewers = $audience->viewers;
 	}//end __construct()
 
 	/**

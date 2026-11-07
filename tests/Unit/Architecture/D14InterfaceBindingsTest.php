@@ -22,6 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Files\FilesRegistrar;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
+use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\McpRegistrar;
@@ -57,7 +64,10 @@ final class D14InterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		ContextChatSubmissionListener::class => [ContextChatSubmissionListenerInterface::class, McpRegistrar::class],
 		GeoFeatureCollectionBuilder::class => [GeoFeatureCollectionBuilderInterface::class, SearchRegistrar::class],
+		NoteService::class => [NoteServiceInterface::class, FilesRegistrar::class],
+		RegisterFolderProvisioner::class => [RegisterFolderProvisionerInterface::class, FilesRegistrar::class],
 		SearchIndexMaintenance::class => [SearchIndexMaintenanceInterface::class, SearchRegistrar::class],
+		ShareUrlBuilder::class => [ShareUrlBuilderInterface::class, FilesRegistrar::class],
 		ToolRegistry::class => [ToolRegistryInterface::class, McpRegistrar::class],
 	];
 
@@ -68,10 +78,17 @@ final class D14InterfaceBindingsTest extends TestCase {
 	 * object created, updated and deleted events. Moving those three lines would change
 	 * the order listeners run in, so the registration is kept as it is.
 	 *
+	 * ConfigurationServiceRegistrar and ImportHandler are being changed by an open
+	 * configuration export/import PR; their setter wiring is left for after it lands.
+	 * Application only imports NoteService (an unused import); Application is also
+	 * changed by open PRs, so the line is left for a later pass.
+	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
 		ContextChatSubmissionListener::class => ['Listener/ListenerRegistrar.php'],
+		RegisterFolderProvisioner::class => ['Service/Configuration/ConfigurationServiceRegistrar.php', 'Service/Configuration/ImportHandler.php'],
+		NoteService::class => ['AppInfo/Application.php', 'Service/Configuration/ConfigurationServiceRegistrar.php'],
 	];
 
 	/**

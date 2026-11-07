@@ -48,6 +48,14 @@ use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -82,6 +90,10 @@ final class D12InterfaceBindingsTest extends TestCase {
 		FlowService::class => [FlowServiceInterface::class, ContractBindings::class],
 		FlowTriggerValidator::class => [FlowTriggerValidatorInterface::class, ContractBindings::class],
 		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
+		ObjectActionBulk::class => [ObjectActionBulkInterface::class, ContractBindings::class],
+		ObjectActionDefinitions::class => [ObjectActionDefinitionsInterface::class, ContractBindings::class],
+		ObjectActionList::class => [ObjectActionListInterface::class, ContractBindings::class],
+		ObjectActionRunner::class => [ObjectActionRunnerInterface::class, ContractBindings::class],
 		ZaaktypeCaseSkeletonMapper::class => [ZaaktypeCaseSkeletonMapperInterface::class, ContractBindings::class],
 	];
 
