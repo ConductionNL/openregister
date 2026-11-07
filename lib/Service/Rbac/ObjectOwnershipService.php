@@ -122,43 +122,119 @@ class ObjectOwnershipService {
 	private const MAX_CASCADE_DEPTH = 5;
 
 	/**
+	 * The acting user, which is where an owner comes from.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Who may name a record's owning group: the owner, an administrator,
+	 *
+	 * @var GrantManageGuard
+	 */
+	private readonly GrantManageGuard $grantManage;
+
+	/**
+	 * The rules, for "may this caller edit this record".
+	 *
+	 * @var PermissionHandlerInterface
+	 */
+	private readonly PermissionHandlerInterface $permissions;
+
+	/**
+	 * Resolves a named new owner, and their display name.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * The caller's groups, and whether an owning group exists.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The targeted write of the owner column.
+	 *
+	 * @var ObjectOwnerWriter
+	 */
+	private readonly ObjectOwnerWriter $ownerWriter;
+
+	/**
+	 * The targeted write of the authorization block.
+	 *
+	 * @var ObjectAuthorizationWriter
+	 */
+	private readonly ObjectAuthorizationWriter $authorizationWriter;
+
+	/**
+	 * The hash-sealed trail.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Tells the previous owner.
+	 *
+	 * @var INotificationManager
+	 */
+	private readonly INotificationManager $notificationManager;
+
+	/**
+	 * Resolves objects and their children.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Resolves a child's register.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Resolves a child's schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IUserSession $userSession The acting user, which is where an owner comes from.
-	 * @param IUserManager $userManager Resolves a named new owner, and their display name.
-	 * @param IGroupManager $groupManager The caller's groups, and whether an owning group exists.
-	 * @param GrantManageGuard $grantManage Who may name a record's owning group: the owner, an administrator,
-	 *                                      or a holder of the special right `grant_manage`.
-	 * @param PermissionHandlerInterface $permissions The rules, for "may this caller edit this record".
-	 * @param ObjectOwnerWriter $ownerWriter The targeted write of the owner column.
-	 * @param ObjectAuthorizationWriter $authorizationWriter The targeted write of the authorization block.
-	 * @param AuditTrailMapperInterface $auditTrailMapper The hash-sealed trail.
-	 * @param MagicMapperInterface $magicMapper Resolves objects and their children.
-	 * @param RegisterMapperInterface $registerMapper Resolves a child's register.
-	 * @param SchemaMapperInterface $schemaMapper Resolves a child's schema.
-	 * @param INotificationManager $notificationManager Tells the previous owner.
-	 * @param LoggerInterface $logger Where a transfer is noted.
+	 * @param OwnershipGuards         $guards       The acting user, who may name an owning group, and the permission rules.
+	 * @param PrincipalDirectory      $directory    Resolves a named new owner, their display name, and groups.
+	 * @param OwnershipWriters        $writers      The owner and authorization writes, the sealed trail and the notification.
+	 * @param ObjectLookup            $lookup       Resolves objects, their children, and a child's register and schema.
+	 * @param LoggerInterface         $logger       Where a transfer is noted.
 	 * @param GrantChangeAuditor|null $grantAuditor Writes an audit-trail entry for a change of the owning group. Null only in legacy fixtures.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; see the
-	 * coupling note on the class.
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IUserManager $userManager,
-		private readonly IGroupManager $groupManager,
-		private readonly GrantManageGuard $grantManage,
-		private readonly PermissionHandlerInterface $permissions,
-		private readonly ObjectOwnerWriter $ownerWriter,
-		private readonly ObjectAuthorizationWriter $authorizationWriter,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly INotificationManager $notificationManager,
+		OwnershipGuards $guards,
+		PrincipalDirectory $directory,
+		OwnershipWriters $writers,
+		ObjectLookup $lookup,
 		private readonly LoggerInterface $logger,
 		private readonly ?GrantChangeAuditor $grantAuditor = null,
 	) {
+		$this->userSession = $guards->userSession;
+		$this->grantManage = $guards->grantManage;
+		$this->permissions = $guards->permissions;
+		$this->userManager = $directory->userManager;
+		$this->groupManager = $directory->groupManager;
+		$this->ownerWriter = $writers->ownerWriter;
+		$this->authorizationWriter = $writers->authorizationWriter;
+		$this->auditTrailMapper = $writers->auditTrailMapper;
+		$this->notificationManager = $writers->notificationManager;
+		$this->magicMapper = $lookup->magicMapper;
+		$this->registerMapper = $lookup->registerMapper;
+		$this->schemaMapper = $lookup->schemaMapper;
 	}//end __construct()
 
 	/**
