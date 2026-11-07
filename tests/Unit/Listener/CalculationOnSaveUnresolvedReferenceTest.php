@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveEngine;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveLookups;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
@@ -122,13 +124,8 @@ class CalculationOnSaveUnresolvedReferenceTest extends TestCase {
 		);
 
 		$this->listener = new CalculationOnSaveListener(
-			$schemaMapper,
-			$this->createMock(RegisterMapper::class),
-			new CalculationEvaluator(new PlaceholderResolver($userSession)),
-			$payloadBuilder,
-			$this->createMock(SequenceService::class),
-			$this->ruleRuns,
-			$logger
+			new CalculationOnSaveLookups($schemaMapper, $this->createMock(RegisterMapper::class), $this->createMock(SequenceService::class), $logger),
+			new CalculationOnSaveEngine(new CalculationEvaluator(new PlaceholderResolver($userSession)), $payloadBuilder, $this->ruleRuns)
 		);
 	}//end setUp()
 

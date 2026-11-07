@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveEngine;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveLookups;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
@@ -77,13 +79,8 @@ class CalculationOnSavePropertyDeclarationTest extends TestCase {
 		$registerMapper->method('find')->willReturn($register);
 
 		$this->listener = new CalculationOnSaveListener(
-			$this->schemaMapper,
-			$registerMapper,
-			new CalculationEvaluator(new PlaceholderResolver($userSession)),
-			$payloadBuilder,
-			$this->createMock(originalClassName: SequenceService::class),
-			$this->createMock(originalClassName: RuleRunRecorder::class),
-			$this->createMock(originalClassName: LoggerInterface::class)
+			new CalculationOnSaveLookups($this->schemaMapper, $registerMapper, $this->createMock(originalClassName: SequenceService::class), $this->createMock(originalClassName: LoggerInterface::class)),
+			new CalculationOnSaveEngine(new CalculationEvaluator(new PlaceholderResolver($userSession)), $payloadBuilder, $this->createMock(originalClassName: RuleRunRecorder::class))
 		);
 
 	}//end setUp()

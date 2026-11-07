@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveEngine;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveLookups;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
@@ -151,13 +153,8 @@ class CalculationOnSaveGoldenTest extends TestCase {
 		);
 
 		return new CalculationOnSaveListener(
-			$schemaMapper,
-			$registerMapper,
-			$evaluator,
-			$builder,
-			$this->createMock(SequenceServiceInterface::class),
-			$ruleRuns,
-			$logger
+			new CalculationOnSaveLookups($schemaMapper, $registerMapper, $this->createMock(SequenceServiceInterface::class), $logger),
+			new CalculationOnSaveEngine($evaluator, $builder, $ruleRuns)
 		);
 	}//end listener()
 
