@@ -322,7 +322,7 @@ final class SeedReferenceIndex
 	private function resolveSlug(string $token, string $slug): mixed {
 		if (array_key_exists($slug, $this->ambiguousSlugs) === true) {
 			$this->logger->warning(
-				message: '[ImportHandler] Ambiguous seed reference "'.$token.'"; slug exists in '
+				message: ImportLogTag::PREFIX.'Ambiguous seed reference "'.$token.'"; slug exists in '
 					.'multiple schemas — use @ref:<schema>:<slug>. Left unresolved.',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -346,7 +346,7 @@ final class SeedReferenceIndex
 	 */
 	private function unresolved(string $token, string $reason): string {
 		$this->logger->warning(
-			message: '[ImportHandler] Unresolved seed reference "'.$token.'" — '.$reason,
+			message: ImportLogTag::PREFIX.'Unresolved seed reference "'.$token.'" — '.$reason,
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 

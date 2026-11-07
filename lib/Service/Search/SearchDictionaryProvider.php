@@ -37,7 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Search;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IAppConfig;
@@ -127,14 +127,14 @@ class SearchDictionaryProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface     $objects    Reads the concepts.
+	 * @param MagicObjectSearchInterface     $objects    Reads the concepts.
 	 * @param RegisterMapperInterface  $registers  Resolves the vocabulary register's id.
 	 * @param SchemaMapperInterface    $schemas    Resolves the concept schemas' ids.
 	 * @param IAppConfig      $appConfig  Holds the administered caps.
 	 * @param LoggerInterface $logger     Diagnostics.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objects,
+		private readonly MagicObjectSearchInterface $objects,
 		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly IAppConfig $appConfig,

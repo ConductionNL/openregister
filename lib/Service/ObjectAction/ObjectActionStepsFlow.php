@@ -43,7 +43,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
-use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowNodeCatalogueInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
@@ -84,13 +84,13 @@ class ObjectActionStepsFlow {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry      $registry The node types steps may name.
-	 * @param FlowDefinitionBuilder $builder  Lowers steps to a flow document.
-	 * @param FlowMapper            $flows    Finds and stores the lowered flow.
-	 * @param FlowVersionService    $versions Publishes the lowered flow.
+	 * @param FlowNodeCatalogueInterface $registry The node types steps may name.
+	 * @param FlowDefinitionBuilder      $builder  Lowers steps to a flow document.
+	 * @param FlowMapper                 $flows    Finds and stores the lowered flow.
+	 * @param FlowVersionService         $versions Publishes the lowered flow.
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeCatalogueInterface $registry,
 		private readonly FlowDefinitionBuilder $builder,
 		private readonly FlowMapper $flows,
 		private readonly FlowVersionService $versions,

@@ -31,7 +31,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -93,9 +93,9 @@ class EmailService implements EmailServiceInterface {
 	/**
 	 * Magic mapper for cross-table _mail JSONB containment queries.
 	 *
-	 * @var MagicMapperInterface
+	 * @var MagicRelationReaderInterface
 	 */
-	private readonly MagicMapperInterface $magicMapper;
+	private readonly MagicRelationReaderInterface $magicMapper;
 
 	/**
 	 * Constructor.

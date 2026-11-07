@@ -33,6 +33,7 @@ use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -74,8 +75,9 @@ class LifecycleValidationListener implements IEventListener {
 	/**
 	 * Wire collaborators used to validate transitions and run guards.
 	 *
-	 * @param LifecycleTransitionAccess $access The edit reader, the current user session and the RBAC handler.
-	 * @param LifecycleTransitionChecks $checks The guard registry, the condition evaluator and tracer, and the rule run log.
+	 * @param LifecycleTransitionAccess $access   The edit reader, the current user session and the RBAC handler.
+	 * @param LifecycleTransitionChecks $checks   The guard registry and the condition evaluator and tracer.
+	 * @param RuleRunRecorderInterface  $ruleRuns Records each condition's verdict for the rule inventory.
 	 *
 	 * @return void
 	 *
@@ -84,6 +86,7 @@ class LifecycleValidationListener implements IEventListener {
 	public function __construct(
 		private readonly LifecycleTransitionAccess $access,
 		private readonly LifecycleTransitionChecks $checks,
+		private readonly RuleRunRecorderInterface $ruleRuns,
 	) {
 	}//end __construct()
 
@@ -398,7 +401,7 @@ class LifecycleValidationListener implements IEventListener {
 			return;
 		}
 
-		$this->checks->ruleRuns->record(
+		$this->ruleRuns->record(
 			ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION, schemaSlug: $slug, key: $attempt->action),
 			schemaSlug: $slug,
 			trace: $this->conditionTrace(attempt: $attempt, refusal: $refusal),

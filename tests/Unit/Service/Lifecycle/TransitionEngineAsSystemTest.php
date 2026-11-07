@@ -189,7 +189,8 @@ class TransitionEngineAsSystemTest extends TestCase {
 		);
 		$this->listener = new LifecycleValidationListener(
 			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new LifecycleTransitionResolver($this->actions), $this->logger), $this->userSession, $this->permission),
-			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groupManager, $l10n, $this->logger, $dialect), new ConditionTracer(dialect: $dialect), $this->createMock(RuleRunRecorder::class))
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groupManager, $l10n, $this->logger, $dialect), new ConditionTracer(dialect: $dialect)),
+			$this->createMock(RuleRunRecorder::class)
 		);
 
 		// saveObject() dispatches ObjectUpdatingEvent to the real listener and

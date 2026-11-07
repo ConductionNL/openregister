@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Rules\DependentValueTable;
+use OCA\OpenRegister\Service\Rules\DependentValueTableInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -64,19 +64,19 @@ class DependentValueListener implements IEventListener {
 	 *
 	 * @var string
 	 */
-	public const ERROR_CODE = DependentValueTable::CODE_VALUE_NOT_ALLOWED;
+	public const ERROR_CODE = DependentValueTableInterface::CODE_VALUE_NOT_ALLOWED;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param DependentValueTable $tables Reads the tables and names what they refuse.
+	 * @param DependentValueTableInterface $tables Reads the tables and names what they refuse.
 	 * @param SchemaMapperInterface $schemas Resolves the schema an object belongs to.
 	 * @param LoggerInterface $logger The logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly DependentValueTable $tables,
+		private readonly DependentValueTableInterface $tables,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 	) {

@@ -153,7 +153,8 @@ class LifecycleValidationListenerTest extends TestCase {
 						)
 					)
 				)
-			), $this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class))
+			)),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 	}//end setUp()
 
@@ -264,7 +265,8 @@ class LifecycleValidationListenerTest extends TestCase {
 		$actions  = new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext();
 		$listener = new LifecycleValidationListener(
 			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($actions), $this->logger), $this->userSession, $this->permissionHandler),
-			new LifecycleTransitionChecks($this->guardRegistry, $this->createMock(LifecycleConditionEvaluator::class), new \OCA\OpenRegister\Service\Rules\ConditionTracer(dialect: $this->realConditionDialect()), $this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class))
+			new LifecycleTransitionChecks($this->guardRegistry, $this->createMock(LifecycleConditionEvaluator::class), new \OCA\OpenRegister\Service\Rules\ConditionTracer(dialect: $this->realConditionDialect())),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 
 		$outside = $this->event('lifecycle', 'geparafeerd', 'concept');

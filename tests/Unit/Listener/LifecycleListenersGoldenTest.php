@@ -174,7 +174,8 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 		return new LifecycleValidationListener(
 			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger), $this->userSession, $this->permission),
-			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guards, $server, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groups, $l10n, $this->logger, $dialect), new ConditionTracer(dialect: $dialect), $this->ruleRuns)
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guards, $server, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groups, $l10n, $this->logger, $dialect), new ConditionTracer(dialect: $dialect)),
+			$this->ruleRuns
 		);
 	}//end validationListener()
 

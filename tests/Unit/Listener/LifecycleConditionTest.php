@@ -140,7 +140,8 @@ class LifecycleConditionTest extends TestCase {
 						)
 					)
 				)
-			), $this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class))
+			)),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 	}//end setUp()
 
@@ -258,7 +259,8 @@ class LifecycleConditionTest extends TestCase {
 						)
 					)
 				)
-			), $this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class))
+			)),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 
 		$this->schemaWithTransition(
@@ -519,7 +521,8 @@ class LifecycleConditionTest extends TestCase {
 						)
 					)
 				)
-			), $this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class))
+			)),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 
 		$schema = new Schema();

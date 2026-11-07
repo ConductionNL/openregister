@@ -38,7 +38,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 
@@ -54,7 +53,7 @@ use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  */
-class IntegrationsToolProvider implements IMcpToolProvider {
+class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 
 	/**
 	 * Tool id for the integrations tool.
@@ -72,20 +71,11 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 	}//end __construct()
 
 	/**
-	 * Returns the owning app id.
-	 *
-	 * @return string Always "openregister"
-	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
-
-	/**
 	 * The tool definitions.
 	 *
 	 * @var array<int, array<string, mixed>>
 	 */
-	private const TOOLS = [
+	protected const TOOLS = [
 		[
 			'id' => self::TOOL_ID,
 			'name' => 'integrations',
@@ -138,15 +128,6 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 			],
 		],
 	];
-
-	/**
-	 * Returns tool descriptors.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
-	 */
-	public function getTools(): array {
-		return self::TOOLS;
-	}//end getTools()
 
 	/**
 	 * Invoke the integrations tool.
@@ -213,9 +194,9 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 		}
 
 		$items = $provider->list(
-			$this->requireParam(arguments: $arguments, param: 'register'),
-			$this->requireParam(arguments: $arguments, param: 'schema'),
-			$this->requireParam(arguments: $arguments, param: 'objectId'),
+			$this->requireText(arguments: $arguments, param: 'register'),
+			$this->requireText(arguments: $arguments, param: 'schema'),
+			$this->requireText(arguments: $arguments, param: 'objectId'),
 			$filters
 		);
 
@@ -233,10 +214,10 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 		$provider = $this->resolveProvider(arguments: $arguments);
 
 		return $provider->get(
-			$this->requireParam(arguments: $arguments, param: 'register'),
-			$this->requireParam(arguments: $arguments, param: 'schema'),
-			$this->requireParam(arguments: $arguments, param: 'objectId'),
-			$this->requireParam(arguments: $arguments, param: 'entityId')
+			$this->requireText(arguments: $arguments, param: 'register'),
+			$this->requireText(arguments: $arguments, param: 'schema'),
+			$this->requireText(arguments: $arguments, param: 'objectId'),
+			$this->requireText(arguments: $arguments, param: 'entityId')
 		);
 	}//end getLinked()
 
@@ -259,9 +240,9 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 		}
 
 		return $provider->create(
-			$this->requireParam(arguments: $arguments, param: 'register'),
-			$this->requireParam(arguments: $arguments, param: 'schema'),
-			$this->requireParam(arguments: $arguments, param: 'objectId'),
+			$this->requireText(arguments: $arguments, param: 'register'),
+			$this->requireText(arguments: $arguments, param: 'schema'),
+			$this->requireText(arguments: $arguments, param: 'objectId'),
 			$payload
 		);
 	}//end createLinked()
@@ -276,7 +257,7 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 	 * @throws InvalidArgumentException When integrationId is missing, unknown, or disabled
 	 */
 	private function resolveProvider(array $arguments): IntegrationProvider {
-		$integrationId = $this->requireParam(arguments: $arguments, param: 'integrationId');
+		$integrationId = $this->requireText(arguments: $arguments, param: 'integrationId');
 		$provider = $this->registry->get(id: $integrationId);
 
 		if ($provider === null) {
@@ -302,11 +283,11 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 	 *
 	 * @throws InvalidArgumentException If parameter is missing
 	 */
-	private function requireParam(array $arguments, string $param): string {
+	private function requireText(array $arguments, string $param): string {
 		if (isset($arguments[$param]) === false || $arguments[$param] === '') {
 			throw new InvalidArgumentException('Missing required parameter: ' . $param);
 		}
 
 		return (string)$arguments[$param];
-	}//end requireParam()
+	}//end requireText()
 }//end class
