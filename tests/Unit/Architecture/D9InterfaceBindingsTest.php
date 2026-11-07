@@ -25,6 +25,9 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\ContextChat\ContentProvider;
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
 use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
+use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -49,6 +52,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 		ContentProvider::class => [
 			ContentProviderInterface::class,
 			ContextChatRegistrar::class,
+			[],
+		],
+		TimeseriesRequestValidator::class => [
+			TimeseriesRequestValidatorInterface::class,
+			SearchRegistrar::class,
 			[],
 		],
 	];
