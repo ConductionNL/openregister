@@ -37,6 +37,9 @@ use Psr\Container\ContainerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRunCheck
  */
 class ExampleSetFlowRunsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__.'/fixtures/example-set-flow-runs-golden.json';
