@@ -132,6 +132,36 @@ class SearchQueryHandlerUnreadLensTest extends TestCase {
 	}//end testAnonymousCallerGetsAnImpossibleIdSet()
 
 	/**
+	 * A session whose user has an empty uid is no reader either.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyUidCountsAsNoReader(): void {
+		$query = $this->makeHandler(uid: '')->buildSearchQuery(['_unread' => 'true'], 1, 777);
+
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $query);
+		$this->assertStringContainsString(needle: 'no-unread-reader', haystack: ($query['_ids'][0] ?? ''));
+	}//end testAnEmptyUidCountsAsNoReader()
+
+	/**
+	 * The reader is always the session, whatever the request names.
+	 *
+	 * @return void
+	 */
+	public function testARequestCannotNameAnotherReader(): void {
+		$handler = $this->makeHandler();
+
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $handler->buildSearchQuery(['_unreadFor' => 'mallory'], 1, 777));
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $handler->buildSearchQuery(['_unread' => 'false', '_unreadFor' => 'mallory'], 1, 777));
+
+		$query = $handler->buildSearchQuery(['_unread' => 'true', '_unreadFor' => 'mallory'], 1, 777);
+		$this->assertSame(expected: 'alice', actual: ($query['_unreadFor'] ?? null));
+
+		$anonymous = $this->makeHandler(uid: null)->buildSearchQuery(['_unread' => 'true', '_unreadFor' => 'mallory'], 1, 777);
+		$this->assertArrayNotHasKey(key: '_unreadFor', array: $anonymous);
+	}//end testARequestCannotNameAnotherReader()
+
+	/**
 	 * `_unread=false` asks for no restriction, and gets none.
 	 *
 	 * @return void

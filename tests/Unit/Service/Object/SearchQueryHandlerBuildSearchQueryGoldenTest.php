@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\DottedParamTree
  * @uses   \OCA\OpenRegister\Service\Object\SearchQueryParts
  * @uses \OCA\OpenRegister\Service\Object\SearchScopeFilters
+ * @uses \OCA\OpenRegister\Service\Object\SearchLenses
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
