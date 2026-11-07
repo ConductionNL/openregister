@@ -1294,10 +1294,12 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
 	private function processConditionalRule(array $rule, array $caller): mixed {
-		$block = $this->heldRuleMatch(rule: $rule, caller: $caller);
-		if (is_bool($block) === true) {
-			return $block;
+		$held = $this->heldRuleVerdict(rule: $rule, caller: $caller);
+		if ($held !== null) {
+			return $held;
 		}
+
+		$block = $rule['match'];
 
 		// A key that names no column of this table admits no row.
 		$compiler = $this->queryMatch(qb: $caller['qb']);
@@ -1309,15 +1311,16 @@ class MagicRbacHandler {
 	}//end processConditionalRule()
 
 	/**
-	 * What a conditional rule leaves to compile for the caller.
+	 * The verdict a conditional rule gives before its match is compiled.
 	 *
 	 * @param array $rule   Rule with 'group' (or 'user') and optional 'match'.
 	 * @param array $caller The caller.
 	 *
-	 * @return mixed False when the caller does not hold the rule, true when it
-	 *               holds without conditions, otherwise the match block.
+	 * @return bool|null False when the caller does not hold the rule, true when
+	 *                   it holds without conditions, null when the rule's
+	 *                   `match` (of any type) is left to compile.
 	 */
-	private function heldRuleMatch(array $rule, array $caller): mixed {
+	private function heldRuleVerdict(array $rule, array $caller): ?bool {
 		// A caller outside the rule's group or named user is not given it.
 		if ($this->callerQualifiesForRule(rule: $rule, caller: $caller) === false) {
 			return false;
@@ -1329,8 +1332,8 @@ class MagicRbacHandler {
 			return true;
 		}
 
-		return $match;
-	}//end heldRuleMatch()
+		return null;
+	}//end heldRuleVerdict()
 
 	/**
 	 * Whether a conditional rule applies to the caller: as its named user, or through its group.
@@ -2083,10 +2086,12 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
 	private function processConditionalRuleSql(array $rule, array $caller): mixed {
-		$block = $this->heldRuleMatch(rule: $rule, caller: $caller);
-		if (is_bool($block) === true) {
-			return $block;
+		$held = $this->heldRuleVerdict(rule: $rule, caller: $caller);
+		if ($held !== null) {
+			return $held;
 		}
+
+		$block = $rule['match'];
 
 		// A key that names no column of this table admits no row.
 		if ($caller['columns']->admits(match: $block) === false) {

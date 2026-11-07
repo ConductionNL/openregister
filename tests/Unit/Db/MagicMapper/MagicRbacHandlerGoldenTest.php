@@ -65,6 +65,10 @@ class MagicRbacHandlerGoldenTest extends TestCase {
 
 	private static function authorizations(): array {
 		$conditional = static fn (array $match): array => ['read' => [['group' => 'team-a', 'match' => $match]], 'update' => [['group' => 'authenticated', 'match' => $match]]];
+		$matchOfType = static fn (mixed $match): array => [
+			'read' => [['group' => 'team-a', 'match' => $match], ['user' => 'jan', 'match' => $match]],
+			'update' => [['group' => 'authenticated', 'match' => $match]],
+		];
 		return [
 			'none' => null,
 			'empty' => [],
@@ -102,6 +106,12 @@ class MagicRbacHandlerGoldenTest extends TestCase {
 			'unknown metadata' => $conditional(['_bogus' => 'x']),
 			'unknown column' => $conditional(['nonsense' => 'x']),
 			'empty match' => ['read' => [['group' => 'team-a', 'match' => []]]],
+			'match true' => $matchOfType(true),
+			'match false' => $matchOfType(false),
+			'match one' => $matchOfType(1),
+			'match string' => $matchOfType('x'),
+			'match null' => $matchOfType(null),
+			'match empty list' => $matchOfType([]),
 			'conditional public' => ['read' => [['group' => 'public', 'match' => ['status' => 'open']]]],
 			'conditional authenticated' => ['read' => [['group' => 'authenticated', 'match' => ['status' => 'open']]]],
 			'conditional user' => ['read' => [['user' => 'jan', 'match' => ['status' => 'open']]]],
