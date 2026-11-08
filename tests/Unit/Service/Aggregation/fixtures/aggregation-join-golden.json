@@ -3037,6 +3037,185 @@
             }
         ]
     },
+    "qualified-denied": {
+        "error": "RuntimeException",
+        "message": "Forbidden: caller lacks read permission on join target \"budgets\".",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "list",
+                    "alice"
+                ]
+            },
+            {
+                "qualifies": [
+                    "budgets",
+                    "read"
+                ]
+            }
+        ]
+    },
+    "qualified-denied-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "s",
+                    "value": 35
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "s",
+                                "value": 35
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
     "qualified-group": {
         "result": {
             "name": "agg",
@@ -3148,6 +3327,899 @@
                         "groups": [
                             {
                                 "key": "s",
+                                "value": 35
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-join-filter": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "s",
+                    "value": 35
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "filter": {
+                                "adm": "y"
+                            },
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "filter": {
+                                "adm": "y"
+                            },
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "s",
+                                "value": 35
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-missing-target": {
+        "error": "RuntimeException",
+        "message": "Schema \"nowhere\" not found.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "nowhere.region"
+                        ],
+                        "join": {
+                            "through": "nowhere",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "b"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "nowhere"
+            }
+        ]
+    },
+    "qualified-mixed": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "keys": {
+                        "team": "a",
+                        "budgets.region": "s"
+                    },
+                    "value": 15
+                },
+                {
+                    "keys": {
+                        "team": "b",
+                        "budgets.region": "s"
+                    },
+                    "value": 20
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "team",
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "team",
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "keys": {
+                                    "team": "a",
+                                    "budgets.region": "s"
+                                },
+                                "value": 15
+                            },
+                            {
+                                "keys": {
+                                    "team": "b",
+                                    "budgets.region": "s"
+                                },
+                                "value": 20
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-multi-key": {
+        "error": "RuntimeException",
+        "message": "Grouping by a joined field is supported for single-key joins only; \"budgets.region\" joins on 2 keys.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status",
+                                "team": "team"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "qualified-native-platform": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "s",
+                    "value": 35
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "s",
+                                "value": 35
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-no-on": {
+        "error": "RuntimeException",
+        "message": "Grouping by \"budgets.region\" needs the join's `on` mapping to locate the parent key.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "qualified-null-keys": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": null,
+                    "value": 1
+                },
+                {
+                    "key": "n",
+                    "value": 2
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": null,
+                                "value": 1
+                            },
+                            {
+                                "key": "n",
+                                "value": 2
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-on-not-strings": {
+        "error": "RuntimeException",
+        "message": "Grouping by \"budgets.region\" needs the join's `on` mapping to locate the parent key.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "3": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "qualified-string-on": {
+        "error": "RuntimeException",
+        "message": "Grouping by \"budgets.region\" requires the explicit join.on map ({parentField: joinedField}); the \"Schema.column\" shorthand infers the parent key from the group fields, which are the joined ones here.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "qualified-two-columns": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "keys": {
+                        "budgets.region": "s",
+                        "budgets.adm": "y"
+                    },
+                    "value": 35
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region",
+                            "budgets.adm"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region",
+                            "budgets.adm"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "keys": {
+                                    "budgets.region": "s",
+                                    "budgets.adm": "y"
+                                },
                                 "value": 35
                             }
                         ],

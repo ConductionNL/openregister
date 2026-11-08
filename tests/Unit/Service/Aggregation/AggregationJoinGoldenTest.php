@@ -141,6 +141,23 @@ class AggregationJoinGoldenTest extends TestCase {
 		$cases['native-extra'] = [['spec' => $plain, 'extra' => ['adm' => 'x']] + $sqlite + $base];
 		$cases['native-bypass'] = [['spec' => $plain, 'bypass' => true] + $sqlite + $base];
 		$cases['native-multi-key'] = [['spec' => $specs['map-on']] + $sqlite + $base];
+		$byStatus = ['on' => ['status' => 'status']] + $join;
+		$byRegion = ['metric' => 'sum', 'field' => 'amount', 'groupBy' => ['budgets.region'], 'join' => $byStatus];
+		$cases['qualified-two-columns'] = [['spec' => ['groupBy' => ['budgets.region', 'budgets.adm']] + $byRegion] + $base];
+		$cases['qualified-mixed'] = [['spec' => ['groupBy' => ['team', 'budgets.region']] + $byRegion] + $base];
+		$cases['qualified-join-filter'] = [['spec' => ['join' => ['filter' => ['adm' => 'y']] + $byStatus] + $byRegion] + $base];
+		$cases['qualified-string-on'] = [['spec' => ['join' => $join] + $byRegion] + $base];
+		$cases['qualified-no-on'] = [['spec' => ['join' => ['through' => 'budgets', 'select' => ['budget']]] + $byRegion] + $base];
+		$cases['qualified-on-not-strings'] = [['spec' => ['join' => ['on' => [3 => 'status']] + $join] + $byRegion] + $base];
+		$cases['qualified-multi-key'] = [['spec' => ['join' => ['on' => ['status' => 'status', 'team' => 'team']] + $join] + $byRegion] + $base];
+		$cases['qualified-denied'] = [['spec' => $byRegion, 'allow' => ['lines' => true, 'budgets' => false]] + $base];
+		$cases['qualified-denied-bypass'] = [['spec' => $byRegion, 'allow' => ['lines' => true, 'budgets' => false], 'bypass' => true] + $base];
+		$nowhere = ['through' => 'nowhere', 'on' => ['status' => 'status'], 'select' => ['b']];
+		$cases['qualified-missing-target'] = [['spec' => ['join' => $nowhere, 'groupBy' => ['nowhere.region']] + $byRegion] + $base];
+		$nullKeys = [['status' => null, 'region' => 'z'], ['status' => 'open', 'region' => 'n']];
+		$nullParents = [['status' => null, 'amount' => 1], ['status' => 'open', 'amount' => 2]];
+		$cases['qualified-null-keys'] = [['spec' => $byRegion, 'joinedRows' => $nullKeys, 'rows' => $nullParents] + $base];
+		$cases['qualified-native-platform'] = [['spec' => $byRegion] + $sqlite + $base];
 
 		return $cases;
 	}//end cases()
