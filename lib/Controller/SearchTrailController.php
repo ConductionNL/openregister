@@ -37,6 +37,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\SearchTrailControllerServices;
 
 /**
  * Class SearchTrailController
@@ -86,24 +87,50 @@ class SearchTrailController extends Controller {
 	];
 
 	/**
+	 * The search trail service
+	 *
+	 * @var SearchTrailServiceInterface
+	 */
+	private readonly SearchTrailServiceInterface $searchTrailService;
+
+	/**
+	 * Mapper the admin clear-all path deletes through
+	 *
+	 * @var SearchTrailMapperInterface
+	 */
+	private readonly SearchTrailMapperInterface $searchTrailMapper;
+
+	/**
+	 * Active user session for caller identity
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin / role checks
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor for SearchTrailController
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param SearchTrailServiceInterface $searchTrailService The search trail service
-	 * @param SearchTrailMapperInterface $searchTrailMapper Mapper the admin clear-all path deletes through
-	 * @param IUserSession $userSession Active user session for caller identity
-	 * @param IGroupManager $groupManager Group manager for admin / role checks
+	 * @param SearchTrailControllerServices $services The services, bundled.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SearchTrailServiceInterface $searchTrailService,
-		private readonly SearchTrailMapperInterface $searchTrailMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		SearchTrailControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->searchTrailService = $services->searchTrailService;
+		$this->searchTrailMapper = $services->searchTrailMapper;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 	}//end __construct()
 
 	/**
