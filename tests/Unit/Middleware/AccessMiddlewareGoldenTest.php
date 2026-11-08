@@ -55,6 +55,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Middleware\Support\ApiCallerServices;
+use OCA\OpenRegister\Middleware\Support\RateLimitPlatform;
 
 /**
  * Allowed and refused outcomes of the access middlewares.
@@ -237,7 +239,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 		$security->method('getTrustedClientIpAddress')->willReturn('10.0.0.1');
 
-		return new RateLimitMiddleware($request, $session, $this->reflector($public), $security, $this->createMock(LoggerInterface::class));
+		return new RateLimitMiddleware($request, new RateLimitPlatform($session, $this->reflector($public), $this->createMock(LoggerInterface::class)), $security);
 	}
 
 	/**
@@ -348,7 +350,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 		$security = $this->createMock(SecurityService::class);
 		$security->method('getTrustedClientIpAddress')->willReturn('10.0.0.1');
 		$security->expects($this->once())->method('checkAuthRateLimit')->willReturn(['allowed' => true]);
-		$mw = new RateLimitMiddleware($this->createMock(IRequest::class), $this->createMock(IUserSession::class), $this->reflector(true, true), $security, $this->createMock(LoggerInterface::class));
+		$mw = new RateLimitMiddleware($this->createMock(IRequest::class), new RateLimitPlatform($this->createMock(IUserSession::class), $this->reflector(true, true), $this->createMock(LoggerInterface::class)), $security);
 		$mw->beforeController($this->controller(), 'm');
 	}
 
@@ -463,7 +465,7 @@ final class AccessMiddlewareGoldenTest extends TestCase {
 
 		$negotiator->method('negotiate')->willReturn(new ApiVersionNegotiation(null, $served, ApiVersionNegotiation::SOURCE_DEFAULT));
 
-		return new ApiCallerMiddleware($request, $recorder, $limiter, $policy, $negotiator);
+		return new ApiCallerMiddleware($request, new ApiCallerServices($recorder, $negotiator), $limiter, $policy);
 	}
 
 	public function testCallerIgnoresANonApiRequest(): void {

@@ -41,6 +41,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
 
 /**
  * End-to-end integration test for notify_push delivery.
@@ -129,11 +130,9 @@ class NotifyPushEndToEndTest extends TestCase {
 		NotifyPushListener::resetStaticState();
 
 		$listener = new NotifyPushListener(
-			logger: $logger,
-			container: $container,
+			platform: new NotifyPushPlatform(logger: $logger, container: $container, appConfig: $appConfig),
 			permissionHandler: $permissionHandler,
-			appConfig: $appConfig,
-			slugs: new PushSlugResolver($registerMapper, $schemaMapper),
+			slugs: new PushSlugResolver($registerMapper, $schemaMapper)
 		);
 
 		$object = new ObjectEntity();

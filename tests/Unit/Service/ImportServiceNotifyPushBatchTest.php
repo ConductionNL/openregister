@@ -50,6 +50,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
 
 /**
  * Tests that bulk imports flush deduplicated notify_push collection events
@@ -145,11 +146,9 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 		$permissionHandler->method('getReadableByUsers')->willReturn(['user1', 'user2']);
 
 		$this->listener = new NotifyPushListener(
-			logger: $this->createMock(LoggerInterface::class),
-			container: $container,
+			platform: new NotifyPushPlatform(logger: $this->createMock(LoggerInterface::class), container: $container, appConfig: $this->createMock(IAppConfig::class)),
 			permissionHandler: $permissionHandler,
-			appConfig: $this->createMock(IAppConfig::class),
-			slugs: new PushSlugResolver($registerMapper, $listenerSchemaMapper),
+			slugs: new PushSlugResolver($registerMapper, $listenerSchemaMapper)
 		);
 
 		$this->objectService = $this->createMock(ObjectService::class);

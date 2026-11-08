@@ -65,6 +65,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
+use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
@@ -145,9 +146,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 	private function gateListener(): ApprovalChainGateListener {
 		return new ApprovalChainGateListener(
 			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
-			$this->sequenceMapper,
-			$this->sequenceService,
-			new ApprovalChainAnnotationInstaller(logger: $this->logger),
+			new ApprovalChainSequences($this->sequenceMapper, $this->sequenceService, new ApprovalChainAnnotationInstaller(logger: $this->logger)),
 			$this->userSession,
 			$this->logger
 		);

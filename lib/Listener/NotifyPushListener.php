@@ -59,6 +59,7 @@ use OCP\EventDispatcher\IEventListener;
 use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
 
 /**
  * Pushes object lifecycle events to browser clients via notify_push.
@@ -118,23 +119,43 @@ class NotifyPushListener implements IEventListener, PresencePushInterface {
 	private static bool $queueUnavailable = false;
 
 	/**
+	 * PSR-3 logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * DI container for lazy IQueue resolution.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * App config for push_available flag.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param LoggerInterface $logger PSR-3 logger.
-	 * @param ContainerInterface $container DI container for lazy IQueue resolution.
+	 * @param NotifyPushPlatform $platform Logger, container and app config.
 	 * @param ObjectReadersInterface $permissionHandler RBAC handler for reader-list resolution.
-	 * @param IAppConfig $appConfig App config for push_available flag.
 	 * @param PushSlugResolver $slugs Resolves register and schema slugs as the system.
 	 *
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-4
 	 */
 	public function __construct(
-		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
+		NotifyPushPlatform $platform,
 		private readonly ObjectReadersInterface $permissionHandler,
-		private readonly IAppConfig $appConfig,
 		private readonly PushSlugResolver $slugs,
 	) {
+		$this->logger = $platform->logger;
+		$this->container = $platform->container;
+		$this->appConfig = $platform->appConfig;
 	}//end __construct()
 
 	/**
