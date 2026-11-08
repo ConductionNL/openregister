@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\ObjectRelationMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
+use OCA\OpenRegister\Service\Relation\RelationGraphSources;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\IAppConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -107,9 +108,11 @@ class RelationGraphServiceWalkGoldenTest extends TestCase {
 
 		return new RelationGraphService(
 			objectEntityMapper: $objectMapper,
-			relationMapper: $relationMapper,
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			relationTypes: new RelationTypeResolver(),
+			sources: new RelationGraphSources(
+				relationMapper: $relationMapper,
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				relationTypes: new RelationTypeResolver()
+			),
 			appConfig: $appConfig,
 			logger: $this->createMock(LoggerInterface::class)
 		);
