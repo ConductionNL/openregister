@@ -106,16 +106,7 @@ class AdvisoryLockStore {
 		$key = $this->key(identifier: $identifier);
 		$now = new DateTime();
 
-		$existingRaw = $this->appConfig->getValueString('openregister', $key, '');
-		if ($existingRaw !== '') {
-			$existing = json_decode($existingRaw, true);
-			if (is_array($existing) === true && isset($existing['expiration']) === true) {
-				$expiration = new DateTime($existing['expiration']);
-				if ($expiration > $now) {
-					throw new LockedException(message: "Advisory lock '{$identifier}' is already held");
-				}
-			}
-		}
+		$this->assertNotHeld(key: $key, identifier: $identifier, now: $now);
 
 		$expiration = (clone $now)->modify("+{$duration} seconds");
 		$lock = [
@@ -141,6 +132,33 @@ class AdvisoryLockStore {
 
 		return ['uuid' => $identifier, 'locked' => $lock];
 	}//end acquire()
+
+	/**
+	 * Refuse while a stored advisory lock has not expired; an unreadable one does not hold.
+	 *
+	 * @param string   $key        The app-config key of the lock.
+	 * @param string   $identifier The locked identifier.
+	 * @param DateTime $now        The moment of the attempt.
+	 *
+	 * @return void
+	 *
+	 * @throws LockedException When the lock is held.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
+	 */
+	private function assertNotHeld(string $key, string $identifier, DateTime $now): void {
+		$existingRaw = $this->appConfig->getValueString('openregister', $key, '');
+		if ($existingRaw === '') {
+			return;
+		}
+
+		$existing = json_decode($existingRaw, true);
+		if (is_array($existing) === true && isset($existing['expiration']) === true
+			&& new DateTime($existing['expiration']) > $now
+		) {
+			throw new LockedException(message: "Advisory lock '{$identifier}' is already held");
+		}
+	}//end assertNotHeld()
 
 	/**
 	 * Release an advisory lock if one exists for the identifier.
