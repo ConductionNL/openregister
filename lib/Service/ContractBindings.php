@@ -375,6 +375,8 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionServiceInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
@@ -469,7 +471,6 @@ use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStoreInterface;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionLifecycleInterface;
-use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\LinkExposureInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
@@ -577,6 +578,9 @@ final class ContractBindings {
 	 */
 	public const BINDINGS = [
 		\OCA\OpenRegister\Service\Rbac\AdminGateInterface::class => \OCA\OpenRegister\Service\Rbac\AdminGate::class,
+		\OCA\OpenRegister\Service\Portal\PortalTaskServiceInterface::class => \OCA\OpenRegister\Service\Portal\PortalTaskService::class,
+		\OCA\OpenRegister\Service\Portal\PortalTaskDeliveryRequestInterface::class => \OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService::class,
+		RegistrySubscriptionServiceInterface::class => RegistrySubscriptionService::class,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard::class,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkService::class,
 		AdministeredValidationEnforcerInterface::class => AdministeredValidationEnforcer::class,
