@@ -146,10 +146,6 @@ class PruneRetiredSchemasCommand extends Command {
 	 *
 	 * @return int Symfony command exit code.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
@@ -161,174 +157,253 @@ class PruneRetiredSchemasCommand extends Command {
 			archivalSchema: (bool)$input->getOption('force-archival'),
 			keptRows: (bool)$input->getOption('force-kept-rows')
 		);
-		$dryRun = ($apply === false);
+		$run = new PruneRetiredSchemasRun(appId: $appId, dryRun: ($apply === false), force: $force, override: $override);
 
-		if ($appId === '') {
-			$output->writeln('<error>--app is required.</error>');
+		$invalid = $this->invalidArguments(appId: $appId, slugs: $slugs);
+		if ($invalid !== null) {
+			$output->writeln($invalid);
 			return Command::FAILURE;
 		}
 
-		if ($slugs === []) {
-			$output->writeln('<error>At least one --slug is required.</error>');
-			return Command::FAILURE;
-		}
-
-		if ($dryRun === true) {
+		if ($run->dryRun === true) {
 			$output->writeln(
 				'<comment>Running in DRY-RUN mode. Nothing will be deleted. '
 				. 'Re-run with --apply to perform deletions.</comment>'
 			);
 		}
 
-		$pruned = 0;
-		$skipped = 0;
-		$missing = 0;
-
 		foreach ($slugs as $slug) {
-			$slug = (string)$slug;
-
-			// EVERY row under this (application, slug), not the first.
-			//
-			// `findByApplicationAndSlug()` caps at one, which is correct where
-			// the pair is unique. It is not unique in practice, and this command
-			// exists because it is not: the import unions schema ids and never
-			// removes one, so a descriptor edit leaves the old row behind and a
-			// later import can add a second under the same pair. Reading one row
-			// meant removing one of two and reporting success. Measured on a live
-			// instance: opencatalogi owned two `document` rows (39 and 40), this
-			// pruned 40, printed `Pruned=1, skipped=0`, and left 39 answering
-			// every lookup.
-			$schemas = $this->schemaMapper->findAllByApplicationAndSlug(slug: $slug, application: $appId);
-
-			if ($schemas === []) {
-				$missing++;
-				$output->writeln(
-					sprintf(
-						'<comment>SKIP "%s": app "%s" owns no schema with that slug (already pruned, or never imported).</comment>',
-						$slug,
-						$appId
-					)
-				);
-				continue;
-			}
-
-			if (count($schemas) > 1) {
-				$output->writeln(
-					sprintf(
-						'<comment>"%s": app "%s" owns %d rows under this slug. All of them are handled below.</comment>',
-						$slug,
-						$appId,
-						count($schemas)
-					)
-				);
-			}
-
-			foreach ($schemas as $schema) {
-			$schemaId = (int)$schema->getId();
-			// The count the DELETE would produce, from the deletion service that
-			// enumerates the tables — not a second, narrower count of its own.
-			// The guard and the delete disagreeing is the whole defect.
-			$objectCount = $this->deletionService->countObjectsCascadeWouldDelete(schema: $schema);
-			$linkedRegisters = $this->registersReferencing(schemaId: $schemaId);
-
-			$output->writeln(
-				sprintf(
-					'<info>%s (id=%d, app=%s): %d object(s), referenced by %d register(s)</info>',
-					$slug,
-					$schemaId,
-					$appId,
-					$objectCount,
-					count($linkedRegisters)
-				)
-			);
-
-			if ($objectCount > 0 && $force === false) {
-				$skipped++;
-				$output->writeln(
-					'  <comment>SKIP: still owns objects. Re-run with --force to drop them, '
-					. 'or migrate them first.</comment>'
-				);
-				continue;
-			}
-
-			$refusal = $this->refusalOf(schema: $schema, override: $override);
-			if ($refusal !== null) {
-				$skipped++;
-				$output->writeln($refusal);
-				continue;
-			}
-
-			$forcedNote = $this->forcedNote(schema: $schema);
-
-			if ($dryRun === true) {
-				$output->writeln(
-					sprintf('  <comment>WOULD DELETE (objects=%d)</comment>%s', $objectCount, $forcedNote)
-				);
-				continue;
-			}
-
-			try {
-				$result = $this->deletionService->cascadeDeleteSchema(
-					schema: $schema,
-					override: $override
-				);
-			} catch (\Throwable $e) {
-				$skipped++;
-				$output->writeln(sprintf('  <error>FAILED: %s</error>', $e->getMessage()));
-				continue;
-			}
-
-			$this->unlinkFromRegisters(schemaId: $schemaId, output: $output);
-
-			$pruned++;
-			$tableDropped = 'no';
-			if ($result['tableDropped'] === true) {
-				$tableDropped = 'yes';
-			}
-
-			$output->writeln(
-				sprintf(
-					'  <info>DELETED (objects removed=%d, table dropped=%s)</info>%s',
-					(int)$result['deletedCount'],
-					$tableDropped,
-					$forcedNote
-				)
-			);
-
-			// The count that gated the deletion and the count the deletion
-			// reports must agree. When they do not, the guard above passed on a
-			// number that did not describe what was destroyed, and the operator
-			// who read "0 object(s)" in the dry run needs to know that.
-			if ((int)$result['deletedCount'] !== $objectCount) {
-				$output->writeln(
-					sprintf(
-						'  <error>COUNT MISMATCH: the guard saw %d object(s), the delete removed %d. '
-						. 'The guard was wrong about what it was protecting.</error>',
-						$objectCount,
-						(int)$result['deletedCount']
-					)
-				);
-			}
-			}//end foreach
-		}//end foreach
+			$this->pruneSlug(slug: (string)$slug, run: $run, output: $output);
+		}
 
 		$suffix = '';
-		if ($dryRun === true) {
+		if ($run->dryRun === true) {
 			$suffix = ' (dry run, no writes performed)';
 		}
 
 		$output->writeln(
 			sprintf(
 				'<info>Done. Pruned=%d, skipped=%d, not-found=%d%s</info>',
-				$pruned,
-				$skipped,
-				$missing,
+				$run->pruned,
+				$run->skipped,
+				$run->missing,
 				$suffix
 			)
 		);
 
 		return Command::SUCCESS;
 	}//end execute()
+
+	/**
+	 * The error line for missing required options, or null when both are given.
+	 *
+	 * @param string            $appId The --app value.
+	 * @param array<int, mixed> $slugs The --slug values.
+	 *
+	 * @return string|null The line to print, or null when the arguments are complete.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function invalidArguments(string $appId, array $slugs): ?string {
+		if ($appId === '') {
+			return '<error>--app is required.</error>';
+		}
+
+		if ($slugs === []) {
+			return '<error>At least one --slug is required.</error>';
+		}
+
+		return null;
+	}//end invalidArguments()
+
+	/**
+	 * Prune every row the app owns under one slug.
+	 *
+	 * @param string                 $slug   The retired schema slug.
+	 * @param PruneRetiredSchemasRun $run    The run's flags and tally.
+	 * @param OutputInterface        $output Console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function pruneSlug(string $slug, PruneRetiredSchemasRun $run, OutputInterface $output): void {
+		$appId = $run->appId;
+
+		// EVERY row under this (application, slug), not the first.
+		//
+		// `findByApplicationAndSlug()` caps at one, which is correct where
+		// the pair is unique. It is not unique in practice, and this command
+		// exists because it is not: the import unions schema ids and never
+		// removes one, so a descriptor edit leaves the old row behind and a
+		// later import can add a second under the same pair. Reading one row
+		// meant removing one of two and reporting success. Measured on a live
+		// instance: opencatalogi owned two `document` rows (39 and 40), this
+		// pruned 40, printed `Pruned=1, skipped=0`, and left 39 answering
+		// every lookup.
+		$schemas = $this->schemaMapper->findAllByApplicationAndSlug(slug: $slug, application: $appId);
+
+		if ($schemas === []) {
+			$run->missing++;
+			$output->writeln(
+				sprintf(
+					'<comment>SKIP "%s": app "%s" owns no schema with that slug (already pruned, or never imported).</comment>',
+					$slug,
+					$appId
+				)
+			);
+			return;
+		}
+
+		if (count($schemas) > 1) {
+			$output->writeln(
+				sprintf(
+					'<comment>"%s": app "%s" owns %d rows under this slug. All of them are handled below.</comment>',
+					$slug,
+					$appId,
+					count($schemas)
+				)
+			);
+		}
+
+		foreach ($schemas as $schema) {
+			$this->pruneSchema(schema: $schema, slug: $slug, run: $run, output: $output);
+		}
+	}//end pruneSlug()
+
+	/**
+	 * Report one schema, apply the guards, then tear it down unless this is a dry run.
+	 *
+	 * @param Schema                 $schema The schema to prune.
+	 * @param string                 $slug   Its slug, as the operator named it.
+	 * @param PruneRetiredSchemasRun $run    The run's flags and tally.
+	 * @param OutputInterface        $output Console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function pruneSchema(Schema $schema, string $slug, PruneRetiredSchemasRun $run, OutputInterface $output): void {
+		$schemaId = (int)$schema->getId();
+		// The count the DELETE would produce, from the deletion service that
+		// enumerates the tables — not a second, narrower count of its own.
+		// The guard and the delete disagreeing is the whole defect.
+		$objectCount = $this->deletionService->countObjectsCascadeWouldDelete(schema: $schema);
+		$linkedRegisters = $this->registersReferencing(schemaId: $schemaId);
+
+		$output->writeln(
+			sprintf(
+				'<info>%s (id=%d, app=%s): %d object(s), referenced by %d register(s)</info>',
+				$slug,
+				$schemaId,
+				$run->appId,
+				$objectCount,
+				count($linkedRegisters)
+			)
+		);
+
+		$skip = $this->skipReason(schema: $schema, objectCount: $objectCount, run: $run);
+		if ($skip !== null) {
+			$run->skipped++;
+			$output->writeln($skip);
+			return;
+		}
+
+		if ($run->dryRun === true) {
+			$output->writeln(
+				sprintf('  <comment>WOULD DELETE (objects=%d)</comment>%s', $objectCount, $this->forcedNote(schema: $schema))
+			);
+			return;
+		}
+
+		$this->tearDown(schema: $schema, objectCount: $objectCount, run: $run, output: $output);
+	}//end pruneSchema()
+
+	/**
+	 * Why this schema is skipped before any write: the object guard, then the refusals.
+	 *
+	 * @param Schema                 $schema      The schema to prune.
+	 * @param int                    $objectCount The objects the cascade would delete.
+	 * @param PruneRetiredSchemasRun $run         The run's flags.
+	 *
+	 * @return string|null The line to print, or null when the schema may go.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function skipReason(Schema $schema, int $objectCount, PruneRetiredSchemasRun $run): ?string {
+		if ($objectCount > 0 && $run->force === false) {
+			return '  <comment>SKIP: still owns objects. Re-run with --force to drop them, '
+				. 'or migrate them first.</comment>';
+		}
+
+		return $this->refusalOf(schema: $schema, override: $run->override);
+	}//end skipReason()
+
+	/**
+	 * Cascade-delete one schema, unlink it from its registers and report the result.
+	 *
+	 * The forced note is read before the teardown, as the dry run reads it.
+	 *
+	 * @param Schema                 $schema      The schema to delete.
+	 * @param int                    $objectCount The objects the guard counted.
+	 * @param PruneRetiredSchemasRun $run         The run's flags and tally.
+	 * @param OutputInterface        $output      Console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function tearDown(
+		Schema $schema,
+		int $objectCount,
+		PruneRetiredSchemasRun $run,
+		OutputInterface $output
+	): void {
+		$forcedNote = $this->forcedNote(schema: $schema);
+
+		try {
+			$result = $this->deletionService->cascadeDeleteSchema(
+				schema: $schema,
+				override: $run->override
+			);
+		} catch (\Throwable $e) {
+			$run->skipped++;
+			$output->writeln(sprintf('  <error>FAILED: %s</error>', $e->getMessage()));
+			return;
+		}
+
+		$this->unlinkFromRegisters(schemaId: (int)$schema->getId(), output: $output);
+
+		$run->pruned++;
+		$tableDropped = 'no';
+		if ($result['tableDropped'] === true) {
+			$tableDropped = 'yes';
+		}
+
+		$output->writeln(
+			sprintf(
+				'  <info>DELETED (objects removed=%d, table dropped=%s)</info>%s',
+				(int)$result['deletedCount'],
+				$tableDropped,
+				$forcedNote
+			)
+		);
+
+		// The count that gated the deletion and the count the deletion
+		// reports must agree. When they do not, the guard above passed on a
+		// number that did not describe what was destroyed, and the operator
+		// who read "0 object(s)" in the dry run needs to know that.
+		if ((int)$result['deletedCount'] !== $objectCount) {
+			$output->writeln(
+				sprintf(
+					'  <error>COUNT MISMATCH: the guard saw %d object(s), the delete removed %d. '
+					. 'The guard was wrong about what it was protecting.</error>',
+					$objectCount,
+					(int)$result['deletedCount']
+				)
+			);
+		}
+	}//end tearDown()
 
 	/**
 	 * Why this schema is skipped, told here as well as in the service.
@@ -350,6 +425,20 @@ class PruneRetiredSchemasCommand extends Command {
 				. 'legally retained records. Re-run with --force-archival to destroy them.</comment>';
 		}
 
+		return $this->keptRowsRefusal(schema: $schema, override: $override);
+	}//end refusalOf()
+
+	/**
+	 * The kept-rows refusal, unless the operator lifted it.
+	 *
+	 * @param Schema                 $schema   The schema to prune.
+	 * @param SchemaTeardownOverride $override What the operator lifted.
+	 *
+	 * @return string|null The line to print, or null when the schema may go.
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	private function keptRowsRefusal(Schema $schema, SchemaTeardownOverride $override): ?string {
 		if ($override->keptRows === true) {
 			return null;
 		}
@@ -364,7 +453,7 @@ class PruneRetiredSchemasCommand extends Command {
 			. 'Re-run with --force-kept-rows to destroy them.</comment>',
 			$keptRows
 		);
-	}//end refusalOf()
+	}//end keptRowsRefusal()
 
 	/**
 	 * The note that marks protected records in the command's output.
