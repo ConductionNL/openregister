@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\GdprEntitiesControllerServices;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
@@ -66,9 +66,9 @@ class GdprEntitiesController extends Controller {
 	/**
 	 * GDPR entity mapper
 	 *
-	 * @var GdprEntityMapper
+	 * @var GdprEntityMapperInterface
 	 */
-	private readonly GdprEntityMapper $entityMapper;
+	private readonly GdprEntityMapperInterface $entityMapper;
 
 	/**
 	 * Entity relation mapper

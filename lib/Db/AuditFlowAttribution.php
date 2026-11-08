@@ -51,14 +51,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
  */
-class AuditFlowAttribution extends QBMapper {
-	/**
-	 * The action of a per-hop audit row. A hop row carries the run's attribution
-	 * but records that the hop ran, not that it wrote anything.
-	 *
-	 * @var string
-	 */
-	public const ACTION_HOP = 'flow.hop';
+class AuditFlowAttribution extends QBMapper implements AuditFlowAttributionInterface {
 
 	/**
 	 * Constructor.

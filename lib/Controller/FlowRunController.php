@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
-use OCA\OpenRegister\Db\AuditFlowAttribution;
+use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
@@ -140,9 +140,9 @@ class FlowRunController extends Controller {
 	/**
 	 * Reads the attribution stamped on
 	 *
-	 * @var ?AuditFlowAttribution
+	 * @var ?AuditFlowAttributionInterface
 	 */
-	private readonly ?AuditFlowAttribution $auditTrails;
+	private readonly ?AuditFlowAttributionInterface $auditTrails;
 
 	/**
 	 * The guarded signal seam the
