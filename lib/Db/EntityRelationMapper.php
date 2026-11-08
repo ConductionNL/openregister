@@ -24,6 +24,8 @@ use DateTime;
 use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
@@ -33,8 +35,6 @@ use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Db\Chunk;
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 
 /**
  * Class EntityRelationMapper
@@ -249,31 +249,54 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		$rows = $result->fetchAll();
 		$result->closeCursor();
 
-		// Decode the JSON `bases` column. Doctrine returns it as a string;
-		// callers expect an array (or null when no bases were recorded).
-		foreach ($rows as &$row) {
-			if (isset($row['bases']) === true && is_string($row['bases']) === true) {
-				$decoded = json_decode($row['bases'], associative: true);
-				$row['bases'] = null;
-				if (is_array($decoded) === true) {
-					$row['bases'] = $decoded;
-				}
-			}
-
-			// Normalise boolean-as-int values returned by some DB drivers.
-			if (isset($row['skip_anonymization']) === true) {
-				$row['skip_anonymization'] = (bool)$row['skip_anonymization'];
-			}
-
-			if (isset($row['anonymized']) === true) {
-				$row['anonymized'] = (bool)$row['anonymized'];
-			}
+		foreach ($rows as $index => $row) {
+			$rows[$index] = $this->normaliseAnonymisedRow(row: $row);
 		}
-
-		unset($row);
 
 		return $rows;
 	}//end findAnonymisedEntitiesWithBasesForFile()
+
+	/**
+	 * Decode the `bases` column and the boolean flags of one anonymised-entity row.
+	 *
+	 * Doctrine returns `bases` as a JSON string; callers expect an array, or null
+	 * when no bases were recorded or the value does not decode to an array. Some
+	 * DB drivers return the flags as integers or strings.
+	 *
+	 * @param array<string, mixed> $row The raw row.
+	 *
+	 * @return array<string, mixed> The normalised row.
+	 */
+	private function normaliseAnonymisedRow(array $row): array {
+		if (isset($row['bases']) === true && is_string($row['bases']) === true) {
+			$row['bases'] = $this->decodeBasesColumn(json: $row['bases']);
+		}
+
+		// Normalise boolean-as-int values returned by some DB drivers.
+		foreach (['skip_anonymization', 'anonymized'] as $flag) {
+			if (isset($row[$flag]) === true) {
+				$row[$flag] = (bool)$row[$flag];
+			}
+		}
+
+		return $row;
+	}//end normaliseAnonymisedRow()
+
+	/**
+	 * The decoded `bases` column, or null when it is not a JSON array or object.
+	 *
+	 * @param string $json The stored column value.
+	 *
+	 * @return array|null The decoded bases.
+	 */
+	private function decodeBasesColumn(string $json): ?array {
+		$decoded = json_decode($json, associative: true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return null;
+	}//end decodeBasesColumn()
 
 	/**
 	 * Build a `(entity_value → {id, type})` map for every entity relation on a file.
@@ -498,7 +521,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		$relation->setEntityId((int)$row['entityId']);
 		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
 		foreach (self::ROW_FIELDS as $field => [$setter, $cast, $nullSkips]) {
-			if (array_key_exists($field, $row) === false || ($nullSkips === true && $row[$field] === null)) {
+			if ($this->rowFieldIsSkipped(row: $row, field: $field, nullSkips: $nullSkips) === true) {
 				continue;
 			}
 
@@ -515,10 +538,23 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	}//end buildRelationFromRow()
 
 	/**
+	 * Whether a row field is left unset: it is absent, or null where null means "skip".
+	 *
+	 * @param array<string, mixed> $row Field values keyed by camelCase setter name.
+	 * @param string $field The field.
+	 * @param bool $nullSkips Whether a null value skips the field.
+	 *
+	 * @return bool True when the setter is not called.
+	 */
+	private function rowFieldIsSkipped(array $row, string $field, bool $nullSkips): bool {
+		return array_key_exists($field, $row) === false || ($nullSkips === true && $row[$field] === null);
+	}//end rowFieldIsSkipped()
+
+	/**
 	 * A row value cast for its field.
 	 *
-	 * @param mixed  $value The value.
-	 * @param string $cast  One of int, float, string, ?string, bool or raw.
+	 * @param mixed $value The value.
+	 * @param string $cast One of int, float, string, ?string, bool or raw.
 	 *
 	 * @return mixed
 	 */
@@ -568,8 +604,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 *
 	 * @param int $fileId The file ID.
 	 * @param array<int|string, string> $placeholders Keys are int|string,
-	 *        not string: a stringified entity id is a canonical numeric string,
-	 *        which PHP coerces to an int array key. Map of entity id → the
+	 *                                                not string: a stringified entity id is a canonical numeric string,
+	 *                                                which PHP coerces to an int array key. Map of entity id → the
 	 *                                                exact placeholder emitted for it
 	 *                                                (e.g. "7" => "[PERSOON: 1]").
 	 *
@@ -840,7 +876,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * Apply the supplied decision metadata to the relation and list what changed.
 	 *
 	 * @param EntityRelation $relation The relation row, updated in place.
-	 * @param array          $fields   Validated decision-metadata fields.
+	 * @param array $fields Validated decision-metadata fields.
 	 *
 	 * @return array<string, array{previous: mixed, new: mixed}> The changed fields.
 	 */
@@ -889,12 +925,9 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * @return bool True when the two values represent the same redaction policy.
 	 */
 	private static function basesAreEqual(?array $a, ?array $b): bool {
-		if ($a === null && $b === null) {
-			return true;
-		}
-
+		// Both null is equal; exactly one null is not.
 		if ($a === null || $b === null) {
-			return false;
+			return $a === $b;
 		}
 
 		$normA = array_values(array_unique($a, SORT_STRING));
@@ -960,10 +993,10 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * the stored link is still `$expectedUuid` (null: none), so two reviewers
 	 * taking a first decision at once cannot both link theirs.
 	 *
-	 * @param EntityRelation $relation     The relation.
-	 * @param string         $decisionUuid The decision's uuid.
-	 * @param string|null    $expectedUuid The link the caller read before deciding; only read when guarded.
-	 * @param bool           $guarded      Whether to write only while the stored link is still `$expectedUuid`.
+	 * @param EntityRelation $relation The relation.
+	 * @param string $decisionUuid The decision's uuid.
+	 * @param string|null $expectedUuid The link the caller read before deciding; only read when guarded.
+	 * @param bool $guarded Whether to write only while the stored link is still `$expectedUuid`.
 	 *
 	 * @return EntityRelation The stored relation.
 	 *
@@ -978,7 +1011,7 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 		EntityRelation $relation,
 		string $decisionUuid,
 		?string $expectedUuid = null,
-		bool $guarded = false
+		bool $guarded = false,
 	): EntityRelation {
 		if ($guarded === true) {
 			$qb = $this->db->getQueryBuilder();
@@ -1000,8 +1033,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	/**
 	 * The condition "the stored decision link is still what the caller read".
 	 *
-	 * @param IQueryBuilder $qb           The query builder the condition is for.
-	 * @param string|null   $expectedUuid The link the caller read; null or empty means none.
+	 * @param IQueryBuilder $qb The query builder the condition is for.
+	 * @param string|null $expectedUuid The link the caller read; null or empty means none.
 	 *
 	 * @return ICompositeExpression|string The condition for `andWhere()`.
 	 */
