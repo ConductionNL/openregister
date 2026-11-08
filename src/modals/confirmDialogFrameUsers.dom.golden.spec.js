@@ -162,11 +162,18 @@ function refused(store, prop) {
 			: undefined
 }
 
-const SCHEMA = {
-	id: 3,
-	title: 'Books',
-	properties: { isbn: { title: 'ISBN' } },
-	required: ['isbn'],
+/**
+ * A fresh schema: deleting a property changes the one the dialog was given.
+ *
+ * @return {object} The schema
+ */
+function schema() {
+	return {
+		id: 3,
+		title: 'Books',
+		properties: { isbn: { title: 'ISBN' } },
+		required: ['isbn'],
+	}
 }
 
 /**
@@ -213,22 +220,26 @@ const DIALOGS = {
 	schemaProperty: {
 		component: DeleteSchemaProperty,
 		open: { modal: 'deleteSchemaProperty' },
-		fields: {
-			schemaStore: { schemaItem: SCHEMA, schemaPropertyKey: 'isbn' },
+		get fields() {
+			return {
+			schemaStore: { schemaItem: schema(), schemaPropertyKey: 'isbn' },
 			registerStore: { registerList: [] },
+			}
 		},
 		failing: refused('schemaStore', 'saveSchema'),
 	},
 	schemaObjects: {
 		component: DeleteSchemaObjects,
 		open: { dialog: 'deleteSchemaObjects' },
-		fields: {
-			schemaStore: { schemaItem: SCHEMA },
+		get fields() {
+			return {
+			schemaStore: { schemaItem: schema() },
 			registerStore: { registerList: [{ id: 1, schemas: [{ id: 3 }] }] },
 			reply: (store, prop) =>
 				store === 'schemaStore' && prop === 'getSchemaStats'
 					? Promise.resolve({ objects: { total: 4, deleted: 1 } })
 					: undefined,
+			}
 		},
 	},
 }

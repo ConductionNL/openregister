@@ -766,7 +766,7 @@ exports[`dialog schemaProperty blocked by objects that use it disables the confi
     </x-ncbutton>
   </slot-actions>
   <slot-default>
-    <p> Weet u zeker dat u <b></b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p>
+    <p> Weet u zeker dat u <b>ISBN</b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p>
     <x-ncnotecard type="warning">
       <slot-default>
         <p> Meerdere objecten zullen niet beschikbaar zijn, omdat ze deze eigenschap gebruiken. </p>
@@ -907,7 +907,7 @@ exports[`dialog schemaProperty shows the busy state 1`] = `
     </x-ncbutton>
   </slot-actions>
   <slot-default>
-    <p> Weet u zeker dat u <b></b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p>
+    <p> Weet u zeker dat u <b>ISBN</b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p>
   </slot-default>
 </x-ncdialog>"
 `;
