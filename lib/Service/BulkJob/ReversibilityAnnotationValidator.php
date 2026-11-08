@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 /**
  * Class ReversibilityAnnotationValidator
  */
-final class ReversibilityAnnotationValidator {
+final class ReversibilityAnnotationValidator implements ReversibilityAnnotationValidatorInterface {
 
 	/**
 	 * The configuration key holding a schema's declared actions.
