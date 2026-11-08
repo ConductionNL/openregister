@@ -1222,8 +1222,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function readStateMapper(): ObjectReadStateMapper {
 		$mapper = $this->createMock(ObjectReadStateMapper::class);
 		$mapper->method('markSeen')->willReturnCallback(
-			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?array $subSeen = null, ?\DateTime $seenAt = null): ObjectReadState {
-				$this->readStates[$userId.' '.$objectUuid] = ($seenAt ?? new \DateTime());
+			function (ObjectReadState $sighting): ObjectReadState {
+				$this->readStates[$sighting->getUserId().' '.$sighting->getObjectUuid()] = ($sighting->getLastSeenAt() ?? new \DateTime());
 				return new ObjectReadState();
 			}
 		);
