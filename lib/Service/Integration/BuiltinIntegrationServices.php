@@ -202,7 +202,7 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-leaf-foundation/spec.md
 		\OCA\OpenRegister\Service\CaseTokenService::class => [
-			'mapper'       => \OCA\OpenRegister\Db\CaseTokenMapper::class,
+			'mapper'       => \OCA\OpenRegister\Db\CaseTokenMapperInterface::class,
 			'secureRandom' => \OCP\Security\ISecureRandom::class,
 			'userSession'  => \OCP\IUserSession::class,
 			'urlGenerator' => \OCP\IURLGenerator::class,

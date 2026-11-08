@@ -59,6 +59,7 @@ final class DbRegistrar {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AccessLinkMapperInterface::class => AccessLinkMapper::class,
 		AnalyticsLinkMapperInterface::class => AnalyticsLinkMapper::class,
 		ApiCallRecordMapperInterface::class => ApiCallRecordMapper::class,
 		ApplicationMapperInterface::class => ApplicationMapper::class,
@@ -66,9 +67,12 @@ final class DbRegistrar {
 		BookmarkLinkMapperInterface::class => BookmarkLinkMapper::class,
 		BulkJobMapperInterface::class => BulkJobMapper::class,
 		BulkJobMemberMapperInterface::class => BulkJobMemberMapper::class,
+		CalendarFeedTokenMapperInterface::class => CalendarFeedTokenMapper::class,
 		CalendarLinkMapperInterface::class => CalendarLinkMapper::class,
 		CaseItemMapperInterface::class => CaseItemMapper::class,
+		CaseTokenMapperInterface::class => CaseTokenMapper::class,
 		CollectiveLinkMapperInterface::class => CollectiveLinkMapper::class,
+		ConsumerMapperInterface::class => ConsumerMapper::class,
 		ContactLinkMapperInterface::class => ContactLinkMapper::class,
 		CospendLinkMapperInterface::class => CospendLinkMapper::class,
 		DecisionMapperInterface::class => DecisionMapper::class,
@@ -77,6 +81,7 @@ final class DbRegistrar {
 		EndpointLogMapperInterface::class => EndpointLogMapper::class,
 		EndpointMapperInterface::class => EndpointMapper::class,
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
+		ErasurePreviewMapperInterface::class => ErasurePreviewMapper::class,
 		FlowDefinitionMapperInterface::class => FlowDefinitionMapper::class,
 		FlowLinkMapperInterface::class => FlowLinkMapper::class,
 		FlowRunMapperInterface::class => FlowRunMapper::class,
@@ -122,6 +127,7 @@ final class DbRegistrar {
 		SequenceMapperInterface::class => SequenceMapper::class,
 		SourceMapperInterface::class => SourceMapper::class,
 		StateHistoryMapperInterface::class => StateHistoryMapper::class,
+		SubjectExportMapperInterface::class => SubjectExportMapper::class,
 		SyncRecordMapperInterface::class => SyncRecordMapper::class,
 		TalkLinkMapperInterface::class => TalkLinkMapper::class,
 		TaskSequenceMapperInterface::class => TaskSequenceMapper::class,

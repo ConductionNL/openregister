@@ -48,7 +48,7 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AccessLink;
-use OCA\OpenRegister\Db\AccessLinkMapper;
+use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 use Symfony\Component\Uid\Uuid;
@@ -101,13 +101,13 @@ class AccessLinkService {
 	/**
 	 * Constructor.
 	 *
-	 * @param AccessLinkMapper $mapper The link store.
+	 * @param AccessLinkMapperInterface $mapper The link store.
 	 * @param AccessLinkUseLog $useLog The audit trail every use is written to, and the log.
 	 * @param AccessLinkSecrets $secrets The RNG for the anchor and the password hasher.
 	 * @param IURLGenerator $urlGenerator The URL generator, for the link a holder is given.
 	 */
 	public function __construct(
-		private readonly AccessLinkMapper $mapper,
+		private readonly AccessLinkMapperInterface $mapper,
 		private readonly AccessLinkUseLog $useLog,
 		private readonly AccessLinkSecrets $secrets,
 		private readonly IURLGenerator $urlGenerator,

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * ApiCallRecordMapperInterface: what callers outside the component use of ApiCallRecordMapper.
+ * ApiCallRecordMapperInterface: what callers outside the Db component use of ApiCallRecordMapper.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -9,7 +9,7 @@
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
- * @author    Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -25,12 +25,30 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 
 /**
- * The API call records the API callers endpoint reads.
+ * The methods of ApiCallRecordMapper that callers outside the Db component use.
  *
- * Declares only what callers outside the component use; the rest of the
- * class stays its own.
+ * Callers type against this interface and resolve it from the container; the
+ * registrar binds it to ApiCallRecordMapper. Guarded by C04InterfaceBindingsTest.
  */
 interface ApiCallRecordMapperInterface {
+
+	/**
+	 * Count one call against a caller, route, method and version.
+	 *
+	 * Tries the increment first and inserts only when nothing was updated, so
+	 * the common path (a caller that has called before) is one statement. A
+	 * concurrent insert of the same combination loses the unique index race and
+	 * is retried as an increment, which is why the insert failure is not simply
+	 * swallowed.
+	 *
+	 * @param ApiCallKey $key    The caller, route, method and version.
+	 * @param DateTime   $moment When the call happened.
+	 *
+	 * @return bool True when the call was counted.
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 */
+	public function count(ApiCallKey $key, DateTime $moment): bool;
 
 	/**
 	 * The records whose last call falls in a period.
