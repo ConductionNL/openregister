@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityFactory;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
@@ -159,7 +159,7 @@ class FlowMessagingService {
 		$logger          = $platform->logger;
 		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipients->recipientResolver);
 		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $events, logger: $logger, runContext: $overrides->runContext);
-		$this->optOut    = ($overrides->optOut ?? new OptOutAuthority(eventDispatcher: $events, appConfig: $platform->appConfig, logger: $logger));
+		$this->optOut    = ($overrides->optOut ?? OptOutAuthorityFactory::create(eventDispatcher: $events, appConfig: $platform->appConfig, logger: $logger));
 
 	}//end __construct()
 
