@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunSubjects;
+use OCA\OpenRegister\Service\Flow\FlowRunSubjectsInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -55,14 +55,16 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 * Resolved lazily from the container, like the other flow repair steps:
 	 * this runs during install, when the tables may not exist yet.
 	 *
-	 * @param ContainerInterface $container The app container.
-	 * @param LoggerInterface    $logger    Diagnostics.
+	 * @param ContainerInterface       $container The app container.
+	 * @param LoggerInterface          $logger    Diagnostics.
+	 * @param FlowRunSubjectsInterface $subjects  The subject rules.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly FlowRunSubjectsInterface $subjects,
 	) {
 
 	}//end __construct()
@@ -90,7 +92,6 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	public function run(IOutput $output): void {
 		try {
 			$runs = $this->container->get(FlowRunMapperInterface::class);
-			$subjects = new FlowRunSubjects(logger: $this->logger);
 		} catch (Throwable $e) {
 			$output->info('Flow run trigger-subject seeding skipped: ' . $e->getMessage());
 			return;
@@ -101,7 +102,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 
 		foreach ($this->everyRun(runs: $runs) as $run) {
 			try {
-				$seeded += $this->seedOne(run: $run, runs: $runs, subjects: $subjects);
+				$seeded += $this->seedOne(run: $run, runs: $runs, subjects: $this->subjects);
 			} catch (Throwable $e) {
 				$skipped++;
 				$this->logger->warning(
@@ -121,15 +122,15 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	/**
 	 * Seed one run, if it has something to seed and nothing already.
 	 *
-	 * @param FlowRun         $run      The run.
+	 * @param FlowRun                  $run      The run.
 	 * @param FlowRunMapperInterface   $runs     The mapper.
-	 * @param FlowRunSubjects $subjects The subject rules.
+	 * @param FlowRunSubjectsInterface $subjects The subject rules.
 	 *
 	 * @return int 1 when it was seeded, 0 otherwise.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function seedOne(FlowRun $run, FlowRunMapperInterface $runs, FlowRunSubjects $subjects): int {
+	private function seedOne(FlowRun $run, FlowRunMapperInterface $runs, FlowRunSubjectsInterface $subjects): int {
 		if ($subjects->all(run: $run) !== []) {
 			// Already declared something. A repair must not overwrite what a
 			// flow author said.
@@ -143,7 +144,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 
 		$subjects->record(
 			run: $run,
-			role: FlowRunSubjects::ROLE_TRIGGER,
+			role: FlowRunSubjectsInterface::ROLE_TRIGGER,
 			uuid: $uuid,
 			register: trim((string)$run->getSubjectRegister()),
 			schema: trim((string)$run->getSubjectSchema())
