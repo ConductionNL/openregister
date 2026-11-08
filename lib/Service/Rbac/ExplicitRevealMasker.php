@@ -32,7 +32,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -50,15 +49,13 @@ class ExplicitRevealMasker {
 	 * @param ExplicitReveal      $reveal      The request's grants.
 	 * @param PropertyRbacHandlerInterface $properties  The property read rule.
 	 * @param IUserSession        $userSession The reader.
-	 * @param LoggerInterface     $logger      The logger.
-	 * @param RevealCollector|null $reveals    Records a reveal; absent, nothing is recorded.
+	 * @param RevealRecording $recording The log line and the collector a reveal is recorded in.
 	 */
 	public function __construct(
 		private readonly ExplicitReveal $reveal,
 		private readonly PropertyRbacHandlerInterface $properties,
 		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly ?RevealCollector $reveals = null,
+		private readonly RevealRecording $recording,
 	) {
 	}//end __construct()
 
@@ -140,19 +137,19 @@ class ExplicitRevealMasker {
 	 */
 	private function record(?Schema $schema, array $objectIds, string $property): void {
 		$rules = ($schema?->getProperties()[$property]['authorization'] ?? null);
-		if ($this->reveals === null || is_array($rules) === false || $this->reveals->isAudited(propertyRules: $rules) === false) {
+		if ($this->recording->reveals === null || is_array($rules) === false || $this->recording->reveals->isAudited(propertyRules: $rules) === false) {
 			return;
 		}
 
 		try {
-			$this->reveals->record(
+			$this->recording->reveals->record(
 				userId: (string)$this->userSession->getUser()?->getUID(),
 				objectUuid: (string)($objectIds[0] ?? ''),
 				property: $property,
 				schemaId: $schema?->getId()
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->recording->logger->warning(
 				message: '[ExplicitRevealMasker] Could not record a reveal; the read is unaffected',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property, 'error' => $e->getMessage()]
 			);

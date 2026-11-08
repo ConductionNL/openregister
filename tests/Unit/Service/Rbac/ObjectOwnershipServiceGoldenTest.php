@@ -43,6 +43,8 @@ use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
 use OCA\OpenRegister\Service\Rbac\ObjectLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\OwnershipLog;
+use OCA\OpenRegister\Service\Rbac\OwnershipSources;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnerWriter;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
@@ -141,20 +143,18 @@ final class ObjectOwnershipServiceGoldenTest extends TestCase {
 				grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
 				permissions: $this->createMock(PermissionHandler::class)
 			),
-			directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager),
+			sources: new OwnershipSources(directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager), lookup: new ObjectLookup(
+				magicMapper: $this->magicMapper,
+				registerMapper: $this->createMock(RegisterMapper::class),
+				schemaMapper: $this->createMock(SchemaMapper::class)
+			)),
 			writers: new OwnershipWriters(
 				ownerWriter: $this->createMock(ObjectOwnerWriter::class),
 				authorizationWriter: $this->authorizationWriter,
 				auditTrailMapper: $this->auditTrailMapper,
 				notificationManager: $this->notificationManager
 			),
-			lookup: new ObjectLookup(
-				magicMapper: $this->magicMapper,
-				registerMapper: $this->createMock(RegisterMapper::class),
-				schemaMapper: $this->createMock(SchemaMapper::class)
-			),
-			logger: new NullLogger(),
-			grantAuditor: $this->grantAuditor
+			log: new OwnershipLog(logger: new NullLogger(), grantAuditor: $this->grantAuditor)
 		);
 	}//end service()
 
