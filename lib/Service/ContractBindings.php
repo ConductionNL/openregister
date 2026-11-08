@@ -759,6 +759,8 @@ final class ContractBindings {
 		DateTimeNormalizerInterface::class => DateTimeNormalizer::class,
 		DecisionTableNodeInterface::class => DecisionTableNode::class,
 		\OCA\OpenRegister\Service\Outbound\ProxySettingsInterface::class => \OCA\OpenRegister\Service\Outbound\ProxySettings::class,
+		\OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface::class => \OCA\OpenRegister\Service\Decision\DecisionVisibility::class,
+		\OCA\OpenRegister\Service\Decision\RelationDecisionServiceInterface::class => \OCA\OpenRegister\Service\Decision\RelationDecisionService::class,
 		DeckCardServiceInterface::class => DeckCardService::class,
 		DeckLinkServiceInterface::class => DeckLinkService::class,
 		DeepLinkRegistryServiceInterface::class => DeepLinkRegistryService::class,
