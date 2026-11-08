@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
 use DateTime;
 use DateTimeImmutable;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
@@ -324,9 +325,7 @@ class TaskScheduledNotificationJob extends TimedJob {
 				schema: $sweep->schema
 			);
 			$this->dedupe->upsert(
-				schemaId: self::DEDUPE_SCHEMA_ID,
-				ruleKey: $sweep->name,
-				objectUuid: $uuid,
+				key: new NotificationDedupeKey(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $sweep->name, objectUuid: $uuid),
 				fingerprint: $fingerprint,
 				now: $now,
 				dispatched: true

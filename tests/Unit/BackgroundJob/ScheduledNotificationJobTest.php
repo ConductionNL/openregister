@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledObjectSources;
@@ -294,9 +295,7 @@ class ScheduledNotificationJobTest extends TestCase {
 		$this->dedupeMapper->expects($this->once())
 			->method('upsert')
 			->with(
-				$this->equalTo(1),
-				$this->equalTo('scheduled-test'),
-				$this->equalTo($object->getUuid()),
+				$this->equalTo(new NotificationDedupeKey(1, 'scheduled-test', $object->getUuid())),
 				$this->isType('string'),
 				$this->isInstanceOf(\DateTime::class),
 				$this->equalTo(true)
@@ -339,8 +338,6 @@ class ScheduledNotificationJobTest extends TestCase {
 				$this->anything(),
 				$this->anything(),
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
 				$this->equalTo(false)
 			);
 
@@ -375,8 +372,6 @@ class ScheduledNotificationJobTest extends TestCase {
 		$this->dedupeMapper->expects($this->once())
 			->method('upsert')
 			->with(
-				$this->anything(),
-				$this->anything(),
 				$this->anything(),
 				$this->anything(),
 				$this->anything(),

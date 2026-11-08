@@ -160,27 +160,21 @@ class EntryMentionService {
 	 * reports and what a test asserts on: a method that returned the uids it
 	 * was ASKED about would pass whether the access check worked or not.
 	 *
-	 * @param ObjectEntity $object    The object the entry hangs on.
-	 * @param string       $entryUuid The entry that named them.
-	 * @param string|null  $text      The entry text.
-	 * @param string|null  $register  The register as the caller addressed it.
-	 * @param string|null  $schema    The schema as the caller addressed it.
+	 * @param WrittenEntry $written  The entry just written: its object, uuid and text.
+	 * @param string|null  $register The register as the caller addressed it.
+	 * @param string|null  $schema   The schema as the caller addressed it.
 	 *
 	 * @return array<int,string> The uids notified and subscribed.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function apply(
-		ObjectEntity $object,
-		string $entryUuid,
-		?string $text,
-		?string $register = null,
-		?string $schema = null,
-	): array {
-		$caller = $this->principals->userSession->getUser()?->getUID();
-		$pulled = [];
+	public function apply(WrittenEntry $written, ?string $register = null, ?string $schema = null): array {
+		$object    = $written->object;
+		$entryUuid = $written->uuid();
+		$caller    = $this->principals->userSession->getUser()?->getUID();
+		$pulled    = [];
 
-		foreach ($this->parse(text: $text) as $uid) {
+		foreach ($this->parse(text: $written->message) as $uid) {
 			if ($uid === $caller) {
 				// Naming yourself is not a mention. It notifies you of your
 				// own sentence and subscribes you to a case you are on.
