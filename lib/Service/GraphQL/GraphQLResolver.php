@@ -80,33 +80,91 @@ class GraphQLResolver {
 	private array $partialErrors = [];
 
 	/**
+	 * Object finder
+	 *
+	 * @var GetObject
+	 */
+	private readonly GetObject $getObject;
+
+	/**
+	 * Object service
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Relation handler
+	 *
+	 * @var RelationHandler
+	 */
+	private readonly RelationHandler $relationHandler;
+
+	/**
+	 * Register mapper
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Permission handler
+	 *
+	 * @var PermissionHandlerInterface
+	 */
+	private readonly PermissionHandlerInterface $permissionHandler;
+
+	/**
+	 * Property RBAC handler
+	 *
+	 * @var PropertyRbacHandler
+	 */
+	private readonly PropertyRbacHandler $propertyRbac;
+
+	/**
+	 * Translation handler
+	 *
+	 * @var \OCA\OpenRegister\Service\Object\TranslationHandler
+	 */
+	private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler;
+
+	/**
+	 * Ad-hoc aggregation dispatcher.
+	 *
+	 * @var AggregationRunner
+	 */
+	private readonly AggregationRunner $aggregationRunner;
+
+	/**
+	 * Validator for `groupBy` arg.
+	 *
+	 * @var TimeseriesRequestValidatorInterface
+	 */
+	private readonly TimeseriesRequestValidatorInterface $timeseriesValidator;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param GetObject $getObject Object finder
-	 * @param ObjectOperationsInterface $objectService Object service
-	 * @param PermissionHandlerInterface $permissionHandler Permission handler
-	 * @param PropertyRbacHandler $propertyRbac Property RBAC handler
-	 * @param RelationHandler $relationHandler Relation handler
-	 * @param RegisterMapperInterface $registerMapper Register mapper
-	 * @param LoggerInterface $logger Logger
-	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler Translation handler
-	 * @param AggregationRunner $aggregationRunner Ad-hoc aggregation dispatcher.
-	 * @param TimeseriesRequestValidatorInterface $timeseriesValidator Validator for `groupBy` arg.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+	 * @param GraphQLResolverObjects $objects The object and register collaborators the GraphQL resolver reads and writes through.
+	 * @param GraphQLResolverRights  $rights  The schema-level and property-level RBAC collaborators of the GraphQL resolver.
+	 * @param GraphQLResolverShaping $shaping The translation and aggregation collaborators that shape a GraphQL result.
+	 * @param LoggerInterface        $logger  Logger
 	 */
 	public function __construct(
-		private readonly GetObject $getObject,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly PermissionHandlerInterface $permissionHandler,
-		private readonly PropertyRbacHandler $propertyRbac,
-		private readonly RelationHandler $relationHandler,
-		private readonly RegisterMapperInterface $registerMapper,
+		GraphQLResolverObjects $objects,
+		GraphQLResolverRights $rights,
+		GraphQLResolverShaping $shaping,
 		private readonly LoggerInterface $logger,
-		private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
-		private readonly AggregationRunner $aggregationRunner,
-		private readonly TimeseriesRequestValidatorInterface $timeseriesValidator,
 	) {
+		$this->getObject = $objects->getObject;
+		$this->objectService = $objects->objectService;
+		$this->relationHandler = $objects->relationHandler;
+		$this->registerMapper = $objects->registerMapper;
+		$this->permissionHandler = $rights->permissionHandler;
+		$this->propertyRbac = $rights->propertyRbac;
+		$this->translationHandler = $shaping->translationHandler;
+		$this->aggregationRunner = $shaping->aggregationRunner;
+		$this->timeseriesValidator = $shaping->timeseriesValidator;
 	}//end __construct()
 
 	/**
