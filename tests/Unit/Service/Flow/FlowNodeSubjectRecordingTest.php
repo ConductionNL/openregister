@@ -38,8 +38,11 @@ use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -183,13 +186,9 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		);
 
 		return new ObjectWriteNode(
-			$this->objects,
-			$registers,
-			$schemas,
-			$this->users(),
-			$appConfig,
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class),
+			new ObjectWriteStores($this->objects, $registers, $schemas),
+			new ObjectWritePlatform($this->users(), $appConfig),
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class)),
 			$recorder
 		);
 	}//end writeNode()
@@ -360,8 +359,7 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 		return new LockObjectNode(
 			$this->objects,
 			$this->users(),
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class),
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class)),
 			$recorder
 		);
 	}//end lockNode()

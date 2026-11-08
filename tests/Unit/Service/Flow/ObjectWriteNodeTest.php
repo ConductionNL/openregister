@@ -16,7 +16,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -119,13 +122,9 @@ class ObjectWriteNodeTest extends TestCase {
 		);
 
 		$this->node = new ObjectWriteNode(
-			$this->objects,
-			$registers,
-			$schemas,
-			$this->userManager,
-			$this->appConfig,
-			$l10n,
-			$urls
+			new ObjectWriteStores($this->objects, $registers, $schemas),
+			new ObjectWritePlatform($this->userManager, $this->appConfig),
+			new FlowNodePresentation($l10n, $urls)
 		);
 
 	}//end setUp()
@@ -1329,13 +1328,9 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->objects->method('saveObject')->willReturn($this->entity('u', []));
 
 		$node = new ObjectWriteNode(
-			$this->objects,
-			$registers,
-			$schemas,
-			$this->userManager,
-			$appConfig,
-			$l10n,
-			$this->createMock(IURLGenerator::class)
+			new ObjectWriteStores($this->objects, $registers, $schemas),
+			new ObjectWritePlatform($this->userManager, $appConfig),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 
 		$node->execute($this->items([['n' => 1]]), $this->config(), $this->registerContext);
