@@ -150,55 +150,65 @@ class DraftExpiry implements DraftExpiryInterface {
 	 */
 	private function walk(DateTimeImmutable $now, int $budget): array {
 		$counts = ['schemas' => 0, 'expired' => 0, 'removed' => 0, 'refused' => 0, 'deferred' => 0, 'perSchema' => []];
-
-		foreach ($this->registers->findAll(_rbac: false, _multitenancy: false) as $register) {
-			if (($register instanceof Register) === false) {
+		foreach ($this->sweepTargets(now: $now) as $target) {
+			$counts['schemas']++;
+			$row = $this->schemaRow(pair: $target['pair'], budget: ($budget - $counts['removed'] - $counts['refused']));
+			if ($row === null) {
 				continue;
 			}
 
-			$this->walkRegister(register: $register, now: $now, budget: $budget, counts: $counts);
+			$row['lifetimeDays'] = $target['days'];
+			$counts = $this->withRow(counts: $counts, row: $row);
 		}
 
 		return $counts;
 	}//end walk()
 
 	/**
-	 * Walk the schemas of one register, adding each schema's row to the counts.
+	 * Every register and schema whose drafts have a lifetime, with the cutoff, read lazily.
 	 *
-	 * @param Register           $register The register.
-	 * @param DateTimeImmutable  $now      The moment the sweep runs at.
-	 * @param int                $budget   The removals one run may make.
-	 * @param array<string, mixed> $counts The run's counts (by reference).
+	 * Lazily, so each schema is loaded just before its drafts are swept, as the
+	 * sweep did when it walked the registers itself.
 	 *
-	 * @return void
+	 * @param DateTimeImmutable $now The moment the sweep runs at.
+	 *
+	 * @return \Generator<int, array{pair: DraftExpiryPair, days: int}> The targets
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
-	private function walkRegister(Register $register, DateTimeImmutable $now, int $budget, array &$counts): void {
-		$policy = new DraftStatusPolicy();
-		foreach (($register->getSchemas() ?? []) as $schemaId) {
-			$schema = $this->schemaOf(schemaId: $schemaId);
-			$days = $this->lifetimeOf(schema: $schema, policy: $policy);
-			if ($days === null) {
+	private function sweepTargets(DateTimeImmutable $now): \Generator {
+		foreach ($this->registers->findAll(_rbac: false, _multitenancy: false) as $register) {
+			if (($register instanceof Register) === false) {
 				continue;
 			}
 
-			$counts['schemas']++;
-			$row = $this->schemaRow(
-				pair: new DraftExpiryPair(register: $register, schema: $schema, cutoff: $now->modify('-' . $days . ' days')),
-				budget: ($budget - $counts['removed'] - $counts['refused'])
-			);
-			if ($row === null) {
-				continue;
+			$policy = new DraftStatusPolicy();
+			foreach (($register->getSchemas() ?? []) as $schemaId) {
+				$schema = $this->schemaOf(schemaId: $schemaId);
+				$days = $this->lifetimeOf(schema: $schema, policy: $policy);
+				if ($days !== null) {
+					yield ['pair' => new DraftExpiryPair(register: $register, schema: $schema, cutoff: $now->modify('-' . $days . ' days')), 'days' => $days];
+				}
 			}
+		}
+	}//end sweepTargets()
 
-			$row['lifetimeDays'] = $days;
-			$counts['perSchema'][] = $row;
-			foreach (['expired', 'removed', 'refused', 'deferred'] as $key) {
-				$counts[$key] += $row[$key];
-			}
-		}//end foreach
-	}//end walkRegister()
+	/**
+	 * The run's counts with one schema's row added.
+	 *
+	 * @param array<string, mixed> $counts The run's counts.
+	 * @param array<string, mixed> $row    The schema's row, lifetime filled in.
+	 *
+	 * @return array<string, mixed> The counts
+	 */
+	private function withRow(array $counts, array $row): array {
+		$counts['perSchema'][] = $row;
+		foreach (['expired', 'removed', 'refused', 'deferred'] as $key) {
+			$counts[$key] += $row[$key];
+		}
+
+		return $counts;
+	}//end withRow()
 
 	/**
 	 * The row of one schema: its expired drafts removed within the budget, or null when none expired.
@@ -211,12 +221,12 @@ class DraftExpiry implements DraftExpiryInterface {
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
 	private function schemaRow(DraftExpiryPair $pair, int $budget): ?array {
-		[$expired, $unread] = $this->expiredIn(register: $pair->register, schema: $pair->schema, cutoff: $pair->cutoff);
+		[$expired, $unread] = $this->expiredIn(pair: $pair);
 		if ($expired === [] && $unread === 0) {
 			return null;
 		}
 
-		return $this->removeWithin(pair: $pair, expired: $expired, budget: $budget, unread: $unread);
+		return $this->removeWithin(pair: $pair, batch: new DraftExpiryBatch(expired: $expired, unread: $unread, budget: $budget));
 	}//end schemaRow()
 
 	/**
@@ -252,18 +262,18 @@ class DraftExpiry implements DraftExpiryInterface {
 	/**
 	 * Remove the expired drafts of one pair while the run's budget lasts.
 	 *
-	 * @param DraftExpiryPair    $pair    The register and schema, and the cutoff the list was made with, asked again just before each delete.
-	 * @param array<int, string> $expired The uuids of its expired drafts.
-	 * @param int                $budget  How many delete attempts are left in this run.
-	 * @param int                $unread  How many expired drafts lie beyond what one run reads; they wait for the next run.
+	 * @param DraftExpiryPair  $pair  The register and schema, and the cutoff the list was made with, asked again just before each delete.
+	 * @param DraftExpiryBatch $batch Its expired drafts, how many lie beyond what one run reads (they wait for the next run),
+	 *                                and how many delete attempts are left in this run.
 	 *
 	 * @return array{register: string, schema: string, lifetimeDays: int, expired: int, removed: int, refused: int, deferred: int}
 	 *         The counts of this pair; the caller fills in the lifetime.
 	 */
-	private function removeWithin(DraftExpiryPair $pair, array $expired, int $budget, int $unread=0): array {
+	private function removeWithin(DraftExpiryPair $pair, DraftExpiryBatch $batch): array {
 		$register = $pair->register;
 		$schema = $pair->schema;
-		$cutoff = $pair->cutoff;
+		$expired = $batch->expired;
+		$unread = $batch->unread;
 		$row = [
 			'register' => (string)($register->getSlug() ?? $register->getId()),
 			'schema' => (string)($schema->getSlug() ?? $schema->getId()),
@@ -275,12 +285,12 @@ class DraftExpiry implements DraftExpiryInterface {
 		];
 
 		foreach ($expired as $uuid) {
-			if (($row['removed'] + $row['refused']) >= $budget) {
+			if (($row['removed'] + $row['refused']) >= $batch->budget) {
 				$row['deferred']++;
 				continue;
 			}
 
-			if ($this->remove(register: $register, schema: $schema, uuid: $uuid, cutoff: $cutoff) === true) {
+			if ($this->remove(pair: $pair, uuid: $uuid) === true) {
 				$row['removed']++;
 				continue;
 			}
@@ -325,13 +335,14 @@ class DraftExpiry implements DraftExpiryInterface {
 	 * delete never shifts the page the next read asks for. When the cap of
 	 * MAX_PAGES full pages is reached, the rest is counted, not read.
 	 *
-	 * @param Register          $register The register.
-	 * @param Schema            $schema   The schema.
-	 * @param DateTimeImmutable $cutoff   Drafts last changed before this moment are expired.
+	 * @param DraftExpiryPair $pair The register, the schema and the cutoff: drafts last changed before it are expired.
 	 *
 	 * @return array{0: array<int, string>, 1: int} The uuids, and the number of expired drafts left unread.
 	 */
-	private function expiredIn(Register $register, Schema $schema, DateTimeImmutable $cutoff): array {
+	private function expiredIn(DraftExpiryPair $pair): array {
+		$register = $pair->register;
+		$schema = $pair->schema;
+		$cutoff = $pair->cutoff;
 		$moment = gmdate('Y-m-d H:i:s', $cutoff->getTimestamp());
 		$filters = [
 			// Changed at some point, and not since the cutoff.
@@ -350,11 +361,11 @@ class DraftExpiry implements DraftExpiryInterface {
 				DraftListLens::PARAMETER => 'true',
 			];
 			if ($pages <= 0) {
-				$unread += $this->countOf(register: $register, schema: $schema, query: $query);
+				$unread += $this->countOf(pair: $pair, query: $query);
 				continue;
 			}
 
-			$scan = $this->scan(pair: new DraftExpiryPair(register: $register, schema: $schema, cutoff: $cutoff), query: $query, pages: $pages);
+			$scan = $this->scan(pair: $pair, query: $query, pages: $pages);
 			array_push($expired, ...$scan['uuids']);
 			if ($scan['failed'] === true) {
 				// A list that cannot be read is logged once; the schema's drafts wait for the next run.
@@ -363,7 +374,7 @@ class DraftExpiry implements DraftExpiryInterface {
 
 			$pages -= $scan['pages'];
 			if ($scan['full'] === true) {
-				$unread += max(1, ($this->countOf(register: $register, schema: $schema, query: $query) - $scan['rows']));
+				$unread += max(1, ($this->countOf(pair: $pair, query: $query) - $scan['rows']));
 			}
 		}
 
@@ -463,19 +474,18 @@ class DraftExpiry implements DraftExpiryInterface {
 	/**
 	 * How many drafts one list matches, for what lies beyond the read cap.
 	 *
-	 * @param Register             $register The register.
-	 * @param Schema               $schema   The schema.
-	 * @param array<string, mixed> $query    The list query, without paging.
+	 * @param DraftExpiryPair      $pair  The register and schema.
+	 * @param array<string, mixed> $query The list query, without paging.
 	 *
 	 * @return int The count; zero when it cannot be asked.
 	 */
-	private function countOf(Register $register, Schema $schema, array $query): int {
+	private function countOf(DraftExpiryPair $pair, array $query): int {
 		try {
 			return (int)$this->objects->countSearchObjects(query: $query, _rbac: false, _multitenancy: false);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				message: '[DraftExpiry] The expired drafts beyond the read cap could not be counted',
-				context: ['register' => $register->getSlug(), 'schema' => $schema->getSlug(), 'exception' => $exception->getMessage()]
+				context: ['register' => $pair->register->getSlug(), 'schema' => $pair->schema->getSlug(), 'exception' => $exception->getMessage()]
 			);
 
 			return 0;
@@ -519,14 +529,14 @@ class DraftExpiry implements DraftExpiryInterface {
 	 * before the cutoff, so a submission that just got its receipt is never
 	 * removed. An object that cannot be read again is left alone.
 	 *
-	 * @param Register          $register The register.
-	 * @param Schema            $schema   The schema.
-	 * @param string            $uuid     The draft.
-	 * @param DateTimeImmutable $cutoff   Drafts last changed before this moment are expired.
+	 * @param DraftExpiryPair $pair The register, the schema and the cutoff: drafts last changed before it are expired.
+	 * @param string          $uuid The draft.
 	 *
 	 * @return bool True when it was removed.
 	 */
-	private function remove(Register $register, Schema $schema, string $uuid, DateTimeImmutable $cutoff): bool {
+	private function remove(DraftExpiryPair $pair, string $uuid): bool {
+		$register = $pair->register;
+		$schema = $pair->schema;
 		try {
 			$current = $this->objects->find(
 				id: $uuid,
@@ -537,7 +547,7 @@ class DraftExpiry implements DraftExpiryInterface {
 				_render: false,
 				_audit: false
 			);
-			if ($this->isExpired(candidate: $current, cutoff: $cutoff) === false) {
+			if ($this->isExpired(candidate: $current, cutoff: $pair->cutoff) === false) {
 				$this->logger->info(
 					message: '[DraftExpiry] A draft was not removed: it is no longer an expired draft',
 					context: ['register' => $register->getSlug(), 'schema' => $schema->getSlug(), 'uuid' => $uuid]
