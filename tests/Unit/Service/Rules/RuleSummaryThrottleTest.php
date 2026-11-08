@@ -176,13 +176,7 @@ class RuleSummaryThrottleTest extends TestCase {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheDerivedIdMatchesTheDescriptorsOwn(): void {
-		$descriptor = new RuleDescriptor(
-			kind: RuleVocabulary::KIND_CALCULATION,
-			schemaSlug: 'bezwaar',
-			key: 'uiterlijkeDatum',
-			label: 'uiterlijkeDatum',
-			source: 'x-openregister-calculations.uiterlijkeDatum'
-		);
+		$descriptor = new RuleDescriptor(origin: new \OCA\OpenRegister\Service\Rules\RuleOrigin(kind: RuleVocabulary::KIND_CALCULATION, schemaSlug: 'bezwaar', key: 'uiterlijkeDatum', source: 'x-openregister-calculations.uiterlijkeDatum'), label: 'uiterlijkeDatum');
 
 		$this->assertSame(
 			expected: $descriptor->getId(),

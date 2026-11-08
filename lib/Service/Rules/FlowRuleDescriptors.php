@@ -116,15 +116,19 @@ final class FlowRuleDescriptors {
 		sort($events);
 
 		return new RuleDescriptor(
-			kind: RuleVocabulary::KIND_FLOW,
-			schemaSlug: $flow['schema'],
-			key: $flow['uuid'],
+			origin: new RuleOrigin(
+				kind: RuleVocabulary::KIND_FLOW,
+				schemaSlug: $flow['schema'],
+				key: $flow['uuid'],
+				source: ('openregister_flow_triggers.' . $flow['uuid'])
+			),
 			label: $flow['uuid'],
-			source: ('openregister_flow_triggers.' . $flow['uuid']),
-			enabled: $flow['enabled'],
-			actions: [RuleVocabulary::ACTION_RUN_FLOW],
-			condition: ['events' => $events],
-			scope: $this->scopeOf(flowUuid: $flow['uuid'], schemaSlug: $flow['schema'])
+			effect: new RuleEffect(
+				actions: [RuleVocabulary::ACTION_RUN_FLOW],
+				condition: ['events' => $events],
+				scope: $this->scopeOf(flowUuid: $flow['uuid'], schemaSlug: $flow['schema'])
+			),
+			enabled: $flow['enabled']
 		);
 	}//end descriptor()
 
