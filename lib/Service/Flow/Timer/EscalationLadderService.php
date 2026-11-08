@@ -240,11 +240,7 @@ class EscalationLadderService {
 	 */
 	public function nextRungAt(array $rungs, DateTimeInterface $fireAt, array $firedKeys, WorkingCalendar $calendar): ?DateTimeImmutable {
 		$earliest = null;
-		foreach ($this->ordered(rungs: $rungs, instantOf: $this->instantOf(fireAt: $fireAt, calendar: $calendar)) as $entry) {
-			if (in_array((string)$entry['rung']['key'], $firedKeys, true) === true) {
-				continue;
-			}
-
+		foreach ($this->unfired(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $calendar) as $entry) {
 			if ($earliest === null || $entry['at'] < $earliest) {
 				$earliest = $entry['at'];
 			}
@@ -270,8 +266,8 @@ class EscalationLadderService {
 	 */
 	public function dueRungs(array $rungs, DateTimeInterface $fireAt, DateTimeInterface $now, array $firedKeys, WorkingCalendar $calendar): array {
 		$due = [];
-		foreach ($this->ordered(rungs: $rungs, instantOf: $this->instantOf(fireAt: $fireAt, calendar: $calendar)) as $entry) {
-			if (in_array((string)$entry['rung']['key'], $firedKeys, true) === true || $entry['at'] > $now) {
+		foreach ($this->unfired(rungs: $rungs, fireAt: $fireAt, firedKeys: $firedKeys, calendar: $calendar) as $entry) {
+			if ($entry['at'] > $now) {
 				continue;
 			}
 
@@ -280,6 +276,29 @@ class EscalationLadderService {
 
 		return $due;
 	}//end dueRungs()
+
+	/**
+	 * The rungs placed on the timeline of one fire moment, in ladder order, minus those already fired.
+	 *
+	 * @param array<int, array<string, mixed>> $rungs     The normalised rungs.
+	 * @param DateTimeInterface                $fireAt    The fire moment.
+	 * @param array<int, string>               $firedKeys Rung keys already in the ledger.
+	 * @param WorkingCalendar                  $calendar  The resolved calendar.
+	 *
+	 * @return list<array{rung: array<string, mixed>, at: DateTimeImmutable}> The unfired entries.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 */
+	private function unfired(array $rungs, DateTimeInterface $fireAt, array $firedKeys, WorkingCalendar $calendar): array {
+		$entries = [];
+		foreach ($this->ordered(rungs: $rungs, instantOf: $this->instantOf(fireAt: $fireAt, calendar: $calendar)) as $entry) {
+			if (in_array((string)$entry['rung']['key'], $firedKeys, true) === false) {
+				$entries[] = $entry;
+			}
+		}
+
+		return $entries;
+	}//end unfired()
 
 	/**
 	 * Resolve a rung's roles to recipient DESCRIPTORS against the subject.
@@ -344,6 +363,19 @@ class EscalationLadderService {
 			return null;
 		}
 
+		return $this->ladderSlugOwnedBy(organisation: $organisation);
+	}//end organisationLadderSlug()
+
+	/**
+	 * The slug of the first defined ladder an organisation owns, or null.
+	 *
+	 * @param string $organisation The trimmed, non-empty organisation.
+	 *
+	 * @return string|null The slug.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 */
+	private function ladderSlugOwnedBy(string $organisation): ?string {
 		foreach ($this->definitions->ladders() as $slug => $definition) {
 			if (trim((string)($definition['organisation'] ?? '')) === $organisation) {
 				return (string)$slug;
@@ -351,7 +383,7 @@ class EscalationLadderService {
 		}
 
 		return null;
-	}//end organisationLadderSlug()
+	}//end ladderSlugOwnedBy()
 
 	/**
 	 * Rungs paired with their instants, earliest first (declared order breaks ties).
@@ -479,22 +511,56 @@ class EscalationLadderService {
 	 * @return array<int, array{type: string, id: string, role: string}> The recipients.
 	 */
 	private function recipientsForRole(string $role, ?Task $subject, array $roleBindings): array {
-		$binding = ($roleBindings[$role] ?? null);
+		$bound = $this->boundRecipients(binding: ($roleBindings[$role] ?? null), role: $role);
+		if ($bound !== []) {
+			return $bound;
+		}
+
+		$performer = $this->handlerRecipients(role: $role, subject: $subject);
+		if ($performer !== []) {
+			return $performer;
+		}
+
+		return [['type' => 'role', 'id' => $role, 'role' => $role]];
+	}//end recipientsForRole()
+
+	/**
+	 * The recipient a `type:id` role binding names; none for any other binding.
+	 *
+	 * @param mixed  $binding The role's binding.
+	 * @param string $role    The role.
+	 *
+	 * @return array<int, array{type: string, id: string, role: string}> The bound recipient, or [].
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 */
+	private function boundRecipients(mixed $binding, string $role): array {
 		if (is_string($binding) === true && str_contains($binding, ':') === true) {
 			[$type, $id] = explode(':', $binding, 2);
 
 			return [['type' => trim($type), 'id' => trim($id), 'role' => $role]];
 		}
 
+		return [];
+	}//end boundRecipients()
+
+	/**
+	 * The subject task's performers, for the handler role only.
+	 *
+	 * @param string    $role    The role.
+	 * @param Task|null $subject The subject task, when there is one.
+	 *
+	 * @return array<int, array{type: string, id: string, role: string}> The performers, or [].
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 */
+	private function handlerRecipients(string $role, ?Task $subject): array {
 		if ($role === self::ROLE_HANDLER && $subject !== null) {
-			$performer = $this->performerRecipients(subject: $subject, role: $role);
-			if ($performer !== []) {
-				return $performer;
-			}
+			return $this->performerRecipients(subject: $subject, role: $role);
 		}
 
-		return [['type' => 'role', 'id' => $role, 'role' => $role]];
-	}//end recipientsForRole()
+		return [];
+	}//end handlerRecipients()
 
 	/**
 	 * The subject task's own performer as recipients: assignee, else candidate groups, else candidate users.
@@ -507,14 +573,40 @@ class EscalationLadderService {
 	private function performerRecipients(Task $subject, string $role): array {
 		$assignee = trim((string)$subject->getAssignee());
 		if ($assignee !== '') {
-			$type = 'user';
-			if ((string)$subject->getPerformerType() !== Task::PERFORMER_USER) {
-				$type = (string)$subject->getPerformerType();
-			}
-
-			return [['type' => $type, 'id' => $assignee, 'role' => $role]];
+			return [['type' => $this->assigneeType(subject: $subject), 'id' => $assignee, 'role' => $role]];
 		}
 
+		return $this->candidateRecipients(subject: $subject, role: $role);
+	}//end performerRecipients()
+
+	/**
+	 * The recipient type of a task's assignee: a user, unless the task names another performer type.
+	 *
+	 * @param Task $subject The task.
+	 *
+	 * @return string The type.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 */
+	private function assigneeType(Task $subject): string {
+		if ((string)$subject->getPerformerType() !== Task::PERFORMER_USER) {
+			return (string)$subject->getPerformerType();
+		}
+
+		return 'user';
+	}//end assigneeType()
+
+	/**
+	 * An unassigned task's candidates: its groups, else its users.
+	 *
+	 * @param Task   $subject The task.
+	 * @param string $role    The role.
+	 *
+	 * @return array<int, array{type: string, id: string, role: string}> The candidates, possibly none.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 */
+	private function candidateRecipients(Task $subject, string $role): array {
 		$recipients = [];
 		foreach (($subject->getCandidateGroups() ?? []) as $gid) {
 			$recipients[] = ['type' => 'group', 'id' => (string)$gid, 'role' => $role];
@@ -529,5 +621,5 @@ class EscalationLadderService {
 		}
 
 		return $recipients;
-	}//end performerRecipients()
+	}//end candidateRecipients()
 }//end class
