@@ -156,14 +156,8 @@ final class NotificationQueueFlushJob extends TimedJob {
 			return;
 		}
 
-		$groups = [];
-		foreach ($rows as $row) {
-			$key = $row->getSchemaId() . '|' . $row->getRuleKey() . '|' . $row->getRecipient();
-			$groups[$key][] = $row;
-		}
-
 		$flushed = 0;
-		foreach ($groups as $groupRows) {
+		foreach ($this->groupRows(rows: $rows) as $groupRows) {
 			$flushed += $this->processGroup(rows: $groupRows, now: $now);
 		}
 
@@ -172,6 +166,23 @@ final class NotificationQueueFlushJob extends TimedJob {
 		}
 
 	}//end run()
+
+	/**
+	 * Group queued rows by `(schema_id, rule_key, recipient)`, keeping scan order.
+	 *
+	 * @param array<int, QueuedNotification> $rows The queued rows.
+	 *
+	 * @return array<string, list<QueuedNotification>> The groups.
+	 */
+	private function groupRows(array $rows): array {
+		$groups = [];
+		foreach ($rows as $row) {
+			$key = $row->getSchemaId() . '|' . $row->getRuleKey() . '|' . $row->getRecipient();
+			$groups[$key][] = $row;
+		}
+
+		return $groups;
+	}//end groupRows()
 
 	/**
 	 * Evaluate and flush one `(schema_id, rule_key, recipient)` group.
@@ -195,6 +206,24 @@ final class NotificationQueueFlushJob extends TimedJob {
 
 		$digest = $this->resolveDigestSpec(schemaId: (int)$first->getSchemaId(), ruleKey: (string)$first->getRuleKey());
 
+		$dueRows = $this->dueRows(rows: $rows, digest: $digest, now: $now);
+		if (count($dueRows) === 0) {
+			return 0;
+		}
+
+		return $this->flushRows(first: $first, recipient: $recipient, dueRows: $dueRows);
+	}//end processGroup()
+
+	/**
+	 * The rows of a group that are due now.
+	 *
+	 * @param array<int, QueuedNotification> $rows   Rows in the group.
+	 * @param array<string, mixed>|null      $digest The rule's digest block, or null.
+	 * @param DateTimeImmutable              $now    Logical "now" for this scan pass.
+	 *
+	 * @return list<QueuedNotification> The due rows.
+	 */
+	private function dueRows(array $rows, ?array $digest, DateTimeImmutable $now): array {
 		$dueRows = [];
 		foreach ($rows as $row) {
 			if ($digest === null) {
@@ -211,10 +240,19 @@ final class NotificationQueueFlushJob extends TimedJob {
 			}
 		}
 
-		if (count($dueRows) === 0) {
-			return 0;
-		}
+		return $dueRows;
+	}//end dueRows()
 
+	/**
+	 * Dispatch the due rows as one batch and delete them once dispatched.
+	 *
+	 * @param QueuedNotification             $first     The group's first row (rule key for the log).
+	 * @param string                         $recipient The group's recipient.
+	 * @param array<int, QueuedNotification> $dueRows   The due rows.
+	 *
+	 * @return int Number of rows flushed (0 when the dispatch failed).
+	 */
+	private function flushRows(QueuedNotification $first, string $recipient, array $dueRows): int {
 		try {
 			$this->dispatcher->dispatchQueued(queuedRows: $dueRows);
 		} catch (\Throwable $e) {
@@ -234,7 +272,7 @@ final class NotificationQueueFlushJob extends TimedJob {
 		}
 
 		return count($dueRows);
-	}//end processGroup()
+	}//end flushRows()
 
 	/**
 	 * Resolve the rule's `digest` block from the owning schema, or null
@@ -252,14 +290,20 @@ final class NotificationQueueFlushJob extends TimedJob {
 			return null;
 		}
 
-		$config = ($schema->getConfiguration() ?? []);
-		$notifications = ($config['x-openregister-notifications'] ?? null);
-		if (is_array($notifications) === false) {
-			return null;
-		}
+		return $this->digestOf(configuration: ($schema->getConfiguration() ?? []), ruleKey: $ruleKey);
+	}//end resolveDigestSpec()
 
-		$spec = ($notifications[$ruleKey] ?? null);
-		if (is_array($spec) === false) {
+	/**
+	 * A rule's valid `digest` block from a schema configuration, or null.
+	 *
+	 * @param array<string, mixed> $configuration The schema configuration.
+	 * @param string               $ruleKey       Notification annotation key.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function digestOf(array $configuration, string $ruleKey): ?array {
+		$spec = $this->ruleSpec(configuration: $configuration, ruleKey: $ruleKey);
+		if ($spec === null) {
 			return null;
 		}
 
@@ -269,5 +313,27 @@ final class NotificationQueueFlushJob extends TimedJob {
 		}
 
 		return $digest;
-	}//end resolveDigestSpec()
+	}//end digestOf()
+
+	/**
+	 * A rule's notification annotation from a schema configuration, or null.
+	 *
+	 * @param array<string, mixed> $configuration The schema configuration.
+	 * @param string               $ruleKey       Notification annotation key.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function ruleSpec(array $configuration, string $ruleKey): ?array {
+		$notifications = ($configuration['x-openregister-notifications'] ?? null);
+		if (is_array($notifications) === false) {
+			return null;
+		}
+
+		$spec = ($notifications[$ruleKey] ?? null);
+		if (is_array($spec) === false) {
+			return null;
+		}
+
+		return $spec;
+	}//end ruleSpec()
 }//end class

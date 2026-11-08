@@ -35,6 +35,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SelectielijstControllerFactory;
 
 /**
  * Pins who may call each selectielijst action, and what each intake path answers.
@@ -91,7 +92,7 @@ class SelectielijstControllerA24GoldenTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groups = $this->createMock(IGroupManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->controller = new SelectielijstController(
+		$this->controller = SelectielijstControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,

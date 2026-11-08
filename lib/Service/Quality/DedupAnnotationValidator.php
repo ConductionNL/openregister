@@ -60,11 +60,6 @@ class DedupAnnotationValidator {
 	 * @return array<int, array{code: string, message: string}> Errors; empty when valid.
 	 *
 	 * @spec openspec/changes/mdm-foundation/tasks.md#task-5
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The branch count tracks the annotation's
-	 *   optional top-level fields (matchRules presence, threshold, blockingKeys) plus the
-	 *   per-rule loop; each is a distinct, independently-testable guard.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — flat sequential guards.
 	 */
 	public function validate(array $schema): array {
 		$annotation = ($schema['x-openregister-dedup'] ?? null);
@@ -81,22 +76,60 @@ class DedupAnnotationValidator {
 			return [['code' => 'dedup.no-rules', 'message' => 'x-openregister-dedup requires a non-empty "matchRules" array.']];
 		}
 
+		return array_merge(
+			$this->validateRules(matchRules: $matchRules),
+			$this->validateThreshold(annotation: $annotation),
+			$this->validateBlockingKeys(annotation: $annotation),
+			$this->validateCreatePolicy(annotation: $annotation)
+		);
+	}//end validate()
+
+	/**
+	 * Validate every match rule, keeping the rules' order.
+	 *
+	 * @param array<int|string, mixed> $matchRules Match rule definitions.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateRules(array $matchRules): array {
 		$errors = [];
 		foreach ($matchRules as $index => $rule) {
 			$errors = array_merge($errors, $this->validateRule(rule: $rule, index: (int)$index));
 		}
 
+		return $errors;
+	}//end validateRules()
+
+	/**
+	 * The error for a present but non-numeric `threshold`.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-dedup` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateThreshold(array $annotation): array {
 		if (array_key_exists('threshold', $annotation) === true && is_numeric($annotation['threshold']) === false) {
-			$errors[] = ['code' => 'dedup.bad-threshold', 'message' => 'x-openregister-dedup "threshold" must be numeric.'];
+			return [['code' => 'dedup.bad-threshold', 'message' => 'x-openregister-dedup "threshold" must be numeric.']];
 		}
 
+		return [];
+	}//end validateThreshold()
+
+	/**
+	 * The error for a `blockingKeys` that is set but not an array.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-dedup` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateBlockingKeys(array $annotation): array {
 		$blockingKeys = ($annotation['blockingKeys'] ?? null);
 		if ($blockingKeys !== null && is_array($blockingKeys) === false) {
-			$errors[] = ['code' => 'dedup.bad-blocking-keys', 'message' => 'x-openregister-dedup "blockingKeys" must be an array.'];
+			return [['code' => 'dedup.bad-blocking-keys', 'message' => 'x-openregister-dedup "blockingKeys" must be an array.']];
 		}
 
-		return array_merge($errors, $this->validateCreatePolicy(annotation: $annotation));
-	}//end validate()
+		return [];
+	}//end validateBlockingKeys()
 
 	/**
 	 * Validate the create-time policy: `onCreate` and `overrideGroups`.
@@ -118,31 +151,66 @@ class DedupAnnotationValidator {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	private function validateCreatePolicy(array $annotation): array {
-		$errors = [];
+		return array_merge(
+			$this->validateOnCreate(onCreate: ($annotation['onCreate'] ?? null)),
+			$this->validateOverrideGroups(overrideGroups: ($annotation['overrideGroups'] ?? null))
+		);
+	}//end validateCreatePolicy()
 
-		$onCreate = ($annotation['onCreate'] ?? null);
-		if ($onCreate !== null && in_array($onCreate, self::VALID_ON_CREATE, true) === false) {
-			$valid = implode(', ', self::VALID_ON_CREATE);
-			$errors[] = [
-				'code' => 'dedup.unknown-on-create',
-				'message' => sprintf('x-openregister-dedup "onCreate" must be one of: %s.', $valid),
-			];
+	/**
+	 * The error for an `onCreate` that is set but not a recognised policy.
+	 *
+	 * @param mixed $onCreate The declared policy, or null when absent.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateOnCreate($onCreate): array {
+		if ($onCreate === null || in_array($onCreate, self::VALID_ON_CREATE, true) === true) {
+			return [];
 		}
 
-		$overrideGroups = ($annotation['overrideGroups'] ?? null);
+		$valid = implode(', ', self::VALID_ON_CREATE);
+		return [
+			[
+				'code' => 'dedup.unknown-on-create',
+				'message' => sprintf('x-openregister-dedup "onCreate" must be one of: %s.', $valid),
+			],
+		];
+	}//end validateOnCreate()
+
+	/**
+	 * The errors for an `overrideGroups` that is not a list of group ids.
+	 *
+	 * @param mixed $overrideGroups The declared groups, or null when absent.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateOverrideGroups($overrideGroups): array {
 		if ($overrideGroups === null) {
-			return $errors;
+			return [];
 		}
 
 		if (is_array($overrideGroups) === false) {
-			$errors[] = [
-				'code' => 'dedup.bad-override-groups',
-				'message' => 'x-openregister-dedup "overrideGroups" must be an array of group ids.',
+			return [
+				[
+					'code' => 'dedup.bad-override-groups',
+					'message' => 'x-openregister-dedup "overrideGroups" must be an array of group ids.',
+				],
 			];
-
-			return $errors;
 		}
 
+		return $this->overrideGroupEntryErrors(overrideGroups: $overrideGroups);
+	}//end validateOverrideGroups()
+
+	/**
+	 * The errors for `overrideGroups` entries that are not non-empty group ids.
+	 *
+	 * @param array<int|string, mixed> $overrideGroups The declared groups.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function overrideGroupEntryErrors(array $overrideGroups): array {
+		$errors = [];
 		foreach ($overrideGroups as $index => $group) {
 			if (is_string($group) === true && $group !== '') {
 				continue;
@@ -155,7 +223,7 @@ class DedupAnnotationValidator {
 		}
 
 		return $errors;
-	}//end validateCreatePolicy()
+	}//end overrideGroupEntryErrors()
 
 	/**
 	 * Validate a single match rule.
@@ -174,22 +242,49 @@ class DedupAnnotationValidator {
 			return [['code' => 'dedup.missing-field', 'message' => sprintf('Match rule #%d requires a "field".', $index)]];
 		}
 
-		$method = (string)($rule['method'] ?? '');
-		if (in_array($method, self::VALID_METHODS, true) === false) {
-			$valid = implode(', ', self::VALID_METHODS);
-			return [
-				[
-					'code' => 'dedup.unknown-method',
-					'message' => sprintf('Match rule #%d has unknown method "%s" (expected one of: %s).', $index, $method, $valid),
-				],
-			];
+		$refusal = $this->methodRefusal(method: (string)($rule['method'] ?? ''), index: $index);
+		if ($refusal !== []) {
+			return $refusal;
 		}
 
-		$errors = [];
-		if (array_key_exists('weight', $rule) === true && is_numeric($rule['weight']) === false) {
-			$errors[] = ['code' => 'dedup.bad-weight', 'message' => sprintf('Match rule #%d "weight" must be numeric.', $index)];
-		}
-
-		return $errors;
+		return $this->weightErrors(rule: $rule, index: $index);
 	}//end validateRule()
+
+	/**
+	 * The error for a match rule with a present but non-numeric weight.
+	 *
+	 * @param array<string, mixed> $rule Rule definition.
+	 * @param int $index Position in matchRules (for messaging).
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function weightErrors(array $rule, int $index): array {
+		if (array_key_exists('weight', $rule) === true && is_numeric($rule['weight']) === false) {
+			return [['code' => 'dedup.bad-weight', 'message' => sprintf('Match rule #%d "weight" must be numeric.', $index)]];
+		}
+
+		return [];
+	}//end weightErrors()
+
+	/**
+	 * The error for a match rule whose method is not recognised.
+	 *
+	 * @param string $method Declared method.
+	 * @param int $index Position in matchRules (for messaging).
+	 *
+	 * @return array<int, array{code: string, message: string}> Empty when the method is known.
+	 */
+	private function methodRefusal(string $method, int $index): array {
+		if (in_array($method, self::VALID_METHODS, true) === true) {
+			return [];
+		}
+
+		$valid = implode(', ', self::VALID_METHODS);
+		return [
+			[
+				'code' => 'dedup.unknown-method',
+				'message' => sprintf('Match rule #%d has unknown method "%s" (expected one of: %s).', $index, $method, $valid),
+			],
+		];
+	}//end methodRefusal()
 }//end class
