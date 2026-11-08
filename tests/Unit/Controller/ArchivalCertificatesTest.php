@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
@@ -107,9 +108,7 @@ class ArchivalCertificatesTest extends TestCase {
 		$schemaMapper->method('find')->willReturn(new Schema());
 
 		$repository = new DestructionListRepository(
-			$objectMapper,
-			$registerMapper,
-			$schemaMapper,
+			new ArchivalRegisterMappers($registerMapper, $schemaMapper, $objectMapper),
 			$settings,
 			$this->createMock(LoggerInterface::class)
 		);
