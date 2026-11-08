@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 use OCA\OpenRegister\Controller\Support\BulkControllerServices;
+use OCA\OpenRegister\Controller\Support\BulkSaveBatch;
 use OCA\OpenRegister\Controller\Support\BulkSaveSummary;
 use OCA\OpenRegister\Controller\Support\BulkStore;
 use OCA\OpenRegister\Db\Register;
@@ -446,16 +447,14 @@ class BulkController extends Controller {
 	 * `stream` and `partial` do not apply: the streaming path commits per row,
 	 * and a partial result is exactly what an atomic batch refuses.
 	 *
-	 * @param array    $objects  The rows.
-	 * @param int      $register The register id.
-	 * @param int|null $schema   The schema id, or null for a mixed-schema batch.
+	 * @param BulkSaveBatch $batch The rows, register and schema; never partial.
 	 *
 	 * @return JSONResponse 200 when every row wrote; 422 naming the first refused row; 413 over the limit.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
-	private function writeAtomicBatch(array $objects, int $register, ?int $schema): JSONResponse {
-		$requestedCount = count($objects);
+	private function writeAtomicBatch(BulkSaveBatch $batch): JSONResponse {
+		$requestedCount = count($batch->objects);
 		$refusal = $this->atomicBatchLimitRefusal(requestedCount: $requestedCount);
 		if ($refusal !== null) {
 			return $refusal;
@@ -463,7 +462,7 @@ class BulkController extends Controller {
 
 		$this->db->beginTransaction();
 		try {
-			$response = $this->writeCheckedBatch(objects: $objects, register: $register, schema: $schema, partial: false);
+			$response = $this->writeCheckedBatch(batch: $batch);
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
 			throw $e;
@@ -565,17 +564,14 @@ class BulkController extends Controller {
 	 * count instead of being a constant: a caller reading only the HTTP status
 	 * would otherwise take a partial import for a complete one.
 	 *
-	 * @param array    $objects  Rows to write.
-	 * @param int      $register Resolved register id.
-	 * @param int|null $schema   Resolved schema id, or null for a mixed-schema batch.
-	 * @param bool     $partial  Whether the caller opted into best-effort semantics.
+	 * @param BulkSaveBatch $batch The rows, register, schema and partial flag.
 	 *
 	 * @return JSONResponse The batch outcome, or 403 for a caller who is no administrator.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function writeStreamedBatch(array $objects, int $register, int|null $schema, bool $partial): JSONResponse {
-		$requestedCount = count($objects);
+	private function writeStreamedBatch(BulkSaveBatch $batch): JSONResponse {
+		$requestedCount = count($batch->objects);
 
 		// Each streamed row goes straight to the save handler, past the per-row
 		// create, update, draft and organisation checks of the default path.
@@ -587,23 +583,26 @@ class BulkController extends Controller {
 		}
 
 		$status = $this->store->objectService->saveObjectsStreaming(
-			objects: $objects,
-			register: $register,
-			schema: $schema
+			objects: $batch->objects,
+			register: $batch->register,
+			schema: $batch->schema
 		);
 
 		$savedCount = ($status->getCreatedCount() + $status->getUpdatedCount());
 		$accounted = ($savedCount + $status->getUnchangedCount());
 
+		$summary = new BulkSaveSummary(
+			successMessage: 'Bulk save operation completed (streaming)',
+			savedCount: $savedCount,
+			requestedCount: $requestedCount,
+			extra: ['saved_objects' => $status->toArray()],
+			accountedCount: $accounted
+		);
+
 		return $this->bulkSaveResponse(
-			summary: new BulkSaveSummary(
-				successMessage: 'Bulk save operation completed (streaming)',
-				savedCount: $savedCount,
-				requestedCount: $requestedCount,
-				extra: ['saved_objects' => $status->toArray()]
-			),
-			outcome: $this->saveOutcome(result: $status, requestedCount: $requestedCount, accountedCount: $accounted),
-			partial: $partial
+			summary: $summary,
+			outcome: $this->saveOutcome(result: $status, summary: $summary),
+			partial: $batch->partial
 		);
 	}//end writeStreamedBatch()
 
@@ -614,22 +613,19 @@ class BulkController extends Controller {
 	 * never consults the reference-validation cache, so rows that reference each
 	 * other cost N×M database round-trips resolving them.
 	 *
-	 * @param array    $objects  Rows to write.
-	 * @param int      $register Resolved register id.
-	 * @param int|null $schema   Resolved schema id, or null for a mixed-schema batch.
-	 * @param bool     $partial  Whether the caller opted into best-effort semantics.
+	 * @param BulkSaveBatch $batch The rows, register, schema and partial flag.
 	 *
 	 * @return JSONResponse The batch outcome.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function writeCheckedBatch(array $objects, int $register, int|null $schema, bool $partial): JSONResponse {
-		$requestedCount = count($objects);
+	private function writeCheckedBatch(BulkSaveBatch $batch): JSONResponse {
+		$requestedCount = count($batch->objects);
 
 		$savedObjects = $this->objectService->saveObjects(
-			objects: $objects,
-			register: $register,
-			schema: $schema,
+			objects: $batch->objects,
+			register: $batch->register,
+			schema: $batch->schema,
 			_rbac: true,
 			_multitenancy: true,
 			validation: true,
@@ -640,24 +636,26 @@ class BulkController extends Controller {
 		$savedCount = ((int)($statistics['saved'] ?? 0) + (int)($statistics['updated'] ?? 0));
 		$accounted = ($savedCount + (int)($statistics['unchanged'] ?? 0));
 
+		$summary = new BulkSaveSummary(
+			successMessage: 'Bulk save operation completed successfully',
+			savedCount: $savedCount,
+			requestedCount: $requestedCount,
+			extra: ['saved_objects' => $savedObjects],
+			accountedCount: $accounted
+		);
+
 		return $this->bulkSaveResponse(
-			summary: new BulkSaveSummary(
-				successMessage: 'Bulk save operation completed successfully',
-				savedCount: $savedCount,
-				requestedCount: $requestedCount,
-				extra: ['saved_objects' => $savedObjects]
-			),
-			outcome: $this->saveOutcome(result: $savedObjects, requestedCount: $requestedCount, accountedCount: $accounted),
-			partial: $partial
+			summary: $summary,
+			outcome: $this->saveOutcome(result: $savedObjects, summary: $summary),
+			partial: $batch->partial
 		);
 	}//end writeCheckedBatch()
 
 	/**
 	 * What a save path lost, and why.
 	 *
-	 * @param BatchOperationStatusInterface|array $result         The streaming status, or the bulk result.
-	 * @param int                                 $requestedCount Rows the caller submitted.
-	 * @param int                                 $accountedCount Rows written or left unchanged.
+	 * @param BatchOperationStatusInterface|array $result  The streaming status, or the bulk result.
+	 * @param BulkSaveSummary                     $summary The rows submitted and accounted for.
 	 *
 	 * @return BulkSaveOutcome
 	 *
@@ -667,7 +665,9 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function saveOutcome(BatchOperationStatusInterface|array $result, int $requestedCount, int $accountedCount): BulkSaveOutcome {
+	private function saveOutcome(BatchOperationStatusInterface|array $result, BulkSaveSummary $summary): BulkSaveOutcome {
+		$requestedCount = $summary->requestedCount;
+		$accountedCount = $summary->accountedCount;
 		if ($result instanceof BatchOperationStatusInterface) {
 			return BulkSaveOutcome::fromBatchStatus(
 				status: $result,
@@ -842,19 +842,20 @@ class BulkController extends Controller {
 			return $refused;
 		}
 
-		return $this->writeRequestedBatch(objects: $objects, data: $data, resolved: $resolved);
+		return $this->writeRequestedBatch(data: $data, resolved: $resolved);
 	}//end saveResolved()
 
 	/**
 	 * Write an accepted batch through the path the request asked for.
 	 *
-	 * @param array $objects  The rows.
-	 * @param array $data     The request parameters (atomic, stream, partial).
+	 * @param array $data     The request parameters: the validated `objects`, and atomic, stream, partial.
 	 * @param array $resolved The resolved register and schema ids.
 	 *
 	 * @return JSONResponse The batch outcome.
 	 */
-	private function writeRequestedBatch(array $objects, array $data, array $resolved): JSONResponse {
+	private function writeRequestedBatch(array $data, array $resolved): JSONResponse {
+		$objects = $data['objects'];
+
 		// Determine schema to use (null for mixed-schema, resolved for single-schema).
 		$schemaToUse = $resolved['schema'];
 		if ($resolved['schema'] === 0) {
@@ -863,7 +864,9 @@ class BulkController extends Controller {
 
 		// `atomic` wins over `stream` and `partial`: see writeAtomicBatch().
 		if (filter_var(($data['atomic'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
-			return $this->writeAtomicBatch(objects: $objects, register: $resolved['register'], schema: $schemaToUse);
+			return $this->writeAtomicBatch(
+				batch: new BulkSaveBatch(objects: $objects, register: $resolved['register'], schema: $schemaToUse, partial: false)
+			);
 		}
 
 		// `stream` is opt-in and defaults to the existing behaviour, because
@@ -872,22 +875,17 @@ class BulkController extends Controller {
 		// payloads, and choosing automatically would need a threshold nobody has
 		// measured. Both paths report a shortfall the same way — see
 		// bulkSaveResponse() for what `partial` does and does not change.
-		$partial = filter_var(($data['partial'] ?? false), FILTER_VALIDATE_BOOLEAN);
-		if (filter_var(($data['stream'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
-			return $this->writeStreamedBatch(
-				objects: $objects,
-				register: $resolved['register'],
-				schema: $schemaToUse,
-				partial: $partial
-			);
-		}
-
-		return $this->writeCheckedBatch(
+		$batch = new BulkSaveBatch(
 			objects: $objects,
 			register: $resolved['register'],
 			schema: $schemaToUse,
-			partial: $partial
+			partial: filter_var(($data['partial'] ?? false), FILTER_VALIDATE_BOOLEAN)
 		);
+		if (filter_var(($data['stream'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
+			return $this->writeStreamedBatch(batch: $batch);
+		}
+
+		return $this->writeCheckedBatch(batch: $batch);
 	}//end writeRequestedBatch()
 
 	/**
