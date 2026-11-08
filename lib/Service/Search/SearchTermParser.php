@@ -177,32 +177,23 @@ final class SearchTermParser {
 	}//end tokenize()
 
 	/**
-	 * Build a token array.
+	 * Build a token array, with neither wildcard flag set.
+	 *
+	 * A wildcarded word sets its flags on the returned array; see readWord().
 	 *
 	 * @param string $type     The token type.
 	 * @param string $value    The literal value.
 	 * @param int    $position The 1-based position.
-	 * @param bool   $leading  Whether a leading wildcard was present.
-	 * @param bool   $trailing Whether a trailing wildcard was present.
 	 *
 	 * @return array{type: string, value: string, position: int, leading: bool, trailing: bool} The token.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Both flags describe the token the
-	 * tokenizer just read, not a behaviour it should switch on.
 	 */
-	private function makeToken(
-		string $type,
-		string $value,
-		int $position,
-		bool $leading = false,
-		bool $trailing = false,
-	): array {
+	private function makeToken(string $type, string $value, int $position): array {
 		return [
 			'type' => $type,
 			'value' => $value,
 			'position' => $position,
-			'leading' => $leading,
-			'trailing' => $trailing,
+			'leading' => false,
+			'trailing' => false,
 		];
 	}//end makeToken()
 
@@ -296,13 +287,11 @@ final class SearchTermParser {
 			);
 		}
 
-		return $this->makeToken(
-			type: self::TOKEN_TERM,
-			value: $value,
-			position: $position,
-			leading: $leading,
-			trailing: $trailing
-		);
+		$token = $this->makeToken(type: self::TOKEN_TERM, value: $value, position: $position);
+		$token['leading'] = $leading;
+		$token['trailing'] = $trailing;
+
+		return $token;
 	}//end readWord()
 
 	/**
