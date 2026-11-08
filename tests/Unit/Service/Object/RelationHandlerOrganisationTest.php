@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -99,11 +100,13 @@ class RelationHandlerOrganisationTest extends TestCase {
 		$rbac->method('hasPermission')->willReturn(true);
 
 		$handler = new RelationHandler(
-			objectEntityMapper: $magic,
-			schemaMapper: $schemaMapper,
+			stores: new RelationHandlerStores(
+				objects: $magic,
+				schemas: $schemaMapper,
+				registers: $registerMapper
+			),
 			rbacHandler: $rbac,
-			logger: $this->createMock(originalClassName: LoggerInterface::class),
-			registerMapper: $registerMapper
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 		$result = $handler->getUses(lookup: (new RelationLookup(objectId: 'lead-1'))->filteredBy(rbac: true, multitenancy: $multitenancy));

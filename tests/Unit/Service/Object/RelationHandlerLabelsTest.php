@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCA\OpenRegister\Service\Object\RelationMap;
 use OCA\OpenRegister\Service\Object\RelationLink;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
@@ -61,12 +62,14 @@ class RelationHandlerLabelsTest extends TestCase {
 		parent::setUp();
 
 		$this->handler = new RelationHandler(
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			stores: new RelationHandlerStores(
+				objects: $this->createMock(MagicMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				registers: $this->createMock(RegisterMapper::class),
+				relationTypes: new RelationTypeResolver()
+			),
 			rbacHandler: $this->createMock(MagicRbacHandler::class),
-			logger: $this->createMock(LoggerInterface::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			relationTypes: new RelationTypeResolver()
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 
@@ -271,11 +274,13 @@ class RelationHandlerLabelsTest extends TestCase {
 	 */
 	public function testWithoutAResolverTheRowIsUntouched(): void {
 		$handler = new RelationHandler(
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			stores: new RelationHandlerStores(
+				objects: $this->createMock(MagicMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				registers: $this->createMock(RegisterMapper::class)
+			),
 			rbacHandler: $this->createMock(MagicRbacHandler::class),
-			logger: $this->createMock(LoggerInterface::class),
-			registerMapper: $this->createMock(RegisterMapper::class)
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$reflection = new ReflectionClass(RelationHandler::class);

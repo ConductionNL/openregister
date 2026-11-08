@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use OCA\OpenRegister\Service\Object\RelatedReadFilter;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -58,11 +59,9 @@ class RelationHandlerDeepTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 
 		$this->handler = new RelationHandler(
-			$this->objectMapper,
-			$this->schemaMapper,
+			new RelationHandlerStores($this->objectMapper, $this->schemaMapper, $this->registerMapper),
 			$this->rbacHandler,
-			$this->logger,
-			$this->registerMapper
+			$this->logger
 		);
 
 	}//end setUp()
