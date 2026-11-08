@@ -84,6 +84,13 @@ use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryInterface;
 use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryService;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
+use OCA\OpenRegister\Service\Bindings\AccessBindings;
+use OCA\OpenRegister\Service\Bindings\FeatureBindings;
+use OCA\OpenRegister\Service\Bindings\FlowBindings;
+use OCA\OpenRegister\Service\Bindings\MiscBindings;
+use OCA\OpenRegister\Service\Bindings\ObjectsBindings;
+use OCA\OpenRegister\Service\Bindings\RootBindings;
+use OCA\OpenRegister\Service\Bindings\SchemasBindings;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
@@ -1133,13 +1140,23 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\View\ViewObjectQueryInterface::class => \OCA\OpenRegister\Service\View\ViewObjectQuery::class,
 		HingeAnnotationValidatorInterface::class => HingeAnnotationValidator::class,
 		SurvivorshipAnnotationValidatorInterface::class => SurvivorshipAnnotationValidator::class,
+		// The area maps below are spread one per entry, never two in a row: PHPStan
+		// skips the item after a spread in an array this size, so two adjacent
+		// spreads end the analysis with an internal error.
 		CredentialAppTokenServiceInterface::class => CredentialAppTokenService::class,
+		...ObjectsBindings::BINDINGS,
 		ProviderCatalogueInterface::class => ProviderCatalogue::class,
+		...RootBindings::BINDINGS,
 		NotificationsAnnotationInstallerInterface::class => NotificationsAnnotationInstaller::class,
+		...FlowBindings::BINDINGS,
 		ReferencedAddressNotifierInterface::class => ReferencedAddressNotifier::class,
+		...AccessBindings::BINDINGS,
 		\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface::class => \OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class,
+		...SchemasBindings::BINDINGS,
 		\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunContext::class,
+		...FeatureBindings::BINDINGS,
 		TrustTierResolverInterface::class => TrustTierResolver::class,
+		...MiscBindings::BINDINGS,
 	];
 
 	/**

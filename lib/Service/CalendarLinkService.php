@@ -56,13 +56,26 @@ use Throwable;
  */
 class CalendarLinkService implements CalendarLinkServiceInterface {
 	/**
+	 * User session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CalendarLinkMapperInterface $linkMapper Link-table mapper.
 	 * @param CalendarEventService $calendarEventService Legacy CalDAV-property service.
 	 * @param CalDavBackend $calDavBackend CalDAV backend for direct picker queries.
-	 * @param IUserSession $userSession User session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkSessionRuntime $runtime User session and logger.
 	 *
 	 * @return void
 	 */
@@ -70,9 +83,10 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		private readonly CalendarLinkMapperInterface $linkMapper,
 		private readonly CalendarEventService $calendarEventService,
 		private readonly CalDavBackend $calDavBackend,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		LinkSessionRuntime $runtime,
 	) {
+		$this->userSession = $runtime->userSession;
+		$this->logger = $runtime->logger;
 	}//end __construct()
 
 	/**

@@ -58,43 +58,16 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 	 *
 	 * PostgreSQL is the sole vector storage backend.
 	 *
-	 * @param string $entityType Entity type ('object' or 'file')
-	 * @param string $entityId Entity UUID
-	 * @param array $embedding Vector embedding (array of floats)
-	 * @param string $model Model used to generate embedding
-	 * @param int $dimensions Number of dimensions
-	 * @param int $chunkIndex Chunk index (0 for objects, N for file chunks)
-	 * @param int $totalChunks Total number of chunks
-	 * @param string|null $chunkText The text that was embedded
-	 * @param array $metadata Additional metadata as associative array
+	 * @param StoredVector $vector The entity, its embedding and its chunk position
 	 *
 	 * @return int The ID of the inserted vector
 	 *
 	 * @throws \Exception If storage fails
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function storeVector(
-		string $entityType,
-		string $entityId,
-		array $embedding,
-		string $model,
-		int $dimensions,
-		int $chunkIndex = 0,
-		int $totalChunks = 1,
-		?string $chunkText = null,
-		array $metadata = [],
-	): int {
-		return $this->storeVectorInDatabase(
-			vector: new StoredVector(
-				subject: new VectorSubject(entityType: $entityType, entityId: $entityId),
-				payload: new VectorPayload(embedding: $embedding, model: $model, dimensions: $dimensions),
-				position: new VectorChunkPosition(chunkIndex: $chunkIndex, totalChunks: $totalChunks, chunkText: $chunkText),
-				metadata: $metadata
-			)
-		);
+	public function storeVector(StoredVector $vector): int {
+		return $this->storeVectorInDatabase(vector: $vector);
 	}//end storeVector()
 
 	/**

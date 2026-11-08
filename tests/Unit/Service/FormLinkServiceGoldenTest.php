@@ -30,6 +30,7 @@ use Exception;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapper;
 use OCA\OpenRegister\Service\FormLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -96,10 +97,8 @@ final class FormLinkServiceGoldenTest extends TestCase {
 		$this->service = new FormLinkService(
 			$this->mapper,
 			$this->createMock(ContainerInterface::class),
-			$this->appManager,
 			$this->db,
-			$this->userSession,
-			$this->createMock(LoggerInterface::class)
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->createMock(LoggerInterface::class))
 		);
 	}//end setUp()
 
