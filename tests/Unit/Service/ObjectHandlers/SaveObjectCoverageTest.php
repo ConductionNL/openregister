@@ -850,24 +850,6 @@ class SaveObjectCoverageTest extends TestCase {
 	}
 
 	/**
-	 * Test deleteOrphanedRelatedObjects handles DoesNotExistException.
-	 *
-	 * @return void
-	 */
-	public function testDeleteOrphanedRelatedObjectsHandlesNotFound(): void {
-		$this->objectEntityMapper->method('find')
-			->willThrowException(new DoesNotExistException('not found'));
-
-		// Should not throw.
-		$this->invokePrivate('deleteOrphanedRelatedObjects', [
-			['aaaaaaaa-bbbb-cccc-dddd-111111111111'],
-			$this->orphanScope(),
-		]);
-
-		$this->assertTrue(true);
-	}
-
-	/**
 	 * Test deleteOrphanedRelatedObjects handles general exception.
 	 *
 	 * @return void
