@@ -128,15 +128,15 @@ exports[`dialog application shows the busy state 1`] = `
 `;
 
 exports[`dialog clearCacheModal asks 1`] = `
-"<x-ncdialog name="Clear Cache" noclose="false">
+"<x-ncdialog name="Clear Cache" size="small" noclose="false">
   <slot-actions>
-    <x-ncbutton disabled="false">
+    <x-ncbutton>
       <slot-default> Cancel</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error" disabled="false">
+    <x-ncbutton disabled="false" variant="error">
       <slot-default> Clear Cache</slot-default>
       <slot-icon>
         <x-delete size="20"></x-delete>
@@ -188,15 +188,15 @@ exports[`dialog clearCacheModal cancels 1`] = `
 `;
 
 exports[`dialog clearCacheModal confirms 1`] = `
-"<x-ncdialog name="Clear Cache" noclose="false">
+"<x-ncdialog name="Clear Cache" size="small" noclose="false">
   <slot-actions>
-    <x-ncbutton disabled="false">
+    <x-ncbutton>
       <slot-default> Cancel</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error" disabled="false">
+    <x-ncbutton disabled="false" variant="error">
       <slot-default> Clear Cache</slot-default>
       <slot-icon>
         <x-delete size="20"></x-delete>
@@ -262,7 +262,7 @@ exports[`dialog clearCacheModal dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog clearCacheModal shows the busy state 1`] = `
-"<x-ncdialog name="Clear Cache" noclose="true">
+"<x-ncdialog name="Clear Cache" size="small" noclose="true">
   <slot-actions>
     <x-ncbutton disabled="true">
       <slot-default> Cancel</slot-default>
@@ -270,7 +270,7 @@ exports[`dialog clearCacheModal shows the busy state 1`] = `
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error" disabled="true">
+    <x-ncbutton disabled="true" variant="error">
       <slot-default> Clearing...</slot-default>
       <slot-icon>
         <x-ncloadingicon size="20"></x-ncloadingicon>
@@ -551,15 +551,15 @@ exports[`dialog endpoint shows the busy state 1`] = `
 `;
 
 exports[`dialog rebaseModal asks 1`] = `
-"<x-ncdialog name="Confirm Rebase Operation" noclose="false">
+"<x-ncdialog name="Confirm Rebase Operation" size="small" noclose="false">
   <slot-actions>
-    <x-ncbutton disabled="false">
+    <x-ncbutton>
       <slot-default> Cancel</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error" disabled="false">
+    <x-ncbutton disabled="false" variant="error">
       <slot-default> Confirm Rebase</slot-default>
       <slot-icon>
         <x-refresh size="20"></x-refresh>
@@ -588,15 +588,15 @@ exports[`dialog rebaseModal cancels 1`] = `
 `;
 
 exports[`dialog rebaseModal confirms 1`] = `
-"<x-ncdialog name="Confirm Rebase Operation" noclose="false">
+"<x-ncdialog name="Confirm Rebase Operation" size="small" noclose="false">
   <slot-actions>
-    <x-ncbutton disabled="false">
+    <x-ncbutton>
       <slot-default> Cancel</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error" disabled="false">
+    <x-ncbutton disabled="false" variant="error">
       <slot-default> Confirm Rebase</slot-default>
       <slot-icon>
         <x-refresh size="20"></x-refresh>
@@ -637,7 +637,7 @@ exports[`dialog rebaseModal dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog rebaseModal shows the busy state 1`] = `
-"<x-ncdialog name="Confirm Rebase Operation" noclose="true">
+"<x-ncdialog name="Confirm Rebase Operation" size="small" noclose="true">
   <slot-actions>
     <x-ncbutton disabled="true">
       <slot-default> Cancel</slot-default>
@@ -645,7 +645,7 @@ exports[`dialog rebaseModal shows the busy state 1`] = `
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error" disabled="true">
+    <x-ncbutton disabled="true" variant="error">
       <slot-default> Rebasing...</slot-default>
       <slot-icon>
         <x-ncloadingicon size="20"></x-ncloadingicon>
