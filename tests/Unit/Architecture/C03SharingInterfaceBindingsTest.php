@@ -63,14 +63,11 @@ final class C03SharingInterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * PortalTaskReminderListener (Listener component) still injects PortalTaskDeliveryService.
-	 * This lane only retypes the controllers; the listener is left for the lane that owns it.
+	 * None: PortalTaskReminderListener now types against PortalTaskDeliveryRequestInterface.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [
-		PortalTaskDeliveryService::class => ['Listener/PortalTaskReminderListener.php'],
-	];
+	private const KEPT_CALLERS = [];
 
 	/**
 	 * One case per class.

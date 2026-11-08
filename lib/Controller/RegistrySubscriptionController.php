@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
-use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionServiceInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -83,9 +83,9 @@ class RegistrySubscriptionController extends Controller {
 	/**
 	 * Owns the subscription lifecycle.
 	 *
-	 * @var RegistrySubscriptionService
+	 * @var RegistrySubscriptionServiceInterface
 	 */
-	private readonly RegistrySubscriptionService $subscriptions;
+	private readonly RegistrySubscriptionServiceInterface $subscriptions;
 
 	/**
 	 * Consumed by HandlesExceptionsTrait for server-side 500 logging.

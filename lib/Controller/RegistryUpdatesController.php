@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -54,13 +54,13 @@ class RegistryUpdatesController extends Controller {
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param RegistrySubscriptionService $subscriptions Applies the update.
+	 * @param RegistrySubscriptionServiceInterface $subscriptions Applies the update.
 	 * @param LoggerInterface|null $logger Consumed by HandlesExceptionsTrait for server-side 500 logging.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RegistrySubscriptionService $subscriptions,
+		private readonly RegistrySubscriptionServiceInterface $subscriptions,
 		private readonly ?LoggerInterface $logger = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);

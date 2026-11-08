@@ -54,7 +54,7 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryServiceInterface;
-use OCA\OpenRegister\Service\Portal\PortalTaskService;
+use OCA\OpenRegister\Service\Portal\PortalTaskServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -92,7 +92,7 @@ class PortalTaskController extends Controller {
 	 *
 	 * @var PortalTaskService
 	 */
-	private readonly PortalTaskService $portal;
+	private readonly PortalTaskServiceInterface $portal;
 
 	/**
 	 * The delivery ledger.
@@ -202,7 +202,7 @@ class PortalTaskController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function complete(string $uuid, string $outcome = PortalTaskService::DEFAULT_OUTCOME, ?string $comment = null): JSONResponse {
+	public function complete(string $uuid, string $outcome = PortalTaskServiceInterface::DEFAULT_OUTCOME, ?string $comment = null): JSONResponse {
 		return $this->asSubject(
 			action: fn (PortalSubject $subject): JSONResponse => $this->completeAs(
 				subject: $subject,
