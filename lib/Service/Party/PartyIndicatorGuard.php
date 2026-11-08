@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Party;
 
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 
 /**
  * Evaluates the declared effect of every indicator on every party of an object.
@@ -56,11 +56,11 @@ class PartyIndicatorGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $links The link rows, for the parties on an object.
+	 * @param ContactLinkMapperInterface $links The link rows, for the parties on an object.
 	 * @param PartyServiceInterface $parties The party records.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
+		private readonly ContactLinkMapperInterface $links,
 		private readonly PartyServiceInterface $parties,
 	) {
 	}//end __construct()

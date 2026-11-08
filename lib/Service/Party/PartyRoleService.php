@@ -33,7 +33,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -64,9 +64,9 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	/**
 	 * The link rows.
 	 *
-	 * @var ContactLinkMapper
+	 * @var ContactLinkMapperInterface
 	 */
-	private readonly ContactLinkMapper $links;
+	private readonly ContactLinkMapperInterface $links;
 
 	/**
 	 * Writes one party link.

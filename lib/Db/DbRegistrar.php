@@ -64,6 +64,8 @@ final class DbRegistrar {
 		BulkJobMapperInterface::class => BulkJobMapper::class,
 		BulkJobMemberMapperInterface::class => BulkJobMemberMapper::class,
 		CaseItemMapperInterface::class => CaseItemMapper::class,
+		ContactLinkMapperInterface::class => ContactLinkMapper::class,
+		EmailLinkMapperInterface::class => EmailLinkMapper::class,
 		EndpointLogMapperInterface::class => EndpointLogMapper::class,
 		EndpointMapperInterface::class => EndpointMapper::class,
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
