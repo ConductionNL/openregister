@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Flow\FlowNextHint;
+use OCA\OpenRegister\Service\Flow\FlowNextHintsInterface;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
@@ -383,7 +383,7 @@ class ObjectActionsController extends Controller {
 				'action' => $selection->action,
 				'summary' => ['succeeded' => $succeeded, 'failed' => (count($results) - $succeeded)],
 				'results' => $results,
-				'next' => ($definition->next ?? FlowNextHint::LIST),
+				'next' => ($definition->next ?? FlowNextHintsInterface::LIST),
 			]
 		);
 	}//end runSelection()

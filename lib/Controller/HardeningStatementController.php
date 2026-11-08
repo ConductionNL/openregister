@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\HardeningStatementControllerServices;
-use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
+use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
 use OCA\OpenRegister\Service\Hardening\StatementServiceInterface;
 use OCP\AppFramework\Controller;
@@ -195,7 +195,7 @@ class HardeningStatementController extends Controller {
 					userId: ($this->userSession->getUser()?->getUID() ?? '')
 				)
 			);
-		} catch (ElevationRequiredException $stale) {
+		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (InvalidArgumentException $invalid) {
 			return new JSONResponse(data: ['error' => $invalid->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
@@ -221,7 +221,7 @@ class HardeningStatementController extends Controller {
 			$this->statements->withdraw();
 
 			return new JSONResponse(data: ['statement' => null]);
-		} catch (ElevationRequiredException $stale) {
+		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
 		}
 

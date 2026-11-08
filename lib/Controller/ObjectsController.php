@@ -39,6 +39,7 @@ use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
 use OCA\OpenRegister\Controller\Support\ObjectReadOptions;
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
 use OCA\OpenRegister\Controller\Support\ObjectShow;
+use OCA\OpenRegister\Files\Service\File\BulkDownloadArchive;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
 use OCA\OpenRegister\Controller\Support\RelationUrlStamper;
 use OCA\OpenRegister\Controller\Support\GeoServices;
@@ -6263,11 +6264,13 @@ class ObjectsController extends Controller {
 			$fileService = $this->container->get(FileService::class);
 			$files = $fileService->getFiles($object);
 			$fileService->getAuditHandler()->logBulkDownload(
-				$object,
-				array_map(static fn ($file) => $file->getId(), $files),
-				array_map(static fn ($file) => $file->getName(), $files),
-				$zipInfo['filename'],
-				$zipInfo['size'] ?? null
+				object: $object,
+				archive: new BulkDownloadArchive(
+					fileIds: array_map(static fn ($file) => $file->getId(), $files),
+					fileNames: array_map(static fn ($file) => $file->getName(), $files),
+					zipName: $zipInfo['filename'],
+					totalBytes: $zipInfo['size'] ?? null
+				)
 			);
 		} catch (\Throwable $auditError) {
 			// Silently swallow — audit-trail must never break the response.
