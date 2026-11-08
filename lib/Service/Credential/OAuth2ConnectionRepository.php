@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Loads, gates and disables brokered OAuth2 connections.
  */
-class OAuth2ConnectionRepository {
+class OAuth2ConnectionRepository implements OAuth2ConnectionRepositoryInterface {
 	/**
 	 * The organisation credential scope.
 	 *
