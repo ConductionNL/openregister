@@ -28,63 +28,51 @@
 			<NcEmptyContent
 				v-else-if="agents.length === 0"
 				:name="t('openregister', 'No agents yet')" />
-			<table v-else class="agents__table">
-				<thead>
-					<tr>
-						<th scope="col">
-							{{ t('openregister', 'Name') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Tools') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Views') }}
-						</th>
-						<th scope="col">
-							<span class="hidden-visually">{{
-								t('openregister', 'Actions')
-							}}</span>
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="agent in agents" :key="agent.id">
-						<td>{{ agent.name }}</td>
-						<td>{{ labels(agent.tools, toolOptions) }}</td>
-						<td>{{ labels(agent.views, viewOptions) }}</td>
-						<td>
-							<NcButton
-								v-if="canEdit(agent)"
-								:aria-label="
-									t('openregister', 'Limits of {name}', {
-										name: agent.name,
-									})
-								"
-								@click="editing = agent">
-								{{ t('openregister', 'Edit limits') }}
-							</NcButton>
-							<span
-								v-else-if="!isListGrant(agent)"
-								class="agents__readonly">
-								{{
-									t(
-										'openregister',
-										'This agent has a grant per app. Change it through the agents API.',
-									)
-								}}
-							</span>
-							<span v-else class="agents__readonly">
-								{{
-									t(
-										'openregister',
-										"Only the agent's owner can change its limits.",
-									)
-								}}
-							</span>
-						</td>
-					</tr>
-				</tbody>
-			</table>
+			<CnDataTable
+				v-else
+				class="agents__table"
+				:columns="columns"
+				:rows="agents">
+				<template #column-tools="{ row: agent }">
+					{{ labels(agent.tools, toolOptions) }}
+				</template>
+				<template #column-views="{ row: agent }">
+					{{ labels(agent.views, viewOptions) }}
+				</template>
+				<template #actions-header>
+					<span class="hidden-visually">{{ t('openregister', 'Actions') }}</span>
+				</template>
+				<template #row-actions="{ row: agent }">
+					<NcButton
+						v-if="canEdit(agent)"
+						:aria-label="
+							t('openregister', 'Limits of {name}', {
+								name: agent.name,
+							})
+						"
+						@click="editing = agent">
+						{{ t('openregister', 'Edit limits') }}
+					</NcButton>
+					<span
+						v-else-if="!isListGrant(agent)"
+						class="agents__readonly">
+						{{
+							t(
+								'openregister',
+								'This agent has a grant per app. Change it through the agents API.',
+							)
+						}}
+					</span>
+					<span v-else class="agents__readonly">
+						{{
+							t(
+								'openregister',
+								"Only the agent's owner can change its limits.",
+							)
+						}}
+					</span>
+				</template>
+			</CnDataTable>
 		</div>
 		<EditAgentLimits
 			v-if="editing"
@@ -97,6 +85,7 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
@@ -113,6 +102,7 @@ import EditAgentLimits from '../../modals/agent/EditAgentLimits.vue'
 export default {
 	name: 'AgentsIndex',
 	components: {
+		CnDataTable,
 		EditAgentLimits,
 		NcAppContent,
 		NcButton,
@@ -130,6 +120,21 @@ export default {
 			error: '',
 			editing: null,
 		}
+	},
+
+	computed: {
+		/**
+		 * The agents table columns; the row actions add the last one.
+		 *
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		columns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Name') },
+				{ key: 'tools', label: t('openregister', 'Tools') },
+				{ key: 'views', label: t('openregister', 'Views') },
+			]
+		},
 	},
 
 	async mounted() {
@@ -243,18 +248,6 @@ export default {
 .agents__intro {
 	color: var(--color-text-maxcontrast);
 	margin-bottom: 16px;
-}
-
-.agents__table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.agents__table th,
-.agents__table td {
-	padding: 8px;
-	text-align: start;
-	border-bottom: 1px solid var(--color-border);
 }
 
 .agents__readonly {
