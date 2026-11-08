@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
  *
  * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
-class PurposeRegistry {
+class PurposeRegistry implements PurposeRegistryInterface {
 
 	/**
 	 * What a read that names no purpose is told.
