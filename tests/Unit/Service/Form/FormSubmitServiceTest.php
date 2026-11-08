@@ -56,6 +56,17 @@ use OCA\OpenRegister\Service\Form\FormSubmitPlatform;
  *
  * @covers \OCA\OpenRegister\Service\Form\FormSubmitService
  * @uses \OCA\OpenRegister\Service\Form\FormPayloadFindings
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Service\Form\FormPayloadMapper
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmission
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmitDestinations
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmitKeeping
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmitPlatform
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmitRefusals
+ * @uses \OCA\OpenRegister\Service\Form\FormSubmitter
+ * @uses \OCA\OpenRegister\Service\Form\FormWriteCompensation
+ * @uses \OCA\OpenRegister\Service\Form\FormWriteContext
+ * @uses \OCA\OpenRegister\Service\Form\FormWriteReferences
  * @uses \OCA\OpenRegister\Service\Form\FormIdempotencyStore
  * @uses \OCA\OpenRegister\Service\Form\FormUploadStore
  * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
