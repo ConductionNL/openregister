@@ -3103,8 +3103,8 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function grantExplicitReveal(ObjectEntity $object): void {
-		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
-		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
+		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class);
+		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface) {
 			$params = $this->request->getParams();
 			$explicitReveal->grantFor(objectId: (string)$object->getUuid(), reveal: (string)($params['_reveal'] ?? ''));
 		}

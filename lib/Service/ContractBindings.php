@@ -695,6 +695,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface::class => \OCA\OpenRegister\Service\Rbac\DefinitionWriteRights::class,
 		\OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface::class => \OCA\OpenRegister\Service\Rbac\GrantChangeAuditor::class,
 		\OCA\OpenRegister\Service\Rbac\DerivedGrantLoginInterface::class => \OCA\OpenRegister\Service\Rbac\DerivedGrantStore::class,
+		\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitReveal::class,
 		\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class,
 		BrpPersonProviderInterface::class => BrpPersonProvider::class,
 		CalendarFeedTokenServiceInterface::class => CalendarFeedTokenService::class,
