@@ -9,10 +9,18 @@ import {
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.modal === 'deleteSchemaProperty'"
 		name="Verwijder Schema-eigenschap"
-		noClose>
+		size="small"
+		:loading="loading"
+		:cancelDisabled="loading"
+		:closeLabel="success !== null ? 'Sluiten' : 'Annuleren'"
+		confirmLabel="Verwijder"
+		:showConfirm="success === null"
+		:confirmDisabled="!canDelete"
+		@cancel="closeModal"
+		@confirm="deleteProperty()">
 		<div v-if="success !== null || error">
 			<NcNoteCard v-if="success" type="success">
 				<p>Schema-eigenschap succesvol verwijderd</p>
@@ -42,40 +50,20 @@ import {
 				eigenschap gebruiken.
 			</p>
 		</NcNoteCard>
-		<template #actions>
-			<CloseCancelButton :label="success !== null ? 'Sluiten' : 'Annuleren'" :disabled="loading" icon="" @click="closeModal" />
-			<NcButton
-				v-if="success === null"
-				:disabled="loading || !canDelete"
-				icon="Delete"
-				variant="error"
-				@click="deleteProperty()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Delete v-if="!loading" :size="20" />
-				</template>
-				Verwijder
-			</NcButton>
+		<template #confirmIcon>
+			<Delete :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
+import { NcNoteCard } from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 
 export default {
 	name: 'DeleteSchemaProperty',
-	components: {
-		NcDialog,
-		NcButton,
-		NcNoteCard,
-		NcLoadingIcon,
-		// Icons
-		CloseCancelButton,
-		Delete,
-	},
+	components: { ConfirmDialogFrame, NcNoteCard, Delete },
 
 	data() {
 		return {

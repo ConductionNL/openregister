@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
-use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
 
@@ -39,7 +39,7 @@ final class AccessLinkDomain {
 	 * @param AccessLinkServiceInterface   $links     The link lifecycle.
 	 * @param AccessLinkReaderInterface    $reader    Serves what a link opens.
 	 * @param AccessLinkMintGuardInterface $mintGuard Decides whether a caller may publish a subject.
-	 * @param AccessLinkActs      $acts      Performs the comment and the upload, as the link.
+	 * @param AccessLinkActsInterface      $acts      Performs the comment and the upload, as the link.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
@@ -47,7 +47,7 @@ final class AccessLinkDomain {
 		public readonly AccessLinkServiceInterface $links,
 		public readonly AccessLinkReaderInterface $reader,
 		public readonly AccessLinkMintGuardInterface $mintGuard,
-		public readonly AccessLinkActs $acts,
+		public readonly AccessLinkActsInterface $acts,
 	) {
 	}//end __construct()
 }//end class

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -84,10 +85,12 @@ class EmailLinkReaderContractTest extends TestCase {
 
 		$reader = new EmailLinkService(
 			$mapper,
-			$this->createMock(originalClassName: IAppManager::class),
 			$this->createMock(originalClassName: IDBConnection::class),
-			$this->createMock(originalClassName: IUserSession::class),
-			$this->createMock(originalClassName: LoggerInterface::class)
+			new LinkServiceRuntime(
+				$this->createMock(originalClassName: IAppManager::class),
+				$this->createMock(originalClassName: IUserSession::class),
+				$this->createMock(originalClassName: LoggerInterface::class)
+			)
 		);
 
 		$result = $this->readThrough(reader: $reader);

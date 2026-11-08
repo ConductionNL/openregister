@@ -84,6 +84,13 @@ use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryInterface;
 use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryService;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
+use OCA\OpenRegister\Service\Bindings\AccessBindings;
+use OCA\OpenRegister\Service\Bindings\FeatureBindings;
+use OCA\OpenRegister\Service\Bindings\FlowBindings;
+use OCA\OpenRegister\Service\Bindings\MiscBindings;
+use OCA\OpenRegister\Service\Bindings\ObjectsBindings;
+use OCA\OpenRegister\Service\Bindings\RootBindings;
+use OCA\OpenRegister\Service\Bindings\SchemasBindings;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
@@ -538,6 +545,10 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriverInterface;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetServiceInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
@@ -688,6 +699,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface::class => \OCA\OpenRegister\Service\Rbac\DefinitionWriteRights::class,
 		\OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface::class => \OCA\OpenRegister\Service\Rbac\GrantChangeAuditor::class,
 		\OCA\OpenRegister\Service\Rbac\DerivedGrantLoginInterface::class => \OCA\OpenRegister\Service\Rbac\DerivedGrantStore::class,
+		\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitReveal::class,
 		\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class,
 		BrpPersonProviderInterface::class => BrpPersonProvider::class,
 		CalendarFeedTokenServiceInterface::class => CalendarFeedTokenService::class,
@@ -939,6 +951,7 @@ final class ContractBindings {
 		ObjectRelationServiceInterface::class => ObjectRelationService::class,
 		ObjectScopeResolverInterface::class => ObjectScopeResolver::class,
 		ObjectStreamingSaveInterface::class => ObjectService::class,
+		ObjectHandlerAccessInterface::class => ObjectService::class,
 		ObjectWriteNodeInterface::class => ObjectWriteNode::class,
 		OpenProjectLinkServiceInterface::class => OpenProjectLinkService::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
@@ -977,6 +990,8 @@ final class ContractBindings {
 		RuleTrialServiceInterface::class => RuleTrialService::class,
 		\OCA\OpenRegister\Service\Flow\FlowTenantMembershipInterface::class => \OCA\OpenRegister\Service\Flow\FlowTenantMembership::class,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkSubject::class,
+		SharePrincipalDeriverInterface::class => SharePrincipalDeriver::class,
+		AccessLinkActsInterface::class => AccessLinkActs::class,
 		RegisterDescriptorServiceInterface::class => RegisterDescriptorService::class,
 		RegisterResolverServiceInterface::class => RegisterResolverService::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
@@ -1133,13 +1148,23 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\View\ViewObjectQueryInterface::class => \OCA\OpenRegister\Service\View\ViewObjectQuery::class,
 		HingeAnnotationValidatorInterface::class => HingeAnnotationValidator::class,
 		SurvivorshipAnnotationValidatorInterface::class => SurvivorshipAnnotationValidator::class,
+		// The area maps below are spread one per entry, never two in a row: PHPStan
+		// skips the item after a spread in an array this size, so two adjacent
+		// spreads end the analysis with an internal error.
 		CredentialAppTokenServiceInterface::class => CredentialAppTokenService::class,
+		...ObjectsBindings::BINDINGS,
 		ProviderCatalogueInterface::class => ProviderCatalogue::class,
+		...RootBindings::BINDINGS,
 		NotificationsAnnotationInstallerInterface::class => NotificationsAnnotationInstaller::class,
+		...FlowBindings::BINDINGS,
 		ReferencedAddressNotifierInterface::class => ReferencedAddressNotifier::class,
+		...AccessBindings::BINDINGS,
 		\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface::class => \OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class,
+		...SchemasBindings::BINDINGS,
 		\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunContext::class,
+		...FeatureBindings::BINDINGS,
 		TrustTierResolverInterface::class => TrustTierResolver::class,
+		...MiscBindings::BINDINGS,
 	];
 
 	/**

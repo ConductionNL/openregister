@@ -104,15 +104,28 @@ class RegisterService implements RegisterServiceInterface {
 	private ?array $magicTableNames = null;
 
 	/**
+	 * File service for file operations.
+	 *
+	 * @var FileFolderServiceInterface
+	 */
+	private readonly FileFolderServiceInterface $fileService;
+
+	/**
+	 * Applies `_extend` post-processing (`schemas`, `@self.stats`).
+	 *
+	 * @var RegisterSerializer
+	 */
+	private readonly RegisterSerializer $registerSerializer;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes service with required dependencies for register operations.
 	 *
 	 * @param RegisterServiceStorage       $storage             Register and schema mappers and the raw connection.
-	 * @param FileFolderServiceInterface   $fileService         File service for file operations.
+	 * @param RegisterServiceHelpers $helpers File service for register folders and the register serializer.
 	 * @param OrganisationServiceInterface $organisationService Organisation service for permissions.
 	 * @param LoggerInterface              $logger              Logger for error tracking.
-	 * @param RegisterSerializer           $registerSerializer  Applies `_extend` post-processing (`schemas`,
 	 *                                                          `@self.stats`), shared between the HTTP
 	 *                                                          controller and DI consumers.
 	 *
@@ -120,11 +133,12 @@ class RegisterService implements RegisterServiceInterface {
 	 */
 	public function __construct(
 		RegisterServiceStorage $storage,
-		private readonly FileFolderServiceInterface $fileService,
+		RegisterServiceHelpers $helpers,
 		private readonly OrganisationServiceInterface $organisationService,
 		private readonly LoggerInterface $logger,
-		private readonly RegisterSerializer $registerSerializer,
 	) {
+		$this->fileService = $helpers->fileService;
+		$this->registerSerializer = $helpers->registerSerializer;
 		$this->logConstruction(phase: 'started');
 		// Store dependencies for use in service methods.
 		$this->registerMapper = $storage->registerMapper;

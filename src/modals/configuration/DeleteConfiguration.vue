@@ -1,13 +1,15 @@
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteConfiguration'"
 		name="Delete Configuration"
 		size="small"
-		noClose>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
+		:error="error"
+		:loading="loading"
+		closeLabel="Cancel"
+		confirmLabel="Delete"
+		showConfirm
+		@cancel="closeModal"
+		@confirm="deleteConfiguration">
 		<div class="formContainer">
 			<p>
 				Are you sure you want to delete the configuration "{{
@@ -16,40 +18,20 @@
 			</p>
 			<p>{{ t('openregister', 'This action cannot be undone.') }}</p>
 		</div>
-
-		<template #actions>
-			<CloseCancelButton label="Cancel" @click="closeModal" />
-			<NcButton
-				:disabled="loading"
-				variant="error"
-				@click="deleteConfiguration">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Delete v-else :size="20" />
-				</template>
-				Delete
-			</NcButton>
+		<template #confirmIcon>
+			<Delete :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { configurationStore, navigationStore } from '../../store/store.js'
 
 export default {
 	name: 'DeleteConfiguration',
-	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
-		CloseCancelButton,
-		Delete,
-	},
+	components: { ConfirmDialogFrame, Delete },
 
 	/**
 	 * @spec exclude Vue setup() exposing stores to the template; framework plumbing.

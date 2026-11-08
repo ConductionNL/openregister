@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use DateTime;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationBroadcastService;
 use OCP\AppFramework\Controller;
@@ -56,20 +57,18 @@ class NotificationBroadcastController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param NotificationBroadcastService $broadcastService The broadcast store and its receipts.
 	 * @param IGroupManager $groupManager The authority on who is an administrator.
 	 * @param IUserSession $userSession Current-user session.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly NotificationBroadcastService $broadcastService,
 		private readonly IGroupManager $groupManager,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

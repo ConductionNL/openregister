@@ -156,7 +156,7 @@ export default {
 				{ key: 'ranAt', label: t('openregister', 'When') },
 				{ key: 'verdict', label: t('openregister', 'Verdict') },
 				{ key: 'objectUuid', label: t('openregister', 'Object') },
-				{ key: 'operand', label: t('openregister', 'What decided it') },
+				{ key: 'operand', label: t('openregister', 'What decided it'), cellClass: 'cn-cell--wrap' },
 			]
 		},
 	},

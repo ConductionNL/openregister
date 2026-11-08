@@ -1969,7 +1969,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	 */
 	private function buildFileSettingsController(): FileSettingsController {
 		return new FileSettingsController(
-			'openregister',
 			$this->request,
 			\OC::$server->get(ContainerInterface::class),
 			\OC::$server->get(SettingsService::class),

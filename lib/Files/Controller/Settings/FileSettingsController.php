@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
+use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
@@ -48,20 +49,18 @@ class FileSettingsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param ContainerInterface $container DI container.
 	 * @param AppSettingsInterface $settingsService Settings service.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		private readonly ContainerInterface $container,
 		private readonly AppSettingsInterface $settingsService,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

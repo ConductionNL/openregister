@@ -133,7 +133,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 				return $this->rowBuilder(array_shift($answers) ?? $row);
 			}
 		);
-		$service = new EmailLinkService($mapper, $apps, $db, $this->session($uid2), $this->createMock(LoggerInterface::class));
+		$service = new EmailLinkService($mapper, $db, new LinkServiceRuntime($apps, $this->session($uid2), $this->createMock(LoggerInterface::class)));
 
 		$this->assertGolden(
 			function () use ($service, $messageId, $uid, $schemaId) {
@@ -155,7 +155,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturnCallback(
 			fn () => $this->rowBuilder(['id' => 7, 'uid' => 'u', 'subject' => 'Hello', 'message_id' => '<a1@x>', 'user_id' => 'alice'])
 		);
-		$service = new EmailLinkService($mapper, $apps, $db, $this->session('alice'), $this->createMock(LoggerInterface::class));
+		$service = new EmailLinkService($mapper, $db, new LinkServiceRuntime($apps, $this->session('alice'), $this->createMock(LoggerInterface::class)));
 
 		$link = $service->linkEmail((new LinkTarget('obj-1', 3))->inSchema(4), (new EmailMessageRef(42, '7'))->withUid('u'));
 
@@ -323,10 +323,8 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$mapper->method('insert')->willReturnArgument(0);
 		$service = new DeckLinkService(
 			$mapper,
-			$this->createMock(IAppManager::class),
-			$this->session('alice'),
+			new LinkServiceRuntime($this->createMock(IAppManager::class), $this->session('alice'), $this->createMock(LoggerInterface::class)),
 			$this->createMock(IUserManager::class),
-			$this->createMock(LoggerInterface::class),
 			$this->container(['OCA\\Deck\\Service\\CardService' => $cards])
 		);
 

@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Controller\FileSidebarController;
+use OCA\OpenRegister\Files\Controller\Support\FileSidebarControllerServices;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Files\Service\FileSidebarService;
@@ -163,11 +163,8 @@ final class FileAccessGuardGoldenTest extends TestCase {
 		];
 		if (in_array($endpoint, ['getObjectsForFile', 'getExtractionStatus'], true) === true) {
 			return new FileSidebarController(
-				'openregister',
 				$request,
-				$this->mocks['sidebar'],
-				new ControllerSession(userSession: $session, groupManager: $this->createMock(IGroupManager::class), logger: new NullLogger()),
-				$root,
+				new FileSidebarControllerServices($this->mocks['sidebar'], $root, $session, new NullLogger()),
 				$scope
 			);
 		}

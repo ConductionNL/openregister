@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\Service\Mcp;
 
-use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -308,7 +308,7 @@ class McpResourcesService {
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject;
-	 * ExplicitReveal::maskAll() is a pure function.
+	 * ExplicitRevealMasks::maskAll() is a pure function.
 	 */
 	private function readObjects(int $registerId, int $schemaId, ?string $objectId = null): array {
 		$this->objectService->setRegister($registerId);
@@ -319,12 +319,12 @@ class McpResourcesService {
 
 		if ($objectId !== null) {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find($objectId));
-			return ExplicitReveal::maskAll(schema: $schema, object: $object->jsonSerialize());
+			return ExplicitRevealMasks::maskAll(schema: $schema, object: $object->jsonSerialize());
 		}
 
 		$result = $this->objectService->findAll();
 		return array_map(
-			callback: static fn ($obj) => ExplicitReveal::maskAll(schema: $schema, object: $obj->jsonSerialize()),
+			callback: static fn ($obj) => ExplicitRevealMasks::maskAll(schema: $schema, object: $obj->jsonSerialize()),
 			array: $result
 		);
 	}//end readObjects()

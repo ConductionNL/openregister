@@ -183,8 +183,8 @@ export default {
 		 */
 		writeColumns() {
 			return [
-				{ key: 'id', label: t('openregister', 'Property') },
-				{ key: 'value', label: t('openregister', 'Value') },
+				{ key: 'id', label: t('openregister', 'Property'), cellClass: 'cn-cell--wrap' },
+				{ key: 'value', label: t('openregister', 'Value'), cellClass: 'cn-cell--wrap' },
 			]
 		},
 

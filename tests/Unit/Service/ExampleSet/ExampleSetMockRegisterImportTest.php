@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\CountedRegisterImport;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
+use OCA\OpenRegister\Service\RegisterImporters;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
@@ -150,19 +151,21 @@ class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 		$descriptors = new RegisterDescriptorService(
 			$appManager,
 			$registerMapper,
-			$configuration,
-			$this->createMock(LoggerInterface::class),
-			new CountedRegisterImport(
+			new RegisterImporters(
+				$configuration,
+				new CountedRegisterImport(
 				registerMapper: $registerMapper,
 				schemaMapper: $this->createMock(SchemaMapper::class),
 				decision: new ShippedAuthorizationDecision()
 			),
-			new AppRegisterImportRunner(
+				new AppRegisterImportRunner(
 				appManager: $appManager,
 				containers: $this->createMock(AppContainerLocator::class),
 				configurationService: $configuration,
 				documents: new RegisterDocumentLoader(appManager: $appManager)
 			)
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$jobs = $this->createMock(AppImportJobRecorder::class);

@@ -1,9 +1,16 @@
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="show"
 		name="Confirm Rebase Operation"
-		:noClose="rebasing"
-		@closing="$emit('close')">
+		size="small"
+		:closable="!rebasing"
+		:loading="rebasing"
+		:cancelDisabled="rebasing"
+		closeLabel="Cancel"
+		:confirmLabel="rebasing ? 'Rebasing...' : 'Confirm Rebase'"
+		showConfirm
+		@cancel="$emit('close')"
+		@confirm="$emit('confirm')">
 		<div class="dialog-content">
 			<h3>⚠️ Confirm Rebase Operation</h3>
 			<p>
@@ -13,35 +20,20 @@
 			</p>
 			<p><strong>This operation may take some time to complete.</strong></p>
 		</div>
-
-		<template #actions>
-			<CloseCancelButton label="Cancel" :disabled="rebasing" @click="$emit('close')" />
-			<NcButton variant="error" :disabled="rebasing" @click="$emit('confirm')">
-				<template #icon>
-					<NcLoadingIcon v-if="rebasing" :size="20" />
-					<Refresh v-else :size="20" />
-				</template>
-				{{ rebasing ? 'Rebasing...' : 'Confirm Rebase' }}
-			</NcButton>
+		<template #confirmIcon>
+			<Refresh :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 
 export default {
 	name: 'RebaseConfirmationModal',
 
-	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		CloseCancelButton,
-		Refresh,
-	},
+	components: { ConfirmDialogFrame, Refresh },
 
 	props: {
 		show: {

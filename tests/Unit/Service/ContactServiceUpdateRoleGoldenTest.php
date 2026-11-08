@@ -13,6 +13,7 @@ use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -88,8 +89,7 @@ class ContactServiceUpdateRoleGoldenTest extends TestCase {
 		return new ContactService(
 			$mapper,
 			$cardDav,
-			$this->createMock(IUserSession::class),
-			$logger,
+			new LinkSessionRuntime($this->createMock(IUserSession::class), $logger),
 			$this->createMock(IURLGenerator::class)
 		);
 	}

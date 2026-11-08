@@ -128,6 +128,21 @@ function mockStub(name) {
 }
 
 /**
+ * A cell without a slot as the library's formatValue draws it: text cut at
+ * 100 characters plus an ellipsis, an empty value as a dash.
+ *
+ * @param {*} value The cell value
+ * @return {string} What the library shows
+ */
+function mockCell(value) {
+	if (value === null || value === undefined || value === '') {
+		return '—'
+	}
+	const text = String(value)
+	return text.length > 100 ? `${text.substring(0, 100)}...` : text
+}
+
+/**
  * A stand-in for CnDataTable that draws its column labels and cell values
  * (or the `column-<key>` slot), so a golden compares what each cell reads.
  *
@@ -149,7 +164,7 @@ function mockTable() {
 						const slot = this.$slots[`column-${col.key}`]
 						return render(
 							'x-td',
-							slot ? slot({ row, value: row[col.key] }) : String(row[col.key] ?? '—'),
+							slot ? slot({ row, value: row[col.key] }) : mockCell(row[col.key]),
 						)
 					}),
 				),

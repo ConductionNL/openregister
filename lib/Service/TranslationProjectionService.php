@@ -44,23 +44,51 @@ use Psr\Log\LoggerInterface;
 
 class TranslationProjectionService implements TranslationProjectionServiceInterface {
 	/**
+	 * The translation mapper.
+	 *
+	 * @var TranslationMapperInterface
+	 */
+	private readonly TranslationMapperInterface $translationMapper;
+
+	/**
+	 * The translation handler.
+	 *
+	 * @var TranslationHandler
+	 */
+	private readonly TranslationHandler $translationHandler;
+
+	/**
+	 * The schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * The register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param TranslationMapperInterface $translationMapper The translation mapper.
-	 * @param TranslationHandler $translationHandler The translation handler.
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param RegisterMapperInterface $registerMapper The register mapper.
+	 * @param TranslationStores $stores The translation mapper and translation handler.
+	 * @param RegisterSchemaMappers $mappers The register and schema mappers.
 	 * @param IUserSession $userSession The user session.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly TranslationMapperInterface $translationMapper,
-		private readonly TranslationHandler $translationHandler,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		TranslationStores $stores,
+		RegisterSchemaMappers $mappers,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->translationMapper = $stores->translationMapper;
+		$this->translationHandler = $stores->translationHandler;
+		$this->schemaMapper = $mappers->schemaMapper;
+		$this->registerMapper = $mappers->registerMapper;
 	}//end __construct()
 
 	/**
