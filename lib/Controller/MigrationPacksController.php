@@ -44,6 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\MigrationPacksControllerServices;
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader;
@@ -71,26 +72,52 @@ class MigrationPacksController extends Controller {
 	public const MAX_PREVIEW_ROWS = MigrationPackRequestReader::MAX_PREVIEW_ROWS;
 
 	/**
+	 * Business logic.
+	 *
+	 * @var MigrationPackServiceInterface
+	 */
+	private readonly MigrationPackServiceInterface $service;
+
+	/**
+	 * Session, group manager and logger.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
+	 * Reads definitions, uploads and preview input.
+	 *
+	 * @var MigrationPackRequestReader
+	 */
+	private readonly MigrationPackRequestReader $requestReader;
+
+	/**
+	 * Builds every error response.
+	 *
+	 * @var MigrationPackErrorResponder
+	 */
+	private readonly MigrationPackErrorResponder $errors;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param MigrationPackServiceInterface $service Business logic.
-	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param MigrationPackRequestReader $requestReader Reads definitions, uploads and preview input.
-	 * @param MigrationPackErrorResponder $errors Builds every error response.
+	 * @param MigrationPacksControllerServices $services The controller's collaborators.
 	 *
 	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly MigrationPackServiceInterface $service,
-		private readonly ControllerSession $session,
-		private readonly MigrationPackRequestReader $requestReader,
-		private readonly MigrationPackErrorResponder $errors,
+		MigrationPacksControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->service = $services->service;
+		$this->session = $services->session;
+		$this->requestReader = $services->requestReader;
+		$this->errors = $services->errors;
 	}//end __construct()
 
 	/**

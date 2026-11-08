@@ -82,47 +82,68 @@ class OAuth2AccountIdentity {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
 	 */
-	public function record(
-		array $provider,
-		string $credentialId,
-		string $scope,
-		OAuth2TokenSet $set,
-		string $owner,
-	): void {
+	public function record(array $provider, string $credentialId, string $scope, OAuth2TokenSet $set, string $owner): void {
 		$identity = ($provider['identity'] ?? null);
 		if (is_array($identity) === false || trim((string)($identity['path'] ?? '')) === '') {
 			return;
 		}
 
 		try {
-			$response = $this->broker->request(
-				credentialId: $credentialId,
-				appId: self::BROKER_APP_ID,
-				method: (string)($identity['method'] ?? 'GET'),
-				path: (string)$identity['path'],
-				actingUserId: $owner
-			);
-
-			$decoded = json_decode($response['body'], true);
-			if (is_array($decoded) === false) {
-				return;
+			$decoded = $this->answer(identity: $identity, credentialId: $credentialId, owner: $owner);
+			if ($decoded !== null) {
+				$this->refresh->persist(credentialId: $credentialId, scope: $scope, set: $this->withAccount(set: $set, identity: $identity, decoded: $decoded));
 			}
-
-			$this->refresh->persist(
-				credentialId: $credentialId,
-				scope: $scope,
-				set: $set->withAccount(
-					id: $this->fieldAt(payload: $decoded, path: (string)($identity['idField'] ?? '')),
-					handle: $this->fieldAt(payload: $decoded, path: (string)($identity['handleField'] ?? '')),
-					displayName: $this->fieldAt(payload: $decoded, path: (string)($identity['displayNameField'] ?? ''))
-				)
-			);
 		} catch (Throwable $failure) {
-			$this->logger->warning(
-				'[OAuth2AccountIdentity] could not read the connected account for ' . $credentialId . ': ' . $failure->getMessage()
-			);
-		}//end try
+			$this->logger->warning('[OAuth2AccountIdentity] could not read the connected account for ' . $credentialId . ': ' . $failure->getMessage());
+		}
 	}//end record()
+
+	/**
+	 * Make the one bounded identity call and decode its answer.
+	 *
+	 * @param array<string, mixed> $identity The provider's identity block, with a non-empty path.
+	 * @param string $credentialId The credential to call as.
+	 * @param string $owner The credential's owner, asserted for this sessionless call.
+	 *
+	 * @return array<mixed>|null The decoded answer, or null when it is not JSON.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
+	 */
+	private function answer(array $identity, string $credentialId, string $owner): ?array {
+		$response = $this->broker->request(
+			credentialId: $credentialId,
+			appId: self::BROKER_APP_ID,
+			method: (string)($identity['method'] ?? 'GET'),
+			path: (string)$identity['path'],
+			actingUserId: $owner
+		);
+
+		$decoded = json_decode($response['body'], true);
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		return $decoded;
+	}//end answer()
+
+	/**
+	 * The token set carrying the account the answer names.
+	 *
+	 * @param OAuth2TokenSet $set The token set just stored.
+	 * @param array<string, mixed> $identity The provider's identity block.
+	 * @param array<mixed> $decoded The decoded identity answer.
+	 *
+	 * @return OAuth2TokenSet The set with its account filled in.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
+	 */
+	private function withAccount(OAuth2TokenSet $set, array $identity, array $decoded): OAuth2TokenSet {
+		return $set->withAccount(
+			id: $this->fieldAt(payload: $decoded, path: (string)($identity['idField'] ?? '')),
+			handle: $this->fieldAt(payload: $decoded, path: (string)($identity['handleField'] ?? '')),
+			displayName: $this->fieldAt(payload: $decoded, path: (string)($identity['displayNameField'] ?? ''))
+		);
+	}//end withAccount()
 
 	/**
 	 * Read one scalar out of a decoded response by dotted path.
@@ -148,10 +169,23 @@ class OAuth2AccountIdentity {
 			$cursor = $cursor[$segment];
 		}
 
-		if (is_scalar($cursor) === false) {
+		return $this->scalarText(value: $cursor);
+	}//end fieldAt()
+
+	/**
+	 * A scalar as text, or an empty string for anything else.
+	 *
+	 * @param mixed $value The value found.
+	 *
+	 * @return string The text.
+	 *
+	 * @spec exclude private response accessor with no behaviour of its own
+	 */
+	private function scalarText(mixed $value): string {
+		if (is_scalar($value) === false) {
 			return '';
 		}
 
-		return (string)$cursor;
-	}//end fieldAt()
+		return (string)$value;
+	}//end scalarText()
 }//end class

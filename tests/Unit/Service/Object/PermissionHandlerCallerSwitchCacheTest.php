@@ -57,7 +57,7 @@ class PermissionHandlerCallerSwitchCacheTest extends TestCase {
 		$groups = $this->createStub(IGroupManager::class);
 		$groups->method('getUserGroupIds')->willReturn(['editors']);
 
-		$handler = new PermissionHandler(
+		$handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $session,
 			userManager: $users,
 			groupManager: $groups,

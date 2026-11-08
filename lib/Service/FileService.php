@@ -66,7 +66,7 @@ use OCA\OpenRegister\Service\File\FileContentHandlers;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
 use OCA\OpenRegister\Service\File\FileLifecycleHandlers;
 use OCA\OpenRegister\Service\File\FileLockHandler;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\FileServicePlatform;
@@ -170,9 +170,9 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 	/**
 	 * File ownership handler
 	 *
-	 * @var FileOwnershipHandler
+	 * @var FileOwnershipHandlerInterface
 	 */
-	private FileOwnershipHandler $fileOwnershipHandler;
+	private FileOwnershipHandlerInterface $fileOwnershipHandler;
 
 	/**
 	 * File sharing handler

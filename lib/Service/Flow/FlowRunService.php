@@ -208,13 +208,13 @@ class FlowRunService implements FlowRunServiceInterface {
 
 		return new FlowStreamWalk(
 			run: $run,
-			claims: $this->claims,
-			commit: $this->commit,
-			streamMapper: $this->streamMapper,
-			owner: FlowPlaceClaims::newOwner(),
-			runCap: $cap,
-			onlyStream: $onlyStream,
-			budget: $budget
+			parts: new FlowStreamWalkParts(claims: $this->claims, commit: $this->commit, streamMapper: $this->streamMapper),
+			limits: new FlowStreamWalkLimits(
+				owner: FlowPlaceClaims::newOwner(),
+				runCap: $cap,
+				onlyStream: $onlyStream,
+				budget: $budget
+			)
 		);
 	}//end streamWalkFor()
 
@@ -529,9 +529,11 @@ class FlowRunService implements FlowRunServiceInterface {
 		return new FlowRunGuard(
 			mapper: $this->mapper,
 			logger: $this->logger,
-			runUuid: (string)$run->getUuid(),
-			startedAt: microtime(true),
-			budget: $this->runtimeBudgetSeconds(flow: $flow)
+			clock: new FlowRunGuardClock(
+				runUuid: (string)$run->getUuid(),
+				startedAt: microtime(true),
+				budget: $this->runtimeBudgetSeconds(flow: $flow)
+			)
 		);
 
 	}//end guardFor()
@@ -1113,16 +1115,15 @@ class FlowRunService implements FlowRunServiceInterface {
 		$guard = $this->guardFor(run: $run, flow: $pinned);
 		$context = $this->nodeContextFor(run: $run, resuming: false, guard: $guard);
 		$dispatcher = new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope());
-		$stepType = (string)($step['type'] ?? '');
-		$startedAt = microtime(true);
+		$hop = new FlowNodeHop(nodeId: $nodeId, stepType: (string)($step['type'] ?? ''), startedAt: microtime(true));
 
 		try {
 			$output = FlowItems::normalise(value: $dispatcher->dispatch(step: $step, items: $items, context: $context));
-			$this->completeNodeRun(run: $run, nodeId: $nodeId, stepType: $stepType, items: $items, output: $output, context: $context, startedAt: $startedAt);
+			$this->completeNodeRun(run: $run, hop: $hop, items: $items, output: $output, context: $context);
 		} catch (FlowSuspension $suspension) {
-			$this->failSuspendedNode(run: $run, nodeId: $nodeId, stepType: $stepType, suspension: $suspension, startedAt: $startedAt);
+			$this->failSuspendedNode(run: $run, hop: $hop, suspension: $suspension);
 		} catch (Throwable $e) {
-			$this->failThrownNode(run: $run, nodeId: $nodeId, stepType: $stepType, error: $e, startedAt: $startedAt);
+			$this->failThrownNode(run: $run, hop: $hop, error: $e);
 		}
 
 		$run->setUpdated(new DateTime());
@@ -1228,35 +1229,18 @@ class FlowRunService implements FlowRunServiceInterface {
 	/**
 	 * Write a completed direct-invoke hop back onto the run.
 	 *
-	 * @param FlowRun $run The run.
-	 * @param string $nodeId The node that ran.
-	 * @param string $stepType The step's type.
-	 * @param array $items The items the node received.
-	 * @param array $output The items the node returned.
-	 * @param array $context The node context (for its {@see FlowStepReport}).
-	 * @param float $startedAt `microtime(true)` when the node was called.
+	 * @param FlowRun     $run     The run.
+	 * @param FlowNodeHop $hop     The node that ran, its type and start.
+	 * @param array       $items   The items the node received.
+	 * @param array       $output  The items the node returned.
+	 * @param array       $context The node context (for its {@see FlowStepReport}).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
 	 */
-	private function completeNodeRun(
-		FlowRun $run,
-		string $nodeId,
-		string $stepType,
-		array $items,
-		array $output,
-		array $context,
-		float $startedAt
-	): void {
-		$entry = [
-			'transition' => $nodeId,
-			'type' => $stepType,
-			'status' => 'completed',
-			'itemsIn' => count($items),
-			'itemsOut' => count($output),
-			'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
-		];
+	private function completeNodeRun(FlowRun $run, FlowNodeHop $hop, array $items, array $output, array $context): void {
+		$entry = $hop->logEntry(status: 'completed', detail: ['itemsIn' => count($items), 'itemsOut' => count($output)]);
 
 		$report = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
 		if ($report instanceof FlowStepReport === true) {
@@ -1281,75 +1265,49 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * the one isolated hop this method ran. Reported as a clear failure
 	 * rather than silently parking a run nothing will ever signal.
 	 *
-	 * @param FlowRun $run The run.
-	 * @param string $nodeId The node that suspended.
-	 * @param string $stepType The step's type.
+	 * @param FlowRun        $run        The run.
+	 * @param FlowNodeHop    $hop        The node that suspended, its type and start.
 	 * @param FlowSuspension $suspension What the node asked to wait for.
-	 * @param float $startedAt `microtime(true)` when the node was called.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
 	 */
-	private function failSuspendedNode(FlowRun $run, string $nodeId, string $stepType, FlowSuspension $suspension, float $startedAt): void {
+	private function failSuspendedNode(FlowRun $run, FlowNodeHop $hop, FlowSuspension $suspension): void {
 		$run->setStatus(FlowRun::STATUS_FAILED);
 		$run->setError(
 			'This node suspended, which the direct-invoke endpoint does not '
 			. 'support — it must complete synchronously: ' . $suspension->getMessage()
 		);
-		$run->setLog(array_merge(
-			($run->getLog() ?? []),
-			[
-				[
-					'transition' => $nodeId,
-					'type' => $stepType,
-					'status' => 'failed',
-					'reason' => 'suspended-unsupported',
-					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
-				],
-			]
-		));
+		$run->setLog(array_merge(($run->getLog() ?? []), [$hop->logEntry(status: 'failed', detail: ['reason' => 'suspended-unsupported'])]));
 	}//end failSuspendedNode()
 
 	/**
 	 * Fail a run whose one node threw.
 	 *
-	 * @param FlowRun $run The run.
-	 * @param string $nodeId The node that threw.
-	 * @param string $stepType The step's type.
-	 * @param Throwable $error What the node threw.
-	 * @param float $startedAt `microtime(true)` when the node was called.
+	 * @param FlowRun     $run   The run.
+	 * @param FlowNodeHop $hop   The node that threw, its type and start.
+	 * @param Throwable   $error What the node threw.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
 	 */
-	private function failThrownNode(FlowRun $run, string $nodeId, string $stepType, Throwable $error, float $startedAt): void {
+	private function failThrownNode(FlowRun $run, FlowNodeHop $hop, Throwable $error): void {
 		$this->logger->warning(
 			message: '[FlowRunService] Direct-invoked node failed',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'run' => $run->getUuid(),
-				'node' => $nodeId,
+				'node' => $hop->nodeId,
 				'error' => $error->getMessage(),
 			]
 		);
 
 		$run->setStatus(FlowRun::STATUS_FAILED);
 		$run->setError($error->getMessage());
-		$run->setLog(array_merge(
-			($run->getLog() ?? []),
-			[
-				[
-					'transition' => $nodeId,
-					'type' => $stepType,
-					'status' => 'failed',
-					'error' => $error->getMessage(),
-					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
-				],
-			]
-		));
+		$run->setLog(array_merge(($run->getLog() ?? []), [$hop->logEntry(status: 'failed', detail: ['error' => $error->getMessage()])]));
 	}//end failThrownNode()
 
 	/**

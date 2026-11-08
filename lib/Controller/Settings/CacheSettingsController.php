@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\CacheSettingsControllerServices;
 use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
@@ -45,24 +46,44 @@ use Psr\Log\LoggerInterface;
  */
 class CacheSettingsController extends Controller {
 	/**
+	 * Settings service.
+	 *
+	 * @var AppSettingsInterface
+	 */
+	private readonly AppSettingsInterface $settingsService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * App configuration.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param AppSettingsInterface $settingsService Settings service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param CacheSettingsControllerServices $services The controller's collaborators.
 	 * @param Factory $appDataFactory App data factory.
-	 * @param IAppConfig $appConfig App configuration.
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly AppSettingsInterface $settingsService,
-		private readonly LoggerInterface $logger,
+		CacheSettingsControllerServices $services,
 		private readonly Factory $appDataFactory,
-		private readonly IAppConfig $appConfig,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->settingsService = $services->settingsService;
+		$this->logger = $services->logger;
+		$this->appConfig = $services->appConfig;
 	}//end __construct()
 
 	/**
@@ -147,14 +168,9 @@ class CacheSettingsController extends Controller {
 			$interval = (int)$this->appConfig->getValueString(app: 'openregister', key: 'cache_warmup_interval', default: '3600');
 			$lastRun = $this->appConfig->getValueString(app: 'openregister', key: 'cache_warmup_last_run', default: '');
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'interval' => $interval,
-					'last_run' => $this->lastRunOrNull(lastRun: $lastRun),
-					'enabled' => $interval > 0,
-				]
-			);
+			$lastRun = $this->lastRunOrNull(lastRun: $lastRun);
+
+			return new JSONResponse(data: ['success' => true, 'interval' => $interval, 'last_run' => $lastRun, 'enabled' => $interval > 0]);
 		} catch (Exception $e) {
 			return $this->failure(e: $e, statusCode: 500);
 		}

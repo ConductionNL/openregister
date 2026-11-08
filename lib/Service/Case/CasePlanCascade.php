@@ -42,10 +42,7 @@ namespace OCA\OpenRegister\Service\Case;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemAudit;
-use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
-use OCP\IDBConnection;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -78,22 +75,14 @@ class CasePlanCascade {
 	/**
 	 * Constructor.
 	 *
-	 * @param CaseItemMapper $items The plan-item table.
+	 * @param CasePlanStore $store The plan-item table, the evaluation's transaction and the failure log.
 	 * @param CasePlanStateMachine $machine The one transition path.
-	 * @param CaseSentryEvaluator $sentries Entry and exit criteria.
-	 * @param CaseRealisationService $realiser Reads how realisations ended.
-	 * @param CaseAnchorReader $anchor Reads the anchoring object.
-	 * @param IDBConnection $db Holds the evaluation's transaction.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param CaseCascadeReaders $readers The entry and exit criteria, how realisations ended, and the anchoring object.
 	 */
 	public function __construct(
-		private readonly CaseItemMapper $items,
+		private readonly CasePlanStore $store,
 		private readonly CasePlanStateMachine $machine,
-		private readonly CaseSentryEvaluator $sentries,
-		private readonly CaseRealisationService $realiser,
-		private readonly CaseAnchorReader $anchor,
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
+		private readonly CaseCascadeReaders $readers,
 	) {
 
 	}//end __construct()
@@ -122,7 +111,7 @@ class CasePlanCascade {
 		}
 
 		$this->evaluating[$objectUuid] = true;
-		$outermost = $this->db->inTransaction() === false;
+		$outermost = $this->store->db->inTransaction() === false;
 		$run = new CaseCascadeRun(objectUuid: $objectUuid, event: $event, payload: $payload, actor: $actor);
 		$this->evaluateInTransaction(run: $run);
 		$this->settle(objectUuid: $objectUuid, outermost: $outermost);
@@ -143,10 +132,10 @@ class CasePlanCascade {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function evaluateInTransaction(CaseCascadeRun $run): void {
-		$this->db->beginTransaction();
+		$this->store->db->beginTransaction();
 		try {
 			$this->runToFixpoint(run: $run);
-			$this->db->commit();
+			$this->store->db->commit();
 		} catch (Throwable $failure) {
 			$this->rollBack(run: $run, failure: $failure);
 			throw $failure;
@@ -165,10 +154,10 @@ class CasePlanCascade {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function rollBack(CaseCascadeRun $run, Throwable $failure): void {
-		$this->db->rollBack();
+		$this->store->db->rollBack();
 		$this->machine->discardEvents();
 		unset($this->evaluating[$run->objectUuid]);
-		$this->logger->warning(
+		$this->store->logger->warning(
 			'[CasePlanCascade] Evaluation rolled back: ' . $failure->getMessage(),
 			['object' => $run->objectUuid, 'passes' => $run->passes]
 		);
@@ -252,13 +241,13 @@ class CasePlanCascade {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function pass(CaseCascadeRun $run): int {
-		$rows = $this->items->findByObject(objectUuid: $run->objectUuid);
+		$rows = $this->store->items->findByObject(objectUuid: $run->objectUuid);
 		if ($rows === []) {
 			return 0;
 		}
 
 		$tree = new CasePlanTree(items: $rows);
-		$object = $this->anchor->read(objectUuid: $run->objectUuid, registerId: $rows[0]->getRegisterId(), schemaId: $rows[0]->getSchemaId());
+		$object = $this->readers->anchor->read(objectUuid: $run->objectUuid, registerId: $rows[0]->getRegisterId(), schemaId: $rows[0]->getSchemaId());
 		$state = new CasePassState(tree: $tree, object: $object, event: $run->event, payload: $run->payload, actor: $run->actor);
 
 		return $this->applyRules(state: $state);
@@ -344,7 +333,7 @@ class CasePlanCascade {
 			return null;
 		}
 
-		$outcome = $this->realiser->terminalOutcome(item: $row);
+		$outcome = $this->readers->realiser->terminalOutcome(item: $row);
 		if ($outcome === null) {
 			return null;
 		}
@@ -367,7 +356,8 @@ class CasePlanCascade {
 			return null;
 		}
 
-		$sentry = $this->sentries->exitSentry(item: $row, tree: $state->tree, object: $state->object, event: $state->event, payload: $state->payload);
+		$sentries = $this->readers->sentries;
+		$sentry = $sentries->exitSentry(item: $row, tree: $state->tree, object: $state->object, event: $state->event, payload: $state->payload);
 		if ($sentry === null) {
 			return null;
 		}
@@ -387,17 +377,48 @@ class CasePlanCascade {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function entryStep(CaseItem $row, CasePassState $state): ?CaseCascadeStep {
-		if ($row->getState() !== CaseItem::STATE_AVAILABLE || $row->getDiscretionary() === true || $state->tree->isParentActive(item: $row) === false) {
+		if (self::awaitsEntry(row: $row, state: $state) === false) {
 			return null;
 		}
 
-		$sentry = $this->sentries->entrySentry(item: $row, tree: $state->tree, object: $state->object, event: $state->event, payload: $state->payload);
+		$sentries = $this->readers->sentries;
+		$sentry = $sentries->entrySentry(item: $row, tree: $state->tree, object: $state->object, event: $state->event, payload: $state->payload);
 		if ($sentry === null) {
 			return null;
 		}
 
 		return CaseCascadeStep::entryFired(item: $row, sentry: $sentry);
 	}//end entryStep()
+
+	/**
+	 * Whether a row waits for its entry sentry: available, not discretionary
+	 * (that one waits for its explicit enable), under an active parent.
+	 *
+	 * @param CaseItem $row The row.
+	 * @param CasePassState $state The pass.
+	 *
+	 * @return bool True when its entry criteria are what admits it.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 */
+	private static function awaitsEntry(CaseItem $row, CasePassState $state): bool {
+		return $row->getState() === CaseItem::STATE_AVAILABLE
+			&& $row->getDiscretionary() !== true
+			&& $state->tree->isParentActive(item: $row) === true;
+	}//end awaitsEntry()
+
+	/**
+	 * Whether a row is a stage that is active.
+	 *
+	 * @param CaseItem $row The row.
+	 *
+	 * @return bool True for an active stage.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 */
+	private static function isActiveStage(CaseItem $row): bool {
+		return $row->getPlanItemType() === CaseItem::TYPE_STAGE && $row->getState() === CaseItem::STATE_ACTIVE;
+	}//end isActiveStage()
 
 	/**
 	 * An enabled item under an active parent starts.
@@ -429,11 +450,8 @@ class CasePlanCascade {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private static function stageStep(CaseItem $row, CasePlanTree $tree): ?CaseCascadeStep {
-		if ($row->getPlanItemType() !== CaseItem::TYPE_STAGE || $row->getState() !== CaseItem::STATE_ACTIVE) {
-			return null;
-		}
-
-		if ($row->getRealisationKind() === CaseItem::REALISATION_RUN || $tree->stageMayComplete(stage: $row) === false) {
+		$runDriven = $row->getRealisationKind() === CaseItem::REALISATION_RUN;
+		if (self::isActiveStage(row: $row) === false || $runDriven === true || $tree->stageMayComplete(stage: $row) === false) {
 			return null;
 		}
 
@@ -499,7 +517,7 @@ class CasePlanCascade {
 	 */
 	private function createNextRealisation(CaseItem $previous): void {
 		$clone = self::nextRealisation(previous: $previous, count: (int)$previous->getRealisationCount() + 1);
-		$inserted = $this->items->insert($clone);
+		$inserted = $this->store->items->insert($clone);
 		$this->machine->recordCreation(
 			item: $inserted,
 			cause: CaseItemAudit::CAUSE_REALISATION,

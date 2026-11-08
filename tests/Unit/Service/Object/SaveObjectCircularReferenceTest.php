@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\ReferenceCycle;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -279,9 +280,11 @@ class SaveObjectCircularReferenceTest extends TestCase {
 		// even in warn-mode because a cycle would cause infinite
 		// recursion if swallowed.
 		$exception = new CircularReferenceException(
-			referencedUuid: 'p-1',
-			targetSchemaSlug: 'parent',
-			cycle: [['schema' => 'parent', 'uuid' => 'p-1', 'register' => 'r1']],
+			referenceCycle: new ReferenceCycle(
+				referencedUuid: 'p-1',
+				targetSchemaSlug: 'parent',
+				cycle: [['schema' => 'parent', 'uuid' => 'p-1', 'register' => 'r1']],
+			),
 		);
 		$this->assertInstanceOf(\OCA\OpenRegister\Exception\ValidationException::class, $exception);
 		$this->assertNotInstanceOf(ReferenceValidationException::class, $exception);

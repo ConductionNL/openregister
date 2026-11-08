@@ -579,17 +579,5 @@ export default {
 		border-radius: var(--border-radius);
 		border: 1px solid var(--color-border-dark);
 	}
-
-	.section-header-inline {
-		position: static;
-		flex-direction: column;
-		gap: 12px;
-		align-items: stretch;
-		margin-bottom: 20px;
-	}
-
-	.button-group {
-		justify-content: center;
-	}
 }
 </style>

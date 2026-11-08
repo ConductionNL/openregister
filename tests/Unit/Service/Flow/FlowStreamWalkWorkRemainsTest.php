@@ -23,6 +23,8 @@ use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
 use OCA\OpenRegister\Service\Flow\FlowStreamHalt;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
+use OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits;
+use OCA\OpenRegister\Service\Flow\FlowStreamWalkParts;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Workflow\Transition;
@@ -130,11 +132,8 @@ class FlowStreamWalkWorkRemainsTest extends TestCase {
 
 		$walk = new FlowStreamWalk(
 			run: $run,
-			claims: $this->createMock(FlowPlaceClaims::class),
-			commit: $commit,
-			streamMapper: $mapper,
-			owner: 'pass-1',
-			onlyStream: $only
+			parts: new FlowStreamWalkParts(claims: $this->createMock(FlowPlaceClaims::class), commit: $commit, streamMapper: $mapper),
+			limits: new FlowStreamWalkLimits(owner: 'pass-1', onlyStream: $only)
 		);
 		$walk->begin(marking: ['wait' => 1, 'work' => 1, $third => 1]);
 

@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Edepot;
 
 use DateTime;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
@@ -101,26 +102,16 @@ class TransferRecordService {
 	public function saveTransferList(array $transferList): array {
 		$uuid = (string)($transferList['uuid'] ?? '');
 
-		$data = $transferList;
 		// The list's own uuid IS the object uuid — keep them aligned so
 		// subsequent status writes update the same durable object.
-		$uuidArg = null;
-		if ($uuid !== '') {
-			$data['@self'] = ['uuid' => $uuid];
-			$uuidArg = $uuid;
-		}
-
 		$saved = $this->objectService->saveObject(
-			object: $data,
+			object: self::alignedWith(transferList: $transferList, uuid: $uuid),
 			register: self::REGISTER_SLUG,
 			schema: self::TRANSFER_SCHEMA_SLUG,
-			uuid: $uuidArg
+			uuid: self::uuidOrNull(uuid: $uuid)
 		);
 
-		$rendered = $saved->getObject();
-		$rendered['uuid'] = (string)$saved->getUuid();
-
-		return $rendered;
+		return self::rendered(object: $saved);
 	}//end saveTransferList()
 
 	/**
@@ -136,24 +127,12 @@ class TransferRecordService {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function loadTransferList(string $uuid): ?array {
-		try {
-			$object = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $uuid,
-				register: self::REGISTER_SLUG,
-				schema: self::TRANSFER_SCHEMA_SLUG
-			));
-		} catch (\Throwable $e) {
-			return null;
-		}
-
+		$object = $this->lookup(uuid: $uuid);
 		if ($object === null) {
 			return null;
 		}
 
-		$data = $object->getObject();
-		$data['uuid'] = (string)$object->getUuid();
-
-		return $data;
+		return self::rendered(object: $object);
 	}//end loadTransferList()
 
 	/**
@@ -166,14 +145,7 @@ class TransferRecordService {
 	 */
 	public function listTransferLists(): array {
 		try {
-			$rows = $this->objectService->findAll(
-				config: [
-					'filters' => [
-						'register' => self::REGISTER_SLUG,
-						'schema' => self::TRANSFER_SCHEMA_SLUG,
-					],
-				]
-			);
+			$rows = $this->rows(filters: ['register' => self::REGISTER_SLUG, 'schema' => self::TRANSFER_SCHEMA_SLUG]);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[TransferRecordService] transfer-list enumeration failed: ' . $e->getMessage(),
@@ -182,14 +154,7 @@ class TransferRecordService {
 			return [];
 		}
 
-		$lists = [];
-		foreach ($rows as $row) {
-			if (is_array($row) === true) {
-				$lists[] = $row;
-			}
-		}
-
-		return $lists;
+		return array_values(array_filter($rows, static fn (mixed $row): bool => is_array($row) === true));
 	}//end listTransferLists()
 
 	/**
@@ -207,26 +172,19 @@ class TransferRecordService {
 	 *   (Scenario: Proof created on confirmed transfer)
 	 */
 	public function createProof(array $proof): array {
-		$objectUuid = (string)($proof['objectUuid'] ?? '');
-		$transferUuid = (string)($proof['transferUuid'] ?? '');
-
-		$existing = $this->findProof(objectUuid: $objectUuid, transferUuid: $transferUuid);
+		$existing = $this->findProof(
+			objectUuid: (string)($proof['objectUuid'] ?? ''),
+			transferUuid: (string)($proof['transferUuid'] ?? '')
+		);
 		if ($existing !== null) {
 			return $existing;
 		}
 
-		if (isset($proof['confirmedAt']) === false) {
-			$proof['confirmedAt'] = (new DateTime())->format('c');
-		}
-
 		$saved = $this->objectService->createObject(
-			data: $proof + ['@self' => ['register' => self::REGISTER_SLUG, 'schema' => self::PROOF_SCHEMA_SLUG]]
+			data: self::dated(proof: $proof) + ['@self' => ['register' => self::REGISTER_SLUG, 'schema' => self::PROOF_SCHEMA_SLUG]]
 		);
 
-		$rendered = $saved->getObject();
-		$rendered['uuid'] = (string)$saved->getUuid();
-
-		return $rendered;
+		return self::rendered(object: $saved);
 	}//end createProof()
 
 	/**
@@ -245,21 +203,113 @@ class TransferRecordService {
 			return null;
 		}
 
+		$filters = ['register' => self::REGISTER_SLUG, 'schema' => self::PROOF_SCHEMA_SLUG, 'objectUuid' => $objectUuid, 'transferUuid' => $transferUuid];
 		try {
-			$rows = $this->objectService->findAll(
-				config: [
-					'filters' => [
-						'register' => self::REGISTER_SLUG,
-						'schema' => self::PROOF_SCHEMA_SLUG,
-						'objectUuid' => $objectUuid,
-						'transferUuid' => $transferUuid,
-					],
-				]
-			);
+			return self::firstArray(rows: $this->rows(filters: $filters));
 		} catch (\Throwable $e) {
 			return null;
 		}
+	}//end findProof()
+	/**
+	 * The list data to save, with `@self.uuid` set when the list has a uuid.
+	 *
+	 * @param array<string, mixed> $transferList The transfer list.
+	 * @param string               $uuid         The list's uuid, or ''.
+	 *
+	 * @return array<string, mixed> The data.
+	 */
+	private static function alignedWith(array $transferList, string $uuid): array {
+		if ($uuid !== '') {
+			$transferList['@self'] = ['uuid' => $uuid];
+		}
 
+		return $transferList;
+	}//end alignedWith()
+
+	/**
+	 * A proof with its confirmation moment, now when it carries none.
+	 *
+	 * @param array<string, mixed> $proof The proof.
+	 *
+	 * @return array<string, mixed> The dated proof.
+	 */
+	private static function dated(array $proof): array {
+		if (isset($proof['confirmedAt']) === false) {
+			$proof['confirmedAt'] = (new DateTime())->format('c');
+		}
+
+		return $proof;
+	}//end dated()
+
+	/**
+	 * A uuid, or null when empty.
+	 *
+	 * @param string $uuid The uuid.
+	 *
+	 * @return string|null The uuid.
+	 */
+	private static function uuidOrNull(string $uuid): ?string {
+		if ($uuid === '') {
+			return null;
+		}
+
+		return $uuid;
+	}//end uuidOrNull()
+
+	/**
+	 * A stored object's data with its uuid.
+	 *
+	 * @param ObjectEntity $object The stored object.
+	 *
+	 * @return array<string, mixed> The data.
+	 */
+	private static function rendered(ObjectEntity $object): array {
+		$rendered         = $object->getObject();
+		$rendered['uuid'] = (string)$object->getUuid();
+
+		return $rendered;
+	}//end rendered()
+
+	/**
+	 * Look a transfer list object up; a failed lookup is null.
+	 *
+	 * @param string $uuid The transfer list uuid.
+	 *
+	 * @return ObjectEntity|null The object.
+	 */
+	private function lookup(string $uuid): ?ObjectEntity {
+		try {
+			return WriteCause::asLookup(fn () => $this->objectService->find(
+				id: $uuid,
+				register: self::REGISTER_SLUG,
+				schema: self::TRANSFER_SCHEMA_SLUG
+			));
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end lookup()
+
+	/**
+	 * The rows matching filters.
+	 *
+	 * @param array<string, string> $filters The filters.
+	 *
+	 * @return array<mixed> The rows.
+	 *
+	 * @throws \Throwable When the store cannot be read.
+	 */
+	private function rows(array $filters): array {
+		return $this->objectService->findAll(config: ['filters' => $filters]);
+	}//end rows()
+
+	/**
+	 * The first array row, or null.
+	 *
+	 * @param array<mixed> $rows The rows.
+	 *
+	 * @return array<string, mixed>|null The row.
+	 */
+	private static function firstArray(array $rows): ?array {
 		foreach ($rows as $row) {
 			if (is_array($row) === true) {
 				return $row;
@@ -267,5 +317,5 @@ class TransferRecordService {
 		}
 
 		return null;
-	}//end findProof()
+	}//end firstArray()
 }//end class

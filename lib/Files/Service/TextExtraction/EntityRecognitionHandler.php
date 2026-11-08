@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Files\Service\TextExtraction;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
@@ -117,27 +117,81 @@ class EntityRecognitionHandler {
 	public const CATEGORY_TEMPORAL_DATA = 'temporal_data';
 
 	/**
+	 * Chunk mapper.
+	 *
+	 * @var ChunkSourceReaderInterface
+	 */
+	private readonly ChunkSourceReaderInterface $chunkMapper;
+
+	/**
+	 * Entity mapper.
+	 *
+	 * @var GdprEntityMapper
+	 */
+	private readonly GdprEntityMapper $entityMapper;
+
+	/**
+	 * Entity relation mapper.
+	 *
+	 * @var EntityRelationMapperInterface
+	 */
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * Database connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Settings service.
+	 *
+	 * @var SettingsServiceInterface
+	 */
+	private readonly SettingsServiceInterface $settingsService;
+
+	/**
+	 * Backend state + ExApp client.
+	 *
+	 * @var AnonymisationBackendService
+	 */
+	private readonly AnonymisationBackendService $anonymisationBackendService;
+
+	/**
+	 * App container, consulted lazily for the object mapper.
+	 *
+	 * @var ContainerInterface|null
+	 */
+	private readonly ?ContainerInterface $container;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ChunkMapper $chunkMapper Chunk mapper.
-	 * @param GdprEntityMapper $entityMapper Entity mapper.
-	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper.
-	 * @param IDBConnection $db Database connection.
-	 * @param LoggerInterface $logger Logger.
-	 * @param SettingsServiceInterface $settingsService Settings service.
-	 * @param AnonymisationBackendService $anonymisationBackendService Backend state + ExApp client.
-	 * @param ContainerInterface|null $container App container, consulted lazily for the object mapper.
+	 * @param EntityRecognitionStores   $stores   Chunk, entity and relation stores plus the DB connection.
+	 * @param EntityRecognitionBackends $backends Settings, anonymisation backend and the lazy app container.
+	 * @param LoggerInterface           $logger   Logger.
 	 */
 	public function __construct(
-		private readonly ChunkMapper $chunkMapper,
-		private readonly GdprEntityMapper $entityMapper,
-		private readonly EntityRelationMapperInterface $entityRelationMapper,
-		private readonly IDBConnection $db,
-		private readonly LoggerInterface $logger,
-		private readonly SettingsServiceInterface $settingsService,
-		private readonly AnonymisationBackendService $anonymisationBackendService,
-		private readonly ?ContainerInterface $container = null,
+		EntityRecognitionStores $stores,
+		EntityRecognitionBackends $backends,
+		LoggerInterface $logger,
 	) {
+		$this->chunkMapper = $stores->chunkMapper;
+		$this->entityMapper = $stores->entityMapper;
+		$this->entityRelationMapper = $stores->entityRelationMapper;
+		$this->db = $stores->db;
+		$this->logger = $logger;
+		$this->settingsService = $backends->settingsService;
+		$this->anonymisationBackendService = $backends->anonymisationBackendService;
+		$this->container = $backends->container;
 	}//end __construct()
 
 	/**

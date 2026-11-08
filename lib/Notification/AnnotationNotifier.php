@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notification;
 
 use OCA\OpenRegister\Service\DeepLinkResolverInterface;
+use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
@@ -122,104 +123,165 @@ class AnnotationNotifier implements INotifier {
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
+		$owned = $this->ownedSubject(notification: $notification);
+		$l = $this->factory->get('openregister', $languageCode);
+
+		$notification->setParsedSubject($this->parsedSubject(l: $l, owned: $owned));
+		$this->setParsedBody(notification: $notification, params: $owned['params']);
+		$notification->setIcon($this->iconUrl(params: $owned['params']));
+		$this->addActions(
+			notification: $notification,
+			render: ['params' => $owned['params'], 'l' => $l, 'language' => $languageCode]
+		);
+
+		return $notification;
+	}//end prepare()
+
+	/**
+	 * The subject and parameters of a notification this notifier owns.
+	 *
+	 * Subjects this notifier does not own (e.g. configuration_update_available,
+	 * rendered by Notifier) are passed on untouched.
+	 *
+	 * @param INotification $notification Notification to prepare.
+	 *
+	 * @return array{subject: string, params: array} The subject and its parameters.
+	 *
+	 * @throws UnknownNotificationException When this notifier does not own it.
+	 */
+	private function ownedSubject(INotification $notification): array {
 		if ($notification->getApp() !== 'openregister') {
 			throw new UnknownNotificationException();
 		}
 
 		$subject = $notification->getSubject();
 		$params = $notification->getSubjectParameters();
-		$text = ($params['_text'] ?? null);
-		$hasText = (is_string($text) === true && $text !== '');
-		$isObject = array_key_exists($subject, self::SUBJECT_TEMPLATES);
-
-		// Subjects this notifier does not own (e.g. configuration_update_available,
-		// rendered by Notifier) are passed on untouched.
-		if ($isObject === false && $hasText === false) {
+		if (array_key_exists($subject, self::SUBJECT_TEMPLATES) === false && self::customText(params: $params) === null) {
 			throw new UnknownNotificationException();
 		}
 
-		$l = $this->factory->get('openregister', $languageCode);
+		return ['subject' => $subject, 'params' => $params];
+	}//end ownedSubject()
 
-		// The schema's custom per-locale subject (already interpolated by the
-		// dispatcher for this recipient) wins; otherwise render the canonical
-		// localised string with the object title + register name substituted.
+	/**
+	 * The dispatcher's pre-rendered `_text`, when it carries one.
+	 *
+	 * @param array $params Subject parameters.
+	 *
+	 * @return string|null The text, or null when absent or empty.
+	 */
+	private static function customText(array $params): ?string {
+		$text = ($params['_text'] ?? null);
+		if (is_string($text) === true && $text !== '') {
+			return $text;
+		}
+
+		return null;
+	}//end customText()
+
+	/**
+	 * The rendered subject line.
+	 *
+	 * The schema's custom per-locale subject (already interpolated by the
+	 * dispatcher for this recipient) wins; otherwise the canonical localised
+	 * string with the object title + register name substituted. Only a
+	 * canonical object subject has a template; a custom subject (e.g. a flow
+	 * send's `flow_message`) reaches this point purely on its `_text`.
+	 *
+	 * @param IL10N                                  $l     Localiser for the recipient.
+	 * @param array{subject: string, params: array} $owned The subject and its parameters.
+	 *
+	 * @return string The parsed subject.
+	 */
+	private function parsedSubject(IL10N $l, array $owned): string {
+		$subject = $owned['subject'];
+		$params = $owned['params'];
+		$text = self::customText(params: $params);
+		if ($text !== null) {
+			return $text;
+		}
+
 		$objectTitle = (string)($params['objectTitle'] ?? $l->t('object'));
 		$registerName = trim((string)($params['registerName'] ?? ''));
-		// Only a canonical object subject has a template; a custom subject
-		// (e.g. a flow send's `flow_message`) reaches this point purely on its
-		// `_text`, and indexing SUBJECT_TEMPLATES with it would be an
-		// undefined-key error that killed the render.
-		$parsedSubject = '';
-		if ($isObject === true && $registerName !== '') {
-			$parsedSubject = $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName]);
+		if ($registerName === '') {
+			return $l->t(self::SUBJECT_TEMPLATES_WITHOUT_REGISTER[$subject], [$objectTitle]);
 		}
 
-		if ($isObject === true && $registerName === '') {
-			$parsedSubject = $l->t(self::SUBJECT_TEMPLATES_WITHOUT_REGISTER[$subject], [$objectTitle]);
-		}
+		return $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName]);
+	}//end parsedSubject()
 
-		if ($hasText === true) {
-			$parsedSubject = $text;
-		}
-
-		$notification->setParsedSubject($parsedSubject);
-
-		// Notification BODY (distinct from the title/subject). The dispatcher
-		// pre-resolves the recipient-localised body — the rule's `message`
-		// template, or an auto-derived "Open in {AppName}." when the rule has
-		// actions but no message. Left unset when empty (back-compat: rules
-		// with neither message nor actions render exactly as before).
+	/**
+	 * Set the notification BODY (distinct from the title/subject).
+	 *
+	 * The dispatcher pre-resolves the recipient-localised body — the rule's
+	 * `message` template, or an auto-derived "Open in {AppName}." when the rule
+	 * has actions but no message. Left unset when empty (back-compat: rules
+	 * with neither message nor actions render exactly as before).
+	 *
+	 * @param INotification $notification Notification to prepare.
+	 * @param array         $params       Subject parameters.
+	 *
+	 * @return void
+	 */
+	private function setParsedBody(INotification $notification, array $params): void {
 		$message = ($params['_message'] ?? null);
 		if (is_string($message) === true && $message !== '') {
 			$notification->setParsedMessage($message);
 		}
+	}//end setParsedBody()
 
-		// Icon: when the rule resolved an originApp, point at the hex-composite
-		// raster endpoint (the originApp's white glyph on the cobalt hexagon)
-		// instead of the static openregister app image — so the OS popup
-		// carries the originating app's identity. Falls back to app.svg.
+	/**
+	 * The absolute icon URL.
+	 *
+	 * When the rule resolved an originApp, the hex-composite raster endpoint
+	 * (the originApp's white glyph on the cobalt hexagon) so the OS popup
+	 * carries the originating app's identity; otherwise app.svg. setIcon()
+	 * only accepts absolute http(s) URLs — a relative imagePath() throws
+	 * InvalidValueException on every render.
+	 *
+	 * @param array $params Subject parameters.
+	 *
+	 * @return string The icon URL.
+	 */
+	private function iconUrl(array $params): string {
 		$originApp = (string)($params['originApp'] ?? 'openregister');
 		if ($originApp !== '' && $originApp !== 'openregister') {
-			$notification->setIcon(
-				$this->urlGenerator->linkToRouteAbsolute(
-					'openregister.webPush.hexIcon',
-					['app' => $originApp]
-				)
-			);
-		} else {
-			// The setIcon() method only accepts absolute http(s) URLs (desktop and
-			// mobile client support) — a relative imagePath() throws
-			// InvalidValueException on every render, so the notification never
-			// reaches the client.
-			$notification->setIcon(
-				$this->urlGenerator->getAbsoluteURL(
-					$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-				)
-			);
+			return $this->urlGenerator->linkToRouteAbsolute('openregister.webPush.hexIcon', ['app' => $originApp]);
 		}
 
+		return $this->urlGenerator->getAbsoluteURL(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+	}//end iconUrl()
+
+	/**
+	 * Link the object and add the action buttons.
+	 *
+	 * Declared actions render when the rule provided any. The implicit "View"
+	 * action is the fallback when no declared action rendered — none declared
+	 * (back-compat) or every one resolved to an empty link — so a notification
+	 * never ships with zero actions when an object-detail target exists.
+	 *
+	 * @param INotification                                  $notification Notification to prepare.
+	 * @param array{params: array, l: IL10N, language: string} $render       Parameters, localiser and language code.
+	 *
+	 * @return void
+	 */
+	private function addActions(INotification $notification, array $render): void {
+		$params = $render['params'];
 		// Link to the object; without it a click went nowhere (cloud check, `link: ""`).
 		$objectLink = $this->linkToObject(notification: $notification, params: $params);
 
-		// Render declared action buttons when the rule provided any; otherwise
-		// keep the implicit single "View" action (back-compat — existing rules
-		// are unchanged).
 		$actions = ($params['_actions'] ?? []);
 		$rendered = 0;
 		if (is_array($actions) === true && count($actions) > 0) {
-			$rendered = $this->addDeclaredActions(notification: $notification, actions: $actions, languageCode: $languageCode);
+			$rendered = $this->addDeclaredActions(notification: $notification, actions: $actions, languageCode: $render['language']);
 		}
 
-		// Fall back to the implicit "View" action when no declared action was
-		// rendered — either none were declared (back-compat) or every declared
-		// action resolved to an empty link. This guarantees a notification
-		// never ships with zero actions when an object-detail target exists.
 		if ($rendered === 0 && $objectLink !== null) {
-			$this->addViewAction(notification: $notification, link: $objectLink, label: $l->t('View'));
+			$this->addViewAction(notification: $notification, link: $objectLink, label: $render['l']->t('View'));
 		}
-
-		return $notification;
-	}//end prepare()
+	}//end addActions()
 
 	/**
 	 * Render the schema-declared action buttons via addParsedAction().

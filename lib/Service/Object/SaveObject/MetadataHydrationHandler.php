@@ -174,11 +174,7 @@ class MetadataHydrationHandler {
 	private function metadataValue(TemplateSource $source, MetadataField $field): ?string {
 		$value = null;
 		if ($field->path !== null) {
-			$properties = [];
-			if ($field->column === 'name') {
-				$properties = $source->schemaProperties;
-			}
-
+			$properties = $field->relationProperties(schemaProperties: $source->schemaProperties);
 			$value = $this->extractMetadataValue(data: $source->data, fieldPath: $field->path, schemaProperties: $properties);
 		}
 

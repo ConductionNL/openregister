@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ErasurePreviewControllerServices;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
@@ -45,22 +46,42 @@ use OCP\IRequest;
  */
 class ErasurePreviewController extends Controller {
 	/**
+	 * The preview.
+	 *
+	 * @var ErasurePreviewService
+	 */
+	private readonly ErasurePreviewService $previewService;
+
+	/**
+	 * The recorded preview and its approval.
+	 *
+	 * @var ErasurePreviewStore
+	 */
+	private readonly ErasurePreviewStore $store;
+
+	/**
+	 * The run.
+	 *
+	 * @var ErasureRunner
+	 */
+	private readonly ErasureRunner $runner;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                $appName        The app name.
 	 * @param IRequest              $request        The request.
-	 * @param ErasurePreviewService $previewService The preview.
-	 * @param ErasurePreviewStore   $store          The recorded preview and its approval.
-	 * @param ErasureRunner         $runner         The run.
+	 * @param ErasurePreviewControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ErasurePreviewService $previewService,
-		private readonly ErasurePreviewStore $store,
-		private readonly ErasureRunner $runner,
+		ErasurePreviewControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->previewService = $services->previewService;
+		$this->store = $services->store;
+		$this->runner = $services->runner;
 
 	}//end __construct()
 

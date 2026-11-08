@@ -115,13 +115,7 @@ class FileSettingsController extends Controller {
 				]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end updateFileSettings()
 
@@ -144,13 +138,7 @@ class FileSettingsController extends Controller {
 		try {
 			// Validate inputs.
 			if (empty($apiEndpoint) === true || empty($apiKey) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'API endpoint and API key are required',
-					],
-					statusCode: 400
-				);
+				return $this->error(message: 'API endpoint and API key are required', status: 400);
 			}
 
 			$headers = [
@@ -166,13 +154,7 @@ class FileSettingsController extends Controller {
 
 			return new JSONResponse(data: $result);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end testDolphinConnection()
 
@@ -194,13 +176,7 @@ class FileSettingsController extends Controller {
 		try {
 			// Validate inputs.
 			if (empty($apiEndpoint) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'API endpoint is required',
-					],
-					statusCode: 400
-				);
+				return $this->error(message: 'API endpoint is required', status: 400);
 			}
 
 			$result = $this->performHealthCheck(
@@ -216,13 +192,7 @@ class FileSettingsController extends Controller {
 
 			return new JSONResponse(data: $result);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end testPresidioConnection()
 
@@ -273,13 +243,7 @@ class FileSettingsController extends Controller {
 				]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end testOpenAnonymiserConnection()
 
@@ -316,7 +280,7 @@ class FileSettingsController extends Controller {
 	public function getFileExtractionStats(): JSONResponse {
 		try {
 			$fileMapper = $this->container->get(\OCA\OpenRegister\Files\Db\FileMapperInterface::class);
-			$chunkMapper = $this->container->get(\OCA\OpenRegister\Files\Db\ChunkMapper::class);
+			$chunkMapper = $this->container->get(\OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface::class);
 			$extractionStats = $this->container->get(\OCA\OpenRegister\Files\Service\TextExtractionService::class)->getStats();
 
 			$processedFiles = $chunkMapper->countFileSourceSummaries();
@@ -457,4 +421,16 @@ class FileSettingsController extends Controller {
 
 		return $capabilities;
 	}//end fetchPresidioCapabilities()
+
+	/**
+	 * A failed response: `success` false and the error.
+	 *
+	 * @param string $message The error.
+	 * @param int    $status  The HTTP status.
+	 *
+	 * @return JSONResponse
+	 */
+	private function error(string $message, int $status=500): JSONResponse {
+		return new JSONResponse(data: ['success' => false, 'error' => $message], statusCode: $status);
+	}//end error()
 }//end class

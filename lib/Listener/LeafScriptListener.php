@@ -85,6 +85,8 @@ use Throwable;
  * Enqueues each providing app's leaf bundle on consuming apps' pages.
  *
  * @template-implements IEventListener<Event>
+ *
+ * @spec openspec/specs/integration-registry/spec.md#requirement-a-leafs-client-half-must-be-loaded-on-consuming-pages
  */
 class LeafScriptListener implements IEventListener {
 
@@ -125,39 +127,54 @@ class LeafScriptListener implements IEventListener {
 	 * @spec openspec/specs/integration-registry/spec.md#requirement-a-leafs-client-half-must-be-loaded-on-consuming-pages
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof BeforeTemplateRenderedEvent === false) {
-			return;
-		}
-
-		// A public page has no OpenRegister objects to hang a leaf on, and
-		// loading another app's bundle there would widen the anonymous surface.
-		if ($event->isLoggedIn() === false) {
+		if (self::isLoggedInPage(event: $event) === false) {
 			return;
 		}
 
 		try {
-			$currentApp = $this->currentAppId();
-			if ($currentApp === null || $currentApp === AppIdentity::APP_ID) {
-				return;
-			}
-
-			foreach ($this->leafAppsFor(currentApp: $currentApp) as $providingApp) {
-				ScriptManifestLoader::addEntryScripts(
-					appId: $providingApp,
-					entry: self::LEAF_ENTRY,
-					fallbackScript: $providingApp . '-' . self::LEAF_ENTRY
-				);
+			foreach ($this->leafAppsForThisPage() as $providingApp) {
+				ScriptManifestLoader::addEntryScripts(appId: $providingApp, entry: self::LEAF_ENTRY, fallbackScript: $providingApp . '-' . self::LEAF_ENTRY);
 			}
 		} catch (Throwable $e) {
 			// A page must render even when the catalogue cannot be read. The
 			// leaf is then absent, which is the pre-existing behaviour.
-			$this->logger->warning(
-				'OpenRegister could not enqueue leaf scripts: ' . $e->getMessage(),
-				['exception' => $e]
-			);
-		}//end try
+			$this->logger->warning('OpenRegister could not enqueue leaf scripts: ' . $e->getMessage(), ['exception' => $e]);
+		}
 
 	}//end handle()
+
+	/**
+	 * Whether the event renders a page for a logged-in user.
+	 *
+	 * A public page has no OpenRegister objects to hang a leaf on, and
+	 * loading another app's bundle there would widen the anonymous surface.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return bool True for a template render of a logged-in page.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-a-leafs-client-half-must-be-loaded-on-consuming-pages
+	 */
+	private static function isLoggedInPage(Event $event): bool {
+		return $event instanceof BeforeTemplateRenderedEvent && $event->isLoggedIn() === true;
+	}//end isLoggedInPage()
+
+	/**
+	 * The providing apps whose leaf bundles belong on the page being rendered;
+	 * none on a non-app page or on OpenRegister's own pages.
+	 *
+	 * @return string[] App ids to load.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-a-leafs-client-half-must-be-loaded-on-consuming-pages
+	 */
+	private function leafAppsForThisPage(): array {
+		$currentApp = $this->currentAppId();
+		if ($currentApp === null || $currentApp === AppIdentity::APP_ID) {
+			return [];
+		}
+
+		return $this->leafAppsFor(currentApp: $currentApp);
+	}//end leafAppsForThisPage()
 
 	/**
 	 * The providing apps whose leaf bundles belong on this page.
@@ -167,6 +184,9 @@ class LeafScriptListener implements IEventListener {
 	 * listener that decides and acts in one method can only be verified by
 	 * booting Nextcloud.
 	 *
+	 * One app may contribute several leaves; its bundle carries all of them
+	 * and is listed once.
+	 *
 	 * @param string $currentApp The app whose page is rendering.
 	 *
 	 * @return string[] App ids to load, in catalogue order, without duplicates.
@@ -174,38 +194,43 @@ class LeafScriptListener implements IEventListener {
 	 * @spec openspec/specs/integration-registry/spec.md#requirement-a-leafs-client-half-must-be-loaded-on-consuming-pages
 	 */
 	public function leafAppsFor(string $currentApp): array {
-		if ($currentApp === '' || $currentApp === AppIdentity::APP_ID) {
-			return [];
-		}
-
-		// A page with no OpenRegister objects has nothing for a leaf to attach
-		// to. This keeps sibling bundles off Files, Photos, Mail and Settings.
-		if ($this->shipsRegisterDescriptor(appId: $currentApp) === false) {
+		if ($this->isConsumingApp(appId: $currentApp) === false) {
 			return [];
 		}
 
 		$apps = [];
 		foreach ($this->leaves->getDescriptors() as $descriptor) {
-			$providingApp = $this->bundleAppFor(descriptor: $descriptor, currentApp: $currentApp);
-			if ($providingApp === null || in_array($providingApp, $apps, true) === true) {
-				// One app may contribute several leaves; its bundle carries all
-				// of them and must be enqueued once.
-				continue;
-			}
-
-			$apps[] = $providingApp;
+			$apps[] = $this->bundleAppFor(descriptor: $descriptor, currentApp: $currentApp);
 		}
 
-		return $apps;
+		return array_values(array_unique(array_filter($apps, static fn (?string $app): bool => $app !== null)));
 	}//end leafAppsFor()
+
+	/**
+	 * Whether an app's pages can host leaves: not OpenRegister itself, and it ships a register descriptor.
+	 *
+	 * A page with no OpenRegister objects has nothing for a leaf to attach
+	 * to. This keeps sibling bundles off Files, Photos, Mail and Settings.
+	 *
+	 * @param string $appId The app whose page is rendering.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md#requirement-a-leafs-client-half-must-be-loaded-on-consuming-pages
+	 */
+	private function isConsumingApp(string $appId): bool {
+		if ($appId === '' || $appId === AppIdentity::APP_ID) {
+			return false;
+		}
+
+		return $this->shipsRegisterDescriptor(appId: $appId);
+	}//end isConsumingApp()
 
 	/**
 	 * The app whose bundle one descriptor needs on this page, if any.
 	 *
-	 * Split out of `leafAppsFor()` so that method reads as "collect the apps"
-	 * and this one holds the four separate reasons a descriptor contributes
-	 * nothing. Keeping all four in the loop body put `leafAppsFor()` over both
-	 * the cyclomatic and the NPath threshold; the rule itself is unchanged.
+	 * A descriptor contributes nothing when it is not a render surface, is
+	 * built in or the page's own app, or its app is disabled or ships no bundle.
 	 *
 	 * @param LeafDescriptor $descriptor The descriptor being considered.
 	 * @param string $currentApp The app whose page is rendering.
@@ -213,33 +238,58 @@ class LeafScriptListener implements IEventListener {
 	 * @return string|null The providing app id, or null when nothing is needed.
 	 */
 	private function bundleAppFor(LeafDescriptor $descriptor, string $currentApp): ?string {
+		$providingApp = self::foreignRenderApp(descriptor: $descriptor, currentApp: $currentApp);
+		if ($providingApp === null || $this->isLoadable(appId: $providingApp) === false) {
+			return null;
+		}
+
+		return $providingApp;
+	}//end bundleAppFor()
+
+	/**
+	 * The other app a render-surface descriptor belongs to.
+	 *
+	 * @param LeafDescriptor $descriptor The descriptor being considered.
+	 * @param string $currentApp The app whose page is rendering.
+	 *
+	 * @return string|null The app, or null for a data provider, a built-in leaf or the page's own leaf.
+	 */
+	private static function foreignRenderApp(LeafDescriptor $descriptor, string $currentApp): ?string {
 		if (in_array(LeafDescriptor::KIND_RENDER_SURFACE, $descriptor->getKinds(), true) === false) {
 			// A data-provider leaf has no client half to load.
 			return null;
 		}
 
 		$providingApp = $descriptor->getRequiredApp();
-		if ($providingApp === null || $providingApp === $currentApp) {
-			// Built-in leaves ride on OpenRegister's own bundle, and an
-			// app's own leaf is already loaded by its own page. Loading a
-			// second copy would register the id twice, which the AD-13
-			// collision policy warns about in production and throws on in
-			// development.
-			return null;
-		}
-
-		if ($this->appManager->isEnabledForUser($providingApp) === false) {
-			return null;
-		}
-
-		if ($this->hasLeafBundle(appId: $providingApp) === false) {
-			// Enqueuing a script that does not exist is a 404 in the page,
-			// so an app that ships no leaf entry is simply skipped.
+		if ($providingApp === $currentApp) {
+			// Built-in leaves (no required app) ride on OpenRegister's own
+			// bundle, and an app's own leaf is already loaded by its own page.
+			// Loading a second copy would register the id twice, which the
+			// AD-13 collision policy warns about in production and throws on
+			// in development.
 			return null;
 		}
 
 		return $providingApp;
-	}//end bundleAppFor()
+	}//end foreignRenderApp()
+
+	/**
+	 * Whether a providing app's bundle can be put on the page: enabled for the user, and built.
+	 *
+	 * Enqueuing a script that does not exist is a 404 in the page, so an app
+	 * that ships no leaf entry is simply skipped.
+	 *
+	 * @param string $appId The providing app.
+	 *
+	 * @return bool
+	 */
+	private function isLoadable(string $appId): bool {
+		if ($this->appManager->isEnabledForUser($appId) === false) {
+			return false;
+		}
+
+		return $this->hasLeafBundle(appId: $appId);
+	}//end isLoadable()
 
 	/**
 	 * The app whose page is being rendered, from the request path.

@@ -19,6 +19,9 @@ use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -77,20 +80,20 @@ class ExampleSetExportRunsTest extends TestCase {
 		});
 		$recorder = $this->createMock(ExportRunRecorder::class);
 		$recorder->method('record')->willReturnCallback(
-			function (string $source, string $actor, string $format, int $rowCount, ?string $profile = null, ?string $filename = null, ?string $registerName = null, ?string $schemaName = null, ?int $fileId = null, ?string $filePath = null, ?int $retentionSeconds = null, int $downloadCount = 0): ExportRun {
+			function (ExportRunOrigin $origin, ExportRunContent $content, ExportRunFile $file, ?int $retentionSeconds = null): ExportRun {
 				$run = new ExportRun();
 				$run->setUuid('run-'.count($this->runs));
-				$run->setSource($source);
-				$run->setActor($actor);
-				$run->setFormat($format);
-				$run->setRowCount($rowCount);
-				$run->setFilename($filename);
-				$run->setRegisterName($registerName);
-				$run->setSchemaName($schemaName);
-				$run->setFileId($fileId);
-				$run->setFilePath($filePath);
+				$run->setSource($origin->source);
+				$run->setActor($origin->actor);
+				$run->setFormat($content->format);
+				$run->setRowCount($content->rowCount);
+				$run->setFilename($file->filename);
+				$run->setRegisterName($content->registerName);
+				$run->setSchemaName($content->schemaName);
+				$run->setFileId($file->fileId);
+				$run->setFilePath($file->filePath);
 				$run->setRetentionSeconds($retentionSeconds);
-				$run->setDownloadCount($downloadCount);
+				$run->setDownloadCount($file->downloadCount);
 				$run->setProducedAt(new DateTime());
 				return $this->runs[$run->getUuid()] = $run;
 			}

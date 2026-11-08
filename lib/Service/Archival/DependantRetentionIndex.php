@@ -75,15 +75,9 @@ class DependantRetentionIndex {
 
 		$dependants = [];
 		foreach ($this->entries() as $entry) {
-			if ($entry['target'] !== null && in_array($entry['target'], $names, true) === false) {
-				continue;
+			if ($entry['target'] === null || in_array($entry['target'], $names, true) === true) {
+				$dependants[] = ['schema' => $entry['schema'], 'relation' => $entry['relation'], 'property' => $entry['property']];
 			}
-
-			$dependants[] = [
-				'schema' => $entry['schema'],
-				'relation' => $entry['relation'],
-				'property' => $entry['property'],
-			];
 		}
 
 		return $dependants;
@@ -115,29 +109,59 @@ class DependantRetentionIndex {
 
 		$this->entries = [];
 		foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
-			$archive = ($schema->getArchive() ?? []);
-			if (($archive['enabled'] ?? false) !== true
-				|| $this->calculator->isRelationMethod(afleidingswijze: (string)($archive['afleidingswijze'] ?? '')) === false
-			) {
-				continue;
+			$entry = $this->entryFor(schema: $schema);
+			if ($entry !== null) {
+				$this->entries[] = $entry;
 			}
-
-			$relation = ($archive['sourceRelation'] ?? null);
-			$property = ($archive['sourceRelationProperty'] ?? null);
-			if (is_string($relation) === false || $relation === '' || is_string($property) === false || $property === '') {
-				continue;
-			}
-
-			$this->entries[] = [
-				'schema' => $schema,
-				'relation' => $relation,
-				'property' => $property,
-				'target' => $this->targetOf(schema: $schema, relation: $relation),
-			];
 		}
 
 		return $this->entries;
 	}//end entries()
+
+	/**
+	 * The index entry for one schema, or null when its date does not follow a relation.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array{schema: Schema, relation: string, property: string, target: string|null}|null The entry.
+	 */
+	private function entryFor(Schema $schema): array|null {
+		$archive = ($schema->getArchive() ?? []);
+		if ($this->followsARelation(archive: $archive) === false) {
+			return null;
+		}
+
+		$relation = ($archive['sourceRelation'] ?? null);
+		$property = ($archive['sourceRelationProperty'] ?? null);
+		if ($this->isName(value: $relation) === false || $this->isName(value: $property) === false) {
+			return null;
+		}
+
+		return ['schema' => $schema, 'relation' => $relation, 'property' => $property, 'target' => $this->targetOf(schema: $schema, relation: $relation)];
+	}//end entryFor()
+
+	/**
+	 * Whether a schema's archive settings are enabled and derive the date from a relation.
+	 *
+	 * @param array<string, mixed> $archive The schema's archive settings.
+	 *
+	 * @return bool True when they do.
+	 */
+	private function followsARelation(array $archive): bool {
+		return ($archive['enabled'] ?? false) === true
+			&& $this->calculator->isRelationMethod(afleidingswijze: (string)($archive['afleidingswijze'] ?? '')) === true;
+	}//end followsARelation()
+
+	/**
+	 * Whether a value is a non-empty string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a non-empty string.
+	 */
+	private function isName(mixed $value): bool {
+		return is_string($value) === true && $value !== '';
+	}//end isName()
 
 	/**
 	 * The last segment of the `$ref` a relation property declares, or null.

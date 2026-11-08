@@ -94,156 +94,34 @@ class RegisterTool extends AbstractTool {
 	}//end getDescription()
 
 	/**
-	 * Get function definitions for LLphant
+	 * The function definitions, one row each: [name, subject, action,
+	 * description, [parameter => [type, description]], required], expanded
+	 * by {@see ToolFunctionTable::expand()}.
 	 *
-	 * @return array<int, array<string, mixed>> Array of function definitions
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @var array<int, array<int, mixed>>
 	 */
-	public function getFunctions(): array {
-		return array_merge(self::readFunctions(), self::writeFunctions());
-
-	}//end getFunctions()
-
-	/**
-	 * The function definitions that change nothing.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	private const READ_FUNCTIONS = [
-		[
-			'name' => 'list_registers',
-			'subject' => 'register',
-			'action' => 'list',
-			'description' => 'Get a list of all accessible registers',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'limit' => [
-						'type' => 'integer',
-						'description' => 'Maximum number of registers to return (default: 100)',
-					],
-					'offset' => [
-						'type' => 'integer',
-						'description' => 'Number of registers to skip for pagination (default: 0)',
-					],
-				],
-				'required' => [],
-			],
-		],
-		[
-			'name' => 'get_register',
-			'subject' => 'register',
-			'action' => 'get',
-			'description' => 'Get details about a specific register by ID or slug',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'id' => [
-						'type' => 'string',
-						'description' => 'The register ID or slug to retrieve',
-					],
-				],
-				'required' => ['id'],
-			],
-		],
+	protected const FUNCTIONS = [
+		['list_registers', 'register', 'list', 'Get a list of all accessible registers', [
+			'limit' => ['integer', 'Maximum number of registers to return (default: 100)'],
+			'offset' => ['integer', 'Number of registers to skip for pagination (default: 0)'],
+		], []],
+		['get_register', 'register', 'get', 'Get details about a specific register by ID or slug', [
+			'id' => ['string', 'The register ID or slug to retrieve'],
+		], ['id']],
+		['create_register', 'register', 'create', 'Create a new register', [
+			'title' => ['string', 'The title of the register'],
+			'description' => ['string', 'A description of what this register is for'],
+			'slug' => ['string', 'URL-friendly identifier (optional, generated from title if not provided)'],
+		], ['title']],
+		['update_register', 'register', 'update', 'Update an existing register', [
+			'id' => ['string', 'The register ID to update'],
+			'title' => ['string', 'New title for the register'],
+			'description' => ['string', 'New description for the register'],
+		], ['id']],
+		['delete_register', 'register', 'delete', 'Delete a register (only if it has no objects)', [
+			'id' => ['string', 'The register ID to delete'],
+		], ['id']],
 	];
-
-	/**
-	 * The register descriptors that change nothing.
-	 *
-	 * @return array<int, array<string, mixed>> The read descriptors.
-	 */
-	private static function readFunctions(): array {
-		return self::READ_FUNCTIONS;
-	}//end readFunctions()
-
-	/**
-	 * The function definitions that change data.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	private const WRITE_FUNCTIONS = [
-		[
-			'name' => 'create_register',
-			'subject' => 'register',
-			'action' => 'create',
-			'description' => 'Create a new register',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'title' => [
-						'type' => 'string',
-						'description' => 'The title of the register',
-					],
-					'description' => [
-						'type' => 'string',
-						'description' => 'A description of what this register is for',
-					],
-					'slug' => [
-						'type' => 'string',
-						'description' => 'URL-friendly identifier (optional, generated from title if not provided)',
-					],
-				],
-				'required' => ['title'],
-			],
-		],
-		[
-			'name' => 'update_register',
-			'subject' => 'register',
-			'action' => 'update',
-			'description' => 'Update an existing register',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'id' => [
-						'type' => 'string',
-						'description' => 'The register ID to update',
-					],
-					'title' => [
-						'type' => 'string',
-						'description' => 'New title for the register',
-					],
-					'description' => [
-						'type' => 'string',
-						'description' => 'New description for the register',
-					],
-				],
-				'required' => ['id'],
-			],
-		],
-		[
-			'name' => 'delete_register',
-			'subject' => 'register',
-			'action' => 'delete',
-			'description' => 'Delete a register (only if it has no objects)',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'id' => [
-						'type' => 'string',
-						'description' => 'The register ID to delete',
-					],
-				],
-				'required' => ['id'],
-			],
-		],
-	];
-
-	/**
-	 * The register descriptors that change state.
-	 *
-	 * Split from the reading half only to keep each method inside the
-	 * ExcessiveMethodLength budget — declaring `subject`/`action` on every
-	 * descriptor pushed the single combined table past it. The read/write line
-	 * is the honest place to cut, since it is the same boundary the grant
-	 * matrix groups on.
-	 *
-	 * @return array<int, array<string, mixed>> The write descriptors.
-	 */
-	private static function writeFunctions(): array {
-		return self::WRITE_FUNCTIONS;
-	}//end writeFunctions()
 
 	/**
 	 * Execute a function
@@ -259,22 +137,7 @@ class RegisterTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		$this->log(functionName: $functionName, parameters: $parameters);
-
-		if ($this->hasUserContext(explicitUserId: $userId) === false) {
-			return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
-		}
-
-		try {
-			// Convert snake_case to camelCase for PSR compliance.
-			$methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-
-			// Call the method directly (LLPhant-compatible).
-			return $this->$methodName(...array_values($parameters));
-		} catch (\Exception $e) {
-			$this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
-			return $this->formatError(message: $e->getMessage());
-		}
+		return $this->executeWithUser(functionName: $functionName, parameters: $parameters, userId: $userId);
 	}//end executeFunction()
 
 	/**

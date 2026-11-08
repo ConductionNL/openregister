@@ -76,6 +76,21 @@ class PropertyConversionService implements PropertyConversionServiceInterface {
 	];
 
 	/**
+	 * The refusal for a type that converts to nothing.
+	 *
+	 * @var string
+	 */
+	private const NO_TARGETS = 'A property of type "%s" cannot be converted to another type, because there is '
+		.'no per-value test that says honestly whether a value would survive it.';
+
+	/**
+	 * The literals a boolean accepts, compared lower-cased and trimmed.
+	 *
+	 * @var list<string>
+	 */
+	private const BOOLEAN_LITERALS = ['true', 'false', '1', '0', 'yes', 'no', 'ja', 'nee'];
+
+	/**
 	 * The published conversion matrix.
 	 *
 	 * @return array<int,array{from:string,to:array<int,string>}> The supported conversions.
@@ -125,11 +140,7 @@ class PropertyConversionService implements PropertyConversionServiceInterface {
 	public function refusalReason(string $from, string $to): string {
 		$targets = (self::SUPPORTED[$from] ?? []);
 		if ($targets === []) {
-			return sprintf(
-				'A property of type "%s" cannot be converted to another type, because there is '
-				.'no per-value test that says honestly whether a value would survive it.',
-				$from
-			);
+			return sprintf(self::NO_TARGETS, $from);
 		}
 
 		return sprintf(
@@ -153,52 +164,78 @@ class PropertyConversionService implements PropertyConversionServiceInterface {
 	 */
 	public function preview(array $values, string $from, string $to): array {
 		if ($this->isSupported(from: $from, to: $to) === false) {
-			return [
-				'supported' => false,
-				'total' => count($values),
-				'convertible' => 0,
-				'rejected' => count($values),
-				'samples' => [],
-				'reason' => $this->refusalReason(from: $from, to: $to),
-			];
+			return $this->refusedPreview(total: count($values), reason: $this->refusalReason(from: $from, to: $to));
 		}
 
-		$convertible = 0;
-		$rejected = 0;
-		$samples = [];
-
+		$tally = ['convertible' => 0, 'rejected' => 0, 'samples' => []];
 		foreach ($values as $value) {
-			// A value that is simply absent is not a conversion failure: the
-			// property stays empty, whatever its type. Counting it as a
-			// rejection would make every optional property look unconvertible.
-			if ($value === null || $value === '') {
-				$convertible++;
-				continue;
-			}
+			$tally = $this->previewValue(tally: $tally, value: $value, to: $to);
+		}
 
-			if ($this->converts(value: $value, to: $to) === true) {
-				$convertible++;
-				continue;
-			}
-
-			$rejected++;
-			if (count($samples) < self::SAMPLE_SIZE) {
-				$samples[] = [
-					'value' => $this->readable(value: $value),
-					'reason' => sprintf('Not a valid %s.', $to),
-				];
-			}
-		}//end foreach
-
-		return [
-			'supported' => true,
-			'total' => count($values),
-			'convertible' => $convertible,
-			'rejected' => $rejected,
-			'samples' => $samples,
-			'reason' => null,
-		];
+		return ['supported' => true, 'total' => count($values)] + $tally + ['reason' => null];
 	}//end preview()
+
+	/**
+	 * The preview of a conversion that is not supported: nothing converts.
+	 *
+	 * @param int    $total  How many values were asked about.
+	 * @param string $reason Why the conversion is refused.
+	 *
+	 * @return array{supported:bool,total:int,convertible:int,rejected:int,samples:array<int,array{value:string,reason:string}>,reason:string|null}
+	 */
+	private function refusedPreview(int $total, string $reason): array {
+		return [
+			'supported' => false,
+			'total' => $total,
+			'convertible' => 0,
+			'rejected' => $total,
+			'samples' => [],
+			'reason' => $reason,
+		];
+	}//end refusedPreview()
+
+	/**
+	 * Count one value of a preview, sampling it when it does not convert.
+	 *
+	 * @param array{convertible:int,rejected:int,samples:array<int,array{value:string,reason:string}>} $tally The counts so far.
+	 * @param mixed  $value The stored value.
+	 * @param string $to    The requested type.
+	 *
+	 * @return array{convertible:int,rejected:int,samples:array<int,array{value:string,reason:string}>} The counts.
+	 */
+	private function previewValue(array $tally, mixed $value, string $to): array {
+		if ($this->survives(value: $value, to: $to) === true) {
+			$tally['convertible']++;
+			return $tally;
+		}
+
+		$tally['rejected']++;
+		if (count($tally['samples']) < self::SAMPLE_SIZE) {
+			$tally['samples'][] = ['value' => $this->readable(value: $value), 'reason' => sprintf('Not a valid %s.', $to)];
+		}
+
+		return $tally;
+	}//end previewValue()
+
+	/**
+	 * Whether one value survives the conversion.
+	 *
+	 * A value that is simply absent is not a conversion failure: the property
+	 * stays empty, whatever its type. Counting it as a rejection would make
+	 * every optional property look unconvertible.
+	 *
+	 * @param mixed  $value The stored value.
+	 * @param string $to    The requested type.
+	 *
+	 * @return boolean True when the value is absent or converts.
+	 */
+	private function survives(mixed $value, string $to): bool {
+		if ($value === null || $value === '') {
+			return true;
+		}
+
+		return $this->converts(value: $value, to: $to);
+	}//end survives()
 
 	/**
 	 * Whether one value survives the conversion.
@@ -242,11 +279,7 @@ class PropertyConversionService implements PropertyConversionServiceInterface {
 			return false;
 		}
 
-		return in_array(
-			strtolower(trim($value)),
-			['true', 'false', '1', '0', 'yes', 'no', 'ja', 'nee'],
-			true
-		);
+		return in_array(strtolower(trim($value)), self::BOOLEAN_LITERALS, true);
 	}//end convertsToBoolean()
 
 	/**

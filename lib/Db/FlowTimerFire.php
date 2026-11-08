@@ -133,20 +133,8 @@ class FlowTimerFire extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function jsonSerialize(): array {
-		$firedAt = null;
-		if ($this->firedAt !== null) {
-			$firedAt = $this->firedAt->format('c');
-		}
+		$names = array_diff(array_keys($this->getFieldTypes()), ['created']);
 
-		return [
-			'id' => $this->id,
-			'timerUuid' => $this->timerUuid,
-			'rungKey' => $this->rungKey,
-			'firedAt' => $firedAt,
-			'transitionAction' => $this->transitionAction,
-			'recipientRoles' => $this->recipientRoles,
-			'priority' => $this->priority,
-			'inherited' => $this->inherited,
-		];
+		return (new TypedFieldsJson())->pick(values: get_object_vars($this), names: $names);
 	}//end jsonSerialize()
 }//end class

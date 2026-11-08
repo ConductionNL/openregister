@@ -317,9 +317,11 @@ class SearchIndexMaintenanceGoldenTest extends TestCase {
 		);
 
 		return new SearchIndexMaintenance(
-			db: $db,
-			registerMapper: $this->registerMapper(),
-			magicMapper: $this->magicMapper(),
+			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores(
+				$db,
+				$this->registerMapper(),
+				$this->magicMapper()
+			),
 			appConfig: $this->appConfig(),
 			config: $this->config(),
 			logger: $this->logger()

@@ -35,6 +35,8 @@ use DOMNode;
 use DOMXPath;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\SanitizationReport;
+use OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts;
+use OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts;
 use ZipArchive;
 
 /**
@@ -168,14 +170,18 @@ class OdtSanitizer implements SanitizerInterface {
 		$zip->close();
 
 		return new SanitizationReport(
-			commentsRemoved: $counts['commentsRemoved'],
-			trackedChangesAccepted: $counts['trackedChangesAccepted'],
-			trackedChangesDropped: $counts['trackedChangesDropped'],
-			revisionAttributesStripped: 0,
-			hyperlinksFlattened: $counts['hyperlinksFlattened'],
-			metadataFieldsScrubbed: $counts['metadataFieldsScrubbed'],
-			customXmlPartsDropped: 0,
-			fieldCodesStripped: $counts['fieldCodesStripped'],
+			revisions: new SanitizationRevisionCounts(
+				commentsRemoved: $counts['commentsRemoved'],
+				trackedChangesAccepted: $counts['trackedChangesAccepted'],
+				trackedChangesDropped: $counts['trackedChangesDropped'],
+				revisionAttributesStripped: 0
+			),
+			structure: new SanitizationStructureCounts(
+				hyperlinksFlattened: $counts['hyperlinksFlattened'],
+				metadataFieldsScrubbed: $counts['metadataFieldsScrubbed'],
+				customXmlPartsDropped: 0,
+				fieldCodesStripped: $counts['fieldCodesStripped']
+			),
 			sentinelApplied: $this->sentinel
 		);
 	}//end sanitize()

@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
+use OCA\OpenRegister\Db\JobRunFilter;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IConfig;
@@ -225,7 +226,7 @@ class SupportBundleService implements SupportBundleServiceInterface {
 	private function recentFailures(): array {
 		try {
 			$rows = $this->runs->findRecent(
-				outcome: JobRun::OUTCOME_FAILED,
+				filter: new JobRunFilter(outcome: JobRun::OUTCOME_FAILED),
 				limit: self::RECENT_FAILURES
 			);
 		} catch (Throwable $exception) {

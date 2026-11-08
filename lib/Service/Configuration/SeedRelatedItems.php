@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use OCA\OpenRegister\Service\FileWriterInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -47,9 +47,9 @@ final class SeedRelatedItems
 	private ?NoteServiceInterface $noteService = null;
 
 	/**
-	 * @var TaskService|null Writes the seed tasks, when present.
+	 * @var ObjectCalendarTasksInterface|null Writes the seed tasks, when present.
 	 */
-	private ?TaskService $taskService = null;
+	private ?ObjectCalendarTasksInterface $taskService = null;
 
 	/**
 	 * Build the creator; the services arrive later and may stay missing.
@@ -91,13 +91,13 @@ final class SeedRelatedItems
 	/**
 	 * Set the service that writes seed tasks.
 	 *
-	 * @param TaskService|null $taskService The task service.
+	 * @param ObjectCalendarTasksInterface|null $taskService The task service.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function useTaskService(?TaskService $taskService): void
+	public function useTaskService(?ObjectCalendarTasksInterface $taskService): void
 	{
 		$this->taskService = $taskService;
 	}//end useTaskService()

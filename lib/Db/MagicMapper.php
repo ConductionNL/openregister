@@ -108,6 +108,7 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
+use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Support\OrderParameter;
@@ -718,8 +719,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			guard: new PropertyReadGuard(container: $this->container, logger: $this->logger)
 		);
 		return new RelatedRowQueryApplier(
-			schemaMapper: $this->schemaMapper,
-			tableHandler: $this->tableHandler,
+			lookups: new RelatedRowLookups(schemaMapper: $this->schemaMapper, tableHandler: $this->tableHandler),
 			db: $this->db,
 			logger: $this->logger,
 			access: $relatedRowAccess

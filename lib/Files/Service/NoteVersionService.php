@@ -244,10 +244,7 @@ class NoteVersionService {
 			$this->auditTrail->createAuditTrailEntry(
 				object: $object,
 				action: self::AUDIT_ACTION,
-				context: [
-					'noteId' => $noteId,
-					'versionCount' => $versions,
-				]
+				context: ['noteId' => $noteId, 'versionCount' => $versions]
 			);
 		} catch (Throwable $e) {
 			// The text has already been replaced and the version already

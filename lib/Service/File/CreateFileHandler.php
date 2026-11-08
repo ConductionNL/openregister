@@ -28,10 +28,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
-use OCP\Files\IRootFolder;
+use OCP\Files\Folder;
 use OCP\Files\NotPermittedException;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 
 /**
  * Handles file creation operations with Single Responsibility.
@@ -50,7 +50,6 @@ use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
  * @version  1.0.0
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class CreateFileHandler {
@@ -73,20 +72,25 @@ class CreateFileHandler {
 	private ?FileHandlerSupportInterface $fileService = null;
 
 	/**
+	 * Present participle of each upsert action, for the log line of a failure.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ACTION_GERUNDS = ['create' => 'creating', 'save' => 'saving'];
+
+	/**
 	 * Constructor for CreateFileHandler.
 	 *
-	 * @param IRootFolder $rootFolder Root folder for file operations.
-	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler.
-	 * @param FileValidationHandler $fileValidHandler File validation handler.
-	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
-	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper.
-	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param FolderManagementHandler       $folderMgmtHandler    Folder management handler.
+	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
+	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
+	 * @param MagicMapperInterface          $objectEntityMapper   Object entity mapper.
+	 * @param LoggerInterface               $logger               Logger for logging operations.
 	 */
 	public function __construct(
-		private readonly IRootFolder $rootFolder,
 		private readonly FolderManagementHandler $folderMgmtHandler,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandler $fileOwnershipHandler,
+		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly LoggerInterface $logger,
 	) {
@@ -127,9 +131,6 @@ class CreateFileHandler {
 	 * @psalm-param   array<int, string> $tags
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag is intentional for simple share toggle.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * File creation requires handling multiple content formats and error cases.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple execution paths for content processing and validation.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -144,114 +145,19 @@ class CreateFileHandler {
 		int|string|null $registerId = null,
 	): File {
 		try {
-			// Ensure we have an ObjectEntity instance.
-			if (is_string($objectEntity) === true) {
-				try {
-					$objectEntity = $this->objectEntityMapper->find($objectEntity);
-				} catch (DoesNotExistException) {
-					// In this case it is a possibility the object gets created later
-					// in a process (for example: synchronization) so we create
-					// the file for a given uuid.
-				}
-			}
+			$objectEntity = $this->resolveObject(objectEntity: $objectEntity);
 
 			// Use the new ID-based folder approach.
 			$folder = $this->folderMgmtHandler->getObjectFolder(objectEntity: $objectEntity, registerId: $registerId);
-
-			// String-only preprocessing (data-URI extraction and base64 auto-decode)
-			// is skipped for a stream resource: the caller has already produced decoded
-			// bytes on the streamed (binary-download) path, so there is nothing to
-			// decode. This is a behaviour-preserving skip, not a security control.
-			if (is_resource($content) === false) {
-				// Check if content is a data URI and extract the base64 content.
-				if (str_starts_with($content, 'data:') === true) {
-					// Extract the base64 content from the data URI.
-					// Format: data:mime/type;base64,actual-base64-data.
-					$parts = explode(',', $content, 2);
-					if (count($parts) === 2 && str_contains($parts[0], 'base64') === true) {
-						$content = $parts[1];
-					}
-
-					// If it's not base64-encoded data URI, leave it as is (it might be URL-encoded).
-				}
-
-				// Check if the content is base64 encoded and decode it if necessary.
-				$decodedContent = base64_decode($content, true);
-				if ($decodedContent !== false && base64_encode($decodedContent) === $content) {
-					$content = $decodedContent;
-				}
-			}
-
-			// Check if the file name is empty.
-			if (empty($fileName) === true) {
-				$objectId = $objectEntity->getId();
-				throw new Exception('Failed to create file because no filename has been provided for object ' . $objectId);
-			}
-
-			// Security: Block executable files. Executable magic-byte signatures live at
-			// offset 0, so on the streamed (resource) path we read a bounded prefix and
-			// rewind before writing — full parity with the string path at a fixed, small
-			// memory cost. A string is checked directly.
-			$execCheckBytes = $content;
-			if (is_resource($content) === true) {
-				$execCheckBytes = (string)fread($content, self::EXECUTABLE_MAGIC_BYTE_PREFIX_LENGTH);
-				rewind($content);
-			}
-
-			$this->fileValidHandler->blockExecutableFile(fileName: $fileName, fileContent: $execCheckBytes);
-
-			// The newFile() call already enforces create permission on the folder; it
-			// creates the node owned by the folder's mount owner (the openregister
-			// system user for the OpenRegister folder, or the original owner for a
-			// folder linked from outside it).
-			$file = $folder->newFile($fileName);
-
-			// Assert the session can reach the freshly created node.
-			$this->fileValidHandler->checkOwnership($file);
-
-			// Write content to the file.
-			$file->putContent($content);
-
-			// Re-own to the openregister user only as a fallback when the session
-			// lacks write rights; otherwise ownership is left following the folder.
-			$this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
-
-			// Create a share link for the file if requested.
-			if ($share === true) {
-				$this->fileService->createShareLink(path: $file->getPath());
-			}
-
-			// Automatically add object tag with the object's UUID.
-			$objectTag = $this->fileService->generateObjectTag($objectEntity);
-			$allTags = array_merge([$objectTag], $tags);
-
-			// Add tags to the file (including the automatic object tag).
-			// $allTags always contains at least $objectTag, so it's never empty.
-			$this->fileService->attachTagsToFile(fileId: (string)$file->getId(), tags: $allTags);
-
-			// @TODO: This sets the file array of an object, but we should check why this array is not added elsewhere.
-			// $objectFiles = $objectEntity->getFiles();
-			//
-			// $objectFiles[] = $this->formatFile($file);
-			// $objectEntity->setFiles($objectFiles);
-			//
-			// $this->objectEntityMapper->update($objectEntity);
+			$content = $this->decodedContent(content: $content);
+			$this->assertCreatable(objectEntity: $objectEntity, fileName: $fileName, content: $content);
+			$file = $this->writeNewFile(folder: $folder, fileName: $fileName, content: $content);
+			$this->shareIfRequested(file: $file, share: $share);
+			$this->tagNewFile(file: $file, objectEntity: $objectEntity, tags: $tags);
 			return $file;
-		} catch (NotPermittedException $e) {
-			// Log permission error and rethrow exception.
-			$this->logger->error(
-				message: '[CreateFileHandler] Permission denied creating file ' . $fileName . ': ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			throw new NotPermittedException("Cannot create file $fileName: " . $e->getMessage());
 		} catch (Exception $e) {
-			// Log general error and rethrow exception.
-			$this->logger->error(
-				message: '[CreateFileHandler] Failed to create file ' . $fileName . ': ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			throw new Exception("Failed to create file $fileName: " . $e->getMessage());
-		}//end try
+			throw $this->failure(error: $e, action: 'create', fileName: $fileName);
+		}
 	}//end addFile()
 
 	/**
@@ -289,55 +195,229 @@ class CreateFileHandler {
 	): File {
 		try {
 			// Check if the file already exists for this object.
-			$existingFile = $this->fileService->getFile(
-				object: $objectEntity,
-				file: $fileName
-			);
-
-			$objectId = $objectEntity->getId();
-			if ($existingFile !== null) {
-				// File exists, update it.
-				$this->logger->info(
-					message: "[CreateFileHandler] File {$fileName} already exists for object {$objectId}, updating...",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-
-				// Update the existing file - pass the object so updateFile can find it in the object folder.
-				return $this->fileService->updateFile(
-					filePath: $existingFile->getId(),
-					content: $content,
-					tags: $tags,
-					object: $objectEntity
-				);
+			$existingFile = $this->fileService->getFile(object: $objectEntity, file: $fileName);
+			$this->logUpsert(fileName: $fileName, objectId: $objectEntity->getId(), exists: $existingFile !== null);
+			if ($existingFile === null) {
+				return $this->addFile(objectEntity: $objectEntity, fileName: $fileName, content: $content, share: $share, tags: $tags);
 			}
 
-			// File doesn't exist, create it.
-			$this->logger->info(
-				message: "[CreateFileHandler] File {$fileName} does not exist for object {$objectId}, creating...",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $this->addFile(
-				objectEntity: $objectEntity,
-				fileName: $fileName,
-				content: $content,
-				share: $share,
-				tags: $tags
-			);
-		} catch (NotPermittedException $e) {
-			// Log permission error and rethrow exception.
-			$this->logger->error(
-				message: '[CreateFileHandler] Permission denied saving file ' . $fileName . ': ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			throw new NotPermittedException("Cannot save file $fileName: " . $e->getMessage());
+			// Update the existing file - pass the object so updateFile can find it in the object folder.
+			return $this->fileService->updateFile(filePath: $existingFile->getId(), content: $content, tags: $tags, object: $objectEntity);
 		} catch (Exception $e) {
-			// Log general error and rethrow exception.
+			throw $this->failure(error: $e, action: 'save', fileName: $fileName);
+		}
+	}//end saveFile()
+
+	/**
+	 * The object entity for a string id, or the id itself when the object does not exist yet.
+	 *
+	 * The object may be created later in a process (for example: synchronization),
+	 * so a file is still created for the given uuid.
+	 *
+	 * @param ObjectEntity|string $objectEntity The object or its id.
+	 *
+	 * @return ObjectEntity|string The entity, or the id as given.
+	 */
+	private function resolveObject(ObjectEntity|string $objectEntity): ObjectEntity|string {
+		if (is_string($objectEntity) === false) {
+			return $objectEntity;
+		}
+
+		try {
+			return $this->objectEntityMapper->find($objectEntity);
+		} catch (DoesNotExistException) {
+			return $objectEntity;
+		}
+	}//end resolveObject()
+
+	/**
+	 * String content with a base64 data URI or plain base64 decoded; a stream resource as given.
+	 *
+	 * The skip for a stream resource is behaviour-preserving, not a security
+	 * control: the streamed (binary-download) path already produced decoded bytes.
+	 *
+	 * @param string|resource $content The content.
+	 *
+	 * @return string|resource The content to write.
+	 */
+	private function decodedContent(mixed $content): mixed {
+		if (is_resource($content) === true) {
+			return $content;
+		}
+
+		$content = $this->dataUriPayload(content: $content);
+		$decodedContent = base64_decode($content, true);
+		if ($decodedContent !== false && base64_encode($decodedContent) === $content) {
+			return $decodedContent;
+		}
+
+		return $content;
+	}//end decodedContent()
+
+	/**
+	 * The base64 payload of a `data:mime/type;base64,...` URI; any other string as given.
+	 *
+	 * A data URI that is not base64-encoded is left as is (it might be URL-encoded).
+	 *
+	 * @param string $content The content.
+	 *
+	 * @return string The payload or the content.
+	 */
+	private function dataUriPayload(string $content): string {
+		if (str_starts_with($content, 'data:') === false) {
+			return $content;
+		}
+
+		$parts = explode(',', $content, 2);
+		if (count($parts) === 2 && str_contains($parts[0], 'base64') === true) {
+			return $parts[1];
+		}
+
+		return $content;
+	}//end dataUriPayload()
+
+	/**
+	 * Refuse a nameless file and, by its magic bytes, an executable one.
+	 *
+	 * @param ObjectEntity|string $objectEntity The object the file is for.
+	 * @param string              $fileName     The file name.
+	 * @param string|resource     $content      The content.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the name is empty or the content is executable.
+	 */
+	private function assertCreatable(ObjectEntity|string $objectEntity, string $fileName, mixed $content): void {
+		if (empty($fileName) === true) {
+			$objectId = $objectEntity->getId();
+			throw new Exception('Failed to create file because no filename has been provided for object ' . $objectId);
+		}
+
+		// Security: Block executable files.
+		$this->fileValidHandler->blockExecutableFile(fileName: $fileName, fileContent: $this->executableProbe(content: $content));
+	}//end assertCreatable()
+
+	/**
+	 * The bytes the executable check reads.
+	 *
+	 * Executable magic-byte signatures live at offset 0, so on the streamed
+	 * (resource) path a bounded prefix is read and the stream rewound before
+	 * writing: full parity with the string path at a fixed, small memory cost.
+	 * A string is checked directly.
+	 *
+	 * @param string|resource $content The content.
+	 *
+	 * @return mixed The content, or the stream's leading bytes.
+	 */
+	private function executableProbe(mixed $content): mixed {
+		if (is_resource($content) === false) {
+			return $content;
+		}
+
+		$prefix = (string)fread($content, self::EXECUTABLE_MAGIC_BYTE_PREFIX_LENGTH);
+		rewind($content);
+		return $prefix;
+	}//end executableProbe()
+
+	/**
+	 * Create the node, assert the session can reach it, then write and re-own it.
+	 *
+	 * The newFile() call already enforces create permission on the folder; it
+	 * creates the node owned by the folder's mount owner (the openregister
+	 * system user for the OpenRegister folder, or the original owner for a
+	 * folder linked from outside it). Re-owning to the openregister user is only
+	 * a fallback when the session lacks write rights.
+	 *
+	 * @param Folder|null     $folder   The object folder.
+	 * @param string          $fileName The file name.
+	 * @param string|resource $content  The content.
+	 *
+	 * @return File The written file.
+	 *
+	 * @throws NotPermittedException When the folder or the new node refuses the session.
+	 */
+	private function writeNewFile(?Folder $folder, string $fileName, mixed $content): File {
+		$file = $folder->newFile($fileName);
+		$this->fileValidHandler->checkOwnership($file);
+		$file->putContent($content);
+		$this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
+		return $file;
+	}//end writeNewFile()
+
+	/**
+	 * Create a share link for the file when asked.
+	 *
+	 * @param File $file  The file.
+	 * @param bool $share Whether to share it.
+	 *
+	 * @return void
+	 */
+	private function shareIfRequested(File $file, bool $share): void {
+		if ($share === true) {
+			$this->fileService->createShareLink(path: $file->getPath());
+		}
+	}//end shareIfRequested()
+
+	/**
+	 * Tag the file with the object's automatic tag followed by the caller's tags.
+	 *
+	 * $allTags always contains at least the object tag, so it is never empty.
+	 *
+	 * @param File                $file         The file.
+	 * @param ObjectEntity|string $objectEntity The object.
+	 * @param array<int, string>  $tags         The caller's tags.
+	 *
+	 * @return void
+	 */
+	private function tagNewFile(File $file, ObjectEntity|string $objectEntity, array $tags): void {
+		$allTags = array_merge([$this->fileService->generateObjectTag($objectEntity)], $tags);
+		$this->fileService->attachTagsToFile(fileId: (string)$file->getId(), tags: $allTags);
+	}//end tagNewFile()
+
+	/**
+	 * Log an upsert's decision.
+	 *
+	 * @param string          $fileName The file name.
+	 * @param int|string|null $objectId The object id.
+	 * @param bool            $exists   Whether the file already exists.
+	 *
+	 * @return void
+	 */
+	private function logUpsert(string $fileName, int|string|null $objectId, bool $exists): void {
+		$message = "[CreateFileHandler] File {$fileName} does not exist for object {$objectId}, creating...";
+		if ($exists === true) {
+			$message = "[CreateFileHandler] File {$fileName} already exists for object {$objectId}, updating...";
+		}
+
+		$this->logger->info(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+	}//end logUpsert()
+
+	/**
+	 * Log a failed create or save and build the exception that reports it.
+	 *
+	 * A permission refusal stays a NotPermittedException; anything else is a plain Exception.
+	 *
+	 * @param Exception $error    The failure.
+	 * @param string    $action   `create` or `save`.
+	 * @param string    $fileName The file name.
+	 *
+	 * @return Exception The exception to throw.
+	 */
+	private function failure(Exception $error, string $action, string $fileName): Exception {
+		$reason = $error->getMessage();
+		if ($error instanceof NotPermittedException) {
 			$this->logger->error(
-				message: '[CreateFileHandler] Failed to save file ' . $fileName . ': ' . $e->getMessage(),
+				message: '[CreateFileHandler] Permission denied '.self::ACTION_GERUNDS[$action]." file $fileName: $reason",
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			throw new Exception("Failed to save file $fileName: " . $e->getMessage());
-		}//end try
-	}//end saveFile()
+			return new NotPermittedException("Cannot $action file $fileName: $reason");
+		}
+
+		$this->logger->error(
+			message: "[CreateFileHandler] Failed to $action file $fileName: $reason",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		return new Exception("Failed to $action file $fileName: $reason");
+	}//end failure()
+
 }//end class

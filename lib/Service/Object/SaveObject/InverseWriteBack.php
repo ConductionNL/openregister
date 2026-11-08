@@ -26,7 +26,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\SaveObjectInterface;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCP\IURLGenerator;
 
 /**
@@ -44,13 +44,13 @@ final class InverseWriteBack {
 
 	/**
 	 * @param MagicObjectFinderInterface $objects Reads the targets.
-	 * @param SaveObjectInterface  $saver   Saves the targets.
+	 * @param SaveObjectWriterInterface  $saver   Saves the targets.
 	 * @param SaveLookups          $lookups Resolves the target schema.
 	 * @param IURLGenerator        $urls    Builds the schema object.
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objects,
-		private readonly SaveObjectInterface $saver,
+		private readonly SaveObjectWriterInterface $saver,
 		private readonly SaveLookups $lookups,
 		private readonly IURLGenerator $urls,
 	) {

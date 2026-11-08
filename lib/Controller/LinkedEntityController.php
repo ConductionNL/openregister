@@ -22,6 +22,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\LinkedEntityControllerServices;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
 use OCP\AppFramework\Controller;
@@ -48,24 +49,50 @@ use Psr\Log\LoggerInterface;
  */
 class LinkedEntityController extends Controller {
 	/**
+	 * The linked entity service
+	 *
+	 * @var LinkedEntityServiceInterface
+	 */
+	private readonly LinkedEntityServiceInterface $linkedEntityService;
+
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Active user session for caller identity
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for admin checks
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor for LinkedEntityController.
 	 *
 	 * @param string $appName The app name
 	 * @param IRequest $request The request object
-	 * @param LinkedEntityServiceInterface $linkedEntityService The linked entity service
-	 * @param LoggerInterface $logger Logger
-	 * @param IUserSession $userSession Active user session for caller identity
-	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param LinkedEntityControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly LinkedEntityServiceInterface $linkedEntityService,
-		private readonly LoggerInterface $logger,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		LinkedEntityControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->linkedEntityService = $services->linkedEntityService;
+		$this->logger = $services->logger;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 	}//end __construct()
 
 	/**

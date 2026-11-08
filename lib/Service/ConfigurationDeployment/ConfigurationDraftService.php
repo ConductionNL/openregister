@@ -173,18 +173,10 @@ class ConfigurationDraftService {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftValue(
-		string $setUuid,
-		string $layer,
-		?string $layerRef,
-		string $configKey,
-		mixed $value
-	): ConfigurationDraft {
+	public function draftValue(string $setUuid, string $layer, ?string $layerRef, string $configKey, mixed $value): ConfigurationDraft {
 		return $this->stage(
 			setUuid: $setUuid,
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey,
+			address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
 			value: $value,
 			removes: false
 		);
@@ -211,17 +203,10 @@ class ConfigurationDraftService {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftRemoval(
-		string $setUuid,
-		string $layer,
-		?string $layerRef,
-		string $configKey
-	): ConfigurationDraft {
+	public function draftRemoval(string $setUuid, string $layer, ?string $layerRef, string $configKey): ConfigurationDraft {
 		return $this->stage(
 			setUuid: $setUuid,
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey,
+			address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
 			value: null,
 			removes: true
 		);
@@ -231,12 +216,10 @@ class ConfigurationDraftService {
 	/**
 	 * Write one pending value into a set, against the live value it replaces.
 	 *
-	 * @param string      $setUuid   The set to draft into.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
-	 * @param mixed       $value     The pending value.
-	 * @param boolean     $removes   Whether the draft removes the value.
+	 * @param string               $setUuid The set to draft into.
+	 * @param ConfigurationAddress $address The layer, layer reference and key to draft at.
+	 * @param mixed                $value   The pending value.
+	 * @param boolean              $removes Whether the draft removes the value.
 	 *
 	 * @return ConfigurationDraft The pending value.
 	 *
@@ -246,28 +229,24 @@ class ConfigurationDraftService {
 	 */
 	private function stage(
 		string $setUuid,
-		string $layer,
-		?string $layerRef,
-		string $configKey,
+		ConfigurationAddress $address,
 		mixed $value,
 		bool $removes
 	): ConfigurationDraft {
 		$set = $this->loadSet(uuid: $setUuid);
 		$this->requireEditable(set: $set);
 		$this->requireDraftableAddress(
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey,
+			address: $address,
 			value: $value,
 			checkValue: ($removes === false)
 		);
 
-		$live = $this->store->read(layer: $layer, layerRef: $layerRef, configKey: $configKey);
+		$live = $this->store->read(layer: $address->layer, layerRef: $address->layerRef, configKey: $address->configKey);
 		$existing = $this->drafts->findAtAddress(
 			setUuid: $setUuid,
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey
+			layer: $address->layer,
+			layerRef: $address->layerRef,
+			configKey: $address->configKey
 		);
 
 		if ($existing !== null) {
@@ -282,9 +261,9 @@ class ConfigurationDraftService {
 		return $this->drafts->createFromArray(
 			[
 				'setUuid' => $setUuid,
-				'layer' => $layer,
-				'layerRef' => $layerRef,
-				'configKey' => $configKey,
+				'layer' => $address->layer,
+				'layerRef' => $address->layerRef,
+				'configKey' => $address->configKey,
 				'baseValue' => ['value' => $live->value],
 				'basePresent' => $live->present,
 				'draftValue' => ['value' => $value],
@@ -429,14 +408,12 @@ class ConfigurationDraftService {
 	/**
 	 * Refuse an address the vocabulary does not allow.
 	 *
-	 * @param string      $layer      The layer.
-	 * @param string|null $layerRef   The layer reference.
-	 * @param string      $configKey  The configuration key.
-	 * @param mixed       $value      The proposed value.
-	 * @param boolean     $checkValue Whether the value has a shape to check. A
-	 *                                removal has no value, so type-checking one
-	 *                                would refuse every removal of a key that
-	 *                                declares a shape.
+	 * @param ConfigurationAddress $address    The layer, layer reference and key.
+	 * @param mixed                $value      The proposed value.
+	 * @param boolean              $checkValue Whether the value has a shape to check. A
+	 *                                         removal has no value, so type-checking one
+	 *                                         would refuse every removal of a key that
+	 *                                         declares a shape.
 	 *
 	 * @return void
 	 *
@@ -445,19 +422,17 @@ class ConfigurationDraftService {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	private function requireDraftableAddress(
-		string $layer,
-		?string $layerRef,
-		string $configKey,
+		ConfigurationAddress $address,
 		mixed $value,
 		bool $checkValue
 	): void {
-		$refusal = $this->registry->refusalFor(layer: $layer, configKey: $configKey);
-		if ($refusal === null && ConfigurationLayer::requiresReference($layer) === true && $layerRef === null) {
-			$refusal = sprintf('the %s layer addresses one subject and needs a reference', $layer);
+		$refusal = $this->registry->refusalFor(layer: $address->layer, configKey: $address->configKey);
+		if ($refusal === null && ConfigurationLayer::requiresReference($address->layer) === true && $address->layerRef === null) {
+			$refusal = sprintf('the %s layer addresses one subject and needs a reference', $address->layer);
 		}
 
 		if ($refusal === null && $checkValue === true) {
-			$refusal = $this->registry->valueRefusalFor(configKey: $configKey, value: $value);
+			$refusal = $this->registry->valueRefusalFor(configKey: $address->configKey, value: $value);
 		}
 
 		if ($refusal === null) {
@@ -469,9 +444,9 @@ class ConfigurationDraftService {
 			message: $refusal,
 			refusals: [
 				[
-					'layer' => $layer,
-					'layerRef' => $layerRef,
-					'key' => $configKey,
+					'layer' => $address->layer,
+					'layerRef' => $address->layerRef,
+					'key' => $address->configKey,
 					'reason' => $refusal,
 				],
 			],

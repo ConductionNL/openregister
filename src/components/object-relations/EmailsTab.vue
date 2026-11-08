@@ -86,7 +86,6 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
@@ -138,14 +137,7 @@ export default {
 			this.mailUnavailable = false
 			this.errorMessage = ''
 
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/emails',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-				},
-			)
+			const url = this.objectApiUrl('/emails')
 
 			try {
 				const response = await axios.get(url)
@@ -166,15 +158,7 @@ export default {
 		 * @spec exclude API passthrough unlinking email + change emit; email-relations contract owned by integration-email capability
 		 */
 		async unlinkEmail(email) {
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/emails/{emailId}',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-					emailId: email.id,
-				},
-			)
+			const url = this.objectApiUrl('/emails/{emailId}', { emailId: email.id })
 
 			try {
 				await axios.delete(url)

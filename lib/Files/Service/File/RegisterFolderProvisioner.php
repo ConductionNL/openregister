@@ -134,12 +134,7 @@ class RegisterFolderProvisioner implements RegisterFolderProvisionerInterface {
 	private function logFailure(Register $register, string $reason): void {
 		$this->logger->warning(
 			message: '[RegisterFolderProvisioner] Could not provision the folder of register {registerId}: {reason}',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'registerId' => $register->getId(),
-				'reason' => $reason,
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $register->getId(), 'reason' => $reason]
 		);
 	}//end logFailure()
 }//end class

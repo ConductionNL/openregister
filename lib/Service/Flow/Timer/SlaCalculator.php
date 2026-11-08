@@ -568,11 +568,6 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 * @throws FlowTimerValidationException When the modifier is unparseable.
 	 */
 	private function shift(DateTimeImmutable $moment, string $modifier): DateTimeImmutable {
-		$shifted = $moment->modify($modifier);
-		if ($shifted === false) {
-			throw new FlowTimerValidationException(message: sprintf("Date modifier '%s' is not parseable.", $modifier));
-		}
-
-		return $shifted;
+		return MomentShift::by(moment: $moment, modifier: $modifier);
 	}//end shift()
 }//end class

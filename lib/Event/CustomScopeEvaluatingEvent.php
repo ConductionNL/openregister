@@ -52,6 +52,7 @@ use OCP\EventDispatcher\Event;
  * verdict via `allow()` / `deny()`.
  */
 class CustomScopeEvaluatingEvent extends Event {
+	use CustomScopeAccessors;
 
 	/**
 	 * Resolved verdict, or null when no listener has voted yet.
@@ -79,39 +80,6 @@ class CustomScopeEvaluatingEvent extends Event {
 		parent::__construct();
 
 	}//end __construct()
-
-	/**
-	 * Schema being checked.
-	 *
-	 * @return Schema The schema involved in this evaluation.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-	 */
-	public function getSchema(): Schema {
-		return $this->schema;
-	}//end getSchema()
-
-	/**
-	 * The custom action verb being evaluated.
-	 *
-	 * @return string The custom action verb.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-	 */
-	public function getAction(): string {
-		return $this->action;
-	}//end getAction()
-
-	/**
-	 * User ID under evaluation (null for anonymous requests).
-	 *
-	 * @return string|null The user ID, or null when anonymous.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-7
-	 */
-	public function getUserId(): ?string {
-		return $this->userId;
-	}//end getUserId()
 
 	/**
 	 * Group memberships of the user at evaluation time.

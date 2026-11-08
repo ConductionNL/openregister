@@ -129,30 +129,24 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 	 * Calls parent constructor to set up base mapper functionality.
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
-	 * @param IAppConfig $appConfig App configuration for multitenancy settings
-	 * @param IUserSession $userSession User session for RBAC
-	 * @param IGroupManager $groupManager Group manager for RBAC
+	 * @param ViewMapperAccess $access The organisation mapper, app config, user session and group manager for multi-tenancy and RBAC
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for view lifecycle events
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IDBConnection $db,
-		OrganisationMapperInterface $organisationMapper,
-		IAppConfig $appConfig,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		ViewMapperAccess $access,
 		IEventDispatcher $eventDispatcher,
 	) {
 		// Call parent constructor to initialize base mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_views', entityClass: View::class);
 
 		// Store dependencies for use in mapper methods.
-		$this->organisationMapper = $organisationMapper;
-		$this->appConfig = $appConfig;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->organisationMapper = $access->organisationMapper;
+		$this->appConfig = $access->appConfig;
+		$this->userSession = $access->userSession;
+		$this->groupManager = $access->groupManager;
 		$this->eventDispatcher = $eventDispatcher;
 	}//end __construct()
 

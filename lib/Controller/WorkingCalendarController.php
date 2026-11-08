@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
@@ -228,18 +229,8 @@ class WorkingCalendarController extends Controller {
 	 * @return JSONResponse|null A refusal, or null when the caller may proceed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: working calendars are administered by administrators'],
-				statusCode: 403
-			);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: working calendars are administered by administrators');
 	}//end requireAdmin()
 }//end class

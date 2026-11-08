@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ContentReportControllerServices;
 use OCA\OpenRegister\Db\ContentReport;
 use OCA\OpenRegister\Db\ContentReportMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
@@ -46,24 +47,50 @@ use Throwable;
  */
 class ContentReportController extends Controller {
 	/**
+	 * The reports and their copies.
+	 *
+	 * @var ContentReportMapper
+	 */
+	private readonly ContentReportMapper $reports;
+
+	/**
+	 * Files a report and resolves reviewer access.
+	 *
+	 * @var ContentReportService
+	 */
+	private readonly ContentReportService $service;
+
+	/**
+	 * Resolves the content being reported.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objects;
+
+	/**
+	 * Current user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string              $appName     App identifier.
 	 * @param IRequest            $request     Active request.
-	 * @param ContentReportMapper $reports     The reports and their copies.
-	 * @param ContentReportService $service    Files a report and resolves reviewer access.
-	 * @param MagicObjectFinderInterface         $objects     Resolves the content being reported.
-	 * @param IUserSession        $userSession Current user session.
+	 * @param ContentReportControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ContentReportMapper $reports,
-		private readonly ContentReportService $service,
-		private readonly MagicObjectFinderInterface $objects,
-		private readonly IUserSession $userSession,
+		ContentReportControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->reports = $services->reports;
+		$this->service = $services->service;
+		$this->objects = $services->objects;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**

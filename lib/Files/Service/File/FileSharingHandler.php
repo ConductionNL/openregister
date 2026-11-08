@@ -52,21 +52,59 @@ use Psr\Log\LoggerInterface;
  */
 class FileSharingHandler {
 	/**
+	 * Share manager for share operations.
+	 *
+	 * @var IManager
+	 */
+	private readonly IManager $shareManager;
+
+	/**
+	 * User manager for user operations.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Builds share links for the host the visitor used.
+	 *
+	 * @var ShareUrlBuilder
+	 */
+	private readonly ShareUrlBuilder $shareUrls;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Ownership handler for user operations.
+	 *
+	 * @var FileOwnershipHandlerInterface
+	 */
+	private readonly FileOwnershipHandlerInterface $fileOwnershipHandler;
+
+	/**
 	 * Constructor for FileSharingHandler.
 	 *
-	 * @param IManager $shareManager Share manager for share operations.
-	 * @param IUserManager $userManager User manager for user operations.
-	 * @param ShareUrlBuilder $shareUrls Builds share links for the host the visitor used.
-	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param FileOwnershipHandler $fileOwnershipHandler Ownership handler for user operations.
+	 * @param IManager            $shareManager Share manager for share operations.
+	 * @param FileSharingAccounts $accounts     The user manager and the system-account ownership handler.
+	 * @param ShareUrlBuilder     $shareUrls    Builds share links for the host the visitor used.
+	 * @param LoggerInterface     $logger       Logger for logging operations.
 	 */
 	public function __construct(
-		private readonly IManager $shareManager,
-		private readonly IUserManager $userManager,
-		private readonly ShareUrlBuilder $shareUrls,
-		private readonly LoggerInterface $logger,
-		private readonly FileOwnershipHandler $fileOwnershipHandler,
+		IManager $shareManager,
+		FileSharingAccounts $accounts,
+		ShareUrlBuilder $shareUrls,
+		LoggerInterface $logger,
 	) {
+		$this->shareManager = $shareManager;
+		$this->userManager = $accounts->userManager;
+		$this->fileOwnershipHandler = $accounts->fileOwnershipHandler;
+		$this->shareUrls = $shareUrls;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**

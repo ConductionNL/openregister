@@ -141,36 +141,75 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	private array $lastPlaceholderMap = [];
 
 	/**
+	 * Root folder for file access.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * User session for getting current user.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Used to honour skip-anonymization flags during the redaction pass (see `entity-relation-grondslagen`).
+	 *
+	 * @var \OCA\OpenRegister\Files\Db\EntityRelationMapperInterface
+	 */
+	private readonly \OCA\OpenRegister\Files\Db\EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * Office document sanitiser (DOCX / ODT).
+	 *
+	 * @var OfficeDocumentSanitizer
+	 */
+	private readonly OfficeDocumentSanitizer $sanitizer;
+
+	/**
+	 * Mapper for persisting per-run anonymisation log rows (carries the sanitisation report). Nullable so the handler stays construct-safe for tests
+	 * that do not need persistence.
+	 *
+	 * @var AnonymisationLogMapper|null
+	 */
+	private readonly ?AnonymisationLogMapper $anonymisationLogMapper;
+
+	/**
+	 * Acting-user localisation, used to translate the placeholder TYPE label (e.g. PERSON → PERSOON on a Dutch instance). Nullable: when absent the
+	 * raw English label is emitted (construct-safe for tests / non-localised callers).
+	 *
+	 * @var IL10N|null
+	 */
+	private readonly ?IL10N $l10n;
+
+	/**
 	 * Constructor for DocumentProcessingHandler.
 	 *
-	 * @param IRootFolder $rootFolder Root folder for file access.
-	 * @param IUserSession $userSession User session for getting current user.
-	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Files\Db\EntityRelationMapperInterface $entityRelationMapper Used to honour skip-anonymization
-	 *                                                                        flags during the redaction pass
-	 *                                                                        (see
-	 *                                                                        `entity-relation-grondslagen`).
-	 * @param OfficeDocumentSanitizer $sanitizer Office document sanitiser (DOCX / ODT).
-	 * @param AnonymisationLogMapper|null $anonymisationLogMapper Mapper for persisting per-run anonymisation
-	 *                                                            log rows (carries the sanitisation report).
-	 *                                                            Nullable so the handler stays construct-safe
-	 *                                                            for tests that do not need persistence.
-	 * @param IL10N|null $l10n Acting-user localisation, used to translate
-	 *                         the placeholder TYPE label (e.g. PERSON →
-	 *                         PERSOON on a Dutch instance). Nullable: when
-	 *                         absent the raw English label is emitted
-	 *                         (construct-safe for tests / non-localised
-	 *                         callers).
+	 * @param DocumentProcessingPlatform $platform  Root folder, user session and the optional acting-user localisation.
+	 * @param DocumentRedactionServices  $redaction Entity relation mapper, office sanitiser and the optional anonymisation log mapper.
+	 * @param LoggerInterface            $logger    Logger for logging operations.
 	 */
 	public function __construct(
-		private readonly IRootFolder $rootFolder,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly \OCA\OpenRegister\Files\Db\EntityRelationMapperInterface $entityRelationMapper,
-		private readonly OfficeDocumentSanitizer $sanitizer,
-		private readonly ?AnonymisationLogMapper $anonymisationLogMapper = null,
-		private readonly ?IL10N $l10n = null,
+		DocumentProcessingPlatform $platform,
+		DocumentRedactionServices $redaction,
+		LoggerInterface $logger,
 	) {
+		$this->rootFolder = $platform->rootFolder;
+		$this->userSession = $platform->userSession;
+		$this->l10n = $platform->l10n;
+		$this->entityRelationMapper = $redaction->entityRelationMapper;
+		$this->sanitizer = $redaction->sanitizer;
+		$this->anonymisationLogMapper = $redaction->anonymisationLogMapper;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**

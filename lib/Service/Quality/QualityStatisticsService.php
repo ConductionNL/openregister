@@ -46,8 +46,6 @@ namespace OCA\OpenRegister\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use Psr\Log\LoggerInterface;
@@ -103,8 +101,7 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	 * Wire collaborators.
 	 *
 	 * @param ObjectOperationsInterface $objectService Object query path (RBAC + tenant scoped).
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the quality annotation.
-	 * @param RegisterMapperInterface $registerMapper Register lookup — the boundary the schema resolves inside.
+	 * @param QualityScopeMappers $mappers Schema and register lookups — the register is the boundary the schema resolves inside.
 	 * @param QualityScorer $scorer Reused for status() bucketing — never reimplemented.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -114,14 +111,13 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		SchemaMapperInterface $schemaMapper,
-		RegisterMapperInterface $registerMapper,
+		QualityScopeMappers $mappers,
 		private readonly QualityScorer $scorer,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+			registerMapper: $mappers->registerMapper,
+			schemaMapper: $mappers->schemaMapper
 		);
 	}//end __construct()
 
@@ -196,10 +192,7 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	 * @param int|string $register Register id, uuid or slug.
 	 * @param int|string $schema Schema id, uuid or slug.
 	 * @param string|null $qualityStatus Optional status filter (`good`/`fair`/`poor`).
-	 * @param string $sort Sort field: `qualityScore` (default) or `qualityStatus`.
-	 * @param string $order Sort order: `asc` (default) or `desc`.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param QualityListingWindow $window Sort field and order, page size and offset.
 	 *
 	 * @return array{
 	 *   items: array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}>,
@@ -214,10 +207,7 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 		$register,
 		$schema,
 		?string $qualityStatus = null,
-		string $sort = 'qualityScore',
-		string $order = 'asc',
-		int $limit = self::DEFAULT_LIMIT,
-		int $offset = 0,
+		QualityListingWindow $window = new QualityListingWindow(),
 	): array {
 		$quality = $this->loadAnnotation(register: $register, schema: $schema);
 		$field = $this->scoreField(quality: $quality);
@@ -244,16 +234,16 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 			];
 		}//end foreach
 
-		$this->sortRows(rows: $rows, sort: $sort, order: $order);
+		$this->sortRows(rows: $rows, sort: $window->sort, order: $window->order);
 
 		$total = count($rows);
-		$page = array_slice($rows, max(0, $offset), max(0, $limit));
+		$page = array_slice($rows, max(0, $window->offset), max(0, $window->limit));
 
 		return [
 			'items' => $page,
 			'total' => $total,
-			'limit' => $limit,
-			'offset' => $offset,
+			'limit' => $window->limit,
+			'offset' => $window->offset,
 		];
 	}//end lowestQuality()
 

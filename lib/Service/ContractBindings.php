@@ -239,12 +239,20 @@ use OCA\OpenRegister\Service\Operations\SupportBundleService;
 use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
+use OCA\OpenRegister\Service\Party\PartySchemaCatalogueInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
+use OCA\OpenRegister\Service\Party\TrustedPartyReaderInterface;
 use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
+use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -281,6 +289,9 @@ use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
@@ -332,6 +343,7 @@ final class ContractBindings {
 		ApplicationServiceInterface::class => ApplicationService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		AppSettingsInterface::class => SettingsService::class,
+		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
 		FlowStateNodeInterface::class => FlowStateNode::class,
@@ -376,6 +388,7 @@ final class ContractBindings {
 		DeepLinkRegistryServiceInterface::class => DeepLinkRegistryService::class,
 		DeepLinkResolverInterface::class => DeepLinkRegistryService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
+		DenyResolverInterface::class => DenyResolver::class,
 		DependentValueTableInterface::class => DependentValueTable::class,
 		\OCA\OpenRegister\Service\Object\DraftActivationInterface::class => \OCA\OpenRegister\Service\Object\DraftActivation::class,
 		\OCA\OpenRegister\Service\Object\DraftExpiryInterface::class => \OCA\OpenRegister\Service\Object\DraftExpiry::class,
@@ -459,6 +472,7 @@ final class ContractBindings {
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
 		\OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface::class => \OCA\OpenRegister\Service\Object\ObjectSlugBackfillService::class,
 		ObjectRelationServiceInterface::class => ObjectRelationService::class,
+		ObjectScopeResolverInterface::class => ObjectScopeResolver::class,
 		ObjectStreamingSaveInterface::class => ObjectService::class,
 		ObjectWriteNodeInterface::class => ObjectWriteNode::class,
 		OpenProjectLinkServiceInterface::class => OpenProjectLinkService::class,
@@ -467,12 +481,15 @@ final class ContractBindings {
 		OperationsJobsServiceInterface::class => OperationsJobsService::class,
 		OperatorCatalogueInterface::class => OperatorCatalogue::class,
 		PartyRoleServiceInterface::class => PartyRoleService::class,
+		PartySchemaCatalogueInterface::class => PartyService::class,
 		PartyServiceInterface::class => PartyService::class,
+		PermissionCatalogueInterface::class => PermissionCatalogue::class,
 		PersonLinkServiceInterface::class => PersonLinkService::class,
 		PhotoLinkServiceInterface::class => PhotoLinkService::class,
 		PollLinkServiceInterface::class => PollLinkService::class,
 		PortalTaskNodeInterface::class => PortalTaskNode::class,
 		PropertyConversionServiceInterface::class => PropertyConversionService::class,
+		PropertyRbacHandlerInterface::class => PropertyRbacHandler::class,
 		PropertyValidatorHandlerInterface::class => PropertyValidatorHandler::class,
 		PropertyVocabularyInterface::class => PropertyVocabulary::class,
 		QualityScorerInterface::class => QualityScorer::class,
@@ -487,8 +504,10 @@ final class ContractBindings {
 		RegisterDescriptorServiceInterface::class => RegisterDescriptorService::class,
 		RegisterResolverServiceInterface::class => RegisterResolverService::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
+		RegisterScopedSchemaResolverInterface::class => RegisterScopedSchemaResolver::class,
 		RegisterServiceInterface::class => RegisterService::class,
 		RelationGraphServiceInterface::class => RelationGraphService::class,
+		RetentionSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaApplicationMigratorInterface::class => SchemaApplicationMigrator::class,
 		SchemaCacheHandlerInterface::class => SchemaCacheHandler::class,
@@ -523,6 +542,7 @@ final class ContractBindings {
 		TemporalCalculationSweepServiceInterface::class => TemporalCalculationSweepService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		TransitionNodeInterface::class => TransitionNode::class,
+		TrustedPartyReaderInterface::class => PartyService::class,
 		\OCA\OpenRegister\Service\Object\TranslationHandlerInterface::class => \OCA\OpenRegister\Service\Object\TranslationHandler::class,
 		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
 		TranslationStatusServiceInterface::class => TranslationStatusService::class,
@@ -531,6 +551,7 @@ final class ContractBindings {
 		TriggerScheduleNodeInterface::class => TriggerScheduleNode::class,
 		UniqueConstraintEvaluatorInterface::class => UniqueConstraintEvaluator::class,
 		UrnServiceInterface::class => UrnService::class,
+		UserTaskListInterface::class => \OCA\OpenRegister\Service\TaskService::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		WatcherServiceInterface::class => WatcherService::class,
@@ -548,6 +569,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ValidateObjectInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
+		\OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
+		\OCA\OpenRegister\Service\Object\SaveObjectWriterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 	];
 

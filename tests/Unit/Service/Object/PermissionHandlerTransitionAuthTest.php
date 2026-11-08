@@ -69,7 +69,7 @@ class PermissionHandlerTransitionAuthTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$this->userManager,
 			$this->groupManager,

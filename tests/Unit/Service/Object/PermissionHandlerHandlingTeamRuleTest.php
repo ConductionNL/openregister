@@ -177,7 +177,7 @@ class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,

@@ -94,163 +94,35 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	}//end getDescription()
 
 	/**
-	 * Get function definitions for LLM function calling
+	 * The function definitions, one row each: [name, subject, action,
+	 * description, [parameter => [type, description]], required], expanded
+	 * by {@see ToolFunctionTable::expand()}.
 	 *
-	 * Returns function definitions in OpenAI function calling format.
-	 * These are used by LLMs to understand what capabilities this tool provides.
-	 *
-	 * @return array<int, array<string, mixed>> Array of function definitions
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @var array<int, array<int, mixed>>
 	 */
-	public function getFunctions(): array {
-		return array_merge(self::readFunctions(), self::writeFunctions());
-
-	}//end getFunctions()
-
-	/**
-	 * The function definitions that change nothing.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	private const READ_FUNCTIONS = [
-		[
-			'name' => 'list_applications',
-			'subject' => 'application',
-			'action' => 'list',
-			'description' => 'List all accessible applications with basic information.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'limit' => [
-						'type' => 'integer',
-						'description' => 'Maximum number of results to return (default: 50)',
-					],
-					'offset' => [
-						'type' => 'integer',
-						'description' => 'Number of results to skip for pagination (default: 0)',
-					],
-				],
-				'required' => [],
-			],
-		],
-		[
-			'name' => 'get_application',
-			'subject' => 'application',
-			'action' => 'get',
-			'description' => 'Get detailed application information by UUID.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'uuid' => [
-						'type' => 'string',
-						'description' => 'UUID of the application to retrieve',
-					],
-				],
-				'required' => ['uuid'],
-			],
-		],
+	protected const FUNCTIONS = [
+		['list_applications', 'application', 'list', 'List all accessible applications with basic information.', [
+			'limit' => ['integer', 'Maximum number of results to return (default: 50)'],
+			'offset' => ['integer', 'Number of results to skip for pagination (default: 0)'],
+		], []],
+		['get_application', 'application', 'get', 'Get detailed application information by UUID.', [
+			'uuid' => ['string', 'UUID of the application to retrieve'],
+		], ['uuid']],
+		['create_application', 'application', 'create', 'Create a new application with unique name.', [
+			'name' => ['string', 'Name of the application (required)'],
+			'description' => ['string', 'Description of what the application does'],
+			'domain' => ['string', 'Domain or URL where the application is hosted'],
+		], ['name']],
+		['update_application', 'application', 'update', 'Update application (owner/update permission required). Provide UUID and fields to update.', [
+			'uuid' => ['string', 'UUID of the application to update'],
+			'name' => ['string', 'New name for the application'],
+			'description' => ['string', 'New description'],
+			'domain' => ['string', 'New domain or URL'],
+		], ['uuid']],
+		['delete_application', 'application', 'delete', 'Permanently delete application (owner/delete permission required). Cannot be undone.', [
+			'uuid' => ['string', 'UUID of the application to delete'],
+		], ['uuid']],
 	];
-
-	/**
-	 * The application descriptors that change nothing.
-	 *
-	 * @return array<int, array<string, mixed>> The read descriptors.
-	 */
-	private static function readFunctions(): array {
-		return self::READ_FUNCTIONS;
-	}//end readFunctions()
-
-	/**
-	 * The function definitions that change data.
-	 *
-	 * @var array<int, array<string, mixed>>
-	 */
-	private const WRITE_FUNCTIONS = [
-		[
-			'name' => 'create_application',
-			'subject' => 'application',
-			'action' => 'create',
-			'description' => 'Create a new application with unique name.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'name' => [
-						'type' => 'string',
-						'description' => 'Name of the application (required)',
-					],
-					'description' => [
-						'type' => 'string',
-						'description' => 'Description of what the application does',
-					],
-					'domain' => [
-						'type' => 'string',
-						'description' => 'Domain or URL where the application is hosted',
-					],
-				],
-				'required' => ['name'],
-			],
-		],
-		[
-			'name' => 'update_application',
-			'subject' => 'application',
-			'action' => 'update',
-			'description' => 'Update application (owner/update permission required). Provide UUID and fields to update.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'uuid' => [
-						'type' => 'string',
-						'description' => 'UUID of the application to update',
-					],
-					'name' => [
-						'type' => 'string',
-						'description' => 'New name for the application',
-					],
-					'description' => [
-						'type' => 'string',
-						'description' => 'New description',
-					],
-					'domain' => [
-						'type' => 'string',
-						'description' => 'New domain or URL',
-					],
-				],
-				'required' => ['uuid'],
-			],
-		],
-		[
-			'name' => 'delete_application',
-			'subject' => 'application',
-			'action' => 'delete',
-			'description' => 'Permanently delete application (owner/delete permission required). Cannot be undone.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'uuid' => [
-						'type' => 'string',
-						'description' => 'UUID of the application to delete',
-					],
-				],
-				'required' => ['uuid'],
-			],
-		],
-	];
-
-	/**
-	 * The application descriptors that change state.
-	 *
-	 * Split from the reading half only to keep each method inside the
-	 * ExcessiveMethodLength budget — declaring `subject`/`action` on every
-	 * descriptor pushed the single combined table past it. The read/write line
-	 * is the honest place to cut, since it is the same boundary the grant
-	 * matrix groups on.
-	 *
-	 * @return array<int, array<string, mixed>> The write descriptors.
-	 */
-	private static function writeFunctions(): array {
-		return self::WRITE_FUNCTIONS;
-	}//end writeFunctions()
 
 	/**
 	 * List applications
@@ -516,10 +388,6 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		// Convert snake_case to camelCase for PSR compliance.
-		$methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-
-		// Call the method directly (LLPhant-compatible).
-		return $this->$methodName(...array_values($parameters));
+		return $this->invokeFunction(functionName: $functionName, parameters: $parameters);
 	}//end executeFunction()
 }//end class

@@ -37,9 +37,7 @@ use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use Twig\Environment;
-use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
-use Twig\Sandbox\SecurityPolicy;
 use Twig\TemplateWrapper;
 
 /**
@@ -154,126 +152,56 @@ class MappingService implements MappingServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly ?IEventDispatcher $events = null,
 	) {
-		$loader = new ArrayLoader([]);
-		// Autoescape disabled — mappings transform data (not HTML), and the
-		// sandbox SecurityPolicy below does not allow the `escape` filter that
-		// autoescaping injects into every output expression.
-		$this->twig = new Environment($loader, ['autoescape' => false]);
-		$this->twig->addExtension(new MappingExtension());
+		$this->twig         = $this->createTwig();
+		$this->mappingCache = $this->createMappingCache(cacheFactory: $cacheFactory);
+	}//end __construct()
 
-		// Functions only another app can provide — `callSource` needs
-		// OpenConnector's CallService, the contract lookups its contract
-		// service. Collected BEFORE the sandbox policy is built, because a
-		// contributed function that is not allowlisted fails as "unknown
-		// function" inside a mapping, nowhere near its registration.
+	/**
+	 * Build the Twig environment mappings render in.
+	 *
+	 * Autoescape is disabled: mappings transform data (not HTML), and the
+	 * sandbox policy does not allow the `escape` filter that autoescaping
+	 * injects into every output expression. Functions only another app can
+	 * provide — `callSource` needs OpenConnector's CallService, the contract
+	 * lookups its contract service — are collected BEFORE the sandbox policy
+	 * is built, because a contributed function that is not allowlisted fails
+	 * as "unknown function" inside a mapping, nowhere near its registration.
+	 *
+	 * @return Environment The sandboxed environment.
+	 */
+	private function createTwig(): Environment {
+		$twig = new Environment(new ArrayLoader([]), ['autoescape' => false]);
+		$twig->addExtension(new MappingExtension());
+
 		$contributed = $this->contributedFunctions();
 		foreach ($contributed['functions'] as $function) {
-			$this->twig->addFunction($function);
+			$twig->addFunction($function);
 		}
 
-		$this->twig->addRuntimeLoader(
-			new MappingRuntimeLoader(
-				mappingService: $this,
-				mappingMapper: $this->mappingMapper,
-			)
-		);
+		$twig->addRuntimeLoader(new MappingRuntimeLoader(mappingService: $this, mappingMapper: $this->mappingMapper));
+		$twig->addExtension((new MappingTwigSandbox())->extension(contributedNames: $contributed['names']));
 
-		// SSTI hardening (SEC-SVC-3): user-authored mapping templates are
-		// compiled and rendered here, so they MUST run inside a Twig sandbox.
-		// Only the tags, filters and functions actually used by mappings are
-		// allowlisted; method/property access on objects is denied entirely.
-		$policy = new SecurityPolicy(
-			allowedTags: [
-				'if',
-				'for',
-				'set',
-				'apply',
-			],
-			allowedFilters: [
-				'date',
-				'date_modify',
-				'upper',
-				'lower',
-				'trim',
-				'length',
-				'default',
-				'number_format',
-				'round',
-				'abs',
-				'split',
-				'join',
-				'slice',
-				'first',
-				'last',
-				'replace',
-				'format',
-				'merge',
-				'keys',
-				'escape',
-				'raw',
-				'b64enc',
-				'b64dec',
-				'json_decode',
-				// Twig core's own filter, and the counterpart to the
-				// `json_decode` above it. It was missing, so a stored mapping
-				// that encodes a value to JSON failed at RENDER with a Twig
-				// SecurityError naming a filter, nowhere near the mapping the
-				// operator was looking at. dossiq stores several ZGW
-				// properties as JSON text and encodes them in twelve of its
-				// default mappings; two of those sit in the setUp of the VNG
-				// ZGW contract collections, so the zaaktype create 400ed and
-				// took every later request in the collection with it.
-				// See #3663.
-				//
-				// It is a pure value transform. The policy already denies
-				// every method and property, so this widens nothing an
-				// attacker can reach.
-				'json_encode',
-				'zgw_enum',
-				'zgw_enum_reverse',
-				'zgw_extract_uuid',
-			],
-			allowedMethods: [],
-			allowedProperties: [],
-			allowedFunctions: array_merge(
-				[
-					'max',
-					'min',
-					'range',
-					'executeMapping',
-					'generateUuid',
-					// Ported from OpenConnector's copy so its mappings keep
-					// working once that copy is retired. `json_decode` is the
-					// name OpenConnector's templates use; OpenRegister's own
-					// runtime spells it `jsonDecode`. Both are exposed rather
-					// than renaming either, because a mapping is authored data
-					// — renaming a function silently breaks stored templates.
-					'json_decode',
-					'jsonDecode',
-					'createSlug',
-					'getFileContents',
-					'getFiles',
-					'b64enc',
-					'b64dec',
-					'zgwEnum',
-					'zgwEnumReverse',
-					'zgwExtractUuid',
-				],
-				$contributed['names']
-			)
-		);
-		$this->twig->addExtension(new SandboxExtension($policy, sandboxed: true));
+		return $twig;
+	}//end createTwig()
 
-		// Initialize distributed cache for mapping entity lookups.
+	/**
+	 * The distributed cache for mapping entity lookups, or null when it cannot be created.
+	 *
+	 * @param ICacheFactory $cacheFactory Cache factory for distributed caching.
+	 *
+	 * @return ICache|null The cache, or null to fall back to the database.
+	 */
+	private function createMappingCache(ICacheFactory $cacheFactory): ?ICache {
 		try {
-			$this->mappingCache = $cacheFactory->createDistributed(self::CACHE_PREFIX);
+			return $cacheFactory->createDistributed(self::CACHE_PREFIX);
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[MappingService] Failed to initialize distributed cache, falling back to DB-only',
 				context: ['error' => $e->getMessage()]
 			);
+			return null;
 		}
-	}//end __construct()
+	}//end createMappingCache()
 
 	/**
 	 * Replaces strings in array keys, helpful for characters like . in array keys.
@@ -289,18 +217,11 @@ class MappingService implements MappingServiceInterface {
 	public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array {
 		$result = [];
 		foreach ($array as $key => $value) {
-			$newKey = str_replace($toReplace, $replacement, (string)$key);
-
-			if (is_array($value) === true && $value !== []) {
-				$result[$newKey] = $this->encodeArrayKeys(
-					array: $value,
-					toReplace: $toReplace,
-					replacement: $replacement
-				);
-				continue;
-			}
-
+			$newKey          = str_replace($toReplace, $replacement, (string)$key);
 			$result[$newKey] = $value;
+			if (is_array($value) === true && $value !== []) {
+				$result[$newKey] = $this->encodeArrayKeys(array: $value, toReplace: $toReplace, replacement: $replacement);
+			}
 		}
 
 		return $result;
@@ -324,12 +245,7 @@ class MappingService implements MappingServiceInterface {
 			return $this->executeListMapping(mapping: $mapping, input: $input);
 		}
 
-		// Pass-through starts the output from the input, keys with dots encoded.
-		$dotArray = new Dot();
-		if ($mapping->getPassThrough() === true) {
-			$dotArray = new Dot($this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;'));
-		}
-
+		$dotArray = $this->startOutput(mapping: $mapping, input: $input);
 		foreach ($this->mappedValues(mapping: $mapping, input: $input) as $key => $value) {
 			$dotArray->set($key, $value);
 		}
@@ -341,6 +257,22 @@ class MappingService implements MappingServiceInterface {
 
 		return $this->unwrapRootValue(output: $output);
 	}//end executeMapping()
+
+	/**
+	 * The output a mapping starts from: empty, or for pass-through the input with dots in keys encoded.
+	 *
+	 * @param Mapping $mapping The mapping recipe.
+	 * @param array   $input   The input of the mapping.
+	 *
+	 * @return Dot The output to build on.
+	 */
+	private function startOutput(Mapping $mapping, array $input): Dot {
+		if ($mapping->getPassThrough() === true) {
+			return new Dot($this->encodeArrayKeys(array: $input, toReplace: '.', replacement: '&#46;'));
+		}
+
+		return new Dot();
+	}//end startOutput()
 
 	/**
 	 * Map every item of a list, passing the extra values of a `listInput` wrapper down to each item.
@@ -363,16 +295,31 @@ class MappingService implements MappingServiceInterface {
 		}
 
 		foreach ($input as $key => $value) {
-			// Mapping function expects an array for $input, make sure we always pass an array.
-			if (is_array($value) === false || empty($extraValues) === false) {
-				$value = array_merge((array)$value, ['value' => $value], $extraValues);
-			}
-
-			$listResult[$key] = $this->executeMapping(mapping: $mapping, input: $value);
+			$itemInput        = $this->listItemInput(value: $value, extraValues: $extraValues);
+			$listResult[$key] = $this->executeMapping(mapping: $mapping, input: $itemInput);
 		}
 
 		return $listResult;
 	}//end executeListMapping()
+
+	/**
+	 * The input for one list item: the item itself, or, for a scalar item or
+	 * when the list carries extra values, the item merged with `value` and the extras.
+	 *
+	 * The mapping function expects an array for its input, so this always returns one.
+	 *
+	 * @param mixed $value       The list item.
+	 * @param array $extraValues The extra values of a `listInput` wrapper.
+	 *
+	 * @return array The item's input.
+	 */
+	private function listItemInput(mixed $value, array $extraValues): array {
+		if (is_array($value) === false || empty($extraValues) === false) {
+			return array_merge((array)$value, ['value' => $value], $extraValues);
+		}
+
+		return $value;
+	}//end listItemInput()
 
 	/**
 	 * The value of every mapping rule, in rule order.
@@ -398,23 +345,37 @@ class MappingService implements MappingServiceInterface {
 				continue;
 			}
 
-			if (is_array($value) === true) {
-				$values[$key] = $value;
-				continue;
+			$values[$key] = $value;
+			if (is_array($value) === false) {
+				$values[$key] = $this->renderRule(mapping: $mapping, key: $key, template: (string)$value, input: $input);
 			}
-
-			try {
-				$values[$key] = html_entity_decode($this->getCachedTemplate(templateString: (string)$value)->render($input));
-			} catch (Throwable $e) {
-				$mappingName = $mapping->getName() ?? 'Unknown';
-				throw new Exception(
-					"Error for mapping: {$mappingName}, key: $key, value: $value and message: {$e->getMessage()}"
-				);
-			}
-		}//end foreach
+		}
 
 		return $values;
 	}//end mappedValues()
+
+	/**
+	 * Render one rule's value as a Twig template against the input.
+	 *
+	 * @param Mapping    $mapping  The mapping recipe, named in the error.
+	 * @param int|string $key      The output key, named in the error.
+	 * @param string     $template The rule's template.
+	 * @param array      $input    The input of the mapping.
+	 *
+	 * @return string The rendered value, HTML entities decoded.
+	 *
+	 * @throws Exception When the template fails to render
+	 */
+	private function renderRule(Mapping $mapping, int|string $key, string $template, array $input): string {
+		try {
+			return html_entity_decode($this->getCachedTemplate(templateString: $template)->render($input));
+		} catch (Throwable $e) {
+			$mappingName = $mapping->getName() ?? 'Unknown';
+			throw new Exception(
+				"Error for mapping: {$mappingName}, key: $key, value: $template and message: {$e->getMessage()}"
+			);
+		}
+	}//end renderRule()
 
 	/**
 	 * Remove the mapping's unset keys from the output.
@@ -546,7 +507,19 @@ class MappingService implements MappingServiceInterface {
 			return (self::STRING_FUNCTION_CASTS[$type])((string)$value);
 		}
 
-		return match ($type) {
+		return $this->applyNamedCast(value: $value, cast: $cast);
+	}//end applyCast()
+
+	/**
+	 * Apply a cast that is not a plain PHP function.
+	 *
+	 * @param mixed                $value The value to cast.
+	 * @param array<string, mixed> $cast  The cast type and argument, the key being cast and the dot array.
+	 *
+	 * @return mixed The cast value; an unknown cast leaves the value unchanged.
+	 */
+	private function applyNamedCast(mixed $value, array $cast): mixed {
+		return match ($cast['type']) {
 			'bool', 'boolean' => $this->isTrueCastValue(value: $value),
 			'?bool', '?boolean' => $this->castToNullableBool(value: $value),
 			'array' => (array)$value,
@@ -558,7 +531,7 @@ class MappingService implements MappingServiceInterface {
 			'intToMoneyString' => number_format(($value / 100), 2, ',', '.'),
 			default => $this->applyDocumentCast(value: $value, cast: $cast),
 		};
-	}//end applyCast()
+	}//end applyNamedCast()
 
 	/**
 	 * Whether a value reads as true: 1, `true` or `yes` (case-insensitive).
@@ -640,30 +613,51 @@ class MappingService implements MappingServiceInterface {
 	 * @return mixed The cast value; an unknown cast leaves the value unchanged.
 	 */
 	private function applyDocumentCast(mixed $value, array $cast): mixed {
-		$argument = $cast['argument'];
-		$dotArray = $cast['dotArray'];
-		switch ($cast['type']) {
-			case 'keyCantBeValue':
-				if ($cast['key'] === $value) {
-					$dotArray->delete($cast['key']);
-				}
-				return $value;
-			case 'unsetIfValue':
-				if ($this->matchesCastArgument(value: $value, argument: $argument) === true) {
-					$dotArray->delete($cast['key']);
-				}
-				return $value;
-			case 'setNullIfValue':
-				if ($this->matchesCastArgument(value: $value, argument: $argument) === true) {
-					return null;
-				}
-				return $value;
-			case 'countValue':
-				return $this->countCastValue(value: $value, cast: $cast);
-			default:
-				return $value;
-		}//end switch
+		return match ($cast['type']) {
+			'keyCantBeValue' => $this->unsetKeyWhen(value: $value, cast: $cast, matches: $cast['key'] === $value),
+			'unsetIfValue' => $this->unsetKeyWhen(
+				value: $value,
+				cast: $cast,
+				matches: $this->matchesCastArgument(value: $value, argument: $cast['argument'])
+			),
+			'setNullIfValue' => $this->nullWhenMatching(value: $value, argument: $cast['argument']),
+			'countValue' => $this->countCastValue(value: $value, cast: $cast),
+			default => $value,
+		};
 	}//end applyDocumentCast()
+
+	/**
+	 * Delete the key being cast when a condition holds; the value is returned unchanged.
+	 *
+	 * @param mixed                $value   The value being cast.
+	 * @param array<string, mixed> $cast    The key being cast and the dot array.
+	 * @param bool                 $matches Whether the key is deleted.
+	 *
+	 * @return mixed The value.
+	 */
+	private function unsetKeyWhen(mixed $value, array $cast, bool $matches): mixed {
+		if ($matches === true) {
+			$cast['dotArray']->delete($cast['key']);
+		}
+
+		return $value;
+	}//end unsetKeyWhen()
+
+	/**
+	 * The `setNullIfValue` cast: null when the value matches the argument.
+	 *
+	 * @param mixed       $value    The value being cast.
+	 * @param string|null $argument The cast argument.
+	 *
+	 * @return mixed Null on a match, otherwise the value.
+	 */
+	private function nullWhenMatching(mixed $value, ?string $argument): mixed {
+		if ($this->matchesCastArgument(value: $value, argument: $argument) === true) {
+			return null;
+		}
+
+		return $value;
+	}//end nullWhenMatching()
 
 	/**
 	 * The `countValue:<key>` cast: the number of items under another key.
@@ -699,12 +693,19 @@ class MappingService implements MappingServiceInterface {
 			return true;
 		}
 
-		if ($argument !== '') {
-			return false;
-		}
-
-		return empty($value) === true || (is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true);
+		return $argument === '' && $this->isEmptyCastValue(value: $value) === true;
 	}//end matchesCastArgument()
+
+	/**
+	 * Whether a value is empty, or an array whose leaves are all empty.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for an empty value.
+	 */
+	private function isEmptyCastValue(mixed $value): bool {
+		return empty($value) === true || (is_array($value) === true && $this->areAllArrayKeysNull(array: $value) === true);
+	}//end isEmptyCastValue()
 
 	/**
 	 * Checks if all keys in multi-dimensional array are null.
@@ -714,22 +715,29 @@ class MappingService implements MappingServiceInterface {
 	 * @return bool True if array keys are null else false.
 	 */
 	private function areAllArrayKeysNull(array $array): bool {
-		if (empty($array) === true) {
-			return true;
-		}
-
 		foreach ($array as $value) {
-			if (is_array($value) === true) {
-				if ($this->areAllArrayKeysNull(array: $value) === false) {
-					return false;
-				}
-			} elseif (empty($value) === false) {
+			if ($this->isEmptyLeaf(value: $value) === false) {
 				return false;
 			}
 		}
 
 		return true;
 	}//end areAllArrayKeysNull()
+
+	/**
+	 * Whether a value is empty: an array when all its keys are, anything else by empty().
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for an empty value.
+	 */
+	private function isEmptyLeaf(mixed $value): bool {
+		if (is_array($value) === true) {
+			return $this->areAllArrayKeysNull(array: $value);
+		}
+
+		return empty($value);
+	}//end isEmptyLeaf()
 
 	/**
 	 * Returns a compiled Twig template from the in-memory cache, compiling on first use.
@@ -761,23 +769,10 @@ class MappingService implements MappingServiceInterface {
 	 * @spec exclude Pure coordinate-string parsing helper; no orchestration or persisted state.
 	 */
 	public function coordinateStringToArray(string $coordinates): array {
-		$halves = explode(' ', $coordinates);
-		$point = [];
-		$coordinateArray = [];
-
-		foreach ($halves as $half) {
-			if (count($point) > 1) {
-				$coordinateArray[] = $point;
-				$point = [];
-			}
-
-			$point[] = $half;
-		}//end foreach
-
-		$coordinateArray[] = $point;
-
+		// Pairs of space-separated values; an odd value out ends as a pair of one.
+		$coordinateArray = array_chunk(explode(' ', $coordinates), 2);
 		if (count($coordinateArray) === 1) {
-			$coordinateArray = $coordinateArray[0];
+			return $coordinateArray[0];
 		}
 
 		return $coordinateArray;
@@ -799,30 +794,39 @@ class MappingService implements MappingServiceInterface {
 	 * @spec exclude Cache-wrapped read delegating to MappingMapper::find; read-through caching plumbing.
 	 */
 	public function getMapping(string $mappingId): Mapping {
-		// Try distributed cache first.
-		if ($this->mappingCache !== null) {
-			$cached = $this->mappingCache->get($mappingId);
-			if ($cached !== null) {
-				$mapping = new Mapping();
-				$mapping->hydrate($cached);
-				if (isset($cached['id']) === true) {
-					$mapping->setId($cached['id']);
-				}
-
-				return $mapping;
-			}
+		$mapping = $this->cachedMapping(mappingId: $mappingId);
+		if ($mapping !== null) {
+			return $mapping;
 		}
 
-		// Cache miss — fetch from database.
+		// Cache miss — fetch from database, then store for subsequent requests.
 		$mapping = $this->mappingMapper->find($mappingId);
-
-		// Store in distributed cache for subsequent requests.
-		if ($this->mappingCache !== null) {
-			$this->mappingCache->set($mappingId, $mapping->jsonSerialize(), self::MAPPING_CACHE_TTL);
-		}
+		$this->mappingCache?->set($mappingId, $mapping->jsonSerialize(), self::MAPPING_CACHE_TTL);
 
 		return $mapping;
 	}//end getMapping()
+
+	/**
+	 * The mapping from the distributed cache, or null when it is not there.
+	 *
+	 * @param string $mappingId The mapping's identifier.
+	 *
+	 * @return Mapping|null The cached mapping, hydrated with its id.
+	 */
+	private function cachedMapping(string $mappingId): ?Mapping {
+		$cached = $this->mappingCache?->get($mappingId);
+		if ($cached === null) {
+			return null;
+		}
+
+		$mapping = new Mapping();
+		$mapping->hydrate($cached);
+		if (isset($cached['id']) === true) {
+			$mapping->setId($cached['id']);
+		}
+
+		return $mapping;
+	}//end cachedMapping()
 
 	/**
 	 * Retrieves all available mappings.
@@ -854,13 +858,7 @@ class MappingService implements MappingServiceInterface {
 		}
 
 		try {
-			$event = new RegisterMappingFunctionsEvent();
-			$this->events->dispatchTyped($event);
-
-			return [
-				'functions' => $event->getFunctions(),
-				'names' => $event->getAllowedNames(),
-			];
+			return $this->dispatchContributedFunctions(events: $this->events);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[MappingService] Could not collect contributed Twig functions: ' . $e->getMessage(),
@@ -869,6 +867,22 @@ class MappingService implements MappingServiceInterface {
 
 			return ['functions' => [], 'names' => []];
 		}//end try
-
 	}//end contributedFunctions()
+
+	/**
+	 * Ask other apps for their Twig functions.
+	 *
+	 * @param IEventDispatcher $events The dispatcher the contributing apps listen on.
+	 *
+	 * @return array{functions: array<int, \Twig\TwigFunction>, names: array<int, string>} The functions and names.
+	 */
+	private function dispatchContributedFunctions(IEventDispatcher $events): array {
+		$event = new RegisterMappingFunctionsEvent();
+		$events->dispatchTyped($event);
+
+		return [
+			'functions' => $event->getFunctions(),
+			'names' => $event->getAllowedNames(),
+		];
+	}//end dispatchContributedFunctions()
 }//end class

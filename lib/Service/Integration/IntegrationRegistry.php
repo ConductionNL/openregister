@@ -52,7 +52,7 @@ use Psr\Log\LoggerInterface;
  * source are rejected at registration time so misconfigurations fail
  * at bootstrap, not on first call.
  */
-class IntegrationRegistry {
+class IntegrationRegistry implements IntegrationCatalogueInterface, PageWidgetRegistryInterface {
 
 	/**
 	 * Registered providers, keyed by id.
