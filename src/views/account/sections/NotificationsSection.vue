@@ -26,11 +26,7 @@
 					inputId="email-digest"
 					@update:modelValue="save" />
 			</div>
-			<p
-				v-if="message"
-				:class="{ section__error: isError, section__success: !isError }">
-				{{ message }}
-			</p>
+			<SectionStatus :message="message" :isError="isError" />
 		</div>
 	</div>
 </template>
@@ -40,10 +36,15 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
+import SectionStatus from '../../../components/shared/SectionStatus.vue'
+import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 export default {
 	name: 'NotificationsSection',
-	components: { NcCheckboxRadioSwitch, NcSelect },
+	components: { NcCheckboxRadioSwitch, NcSelect, SectionStatus },
+
+	mixins: [sectionStatus],
+
 	data() {
 		return {
 			loading: true,
@@ -55,8 +56,6 @@ export default {
 				emailDigest: 'daily',
 			},
 
-			message: '',
-			isError: false,
 			digestOptions: ['none', 'daily', 'weekly'],
 			toggleLabels: {
 				objectChanges: t('openregister', 'Object changes in owned objects'),
@@ -100,13 +99,12 @@ export default {
 					this.prefs,
 				)
 				this.prefs = { ...this.prefs, ...data }
-				this.message = t('openregister', 'Preferences saved')
-				this.isError = false
+				this.setStatus(t('openregister', 'Preferences saved'))
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to save preferences')
-				this.isError = true
+				this.setStatusError(
+					e,
+					t('openregister', 'Failed to save preferences'),
+				)
 			}
 		},
 	},
