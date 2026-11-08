@@ -613,6 +613,27 @@ class FlowTimerServiceTest extends TestCase {
 		}
 	}//end testTheSecondExtensionIsRefusedNamingTheBoundAndTheOverrideIsRecordedAsOne()
 
+	public function testAnExtensionRecordsItsActorReasonAndBasisAndRefusesANonPositiveAmountFirst(): void {
+		$this->task();
+		$start = $this->at('2026-09-01 09:00');
+		$timer = $this->service->arm(config: $this->config(), actor: null, now: $start);
+		$uuid = (string)$timer->getUuid();
+
+		try {
+			$this->service->extend(uuid: $uuid, amount: -2, unit: 'no-such-unit', rationale: 'x', actor: 'carol', now: $start->modify('+1 day'));
+			self::fail('a negative extension went through');
+		} catch (FlowTimerValidationException $refused) {
+			self::assertStringContainsString('must be positive; got -2', $refused->getMessage(), 'the amount is refused before the unit is read');
+		}
+
+		$this->service->extend(uuid: $uuid, amount: 3, unit: 'calendarDays', rationale: 'Verdaging', actor: 'carol', now: $start->modify('+2 days'));
+		$this->service->extendWithOverride(uuid: $uuid, amount: 4, unit: 'hours', rationale: 'Override', actor: 'supervisor', now: $start->modify('+3 days'));
+		$events = $this->service->history(uuid: $uuid);
+		self::assertSame([FlowTimerEvent::TYPE_EXTENDED, 'carol', 'Verdaging (+3 calendarDays)', 'Awb 4:14'], [$events[1]->getType(), $events[1]->getActor(), $events[1]->getReason(), $events[1]->getBasis()]);
+		self::assertSame([FlowTimerEvent::TYPE_EXTENDED, 'supervisor', 'Override (+4 hours)', 'override'], [$events[2]->getType(), $events[2]->getActor(), $events[2]->getReason(), $events[2]->getBasis()]);
+		self::assertSame(2, $this->store->timers[$uuid]->getExtensionCount());
+	}//end testAnExtensionRecordsItsActorReasonAndBasisAndRefusesANonPositiveAmountFirst()
+
 	public function testExtendingAfterExpiryIsRefusedAndTheBreachStays(): void {
 		$this->task();
 		$start = $this->at('2026-09-01 09:00');
