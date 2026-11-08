@@ -333,6 +333,7 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Rbac\AdminGateInterface::class => \OCA\OpenRegister\Service\Rbac\AdminGate::class,
 		AdministeredValidationEnforcerInterface::class => AdministeredValidationEnforcer::class,
 		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
@@ -352,9 +353,14 @@ final class ContractBindings {
 		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
+		\OCA\OpenRegister\Service\Rbac\ObjectSharingServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectSharingService::class,
+		\OCA\OpenRegister\Service\Rbac\PermissionReportScopeInterface::class => \OCA\OpenRegister\Service\Rbac\PermissionReportScope::class,
+		\OCA\OpenRegister\Service\Rbac\ReachRevocationServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ReachRevocationService::class,
 		RouterNodeInterface::class => RouterNode::class,
+		\OCA\OpenRegister\Service\Rbac\ScopeAuditInterface::class => \OCA\OpenRegister\Service\Rbac\ScopeAudit::class,
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
+		\OCA\OpenRegister\Service\UserServiceInterface::class => \OCA\OpenRegister\Service\UserService::class,
 		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,

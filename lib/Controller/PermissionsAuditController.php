@@ -58,12 +58,12 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\PermissionsAuditControllerServices;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\AdminGate;
+use OCA\OpenRegister\Service\Rbac\AdminGateInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
-use OCA\OpenRegister\Service\Rbac\PermissionReportScope;
-use OCA\OpenRegister\Service\Rbac\ScopeAudit;
+use OCA\OpenRegister\Service\Rbac\PermissionReportScopeInterface;
+use OCA\OpenRegister\Service\Rbac\ScopeAuditInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -106,23 +106,23 @@ class PermissionsAuditController extends Controller {
 	/**
 	 * Resolves which registers and schemas a report covers.
 	 *
-	 * @var PermissionReportScope
+	 * @var PermissionReportScopeInterface
 	 */
-	private readonly PermissionReportScope $scope;
+	private readonly PermissionReportScopeInterface $scope;
 
 	/**
 	 * Assembles the per-rule audit.
 	 *
-	 * @var ScopeAudit
+	 * @var ScopeAuditInterface
 	 */
-	private readonly ScopeAudit $audit;
+	private readonly ScopeAuditInterface $audit;
 
 	/**
 	 * Answers whether the caller is an admin.
 	 *
-	 * @var AdminGate
+	 * @var AdminGateInterface
 	 */
-	private readonly AdminGate $adminGate;
+	private readonly AdminGateInterface $adminGate;
 
 	/**
 	 * Constructor.
