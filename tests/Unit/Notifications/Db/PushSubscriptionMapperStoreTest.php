@@ -45,6 +45,21 @@ class PushSubscriptionMapperStoreTest extends TestCase {
 	}//end mapper()
 
 	/**
+	 * The unsaved subscription a controller hands to store().
+	 *
+	 * @return PushSubscription
+	 */
+	private function candidate(): PushSubscription {
+		$candidate = new PushSubscription();
+		$candidate->setUserId('alice');
+		$candidate->setEndpoint('https://push.example/e');
+		$candidate->setP256dh('key');
+		$candidate->setAuth('secret');
+		$candidate->setUserAgent('UA');
+		return $candidate;
+	}//end candidate()
+
+	/**
 	 * A new endpoint is inserted with the owner, keys, user agent and a creation time.
 	 *
 	 * @return void
@@ -56,7 +71,7 @@ class PushSubscriptionMapperStoreTest extends TestCase {
 		$mapper->expects($this->never())->method('update');
 		$mapper->expects($this->once())->method('insert')->willReturnArgument(0);
 
-		$result = $mapper->store('alice', 'https://push.example/e', 'key', 'secret', 'UA');
+		$result = $mapper->store($this->candidate());
 
 		$this->assertSame('alice', $result->getUserId());
 		$this->assertSame('https://push.example/e', $result->getEndpoint());
@@ -86,7 +101,7 @@ class PushSubscriptionMapperStoreTest extends TestCase {
 		$mapper->expects($this->never())->method('insert');
 		$mapper->expects($this->once())->method('update')->with($existing)->willReturnArgument(0);
 
-		$result = $mapper->store('alice', 'https://push.example/e', 'key', 'secret', 'UA');
+		$result = $mapper->store($this->candidate());
 
 		$this->assertSame(7, $result->getId());
 		$this->assertSame('alice', $result->getUserId());

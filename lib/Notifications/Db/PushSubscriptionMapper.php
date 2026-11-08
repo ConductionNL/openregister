@@ -90,39 +90,32 @@ class PushSubscriptionMapper extends QBMapper {
 	}//end findByUserAndEndpoint()
 
 	/**
-	 * Store (upsert) a subscription for a user + endpoint.
+	 * Store (upsert) a subscription for its owner + endpoint.
 	 *
-	 * Re-subscribing the same endpoint refreshes the keys rather than
-	 * creating a duplicate row.
+	 * Re-subscribing the same endpoint refreshes the keys and user agent of the
+	 * existing row rather than creating a duplicate.
 	 *
-	 * @param string $userId The owning user id.
-	 * @param string $endpoint The push endpoint URL.
-	 * @param string $p256dh The client P-256 public key.
-	 * @param string $auth The client auth secret.
-	 * @param string $userAgent The browser user agent (diagnostics).
+	 * @param PushSubscription $subscription The unsaved subscription: owner, endpoint, keys, user agent.
 	 *
 	 * @return PushSubscription The persisted subscription.
 	 *
 	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
-	public function store(string $userId, string $endpoint, string $p256dh, string $auth, string $userAgent): PushSubscription {
-		$existing = $this->findByUserAndEndpoint(userId: $userId, endpoint: $endpoint);
+	public function store(PushSubscription $subscription): PushSubscription {
+		$existing = $this->findByUserAndEndpoint(
+			userId: (string)$subscription->getUserId(),
+			endpoint: (string)$subscription->getEndpoint()
+		);
 		if ($existing !== null) {
-			$existing->setP256dh($p256dh);
-			$existing->setAuth($auth);
-			$existing->setUserAgent($userAgent);
+			$existing->setP256dh($subscription->getP256dh());
+			$existing->setAuth($subscription->getAuth());
+			$existing->setUserAgent($subscription->getUserAgent());
 			return $this->update(entity: $existing);
 		}
 
-		$entity = new PushSubscription();
-		$entity->setUserId($userId);
-		$entity->setEndpoint($endpoint);
-		$entity->setP256dh($p256dh);
-		$entity->setAuth($auth);
-		$entity->setUserAgent($userAgent);
-		$entity->setCreatedAt(new DateTime());
+		$subscription->setCreatedAt(new DateTime());
 
-		return $this->insert(entity: $entity);
+		return $this->insert(entity: $subscription);
 	}//end store()
 
 	/**

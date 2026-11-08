@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\Notifications\Db\PushSubscription;
 use OCA\OpenRegister\Notifications\Db\PushSubscriptionMapper;
 use OCA\OpenRegister\Notifications\Controller\Support\WebPushControllerServices;
 use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
@@ -151,13 +152,13 @@ class WebPushController extends Controller {
 			return new JSONResponse(['error' => 'endpoint, keys.p256dh and keys.auth are required'], Http::STATUS_BAD_REQUEST);
 		}
 
-		$subscription = $this->subscriptionMapper->store(
-			userId: $user->getUID(),
-			endpoint: $endpoint,
-			p256dh: $p256dh,
-			auth: $auth,
-			userAgent: $this->request->getHeader('User-Agent')
-		);
+		$subscription = new PushSubscription();
+		$subscription->setUserId($user->getUID());
+		$subscription->setEndpoint($endpoint);
+		$subscription->setP256dh($p256dh);
+		$subscription->setAuth($auth);
+		$subscription->setUserAgent($this->request->getHeader('User-Agent'));
+		$subscription = $this->subscriptionMapper->store(subscription: $subscription);
 
 		return new JSONResponse($subscription->jsonSerialize(), Http::STATUS_CREATED);
 	}//end subscribe()
