@@ -28,12 +28,12 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
 use OCA\OpenRegister\Controller\Support\ConversationFailure;
+use OCA\OpenRegister\Db\FeedbackMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
-use OCA\OpenRegister\Mcp\Db\Conversation;
-use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
-use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -76,9 +76,9 @@ class ConversationController extends Controller {
 	/**
 	 * Feedback mapper
 	 *
-	 * @var FeedbackMapper
+	 * @var FeedbackMapperInterface
 	 */
-	private FeedbackMapper $feedbackMapper;
+	private FeedbackMapperInterface $feedbackMapper;
 
 	/**
 	 * Agent mapper

@@ -31,7 +31,7 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends                     QBMapper<Consumer>
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class ConsumerMapper extends QBMapper {
+class ConsumerMapper extends QBMapper implements ConsumerMapperInterface {
 
 	use ColumnFiltersTrait;
 
