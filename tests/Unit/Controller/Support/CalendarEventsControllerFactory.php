@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\CalendarEventsController;
 
 /**
- * Builds CalendarEventsController from its services as separate arguments.
+ * Builds CalendarEventsController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class CalendarEventsControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class CalendarEventsControllerFactory {
 		return [
 			$appName,
 			$request,
-			$calendarEventService,
-			$calendarLinkService,
-			$objectService,
-			$permissions,
+			new \OCA\OpenRegister\Controller\Support\CalendarEventsControllerServices(
+				calendarEventService: $calendarEventService,
+				calendarLinkService: $calendarLinkService,
+				objectService: $objectService,
+				permissions: $permissions,
+			),
 		];
 	}//end args()
 

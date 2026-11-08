@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\FormLinksController;
 
 /**
- * Builds FormLinksController from its services as separate arguments.
+ * Builds FormLinksController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class FormLinksControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class FormLinksControllerFactory {
 		return [
 			$appName,
 			$request,
-			$formLinkService,
-			$objectService,
-			$l10n,
-			$logger,
+			new \OCA\OpenRegister\Controller\Support\FormLinksControllerServices(
+				formLinkService: $formLinkService,
+				objectService: $objectService,
+				l10n: $l10n,
+				logger: $logger,
+			),
 		];
 	}//end args()
 

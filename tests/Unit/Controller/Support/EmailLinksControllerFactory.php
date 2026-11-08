@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\EmailLinksController;
 
 /**
- * Builds EmailLinksController from its services as separate arguments.
+ * Builds EmailLinksController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class EmailLinksControllerFactory {
 	/**
@@ -36,9 +36,11 @@ final class EmailLinksControllerFactory {
 		return [
 			$appName,
 			$request,
-			$emailLinkService,
-			$objectService,
-			$permissions,
+			new \OCA\OpenRegister\Controller\Support\EmailLinksControllerServices(
+				emailLinkService: $emailLinkService,
+				objectService: $objectService,
+				permissions: $permissions,
+			),
 		];
 	}//end args()
 

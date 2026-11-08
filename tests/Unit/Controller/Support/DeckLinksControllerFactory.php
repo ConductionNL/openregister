@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\DeckLinksController;
 
 /**
- * Builds DeckLinksController from its services as separate arguments.
+ * Builds DeckLinksController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class DeckLinksControllerFactory {
 	/**
@@ -36,9 +36,11 @@ final class DeckLinksControllerFactory {
 		return [
 			$appName,
 			$request,
-			$deckLinkService,
-			$objectService,
-			$settingsService,
+			new \OCA\OpenRegister\Controller\Support\DeckLinksControllerServices(
+				deckLinkService: $deckLinkService,
+				objectService: $objectService,
+				settingsService: $settingsService,
+			),
 		];
 	}//end args()
 

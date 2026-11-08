@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\ActivityLinksController;
 
 /**
- * Builds ActivityLinksController from its services as separate arguments.
+ * Builds ActivityLinksController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class ActivityLinksControllerFactory {
 	/**
@@ -36,9 +36,11 @@ final class ActivityLinksControllerFactory {
 		return [
 			$appName,
 			$request,
-			$filterService,
-			$objectService,
-			$visibility,
+			new \OCA\OpenRegister\Controller\Support\ActivityLinksControllerServices(
+				filterService: $filterService,
+				objectService: $objectService,
+				visibility: $visibility,
+			),
 		];
 	}//end args()
 
