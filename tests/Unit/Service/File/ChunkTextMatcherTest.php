@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Exception\ChunkMatcherException;
 use OCA\OpenRegister\Files\Service\File\ChunkTextMatcher;
+use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
+use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -50,6 +52,20 @@ class ChunkTextMatcherTest extends TestCase {
 		$this->matcher = new ChunkTextMatcher();
 
 	}//end setUp()
+
+	/**
+	 * Build the request carrying the needle and its match options.
+	 *
+	 * @param string $needle The value to match.
+	 * @param bool $wholeWord Match whole words only.
+	 * @param bool $caseSensitive Match case-sensitively.
+	 *
+	 * @return ManualEntityRequest
+	 */
+	private function request(string $needle, bool $wholeWord, bool $caseSensitive): ManualEntityRequest {
+		return (new ManualEntityRequest(fileId: 1, value: $needle, type: 'PERSON', actor: $this->createMock(IUser::class)))
+			->withMatching(wholeWord: $wholeWord, caseSensitive: $caseSensitive);
+	}//end request()
 
 	/**
 	 * Build a `Chunk` entity with the fields the matcher consults.
@@ -85,9 +101,7 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$matches = $this->matcher->match(
 			chunks: [$chunk],
-			needle: 'Jan Jansen',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: 'Jan Jansen', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -114,9 +128,7 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$matches = $this->matcher->match(
 			chunks: [$chunk],
-			needle: 'Jan',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: 'Jan', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -154,9 +166,7 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$matches = $this->matcher->match(
 			chunks: [$chunk0, $chunk1],
-			needle: 'Jansen',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: 'Jansen', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -190,9 +200,7 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$matches = $this->matcher->match(
 			chunks: [$chunk0, $chunk1],
-			needle: 'Anna',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: 'Anna', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -226,16 +234,12 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$first = $this->matcher->match(
 			chunks: [$chunk0, $chunk1],
-			needle: 'Jansen',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: 'Jansen', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 		$second = $this->matcher->match(
 			chunks: [$chunk0, $chunk1],
-			needle: 'Jansen',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: 'Jansen', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -258,9 +262,7 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$matches = $this->matcher->match(
 			chunks: [$chunk],
-			needle: 'Jan',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: 'Jan', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -283,9 +285,7 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$matches = $this->matcher->match(
 			chunks: [$chunk],
-			needle: 'Jan',
-			wholeWord: false,
-			caseSensitive: true,
+			request: $this->request(needle: 'Jan', wholeWord: false, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -308,9 +308,7 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$matches = $this->matcher->match(
 			chunks: [$chunk],
-			needle: 'Jan',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: 'Jan', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -333,9 +331,7 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$matches = $this->matcher->match(
 			chunks: [$chunk],
-			needle: 'Jan',
-			wholeWord: true,
-			caseSensitive: false,
+			request: $this->request(needle: 'Jan', wholeWord: true, caseSensitive: false),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -358,9 +354,7 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$matches = $this->matcher->match(
 			chunks: [$chunk],
-			needle: 'Jan Jansen',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: 'Jan Jansen', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -376,9 +370,7 @@ class ChunkTextMatcherTest extends TestCase {
 	public function testEmptyChunkList(): void {
 		$matches = $this->matcher->match(
 			chunks: [],
-			needle: 'Jan',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: 'Jan', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 
@@ -399,9 +391,7 @@ class ChunkTextMatcherTest extends TestCase {
 		try {
 			$this->matcher->match(
 				chunks: [],
-				needle: $longNeedle,
-				wholeWord: true,
-				caseSensitive: true,
+				request: $this->request(needle: $longNeedle, wholeWord: true, caseSensitive: true),
 				chunkOverlap: self::CHUNK_OVERLAP
 			);
 			$this->fail(message: 'Expected ChunkMatcherException');
@@ -432,9 +422,7 @@ class ChunkTextMatcherTest extends TestCase {
 
 		$matches = $this->matcher->match(
 			chunks: [$chunk],
-			needle: '',
-			wholeWord: true,
-			caseSensitive: true,
+			request: $this->request(needle: '', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
 		);
 

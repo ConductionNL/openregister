@@ -31,6 +31,7 @@ use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
 use OCA\OpenRegister\Files\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileServiceInterface;
@@ -766,14 +767,9 @@ class FileTextController extends Controller {
 		);
 
 		try {
-			$result = $this->manualEntityService->addManualEntity(
-				fileId: $fileId,
-				value: $input['value'],
-				type: $input['type'],
-				wholeWord: $input['wholeWord'],
-				caseSensitive: $input['caseSensitive'],
-				actor: $user
-			);
+			$manualEntity = (new ManualEntityRequest(fileId: $fileId, value: $input['value'], type: $input['type'], actor: $user))
+				->withMatching(wholeWord: $input['wholeWord'], caseSensitive: $input['caseSensitive']);
+			$result       = $this->manualEntityService->addManualEntity(request: $manualEntity);
 		} catch (ManualEntityException $e) {
 			return $this->mapManualEntityException(exception: $e, fileId: $fileId);
 		} catch (Throwable $e) {
