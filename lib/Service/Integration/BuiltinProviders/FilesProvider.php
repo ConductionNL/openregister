@@ -232,25 +232,36 @@ class FilesProvider extends AbstractIntegrationProvider {
 				continue;
 			}
 
-			$row = [];
-			foreach (['getId', 'getName', 'getPath', 'getMimetype', 'getSize', 'getMTime'] as $accessor) {
-				if (method_exists($node, $accessor) === false) {
-					continue;
-				}
-
-				try {
-					$value = $node->{$accessor}();
-				} catch (\Throwable $e) {
-					continue;
-				}
-
-				$key = lcfirst(substr($accessor, 3));
-				$row[$key] = $value;
-			}
-
-			$rows[] = $row;
-		}//end foreach
+			$rows[] = self::nodeRow(node: $node);
+		}
 
 		return $rows;
 	}//end normalize()
+
+	/**
+	 * A node's row: each accessor it has and that answers, keyed by the accessor's noun.
+	 *
+	 * @param object $node A Files node.
+	 *
+	 * @return array<string,mixed> The row.
+	 */
+	private static function nodeRow(object $node): array {
+		$row = [];
+		foreach (['getId', 'getName', 'getPath', 'getMimetype', 'getSize', 'getMTime'] as $accessor) {
+			if (method_exists($node, $accessor) === false) {
+				continue;
+			}
+
+			try {
+				$value = $node->{$accessor}();
+			} catch (\Throwable $e) {
+				continue;
+			}
+
+			$key = lcfirst(substr($accessor, 3));
+			$row[$key] = $value;
+		}
+
+		return $row;
+	}//end nodeRow()
 }//end class
