@@ -25,7 +25,7 @@ use OCA\OpenRegister\Db\Schema;
  *
  * @spec openspec/specs/referential-integrity/spec.md
  */
-final class OrphanCleanupFlag {
+final class OrphanCleanupFlag implements OrphanCleanupFlagInterface {
 	/**
 	 * Whether the document sets the flag to another value than the schema holds.
 	 *

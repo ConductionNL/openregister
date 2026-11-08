@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Handler-scopes-own + officer-override case-level access control (fail-closed).
  */
-class CaseAccessControl {
+class CaseAccessControl implements CaseAccessControlInterface {
 
 	/**
 	 * App id for app-config lookups.

@@ -71,11 +71,6 @@ final class A18InterfaceBindingsTest extends TestCase {
 	 */
 	private const KEPT_CALLERS = [
 		ObjectRetentionHandler::class => [
-			'BackgroundJob/DestructionCheckJob.php',
-			'BackgroundJob/DestructionListRun.php',
-			'BackgroundJob/ReviewReminderJob.php',
-			'Controller/RetentionController.php',
-			'Controller/Support/RetentionDomain.php',
 			'Service/Configuration/ConfigurationServiceRegistrar.php',
 			'Service/ContractBindings.php',
 			'Service/SettingsService.php',

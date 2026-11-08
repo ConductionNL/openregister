@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
  *
  * @template-implements IEventListener<SchemaCreatedEvent|SchemaUpdatedEvent>
  */
-class NotificationsAnnotationInstaller implements IEventListener {
+class NotificationsAnnotationInstaller implements IEventListener, NotificationsAnnotationInstallerInterface {
 	/**
 	 * Constructor.
 	 *

@@ -92,9 +92,6 @@ final class D2InterfaceBindingsTest extends TestCase {
 			'Controller/DeletedController.php' => 'deletion-audit-trail surface: out of scope for lane D2',
 			'Controller/Support/DeletedAccess.php' => 'deletion-audit-trail surface, bundles the deleted-object authorizer: out of scope for lane D2',
 		],
-		SchemaTypeConverter::class => [
-			'Command/RematerialiseCalculationsCommand.php' => 'constructs the converter as a parameter default (`new`)',
-		],
 	];
 
 	/**

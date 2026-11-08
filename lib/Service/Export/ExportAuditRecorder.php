@@ -43,7 +43,7 @@ use Throwable;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportAuditRecorder {
+class ExportAuditRecorder implements ExportAuditRecorderInterface {
 	/**
 	 * The outcome of an export that produced a file.
 	 *

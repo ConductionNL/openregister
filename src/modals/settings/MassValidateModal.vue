@@ -483,12 +483,7 @@
 
 		<template #actions>
 			<div class="modal-actions">
-				<NcButton :disabled="massValidating" @click="$emit('close')">
-					<template #icon>
-						<Cancel :size="20" />
-					</template>
-					{{ massValidating ? 'Close' : completed ? 'Close' : 'Cancel' }}
-				</NcButton>
+				<CloseCancelButton :label="massValidating ? 'Close' : completed ? 'Close' : 'Cancel'" :disabled="massValidating" @click="$emit('close')" />
 
 				<NcButton
 					v-if="!massValidating && !completed"
@@ -518,9 +513,9 @@ import {
 	NcDialog,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'MassValidateModal',
@@ -532,7 +527,7 @@ export default {
 		NcCheckboxRadioSwitch,
 		CheckCircle,
 		Refresh,
-		Cancel,
+		CloseCancelButton,
 	},
 
 	props: {

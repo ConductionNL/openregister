@@ -40,7 +40,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
  *
  * @spec openspec/specs/schema-import/spec.md
  */
-class SchemaImportService {
+class SchemaImportService implements SchemaImportServiceInterface {
 
 	/**
 	 * Registered importers keyed by dialect.

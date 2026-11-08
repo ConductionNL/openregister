@@ -15,12 +15,7 @@
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="rebasing" @click="$emit('close')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
+			<CloseCancelButton label="Cancel" :disabled="rebasing" @click="$emit('close')" />
 			<NcButton variant="error" :disabled="rebasing" @click="$emit('confirm')">
 				<template #icon>
 					<NcLoadingIcon v-if="rebasing" :size="20" />
@@ -34,8 +29,8 @@
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'RebaseConfirmationModal',
@@ -44,7 +39,7 @@ export default {
 		NcDialog,
 		NcButton,
 		NcLoadingIcon,
-		Cancel,
+		CloseCancelButton,
 		Refresh,
 	},
 

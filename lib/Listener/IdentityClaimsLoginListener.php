@@ -36,7 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\IdentityClaimsCollectingEvent;
-use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
+use OCA\OpenRegister\Service\Rbac\DerivedGrantLoginInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\EventDispatcher\IEventListener;
@@ -55,12 +55,12 @@ class IdentityClaimsLoginListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param DerivedGrantStore $store      The rules, the claims and the grants.
+	 * @param DerivedGrantLoginInterface $store      The rules, the claims and the grants.
 	 * @param IEventDispatcher  $dispatcher Where the claims are asked for.
 	 * @param LoggerInterface   $logger     Where a failed derivation is reported.
 	 */
 	public function __construct(
-		private readonly DerivedGrantStore $store,
+		private readonly DerivedGrantLoginInterface $store,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
 	) {

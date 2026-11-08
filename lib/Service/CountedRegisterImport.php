@@ -77,46 +77,123 @@ class CountedRegisterImport {
 		string $via,
 		callable $import
 	): array {
-		$before = $this->snapshot(slugs: $slugs);
-		$run    = $this->decision->run(via: $via, operation: $import);
+		$document = (new RegisterImportDocument(slug: $slug, slugs: $slugs))
+			->release(version: $version, fragments: $fragments);
+
+		return $this->counted(
+			document: $document,
+			import: fn (): mixed => $this->decision->run(via: $via, operation: $import)
+		);
+	}//end run()
+
+	/**
+	 * Snapshot, import, snapshot again, and report the counts and the outcome.
+	 *
+	 * @param RegisterImportDocument $document The imported document.
+	 * @param \Closure               $import   Runs the import under the decision; returns its result array.
+	 *
+	 * @return array<string, mixed> The reimport() result.
+	 */
+	private function counted(RegisterImportDocument $document, \Closure $import): array {
+		$before   = $this->snapshot(slugs: $document->slugs);
+		$run      = $import();
 		$replaced = $this->decision->replaced();
-		$after    = $this->snapshot(slugs: $slugs);
+		$after    = $this->snapshot(slugs: $document->slugs);
 
 		$result = [
 			'outcome'   => 'imported',
 			'reason'    => null,
 			'path'      => $run['path'],
 			'via'       => $run['via'],
-			'version'   => $version,
-			'fragments' => $fragments,
-			'counts'    => [
-				'registers'             => $this->compare(before: $before['registers'], after: $after['registers']),
-				'schemas'               => $this->compare(before: $before['schemas'], after: $after['schemas']),
-				'authorizationReplaced' => count($replaced),
-			],
+			'version'   => $document->version(),
+			'fragments' => $document->fragments(),
+			'counts'    => $this->counts(before: $before, after: $after) + ['authorizationReplaced' => count($replaced)],
 			'replaced'  => $replaced,
 		];
 
-		// The job the import ran under, so a caller that must undo exactly this import (the example-set loader) is
-		// told which one it was and does not have to guess it from a before/after diff of every job on the instance.
+		$result = $this->withImportJob(result: $result, run: $run);
+		$reason = $this->failureReason(
+			run: $run,
+			missingSlug: $this->missingSlug(document: $document, registers: $after['registers'])
+		);
+		if ($reason !== null) {
+			$result['outcome'] = 'failed';
+			$result['reason']  = $reason;
+		}
+
+		return $result;
+	}//end counted()
+
+	/**
+	 * The register and schema counts between two snapshots.
+	 *
+	 * @param array{registers: array<string, string>, schemas: array<string, string>} $before Before the import.
+	 * @param array{registers: array<string, string>, schemas: array<string, string>} $after  After the import.
+	 *
+	 * @return array{registers: array{created: int, updated: int, unchanged: int}, schemas: array{created: int, updated: int, unchanged: int}}
+	 */
+	private function counts(array $before, array $after): array {
+		return [
+			'registers' => $this->compare(before: $before['registers'], after: $after['registers']),
+			'schemas'   => $this->compare(before: $before['schemas'], after: $after['schemas']),
+		];
+	}//end counts()
+
+	/**
+	 * The result with the job the import ran under, when it recorded one.
+	 *
+	 * So a caller that must undo exactly this import (the example-set loader) is told which one it was and does not
+	 * have to guess it from a before/after diff of every job on the instance.
+	 *
+	 * @param array<string, mixed> $result The result so far.
+	 * @param mixed                $run    The import's own result.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function withImportJob(array $result, mixed $run): array {
 		if (is_string($run['importJobId'] ?? null) === true) {
 			$result['importJobId'] = $run['importJobId'];
 			$result['importAppId'] = (string) ($run['importAppId'] ?? '');
 		}
 
-		if ($run['success'] === false) {
-			$result['outcome'] = 'failed';
-			$result['reason']  = sprintf('The import through %s failed: %s', $run['via'], $run['message']);
-			return $result;
-		}
-
-		if (array_key_exists(strtolower($slug), $after['registers']) === false) {
-			$result['outcome'] = 'failed';
-			$result['reason']  = sprintf('The import reported no error but register "%s" still does not exist.', $slug);
-		}
-
 		return $result;
-	}//end run()
+	}//end withImportJob()
+
+	/**
+	 * Why the import failed: it said so, or it did not create the register asked for; null when it did not fail.
+	 *
+	 * @param mixed       $run         The import's own result.
+	 * @param string|null $missingSlug The register slug asked for when it does not exist afterwards, else null.
+	 *
+	 * @return string|null
+	 */
+	private function failureReason(mixed $run, ?string $missingSlug): ?string {
+		if ($run['success'] === false) {
+			return sprintf('The import through %s failed: %s', $run['via'], $run['message']);
+		}
+
+		if ($missingSlug !== null) {
+			return sprintf('The import reported no error but register "%s" still does not exist.', $missingSlug);
+		}
+
+		return null;
+	}//end failureReason()
+
+	/**
+	 * The register slug the caller named when no register with it exists after the import, else null.
+	 *
+	 * @param RegisterImportDocument $document  The imported document.
+	 * @param array<string, string>  $registers Lowercased slug to fingerprint, after the import.
+	 *
+	 * @return string|null
+	 */
+	private function missingSlug(RegisterImportDocument $document, array $registers): ?string {
+		if (array_key_exists(strtolower($document->slug), $registers) === true) {
+			return null;
+		}
+
+		return $document->slug;
+	}//end missingSlug()
 
 	/**
 	 * A fingerprint of every register with one of the slugs, and of their schemas.
@@ -135,24 +212,51 @@ class CountedRegisterImport {
 			}
 
 			$registers[$slug] = $this->registerFingerprint(register: $register);
-			foreach ($register->getSchemas() as $schemaId) {
-				if (is_scalar($schemaId) === true) {
-					$schemaIds[(string)$schemaId] = $schemaId;
-				}
-			}
+			$schemaIds        = array_replace($schemaIds, $this->schemaIdsOf(register: $register));
 		}
 
-		$schemas = [];
-		if ($schemaIds !== []) {
-			$found = $this->schemaMapper->findMultiple(ids: array_values($schemaIds), _rbac: false, _multitenancy: false);
-			foreach ($found as $schema) {
-				// Keyed by a string, never a bare id PHP would turn into an int key.
-				$schemas['schema:' . (string)$schema->getId()] = $this->schemaFingerprint(schema: $schema);
-			}
-		}
-
-		return ['registers' => $registers, 'schemas' => $schemas];
+		return ['registers' => $registers, 'schemas' => $this->schemaFingerprints(schemaIds: $schemaIds)];
 	}//end snapshot()
+
+	/**
+	 * The scalar schema ids of a register, keyed by their string form.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<string, int|float|string|bool>
+	 */
+	private function schemaIdsOf(Register $register): array {
+		$schemaIds = [];
+		foreach ($register->getSchemas() as $schemaId) {
+			if (is_scalar($schemaId) === true) {
+				$schemaIds[(string)$schemaId] = $schemaId;
+			}
+		}
+
+		return $schemaIds;
+	}//end schemaIdsOf()
+
+	/**
+	 * A fingerprint of each schema with one of the ids.
+	 *
+	 * @param array<string, int|float|string|bool> $schemaIds Schema ids, keyed by their string form.
+	 *
+	 * @return array<string, string> "schema:{id}" to fingerprint.
+	 */
+	private function schemaFingerprints(array $schemaIds): array {
+		$schemas = [];
+		if ($schemaIds === []) {
+			return $schemas;
+		}
+
+		$found = $this->schemaMapper->findMultiple(ids: array_values($schemaIds), _rbac: false, _multitenancy: false);
+		foreach ($found as $schema) {
+			// Keyed by a string, never a bare id PHP would turn into an int key.
+			$schemas['schema:' . (string)$schema->getId()] = $this->schemaFingerprint(schema: $schema);
+		}
+
+		return $schemas;
+	}//end schemaFingerprints()
 
 	/**
 	 * What of a register an import writes.

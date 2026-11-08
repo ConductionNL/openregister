@@ -35,7 +35,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\Support\StateFieldWrite;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
-use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRulesInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
@@ -253,12 +253,12 @@ class StateFieldRuleListener implements IEventListener {
 	/**
 	 * The refusal a changed read-only field earns.
 	 *
-	 * @param StateFieldRules $rules The rules of the state the edit was made in.
+	 * @param StateFieldRulesInterface $rules The rules of the state the edit was made in.
 	 * @param StateFieldWrite $write The save.
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 */
-	private function readOnlyRefusal(StateFieldRules $rules, StateFieldWrite $write): ?array {
+	private function readOnlyRefusal(StateFieldRulesInterface $rules, StateFieldWrite $write): ?array {
 		$state = (string)$write->editState();
 		foreach ($rules->getReadOnly() as $property) {
 			if ($write->changes(property: $property) === true) {
@@ -277,12 +277,12 @@ class StateFieldRuleListener implements IEventListener {
 	/**
 	 * The refusal a written hidden field earns.
 	 *
-	 * @param StateFieldRules $rules The rules of the state the edit was made in.
+	 * @param StateFieldRulesInterface $rules The rules of the state the edit was made in.
 	 * @param StateFieldWrite $write The save.
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 */
-	private function hiddenRefusal(StateFieldRules $rules, StateFieldWrite $write): ?array {
+	private function hiddenRefusal(StateFieldRulesInterface $rules, StateFieldWrite $write): ?array {
 		$state = (string)$write->editState();
 		foreach ($rules->getHidden() as $property) {
 			if ($write->changes(property: $property) === true) {
@@ -323,13 +323,13 @@ class StateFieldRuleListener implements IEventListener {
 	/**
 	 * The refusal an unanswered required property earns.
 	 *
-	 * @param StateFieldRules $rules    The rules of the state the object ends in.
+	 * @param StateFieldRulesInterface $rules    The rules of the state the object ends in.
 	 * @param string          $property The unanswered property.
 	 * @param string          $state    The state the object ends in.
 	 *
 	 * @return array<string, mixed> The structured refusal.
 	 */
-	private static function requiredRefusalFor(StateFieldRules $rules, string $property, string $state): array {
+	private static function requiredRefusalFor(StateFieldRulesInterface $rules, string $property, string $state): array {
 		return [
 			'code' => self::CODE_REQUIRED,
 			'field' => $property,

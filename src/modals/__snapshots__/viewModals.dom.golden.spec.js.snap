@@ -25,7 +25,7 @@ exports[`view modals DOM golden configuration, filled, tab 0 1`] = `
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
-      <slot-default> Close </slot-default>
+      <slot-default> Close</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
@@ -86,7 +86,7 @@ exports[`view modals DOM golden configuration, filled, tab 1 1`] = `
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
-      <slot-default> Close </slot-default>
+      <slot-default> Close</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
@@ -147,7 +147,7 @@ exports[`view modals DOM golden configuration, sparse, tab 0 1`] = `
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
-      <slot-default> Close </slot-default>
+      <slot-default> Close</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
@@ -204,7 +204,7 @@ exports[`view modals DOM golden configuration, sparse, tab 1 1`] = `
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
-      <slot-default> Close </slot-default>
+      <slot-default> Close</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
@@ -255,7 +255,7 @@ exports[`view modals DOM golden source, filled, tab 0 1`] = `
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
-      <slot-default> Close </slot-default>
+      <slot-default> Close</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
@@ -327,7 +327,7 @@ exports[`view modals DOM golden source, filled, tab 1 1`] = `
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
-      <slot-default> Close </slot-default>
+      <slot-default> Close</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
@@ -382,7 +382,7 @@ exports[`view modals DOM golden source, sparse, tab 0 1`] = `
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
-      <slot-default> Close </slot-default>
+      <slot-default> Close</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
@@ -433,7 +433,7 @@ exports[`view modals DOM golden source, sparse, tab 1 1`] = `
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
-      <slot-default> Close </slot-default>
+      <slot-default> Close</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>

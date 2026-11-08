@@ -55,7 +55,7 @@ namespace OCA\OpenRegister\Repair;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Service\AuditCanonicalV1;
-use OCA\OpenRegister\Service\AuditHashService;
+use OCA\OpenRegister\Service\AuditRechainInterface;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -100,15 +100,15 @@ class RechainAuditTrailForFlowAttribution implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection    $db     Reads the audit rows to verify.
-	 * @param IAppConfig       $config Stores the verdict and the done-marker.
-	 * @param AuditHashService $hashes Performs the re-seal.
-	 * @param LoggerInterface  $logger Records the verdict in the log as well.
+	 * @param IDBConnection         $db     Reads the audit rows to verify.
+	 * @param IAppConfig            $config Stores the verdict and the done-marker.
+	 * @param AuditRechainInterface $hashes Performs the re-seal.
+	 * @param LoggerInterface       $logger Records the verdict in the log as well.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly IAppConfig $config,
-		private readonly AuditHashService $hashes,
+		private readonly AuditRechainInterface $hashes,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -116,24 +116,19 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				</template>
 				Delete Configuration
 			</NcActionButton>
-			<NcButton variant="primary" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Close
-			</NcButton>
+			<CloseCancelButton label="Close" variant="primary" @click="closeModal" />
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import { NcActionButton, NcButton, NcDialog, NcEmptyContent } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+import { NcActionButton, NcDialog, NcEmptyContent } from '@nextcloud/vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import TimestampProperties from '../shared/TimestampProperties.vue'
 import ViewDialogTabs from '../shared/ViewDialogTabs.vue'
 
@@ -143,10 +138,9 @@ export default {
 		TimestampProperties,
 		ViewDialogTabs,
 		NcDialog,
-		NcButton,
 		NcActionButton,
 		NcEmptyContent,
-		Cancel,
+		CloseCancelButton,
 		Pencil,
 		TrashCanOutline,
 		Download,

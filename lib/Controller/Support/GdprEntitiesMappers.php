@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 
 /**
  * The mappers and repositories of the gdpr entities API.
@@ -34,13 +34,13 @@ final class GdprEntitiesMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param GdprEntityMapper     $entityMapper         GDPR entity mapper
+	 * @param GdprEntityMapperInterface     $entityMapper         GDPR entity mapper
 	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function __construct(
-		public readonly GdprEntityMapper $entityMapper,
+		public readonly GdprEntityMapperInterface $entityMapper,
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
 	) {
 	}//end __construct()

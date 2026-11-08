@@ -17,12 +17,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 			<p>{{ t('openregister', 'This action cannot be undone.') }}</p>
 		</div>
 		<template #actions>
-			<NcButton @click="navigationStore.setDialog(false)">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
+			<CloseCancelButton label="Cancel" @click="navigationStore.setDialog(false)" />
 			<NcButton variant="error" @click="deleteEndpoint()">
 				<template #icon>
 					<TrashCanOutline :size="20" />
@@ -35,15 +30,15 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcButton, NcDialog } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'DeleteEndpoint',
 	components: {
 		NcDialog,
 		NcButton,
-		Cancel,
+		CloseCancelButton,
 		TrashCanOutline,
 	},
 

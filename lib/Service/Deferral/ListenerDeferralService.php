@@ -49,7 +49,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/event-driven-architecture/spec.md
  */
-class ListenerDeferralService {
+class ListenerDeferralService implements ListenerDeferralInterface {
 
 	/**
 	 * Kill-switch value that restores synchronous listener execution.
@@ -64,13 +64,6 @@ class ListenerDeferralService {
 	 * @var string
 	 */
 	public const MODE_BACKGROUND = 'background';
-
-	/**
-	 * Default number of entries per enqueued job.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_CHUNK_SIZE = 100;
 
 	/**
 	 * The longest job argument Nextcloud 32 and 33 accept, as its own JSON

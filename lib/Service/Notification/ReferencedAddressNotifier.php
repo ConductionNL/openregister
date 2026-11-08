@@ -53,17 +53,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface
  *
  * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
  */
-class ReferencedAddressNotifier {
-
-	/**
-	 * The recipient kind this unit sends.
-	 */
-	public const KIND = 'email';
-
-	/**
-	 * The most references one path may follow.
-	 */
-	public const MAX_HOPS = 3;
+class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 
 	/**
 	 * The path names no value, or an empty one.

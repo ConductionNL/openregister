@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Closure;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\ScopeCaller;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -163,7 +164,10 @@ class ScopesController extends Controller {
 
 		$registers = $this->resolveRegisters(filter: $register);
 		$schemas = $this->resolveSchemas(filter: $schema);
-		$scopes = $this->scopesFor(registers: $registers, schemas: $schemas, userId: $userId, isAdmin: $isAdmin);
+		$scopes = $this->scopesFor(
+			catalogue: ['registers' => $registers, 'schemas' => $schemas],
+			caller: new ScopeCaller(userId: $userId, isAdmin: $isAdmin)
+		);
 
 		return new JSONResponse(['user' => $userId, 'isAdmin' => $isAdmin, 'groups' => array_values($groups), 'scopes' => $scopes]);
 
@@ -187,18 +191,16 @@ class ScopesController extends Controller {
 	/**
 	 * Every (register, schema) pair the caller holds at least one action on.
 	 *
-	 * @param Register[] $registers The registers reported on.
-	 * @param Schema[] $schemas The schemas reported on.
-	 * @param string|null $userId Active user (null = unauthenticated probe).
-	 * @param bool $isAdmin Whether the caller is in the `admin` group.
+	 * @param array{registers: Register[], schemas: Schema[]} $catalogue The registers and schemas reported on.
+	 * @param ScopeCaller                                     $caller    The caller probed.
 	 *
 	 * @return array<int, array<string, mixed>> The scope entries.
 	 */
-	private function scopesFor(array $registers, array $schemas, ?string $userId, bool $isAdmin): array {
+	private function scopesFor(array $catalogue, ScopeCaller $caller): array {
 		$scopes = [];
-		foreach ($registers as $reg) {
-			foreach ($schemas as $sch) {
-				$scope = $this->scopeFor(register: $reg, schema: $sch, userId: $userId, isAdmin: $isAdmin);
+		foreach ($catalogue['registers'] as $reg) {
+			foreach ($catalogue['schemas'] as $sch) {
+				$scope = $this->scopeFor(pair: ['register' => $reg, 'schema' => $sch], caller: $caller);
 				if ($scope !== null) {
 					$scopes[] = $scope;
 				}
@@ -215,19 +217,19 @@ class ScopesController extends Controller {
 	 * it as a list of strings, and provenance is added BESIDE it rather than
 	 * inside it so none of them has to change to keep working.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The schema.
-	 * @param string|null $userId Active user (null = unauthenticated probe).
-	 * @param bool $isAdmin Whether the caller is in the `admin` group.
+	 * @param array{register: Register, schema: Schema} $pair   The register and the schema.
+	 * @param ScopeCaller                              $caller The caller probed.
 	 *
 	 * @return array<string, mixed>|null The scope entry, or null.
 	 */
-	private function scopeFor(Register $register, Schema $schema, ?string $userId, bool $isAdmin): ?array {
+	private function scopeFor(array $pair, ScopeCaller $caller): ?array {
+		$register = $pair['register'];
+		$schema = $pair['schema'];
 		if (in_array($schema->getId(), ($register->getSchemas() ?? []), false) === false) {
 			return null;
 		}
 
-		$actions = $this->collectActionsForUser(schema: $schema, userId: $userId, isAdmin: $isAdmin);
+		$actions = $this->collectActionsForUser(schema: $schema, caller: $caller);
 		if ($actions === []) {
 			return null;
 		}
@@ -236,7 +238,7 @@ class ScopesController extends Controller {
 			'register' => $register->getSlug(),
 			'schema' => $schema->getSlug(),
 			'actions' => $actions,
-			'provenance' => $this->provenanceFor(schema: $schema, userId: $userId, isAdmin: $isAdmin),
+			'provenance' => $this->provenanceFor(schema: $schema, caller: $caller),
 		];
 	}//end scopeFor()
 
@@ -321,21 +323,20 @@ class ScopesController extends Controller {
 	 * so is more useful than naming a rule that did not decide. A report
 	 * that invented a rule here would send somebody looking for it.
 	 *
-	 * @param Schema      $schema  Schema being reported on.
-	 * @param string|null $userId  Active user (null = unauthenticated probe).
-	 * @param bool        $isAdmin Whether the caller is in the `admin` group.
+	 * @param Schema      $schema Schema being reported on.
+	 * @param ScopeCaller $caller The caller probed: active user (null = unauthenticated probe) and admin fact.
 	 *
 	 * @return array<string, array<string, mixed>> The provenance, keyed by action.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function provenanceFor(Schema $schema, ?string $userId, bool $isAdmin): array {
-		if ($isAdmin === true) {
+	private function provenanceFor(Schema $schema, ScopeCaller $caller): array {
+		if ($caller->isAdmin === true) {
 			return array_fill_keys(self::ACTIONS, self::ADMIN_PROVENANCE);
 		}
 
 		try {
-			return $this->permissionHandler->provenanceFor(schema: $schema, actions: self::ACTIONS, userId: $userId);
+			return $this->permissionHandler->provenanceFor(schema: $schema, actions: self::ACTIONS, userId: $caller->userId);
 		} catch (\Throwable $e) {
 			// The verdict above already answered. A provenance that throws must
 			// not take the scope list with it: a client that cannot read WHY is
@@ -350,19 +351,19 @@ class ScopesController extends Controller {
 	 * Admin callers short-circuit to the full action vocabulary, mirroring the
 	 * admin-bypass branch in `PermissionHandlerInterface::hasPermission`.
 	 *
-	 * @param Schema $schema Schema being evaluated.
-	 * @param string|null $userId Active user (null = unauthenticated probe).
-	 * @param bool $isAdmin Whether the caller is in the `admin` group.
+	 * @param Schema      $schema Schema being evaluated.
+	 * @param ScopeCaller $caller The caller probed: active user (null = unauthenticated probe) and admin fact.
 	 *
 	 * @return array<int, string> Permitted action vocabulary.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function collectActionsForUser(Schema $schema, ?string $userId, bool $isAdmin): array {
-		if ($isAdmin === true) {
+	private function collectActionsForUser(Schema $schema, ScopeCaller $caller): array {
+		if ($caller->isAdmin === true) {
 			return self::ACTIONS;
 		}
 
+		$userId = $caller->userId;
 		return array_values(
 			array_filter(
 				self::ACTIONS,

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -274,7 +275,8 @@ class RematerialiseCalculationsGoldenTest extends TestCase {
 
 		return new RematerialiseCalculationsCommand(
 			new RematerialiseStorage($registers, $schemas, $magic, $objects),
-			new RematerialiseEvaluation($evaluator, $references, $aggregates)
+			new RematerialiseEvaluation($evaluator, $references, $aggregates),
+			new SchemaTypeConverter()
 		);
 	}//end command()
 

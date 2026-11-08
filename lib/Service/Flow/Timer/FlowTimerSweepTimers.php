@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 
 /**
  * The collaborators FlowTimerSweep sweeps flow timers with.
@@ -33,14 +33,14 @@ final class FlowTimerSweepTimers {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param FlowTimerMapper        $timers    The two timer range scans.
+	 * @param FlowTimerMapperInterface        $timers    The two timer range scans.
 	 * @param FlowTimerService       $service   Fires expiries and rungs.
 	 * @param WorkingCalendarService $calendars Reset once per pass so memoisation is per pass.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-the-sweep-is-bounded-to-due-work-by-index-not-by-a-page-of-candidates
 	 */
 	public function __construct(
-		public readonly FlowTimerMapper $timers,
+		public readonly FlowTimerMapperInterface $timers,
 		public readonly FlowTimerService $service,
 		public readonly WorkingCalendarService $calendars,
 	) {

@@ -17,14 +17,7 @@ import {
 		:subname="t('openregister', 'Restore or permanently delete items')"
 		:open="navigationStore.sidebarState.deleted"
 		@update:open="(e) => navigationStore.setSidebarState('deleted', e)">
-		<NcAppSidebarTab
-			id="filters-tab"
-			:name="t('openregister', 'Filters')"
-			:order="1">
-			<template #icon>
-				<FilterOutline :size="20" />
-			</template>
-
+		<FiltersSidebarTab>
 			<!-- Filter Section -->
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Deleted Items') }}</h3>
@@ -71,16 +64,9 @@ import {
 					)
 				}}
 			</NcNoteCard>
-		</NcAppSidebarTab>
+		</FiltersSidebarTab>
 
-		<NcAppSidebarTab
-			id="stats-tab"
-			:name="t('openregister', 'Statistics')"
-			:order="2">
-			<template #icon>
-				<ChartLine :size="20" />
-			</template>
-
+		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Deletion Statistics') }}</h3>
@@ -91,38 +77,18 @@ import {
 				</div>
 
 				<div v-else>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.totalDeleted }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Deleted Items') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.deletedToday }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Deleted Today') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.deletedThisWeek }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Deleted This Week') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.oldestDays }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Oldest Item (days)') }}
-						</div>
-					</div>
+					<SidebarStatCard
+						:value="deletedStore.statistics.totalDeleted"
+						:label="t('openregister', 'Total Deleted Items')" />
+					<SidebarStatCard
+						:value="deletedStore.statistics.deletedToday"
+						:label="t('openregister', 'Deleted Today')" />
+					<SidebarStatCard
+						:value="deletedStore.statistics.deletedThisWeek"
+						:label="t('openregister', 'Deleted This Week')" />
+					<SidebarStatCard
+						:value="deletedStore.statistics.oldestDays"
+						:label="t('openregister', 'Oldest Item (days)')" />
 				</div>
 			</div>
 
@@ -140,46 +106,39 @@ import {
 					<p>{{ t('openregister', 'No deletion data available') }}</p>
 				</div>
 
-				<NcListItem
+				<CountListItem
 					v-for="(deleter, index) in deletedStore.topDeleters"
 					v-else
 					:key="index"
 					:name="deleter.user"
-					:bold="false">
+					:subname="deletionsLabel(deleter.count)">
 					<template #icon>
 						<AccountCircle :size="32" />
 					</template>
-					<template #subname>
-						{{
-							t('openregister', '{count} deletions', {
-								count: deleter.count,
-							})
-						}}
-					</template>
-				</NcListItem>
+				</CountListItem>
 			</div>
-		</NcAppSidebarTab>
+		</StatisticsSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
-import ScopeFilterFields from '../ScopeFilterFields.vue'
 import {
 	NcAppSidebar,
-	NcAppSidebarTab,
 	NcDateTimePickerNative,
-	NcListItem,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
-import ChartLine from 'vue-material-design-icons/ChartLine.vue'
-import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
+import CountListItem from '../../components/shared/CountListItem.vue'
+import FiltersSidebarTab from '../../components/shared/FiltersSidebarTab.vue'
+import SidebarStatCard from '../../components/shared/SidebarStatCard.vue'
+import StatisticsSidebarTab from '../../components/shared/StatisticsSidebarTab.vue'
+import ScopeFilterFields from '../ScopeFilterFields.vue'
 import eventBus from '../../eventBus.js'
 import { addDateRange, addScope, routeDate } from '../../services/routeQuery.js'
 import { applyRouteScope } from '../../services/routeScope.js'
-import { routeBoundFilters } from '../routeBoundFilters.js'
+import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
 
 /**
  * The ids of the selected register and schema, null when none is selected.
@@ -196,17 +155,17 @@ function selectedScopeIds() {
 export default {
 	name: 'DeletedSideBar',
 	components: {
+		CountListItem,
+		FiltersSidebarTab,
 		ScopeFilterFields,
 		NcAppSidebar,
-		NcAppSidebarTab,
 		NcSelect,
 		NcNoteCard,
-		NcListItem,
 		NcDateTimePickerNative,
 		NcLoadingIcon,
-		FilterOutline,
-		ChartLine,
 		AccountCircle,
+		SidebarStatCard,
+		StatisticsSidebarTab,
 	},
 
 	mixins: [routeBoundFilters('/deleted')],
@@ -286,6 +245,17 @@ export default {
 
 	methods: {
 		/**
+		 * "{count} deletions", translated, for a row of a top list.
+		 *
+		 * @param {number} count How often the row occurs
+		 * @spec exclude Presentational count label.
+		 * @return {string} The label
+		 */
+		deletionsLabel(count) {
+			return t('openregister', '{count} deletions', { count })
+		},
+
+		/**
 		 * Apply filters and emit to parent components.
 		 *
 		 * Delegates to {@link updateRouteQueryFromState} which serialises the current
@@ -334,10 +304,7 @@ export default {
 		 */
 		buildQueryFromState() {
 			const query = {}
-			addScope(query, {
-				register: registerStore.registerItem,
-				schema: schemaStore.schemaItem,
-			})
+			addScope(query, selectedScope())
 			if (this.selectedDeletedBy && this.selectedDeletedBy.value) {
 				query.deletedBy = String(this.selectedDeletedBy.value)
 			}
@@ -403,8 +370,6 @@ export default {
 }
 
 @include stat-card;
-
-@include stat-number-rules;
 
 .topDeleters {
 	margin-top: 20px;

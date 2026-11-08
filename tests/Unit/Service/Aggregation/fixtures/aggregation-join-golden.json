@@ -1,0 +1,4935 @@
+{
+    "extra-applicable": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 10,
+                    "joined": {
+                        "budget": 100
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 5,
+                    "joined": {
+                        "budget": 7
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "adm": "x"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "adm": "x"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 10,
+                                "joined": {
+                                    "budget": 100
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 5,
+                                "joined": {
+                                    "budget": 7
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "extra-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 10,
+                    "joined": {
+                        "budget": 100
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 5,
+                    "joined": {
+                        "budget": 7
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "adm": "x"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "adm": "x"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 10,
+                                "joined": {
+                                    "budget": 100
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 5,
+                                "joined": {
+                                    "budget": 7
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "extra-conflicts-join-filter": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 20,
+                    "joined": {
+                        "budget": 100
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "adm": "y"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "filter": {
+                                "adm": "x"
+                            },
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "debug": [
+                    "Aggregation: refusing a request filter that would relax a declared one.",
+                    {
+                        "aggregation": "budgets (join)",
+                        "key": "adm"
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "adm": "y"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "filter": {
+                                "adm": "x"
+                            },
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 20,
+                                "joined": {
+                                    "budget": 100
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "extra-ignored": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 10,
+                    "joined": {
+                        "budget": 100
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 5,
+                    "joined": {
+                        "budget": 10
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 10,
+                                "joined": {
+                                    "budget": 100
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 5,
+                                "joined": {
+                                    "budget": 10
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "extra-mixed": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "team": "a",
+                            "adm": "y"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "team": "a",
+                            "adm": "y"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "join-filter": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 30,
+                    "joined": {
+                        "budget": 100
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 5,
+                    "joined": {
+                        "budget": 7
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "filter": {
+                                "adm": "x"
+                            },
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "filter": {
+                                "adm": "x"
+                            },
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 30,
+                                "joined": {
+                                    "budget": 100
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 5,
+                                "joined": {
+                                    "budget": 7
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "join-not-array": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 30
+                },
+                {
+                    "key": "done",
+                    "value": 5
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": "budgets",
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": "budgets",
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 30
+                            },
+                            {
+                                "key": "done",
+                                "value": 5
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "join-where": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 30,
+                    "joined": {
+                        "budget": 50
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 5,
+                    "joined": {
+                        "budget": 3
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "where": {
+                                "adm": "y"
+                            },
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "where": {
+                                "adm": "y"
+                            },
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 30,
+                                "joined": {
+                                    "budget": 50
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 5,
+                                "joined": {
+                                    "budget": 3
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "joined-denied": {
+        "error": "RuntimeException",
+        "message": "Forbidden: caller lacks read permission on join target \"budgets\".",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "list",
+                    "alice"
+                ]
+            },
+            {
+                "qualifies": [
+                    "budgets",
+                    "read"
+                ]
+            }
+        ]
+    },
+    "joined-denied-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 30,
+                    "joined": {
+                        "budget": 150
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 5,
+                    "joined": {
+                        "budget": 10
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 30,
+                                "joined": {
+                                    "budget": 150
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 5,
+                                "joined": {
+                                    "budget": 10
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "joined-denied-qualifies": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 30,
+                    "joined": {
+                        "budget": 150
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 5,
+                    "joined": {
+                        "budget": 10
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "list",
+                    "alice"
+                ]
+            },
+            {
+                "qualifies": [
+                    "budgets",
+                    "read"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 30,
+                                "joined": {
+                                    "budget": 150
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 5,
+                                "joined": {
+                                    "budget": 10
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "map-on": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "keys": {
+                        "status": "open",
+                        "team": "a"
+                    },
+                    "value": 1,
+                    "joined": {
+                        "budget": 100
+                    }
+                },
+                {
+                    "keys": {
+                        "status": "open",
+                        "team": "b"
+                    },
+                    "value": 1,
+                    "joined": {
+                        "budget": 50
+                    }
+                },
+                {
+                    "keys": {
+                        "status": "done",
+                        "team": "a"
+                    },
+                    "value": 1,
+                    "joined": {
+                        "budget": 10
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status",
+                    "team": "team"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": [
+                            "status",
+                            "team"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "Budget.status",
+                                "team": "team"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": [
+                            "status",
+                            "team"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "Budget.status",
+                                "team": "team"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "keys": {
+                                    "status": "open",
+                                    "team": "a"
+                                },
+                                "value": 1,
+                                "joined": {
+                                    "budget": 100
+                                }
+                            },
+                            {
+                                "keys": {
+                                    "status": "open",
+                                    "team": "b"
+                                },
+                                "value": 1,
+                                "joined": {
+                                    "budget": 50
+                                }
+                            },
+                            {
+                                "keys": {
+                                    "status": "done",
+                                    "team": "a"
+                                },
+                                "value": 1,
+                                "joined": {
+                                    "budget": 10
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status",
+                                "team": "team"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-grouped": {
+        "result": {
+            "name": "agg",
+            "metric": "",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "values": {
+                        "count": 2,
+                        "sum_amount": 30
+                    },
+                    "joined": {
+                        "budget": 150
+                    }
+                },
+                {
+                    "key": "done",
+                    "values": {
+                        "count": 1,
+                        "sum_amount": 5
+                    },
+                    "joined": {
+                        "budget": 10
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "field": null,
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "field": null,
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "values": {
+                                    "count": 2,
+                                    "sum_amount": 30
+                                },
+                                "joined": {
+                                    "budget": 150
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "values": {
+                                    "count": 1,
+                                    "sum_amount": 5
+                                },
+                                "joined": {
+                                    "budget": 10
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "missing-target": {
+        "error": "RuntimeException",
+        "message": "Schema \"nowhere\" not found.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "nowhere",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "nowhere"
+            }
+        ]
+    },
+    "native": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "postgres",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3,
+                    "joined": {
+                        "budget": 3
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 1,
+                    "joined": {
+                        "budget": 1
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "postgres",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "tableName": [
+                    "reg",
+                    "lines"
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, SUM(NULLIF(\"amount\", '') + 0) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": [
+                    "alice",
+                    "__none__"
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "tableName": [
+                    "treg",
+                    "budgets"
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, SUM(NULLIF(\"budget\", '') + 0) AS agg FROM \"*PREFIX*oc_or_4_7\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": [
+                    "alice",
+                    "__none__"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "postgres",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 3,
+                                "joined": {
+                                    "budget": 3
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 1,
+                                "joined": {
+                                    "budget": 1
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "postgres",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "native-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "postgres",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3,
+                    "joined": {
+                        "budget": 3
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 1,
+                    "joined": {
+                        "budget": 1
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "postgres",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "tableName": [
+                    "reg",
+                    "lines"
+                ]
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, SUM(NULLIF(\"amount\", '') + 0) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) GROUP BY \"status\"",
+                "bindings": [
+                    "alice",
+                    "__none__"
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "tableName": [
+                    "treg",
+                    "budgets"
+                ]
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, SUM(NULLIF(\"budget\", '') + 0) AS agg FROM \"*PREFIX*oc_or_4_7\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) GROUP BY \"status\"",
+                "bindings": [
+                    "alice",
+                    "__none__"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "postgres",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 3,
+                                "joined": {
+                                    "budget": 3
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 1,
+                                "joined": {
+                                    "budget": 1
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "postgres",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "native-extra": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "postgres",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3,
+                    "joined": {
+                        "budget": 3
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 1,
+                    "joined": {
+                        "budget": 1
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "postgres",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "adm": "x"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "tableName": [
+                    "reg",
+                    "lines"
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, SUM(NULLIF(\"amount\", '') + 0) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"adm\" = ? GROUP BY \"status\"",
+                "bindings": [
+                    "alice",
+                    "__none__",
+                    "x"
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "tableName": [
+                    "treg",
+                    "budgets"
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, SUM(NULLIF(\"budget\", '') + 0) AS agg FROM \"*PREFIX*oc_or_4_7\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"adm\" = ? GROUP BY \"status\"",
+                "bindings": [
+                    "alice",
+                    "__none__",
+                    "x"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "adm": "x"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "postgres",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 3,
+                                "joined": {
+                                    "budget": 3
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 1,
+                                "joined": {
+                                    "budget": 1
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "postgres",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "native-multi-key": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "postgres",
+            "truncated": false,
+            "groups": [
+                {
+                    "keys": {
+                        "status": "open",
+                        "team": null
+                    },
+                    "value": 3,
+                    "joined": {
+                        "budget": 3
+                    }
+                },
+                {
+                    "keys": {
+                        "status": "done",
+                        "team": null
+                    },
+                    "value": 1,
+                    "joined": {
+                        "budget": 1
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status",
+                    "team": "team"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "postgres",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": [
+                            "status",
+                            "team"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "Budget.status",
+                                "team": "team"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "tableName": [
+                    "reg",
+                    "lines"
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, \"team\" AS g1, COUNT(*) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 GROUP BY \"status\", \"team\"",
+                "bindings": [
+                    "alice",
+                    "__none__"
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "tableName": [
+                    "treg",
+                    "budgets"
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, \"team\" AS g1, SUM(NULLIF(\"budget\", '') + 0) AS agg FROM \"*PREFIX*oc_or_4_7\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 GROUP BY \"status\", \"team\"",
+                "bindings": [
+                    "alice",
+                    "__none__"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": [
+                            "status",
+                            "team"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "Budget.status",
+                                "team": "team"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "postgres",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "keys": {
+                                    "status": "open",
+                                    "team": null
+                                },
+                                "value": 3,
+                                "joined": {
+                                    "budget": 3
+                                }
+                            },
+                            {
+                                "keys": {
+                                    "status": "done",
+                                    "team": null
+                                },
+                                "value": 1,
+                                "joined": {
+                                    "budget": 1
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status",
+                                "team": "team"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "postgres",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "no-group-by": {
+        "error": "RuntimeException",
+        "message": "Aggregation join requires a groupBy \u2014 joined values are attached per group.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "no-join": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 30
+                },
+                {
+                    "key": "done",
+                    "value": 5
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": null,
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": null,
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 30
+                            },
+                            {
+                                "key": "done",
+                                "value": 5
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "no-target-register": {
+        "error": "RuntimeException",
+        "message": "No register found that contains join target schema \"budgets\".",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            }
+        ]
+    },
+    "on-empty-column": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on names an empty column.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "on": "Budget.",
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "on-map-empty": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on names an empty field.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": ""
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "on-map-unknown-parent": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on parent field \"team\" is not one of the groupBy fields.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "on": {
+                                "team": "team"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "on-missing": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on must be a \"Schema.column\" string or a {parentField: joinedField} map.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "parent-denied": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "You do not have permission to aggregate schema \"lines\".",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "permission": [
+                    "lines",
+                    "list",
+                    "alice"
+                ]
+            },
+            {
+                "qualifies": [
+                    "lines",
+                    "read"
+                ]
+            }
+        ]
+    },
+    "qualified-denied": {
+        "error": "RuntimeException",
+        "message": "Forbidden: caller lacks read permission on join target \"budgets\".",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "list",
+                    "alice"
+                ]
+            },
+            {
+                "qualifies": [
+                    "budgets",
+                    "read"
+                ]
+            }
+        ]
+    },
+    "qualified-denied-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "s",
+                    "value": 35
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "s",
+                                "value": 35
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-group": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "s",
+                    "value": 35
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "s",
+                                "value": 35
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-join-filter": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "s",
+                    "value": 35
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "filter": {
+                                "adm": "y"
+                            },
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "filter": {
+                                "adm": "y"
+                            },
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "s",
+                                "value": 35
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-missing-target": {
+        "error": "RuntimeException",
+        "message": "Schema \"nowhere\" not found.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "nowhere.region"
+                        ],
+                        "join": {
+                            "through": "nowhere",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "b"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "nowhere"
+            }
+        ]
+    },
+    "qualified-mixed": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "keys": {
+                        "team": "a",
+                        "budgets.region": "s"
+                    },
+                    "value": 15
+                },
+                {
+                    "keys": {
+                        "team": "b",
+                        "budgets.region": "s"
+                    },
+                    "value": 20
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "team",
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "team",
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "keys": {
+                                    "team": "a",
+                                    "budgets.region": "s"
+                                },
+                                "value": 15
+                            },
+                            {
+                                "keys": {
+                                    "team": "b",
+                                    "budgets.region": "s"
+                                },
+                                "value": 20
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-multi-key": {
+        "error": "RuntimeException",
+        "message": "Grouping by a joined field is supported for single-key joins only; \"budgets.region\" joins on 2 keys.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status",
+                                "team": "team"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "qualified-native-platform": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "s",
+                    "value": 35
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "s",
+                                "value": 35
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-no-on": {
+        "error": "RuntimeException",
+        "message": "Grouping by \"budgets.region\" needs the join's `on` mapping to locate the parent key.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "qualified-null-keys": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": null,
+                    "value": 1
+                },
+                {
+                    "key": "n",
+                    "value": 2
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": null,
+                                "value": 1
+                            },
+                            {
+                                "key": "n",
+                                "value": 2
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "qualified-on-not-strings": {
+        "error": "RuntimeException",
+        "message": "Grouping by \"budgets.region\" needs the join's `on` mapping to locate the parent key.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "on": {
+                                "3": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "qualified-string-on": {
+        "error": "RuntimeException",
+        "message": "Grouping by \"budgets.region\" requires the explicit join.on map ({parentField: joinedField}); the \"Schema.column\" shorthand infers the parent key from the group fields, which are the joined ones here.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "qualified-two-columns": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "keys": {
+                        "budgets.region": "s",
+                        "budgets.adm": "y"
+                    },
+                    "value": 35
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "consumedForGrouping": true
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region",
+                            "budgets.adm"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "budgets.region",
+                            "budgets.adm"
+                        ],
+                        "join": {
+                            "on": {
+                                "status": "status"
+                            },
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "keys": {
+                                    "budgets.region": "s",
+                                    "budgets.adm": "y"
+                                },
+                                "value": 35
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "consumedForGrouping": true
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "select-bad-entry": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.select entries must be \"Field\" strings or {field, metric?} objects.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "select": [
+                                7
+                            ],
+                            "through": "budgets",
+                            "on": "Budget.status"
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "select-bad-metric": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.select metric \"median\" is not supported.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "select": [
+                                {
+                                    "field": "budget",
+                                    "metric": "median"
+                                }
+                            ],
+                            "through": "budgets",
+                            "on": "Budget.status"
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "select-empty": {
+        "error": "RuntimeException",
+        "message": "Aggregation join requires a non-empty `select` list.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "select": [],
+                            "through": "budgets",
+                            "on": "Budget.status"
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    },
+    "select-objects": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 30,
+                    "joined": {
+                        "budget": 2,
+                        "top": 100
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 5,
+                    "joined": {
+                        "budget": 2,
+                        "top": 7
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget",
+                    "top",
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "select": [
+                                "budget",
+                                {
+                                    "field": "Budget.budget",
+                                    "metric": "max",
+                                    "alias": "top"
+                                },
+                                {
+                                    "field": "budget",
+                                    "metric": "count"
+                                }
+                            ],
+                            "through": "budgets",
+                            "on": "Budget.status"
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "select": [
+                                "budget",
+                                {
+                                    "field": "Budget.budget",
+                                    "metric": "max",
+                                    "alias": "top"
+                                },
+                                {
+                                    "field": "budget",
+                                    "metric": "count"
+                                }
+                            ],
+                            "through": "budgets",
+                            "on": "Budget.status"
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 30,
+                                "joined": {
+                                    "budget": 2,
+                                    "top": 100
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 5,
+                                "joined": {
+                                    "budget": 2,
+                                    "top": 7
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget",
+                                "top",
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "string-on": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 30,
+                    "joined": {
+                        "budget": 150
+                    }
+                },
+                {
+                    "key": "done",
+                    "value": 5,
+                    "joined": {
+                        "budget": 10
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "status": "status"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 30,
+                                "joined": {
+                                    "budget": 150
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "value": 5,
+                                "joined": {
+                                    "budget": 10
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "status": "status"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "string-on-first-group": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "keys": {
+                        "team": "a",
+                        "status": "open"
+                    },
+                    "value": 1,
+                    "joined": {
+                        "budget": null
+                    }
+                },
+                {
+                    "keys": {
+                        "team": "b",
+                        "status": "open"
+                    },
+                    "value": 1,
+                    "joined": {
+                        "budget": null
+                    }
+                },
+                {
+                    "keys": {
+                        "team": "a",
+                        "status": "done"
+                    },
+                    "value": 1,
+                    "joined": {
+                        "budget": null
+                    }
+                }
+            ],
+            "join": {
+                "through": "budgets",
+                "on": {
+                    "team": "adm"
+                },
+                "select": [
+                    "budget"
+                ],
+                "backend": "php-fallback",
+                "truncated": false
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": [
+                            "team",
+                            "status"
+                        ],
+                        "join": {
+                            "on": "Budget.adm",
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            },
+            {
+                "schemaFind": "budgets"
+            },
+            {
+                "permission": [
+                    "budgets",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "table": [
+                    "treg",
+                    "budgets",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": [
+                            "team",
+                            "status"
+                        ],
+                        "join": {
+                            "on": "Budget.adm",
+                            "through": "budgets",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "keys": {
+                                    "team": "a",
+                                    "status": "open"
+                                },
+                                "value": 1,
+                                "joined": {
+                                    "budget": null
+                                }
+                            },
+                            {
+                                "keys": {
+                                    "team": "b",
+                                    "status": "open"
+                                },
+                                "value": 1,
+                                "joined": {
+                                    "budget": null
+                                }
+                            },
+                            {
+                                "keys": {
+                                    "team": "a",
+                                    "status": "done"
+                                },
+                                "value": 1,
+                                "joined": {
+                                    "budget": null
+                                }
+                            }
+                        ],
+                        "join": {
+                            "through": "budgets",
+                            "on": {
+                                "team": "adm"
+                            },
+                            "select": [
+                                "budget"
+                            ],
+                            "backend": "php-fallback",
+                            "truncated": false
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "through-empty": {
+        "error": "RuntimeException",
+        "message": "Aggregation join is missing a non-empty `through` schema ref.",
+        "calls": [
+            {
+                "permission": [
+                    "lines",
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "lines",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": {
+                            "through": "",
+                            "on": "Budget.status",
+                            "select": [
+                                "budget"
+                            ]
+                        },
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "lines",
+                    10000
+                ]
+            }
+        ]
+    }
+}

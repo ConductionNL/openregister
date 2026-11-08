@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
  * asking it; injecting it would let a caller supply the answer to the question
  * being asked.
  */
-class ConfigurationKeyRegistry {
+class ConfigurationKeyRegistry implements ConfigurationKeyRegistryInterface {
 
 	/**
 	 * The value is a JSON object.

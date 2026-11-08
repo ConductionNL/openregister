@@ -22,6 +22,7 @@ use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\View\ViewAlert;
+use OCA\OpenRegister\Service\View\ViewObjectQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -81,7 +82,7 @@ class ViewAlertSweepJobTest extends TestCase {
 			$this->objects,
 			$this->users,
 			$dispatcher,
-			new NullLogger()
+			new NullLogger(), new ViewObjectQuery()
 		);
 	}//end setUp()
 
@@ -212,7 +213,7 @@ class ViewAlertSweepJobTest extends TestCase {
 				$objects,
 				$users,
 				$this->createMock(IEventDispatcher::class),
-				new NullLogger()
+				new NullLogger(), new ViewObjectQuery()
 			)
 		);
 
@@ -241,7 +242,7 @@ class ViewAlertSweepJobTest extends TestCase {
 				$objects,
 				$users,
 				$this->createMock(IEventDispatcher::class),
-				new NullLogger()
+				new NullLogger(), new ViewObjectQuery()
 			)
 		);
 

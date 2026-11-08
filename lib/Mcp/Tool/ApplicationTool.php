@@ -236,6 +236,20 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 		?string $description = null,
 		?string $_domain = null,
 	): array {
+		return $this->insertApplication(name: $name, description: $description);
+	}//end createApplication()
+
+	/**
+	 * Insert a new application and report the outcome.
+	 *
+	 * @param string      $name        Application name
+	 * @param string|null $description Application description; null or empty is skipped.
+	 *
+	 * @return (bool|mixed|string)[] Response with created application
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 */
+	private function insertApplication(string $name, ?string $description): array {
 		try {
 			$this->logger->info(
 				message: '[ApplicationTool] Creating application',
@@ -268,7 +282,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			);
 			return $this->formatError(message: 'Failed to create application: ' . $e->getMessage());
 		}//end try
-	}//end createApplication()
+	}//end insertApplication()
 
 	/**
 	 * Update application
@@ -290,6 +304,20 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 		?string $description = null,
 		?string $_domain = null,
 	): array {
+		return $this->patchApplication(uuid: $uuid, fields: ['setName' => $name, 'setDescription' => $description]);
+	}//end updateApplication()
+
+	/**
+	 * Change the non-null fields of an application and report the outcome.
+	 *
+	 * @param string                     $uuid   Application UUID
+	 * @param array<string, string|null> $fields The fields, keyed by setter; null keeps one.
+	 *
+	 * @return (bool|mixed|string)[] Response with updated application
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 */
+	private function patchApplication(string $uuid, array $fields): array {
 		try {
 			$this->logger->info(
 				message: '[ApplicationTool] Updating application',
@@ -300,12 +328,10 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			$application = $this->applicationMapper->findByUuid(uuid: $uuid);
 
 			// Update fields.
-			if ($name !== null) {
-				$application->setName($name);
-			}
-
-			if ($description !== null) {
-				$application->setDescription($description);
+			foreach ($fields as $setter => $value) {
+				if ($value !== null) {
+					$application->$setter($value);
+				}
 			}
 
 			// Save changes (RBAC enforced in mapper).
@@ -329,7 +355,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 			);
 			return $this->formatError(message: 'Failed to update application: ' . $e->getMessage());
 		}//end try
-	}//end updateApplication()
+	}//end patchApplication()
 
 	/**
 	 * Delete application

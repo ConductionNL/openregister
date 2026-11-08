@@ -307,22 +307,39 @@ abstract class AbstractTool implements ToolInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	protected function log(string $functionName, array $parameters, string $level = 'info', string $message = ''): void {
+		$this->writeLog(
+			call: ['function' => $functionName, 'parameters' => $parameters],
+			entry: ['level' => $level, 'message' => $message]
+		);
+	}//end log()
+
+	/**
+	 * Write the log entry of a tool function call.
+	 *
+	 * @param array<string, mixed>  $call  The function name (`function`) and its parameters (`parameters`).
+	 * @param array<string, string> $entry The log level (`level`) and custom message (`message`, empty for the default).
+	 *
+	 * @return void
+	 *
+	 * @psalm-suppress PossiblyNullArgument
+	 */
+	private function writeLog(array $call, array $entry): void {
 		// Build context array with tool execution metadata.
 		// Includes tool name, function name, parameters, agent ID, and user ID.
 		$context = [
 			'file' => __FILE__,
 			'line' => __LINE__,
 			'tool' => $this->getName(),
-			'function' => $functionName,
-			'parameters' => $parameters,
+			'function' => $call['function'],
+			'parameters' => $call['parameters'],
 			'agent' => $this->agent?->getId(),
 			'user' => $this->getUserId(),
 		];
 
 		// Use custom message if provided, otherwise use default message.
 		$messageText = 'Executing function';
-		if ($message !== '') {
-			$messageText = $message;
+		if ($entry['message'] !== '') {
+			$messageText = $entry['message'];
 		}
 
 		// Format log message with class name, tool name, function name, and message text.
@@ -332,7 +349,7 @@ abstract class AbstractTool implements ToolInterface {
 			'[%s] %s: %s: %s',
 			$className,
 			$toolName,
-			$functionName,
+			$call['function'],
 			$messageText
 		);
 
@@ -340,7 +357,7 @@ abstract class AbstractTool implements ToolInterface {
 		// Different log levels help filter and prioritize log entries.
 		// Add file and line to context for all log calls.
 		$contextWithLocation = array_merge(['file' => __FILE__, 'line' => __LINE__], $context);
-		switch ($level) {
+		switch ($entry['level']) {
 			case 'error':
 				// Log errors for critical issues that need attention.
 				$this->logger->error(message: $logMessage, context: $contextWithLocation);
@@ -354,7 +371,7 @@ abstract class AbstractTool implements ToolInterface {
 				$this->logger->info(message: $logMessage, context: $contextWithLocation);
 				break;
 		}
-	}//end log()
+	}//end writeLog()
 
 	/**
 	 * Validate required parameters

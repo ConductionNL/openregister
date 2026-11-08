@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -74,7 +74,7 @@ class FederationController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfaces::FEDERATION_SHARE_TOKEN;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::FEDERATION_SHARE_TOKEN;
 
 	/**
 	 * Confidentiality values treated as public (servable through a schema share).

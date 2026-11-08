@@ -157,13 +157,7 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function createClientCredentialConfig(array $configuration): array {
-		$missingParams = array_keys(array: $configuration);
-		$diff = array_diff(self::REQUIRED_PARAMETERS_CLIENT_CREDENTIALS, $missingParams);
-		if ($diff !== []) {
-			throw new BadRequestException(
-				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
-			);
-		}
+		$this->assertParametersSet(required: self::REQUIRED_PARAMETERS_CLIENT_CREDENTIALS, configuration: $configuration);
 
 		$callConfig = [
 			'form_params' => [
@@ -172,6 +166,39 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 			],
 		];
 
+		$callConfig = $this->withClientCredentials(callConfig: $callConfig, configuration: $configuration);
+
+		return $this->withClientAssertion(callConfig: $callConfig, configuration: $configuration);
+	}//end createClientCredentialConfig()
+
+	/**
+	 * Refuse a configuration that lacks any of the required parameters.
+	 *
+	 * @param string[] $required      The parameter names that must be present.
+	 * @param array    $configuration The configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws BadRequestException Listing the missing parameters.
+	 */
+	private function assertParametersSet(array $required, array $configuration): void {
+		$diff = array_diff($required, array_keys(array: $configuration));
+		if ($diff !== []) {
+			throw new BadRequestException(
+				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
+			);
+		}
+	}//end assertParametersSet()
+
+	/**
+	 * Put the client id and secret in the body or in basic auth, as configured.
+	 *
+	 * @param array $callConfig    The call options so far.
+	 * @param array $configuration The configuration.
+	 *
+	 * @return array The call options with the client credentials.
+	 */
+	private function withClientCredentials(array $callConfig, array $configuration): array {
 		if ($configuration['authentication'] === 'body') {
 			$callConfig['form_params']['client_id'] = $configuration['client_id'];
 			$callConfig['form_params']['client_secret'] = $configuration['client_secret'];
@@ -182,6 +209,18 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 			];
 		}
 
+		return $callConfig;
+	}//end withClientCredentials()
+
+	/**
+	 * Add a signed JWT client assertion when the configuration asks for one.
+	 *
+	 * @param array $callConfig    The call options so far.
+	 * @param array $configuration The configuration.
+	 *
+	 * @return array The call options, with the assertion when configured.
+	 */
+	private function withClientAssertion(array $callConfig, array $configuration): array {
 		if (isset($configuration['client_assertion_type']) === true
 			&& $configuration['client_assertion_type'] === 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
 		) {
@@ -197,7 +236,7 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 		}
 
 		return $callConfig;
-	}//end createClientCredentialConfig()
+	}//end withClientAssertion()
 
 	/**
 	 * Create call options for OAuth with Password Credentials.
@@ -211,13 +250,7 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function createPasswordConfig(array $configuration): array {
-		$configKeys = array_keys(array: $configuration);
-		$diff = array_diff(self::REQUIRED_PARAMETERS_PASSWORD, $configKeys);
-		if ($diff !== []) {
-			throw new BadRequestException(
-				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
-			);
-		}
+		$this->assertParametersSet(required: self::REQUIRED_PARAMETERS_PASSWORD, configuration: $configuration);
 
 		$callConfig = [
 			'form_params' => [
@@ -260,16 +293,7 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 			throw new BadRequestException('Token URL not set, cannot request token');
 		}
 
-		switch ($configuration['grant_type']) {
-			case 'client_credentials':
-				$callConfig = $this->createClientCredentialConfig(configuration: $configuration);
-				break;
-			case 'password':
-				$callConfig = $this->createPasswordConfig(configuration: $configuration);
-				break;
-			default:
-				throw new BadRequestException('Grant type not supported');
-		}
+		$callConfig = $this->grantCallConfig(configuration: $configuration);
 
 		$client = new Client();
 		$response = $client->post($configuration['tokenUrl'], $callConfig);
@@ -281,6 +305,26 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 
 		return $result['access_token'];
 	}//end fetchOAuthTokens()
+
+	/**
+	 * The token call options for the configured grant type.
+	 *
+	 * @param array $configuration The OAuth configuration.
+	 *
+	 * @return array The call options.
+	 *
+	 * @throws BadRequestException If the grant type is not supported or parameters are missing.
+	 */
+	private function grantCallConfig(array $configuration): array {
+		switch ($configuration['grant_type']) {
+			case 'client_credentials':
+				return $this->createClientCredentialConfig(configuration: $configuration);
+			case 'password':
+				return $this->createPasswordConfig(configuration: $configuration);
+			default:
+				throw new BadRequestException('Grant type not supported');
+		}
+	}//end grantCallConfig()
 
 	/**
 	 * Fetch an access token from DeCOS (non-standard OAuth implementation).
@@ -422,18 +466,11 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	}//end getJWK()
 
 	/**
-	 * Generate a signed JWT token.
+	 * The JWS builder over every algorithm a source may sign with.
 	 *
-	 * @param array $payload The JWT payload
-	 * @param JWK $jwk The signing key
-	 * @param string $algorithm The signing algorithm
-	 * @param string|null $x5t Optional certificate thumbprint
-	 *
-	 * @return string The compact-serialized JWT string.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @return JWSBuilder The builder.
 	 */
-	private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t = null): string {
+	private function jwsBuilder(): JWSBuilder {
 		$algorithmManager = new AlgorithmManager(
 			[
 				new HS256(),
@@ -446,9 +483,18 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 			]
 		);
 
-		$jwsBuilder = new JWSBuilder($algorithmManager);
-		$jwsSerializer = new CompactSerializer();
+		return new JWSBuilder($algorithmManager);
+	}//end jwsBuilder()
 
+	/**
+	 * The protected header of a JWT.
+	 *
+	 * @param string      $algorithm The signing algorithm.
+	 * @param string|null $x5t       Optional certificate thumbprint.
+	 *
+	 * @return array The header.
+	 */
+	private function jwtHeader(string $algorithm, ?string $x5t): array {
 		$header = [
 			'alg' => $algorithm,
 			'typ' => 'JWT',
@@ -457,13 +503,30 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 			$header['x5t'] = $x5t;
 		}
 
+		return $header;
+	}//end jwtHeader()
+
+	/**
+	 * Generate a signed JWT token.
+	 *
+	 * @param array       $payload   The JWT payload
+	 * @param JWK         $jwk       The signing key
+	 * @param string      $algorithm The signing algorithm
+	 * @param string|null $x5t       Optional certificate thumbprint
+	 *
+	 * @return string The compact-serialized JWT string.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t = null): string {
+		$jwsBuilder = $this->jwsBuilder();
 		$jws = $jwsBuilder
 			->create()
 			->withPayload(json_encode(value: $payload))
-			->addSignature($jwk, $header)
+			->addSignature($jwk, $this->jwtHeader(algorithm: $algorithm, x5t: $x5t))
 			->build();
 
-		return $jwsSerializer->serialize($jws, 0);
+		return (new CompactSerializer())->serialize($jws, 0);
 	}//end generateJWT()
 
 	/**
@@ -478,26 +541,16 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function fetchJWTToken(array $configuration): string {
-		$configKeys = array_keys(array: $configuration);
-		$diff = array_diff(self::REQUIRED_PARAMETERS_JWT, $configKeys);
-		if ($diff !== []) {
-			throw new BadRequestException(
-				'Some required parameters are not set: [' . implode(separator: ',', array: $diff) . ']'
-			);
-		}
+		$this->assertParametersSet(required: self::REQUIRED_PARAMETERS_JWT, configuration: $configuration);
 
 		$payload = $this->getJWTPayload(configuration: $configuration);
 		$jwk = $this->getJWK(configuration: $configuration);
 
-		if (isset($configuration['x5t']) === true) {
-			return $this->generateJWT(
-				payload: $payload,
-				jwk: $jwk,
-				algorithm: $configuration['algorithm'],
-				x5t: $configuration['x5t']
-			);
-		}
-
-		return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm']);
+		return $this->generateJWT(
+			payload: $payload,
+			jwk: $jwk,
+			algorithm: $configuration['algorithm'],
+			x5t: ($configuration['x5t'] ?? null)
+		);
 	}//end fetchJWTToken()
 }//end class

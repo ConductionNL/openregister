@@ -48,7 +48,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
-use OCA\OpenRegister\Db\SchemaRunMapper;
+use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -96,7 +96,7 @@ class SchemaMigrationService implements SchemaBatchMigratorInterface {
 	 * Constructor.
 	 *
 	 * @param SchemaMigrationPlanner $planner Pure transform engine.
-	 * @param SchemaRunMapper $runMapper Run persistence.
+	 * @param SchemaRunMapperInterface $runMapper Run persistence.
 	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
 	 * @param ObjectOperationsInterface $objectService Object read/save pipeline.
@@ -104,7 +104,7 @@ class SchemaMigrationService implements SchemaBatchMigratorInterface {
 	 */
 	public function __construct(
 		private readonly SchemaMigrationPlanner $planner,
-		private readonly SchemaRunMapper $runMapper,
+		private readonly SchemaRunMapperInterface $runMapper,
 		private readonly SchemaRunEntryMapper $runEntryMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectOperationsInterface $objectService,

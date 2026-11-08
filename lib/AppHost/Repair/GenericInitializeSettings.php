@@ -56,7 +56,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Repair;
 
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
-use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
+use OCA\OpenRegister\Service\Credential\CredentialAppTokenServiceInterface;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrarInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
@@ -82,7 +82,7 @@ class GenericInitializeSettings implements IRepairStep {
 	 * @param AppHostSettingsService $settingsService App-scoped settings service.
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param IAppManager|null $appManager Locates the leaf's bundled manifest (lazily resolved when null).
-	 * @param CredentialAppTokenService|null $tokenService Credential-broker app registry (lazily resolved when null).
+	 * @param CredentialAppTokenServiceInterface|null $tokenService Credential-broker app registry (lazily resolved when null).
 	 * @param DoriathApplicationRegistrarInterface|null $applicationRegistrar Per-app Doriath application registrar (lazily resolved when null).
 	 */
 	public function __construct(
@@ -90,7 +90,7 @@ class GenericInitializeSettings implements IRepairStep {
 		protected readonly AppHostSettingsService $settingsService,
 		protected readonly LoggerInterface $logger,
 		protected readonly ?IAppManager $appManager = null,
-		protected readonly ?CredentialAppTokenService $tokenService = null,
+		protected readonly ?CredentialAppTokenServiceInterface $tokenService = null,
 		protected readonly ?DoriathApplicationRegistrarInterface $applicationRegistrar = null,
 	) {
 	}//end __construct()
@@ -212,7 +212,7 @@ class GenericInitializeSettings implements IRepairStep {
 	 */
 	private function registerBrokerAppKey(IOutput $output): void {
 		try {
-			$tokenService = ($this->tokenService ?? Server::get(CredentialAppTokenService::class));
+			$tokenService = ($this->tokenService ?? Server::get(CredentialAppTokenServiceInterface::class));
 
 			if ($tokenService->isRegistered($this->appId) === true) {
 				// Never rotate an existing signing secret from an auto-run.

@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -60,7 +60,7 @@ class FlowPublishedGraph implements FlowPublishedGraphInterface {
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function graphOf(string $flowId): ?array {
-		$published = $this->container->get(FlowVersionMapper::class)->findPublished(flowUuid: $flowId);
+		$published = $this->container->get(FlowVersionMapperInterface::class)->findPublished(flowUuid: $flowId);
 		if ($published === null) {
 			return null;
 		}
@@ -91,7 +91,7 @@ class FlowPublishedGraph implements FlowPublishedGraphInterface {
 			return null;
 		}
 
-		$row = $this->container->get(FlowVersionMapper::class)
+		$row = $this->container->get(FlowVersionMapperInterface::class)
 			->find(flowUuid: (string)$run->getFlowId(), version: (int)$version);
 
 		if ($row === null) {

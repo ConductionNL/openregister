@@ -155,15 +155,15 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	/**
 	 * Bring the plan's items in through the case layer as the fragment's app.
 	 *
-	 * @param string               $app  The app that ships the fragment; the plan is written as that app.
-	 * @param string               $key  The plan's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled plan fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{object: string, created: array<int, string>}|null} The entry, or why not.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$objectUuid = (string) $data['object'];
 		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {

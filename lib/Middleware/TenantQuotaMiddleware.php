@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Middleware;
 
 use DateTime;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Service\TenantLifecycleService;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
@@ -54,20 +54,20 @@ class TenantQuotaMiddleware extends Middleware {
 	 * Environment-based request quota multipliers.
 	 */
 	private const ENV_REQUEST_MULTIPLIER = [
-		TenantLifecycleService::ENV_DEVELOPMENT => 10,
-		TenantLifecycleService::ENV_TEST => 5,
-		TenantLifecycleService::ENV_ACCEPTANCE => 2,
-		TenantLifecycleService::ENV_PRODUCTION => 1,
+		TenantLifecycleServiceInterface::ENV_DEVELOPMENT => 10,
+		TenantLifecycleServiceInterface::ENV_TEST => 5,
+		TenantLifecycleServiceInterface::ENV_ACCEPTANCE => 2,
+		TenantLifecycleServiceInterface::ENV_PRODUCTION => 1,
 	];
 
 	/**
 	 * Environment-based bandwidth quota multipliers.
 	 */
 	private const ENV_BANDWIDTH_MULTIPLIER = [
-		TenantLifecycleService::ENV_DEVELOPMENT => 5,
-		TenantLifecycleService::ENV_TEST => 3,
-		TenantLifecycleService::ENV_ACCEPTANCE => 2,
-		TenantLifecycleService::ENV_PRODUCTION => 1,
+		TenantLifecycleServiceInterface::ENV_DEVELOPMENT => 5,
+		TenantLifecycleServiceInterface::ENV_TEST => 3,
+		TenantLifecycleServiceInterface::ENV_ACCEPTANCE => 2,
+		TenantLifecycleServiceInterface::ENV_PRODUCTION => 1,
 	];
 
 	/**
@@ -90,10 +90,10 @@ class TenantQuotaMiddleware extends Middleware {
 	 * The refusal message for each organisation status nobody may work in.
 	 */
 	private const REFUSED_STATUSES = [
-		TenantLifecycleService::STATUS_SUSPENDED => 'Organisation is suspended',
-		TenantLifecycleService::STATUS_DEPROVISIONING => 'Organisation is being deprovisioned',
+		TenantLifecycleServiceInterface::STATUS_SUSPENDED => 'Organisation is suspended',
+		TenantLifecycleServiceInterface::STATUS_DEPROVISIONING => 'Organisation is being deprovisioned',
 		// Retained: the tenancy ended and the data is kept, so nobody works in it.
-		TenantLifecycleService::STATUS_RETAINED => 'Organisation access has ended and its data is retained',
+		TenantLifecycleServiceInterface::STATUS_RETAINED => 'Organisation access has ended and its data is retained',
 	];
 
 	/**
@@ -212,9 +212,9 @@ class TenantQuotaMiddleware extends Middleware {
 	 * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-a-terminated-organisation-must-be-able-to-keep-its-data-in-the-retained-state
 	 */
 	private function assertStatusAllows(object $organisation, IUser $user): void {
-		$status = $organisation->getStatus() ?? TenantLifecycleService::STATUS_ACTIVE;
+		$status = $organisation->getStatus() ?? TenantLifecycleServiceInterface::STATUS_ACTIVE;
 		$message = self::REFUSED_STATUSES[$status] ?? null;
-		if ($status === TenantLifecycleService::STATUS_PROVISIONING
+		if ($status === TenantLifecycleServiceInterface::STATUS_PROVISIONING
 			&& $this->groupManager->isAdmin($user->getUID()) === false
 		) {
 			$message = 'Organisation is being provisioned';
@@ -266,7 +266,7 @@ class TenantQuotaMiddleware extends Middleware {
 			return null;
 		}
 
-		$environment = $organisation->getEnvironment() ?? TenantLifecycleService::ENV_PRODUCTION;
+		$environment = $organisation->getEnvironment() ?? TenantLifecycleServiceInterface::ENV_PRODUCTION;
 		return $requestQuota * (self::ENV_REQUEST_MULTIPLIER[$environment] ?? 1);
 	}//end effectiveRequestQuota()
 
