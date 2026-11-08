@@ -163,7 +163,7 @@ class ProcessingLogController extends Controller {
 			);
 		}
 
-		return $this->extract(subject: $subject, organisationId: $organisationId, includeConfidential: $isFg);
+		return $this->extract(subject: $subject, scope: ['organisationId' => $organisationId, 'includeConfidential' => $isFg]);
 	}//end involvedParty()
 
 	/**
@@ -227,15 +227,15 @@ class ProcessingLogController extends Controller {
 	/**
 	 * The per-subject extract over the requested period, or the range refusal.
 	 *
-	 * @param array{idType: string, idValue: string} $subject             The subject identifiers.
-	 * @param string|null                            $organisationId      The organisation scope.
-	 * @param bool                                   $includeConfidential Whether confidential entries are included.
+	 * @param array{idType: string, idValue: string}                       $subject The subject identifiers.
+	 * @param array{organisationId: ?string, includeConfidential: bool} $scope   The organisation scope, and whether
+	 *                                                                           confidential entries are included.
 	 *
 	 * @return JSONResponse The extract envelope, or HTTP 422.
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	private function extract(array $subject, ?string $organisationId, bool $includeConfidential): JSONResponse {
+	private function extract(array $subject, array $scope): JSONResponse {
 		$from = $this->dateParam(key: 'from');
 		$to = $this->dateParam(key: 'to');
 
@@ -246,30 +246,28 @@ class ProcessingLogController extends Controller {
 
 		$entries = $this->logMapper->findBySubject(
 			idType: $subject['idType'], idValue: $subject['idValue'], from: $from, to: $to,
-			organisationId: $organisationId, includeConfidential: $includeConfidential
+			organisationId: $scope['organisationId'], includeConfidential: $scope['includeConfidential']
 		);
 
-		return new JSONResponse(data: $this->extractBody(subject: $subject, from: $from, to: $to, entries: $entries));
+		return new JSONResponse(data: $this->extractBody(subject: $subject, read: ['from' => $from, 'to' => $to, 'entries' => $entries]));
 	}//end extract()
 
 	/**
 	 * The extract envelope.
 	 *
-	 * @param array{idType: string, idValue: string} $subject The subject identifiers.
-	 * @param DateTime|null                          $from    Lower bound.
-	 * @param DateTime|null                          $to      Upper bound.
-	 * @param array<int, mixed>                      $entries The reads.
+	 * @param array{idType: string, idValue: string}                             $subject The subject identifiers.
+	 * @param array{from: ?DateTime, to: ?DateTime, entries: array<int, mixed>} $read    The lower and upper bound, and the reads.
 	 *
 	 * @return array<string, mixed> The response body.
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	private function extractBody(array $subject, DateTime|null $from, DateTime|null $to, array $entries): array {
+	private function extractBody(array $subject, array $read): array {
 		return [
 			'subject' => $subject,
-			'period' => ['from' => $from?->format('c'), 'to' => $to?->format('c')],
-			'count' => count($entries),
-			'reads' => $entries,
+			'period' => ['from' => $read['from']?->format('c'), 'to' => $read['to']?->format('c')],
+			'count' => count($read['entries']),
+			'reads' => $read['entries'],
 		];
 	}//end extractBody()
 

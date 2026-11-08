@@ -146,7 +146,8 @@ class ObjectReadStateController extends Controller {
 		}
 
 		$subResource = $this->requestedSubResource();
-		$mark = fn (): array => $this->markAndClear(object: $object, register: $register, schema: $schema, subResource: $subResource);
+		$where = ['register' => $register, 'schema' => $schema, 'subResource' => $subResource];
+		$mark = fn (): array => $this->markAndClear(object: $object, where: $where);
 		$marked = $this->endpoint->run(operation: $mark, context: 'markRead');
 		if ($marked instanceof JSONResponse) {
 			return $marked;
@@ -226,22 +227,21 @@ class ObjectReadStateController extends Controller {
 	/**
 	 * Store the read state, then clear the notices the opened work was about.
 	 *
-	 * @param ObjectEntity $object      The object that was opened.
-	 * @param string       $register    Register slug or id.
-	 * @param string       $schema      Schema slug or id.
-	 * @param string|null  $subResource The sub-resource, when one was opened.
+	 * @param ObjectEntity                                                     $object The object that was opened.
+	 * @param array{register: string, schema: string, subResource: ?string} $where  Register slug or id, schema slug or id,
+	 *                                                                              and the sub-resource, when one was opened.
 	 *
 	 * @return array{state: ObjectReadState, cleared: int} The stored state and how many notices were cleared.
 	 */
-	private function markAndClear(ObjectEntity $object, string $register, string $schema, ?string $subResource): array {
+	private function markAndClear(ObjectEntity $object, array $where): array {
 		$state = $this->readState->markRead(
 			object: $object,
-			register: $register,
-			schema: $schema,
-			subResource: $subResource
+			register: $where['register'],
+			schema: $where['schema'],
+			subResource: $where['subResource']
 		);
 
-		return ['state' => $state, 'cleared' => $this->clearNotices(object: $object, subResource: $subResource)];
+		return ['state' => $state, 'cleared' => $this->clearNotices(object: $object, subResource: $where['subResource'])];
 
 	}//end markAndClear()
 
