@@ -251,10 +251,14 @@ use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -404,6 +408,8 @@ final class ContractBindings {
 		DeepLinkResolverInterface::class => DeepLinkRegistryService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
 		DenyResolverInterface::class => DenyResolver::class,
+		ObjectGrantResolverInterface::class => ObjectGrantResolver::class,
+		SchemaManageGateInterface::class => SchemaManageGate::class,
 		DependentValueTableInterface::class => DependentValueTable::class,
 		\OCA\OpenRegister\Service\Object\DraftActivationInterface::class => \OCA\OpenRegister\Service\Object\DraftActivation::class,
 		\OCA\OpenRegister\Service\Object\DraftExpiryInterface::class => \OCA\OpenRegister\Service\Object\DraftExpiry::class,

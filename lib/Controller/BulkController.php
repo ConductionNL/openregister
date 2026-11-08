@@ -42,7 +42,8 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
+use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -123,9 +124,9 @@ class BulkController extends Controller {
 	/**
 	 * Who may manage a schema. Built from the collaborators above when null.
 	 *
-	 * @var ?SchemaManageGate
+	 * @var ?SchemaManageGateInterface
 	 */
-	private readonly ?SchemaManageGate $schemaManageGate;
+	private readonly ?SchemaManageGateInterface $schemaManageGate;
 
 	/**
 	 * Constructor for the BulkController
@@ -175,7 +176,7 @@ class BulkController extends Controller {
 	 * The refusal of a single-schema bulk write the caller may not manage, or null.
 	 *
 	 * Mixed-schema (0) batches name their schema per row and are checked against
-	 * {@see SchemaManageGate::firstUnmanageableRowSchema()} once the rows are read.
+	 * {@see SchemaManageGateInterface::firstUnmanageableRowSchema()} once the rows are read.
 	 *
 	 * @param int $schemaId The resolved schema id, 0 for mixed-schema.
 	 *
@@ -231,10 +232,10 @@ class BulkController extends Controller {
 	/**
 	 * The schema manage gate, built from this controller's collaborators when none was injected.
 	 *
-	 * @return SchemaManageGate The gate.
+	 * @return SchemaManageGateInterface The gate.
 	 */
-	private function manageGate(): SchemaManageGate {
-		return ($this->schemaManageGate ?? new SchemaManageGate(
+	private function manageGate(): SchemaManageGateInterface {
+		return ($this->schemaManageGate ?? RbacCollaborators::schemaManageGate(
 			userSession: $this->userSession,
 			groupManager: $this->groupManager,
 			schemaMapper: $this->schemaMapper

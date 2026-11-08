@@ -60,7 +60,7 @@ use Throwable;
 /**
  * Resolves the object UUIDs a caller has been granted, from core's shares.
  */
-class ObjectGrantResolver {
+class ObjectGrantResolver implements ObjectGrantResolverInterface {
 
 	/**
 	 * Share types that name a PRINCIPAL, and so can grant an object.

@@ -35,7 +35,7 @@ use Throwable;
  *
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-mixed-schema-bulk-route-checks-every-schema-its-rows-name
  */
-class SchemaManageGate {
+class SchemaManageGate implements SchemaManageGateInterface {
 
 	/**
 	 * Constructor.
