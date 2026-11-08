@@ -315,7 +315,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/common.scss' as *;
+
 .calendars {
 	display: flex;
 	flex-direction: column;
@@ -365,11 +367,6 @@ export default {
 }
 
 .calendars__sr {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	overflow: hidden;
-	clip-path: inset(50%);
-	white-space: nowrap;
+	@include visually-hidden;
 }
 </style>
