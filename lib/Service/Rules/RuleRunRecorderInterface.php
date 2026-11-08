@@ -45,6 +45,8 @@ interface RuleRunRecorderInterface {
 	 * @param DateTime|null  $moment  The moment of evaluation; defaults to now.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function record(RuleRunSubject $subject, RuleTrace $trace, ?DateTime $moment = null): void;
 }//end interface
