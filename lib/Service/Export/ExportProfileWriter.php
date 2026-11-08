@@ -53,14 +53,7 @@ use Throwable;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportProfileWriter {
-	/**
-	 * The prefix of the CSV metadata line.
-	 *
-	 * @var string
-	 */
-	public const CSV_METADATA_PREFIX = '#openregister-export ';
-
+class ExportProfileWriter implements ExportProfileWriterInterface {
 	/**
 	 * Wire the name resolver and the value renderer.
 	 *

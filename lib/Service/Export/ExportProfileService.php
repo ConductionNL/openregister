@@ -50,7 +50,7 @@ use Throwable;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportProfileService {
+class ExportProfileService implements ExportProfileServiceInterface {
 
 	/**
 	 * Wire the collaborators.
