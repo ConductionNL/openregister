@@ -135,9 +135,9 @@ class FlowTimerService implements FlowTimerControlInterface {
 	/**
 	 * Business-time arithmetic.
 	 *
-	 * @var SlaCalculator
+	 * @var SlaCalculatorInterface
 	 */
-	private readonly SlaCalculator $calculator;
+	private readonly SlaCalculatorInterface $calculator;
 
 	/**
 	 * Rung resolution and validation.

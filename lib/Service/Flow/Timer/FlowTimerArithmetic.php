@@ -32,12 +32,12 @@ final class FlowTimerArithmetic {
 	 * Bundle the services.
 	 *
 	 * @param WorkingCalendarService  $calendars  Calendar resolution.
-	 * @param SlaCalculator           $calculator Business-time arithmetic.
+	 * @param SlaCalculatorInterface  $calculator Business-time arithmetic.
 	 * @param EscalationLadderService $ladder     Rung resolution and validation.
 	 */
 	public function __construct(
 		public readonly WorkingCalendarService $calendars,
-		public readonly SlaCalculator $calculator,
+		public readonly SlaCalculatorInterface $calculator,
 		public readonly EscalationLadderService $ladder,
 	) {
 	}//end __construct()
