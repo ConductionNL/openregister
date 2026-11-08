@@ -659,6 +659,7 @@ final class ContractBindings {
 		PortalTaskDeliveryServiceInterface::class => PortalTaskDeliveryService::class,
 		PrincipalResolverRegistryInterface::class => PrincipalResolverRegistry::class,
 		RestApiTransportInterface::class => RestApiTransport::class,
+		\OCA\OpenRegister\Service\Rbac\PrincipalReachListerInterface::class => \OCA\OpenRegister\Service\Rbac\PrincipalReachService::class,
 		RouterNodeInterface::class => RouterNode::class,
 		SelectielijstImportServiceInterface::class => SelectielijstImportService::class,
 		SelectielijstReferenceResolverInterface::class => SelectielijstReferenceResolver::class,

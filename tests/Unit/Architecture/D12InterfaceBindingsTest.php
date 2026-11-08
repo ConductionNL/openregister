@@ -187,19 +187,16 @@ final class D12InterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * and a schema-mapper refusal helper are not container-built); they are
-	 * AuditTrailExportJob is audit code, outside this lane; it hands the
-	 * Both are Db code that constructs the class with `new` (the schema entity
-	 * concrete recorder to its RecordedQueuedJob parent, which now takes the
-	 * interface. MaintenanceModeMiddleware is touched by an open pull request,
-	 * left as they are.
+	 * ExtendingFormDeclaration and UniqueConstraintEvaluator: both callers are
+	 * Db code that constructs the class with `new` (the schema entity and a
+	 * schema-mapper refusal helper are not container-built); they are left as
+	 * they are. MaintenanceModeMiddleware is touched by an open pull request,
 	 * so it is left until that lands.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
 		ExtendingFormDeclaration::class => ['Db/SchemaMapper/PropertyDeclarationRefusals.php'],
-		JobRunRecorder::class => ['BackgroundJob/AuditTrailExportJob.php'],
 		MaintenanceModeService::class => ['Middleware/MaintenanceModeMiddleware.php'],
 		UniqueConstraintEvaluator::class => ['Db/Schema.php'],
 	];
