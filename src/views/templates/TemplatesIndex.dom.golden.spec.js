@@ -55,6 +55,16 @@ describe('TemplatesIndex table', () => {
 		expect(tableText(wrapper)).toMatchSnapshot()
 	})
 
+	it('lets the name and description wrap', async () => {
+		const wrapper = mount(TemplatesIndex)
+		await flushPromises()
+		await wrapper.setData({ loading: false, templatesList: [{ id: 1, name: 'Letter', type: 'docx' }] })
+		const wrapping = wrapper.findComponent({ name: 'CnDataTable' }).props('columns')
+			.filter((column) => column.cellClass === 'cn-cell--wrap')
+			.map((column) => column.key)
+		expect(wrapping).toEqual(['name', 'description'])
+	})
+
 	it('shows the placeholder without templates', async () => {
 		const wrapper = mount(TemplatesIndex)
 		await flushPromises()

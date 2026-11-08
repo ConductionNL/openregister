@@ -182,7 +182,7 @@ export default {
 		 */
 		webhookColumns() {
 			return [
-				{ key: 'name', label: t('openregister', 'Name'), class: 'column-name' },
+				{ key: 'name', label: t('openregister', 'Name'), class: 'column-name', cellClass: 'cn-cell--wrap' },
 				{ key: 'url', label: t('openregister', 'URL'), class: 'column-url' },
 				{ key: 'method', label: t('openregister', 'Method'), class: 'column-method' },
 				{ key: 'enabled', label: t('openregister', 'Status'), class: 'column-status' },
@@ -543,9 +543,6 @@ export default {
 
 .webhook-name {
 	font-weight: 500;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 }
 
 .webhook-url {

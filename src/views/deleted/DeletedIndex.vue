@@ -209,7 +209,7 @@ export default {
 		 */
 		columns() {
 			return [
-				{ key: 'title', label: t('openregister', 'Title') },
+				{ key: 'title', label: t('openregister', 'Title'), cellClass: 'cn-cell--wrap' },
 				{ key: 'register', label: t('openregister', 'Register'), class: 'tableColumnConstrained' },
 				{ key: 'schema', label: t('openregister', 'Schema'), class: 'tableColumnConstrained' },
 				{ key: 'deleted', label: t('openregister', 'Deleted Date') },

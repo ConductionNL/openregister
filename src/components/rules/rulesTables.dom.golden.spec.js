@@ -58,13 +58,50 @@ jest.mock('@nextcloud/vue', () => {
 		NcTextField: plainStub('NcTextField'),
 	}
 })
-jest.mock('@conduction/nextcloud-vue', () => ({
-	__esModule: true,
-	CnDataTable: jest.requireActual('../../../tests/unit/support/tableGolden.js').CnDataTableStub,
-}))
+jest.mock('@conduction/nextcloud-vue', () => {
+	const { CnDataTableStub } = jest.requireActual('../../../tests/unit/support/tableGolden.js')
+	// A cell without a slot as the library's formatValue draws it: text cut at
+	// 100 characters plus an ellipsis, an empty value as a dash.
+	const formatValue = (value) => {
+		if (value === null || value === undefined || value === '') {
+			return '—'
+		}
+		const text = String(value)
+		return text.length > 100 ? `${text.substring(0, 100)}...` : text
+	}
+	return {
+		__esModule: true,
+		CnDataTable: {
+			...CnDataTableStub,
+			render() {
+				const $slots = { ...this.$slots }
+				for (const col of this.columns) {
+					$slots[`column-${col.key}`] ||= ({ value }) => formatValue(value)
+				}
+				return CnDataTableStub.render.call(new Proxy(this, {
+					get: (target, key) => (key === '$slots' ? $slots : target[key]),
+				}))
+			},
+		},
+	}
+})
 jest.mock('./RuleTraceView.vue', () => ({ __esModule: true, default: { render: () => null } }))
 jest.mock('vue-material-design-icons/Gavel.vue', () => ({ __esModule: true, default: { render: () => null } }))
 jest.mock('vue-material-design-icons/History.vue', () => ({ __esModule: true, default: { render: () => null } }))
+
+const LONG_TEXT = 'A long sentence that runs on. '.repeat(6).trim()
+
+/**
+ * The columns of a table that opt in to wrapping.
+ *
+ * @param {object} wrapper The mounted panel
+ * @return {Array<string>} Their keys
+ */
+function wrappingColumns(wrapper) {
+	return wrapper.findComponent({ name: 'CnDataTable' }).props('columns')
+		.filter((column) => column.cellClass === 'cn-cell--wrap')
+		.map((column) => column.key)
+}
 
 const RULES = [
 	{ id: 'r1', key: 'total', label: 'Total', order: 1, kind: 'calculation', source: 'x-openregister-calculations', lastRun: '2026-11-01', enabled: true },
@@ -84,6 +121,11 @@ describe('RuleInventoryTable', () => {
 			['false', 'false'],
 			['true', 'true'],
 		])
+	})
+
+	it('lets the rule, source and last run cells wrap', () => {
+		const wrapper = mount(RuleInventoryTable, { props: { rules: RULES } })
+		expect(wrappingColumns(wrapper)).toEqual(['label', 'source', 'lastRun'])
 	})
 
 	it('shows the empty state without rules', () => {
@@ -119,6 +161,13 @@ describe('RuleRunsPanel', () => {
 		expect(wrapper.text()).toContain('t:Showing {shown} of {total}.{"shown":3,"total":9}')
 	})
 
+	it('lets the deciding operand wrap', async () => {
+		fetchRuns.mockResolvedValue({ runs: [{ id: 1, verdict: 'pass' }], total: 1 })
+		const wrapper = mount(RuleRunsPanel, { props: { ruleId: 'r1' } })
+		await flushPromises()
+		expect(wrappingColumns(wrapper)).toEqual(['operand'])
+	})
+
 	it('shows the empty state without runs', async () => {
 		fetchRuns.mockResolvedValue({ runs: [], total: 0 })
 		const wrapper = mount(RuleRunsPanel, { props: { ruleId: 'r1' } })
@@ -133,6 +182,12 @@ describe('RuleTrialPanel', () => {
 		const wrapper = mount(RuleTrialPanel, { props: { ruleId: 'r1' } })
 		await wrapper.setData({ result: { trace: [], writes: { total: 12, label: 'x', nested: { a: 1 } } } })
 		expect(tableText(wrapper)).toMatchSnapshot()
+	})
+
+	it('lets the property and written value wrap', async () => {
+		const wrapper = mount(RuleTrialPanel, { props: { ruleId: 'r1' } })
+		await wrapper.setData({ result: { trace: [], writes: { total: 12 } } })
+		expect(wrappingColumns(wrapper)).toEqual(['id', 'value'])
 	})
 
 	it('says nothing is written without writes', async () => {
@@ -156,5 +211,16 @@ describe('RuleConditionEditor', () => {
 			},
 		})
 		expect(tableText(wrapper)).toMatchSnapshot()
+	})
+
+	it('keeps a long operator description whole and lets it wrap', () => {
+		const wrapper = mount(RuleConditionEditor, {
+			props: {
+				rule: { id: 'r1', kind: 'calculation', condition: {} },
+				operators: [{ op: 'map', arity: '2', category: 'Data', description: LONG_TEXT }],
+			},
+		})
+		expect(wrapper.findAll('td').map((cell) => cell.text())).toContain(LONG_TEXT)
+		expect(wrappingColumns(wrapper)).toEqual(['description'])
 	})
 })
