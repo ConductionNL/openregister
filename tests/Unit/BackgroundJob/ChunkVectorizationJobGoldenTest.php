@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -231,9 +232,9 @@ class ChunkVectorizationJobGoldenTest extends TestCase
         $storage = $this->createMock(VectorStorageHandler::class);
         $storeCalls = 0;
         $storage->method('storeVector')->willReturnCallback(
-            function (...$args) use ($case, &$storeCalls): int {
+            function (StoredVector $vector) use ($case, &$storeCalls): int {
                 $storeCalls++;
-                $this->record('storeVector', $args);
+                $this->record('storeVector', array_values(get_object_vars($vector)));
                 if (in_array($storeCalls, $case['storeThrow'] ?? [], true) === true) {
                     throw new \Exception('store failed '.$storeCalls);
                 }

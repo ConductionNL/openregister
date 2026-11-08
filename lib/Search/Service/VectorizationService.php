@@ -29,6 +29,10 @@ use OCA\OpenRegister\Search\Service\Vectorization\VectorizationRun;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorizedEntity;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject;
 
 /**
  * VectorizationService
@@ -519,15 +523,20 @@ class VectorizationService implements VectorizationServiceInterface {
 		$metadata = $target->strategy->prepareVectorMetadata(entity: $target->entity, item: $item);
 
 		$this->vectorService->storeVector(
-			entityType: $metadata['entity_type'],
-			entityId: $metadata['entity_id'],
-			embedding: $embeddingData['embedding'],
-			model: $embeddingData['model'],
-			dimensions: $embeddingData['dimensions'],
-			chunkIndex: $metadata['chunk_index'] ?? 0,
-			totalChunks: $metadata['total_chunks'] ?? 1,
-			chunkText: $metadata['chunk_text'] ?? null,
-			metadata: $metadata['additional_metadata'] ?? []
+			vector: new StoredVector(
+				subject: new VectorSubject(entityType: $metadata['entity_type'], entityId: $metadata['entity_id']),
+				payload: new VectorPayload(
+					embedding: $embeddingData['embedding'],
+					model: $embeddingData['model'],
+					dimensions: $embeddingData['dimensions']
+				),
+				position: new VectorChunkPosition(
+					chunkIndex: $metadata['chunk_index'] ?? 0,
+					totalChunks: $metadata['total_chunks'] ?? 1,
+					chunkText: $metadata['chunk_text'] ?? null
+				),
+				metadata: $metadata['additional_metadata'] ?? []
+			)
 		);
 	}//end storeVector()
 
