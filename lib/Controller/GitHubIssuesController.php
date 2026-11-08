@@ -38,9 +38,9 @@ use OCA\OpenRegister\Controller\Support\GitHubIssueDraft;
 use OCA\OpenRegister\Controller\Support\GitHubIssueListing;
 use OCA\OpenRegister\Controller\Support\GitHubIssuesControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
-use OCA\OpenRegister\Service\Configuration\GitHubGuards;
-use OCA\OpenRegister\Service\Configuration\GitHubRequestValidator;
-use OCA\OpenRegister\Service\Configuration\RateLimiterService;
+use OCA\OpenRegister\Service\Configuration\GitHubGuardsInterface;
+use OCA\OpenRegister\Service\Configuration\GitHubRequestValidatorInterface;
+use OCA\OpenRegister\Service\Configuration\RateLimiterServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -83,23 +83,23 @@ class GitHubIssuesController extends Controller {
 	/**
 	 * Policy guards (feature flag, repo allowlist, GET rate limit)
 	 *
-	 * @var GitHubGuards
+	 * @var GitHubGuardsInterface
 	 */
-	private readonly GitHubGuards $guards;
+	private readonly GitHubGuardsInterface $guards;
 
 	/**
 	 * Pure-function input validators
 	 *
-	 * @var GitHubRequestValidator
+	 * @var GitHubRequestValidatorInterface
 	 */
-	private readonly GitHubRequestValidator $validator;
+	private readonly GitHubRequestValidatorInterface $validator;
 
 	/**
 	 * Cache-backed rate limiter with fail-closed contract
 	 *
-	 * @var RateLimiterService
+	 * @var RateLimiterServiceInterface
 	 */
-	private readonly RateLimiterService $rateLimiter;
+	private readonly RateLimiterServiceInterface $rateLimiter;
 
 	/**
 	 * The controller's injected services.

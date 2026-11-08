@@ -42,7 +42,7 @@ use OCP\AppFramework\Http\JSONResponse;
  *
  * @psalm-suppress UnusedClass
  */
-class GitHubRequestValidator {
+class GitHubRequestValidator implements GitHubRequestValidatorInterface {
 	/**
 	 * Allowed `sort` query parameter values (task 1.20).
 	 */
