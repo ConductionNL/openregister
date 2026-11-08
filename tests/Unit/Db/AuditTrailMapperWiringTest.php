@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
@@ -141,10 +142,9 @@ final class AuditTrailMapperWiringTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$this->database->idbConnection(),
-			$this->createMock(ContainerInterface::class),
 			$session,
 			$request,
-			new NullLogger()
+			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger())
 		);
 	}//end mapper()
 }//end class

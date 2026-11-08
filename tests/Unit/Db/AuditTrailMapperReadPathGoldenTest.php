@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -431,6 +432,6 @@ final class AuditTrailMapperReadPathGoldenTest extends TestCase {
 			}
 		};
 
-		return new AuditTrailMapper($db, $container, $this->createMock(IUserSession::class), $this->createMock(IRequest::class), $logger);
+		return new AuditTrailMapper($db, $this->createMock(IUserSession::class), $this->createMock(IRequest::class), new AuditTrailMapperServices($container, $logger));
 	}//end mapper()
 }//end class

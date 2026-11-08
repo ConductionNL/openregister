@@ -43,6 +43,7 @@ namespace Unit\Service\Lifecycle;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -481,10 +482,9 @@ class TransitionEngineAsSystemTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$this->createMock(IDBConnection::class),
-			$container,
 			$this->userSession,
 			$request,
-			$this->createMock(LoggerInterface::class)
+			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class))
 		);
 	}//end auditMapper()
 }//end class
