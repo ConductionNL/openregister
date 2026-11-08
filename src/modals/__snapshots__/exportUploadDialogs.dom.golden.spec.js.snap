@@ -1,0 +1,344 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ReimportDescriptorDialog (DOM golden) renders the question 1`] = `
+"<!-- Re-importing takes the file's authorization over a local change, and
+	     re-imports the whole app's configuration where it has a base
+	     document: say so before it runs, not after. -->
+<x-ncdialog open="true" name="t:Re-import {register}? {&quot;register&quot;:&quot;Reg&quot;}" size="small">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default>t:Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary">
+      <slot-default>t:Re-import</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Re-importing {app} takes the authorization of its schemas from the file, replacing any change made on this instance, and may re-import every register of the app, not only {register}. {"app":"app","register":"Reg"}</p>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`import, export, upload and download dialogs (DOM golden) exportConfiguration renders a reported error 1`] = `
+"<x-ncdialog name="export-configuration-dialog" title="t:Export Configuration" size="small" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary">
+      <slot-default> Export </slot-default>
+      <slot-icon>
+        <x-export size="20"></x-export>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <p>Export configuration "Conf"?</p>
+      <x-nccheckboxradioswitch modelvalue="false">
+        <slot-default> Include related objects </slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`import, export, upload and download dialogs (DOM golden) exportConfiguration renders while open 1`] = `
+"<x-ncdialog name="export-configuration-dialog" title="t:Export Configuration" size="small" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary">
+      <slot-default> Export </slot-default>
+      <slot-icon>
+        <x-export size="20"></x-export>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <div class="formContainer">
+      <p>Export configuration "Conf"?</p>
+      <x-nccheckboxradioswitch modelvalue="false">
+        <slot-default> Include related objects </slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`import, export, upload and download dialogs (DOM golden) exportRegister renders a reported error 1`] = `
+"<x-ncdialog name="export-register-dialog" title="t:Export Objects" size="small" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary">
+      <slot-default> t:Export</slot-default>
+      <slot-icon>
+        <x-export size="20"></x-export>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <p>t:Export "{schema}" objects from "{register}" {"schema":"Sch","register":"Reg"}</p>
+      <div class="formGroup"><label>t:Export Format:</label>
+        <x-ncselect modelvalue="excel" inputlabel="Export Format" options="[object Object],[object Object]" optionlabel="label" optionvalue="value" reduce="[fn]"></x-ncselect>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`import, export, upload and download dialogs (DOM golden) exportRegister renders while open 1`] = `
+"<x-ncdialog name="export-register-dialog" title="t:Export Objects" size="small" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary">
+      <slot-default> t:Export</slot-default>
+      <slot-icon>
+        <x-export size="20"></x-export>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <div class="formContainer">
+      <p>t:Export "{schema}" objects from "{register}" {"schema":"Sch","register":"Reg"}</p>
+      <div class="formGroup"><label>t:Export Format:</label>
+        <x-ncselect modelvalue="excel" inputlabel="Export Format" options="[object Object],[object Object]" optionlabel="label" optionvalue="value" reduce="[fn]"></x-ncselect>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`import, export, upload and download dialogs (DOM golden) uploadObject renders a reported error 1`] = `
+"<x-ncdialog name="Upload Object" size="normal" noclose="">
+  <slot-actions>
+    <!--v-if-->
+    <!--v-if-->
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary">
+      <slot-default> Upload </slot-default>
+      <slot-icon>
+        <!--v-if-->
+        <x-upload size="20"></x-upload>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <!--v-if-->
+      <!--v-if-->
+      <!-- STAGE 1 -->
+      <div>
+        <x-ncselect inputlabel="t:Register" loading="false" disabled="false" multiple="false" closeonselect="true" options="[object Object]"></x-ncselect>
+      </div><!-- STAGE 2 -->
+      <!--v-if-->
+      <!-- STAGE 3 -->
+      <!--v-if-->
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`import, export, upload and download dialogs (DOM golden) uploadObject renders a success 1`] = `
+"<x-ncdialog name="Upload Object" size="normal" noclose="">
+  <slot-actions>
+    <!--v-if-->
+    <!--v-if-->
+    <x-ncbutton>
+      <slot-default> Close</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <!--v-if-->
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Object successfully uploaded</p>
+      </slot-default>
+    </x-ncnotecard>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`import, export, upload and download dialogs (DOM golden) uploadObject renders while open 1`] = `
+"<x-ncdialog name="Upload Object" size="normal" noclose="">
+  <slot-actions>
+    <!--v-if-->
+    <!--v-if-->
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary">
+      <slot-default> Upload </slot-default>
+      <slot-icon>
+        <!--v-if-->
+        <x-upload size="20"></x-upload>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <!--v-if-->
+    <div class="formContainer">
+      <!--v-if-->
+      <!--v-if-->
+      <!-- STAGE 1 -->
+      <div>
+        <x-ncselect inputlabel="t:Register" loading="false" disabled="false" multiple="false" closeonselect="true" options="[object Object]"></x-ncselect>
+      </div><!-- STAGE 2 -->
+      <!--v-if-->
+      <!-- STAGE 3 -->
+      <!--v-if-->
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`import, export, upload and download dialogs (DOM golden) uploadSchema renders a reported error 1`] = `
+"<x-ncdialog name="Upload Schema" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary">
+      <slot-default> Upload </slot-default>
+      <slot-icon>
+        <!--v-if-->
+        <x-upload size="20"></x-upload>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <x-nctextfield modelvalue="" disabled="false" label="t:Url"></x-nctextfield>
+      <div class="codeMirrorContainer light">
+        <p>t:Schema</p>
+        <x-codemirror modelvalue="{}" basic="true" dark="false" lang="json" linter="linter" placeholder="t:Enter your schema here..."></x-codemirror>
+      </div>
+      <x-ncbutton class="prettifyButton">
+        <slot-default> t:Prettify</slot-default>
+        <slot-icon>
+          <!---->
+        </slot-icon>
+      </x-ncbutton>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`import, export, upload and download dialogs (DOM golden) uploadSchema renders a success 1`] = `
+"<x-ncdialog name="Upload Schema" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Close</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <!--v-if-->
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Schema successfully uploaded</p>
+      </slot-default>
+    </x-ncnotecard>
+    <!--v-if-->
+    <!--v-if-->
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`import, export, upload and download dialogs (DOM golden) uploadSchema renders while open 1`] = `
+"<x-ncdialog name="Upload Schema" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary">
+      <slot-default> Upload </slot-default>
+      <slot-icon>
+        <!--v-if-->
+        <x-upload size="20"></x-upload>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <!--v-if-->
+    <!--v-if-->
+    <div class="formContainer">
+      <x-nctextfield modelvalue="" disabled="false" label="t:Url"></x-nctextfield>
+      <div class="codeMirrorContainer light">
+        <p>t:Schema</p>
+        <x-codemirror modelvalue="{}" basic="true" dark="false" lang="json" linter="linter" placeholder="t:Enter your schema here..."></x-codemirror>
+      </div>
+      <x-ncbutton class="prettifyButton">
+        <slot-default> t:Prettify</slot-default>
+        <slot-icon>
+          <!---->
+        </slot-icon>
+      </x-ncbutton>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;

@@ -88,36 +88,22 @@
 				:key="category"
 				class="operatorCategory">
 				<h4>{{ category }}</h4>
-				<table class="operatorTable">
-					<thead>
-						<tr>
-							<th scope="col">
-								{{ t('openregister', 'Operator') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Takes') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'What it does') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="row in operatorsIn(category)" :key="row.op">
-							<td>
-								<code>{{ row.op }}</code>
-							</td>
-							<td>{{ row.arity }}</td>
-							<td>{{ row.description }}</td>
-						</tr>
-					</tbody>
-				</table>
+				<CnDataTable
+					class="operatorTable"
+					:columns="operatorColumns"
+					:rows="operatorsIn(category)"
+					rowKey="op">
+					<template #column-op="{ value }">
+						<code>{{ value }}</code>
+					</template>
+				</CnDataTable>
 			</div>
 		</details>
 	</section>
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton } from '@nextcloud/vue'
 
@@ -136,6 +122,7 @@ export default {
 	name: 'RuleConditionEditor',
 
 	components: {
+		CnDataTable,
 		NcButton,
 	},
 
@@ -161,6 +148,19 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The operator reference columns.
+		 *
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		operatorColumns() {
+			return [
+				{ key: 'op', label: t('openregister', 'Operator') },
+				{ key: 'arity', label: t('openregister', 'Takes') },
+				{ key: 'description', label: t('openregister', 'What it does') },
+			]
+		},
+
 		/**
 		 * The published sentence for this rule's kind.
 		 *
@@ -412,18 +412,6 @@ textarea {
 
 .operatorCategory {
 	margin-bottom: 16px;
-}
-
-.operatorTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.operatorTable th,
-.operatorTable td {
-	text-align: start;
-	padding: 4px 10px;
-	border-bottom: 1px solid var(--color-border);
 }
 
 .muted {
