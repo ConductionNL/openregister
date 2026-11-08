@@ -83,6 +83,8 @@ use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
+use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableValidatorInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
@@ -312,10 +314,14 @@ use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
 use OCA\OpenRegister\Service\Task\TaskSubjectLocatorInterface;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
+use OCA\OpenRegister\Service\Vocabulary\CodedValueGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepositoryInterface;
+use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
+use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -564,6 +570,9 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectWriterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		CodedValueGuardInterface::class => CodedValueGuard::class,
+		ConceptShapeGuardInterface::class => ConceptShapeGuard::class,
+		DecisionTableValidatorInterface::class => DecisionTableValidator::class,
 	];
 
 	/**
