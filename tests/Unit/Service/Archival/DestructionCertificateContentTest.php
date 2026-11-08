@@ -40,7 +40,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
+use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionStores;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
@@ -94,16 +96,20 @@ class DestructionCertificateContentTest extends TestCase {
 		);
 
 		$this->retentionService = new RetentionService(
-			$objectMapper,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(ObjectRetentionHandler::class),
+			new RetentionStores(
+				$objectMapper,
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(RegisterMapper::class),
+				$this->createMock(AuditTrailMapper::class)
+			),
+			new RetentionRules(
+				$this->createMock(ObjectRetentionHandler::class),
+				$this->createMock(RetentionRowScanner::class),
+				$this->createMock(ArchiveActionDateCalculator::class),
+				$this->createMock(SelectielijstResolver::class)
+			),
 			$userSession,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(RetentionRowScanner::class),
-			$this->createMock(ArchiveActionDateCalculator::class),
-			$this->createMock(SelectielijstResolver::class)
+			$this->createMock(LoggerInterface::class)
 		);
 	}
 

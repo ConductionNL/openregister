@@ -66,21 +66,35 @@ class TenantLifecycleService implements TenantLifecycleServiceInterface {
 	];
 
 	/**
+	 * Nextcloud group manager
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Nextcloud user manager, to look up the org admin
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
 	 * Constructor
 	 *
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param IGroupManager $groupManager Nextcloud group manager
-	 * @param IUserManager $userManager Nextcloud user manager, to look up the org admin
+	 * @param TenantDirectory $directory Group and user managers for the tenant groups and admin user.
 	 * @param LoggerInterface $logger Logger
 	 * @param OrganisationLifecycleAuditor|null $auditor Writes each status change to the audit trail. Null only in legacy fixtures.
 	 */
 	public function __construct(
 		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
+		TenantDirectory $directory,
 		private readonly LoggerInterface $logger,
 		private readonly ?OrganisationLifecycleAuditor $auditor = null,
 	) {
+		$this->groupManager = $directory->groupManager;
+		$this->userManager = $directory->userManager;
 	}//end __construct()
 
 	/**
