@@ -30,11 +30,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyProvider;
-use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
+use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateProvider;
-use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
+use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -67,14 +67,14 @@ class ConnectionSeamReportJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory       $time      Time factory for TimedJob.
-	 * @param ContainerInterface $container Resolves each seam on its own, so one broken binding reports only itself.
-	 * @param ConnectionReporter $reporter  Sends the reports to integriq.
+	 * @param ITimeFactory                $time      Time factory for TimedJob.
+	 * @param ContainerInterface          $container Resolves each seam on its own, so one broken binding reports only itself.
+	 * @param ConnectionReporterInterface $reporter  Sends the reports to integriq.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly ContainerInterface $container,
-		private readonly ConnectionReporter $reporter,
+		private readonly ConnectionReporterInterface $reporter,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
@@ -131,10 +131,10 @@ class ConnectionSeamReportJob extends TimedJob {
 	 */
 	private function describeIdentity(): array {
 		/*
-		 * @var IdentityVerifyRegistry $registry
+		 * @var IdentityVerifyRegistryInterface $registry
 		 */
 
-		$registry = $this->container->get(IdentityVerifyRegistry::class);
+		$registry = $this->container->get(IdentityVerifyRegistryInterface::class);
 		$others = array_values(array_diff($registry->listIds(), [IdentityVerifyProvider::NULL_PROVIDER_ID]));
 
 		if ($others === []) {
@@ -159,10 +159,10 @@ class ConnectionSeamReportJob extends TimedJob {
 	 */
 	private function describeRegulator(): array {
 		/*
-		 * @var RegulatorEscalateRegistry $registry
+		 * @var RegulatorEscalateRegistryInterface $registry
 		 */
 
-		$registry = $this->container->get(RegulatorEscalateRegistry::class);
+		$registry = $this->container->get(RegulatorEscalateRegistryInterface::class);
 		$others = array_values(array_diff($registry->listIds(), [RegulatorEscalateProvider::NULL_PROVIDER_ID]));
 
 		if ($others === []) {

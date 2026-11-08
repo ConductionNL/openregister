@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrant;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
@@ -80,9 +80,9 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 	/**
 	 * Delegations held.
 	 *
-	 * @var DelegationGrantMapper
+	 * @var DelegationGrantMapperInterface
 	 */
-	private readonly DelegationGrantMapper $delegations;
+	private readonly DelegationGrantMapperInterface $delegations;
 
 	/**
 	 * Wire the act.

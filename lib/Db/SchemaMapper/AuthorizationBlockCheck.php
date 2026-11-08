@@ -23,9 +23,8 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
-use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
-use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 
@@ -69,8 +68,8 @@ final class AuthorizationBlockCheck {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function check(Schema $schema): void {
-		(new MetadataConditionFindings(db: $this->db))->assertSchemaSavable(schema: $schema);
-		(new UnknownRuleKeyFindings(db: $this->db))->assertSchemaSavable(schema: $schema);
+		RbacChecks::metadataConditions(db: $this->db)->assertSchemaSavable(schema: $schema);
+		RbacChecks::unknownRuleKeys(db: $this->db)->assertSchemaSavable(schema: $schema);
 
 		$authorization = $schema->getAuthorization();
 		if (is_array($authorization) === true && $authorization !== []) {

@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
-use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
+use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStoreInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -56,7 +56,7 @@ class RecordTemplatesController extends Controller {
 	 *
 	 * @param string                $appName   The app name.
 	 * @param IRequest              $request   The request.
-	 * @param RecordTemplateService $templates Decides and stores.
+	 * @param RecordTemplateStoreInterface $templates Decides and stores.
 	 * @param ViewerReachResolverInterface   $viewers   Names the caller and their groups.
 	 * @param LoggerInterface       $logger    Logger.
 	 *
@@ -65,7 +65,7 @@ class RecordTemplatesController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RecordTemplateService $templates,
+		private readonly RecordTemplateStoreInterface $templates,
 		private readonly ViewerReachResolverInterface $viewers,
 		private readonly LoggerInterface $logger,
 	) {

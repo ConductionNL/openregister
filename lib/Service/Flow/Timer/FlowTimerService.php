@@ -48,8 +48,8 @@ use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerEvent;
 use OCA\OpenRegister\Db\FlowTimerEventMapperInterface;
 use OCA\OpenRegister\Db\FlowTimerFire;
-use OCA\OpenRegister\Db\FlowTimerFireMapper;
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerFireMapperInterface;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Exception\FlowTimerStateException;
@@ -98,8 +98,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerMapper $timers The timer table.
-	 * @param FlowTimerFireMapper $fires The rung dedup ledger.
+	 * @param FlowTimerMapperInterface $timers The timer table.
+	 * @param FlowTimerFireMapperInterface $fires The rung dedup ledger.
 	 * @param FlowTimerEventMapperInterface $events The append-only history.
 	 * @param TaskMapper $tasks The task table, for the projection and the subject read.
 	 * @param TaskServiceInterface $taskService Applies enforcing outcomes as named task actions.
@@ -111,8 +111,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly FlowTimerMapper $timers,
-		private readonly FlowTimerFireMapper $fires,
+		private readonly FlowTimerMapperInterface $timers,
+		private readonly FlowTimerFireMapperInterface $fires,
 		private readonly FlowTimerEventMapperInterface $events,
 		private readonly TaskMapper $tasks,
 		private readonly TaskServiceInterface $taskService,

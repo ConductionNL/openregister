@@ -40,8 +40,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
-use DateTimeImmutable;
-use DateTimeInterface;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 
 /**
@@ -81,10 +79,7 @@ class TermDiagnostic {
 	/**
 	 * Explain what arming this SLA against this anchor would compute.
 	 *
-	 * @param WorkingCalendar   $calendar The resolved calendar.
-	 * @param DateTimeInterface $anchor   The anchor moment.
-	 * @param array<string, mixed> $sla   `{value, unit, rollToWorkingDay?}`.
-	 * @param array<int, mixed> $ladder   Optional rungs, each `{value, unit}`.
+	 * @param TermQuery $query The calendar, the anchor moment, the SLA and the optional rungs.
 	 *
 	 * @return array<string, mixed> The fire moment, the walk, the roll, the zone and the rungs.
 	 *
@@ -92,17 +87,13 @@ class TermDiagnostic {
 	 *
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
-	public function explain(
-		WorkingCalendar $calendar,
-		DateTimeInterface $anchor,
-		array $sla,
-		array $ladder = []
-	): array {
-		$normalised = $this->calculator->validateSla(sla: $sla);
-		$roll = $this->validateRoll(sla: $sla);
+	public function explain(TermQuery $query): array {
+		$calendar   = $query->calendar;
+		$normalised = $this->calculator->validateSla(sla: $query->sla);
+		$roll = $this->validateRoll(sla: $query->sla);
 
 		$collector = new WalkCollector();
-		$start = DateTimeImmutable::createFromInterface($anchor);
+		$start = $query->start();
 
 		$landed = $this->calculator->add(
 			from: $start,
@@ -134,7 +125,7 @@ class TermDiagnostic {
 			'skipped' => $collector->skipped(),
 			'examinedDays' => $collector->examinedCount(),
 			'walkTruncated' => $collector->isTruncated(),
-			'ladder' => $this->rungs(calendar: $calendar, anchor: $start, ladder: $ladder),
+			'ladder' => $this->rungs(query: $query),
 		];
 	}//end explain()
 
@@ -147,15 +138,15 @@ class TermDiagnostic {
 	 * every rung later than the engine puts it, and the further down the
 	 * ladder the wronger it would read.
 	 *
-	 * @param WorkingCalendar   $calendar The calendar.
-	 * @param DateTimeImmutable $anchor   The anchor.
-	 * @param array<int, mixed> $ladder   The rungs.
+	 * @param TermQuery $query The calendar, the anchor and the rungs.
 	 *
 	 * @return array<int, array<string, mixed>> The rungs with their instants.
 	 *
 	 * @throws FlowTimerValidationException When a rung is refused.
 	 */
-	private function rungs(WorkingCalendar $calendar, DateTimeImmutable $anchor, array $ladder): array {
+	private function rungs(TermQuery $query): array {
+		$ladder = $query->ladder;
+		$anchor = $query->start();
 		if (count($ladder) > self::MAX_RUNGS) {
 			throw new FlowTimerValidationException(
 				message: sprintf('A ladder may have at most %d rungs; %d were given.', self::MAX_RUNGS, count($ladder))
@@ -169,7 +160,7 @@ class TermDiagnostic {
 				from: $anchor,
 				value: (float)$normalised['value'],
 				unit: $normalised['unit'],
-				calendar: $calendar
+				calendar: $query->calendar
 			);
 
 			$rungs[] = [

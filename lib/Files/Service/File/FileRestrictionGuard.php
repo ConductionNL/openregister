@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
-class FileRestrictionGuard {
+class FileRestrictionGuard implements FileRestrictionGuardInterface {
 
 	/**
 	 * Verdicts already given in this request, keyed by "uid:fileId".

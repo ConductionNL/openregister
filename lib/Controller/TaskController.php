@@ -56,7 +56,7 @@ use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
 use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -107,9 +107,9 @@ class TaskController extends Controller {
 	/**
 	 * The inbox queries.
 	 *
-	 * @var TaskInboxService
+	 * @var TaskInboxServiceInterface
 	 */
-	private readonly TaskInboxService $inbox;
+	private readonly TaskInboxServiceInterface $inbox;
 
 	/**
 	 * Read-visibility decisions.

@@ -77,30 +77,12 @@ class TaskSequenceDecisionGuard {
 	 * @spec openspec/specs/approval-workflow/spec.md#req-009
 	 */
 	public function assertDecidable(Task $task, ?string $actor): void {
-		$sequenceUuid = trim((string)$task->getSequenceUuid());
-		if ($sequenceUuid === '') {
-			return;
-		}
-
-		try {
-			$sequence = $this->sequences->findByUuid(uuid: $sequenceUuid);
-		} catch (DoesNotExistException) {
-			// A dangling sequence reference has no policy to read. The
-			// performer check still applies in full.
-			return;
-		}
-
-		if ($this->separationOfDutiesApplies(sequence: $sequence) === false) {
-			return;
-		}
-
-		$requester = trim((string)$sequence->getRequesterId());
+		$requester = $this->bindingRequester(task: $task);
 		if ($requester === '') {
 			return;
 		}
 
 		$deciding = trim((string)$actor);
-		$actedFor = trim((string)$task->getOnBehalfOf());
 
 		if ($deciding === $requester) {
 			throw new TaskSeparationOfDutiesException(
@@ -111,6 +93,22 @@ class TaskSequenceDecisionGuard {
 			);
 		}
 
+		$this->refuseDelegatedSelfDecision(task: $task, requester: $requester);
+	}//end assertDecidable()
+
+	/**
+	 * Refuse a decision made on behalf of the requester: a delegated
+	 * self-decision is refused on the same grounds as a direct one.
+	 *
+	 * @param Task   $task      The task about to be decided.
+	 * @param string $requester The bound requester, not empty.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskSeparationOfDutiesException When the decision acts for the requester.
+	 */
+	private function refuseDelegatedSelfDecision(Task $task, string $requester): void {
+		$actedFor = trim((string)$task->getOnBehalfOf());
 		if ($actedFor !== '' && $actedFor === $requester) {
 			throw new TaskSeparationOfDutiesException(
 				message: sprintf(
@@ -120,7 +118,38 @@ class TaskSequenceDecisionGuard {
 				)
 			);
 		}
-	}//end assertDecidable()
+	}//end refuseDelegatedSelfDecision()
+
+	/**
+	 * The requester a separation-of-duties policy binds this task to.
+	 *
+	 * Empty when there is nothing to enforce: the task is outside any
+	 * sequence, the sequence reference dangles (it has no policy to read,
+	 * and the performer check still applies in full), the policy is off, or
+	 * the sequence names no requester.
+	 *
+	 * @param Task $task The task about to be decided.
+	 *
+	 * @return string The requester id, trimmed, or '' when none is bound.
+	 */
+	private function bindingRequester(Task $task): string {
+		$sequenceUuid = trim((string)$task->getSequenceUuid());
+		if ($sequenceUuid === '') {
+			return '';
+		}
+
+		try {
+			$sequence = $this->sequences->findByUuid(uuid: $sequenceUuid);
+		} catch (DoesNotExistException) {
+			return '';
+		}
+
+		if ($this->separationOfDutiesApplies(sequence: $sequence) === false) {
+			return '';
+		}
+
+		return trim((string)$sequence->getRequesterId());
+	}//end bindingRequester()
 
 	/**
 	 * Whether the frozen declaration requires separation of duties.

@@ -12,7 +12,7 @@
  * instance that has seven, which reads as reassurance.
  *
  * Adding a throttled surface means adding a constant here and naming it in
- * {@see self::ALL}. The controller then references this class, never a literal.
+ * {@see self::ALL} of ThrottledSurfacesInterface. The controller then references the interface, never a literal.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -36,88 +36,13 @@ namespace OCA\OpenRegister\Service\Hardening;
 /**
  * The throttler actions this app registers attempts against.
  *
+ * The action names are constants of ThrottledSurfacesInterface, so a controller
+ * outside lib/Service names the interface, not this class.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-final class ThrottledSurfaces {
-
-	/**
-	 * A scoped, expiring link that opens one record for somebody with no account.
-	 *
-	 * @var string
-	 */
-	public const ACCESS_LINK = 'openregister_access_link';
-
-	/**
-	 * A calendar feed served against a token.
-	 *
-	 * @var string
-	 */
-	public const CALENDAR_FEED = 'openregister_calendar_feed';
-
-	/**
-	 * A case token handed to a party outside the instance.
-	 *
-	 * @var string
-	 */
-	public const CASE_TOKEN = 'openregister_case_token';
-
-	/**
-	 * A share link on a single object.
-	 *
-	 * @var string
-	 */
-	public const OBJECT_SHARE_LINK = 'openregister_object_share_link';
-
-	/**
-	 * A federation share token from another instance.
-	 *
-	 * @var string
-	 */
-	public const FEDERATION_SHARE_TOKEN = 'openregister_federation_share_token';
-
-	/**
-	 * The OAuth2 callback the credential broker completes a grant on.
-	 *
-	 * @var string
-	 */
-	public const OAUTH2_CALLBACK = 'openregisterOauth2Callback';
-
-	/**
-	 * The password confirmation that elevates an administration session.
-	 *
-	 * Throttled because it is the one surface where a correct guess buys the
-	 * right to weaken every other control on this list.
-	 *
-	 * @var string
-	 */
-	public const ELEVATION = 'openregister_elevation';
-
-	/**
-	 * A form submit or upload into a destination object (decision 179).
-	 *
-	 * An unknown form id registers an attempt, so walking form ids to find
-	 * one that accepts writes slows down like any other token guess.
-	 *
-	 * @var string
-	 */
-	public const FORM_SUBMIT = 'openregister_form_submit';
-
-	/**
-	 * Every throttled surface, as `name => throttler action`.
-	 *
-	 * @var array<string, string>
-	 */
-	public const ALL = [
-		'accessLink' => self::ACCESS_LINK,
-		'calendarFeed' => self::CALENDAR_FEED,
-		'caseToken' => self::CASE_TOKEN,
-		'objectShareLink' => self::OBJECT_SHARE_LINK,
-		'federationShareToken' => self::FEDERATION_SHARE_TOKEN,
-		'oauth2Callback' => self::OAUTH2_CALLBACK,
-		'elevation' => self::ELEVATION,
-		'formSubmit' => self::FORM_SUBMIT,
-	];
+final class ThrottledSurfaces implements ThrottledSurfacesInterface {
 
 	/**
 	 * How many surfaces register attempts.

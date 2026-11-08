@@ -73,41 +73,12 @@ final class C03EdepotInterfaceBindingsTest extends TestCase {
 	 * Outside files still allowed to name the class, and why.
 	 *
 	 * This lane retypes only the controllers (lib/Controller, P to Z and subdirectories).
-	 * The e-Depot background jobs below still inject the classes; they are left for
-	 * the lane that owns lib/BackgroundJob.
+	 * The background job below still injects the class; it is left for the lane
+	 * that owns lib/BackgroundJob.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		ConnectionReporter::class => [
-			'BackgroundJob/ConnectionSeamReportJob.php',
-		],
-		EdepotTransferService::class => [
-			'BackgroundJob/Support/TransferExecutionRecords.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
-		OpenConnectorTransport::class => [
-			'BackgroundJob/Support/TransferExecutionTransports.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
-		RestApiTransport::class => [
-			'BackgroundJob/Support/TransferExecutionTransports.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
-		SftpTransport::class => [
-			'BackgroundJob/Support/TransferExecutionTransports.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
-		TransferListService::class => [
-			'BackgroundJob/Support/TransferExecutionRecords.php',
-			'BackgroundJob/TransferCheckJob.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
-		TransferRecordService::class => [
-			'BackgroundJob/Support/TransferExecutionRecords.php',
-			'BackgroundJob/TransferCheckJob.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
 	];
 
 	/**

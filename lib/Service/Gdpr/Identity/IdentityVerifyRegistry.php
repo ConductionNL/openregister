@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Registry of all IdentityVerifyProvider implementations on this instance.
  */
-class IdentityVerifyRegistry {
+class IdentityVerifyRegistry implements IdentityVerifyRegistryInterface {
 
 	/**
 	 * Registered providers, keyed by provider id.

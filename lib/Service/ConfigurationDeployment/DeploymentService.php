@@ -42,9 +42,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use OCA\OpenRegister\Db\ConfigurationDeployment;
-use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
+use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
-use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
+use OCA\OpenRegister\Db\ConfigurationDraftSetMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IDBConnection;
@@ -60,7 +60,7 @@ use Throwable;
  * set, the preview, the value store, the history and the transaction. Splitting
  * it would put the all-or-nothing rule in two places.
  */
-class DeploymentService {
+class DeploymentService implements DeploymentServiceInterface {
 
 	/**
 	 * Constructor.
@@ -68,8 +68,8 @@ class DeploymentService {
 	 * @param ConfigurationDraftService     $drafts      The pending values.
 	 * @param DeploymentPreviewService      $previews    The diff and its refusals.
 	 * @param ConfigurationValueStore       $store       The live values.
-	 * @param ConfigurationDeploymentMapper $deployments The append-only history.
-	 * @param ConfigurationDraftSetMapper   $sets        The draft sets.
+	 * @param ConfigurationDeploymentMapperInterface $deployments The append-only history.
+	 * @param ConfigurationDraftSetMapperInterface   $sets        The draft sets.
 	 * @param IDBConnection                 $db          The database, for the transaction.
 	 * @param IUserSession                  $session     The current session.
 	 * @param LoggerInterface               $logger      The log.
@@ -78,8 +78,8 @@ class DeploymentService {
 		private readonly ConfigurationDraftService $drafts,
 		private readonly DeploymentPreviewService $previews,
 		private readonly ConfigurationValueStore $store,
-		private readonly ConfigurationDeploymentMapper $deployments,
-		private readonly ConfigurationDraftSetMapper $sets,
+		private readonly ConfigurationDeploymentMapperInterface $deployments,
+		private readonly ConfigurationDraftSetMapperInterface $sets,
 		private readonly IDBConnection $db,
 		private readonly IUserSession $session,
 		private readonly LoggerInterface $logger

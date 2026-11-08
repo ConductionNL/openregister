@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetServiceInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -47,13 +47,13 @@ class ResetSchemaToShippedCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param ShippedBaselineResetService $reset   The reset.
+	 * @param ShippedBaselineResetServiceInterface $reset The reset.
 	 * @param IUserManager                $users   To find the actor.
 	 * @param IGroupManager               $groups  To check the actor is an administrator.
 	 * @param IUserSession                $session To act as the actor.
 	 */
 	public function __construct(
-		private readonly ShippedBaselineResetService $reset,
+		private readonly ShippedBaselineResetServiceInterface $reset,
 		private readonly IUserManager $users,
 		private readonly IGroupManager $groups,
 		private readonly IUserSession $session,

@@ -46,7 +46,7 @@ use OCP\IUserSession;
  * @spec openspec/specs/deletion-audit-trail/spec.md
  * @spec openspec/specs/archival-annotation-vocabulary/spec.md
  */
-class DeletedObjectAuthorizer {
+class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 	/**
 	 * Wire the RBAC and schema collaborators.
 	 *

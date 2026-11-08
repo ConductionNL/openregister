@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
-use OCA\OpenRegister\Db\FlowRunStepMapper;
+use OCA\OpenRegister\Db\FlowRunStepMapperInterface;
 use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Exception\FlowRunExpired;
@@ -124,7 +124,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @param FlowNodeRegistryInterface $registry Resolves step types.
 	 * @param LoggerInterface $logger The logger.
 	 * @param ContainerInterface $container Lazily resolves OrganisationService.
-	 * @param FlowRunStepMapper|null $steps Records one row per node execution.
+	 * @param FlowRunStepMapperInterface|null $steps Records one row per node execution.
 	 *                                      Nullable so the cron worker and the
 	 *                                      unit tests can build this service
 	 *                                      without it; history is then simply
@@ -148,7 +148,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		private readonly FlowNodeRegistryInterface $registry,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
-		private readonly ?FlowRunStepMapper $steps = null,
+		private readonly ?FlowRunStepMapperInterface $steps = null,
 		private readonly ?IAppConfig $appConfig = null,
 		private readonly ?FlowStreamMapperInterface $streamMapper = null,
 		private readonly ?FlowPlaceClaims $claims = null,

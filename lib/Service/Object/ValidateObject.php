@@ -40,11 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Formats\BsnFormat;
-use OCA\OpenRegister\Formats\CronFormat;
-use OCA\OpenRegister\Formats\Iso8601DateTimeFormat;
-use OCA\OpenRegister\Formats\SemVerFormat;
-use OCA\OpenRegister\Formats\UserFormat;
+use OCA\OpenRegister\Formats\FormatFactory;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -2117,13 +2113,10 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @return array<string, object> The resolvers by format.
 	 */
 	private function customFormats(): array {
-		return [
-			'bsn'       => new BsnFormat(),
-			'semver'    => new SemVerFormat(),
-			'cron'      => new CronFormat(),
-			'user'      => new UserFormat(userManager: $this->userManager, planned: fn (string $uid): bool => in_array($uid, $this->plannedUsers, true)),
-			'date-time' => new Iso8601DateTimeFormat(),
-		];
+		return FormatFactory::customStringFormats(
+			userManager: $this->userManager,
+			planned: fn (string $uid): bool => in_array($uid, $this->plannedUsers, true)
+		);
 	}//end customFormats()
 
 	/**

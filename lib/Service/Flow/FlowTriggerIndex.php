@@ -52,7 +52,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md#requirement-trigger-matching-must-not-scale-with-the-number-of-flows
  */
-class FlowTriggerIndex {
+class FlowTriggerIndex implements FlowTriggerIndexInterface {
 	/**
 	 * Constructor.
 	 *

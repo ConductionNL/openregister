@@ -123,10 +123,8 @@ class MigrationHandler {
 	 * This method migrates multiple objects from one register/schema combination
 	 * to another register/schema combination with property mapping.
 	 *
-	 * @param string|int $sourceRegister The source register ID or slug.
-	 * @param string|int $sourceSchema The source schema ID or slug.
-	 * @param string|int $targetRegister The target register ID or slug.
-	 * @param string|int $targetSchema The target schema ID or slug.
+	 * @param array{0: string|int, 1: string|int} $source The source register and schema, each an ID or slug.
+	 * @param array{0: string|int, 1: string|int} $target The target register and schema, each an ID or slug.
 	 * @param array $objectIds Array of object IDs to migrate.
 	 * @param array $mapping Simple mapping where keys are target properties, values are source properties.
 	 *
@@ -138,17 +136,12 @@ class MigrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function migrateObjects(
-		string|int $sourceRegister,
-		string|int $sourceSchema,
-		string|int $targetRegister,
-		string|int $targetSchema,
+		array $source,
+		array $target,
 		array $objectIds,
 		array $mapping,
 	): array {
-		$run = new MigrationRun(
-			source: [$sourceRegister, $sourceSchema],
-			target: [$targetRegister, $targetSchema]
-		);
+		$run = new MigrationRun(source: $source, target: $target);
 		$run->mapping = $mapping;
 
 		$this->loadSides(run: $run);
@@ -162,11 +155,7 @@ class MigrationHandler {
 		// left was not found.
 		$remainingObjectIds = $objectIds;
 		foreach ($sourceObjects as $sourceObject) {
-			$remainingObjectIds = array_filter(
-				$remainingObjectIds,
-				// Compare as strings: ids arrive from the request as strings, getId() is an int.
-				fn ($id) => (string) $id !== $sourceObject->getUuid() && (string) $id !== (string) $sourceObject->getId()
-			);
+			$remainingObjectIds = $this->withoutFound(objectIds: $remainingObjectIds, found: $sourceObject);
 			$this->migrateOne(sourceObject: $sourceObject, run: $run);
 		}
 
@@ -176,6 +165,24 @@ class MigrationHandler {
 
 		return $run->report();
 	}//end migrateObjects()
+
+	/**
+	 * The requested ids that are neither the uuid nor the id of a found object.
+	 *
+	 * @param array $objectIds The ids still unaccounted for.
+	 * @param mixed $found     The object found.
+	 *
+	 * @return array The ids still unaccounted for, keys kept
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function withoutFound(array $objectIds, mixed $found): array {
+		return array_filter(
+			$objectIds,
+			// Compare as strings: ids arrive from the request as strings, getId() is an int.
+			fn ($id) => (string) $id !== $found->getUuid() && (string) $id !== (string) $found->getId()
+		);
+	}//end withoutFound()
 
 	/**
 	 * Load the source register and schema, then the target register and schema.

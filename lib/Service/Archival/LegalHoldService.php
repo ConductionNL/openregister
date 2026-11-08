@@ -224,7 +224,7 @@ class LegalHoldService implements LegalHoldServiceInterface {
 	public function bulkPlaceHold(int $schemaId, int $registerId, string $reason): void {
 		$job = ['schemaId' => $schemaId, 'registerId' => $registerId, 'reason' => $reason, 'placedBy' => $this->getCurrentUserId()];
 
-		$this->jobList->add(\OCA\OpenRegister\BackgroundJob\BulkLegalHoldJob::class, $job);
+		$this->jobList->add(\OCA\OpenRegister\BackgroundJob\JobHandles::BULK_LEGAL_HOLD, $job);
 
 		$this->logger->info(
 			message: '[LegalHoldService] Bulk legal hold job queued',

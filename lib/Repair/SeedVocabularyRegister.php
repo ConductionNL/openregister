@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
@@ -78,7 +78,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	private const CONFIG_APP_ID = DescriptorConfigIds::VOCABULARY;
+	private const CONFIG_APP_ID = DescriptorConfigIdsInterface::VOCABULARY;
 
 	/**
 	 * App-relative paths of the bundled TOOI SKOS/JSON-LD seed fixtures.

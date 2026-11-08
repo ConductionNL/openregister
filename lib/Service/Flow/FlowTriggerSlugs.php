@@ -54,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class FlowTriggerSlugs {
+class FlowTriggerSlugs implements FlowTriggerSlugsInterface {
 
 	/**
 	 * Constructor.

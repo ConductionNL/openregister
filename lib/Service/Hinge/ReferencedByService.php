@@ -47,7 +47,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Mappers for register, schema and objects.
  */
-class ReferencedByService {
+class ReferencedByService implements ReferencedByServiceInterface {
 
 	/**
 	 * Default number of referencing records returned per schema group.

@@ -67,7 +67,7 @@ use Throwable;
  *
  * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
  */
-class MoveObject {
+class MoveObject implements MoveObjectInterface {
 
 	/**
 	 * What a move is called in the audit trail.

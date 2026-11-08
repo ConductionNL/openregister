@@ -158,7 +158,7 @@ final class FlowDeleteCascadeTest extends TestCase {
 		$versions = ($this->versionMapper ?? $this->createMock(FlowVersionMapper::class));
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($organisationService, $versions): object {
-				if ($id === FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 

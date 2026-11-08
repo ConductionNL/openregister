@@ -85,14 +85,9 @@ SPDX-License-Identifier: EUPL-1.2
 						}}</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Remove contact')"
-					@click="unlinkContact(contact)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Remove contact')"
+					@unlink="unlinkContact(contact)" />
 			</li>
 		</ul>
 	</div>
@@ -103,8 +98,8 @@ import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AccountOff from 'vue-material-design-icons/AccountOff.vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
 import { useContactRelationsStore } from '../../store/modules/object-relations/contacts.js'
 import { storeRelationTab } from './relationTab.js'
 
@@ -131,7 +126,7 @@ export default {
 		AccountOutline,
 		AccountPlus,
 		AccountOff,
-		CloseCircleOutline,
+		UnlinkButton,
 	},
 
 	mixins: [storeRelationTab(useContactRelationsStore)],

@@ -127,9 +127,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	/**
 	 * Write one conversation, its held call and its link to the object.
 	 *
-	 * @param string               $app  The fragment's app.
-	 * @param string               $key  The row key.
-	 * @param array<string, mixed> $data The row's fields, placeholders filled.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{
 	 *     error: string,
@@ -138,7 +136,9 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$found = $this->target(data: $data);
 		if ($found['error'] !== '') {
 			return ['error' => $found['error'], 'entry' => null];

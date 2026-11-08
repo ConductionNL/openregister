@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidators;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationContentValidator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use Psr\Log\LoggerInterface;
@@ -99,7 +99,7 @@ final class NotificationAnnotationCheck {
 			return [];
 		}
 
-		return (new NotificationAnnotationValidator())->validate($annotation->shape());
+		return NotificationAnnotationValidators::create()->validate($annotation->shape());
 	}//end errors()
 
 	/**

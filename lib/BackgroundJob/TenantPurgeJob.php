@@ -6,7 +6,7 @@
  * Permanently deletes archived organisations and their data after the
  * configured retention period (default: 90 days).
  *
- * Only an organisation in TenantLifecycleService::PURGEABLE_STATUS is ever
+ * Only an organisation in TenantLifecycleServiceInterface::PURGEABLE_STATUS is ever
  * deleted. A `retained` organisation, whose access ended but whose data must
  * be kept, is outside this job's reach by construction.
  *
@@ -34,7 +34,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsageMapper;
-use OCA\OpenRegister\Service\TenantLifecycleService;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -127,7 +127,7 @@ class TenantPurgeJob extends TimedJob {
 			// organisation in this table but NOT a tenant of this installation, and
 			// selecting on status alone would sweep it up with the tenants.
 			return $this->organisationMapper->findLocalTenants(
-				filters: ['status' => TenantLifecycleService::PURGEABLE_STATUS]
+				filters: ['status' => TenantLifecycleServiceInterface::PURGEABLE_STATUS]
 			);
 		} catch (\Exception $e) {
 			$this->logger->error(
@@ -180,7 +180,7 @@ class TenantPurgeJob extends TimedJob {
 		// row itself. The query is the only thing between a retained
 		// organisation and a permanent delete, so a filter that was dropped
 		// or ignored must not be enough to delete one.
-		if ($organisation->getStatus() !== TenantLifecycleService::PURGEABLE_STATUS) {
+		if ($organisation->getStatus() !== TenantLifecycleServiceInterface::PURGEABLE_STATUS) {
 			$this->logger->warning(
 				'[TenantPurgeJob] Skipped an organisation that is not in the purgeable state',
 				['uuid' => $organisation->getUuid(), 'status' => $organisation->getStatus()]

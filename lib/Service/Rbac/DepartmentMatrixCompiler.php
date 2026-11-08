@@ -144,6 +144,18 @@ class DepartmentMatrixCompiler {
 			now: ($now ?? new DateTimeImmutable())
 		);
 
+		return $this->rulesFrom(gathered: $gathered, field: $field);
+	}//end compile()
+
+	/**
+	 * One rule per gathered scope, its values sorted, keyed by action.
+	 *
+	 * @param array<string, array<string, array>> $gathered Action => key => scope.
+	 * @param string                              $field    The record field the matrix matches on.
+	 *
+	 * @return array<string, array<int, array>> Action => rules.
+	 */
+	private function rulesFrom(array $gathered, string $field): array {
 		$compiled = [];
 		foreach ($gathered as $action => $scopes) {
 			foreach ($scopes as $scope) {
@@ -160,7 +172,7 @@ class DepartmentMatrixCompiler {
 		}
 
 		return $compiled;
-	}//end compile()
+	}//end rulesFrom()
 
 	/**
 	 * Gather the declared values per action, group and `where`.
@@ -182,53 +194,108 @@ class DepartmentMatrixCompiler {
 	 */
 	private function gatherByActionGroup(array $rows, array $ownValues, string $field, DateTimeInterface $now): array {
 		$gathered = [];
-		$constraints = new GrantConstraints();
 
 		foreach ($rows as $row) {
-			if (is_array($row) === false) {
+			$scope = $this->scopeOf(row: $row, ownValues: $ownValues, field: $field, now: $now);
+			if ($scope === null) {
 				continue;
 			}
 
-			$group = trim((string)($row['group'] ?? ''));
-			if ($group === '') {
-				continue;
-			}
-
-			if (array_key_exists(GrantConstraints::UNTIL_KEY, $row) === true
-				&& $constraints->reaches(entry: [GrantConstraints::UNTIL_KEY => $row[GrantConstraints::UNTIL_KEY]], area: [], now: $now) === false
-			) {
-				continue;
-			}
-
-			$where = $this->where->conditionsOf(row: $row, field: $field);
-			if ($where === null) {
-				continue;
-			}
-
-			$values = $this->valuesOf(row: $row, ownValues: $ownValues);
-			if (empty($values) === true) {
-				// 🔴 DROPPED WHOLE. See the class docblock: an empty `$in` is
-				// dropped by the SQL builder and the rule becomes an
-				// unconditional grant to the group.
-				continue;
-			}
-
-			$marker = (new ReadRuleTenancy())->markerOf(rule: $row);
-
-			$key = $group . "\0" . json_encode($where) . "\0" . json_encode($marker);
-			foreach ($this->actionsOf(row: $row) as $action) {
-				$existing = ($gathered[$action][$key]['values'] ?? []);
-				$gathered[$action][$key] = [
-					'group' => $group,
-					'where' => $where,
-					'marker' => $marker,
-					'values' => array_values(array_unique(array_merge($existing, $values))),
-				];
-			}
-		}//end foreach
+			$this->gather(gathered: $gathered, scope: $scope, actions: $this->actionsOf(row: $row));
+		}
 
 		return $gathered;
 	}//end gatherByActionGroup()
+
+	/**
+	 * The scope one row compiles to, or null when the row is dropped.
+	 *
+	 * @param mixed              $row       One matrix row.
+	 * @param array<int, string> $ownValues The caller's own values.
+	 * @param string             $field     The record field the matrix matches on.
+	 * @param DateTimeInterface  $now       The moment `until` is read against.
+	 *
+	 * @return array{group: string, where: array, marker: array, values: array}|null The scope.
+	 */
+	private function scopeOf(mixed $row, array $ownValues, string $field, DateTimeInterface $now): array|null {
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		$group = trim((string)($row['group'] ?? ''));
+		if ($group === '' || $this->hasLapsed(row: $row, now: $now) === true) {
+			return null;
+		}
+
+		return $this->conditionedScope(row: $row, group: $group, ownValues: $ownValues, field: $field);
+	}//end scopeOf()
+
+	/**
+	 * Whether a row carries an `until` that has passed.
+	 *
+	 * @param array             $row The row.
+	 * @param DateTimeInterface $now The moment it is read against.
+	 *
+	 * @return bool True when the row no longer answers.
+	 */
+	private function hasLapsed(array $row, DateTimeInterface $now): bool {
+		return array_key_exists(GrantConstraints::UNTIL_KEY, $row) === true
+			&& (new GrantConstraints())->reaches(entry: [GrantConstraints::UNTIL_KEY => $row[GrantConstraints::UNTIL_KEY]], area: [], now: $now) === false;
+	}//end hasLapsed()
+
+	/**
+	 * A live row's scope: its `where`, values and marker, or null when either is unusable.
+	 *
+	 * @param array              $row       The row.
+	 * @param string             $group     Its group.
+	 * @param array<int, string> $ownValues The caller's own values.
+	 * @param string             $field     The record field the matrix matches on.
+	 *
+	 * @return array{group: string, where: array, marker: array, values: array}|null The scope.
+	 */
+	private function conditionedScope(array $row, string $group, array $ownValues, string $field): array|null {
+		$where = $this->where->conditionsOf(row: $row, field: $field);
+		if ($where === null) {
+			return null;
+		}
+
+		$values = $this->valuesOf(row: $row, ownValues: $ownValues);
+		if (empty($values) === true) {
+			// 🔴 DROPPED WHOLE. See the class docblock: an empty `$in` is
+			// dropped by the SQL builder and the rule becomes an
+			// unconditional grant to the group.
+			return null;
+		}
+
+		return [
+			'group' => $group,
+			'where' => $where,
+			'marker' => (new ReadRuleTenancy())->markerOf(rule: $row),
+			'values' => $values,
+		];
+	}//end conditionedScope()
+
+	/**
+	 * Add one scope under each of its actions, merging values with an equal group, where and marker.
+	 *
+	 * @param array<string, array<string, array>> $gathered Action => key => scope, modified in place.
+	 * @param array                               $scope    The scope.
+	 * @param array<int, string>                  $actions  The row's actions.
+	 *
+	 * @return void
+	 */
+	private function gather(array &$gathered, array $scope, array $actions): void {
+		$key = $scope['group'] . "\0" . json_encode($scope['where']) . "\0" . json_encode($scope['marker']);
+		foreach ($actions as $action) {
+			$existing = ($gathered[$action][$key]['values'] ?? []);
+			$gathered[$action][$key] = [
+				'group' => $scope['group'],
+				'where' => $scope['where'],
+				'marker' => $scope['marker'],
+				'values' => array_values(array_unique(array_merge($existing, $scope['values']))),
+			];
+		}
+	}//end gather()
 
 
 
@@ -263,16 +330,28 @@ class DepartmentMatrixCompiler {
 		unset($merged[self::KEY]);
 
 		foreach ($compiled as $action => $rules) {
-			$existing = ($merged[$action] ?? []);
-			if (is_array($existing) === false) {
-				$existing = [];
-			}
-
-			$merged[$action] = array_merge(array_values($existing), $rules);
+			$merged[$action] = array_merge($this->existingRules(block: $merged, action: $action), $rules);
 		}
 
 		return $merged;
 	}//end merge()
+
+	/**
+	 * The rules a block already holds for an action, as a list; none when it holds no list.
+	 *
+	 * @param array      $block  The block.
+	 * @param int|string $action The action.
+	 *
+	 * @return array<int, mixed> The rules.
+	 */
+	private function existingRules(array $block, int|string $action): array {
+		$existing = ($block[$action] ?? []);
+		if (is_array($existing) === false) {
+			return [];
+		}
+
+		return array_values($existing);
+	}//end existingRules()
 
 	/**
 	 * The caller's own values, from a group-prefix user source.
@@ -299,6 +378,21 @@ class DepartmentMatrixCompiler {
 			return array_values(array_unique($values));
 		}
 
+		$values = array_merge($values, $this->valuesAfterPrefix(userGroups: $userGroups, prefix: $prefix));
+
+		return array_values(array_unique($values));
+	}//end valuesFromGroups()
+
+	/**
+	 * What follows the prefix in each of the caller's groups that carries it.
+	 *
+	 * @param array<int, mixed> $userGroups The caller's groups.
+	 * @param string            $prefix     The non-empty prefix.
+	 *
+	 * @return array<int, string> The values, in group order.
+	 */
+	private function valuesAfterPrefix(array $userGroups, string $prefix): array {
+		$values = [];
 		foreach ($userGroups as $group) {
 			$group = (string)$group;
 			if (str_starts_with($group, $prefix) === true) {
@@ -309,8 +403,8 @@ class DepartmentMatrixCompiler {
 			}
 		}
 
-		return array_values(array_unique($values));
-	}//end valuesFromGroups()
+		return $values;
+	}//end valuesAfterPrefix()
 
 	/**
 	 * The verb a matrix action enforces as.
@@ -348,17 +442,8 @@ class DepartmentMatrixCompiler {
 	 * @return string[] The values.
 	 */
 	private function valuesOf(array $row, array $ownValues): array {
-		$declared = ($row['value'] ?? ($row['values'] ?? null));
-		if (is_string($declared) === true) {
-			$declared = [$declared];
-		}
-
-		if (is_array($declared) === false) {
-			return [];
-		}
-
 		$values = [];
-		foreach ($declared as $value) {
+		foreach ($this->declaredValues(row: $row) as $value) {
 			$value = trim((string)$value);
 			if ($value === '') {
 				continue;
@@ -374,6 +459,26 @@ class DepartmentMatrixCompiler {
 
 		return array_values(array_unique($values));
 	}//end valuesOf()
+
+	/**
+	 * The values a row declares under `value` (preferred) or `values`, as a list.
+	 *
+	 * @param array $row The row.
+	 *
+	 * @return array<int, mixed> The declared values, empty when none are readable.
+	 */
+	private function declaredValues(array $row): array {
+		$declared = ($row['value'] ?? ($row['values'] ?? null));
+		if (is_string($declared) === true) {
+			return [$declared];
+		}
+
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		return $declared;
+	}//end declaredValues()
 
 	/**
 	 * The actions one row grants, resolved.

@@ -543,7 +543,7 @@ class SchemaMigrationController extends Controller {
 	 * @return JSONResponse The 201 with the run.
 	 */
 	private function enqueued(SchemaRun $run): JSONResponse {
-		$this->platform->jobList->add(\OCA\OpenRegister\BackgroundJob\SchemaRunJob::class, ['run_id' => $run->getId()]);
+		$this->platform->jobList->add(\OCA\OpenRegister\BackgroundJob\JobHandles::SCHEMA_RUN, ['run_id' => $run->getId()]);
 
 		return new JSONResponse($run->jsonSerialize(), 201);
 	}//end enqueued()

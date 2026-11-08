@@ -43,14 +43,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
  */
-class AuditTrailPageQuery {
-
-	/**
-	 * The largest page one call answers.
-	 *
-	 * @var int
-	 */
-	public const MAX_LIMIT = 500;
+class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 
 	/**
 	 * The filter keys this query understands, and the column each reads.

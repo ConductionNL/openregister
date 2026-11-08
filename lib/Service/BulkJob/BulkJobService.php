@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
@@ -194,53 +194,57 @@ class BulkJobService implements BulkJobServiceInterface {
 		?int $registerId = null,
 		?int $schemaId = null
 	): BulkJob {
-		$action = $this->actions->registry->get(id: $actionId);
-		$action->validateParameters(parameters: $parameters);
-		$this->guards()->assertScope(registerId: $registerId, schemaId: $schemaId);
+		return $this->preview(
+			request: new BulkJobRequest(
+				actionId: $actionId,
+				parameters: $parameters,
+				selection: $selection,
+				justification: $justification,
+				actorUid: $actorUid,
+				registerId: $registerId,
+				schemaId: $schemaId
+			)
+		);
+	}//end create()
 
-		$selectionType = $this->selectionTypeOf(selection: $selection);
+	/**
+	 * Resolve, guard and rehearse a request, and write the previewed job.
+	 *
+	 * @param BulkJobRequest $request What the operator asked for.
+	 *
+	 * @return BulkJob The previewed job.
+	 *
+	 * @throws InvalidArgumentException When the action, its parameters or the
+	 *                                  register and schema do not resolve.
+	 * @throws BulkJobRefusedException When the ceiling or a guard refuses the selection.
+	 */
+	private function preview(BulkJobRequest $request): BulkJob {
+		$action = $this->actions->registry->get(id: $request->actionId);
+		$action->validateParameters(parameters: $request->parameters);
+		$this->guards()->assertScope(registerId: $request->registerId, schemaId: $request->schemaId);
+
+		$selectionType = $this->selectionTypeOf(selection: $request->selection);
 		$ceiling = $this->getCeiling();
 
 		$uuids = $this->actions->resolver->resolveUuids(
 			selectionType: $selectionType,
-			selection: $selection,
-			registerId: $registerId,
-			schemaId: $schemaId,
+			selection: $request->selection,
+			registerId: $request->registerId,
+			schemaId: $request->schemaId,
 			ceiling: $ceiling
 		);
 
 		$this->guards()->assertCeiling(count: count($uuids), ceiling: $ceiling);
 
-		$objects = $this->actions->resolver->hydrate(uuids: $uuids, registerId: $registerId, schemaId: $schemaId);
+		$objects = $this->actions->resolver->hydrate(uuids: $uuids, registerId: $request->registerId, schemaId: $request->schemaId);
 		$this->actions->executor->assertGuards(action: $action, objects: $objects);
-		$this->guards()->assertUndoCeiling(action: $action, objects: $objects, parameters: $parameters);
-
-		$window = null;
-		$until = null;
-		if ($action instanceof ReversibleBulkActionInterface) {
-			$window = $action->getReversalWindow();
-			// Provisional: the preview has to be able to NAME the window before
-			// the job commits, and the executor re-stamps this the moment the
-			// job stops writing.
-			$until = (new DateTime())->modify('+'.$window.' seconds');
-		}
+		$this->guards()->assertUndoCeiling(action: $action, objects: $objects, parameters: $request->parameters);
 
 		$job = $this->store->jobMapper->createFromArray(
-			[
-				'action' => $actionId,
-				'parameters' => $parameters,
-				'selectionType' => $selectionType,
-				'selection' => $this->normaliseSelection(selection: $selection, selectionType: $selectionType, uuids: $uuids),
-				'registerId' => $registerId,
-				'schemaId' => $schemaId,
-				'justification' => $justification,
-				'state' => BulkJob::STATE_PREVIEWED,
-				'total' => count($uuids),
-				'report' => ['selection' => ['kind' => $selectionType, 'countAtCreation' => count($uuids)]],
-				'startedBy' => $actorUid,
-				'reversalWindow' => $window,
-				'reversibleUntil' => $until,
-			]
+			array_merge(
+				$this->previewRow(request: $request, selectionType: $selectionType, uuids: $uuids),
+				$this->reversalFields(action: $action)
+			)
 		);
 
 		$this->actions->executor->writePreviewMembers(
@@ -248,7 +252,7 @@ class BulkJobService implements BulkJobServiceInterface {
 			uuids: $uuids,
 			objects: $objects,
 			action: $action,
-			actor: $this->environment->userManager->get($actorUid)
+			actor: $this->environment->userManager->get($request->actorUid)
 		);
 
 		// The cursor is still zero, so refreshCounts reports nothing walked
@@ -256,7 +260,56 @@ class BulkJobService implements BulkJobServiceInterface {
 		$this->actions->executor->refreshCounts(job: $job);
 
 		return $this->store->jobMapper->save($job);
-	}//end create()
+	}//end preview()
+
+	/**
+	 * The previewed job row, up to its reversal fields.
+	 *
+	 * @param BulkJobRequest     $request       What the operator asked for.
+	 * @param string             $selectionType The selection kind.
+	 * @param array<int, string> $uuids         The resolved uuids.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function previewRow(BulkJobRequest $request, string $selectionType, array $uuids): array {
+		return [
+			'action' => $request->actionId,
+			'parameters' => $request->parameters,
+			'selectionType' => $selectionType,
+			'selection' => $this->normaliseSelection(selection: $request->selection, selectionType: $selectionType, uuids: $uuids),
+			'registerId' => $request->registerId,
+			'schemaId' => $request->schemaId,
+			'justification' => $request->justification,
+			'state' => BulkJob::STATE_PREVIEWED,
+			'total' => count($uuids),
+			'report' => ['selection' => ['kind' => $selectionType, 'countAtCreation' => count($uuids)]],
+			'startedBy' => $request->actorUid,
+		];
+	}//end previewRow()
+
+	/**
+	 * The reversal window of a reversible action and its provisional deadline.
+	 *
+	 * Provisional: the preview has to be able to NAME the window before the
+	 * job commits, and the executor re-stamps this the moment the job stops
+	 * writing.
+	 *
+	 * @param BulkActionInterface $action The action.
+	 *
+	 * @return array{reversalWindow: int|null, reversibleUntil: DateTime|null} Both null for an irreversible action.
+	 */
+	private function reversalFields(BulkActionInterface $action): array {
+		if (($action instanceof ReversibleBulkActionInterface) === false) {
+			return ['reversalWindow' => null, 'reversibleUntil' => null];
+		}
+
+		$window = $action->getReversalWindow();
+
+		return [
+			'reversalWindow' => $window,
+			'reversibleUntil' => (new DateTime())->modify('+'.$window.' seconds'),
+		];
+	}//end reversalFields()
 
 	/**
 	 * Commit a previewed job: re-resolve, report the delta, queue the work.
@@ -286,7 +339,7 @@ class BulkJobService implements BulkJobServiceInterface {
 		$job->setCursor(0);
 		$saved = $this->store->jobMapper->save($job);
 
-		$this->store->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+		$this->store->jobList->add(JobHandles::BULK_JOB_RUNNER, ['job_id' => $saved->getId()]);
 
 		return $saved;
 	}//end commit()
@@ -382,7 +435,7 @@ class BulkJobService implements BulkJobServiceInterface {
 		$job->setState(BulkJob::STATE_RUNNING);
 		$saved = $this->store->jobMapper->save($job);
 
-		$this->store->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+		$this->store->jobList->add(JobHandles::BULK_JOB_RUNNER, ['job_id' => $saved->getId()]);
 
 		return $saved;
 	}//end resume()
@@ -428,7 +481,7 @@ class BulkJobService implements BulkJobServiceInterface {
 		$job->setCursor(0);
 		$saved = $this->store->jobMapper->save($job);
 
-		$this->store->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+		$this->store->jobList->add(JobHandles::BULK_JOB_RUNNER, ['job_id' => $saved->getId()]);
 
 		return $saved;
 	}//end retry()

@@ -38,11 +38,11 @@ use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Service\OrganisationUsageService;
-use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
-use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
-use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
-use OCA\OpenRegister\Service\TenantLifecycleService;
+use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
+use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -95,9 +95,9 @@ class OrganisationController extends Controller {
 	/**
 	 * Tenant lifecycle service for state transitions
 	 *
-	 * @var TenantLifecycleService
+	 * @var TenantLifecycleServiceInterface
 	 */
-	private TenantLifecycleService $tenantLifecycleService;
+	private TenantLifecycleServiceInterface $tenantLifecycleService;
 
 	/**
 	 * Tenant usage mapper for quota data
@@ -123,23 +123,23 @@ class OrganisationController extends Controller {
 	/**
 	 * Records a change of who holds the special right `grant_manage`.
 	 *
-	 * @var GrantChangeAuditor|null
+	 * @var GrantChangeAuditorInterface|null
 	 */
-	private ?GrantChangeAuditor $grantAuditor;
+	private ?GrantChangeAuditorInterface $grantAuditor;
 
 	/**
 	 * Measures an organisation's usage
 	 *
-	 * @var OrganisationUsageService
+	 * @var OrganisationUsageServiceInterface
 	 */
-	private readonly OrganisationUsageService $usageService;
+	private readonly OrganisationUsageServiceInterface $usageService;
 
 	/**
 	 * Records an edit of an organisation's details. Null only in legacy fixtures.
 	 *
-	 * @var ?OrganisationLifecycleAuditor
+	 * @var ?OrganisationEditAuditorInterface
 	 */
-	private readonly ?OrganisationLifecycleAuditor $lifecycleAuditor;
+	private readonly ?OrganisationEditAuditorInterface $lifecycleAuditor;
 
 	/**
 	 * OrganisationController constructor
@@ -814,7 +814,7 @@ class OrganisationController extends Controller {
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	private function grantManageOf(object $organisation): array {
-		$list = ($organisation->getAuthorization()[OrganisationSpecialRights::GRANT_MANAGE] ?? []);
+		$list = ($organisation->getAuthorization()[OrganisationSpecialRightsInterface::GRANT_MANAGE] ?? []);
 		if (is_array($list) === false) {
 			return [];
 		}
@@ -1353,9 +1353,9 @@ class OrganisationController extends Controller {
 	public function activate(string $uuid): JSONResponse {
 		try {
 			$organisation = $this->organisationMapper->findByUuid($uuid);
-			$status = $organisation->getStatus() ?? TenantLifecycleService::STATUS_ACTIVE;
+			$status = $organisation->getStatus() ?? TenantLifecycleServiceInterface::STATUS_ACTIVE;
 
-			if ($status === TenantLifecycleService::STATUS_PROVISIONING) {
+			if ($status === TenantLifecycleServiceInterface::STATUS_PROVISIONING) {
 				$userId = $this->userSession->getUser()?->getUID() ?? 'admin';
 				$result = $this->tenantLifecycleService->provision($organisation, $userId);
 				return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);

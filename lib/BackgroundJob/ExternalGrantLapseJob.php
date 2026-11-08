@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifierInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -100,7 +100,7 @@ class ExternalGrantLapseJob extends TimedJob {
 	 */
 	private function warnFor(Schema $schema): int {
 		$warned = 0;
-		foreach ((new ExternalGrantGuard())->lapsingWithin(authorization: $schema->getAuthorization()) as $grant) {
+		foreach (RbacChecks::externalGrants()->lapsingWithin(authorization: $schema->getAuthorization()) as $grant) {
 			$warned += $this->notifier->warn(schema: $schema, grant: $grant);
 		}
 

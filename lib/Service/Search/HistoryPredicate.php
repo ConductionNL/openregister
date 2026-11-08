@@ -49,7 +49,7 @@ use JsonSerializable;
  *
  * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
  */
-final class HistoryPredicate implements JsonSerializable {
+final class HistoryPredicate implements HistoryPredicateInterface, JsonSerializable {
 
 	/**
 	 * The query key carrying a "was ever at" filter.

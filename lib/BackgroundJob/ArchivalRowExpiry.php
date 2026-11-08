@@ -26,7 +26,8 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
 use Exception;
-use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
+use OCA\OpenRegister\Service\Archival\RetentionEvaluatorFactory;
+use OCA\OpenRegister\Service\Archival\RetentionEvaluatorInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -41,9 +42,9 @@ final class ArchivalRowExpiry {
 	/**
 	 * Retention evaluator.
 	 *
-	 * @var RetentionEvaluator
+	 * @var RetentionEvaluatorInterface
 	 */
-	private readonly RetentionEvaluator $retentionEvaluator;
+	private readonly RetentionEvaluatorInterface $retentionEvaluator;
 
 	/**
 	 * Constructor
@@ -55,7 +56,7 @@ final class ArchivalRowExpiry {
 	public function __construct(
 		private readonly LoggerInterface $logger,
 	) {
-		$this->retentionEvaluator = new RetentionEvaluator(logger: $logger);
+		$this->retentionEvaluator = (new RetentionEvaluatorFactory())->create(logger: $logger);
 	}//end __construct()
 
 	/**
