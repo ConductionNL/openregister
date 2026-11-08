@@ -91,27 +91,12 @@ class RunLockRegistry {
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
 	 */
 	public function record(ObjectEntity $object, ?string $runUuid, ?string $nodeId): void {
-		if ($runUuid === null || trim($runUuid) === '') {
+		if (trim((string)$runUuid) === '') {
 			return;
 		}
 
 		try {
-			$payload = ($object->getLocked() ?? []);
-			$expires = null;
-			if (isset($payload['expiration']) === true) {
-				$expires = new DateTime((string)$payload['expiration']);
-			}
-
-			$row = new RunObjectLock();
-			$row->setRunUuid(trim($runUuid));
-			$row->setObjectUuid((string)$object->getUuid());
-			$row->setRegisterId((string)$object->getRegister());
-			$row->setSchemaId((string)$object->getSchema());
-			$row->setNodeId($nodeId);
-			$row->setLockedAt(new DateTime());
-			$row->setExpiresAt($expires);
-
-			$this->registry->record(lock: $row);
+			$this->registry->record(lock: $this->lockRowFor(object: $object, runUuid: trim($runUuid), nodeId: $nodeId));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[RunLockRegistry] Could not record a run lock; the lock itself stands',
@@ -119,6 +104,36 @@ class RunLockRegistry {
 			);
 		}//end try
 	}//end record()
+
+	/**
+	 * The registry row of a run's lock on an object, expiring with the lock.
+	 *
+	 * @param ObjectEntity $object  The locked object.
+	 * @param string       $runUuid The run, trimmed.
+	 * @param string|null  $nodeId  The flow node.
+	 *
+	 * @return RunObjectLock The row
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-every-lock-a-run-holds-is-released-when-the-run-ends
+	 */
+	private function lockRowFor(ObjectEntity $object, string $runUuid, ?string $nodeId): RunObjectLock {
+		$payload = ($object->getLocked() ?? []);
+		$expires = null;
+		if (isset($payload['expiration']) === true) {
+			$expires = new DateTime((string)$payload['expiration']);
+		}
+
+		$row = new RunObjectLock();
+		$row->setRunUuid($runUuid);
+		$row->setObjectUuid((string)$object->getUuid());
+		$row->setRegisterId((string)$object->getRegister());
+		$row->setSchemaId((string)$object->getSchema());
+		$row->setNodeId($nodeId);
+		$row->setLockedAt(new DateTime());
+		$row->setExpiresAt($expires);
+
+		return $row;
+	}//end lockRowFor()
 
 	/**
 	 * Forget one run's row for one object, after the lock has been released.

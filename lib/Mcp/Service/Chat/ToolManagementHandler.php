@@ -103,19 +103,33 @@ class ToolManagementHandler {
 	 * @psalm-return list<ToolInterface>
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) getAgentTools() iterates tool ids, tries multiple
-	 * candidate key formats (raw / prefixed) per id, and logs both found and not-found results — each
-	 * branch is a required backward-compatibility guard for agent records from different schema eras.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Three independent early-returns (null agent, empty
-	 * enabledToolIds, filtered-to-empty selection) plus the two-candidate loop expand the NPath count
-	 * without adding logical complexity.
 	 */
 	public function getAgentTools(?Agent $agent, array $selectedTools = []): array {
 		if ($agent === null) {
 			return [];
 		}
 
+		$tools = [];
+
+		foreach ($this->enabledToolIds(agent: $agent, selectedTools: $selectedTools) as $toolId) {
+			$tool = $this->loadTool(agent: $agent, toolId: $toolId);
+			if ($tool !== null) {
+				$tools[] = $tool;
+			}
+		}
+
+		return $tools;
+	}//end getAgentTools()
+
+	/**
+	 * The agent's enabled tool ids, narrowed to the selection when one is given.
+	 *
+	 * @param Agent $agent         Agent entity.
+	 * @param array $selectedTools Tool UUIDs to use (empty = all agent tools).
+	 *
+	 * @return array Tool ids
+	 */
+	private function enabledToolIds(Agent $agent, array $selectedTools): array {
 		$enabledToolIds = $agent->getTools();
 		if ($enabledToolIds === null || empty($enabledToolIds) === true) {
 			return [];
@@ -136,59 +150,69 @@ class ToolManagementHandler {
 			);
 		}
 
-		$tools = [];
+		return $enabledToolIds;
+	}//end enabledToolIds()
 
-		foreach ($enabledToolIds as $toolId) {
-			// Try three formats in turn so agent records from different
-			// eras keep working:
-			// 1. The raw id as stored ("openbuild", "openregister.register")
-			// 2. The legacy openregister-prefixed form ("openregister.objects"
-			// when the agent stores just "objects")
-			// 3. An "openbuild" -> "openbuild.{x}" fallback handled by
-			// the McpProviderBridge — that bridge exposes every
-			// function under one appId-level registration.
-			$candidates = [$toolId];
-			if (strpos($toolId, '.') === false) {
-				$candidates[] = 'openregister.' . $toolId;
-			}
-
-			$tool = null;
-			$fullToolId = $toolId;
-			foreach ($candidates as $candidate) {
-				$tool = $this->toolRegistry->getTool($candidate);
-				if ($tool !== null) {
-					$fullToolId = $candidate;
-					break;
-				}
-			}
-
+	/**
+	 * Load one tool for the agent, trying the raw and the legacy prefixed id.
+	 *
+	 * @param Agent $agent  Agent entity.
+	 * @param mixed $toolId Tool id as stored on the agent.
+	 *
+	 * @return ToolInterface|null Null when no candidate id is registered
+	 */
+	private function loadTool(Agent $agent, mixed $toolId): ?ToolInterface {
+		foreach ($this->toolIdCandidates(toolId: $toolId) as $candidate) {
+			$tool = $this->toolRegistry->getTool($candidate);
 			if ($tool !== null) {
 				$tool->setAgent($agent);
-				$tools[] = $tool;
 				$this->logger->debug(
 					message: '[ToolManagementHandler] Loaded tool',
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
-						'id' => $fullToolId,
+						'id' => $candidate,
 					]
 				);
+				return $tool;
 			}
+		}
 
-			if ($tool === null) {
-				$this->logger->warning(
-					message: '[ToolManagementHandler] Tool not found',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'id' => $fullToolId,
-					]
-				);
-			}
-		}//end foreach
+		$this->logger->warning(
+			message: '[ToolManagementHandler] Tool not found',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'id' => $toolId,
+			]
+		);
 
-		return $tools;
-	}//end getAgentTools()
+		return null;
+	}//end loadTool()
+
+	/**
+	 * The ids to try for a stored tool id.
+	 *
+	 * Agent records from different eras keep working:
+	 * 1. The raw id as stored ("openbuild", "openregister.register")
+	 * 2. The legacy openregister-prefixed form ("openregister.objects"
+	 * when the agent stores just "objects")
+	 * 3. An "openbuild" -> "openbuild.{x}" fallback handled by
+	 * the McpProviderBridge — that bridge exposes every
+	 * function under one appId-level registration.
+	 *
+	 * @param mixed $toolId Tool id as stored on the agent.
+	 *
+	 * @return array Candidate ids in lookup order
+	 */
+	private function toolIdCandidates(mixed $toolId): array {
+		$candidates = [$toolId];
+		if (strpos($toolId, '.') === false) {
+			$candidates[] = 'openregister.' . $toolId;
+		}
+
+		return $candidates;
+	}//end toolIdCandidates()
 
 	/**
 	 * Convert tools to OpenAI function format
