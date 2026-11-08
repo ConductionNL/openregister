@@ -131,6 +131,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 
 /**
  * Dynamic Schema-Based Table Management Service
@@ -7208,58 +7209,83 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				needsPreUpdateState: $needsPreUpdateState
 			);
 		} catch (\Exception $e) {
-			// Check if this is a "table does not exist" error (PostgreSQL: 42P01, MySQL: 1146).
-			$message = $e->getMessage();
-			if (str_contains($message, '42P01') === true
-				|| str_contains($message, 'does not exist') === true
-				|| str_contains($message, "doesn't exist") === true
-				|| str_contains($message, '1146') === true
-			) {
-				$this->logger->warning(
-					message: '[MagicMapper] Table does not exist, creating and retrying bulkUpsert',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'register' => $register->getId(),
-						'schema' => $schema->getId(),
-						'table' => $tableName,
-						'error' => $message,
-					]
-				);
+			$target = new MagicTableTarget(register: $register, schema: $schema);
+			$target->tableName = $tableName;
+			$this->createMissingBulkTable(error: $e, target: $target);
 
-				// ONLY CREATE A TABLE THAT IS ACTUALLY MISSING. `force: true` makes
-				// ensureTableForRegisterSchema() DROP an existing table before
-				// recreating it, which destroys every row with no audit entry — and
-				// the message test above is wider than its name: PostgreSQL says
-				// `column "x" of relation "y" does not exist` for a missing COLUMN
-				// (42703) as well as for a missing table (42P01), so a schema whose
-				// magic table was merely out of sync could reach this recovery and
-				// come back empty. If the table is there, the failure was something
-				// else, so surface it instead of resolving it destructively.
-				//
-				// Asked of the connection rather than of tableExistsForRegisterSchema(),
-				// whose positive answers are cached for TABLE_CACHE_TIMEOUT: a stale
-				// "yes" here would turn a genuine missing-table recovery into an error.
-				if ($this->db->tableExists($tableName) === true) {
-					throw $e;
-				}
-
-				// Create the table.
-				$this->ensureTableForRegisterSchema(register: $register, schema: $schema, force: true);
-
-				// Retry the bulk upsert.
-				return $this->bulkHandler->bulkUpsert(
-					objects: $objects,
-					register: $register,
-					schema: $schema,
-					tableName: $tableName
-				);
-			}//end if
-
-			// Re-throw if it's not a table-not-found error.
-			throw $e;
+			// Retry the bulk upsert.
+			return $this->bulkHandler->bulkUpsert(
+				objects: $objects,
+				register: $register,
+				schema: $schema,
+				tableName: $tableName
+			);
 		}//end try
 	}//end bulkUpsert()
+
+	/**
+	 * Create the table a failed bulk upsert found missing, or rethrow the failure.
+	 *
+	 * ONLY CREATE A TABLE THAT IS ACTUALLY MISSING. `force: true` makes
+	 * ensureTableForRegisterSchema() DROP an existing table before
+	 * recreating it, which destroys every row with no audit entry — and
+	 * the message test is wider than its name: PostgreSQL says
+	 * `column "x" of relation "y" does not exist` for a missing COLUMN
+	 * (42703) as well as for a missing table (42P01), so a schema whose
+	 * magic table was merely out of sync could reach this recovery and
+	 * come back empty. If the table is there, the failure was something
+	 * else, so surface it instead of resolving it destructively.
+	 *
+	 * Asked of the connection rather than of tableExistsForRegisterSchema(),
+	 * whose positive answers are cached for TABLE_CACHE_TIMEOUT: a stale
+	 * "yes" here would turn a genuine missing-table recovery into an error.
+	 *
+	 * @param \Exception       $error  The bulk upsert failure.
+	 * @param MagicTableTarget $target The register, schema and table name of the upsert.
+	 *
+	 * @return void
+	 *
+	 * @throws \Exception The failure itself, unless it is a missing table that is now created.
+	 */
+	private function createMissingBulkTable(\Exception $error, MagicTableTarget $target): void {
+		$message = $error->getMessage();
+		if ($this->namesAMissingTable(message: $message) === false) {
+			// Re-throw if it's not a table-not-found error.
+			throw $error;
+		}
+
+		$this->logger->warning(
+			message: '[MagicMapper] Table does not exist, creating and retrying bulkUpsert',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'register' => $target->register->getId(),
+				'schema' => $target->schema->getId(),
+				'table' => $target->tableName,
+				'error' => $message,
+			]
+		);
+
+		if ($this->db->tableExists($target->tableName) === true) {
+			throw $error;
+		}
+
+		$this->ensureTableForRegisterSchema(register: $target->register, schema: $target->schema, force: true);
+	}//end createMissingBulkTable()
+
+	/**
+	 * Whether a database error message reads as "table does not exist" (PostgreSQL: 42P01, MySQL: 1146).
+	 *
+	 * @param string $message The error message.
+	 *
+	 * @return bool
+	 */
+	private function namesAMissingTable(string $message): bool {
+		return str_contains($message, '42P01') === true
+			|| str_contains($message, 'does not exist') === true
+			|| str_contains($message, "doesn't exist") === true
+			|| str_contains($message, '1146') === true;
+	}//end namesAMissingTable()
 
 	/**
 	 * Find objects that reference a specific UUID in any of their columns.
