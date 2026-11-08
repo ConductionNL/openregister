@@ -25,7 +25,7 @@ use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 
 /**
@@ -165,7 +165,7 @@ class TypeMapperHandler {
 	 * @param callable $objectTypeFactory Gets/creates an ObjectType for a schema
 	 * @param callable $fieldNameConverter Converts a slug to a GraphQL field name
 	 * @param callable $typeNameConverter Converts a slug to a PascalCase type name
-	 * @param PropertyRbacHandler $propertyRbac Withholds a property the caller may not read
+	 * @param PropertyRbacHandlerInterface $propertyRbac Withholds a property the caller may not read
 	 */
 	public function __construct(
 		array $scalars,
@@ -173,7 +173,7 @@ class TypeMapperHandler {
 		callable $objectTypeFactory,
 		callable $fieldNameConverter,
 		callable $typeNameConverter,
-		private readonly PropertyRbacHandler $propertyRbac,
+		private readonly PropertyRbacHandlerInterface $propertyRbac,
 	) {
 		$this->scalars = $scalars;
 		$this->refResolver = $refResolver;

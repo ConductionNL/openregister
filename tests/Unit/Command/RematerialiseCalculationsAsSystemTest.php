@@ -38,7 +38,6 @@ use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 use ReflectionNamedType;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -52,7 +51,8 @@ class RematerialiseCalculationsAsSystemTest extends TestCase {
 	 */
 	private function permissions(): PermissionHandler {
 		$args = [];
-		foreach ((new ReflectionClass(PermissionHandler::class))->getConstructor()->getParameters() as $param) {
+		$factory = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::class;
+		foreach ((new \ReflectionMethod($factory, 'args'))->getParameters() as $param) {
 			if ($param->isOptional() === true) {
 				$args[] = $param->getDefaultValue();
 				continue;
@@ -63,7 +63,7 @@ class RematerialiseCalculationsAsSystemTest extends TestCase {
 			$args[] = $this->createMock($type->getName());
 		}
 
-		return new PermissionHandler(...$args);
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(...$args);
 	}//end permissions()
 
 	/**

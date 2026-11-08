@@ -17,6 +17,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceStorage;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -109,9 +110,7 @@ class RegisterServiceSchemaObjectCountsGoldenTest extends TestCase {
 		}
 
 		return new RegisterService(
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$db,
+			new RegisterServiceStorage($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class), $db),
 			$this->createMock(FileService::class),
 			$this->createMock(OrganisationService::class),
 			$logger,

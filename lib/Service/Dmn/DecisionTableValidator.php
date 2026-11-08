@@ -94,8 +94,7 @@ class DecisionTableValidator {
 
 		$this->validateRules(
 			raw: ($table['rules'] ?? null),
-			inputs: $inputs,
-			outputCount: count($outputs),
+			columns: new DecisionTableColumns(inputs: $inputs, outputCount: count($outputs)),
 			problems: $problems
 		);
 
@@ -163,15 +162,14 @@ class DecisionTableValidator {
 	 * input cell executed through the evaluator's grammar.
 	 *
 	 * @param mixed $raw The declared `rules`.
-	 * @param array<int, array{name: string, type: string}> $inputs The declared inputs, positionally.
-	 * @param int $outputCount The declared output count.
+	 * @param DecisionTableColumns $columns The declared inputs, positionally, and the output count.
 	 * @param array<int, string> $problems Collected problems, appended to.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
-	private function validateRules(mixed $raw, array $inputs, int $outputCount, array &$problems): void {
+	private function validateRules(mixed $raw, DecisionTableColumns $columns, array &$problems): void {
 		if (is_array($raw) === false || $raw === []) {
 			$problems[] = 'the table declares no rules; a table that can never match decides nothing';
 
@@ -189,7 +187,7 @@ class DecisionTableValidator {
 				$ruleId = ('#' . $position);
 			}
 
-			$this->validateRule(rule: $rule, ruleId: $ruleId, inputs: $inputs, outputCount: $outputCount, problems: $problems);
+			$this->validateRule(rule: $rule, ruleId: $ruleId, columns: $columns, problems: $problems);
 		}
 
 	}//end validateRules()
@@ -199,15 +197,14 @@ class DecisionTableValidator {
 	 *
 	 * @param array<string, mixed> $rule The rule row.
 	 * @param string $ruleId The rule's id or position, for the messages.
-	 * @param array<int, array{name: string, type: string}> $inputs The declared inputs, positionally.
-	 * @param int $outputCount The declared output count.
+	 * @param DecisionTableColumns $columns The declared inputs, positionally, and the output count.
 	 * @param array<int, string> $problems Collected problems, appended to.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
-	private function validateRule(array $rule, string $ruleId, array $inputs, int $outputCount, array &$problems): void {
+	private function validateRule(array $rule, string $ruleId, DecisionTableColumns $columns, array &$problems): void {
 		$inputEntries = [];
 		if (is_array($rule['inputEntries'] ?? null) === true) {
 			$inputEntries = array_values($rule['inputEntries']);
@@ -218,23 +215,23 @@ class DecisionTableValidator {
 			$outputEntries = array_values($rule['outputEntries']);
 		}
 
-		if (count($inputEntries) !== count($inputs)) {
+		if (count($inputEntries) !== count($columns->inputs)) {
 			// A short row would silently wildcard its missing tail: the
 			// evaluator reads an absent positional entry as `-`.
 			$problems[] = sprintf(
 				'rule %s has %d input entries for %d declared inputs; a short row would silently wildcard the missing columns',
 				$ruleId,
 				count($inputEntries),
-				count($inputs)
+				count($columns->inputs)
 			);
 		}
 
-		if (count($outputEntries) !== $outputCount) {
+		if (count($outputEntries) !== $columns->outputCount) {
 			$problems[] = sprintf(
 				'rule %s has %d output entries for %d declared outputs',
 				$ruleId,
 				count($outputEntries),
-				$outputCount
+				$columns->outputCount
 			);
 		}
 
@@ -242,7 +239,7 @@ class DecisionTableValidator {
 			$problems[] = sprintf('rule %s has a non-integer priority', $ruleId);
 		}
 
-		foreach ($inputs as $columnPosition => $column) {
+		foreach ($columns->inputs as $columnPosition => $column) {
 			if (array_key_exists($columnPosition, $inputEntries) === false) {
 				continue;
 			}

@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -131,23 +132,33 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	 * signature parity with resolveRegister; pure id reads never need it but the unified contract
 	 * lets callers pass the same tuple through.
 	 */
-	public function resolveRegisterId(
-		string $appId,
-		string $configKey,
-		?string $default = null,
-		?string $organisationUuid = null,
-	): string {
+	public function resolveRegisterId(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
 		$value = $this->appConfig->getValueString($appId, $configKey, '');
 		if ($value !== '') {
 			return $value;
 		}
 
+		return $this->defaultOrThrow(appId: $appId, configKey: $configKey, default: $default);
+	}//end resolveRegisterId()
+
+	/**
+	 * The caller's fallback for an unset config key, or the missing-config failure.
+	 *
+	 * @param string      $appId     Consumer app id.
+	 * @param string      $configKey Config key that was read.
+	 * @param string|null $default   Fallback value.
+	 *
+	 * @return string The non-empty fallback.
+	 *
+	 * @throws MissingConfigException If no non-empty fallback was provided.
+	 */
+	private function defaultOrThrow(string $appId, string $configKey, ?string $default): string {
 		if ($default !== null && $default !== '') {
 			return $default;
 		}
 
 		throw new MissingConfigException(appId: $appId, configKey: $configKey);
-	}//end resolveRegisterId()
+	}//end defaultOrThrow()
 
 	/**
 	 * Read the configured slug/UUID for a schema from app config.
@@ -166,12 +177,7 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Same parity rationale as resolveRegisterId.
 	 */
-	public function resolveSchemaId(
-		string $appId,
-		string $configKey,
-		?string $default = null,
-		?string $organisationUuid = null,
-	): string {
+	public function resolveSchemaId(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
 		return $this->resolveRegisterId(appId: $appId, configKey: $configKey, default: $default);
 	}//end resolveSchemaId()
 
@@ -197,12 +203,7 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Same parity rationale as resolveRegisterId.
 	 */
-	public function resolvePropertyId(
-		string $appId,
-		string $configKey,
-		?string $default = null,
-		?string $organisationUuid = null,
-	): string {
+	public function resolvePropertyId(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): string {
 		return $this->resolveRegisterId(appId: $appId, configKey: $configKey, default: $default);
 	}//end resolvePropertyId()
 
@@ -222,36 +223,44 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	 * @spec openspec/specs/register-resolver-service/spec.md
 	 *   (Requirement: resolveRegister)
 	 */
-	public function resolveRegister(
-		string $appId,
-		string $configKey,
-		?string $default = null,
-		?string $organisationUuid = null,
-	): Register {
+	public function resolveRegister(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): Register {
 		$this->maybeFlushOnTenantSwitch();
 
-		$slugOrUuid = $this->resolveRegisterId(
-			appId: $appId,
-			configKey: $configKey,
-			default: $default,
-			organisationUuid: $organisationUuid
-		);
-		$cacheKey = $this->cacheKey(appId: $appId, configKey: $configKey, organisationUuid: $organisationUuid);
+		$slugOrUuid = $this->resolveRegisterId(appId: $appId, configKey: $configKey, default: $default, organisationUuid: $organisationUuid);
+		$cacheKey   = $this->cacheKey(appId: $appId, configKey: $configKey, organisationUuid: $organisationUuid);
 
 		if (isset($this->registerCache[$cacheKey]) === true) {
 			return $this->registerCache[$cacheKey];
 		}
 
+		$register = $this->findRegister(appId: $appId, configKey: $configKey, slugOrUuid: $slugOrUuid, organisationUuid: $organisationUuid);
+		$this->registerCache[$cacheKey] = $register;
+
+		return $register;
+	}//end resolveRegister()
+
+	/**
+	 * Fetch the configured register, in the caller's tenant or the explicitly given one.
+	 *
+	 * When an explicit org override was passed, bypass multi-tenancy
+	 * filtering at the mapper layer and verify membership ourselves
+	 * after fetch; otherwise rely on the mapper's implicit caller-
+	 * tenant scoping via applyOrganisationFilter().
+	 *
+	 * @param string      $appId            Consumer app id.
+	 * @param string      $configKey        Config key that was read.
+	 * @param string      $slugOrUuid       The configured slug or UUID.
+	 * @param string|null $organisationUuid Optional explicit-tenant override.
+	 *
+	 * @return Register The register.
+	 *
+	 * @throws RegisterNotFoundException If it does not exist, is ambiguous, or belongs to another organisation.
+	 */
+	private function findRegister(string $appId, string $configKey, string $slugOrUuid, ?string $organisationUuid): Register {
 		try {
-			// When an explicit org override was passed, bypass multi-tenancy
-			// filtering at the mapper layer and verify membership ourselves
-			// after fetch; otherwise rely on the mapper's implicit caller-
-			// tenant scoping via applyOrganisationFilter().
 			if ($organisationUuid !== null) {
 				$register = $this->registerMapper->find(id: $slugOrUuid, _multitenancy: false);
-				if ($register->getOrganisation() !== null
-					&& $register->getOrganisation() !== $organisationUuid
-				) {
+				if ($this->ownedElsewhere(owner: $register->getOrganisation(), organisationUuid: $organisationUuid) === true) {
 					throw new RegisterNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid);
 				}
 			} else {
@@ -261,10 +270,22 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 			throw new RegisterNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid, previous: $e);
 		}
 
-		$this->registerCache[$cacheKey] = $register;
-
 		return $register;
-	}//end resolveRegister()
+	}//end findRegister()
+
+	/**
+	 * Whether an entity carries an organisation other than the explicitly requested one.
+	 *
+	 * An entity without an organisation is not owned elsewhere.
+	 *
+	 * @param string|null $owner            The entity's organisation uuid.
+	 * @param string      $organisationUuid The explicitly requested organisation uuid.
+	 *
+	 * @return bool True when the entity belongs to another organisation.
+	 */
+	private function ownedElsewhere(?string $owner, string $organisationUuid): bool {
+		return $owner !== null && $owner !== $organisationUuid;
+	}//end ownedElsewhere()
 
 	/**
 	 * Resolve `<context>_schema` config to a hydrated Schema entity.
@@ -282,32 +303,42 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	 * @spec openspec/specs/register-resolver-service/spec.md
 	 *   (Requirement: resolveSchema)
 	 */
-	public function resolveSchema(
-		string $appId,
-		string $configKey,
-		?string $default = null,
-		?string $organisationUuid = null,
-	): Schema {
+	public function resolveSchema(string $appId, string $configKey, ?string $default = null, ?string $organisationUuid = null): Schema {
 		$this->maybeFlushOnTenantSwitch();
 
-		$slugOrUuid = $this->resolveSchemaId(
-			appId: $appId,
-			configKey: $configKey,
-			default: $default,
-			organisationUuid: $organisationUuid
-		);
-		$cacheKey = $this->cacheKey(appId: $appId, configKey: $configKey, organisationUuid: $organisationUuid);
+		$slugOrUuid = $this->resolveSchemaId(appId: $appId, configKey: $configKey, default: $default, organisationUuid: $organisationUuid);
+		$cacheKey   = $this->cacheKey(appId: $appId, configKey: $configKey, organisationUuid: $organisationUuid);
 
 		if (isset($this->schemaCache[$cacheKey]) === true) {
 			return $this->schemaCache[$cacheKey];
 		}
 
+		$schema = $this->findSchema(appId: $appId, configKey: $configKey, slugOrUuid: $slugOrUuid, organisationUuid: $organisationUuid);
+		$this->schemaCache[$cacheKey] = $schema;
+
+		return $schema;
+	}//end resolveSchema()
+
+	/**
+	 * Fetch the configured schema, in the caller's tenant or the explicitly given one.
+	 *
+	 * Same tenancy rule as {@see findRegister()}: an explicit override bypasses
+	 * the mapper's multitenancy filter and is verified here after the fetch.
+	 *
+	 * @param string      $appId            Consumer app id.
+	 * @param string      $configKey        Config key that was read.
+	 * @param string      $slugOrUuid       The configured slug or UUID.
+	 * @param string|null $organisationUuid Optional explicit-tenant override.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws SchemaNotFoundException If it does not exist, is ambiguous, or belongs to another organisation.
+	 */
+	private function findSchema(string $appId, string $configKey, string $slugOrUuid, ?string $organisationUuid): Schema {
 		try {
 			if ($organisationUuid !== null) {
 				$schema = $this->schemaMapper->find(id: $slugOrUuid, _multitenancy: false);
-				if ($schema->getOrganisation() !== null
-					&& $schema->getOrganisation() !== $organisationUuid
-				) {
+				if ($this->ownedElsewhere(owner: $schema->getOrganisation(), organisationUuid: $organisationUuid) === true) {
 					throw new SchemaNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid);
 				}
 			} else {
@@ -317,10 +348,8 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 			throw new SchemaNotFoundException(appId: $appId, configKey: $configKey, resolvedValue: $slugOrUuid, previous: $e);
 		}
 
-		$this->schemaCache[$cacheKey] = $schema;
-
 		return $schema;
-	}//end resolveSchema()
+	}//end findSchema()
 
 	/**
 	 * Resolve a schema property by configured identifier.
@@ -363,52 +392,101 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 		?string $schemaDefault = null,
 		?string $organisationUuid = null,
 	): array {
-		$schema = $this->resolveSchema(
-			appId: $appId,
-			configKey: $schemaConfigKey,
-			default: $schemaDefault,
-			organisationUuid: $organisationUuid
-		);
-		$propertyId = $this->resolvePropertyId(
-			appId: $appId,
-			configKey: $propertyConfigKey,
-			default: $propertyDefault,
-			organisationUuid: $organisationUuid
-		);
+		$schema   = $this->resolveSchema(appId: $appId, configKey: $schemaConfigKey, default: $schemaDefault, organisationUuid: $organisationUuid);
+		$property = $this->resolvePropertyId(appId: $appId, configKey: $propertyConfigKey, default: $propertyDefault, organisationUuid: $organisationUuid);
 
-		$properties = $schema->getProperties();
-		$schemaId = (string)($schema->getSlug() ?? $schema->getUuid() ?? '');
+		return $this->findProperty(schema: $schema, propertyId: $property, appId: $appId, configKey: $propertyConfigKey);
+	}//end resolveProperty()
 
-		// Match by array key first (canonical name in property maps).
+	/**
+	 * Locate a property on a schema by key, then by slug / name / id.
+	 *
+	 * @param Schema $schema     The resolved schema.
+	 * @param string $propertyId The configured property identifier.
+	 * @param string $appId      Consumer app id.
+	 * @param string $configKey  The property config key.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>} The property key and definition.
+	 *
+	 * @throws PropertyNotFoundException If no property matches.
+	 */
+	private function findProperty(Schema $schema, string $propertyId, string $appId, string $configKey): array {
+		$match = $this->matchProperty(properties: $schema->getProperties(), propertyId: $propertyId);
+		if ($match !== null) {
+			return $match;
+		}
+
+		throw new PropertyNotFoundException(
+			appId: $appId,
+			configKey: $configKey,
+			resolvedValue: $propertyId,
+			schemaIdentifier: $this->schemaIdentifier(schema: $schema),
+		);
+	}//end findProperty()
+
+	/**
+	 * Match a property by array key first (canonical name in property maps), then by slug / name / id.
+	 *
+	 * @param array<mixed> $properties The schema's property map.
+	 * @param string       $propertyId The configured property identifier.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>}|null The match, or null.
+	 */
+	private function matchProperty(array $properties, string $propertyId): ?array {
 		if (isset($properties[$propertyId]) === true && is_array($properties[$propertyId]) === true) {
 			return [$propertyId, $properties[$propertyId]];
 		}
 
-		// Fall back to scanning by slug / name / id.
+		return $this->scanProperties(properties: $properties, propertyId: $propertyId);
+	}//end matchProperty()
+
+	/**
+	 * Fall back to scanning the property definitions by slug / name / id.
+	 *
+	 * @param array<mixed> $properties The schema's property map.
+	 * @param string       $propertyId The configured property identifier.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>}|null The match, or null.
+	 */
+	private function scanProperties(array $properties, string $propertyId): ?array {
 		foreach ($properties as $key => $definition) {
 			if (is_array($definition) === false) {
 				continue;
 			}
 
-			$candidates = [
-				(string)($definition['slug'] ?? ''),
-				(string)($definition['name'] ?? ''),
-				(string)($definition['id'] ?? ''),
-			];
-
-			if (in_array($propertyId, $candidates, true) === true) {
+			if (in_array($propertyId, $this->propertyIdentifiers(definition: $definition), true) === true) {
 				return [(string)$key, $definition];
 			}
 		}
 
-		throw new PropertyNotFoundException(
-			appId: $appId,
-			configKey: $propertyConfigKey,
-			resolvedValue: $propertyId,
-			schemaIdentifier: $schemaId,
-		);
+		return null;
+	}//end scanProperties()
 
-	}//end resolveProperty()
+	/**
+	 * The slug, name and id of a property definition, as strings.
+	 *
+	 * @param array<string, mixed> $definition The property definition.
+	 *
+	 * @return array<int, string> The candidate identifiers.
+	 */
+	private function propertyIdentifiers(array $definition): array {
+		return [
+			(string)($definition['slug'] ?? ''),
+			(string)($definition['name'] ?? ''),
+			(string)($definition['id'] ?? ''),
+		];
+	}//end propertyIdentifiers()
+
+	/**
+	 * How a schema is named in a property-not-found diagnostic.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return string Its slug, else its UUID, else empty.
+	 */
+	private function schemaIdentifier(Schema $schema): string {
+		return (string)($schema->getSlug() ?? $schema->getUuid() ?? '');
+	}//end schemaIdentifier()
 
 	/**
 	 * Convenience: resolve a register and schema in a single call.
@@ -427,24 +505,13 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	 * @spec openspec/specs/register-resolver-service/spec.md
 	 *   (Requirement: resolvePair)
 	 */
-	public function resolvePair(
-		string $appId,
-		string $registerKey,
-		string $schemaKey,
-		?string $organisationUuid = null,
-	): RegisterSchemaPair {
+	public function resolvePair(string $appId, string $registerKey, string $schemaKey, ?string $organisationUuid = null): RegisterSchemaPair {
 		$registerId = $this->resolveRegisterId(appId: $appId, configKey: $registerKey, default: null, organisationUuid: $organisationUuid);
-		$schemaId = $this->resolveSchemaId(appId: $appId, configKey: $schemaKey, default: null, organisationUuid: $organisationUuid);
-		$register = $this->resolveRegister(appId: $appId, configKey: $registerKey, default: null, organisationUuid: $organisationUuid);
-		$schema = $this->resolveSchema(appId: $appId, configKey: $schemaKey, default: null, organisationUuid: $organisationUuid);
+		$schemaId   = $this->resolveSchemaId(appId: $appId, configKey: $schemaKey, default: null, organisationUuid: $organisationUuid);
+		$register   = $this->resolveRegister(appId: $appId, configKey: $registerKey, default: null, organisationUuid: $organisationUuid);
+		$schema     = $this->resolveSchema(appId: $appId, configKey: $schemaKey, default: null, organisationUuid: $organisationUuid);
 
-		return new RegisterSchemaPair(
-			registerId: $registerId,
-			schemaId: $schemaId,
-			register: $register,
-			schema: $schema,
-		);
-
+		return new RegisterSchemaPair(registerId: $registerId, schemaId: $schemaId, register: $register, schema: $schema);
 	}//end resolvePair()
 
 	/**
@@ -463,7 +530,20 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	 *   (Requirement: enumerateAppConfigs)
 	 */
 	public function enumerateAppConfigs(string $appId): array {
-		$allValues = $this->appConfig->getAllValues($appId);
+		$matches = $this->resolverKeyValues(allValues: $this->appConfig->getAllValues($appId));
+		ksort($matches);
+
+		return $matches;
+	}//end enumerateAppConfigs()
+
+	/**
+	 * Keep the resolver-shaped keys that carry a non-empty value, under their canonical key.
+	 *
+	 * @param array<mixed> $allValues Every app-config value of the app.
+	 *
+	 * @return array<string, string> Canonical key → raw configured value.
+	 */
+	private function resolverKeyValues(array $allValues): array {
 		$matches = [];
 		foreach ($allValues as $key => $value) {
 			$resolved = $this->matchResolverKey(key: $key);
@@ -474,17 +554,13 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 			// Skip empty values; an empty IAppConfig string means "unset"
 			// in NC and we don't want to advertise it as a configured key.
 			$stringValue = (string)$value;
-			if ($stringValue === '') {
-				continue;
+			if ($stringValue !== '') {
+				$matches[$resolved] = $stringValue;
 			}
-
-			$matches[$resolved] = $stringValue;
 		}
 
-		ksort($matches);
-
 		return $matches;
-	}//end enumerateAppConfigs()
+	}//end resolverKeyValues()
 
 	/**
 	 * Clear request-scoped caches. Test hook + defensive tenant-switch path.
@@ -564,6 +640,17 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 			return;
 		}
 
+		$this->noteTenant(active: $active);
+	}//end maybeFlushOnTenantSwitch()
+
+	/**
+	 * Record the active tenant, clearing the caches when it differs from the last one seen.
+	 *
+	 * @param Organisation|null $active The active organisation, if any.
+	 *
+	 * @return void
+	 */
+	private function noteTenant(?Organisation $active): void {
 		$currentUuid = null;
 		if ($active !== null) {
 			$currentUuid = $active->getUuid();
@@ -574,6 +661,5 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 		}
 
 		$this->lastTenantUuid = $currentUuid;
-
-	}//end maybeFlushOnTenantSwitch()
+	}//end noteTenant()
 }//end class

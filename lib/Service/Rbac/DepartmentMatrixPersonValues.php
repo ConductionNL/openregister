@@ -115,29 +115,34 @@ class DepartmentMatrixPersonValues {
 			return $this->cache[$key];
 		}
 
-		$this->cache[$key] = $this->read(
+		$persons = $this->persons(
 			schemaRef: $schemaRef,
 			registerRef: trim((string)($source['register'] ?? '')),
-			property: $property,
 			match: $match,
 			userId: $userId
 		);
+
+		$values = [];
+		if ($persons !== null) {
+			$values = self::collect(persons: $persons, property: $property, match: $match, userId: $userId);
+		}
+
+		$this->cache[$key] = $values;
 
 		return $this->cache[$key];
 	}//end valuesFor()
 
 	/**
-	 * Read the person objects and collect the property's values.
+	 * Read the person objects the search returns for the user.
 	 *
 	 * @param string $schemaRef   The person schema's slug or id.
 	 * @param string $registerRef The register's slug or id, or '' to find it.
-	 * @param string $property    The property holding the values.
 	 * @param string $match       The property matched against the user id.
 	 * @param string $userId      The current user.
 	 *
-	 * @return string[] The values.
+	 * @return array<int, mixed>|null The objects, or null when the source cannot be read.
 	 */
-	private function read(string $schemaRef, string $registerRef, string $property, string $match, string $userId): array {
+	private function persons(string $schemaRef, string $registerRef, string $match, string $userId): ?array {
 		try {
 			$schema = $this->schemas->find($schemaRef, _multitenancy: false, _rbac: false);
 
@@ -147,7 +152,7 @@ class DepartmentMatrixPersonValues {
 			}
 
 			if ($registerId === '') {
-				return [];
+				return null;
 			}
 
 			$register = $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false);
@@ -166,15 +171,15 @@ class DepartmentMatrixPersonValues {
 				message: '[DepartmentMatrixPersonValues] Could not read the person source; the user gets no own values',
 				context: ['schema' => $schemaRef, 'error' => $e->getMessage()]
 			);
-			return [];
+			return null;
 		}//end try
 
 		if (is_array($persons) === false) {
-			return [];
+			return null;
 		}
 
-		return self::collect(persons: $persons, property: $property, match: $match, userId: $userId);
-	}//end read()
+		return $persons;
+	}//end persons()
 
 	/**
 	 * The property's values over the persons that really match the user.

@@ -302,7 +302,44 @@ class ObjectSharingService {
 		?DateTime $sharedAt = null,
 	): array {
 		$admittedAs = $this->requireMayManageGrants(object: $object, grantType: $type, grantee: trim($shareWith));
+		$this->assertGrantRequest(type: $type, shareWith: $shareWith);
 
+		$share = $this->shareOnFolder(object: $object, shareType: self::GRANTABLE_TYPES[$type]);
+		$share->setSharedWith(trim($shareWith));
+		$share->setPermissions($this->withoutReshare(permissions: $permissions));
+		$this->applyVerbs(share: $share, verbs: $verbs);
+		if ($expiresAt !== null) {
+			$share->setExpirationDate($expiresAt);
+		}
+
+		$created = $this->createDated(share: $share, sharedAt: $sharedAt);
+
+		// The caller may re-decide access within this same request.
+		$this->grantResolver->forget();
+
+		$grant = $this->grantRecord(created: $created, type: $type, verbs: $verbs);
+
+		// Who let this principal in, and when, is the question the trail has
+		// to be able to answer, whoever the caller was admitted as.
+		$this->auditor?->recordGrant(object: $object, grant: $grant, admittedAs: $admittedAs);
+
+		// The created share's identity, so a caller that keeps the grant can later tell it from another share.
+		$identity = ['nodeId' => (int)$created->getNodeId(), 'sharedBy' => (string)$created->getSharedBy()];
+
+		return $grant + $identity + ['shareType' => (int)$created->getShareType()];
+	}//end grant()
+
+	/**
+	 * Refuse a grant of an unknown type, or to nobody.
+	 *
+	 * @param string $type      The grant type asked for.
+	 * @param string $shareWith The principal asked for.
+	 *
+	 * @throws InvalidArgumentException When the type is not grantable or the principal is blank.
+	 *
+	 * @return void
+	 */
+	private function assertGrantRequest(string $type, string $shareWith): void {
 		if (isset(self::GRANTABLE_TYPES[$type]) === false) {
 			throw new InvalidArgumentException(
 				'Grant type must be one of: ' . implode(', ', array_keys(self::GRANTABLE_TYPES))
@@ -312,57 +349,44 @@ class ObjectSharingService {
 		if (trim($shareWith) === '') {
 			throw new InvalidArgumentException('A grant needs a principal to grant to');
 		}
+	}//end assertGrantRequest()
 
-		$folder = $this->resolveFolder(object: $object);
-		if ($folder === null) {
-			throw new InvalidArgumentException('Could not resolve the object folder to share');
-		}
-
-		$uid = $this->callerUid();
-		if ($uid === null) {
-			throw new NotAuthorizedException(message: 'No user session');
-		}
-
-		$share = $this->shareManager->newShare();
-		$share->setNode($folder);
-		$share->setShareType(self::GRANTABLE_TYPES[$type]);
-		$share->setSharedWith(trim($shareWith));
-		$share->setSharedBy($uid);
-		$share->setPermissions($this->withoutReshare(permissions: $permissions));
-
-		$this->applyVerbs(share: $share, verbs: $verbs);
-		if ($expiresAt !== null) {
-			$share->setExpirationDate($expiresAt);
-		}
-
+	/**
+	 * Create the share, and write the share time a fragment declared after creation.
+	 *
+	 * @param IShare        $share    The share built.
+	 * @param DateTime|null $sharedAt The declared share time, or null for now.
+	 *
+	 * @return IShare The created share.
+	 */
+	private function createDated(IShare $share, ?DateTime $sharedAt): IShare {
 		$created = $this->shareManager->createShare($share);
 		if ($sharedAt !== null && $this->shareTimes !== null) {
 			$this->shareTimes->stamp(shareId: (int)$created->getId(), moment: $sharedAt);
 			$created->setShareTime($sharedAt);
 		}
 
-		// The caller may re-decide access within this same request.
-		$this->grantResolver->forget();
+		return $created;
+	}//end createDated()
 
-		$grant = [
+	/**
+	 * The grant as it is returned and recorded.
+	 *
+	 * @param IShare   $created The created share.
+	 * @param string   $type    The grant type.
+	 * @param string[] $verbs   The verbs asked for.
+	 *
+	 * @return array<string, mixed> The grant.
+	 */
+	private function grantRecord(IShare $created, string $type, array $verbs): array {
+		return [
 			'id' => $created->getFullId(),
 			'type' => $type,
 			'sharedWith' => $created->getSharedWith(),
 			'permissions' => $created->getPermissions(),
 			'verbs' => array_values($verbs),
 		];
-
-		// Who let this principal in, and when, is the question the trail has
-		// to be able to answer, whoever the caller was admitted as.
-		$this->auditor?->recordGrant(object: $object, grant: $grant, admittedAs: $admittedAs);
-
-		// The created share's identity, so a caller that keeps the grant can later tell it from another share.
-		return $grant + [
-			'nodeId' => (int)$created->getNodeId(),
-			'sharedBy' => (string)$created->getSharedBy(),
-			'shareType' => (int)$created->getShareType(),
-		];
-	}//end grant()
+	}//end grantRecord()
 
 	/**
 	 * Attach extension verbs to a share.
@@ -556,6 +580,33 @@ class ObjectSharingService {
 	): IShare {
 		$this->requireOwnerOrAdmin(object: $object);
 
+		$share = $this->shareOnFolder(object: $object, shareType: $shareType);
+
+		// A share must never exceed what the sharer holds. The owner-or-admin
+		// check above establishes the sharer can reach the object at all; core
+		// additionally clamps against the node's own permissions when the share
+		// is created, so a wider request cannot become a wider share.
+		$share->setPermissions($this->withoutReshare(permissions: $permissions));
+
+		if ($shareWith !== null) {
+			$share->setSharedWith($shareWith);
+		}
+
+		return $share;
+	}//end newFolderShare()
+
+	/**
+	 * A new share of one type on the object's folder, shared by the caller.
+	 *
+	 * @param ObjectEntity $object    The object.
+	 * @param int          $shareType Core share type.
+	 *
+	 * @throws InvalidArgumentException When the folder cannot be resolved.
+	 * @throws NotAuthorizedException   When there is no user session.
+	 *
+	 * @return IShare The unsaved share.
+	 */
+	private function shareOnFolder(ObjectEntity $object, int $shareType): IShare {
 		$folder = $this->resolveFolder(object: $object);
 		if ($folder === null) {
 			throw new InvalidArgumentException('Could not resolve the object folder to share');
@@ -571,18 +622,8 @@ class ObjectSharingService {
 		$share->setShareType($shareType);
 		$share->setSharedBy($uid);
 
-		// A share must never exceed what the sharer holds. The owner-or-admin
-		// check above establishes the sharer can reach the object at all; core
-		// additionally clamps against the node's own permissions when the share
-		// is created, so a wider request cannot become a wider share.
-		$share->setPermissions($this->withoutReshare(permissions: $permissions));
-
-		if ($shareWith !== null) {
-			$share->setSharedWith($shareWith);
-		}
-
 		return $share;
-	}//end newFolderShare()
+	}//end shareOnFolder()
 
 	/**
 	 * Apply the optional password and expiry to a link-style share.

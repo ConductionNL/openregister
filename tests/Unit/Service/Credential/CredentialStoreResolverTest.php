@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Credential;
 
+use OCA\OpenRegister\Service\Credential\CredentialStoreLeaves;
 use OCA\OpenRegister\Service\Credential\CredentialStoreResolver;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
 use OCA\OpenRegister\Service\Credential\NextcloudVaultCredentialStore;
@@ -191,8 +192,7 @@ class CredentialStoreResolverTest extends TestCase {
 		$resolver = new CredentialStoreResolver(
 			$this->createMock(IAppManager::class),
 			$this->createMock(IAppConfig::class),
-			$this->doriathStore,
-			$this->vaultStore,
+			new CredentialStoreLeaves($this->doriathStore, $this->vaultStore),
 			$this->createMock(LoggerInterface::class),
 		);
 
@@ -215,8 +215,7 @@ class CredentialStoreResolverTest extends TestCase {
 		$resolver = new CredentialStoreResolver(
 			$this->createMock(IAppManager::class),
 			$this->createMock(IAppConfig::class),
-			$this->doriathStore,
-			$this->vaultStore,
+			new CredentialStoreLeaves($this->doriathStore, $this->vaultStore),
 			$this->createMock(LoggerInterface::class),
 		);
 
@@ -240,8 +239,7 @@ class CredentialStoreResolverTest extends TestCase {
 		$resolver = new CredentialStoreResolver(
 			$this->createMock(IAppManager::class),
 			$this->createMock(IAppConfig::class),
-			$this->doriathStore,
-			$this->vaultStore,
+			new CredentialStoreLeaves($this->doriathStore, $this->vaultStore),
 			$this->createMock(LoggerInterface::class),
 		);
 
@@ -373,7 +371,7 @@ class CredentialStoreResolverTest extends TestCase {
 				private readonly array $probedClasses,
 				private readonly string $probedSecretService,
 			) {
-				parent::__construct($appManager, $appConfig, $doriathStore, $vaultStore, $logger);
+				parent::__construct($appManager, $appConfig, new CredentialStoreLeaves($doriathStore, $vaultStore), $logger);
 			}
 
 			protected function doriathServiceClasses(): array {

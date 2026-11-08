@@ -86,32 +86,17 @@ final class OAuth2TokenSet {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
 	 */
 	public static function fromStoredJson(string $stored): self {
-		try {
-			$decoded = json_decode($stored, true, 32, JSON_THROW_ON_ERROR);
-		} catch (JsonException) {
-			throw new InvalidArgumentException(message: 'stored token set is not valid JSON');
-		}
-
-		if (is_array($decoded) === false || is_string(($decoded['accessToken'] ?? null)) === false) {
-			throw new InvalidArgumentException(message: 'stored token set carries no access token');
-		}
-
-		$expiresAt = self::parseAtom(value: ($decoded['expiresAt'] ?? null));
+		$decoded = self::decodeStored(stored: $stored);
 		$obtainedAt = self::parseAtom(value: ($decoded['obtainedAt'] ?? null));
-
-		$raw = [];
-		if (is_array(($decoded['raw'] ?? null)) === true) {
-			$raw = $decoded['raw'];
-		}
 
 		return new self(
 			accessToken: (string)$decoded['accessToken'],
 			refreshToken: self::nullableString(value: ($decoded['refreshToken'] ?? null)),
 			tokenType: (self::nullableString(value: ($decoded['tokenType'] ?? null)) ?? 'Bearer'),
-			expiresAt: $expiresAt,
+			expiresAt: self::parseAtom(value: ($decoded['expiresAt'] ?? null)),
 			scopes: self::stringList(value: ($decoded['scopes'] ?? [])),
 			account: self::accountOf(value: ($decoded['account'] ?? [])),
-			raw: $raw,
+			raw: self::arrayOf(value: ($decoded['raw'] ?? null)),
 			obtainedAt: ($obtainedAt ?? new DateTimeImmutable())
 		);
 	}//end fromStoredJson()
@@ -136,40 +121,16 @@ final class OAuth2TokenSet {
 	 *
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
-	public static function fromTokenResponse(
-		array $response,
-		array $requestedScopes = [],
-		?self $previous = null,
-		?DateTimeImmutable $now = null,
-	): self {
-		$accessToken = self::nullableString(value: ($response['access_token'] ?? null));
-		if ($accessToken === null) {
-			throw new InvalidArgumentException(message: 'token response carries no access token');
-		}
-
+	public static function fromTokenResponse(array $response, array $requestedScopes=[], ?self $previous=null, ?DateTimeImmutable $now=null): self {
+		$accessToken = self::requiredAccessToken(response: $response);
 		$now = ($now ?? new DateTimeImmutable());
-
-		$expiresAt = null;
-		$expiresIn = ($response['expires_in'] ?? null);
-		if (is_numeric($expiresIn) === true && (int)$expiresIn > 0) {
-			$expiresAt = $now->modify('+' . (int)$expiresIn . ' seconds');
-		}
-
-		$scopes = self::stringList(value: ($response['scope'] ?? null));
-		if ($scopes === [] && $requestedScopes !== []) {
-			$scopes = array_values($requestedScopes);
-		}
-
-		if ($scopes === [] && $previous !== null) {
-			$scopes = $previous->scopes;
-		}
 
 		return new self(
 			accessToken: $accessToken,
 			refreshToken: (self::nullableString(value: ($response['refresh_token'] ?? null)) ?? $previous?->refreshToken),
 			tokenType: (self::nullableString(value: ($response['token_type'] ?? null)) ?? 'Bearer'),
-			expiresAt: $expiresAt,
-			scopes: $scopes,
+			expiresAt: self::expiryOf(expiresIn: ($response['expires_in'] ?? null), now: $now),
+			scopes: self::grantedScopes(response: $response, requestedScopes: $requestedScopes, previous: $previous),
 			account: self::accountOf(value: $previous?->account),
 			raw: $response,
 			obtainedAt: $now
@@ -304,6 +265,111 @@ final class OAuth2TokenSet {
 	}//end needsRefresh()
 
 	/**
+	 * Decode a stored document, refusing one that is not a token set.
+	 *
+	 * @param string $stored The stored document.
+	 *
+	 * @return array<string, mixed> The decoded document, carrying a string `accessToken`.
+	 *
+	 * @throws InvalidArgumentException When the document is not decodable into a token set. The message names the
+	 *                                  failure and NEVER quotes any part of the stored value.
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
+	 */
+	private static function decodeStored(#[\SensitiveParameter] string $stored): array {
+		try {
+			$decoded = json_decode($stored, true, 32, JSON_THROW_ON_ERROR);
+		} catch (JsonException) {
+			throw new InvalidArgumentException(message: 'stored token set is not valid JSON');
+		}
+
+		if (is_array($decoded) === false || is_string(($decoded['accessToken'] ?? null)) === false) {
+			throw new InvalidArgumentException(message: 'stored token set carries no access token');
+		}
+
+		return $decoded;
+	}//end decodeStored()
+
+	/**
+	 * The access token a token response must carry.
+	 *
+	 * @param array<string, mixed> $response The decoded token response.
+	 *
+	 * @return string The trimmed access token.
+	 *
+	 * @throws InvalidArgumentException When the response carries no access token.
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 */
+	private static function requiredAccessToken(#[\SensitiveParameter] array $response): string {
+		$accessToken = self::nullableString(value: ($response['access_token'] ?? null));
+		if ($accessToken === null) {
+			throw new InvalidArgumentException(message: 'token response carries no access token');
+		}
+
+		return $accessToken;
+	}//end requiredAccessToken()
+
+	/**
+	 * Resolve `expires_in` against the exchange's own clock.
+	 *
+	 * @param mixed $expiresIn The declared lifetime in seconds.
+	 * @param DateTimeImmutable $now When the set was issued.
+	 *
+	 * @return DateTimeImmutable|null The absolute expiry, or null when none was declared.
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
+	 */
+	private static function expiryOf(mixed $expiresIn, DateTimeImmutable $now): ?DateTimeImmutable {
+		if (is_numeric($expiresIn) === false || (int)$expiresIn <= 0) {
+			return null;
+		}
+
+		return $now->modify('+' . (int)$expiresIn . ' seconds');
+	}//end expiryOf()
+
+	/**
+	 * The scopes to record: granted, else requested, else the previous set's.
+	 *
+	 * @param array<string, mixed> $response The decoded token response.
+	 * @param array<int, string> $requestedScopes Scopes to record when the response names none.
+	 * @param self|null $previous The set being replaced.
+	 *
+	 * @return array<int, string> The scopes.
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
+	 */
+	private static function grantedScopes(array $response, array $requestedScopes, ?self $previous): array {
+		$scopes = self::stringList(value: ($response['scope'] ?? null));
+		if ($scopes === [] && $requestedScopes !== []) {
+			$scopes = array_values($requestedScopes);
+		}
+
+		if ($scopes === [] && $previous !== null) {
+			$scopes = $previous->scopes;
+		}
+
+		return $scopes;
+	}//end grantedScopes()
+
+	/**
+	 * Coerce a value to an array, or an empty one.
+	 *
+	 * @param mixed $value The candidate.
+	 *
+	 * @return array<mixed> The array.
+	 *
+	 * @spec exclude private coercion helper with no behaviour of its own
+	 */
+	private static function arrayOf(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end arrayOf()
+
+	/**
 	 * Parse a stored ATOM timestamp, or null when there is none to parse.
 	 *
 	 * A value that does not parse yields null rather than an error. A stored set with
@@ -343,16 +409,11 @@ final class OAuth2TokenSet {
 	 * @spec exclude private coercion helper with no behaviour of its own
 	 */
 	private static function nullableString(mixed $value): ?string {
-		if (is_string($value) === false) {
+		if (is_string($value) === false || trim($value) === '') {
 			return null;
 		}
 
-		$trimmed = trim($value);
-		if ($trimmed === '') {
-			return null;
-		}
-
-		return $trimmed;
+		return trim($value);
 	}//end nullableString()
 
 	/**
@@ -370,20 +431,11 @@ final class OAuth2TokenSet {
 	 */
 	private static function stringList(mixed $value): array {
 		if (is_string($value) === true) {
-			$parts = preg_split('/[\s,]+/', trim($value), -1, PREG_SPLIT_NO_EMPTY);
-			if ($parts === false) {
-				return [];
-			}
-
-			return $parts;
-		}
-
-		if (is_array($value) === false) {
-			return [];
+			return self::splitScopes(value: $value);
 		}
 
 		$out = [];
-		foreach ($value as $entry) {
+		foreach (self::arrayOf(value: $value) as $entry) {
 			if (is_string($entry) === true && trim($entry) !== '') {
 				$out[] = trim($entry);
 			}
@@ -391,6 +443,24 @@ final class OAuth2TokenSet {
 
 		return $out;
 	}//end stringList()
+
+	/**
+	 * Split a space- or comma-separated scope string.
+	 *
+	 * @param string $value The scope string.
+	 *
+	 * @return array<int, string> The scope list.
+	 *
+	 * @spec exclude private coercion helper with no behaviour of its own
+	 */
+	private static function splitScopes(string $value): array {
+		$parts = preg_split('/[\s,]+/', trim($value), -1, PREG_SPLIT_NO_EMPTY);
+		if ($parts === false) {
+			return [];
+		}
+
+		return $parts;
+	}//end splitScopes()
 
 	/**
 	 * Coerce an account value to the three non-secret identity fields.

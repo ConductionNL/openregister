@@ -143,36 +143,50 @@ class ConfigurationSettingsHandler {
 	private string $appName;
 
 	/**
+	 * App manager, read for the app's own version info.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Tells the administrators when a marked setting moves.
+	 *
+	 * @var SecuritySettingAnnouncer|null
+	 */
+	private readonly ?SecuritySettingAnnouncer $announcer;
+
+	/**
+	 * Records every save on the audit trail, and announces it.
+	 *
+	 * @var OwnSettingsChangeRecorder|null
+	 */
+	private readonly ?OwnSettingsChangeRecorder $changeRecorder;
+
+	/**
 	 * Constructor for ConfigurationSettingsHandler
 	 *
-	 * @param IAppConfig $appConfig Configuration service.
-	 * @param IGroupManager $groupManager Group manager.
-	 * @param IUserManager $userManager User manager.
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper.
-	 * @param LoggerInterface $logger Logger.
-	 * @param IAppManager $appManager App manager, read for the app's own version info.
-	 * @param string $appName Application name.
-	 * @param SecuritySettingAnnouncer|null $announcer Tells the administrators when a marked setting moves.
-	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail, and announces it.
+	 * @param IAppConfig                   $appConfig Configuration service.
+	 * @param SettingsDirectory            $directory The group manager, user manager and organisation mapper.
+	 * @param ConfigurationSettingsSupport $support   The logger, app manager, announcer and change recorder.
+	 * @param string                       $appName   Application name.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IAppConfig $appConfig,
-		IGroupManager $groupManager,
-		IUserManager $userManager,
-		OrganisationMapperInterface $organisationMapper,
-		LoggerInterface $logger,
-		private readonly IAppManager $appManager,
+		SettingsDirectory $directory,
+		ConfigurationSettingsSupport $support,
 		string $appName = 'openregister',
-		private readonly ?SecuritySettingAnnouncer $announcer = null,
-		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
 	) {
 		$this->appConfig = $appConfig;
-		$this->groupManager = $groupManager;
-		$this->userManager = $userManager;
-		$this->organisationMapper = $organisationMapper;
-		$this->logger = $logger;
+		$this->groupManager = $directory->groupManager;
+		$this->userManager = $directory->userManager;
+		$this->organisationMapper = $directory->organisationMapper;
+		$this->logger = $support->logger;
+		$this->appManager = $support->appManager;
+		$this->announcer = $support->announcer;
+		$this->changeRecorder = $support->changeRecorder;
 		$this->appName = $appName;
 	}//end __construct()
 

@@ -18,7 +18,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyLinkTarget;
 use OCA\OpenRegister\Service\Party\PartyLinkWriter;
+use OCA\OpenRegister\Service\Party\PartyRoleRecords;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
@@ -124,11 +126,9 @@ class PartyRoleServiceTest extends TestCase {
 		);
 
 		$this->service = new PartyRoleService(
-			$this->links,
-			$this->writer,
+			new PartyRoleRecords($this->links, $this->writer, $this->audit),
 			$this->parties,
 			$this->schemas,
-			$this->audit,
 			new PersonLinkEvents($dispatcher)
 		);
 	}//end setUp()
@@ -218,7 +218,7 @@ class PartyRoleServiceTest extends TestCase {
 	public function testImportNamesTheLinkerAndAddDoesNot(): void {
 		$linkers = [];
 		$this->writer->method('write')->willReturnCallback(
-			function (string $objectUuid, int $registerId, ?int $schemaId, string $partyUuid, ?string $role, ?string $linkedBy = null) use (&$linkers): ContactLink {
+			function (PartyLinkTarget $target, string $partyUuid, ?string $role, ?string $linkedBy = null) use (&$linkers): ContactLink {
 				$linkers[] = $linkedBy;
 				return $this->storedLink(partyUuid: $partyUuid, role: (string) $role);
 			}

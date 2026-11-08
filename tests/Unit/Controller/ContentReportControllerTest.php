@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ContentReportMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Audit\ContentReportService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ContentReportControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -92,7 +93,7 @@ final class ContentReportControllerTest extends TestCase {
 
 		$service = new ContentReportService($reports, $config, $groupManager, $this->createMock(LoggerInterface::class));
 
-		return new ContentReportController('openregister', $request, $reports, $service, $objects, $session);
+		return ContentReportControllerFactory::create('openregister', $request, $reports, $service, $objects, $session);
 	}//end controller()
 
 	public function testAReviewerReadsTheCopy(): void {

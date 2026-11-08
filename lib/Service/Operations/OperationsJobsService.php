@@ -29,6 +29,7 @@ use OCA\OpenRegister\BackgroundJob\CacheClearAndWarmJob;
 use OCA\OpenRegister\BackgroundJob\ConsistencyCheckJob;
 use OCA\OpenRegister\Search\BackgroundJob\SearchIndexRebuildJob;
 use OCA\OpenRegister\Db\JobRun;
+use OCA\OpenRegister\Db\JobRunFilter as RunQuery;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use Throwable;
@@ -106,9 +107,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 		}
 
 		$rows = $this->runs->findRecent(
-			jobClass: $jobClass,
-			outcome: $outcome,
-			since: $since,
+			filter: new RunQuery(jobClass: $jobClass, outcome: $outcome, since: $since),
 			limit: $limit,
 			offset: $offset
 		);
@@ -175,7 +174,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 			context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $actor)
 		);
 
-		$started = $this->runs->findRecent(jobClass: $class, limit: 1);
+		$started = $this->runs->findRecent(filter: new RunQuery(jobClass: $class), limit: 1);
 
 		return [
 			'job' => $class,
@@ -244,7 +243,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	 * @return int The timestamp.
 	 */
 	private function lastRunTimestamp(string $jobClass): int {
-		$rows = $this->runs->findRecent(jobClass: $jobClass, limit: 1);
+		$rows = $this->runs->findRecent(filter: new RunQuery(jobClass: $jobClass), limit: 1);
 
 		if ($rows === []) {
 			return 0;

@@ -18,6 +18,8 @@ use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SettingsDirectory;
+use OCA\OpenRegister\Service\Settings\ConfigurationSettingsSupport;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroup;
@@ -83,11 +85,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 
 		$this->handler = new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$this->groupManager,
-			$this->userManager,
-			$this->organisationMapper,
-			$this->logger,
-			$this->appManager
+			new SettingsDirectory($this->groupManager, $this->userManager, $this->organisationMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager)
 		);
 	}
 
@@ -144,11 +143,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 
 		return new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$groupManager,
-			$userManager,
-			$orgMapper,
-			$this->logger,
-			$this->appManager
+			new SettingsDirectory($groupManager, $userManager, $orgMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager)
 		);
 	}
 
@@ -469,11 +465,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 
 		$handler = new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$this->groupManager,
-			$userManager,
-			$this->organisationMapper,
-			$this->logger,
-			$this->appManager
+			new SettingsDirectory($this->groupManager, $userManager, $this->organisationMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager)
 		);
 
 		$this->appConfig->method('getValueString')->willReturn('');
@@ -499,11 +492,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 
 		$handler = new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$this->groupManager,
-			$userManager,
-			$this->organisationMapper,
-			$this->logger,
-			$this->appManager
+			new SettingsDirectory($this->groupManager, $userManager, $this->organisationMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager)
 		);
 
 		$this->appConfig->method('getValueString')->willReturn('');
@@ -526,11 +516,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 
 		$handler = new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$this->groupManager,
-			$this->userManager,
-			$orgMapper,
-			$this->logger,
-			$this->appManager
+			new SettingsDirectory($this->groupManager, $this->userManager, $orgMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager)
 		);
 
 		$this->appConfig->method('getValueString')->willReturn('');
@@ -1381,11 +1368,8 @@ class ConfigurationSettingsHandlerTest extends TestCase {
 	public function testConstructorWithCustomAppName(): void {
 		$handler = new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$this->groupManager,
-			$this->userManager,
-			$this->organisationMapper,
-			$this->logger,
-			$this->appManager,
+			new SettingsDirectory($this->groupManager, $this->userManager, $this->organisationMapper),
+			new ConfigurationSettingsSupport($this->logger, $this->appManager),
 			'custom-app'
 		);
 

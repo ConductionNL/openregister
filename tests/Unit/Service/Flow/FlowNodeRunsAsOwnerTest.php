@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\ObjectService;
@@ -198,9 +199,7 @@ class FlowNodeRunsAsOwnerTest extends TestCase {
 		[$registers, $schemas] = $this->mappers();
 
 		$node = new ObjectReadNode(
-			$this->objects,
-			$registers,
-			$schemas,
+			new ObjectNodeSources($this->objects, $registers, $schemas),
 			$this->userManager(),
 			$this->l10n(),
 			$this->createMock(IURLGenerator::class)
@@ -280,9 +279,7 @@ class FlowNodeRunsAsOwnerTest extends TestCase {
 		[$registers, $schemas] = $this->mappers();
 
 		$node = new ObjectReadNode(
-			$this->objects,
-			$registers,
-			$schemas,
+			new ObjectNodeSources($this->objects, $registers, $schemas),
 			$this->userManager(),
 			$this->l10n(),
 			$this->createMock(IURLGenerator::class)

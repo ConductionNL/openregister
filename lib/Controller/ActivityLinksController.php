@@ -33,8 +33,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\ActivityLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ActivityFilterServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
@@ -53,22 +53,42 @@ class ActivityLinksController extends Controller {
 	use ResolvesLinkedObjectTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var ActivityFilterServiceInterface
+	 */
+	private readonly ActivityFilterServiceInterface $filterService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Internal/public filter for the feed.
+	 *
+	 * @var TimelineVisibilityServiceInterface
+	 */
+	private readonly TimelineVisibilityServiceInterface $visibility;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param ActivityFilterServiceInterface $filterService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
-	 * @param TimelineVisibilityServiceInterface $visibility Internal/public filter for the feed.
+	 * @param ActivityLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ActivityFilterServiceInterface $filterService,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly TimelineVisibilityServiceInterface $visibility,
+		ActivityLinksControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->filterService = $services->filterService;
+		$this->objectService = $services->objectService;
+		$this->visibility = $services->visibility;
 	}//end __construct()
 
 	/**

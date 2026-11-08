@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -193,9 +194,11 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(
 			link: $link,
-			act: AccessLinkService::ACT_READ,
-			object: $object,
-			ipAddress: $this->request->getRemoteAddress()
+			use: new AccessLinkUse(
+				act: AccessLinkService::ACT_READ,
+				object: $object,
+				ipAddress: $this->request->getRemoteAddress()
+			)
 		);
 
 		return new JSONResponse(array_merge(['link' => $link->publicDescriptor()], $body));
@@ -248,9 +251,11 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(
 			link: $link,
-			act: AccessLinkService::ACT_COMMENT,
-			object: $object,
-			ipAddress: $this->request->getRemoteAddress()
+			use: new AccessLinkUse(
+				act: AccessLinkService::ACT_COMMENT,
+				object: $object,
+				ipAddress: $this->request->getRemoteAddress()
+			)
 		);
 
 		return new JSONResponse($note, Http::STATUS_CREATED);
@@ -325,10 +330,12 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(
 			link: $link,
-			act: AccessLinkService::ACT_UPLOAD,
-			object: $object,
-			ipAddress: $this->request->getRemoteAddress(),
-			context: ['fileName' => $fileName]
+			use: new AccessLinkUse(
+				act: AccessLinkService::ACT_UPLOAD,
+				object: $object,
+				ipAddress: $this->request->getRemoteAddress(),
+				context: ['fileName' => $fileName]
+			)
 		);
 
 		return new JSONResponse($stored, Http::STATUS_CREATED);

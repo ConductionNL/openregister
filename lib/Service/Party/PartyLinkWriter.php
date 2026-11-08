@@ -62,9 +62,7 @@ class PartyLinkWriter {
 	/**
 	 * Write a party link, or refresh the one the party already holds in that role.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId The object's schema id.
+	 * @param PartyLinkTarget $target The object, register and schema the link records.
 	 * @param string $partyUuid The party object's uuid.
 	 * @param string|null $role The role.
 	 * @param string|null $linkedBy Who links it when nobody is signed in, such as an example set's app; the signed-in user wins.
@@ -80,7 +78,7 @@ class PartyLinkWriter {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 * @spec openspec/changes/example-set-install-agrees-with-the-store/specs/example-sets/spec.md
 	 */
-	public function write(string $objectUuid, int $registerId, ?int $schemaId, string $partyUuid, ?string $role, ?string $linkedBy = null): ContactLink {
+	public function write(PartyLinkTarget $target, string $partyUuid, ?string $role, ?string $linkedBy = null): ContactLink {
 		$signedIn = $this->session->getUser();
 		$party    = match ($signedIn === null && $linkedBy !== null) {
 			true  => $this->parties->findUnscoped(uuid: $partyUuid),
@@ -101,17 +99,17 @@ class PartyLinkWriter {
 		}
 
 		$contactUid = ContactLink::partyUid(partyUuid: $partyUuid);
-		$link = $this->links->findByObjectContactAndRole(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
+		$link = $this->links->findByObjectContactAndRole(objectUuid: $target->objectUuid, contactUid: $contactUid, role: $role);
 		$isNew = ($link === null);
 		if ($link === null) {
 			$link = new ContactLink();
-			$link->setObjectUuid($objectUuid);
+			$link->setObjectUuid($target->objectUuid);
 			$link->setContactUid($contactUid);
 			$link->setPrimaryParty(false);
 		}
 
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
+		$link->setRegisterId($target->registerId);
+		$link->setSchemaId($target->schemaId);
 		$link->setPartyUuid($partyUuid);
 		$link->setPartyKind($definition->kind());
 		$link->setDisplayName($this->displayNameOf(party: $party, definition: $definition));

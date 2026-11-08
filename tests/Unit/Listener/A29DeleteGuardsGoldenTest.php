@@ -35,6 +35,7 @@ use OCA\OpenRegister\Listener\PartyTreeGuardListener;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyPropertyNames;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepositoryInterface;
@@ -268,7 +269,7 @@ final class A29DeleteGuardsGoldenTest extends TestCase {
 	 */
 	public function testPartyTreeOutcomes(): void {
 		$parties = $this->createStub(PartyServiceInterface::class);
-		$parties->method('definitionFor')->willReturn(new PartyDefinition(parentProperty: 'parent'));
+		$parties->method('definitionFor')->willReturn(new PartyDefinition(properties: new PartyPropertyNames(parentProperty: 'parent')));
 		$parties->method('assertParentAllowed')->willReturnCallback(
 			static function (string $partyUuid, ?string $parentUuid): void {
 				if ($parentUuid === 'cycle') {

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Listener\Support\ConsentSaveContext;
 use OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluator;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -122,23 +123,13 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 */
 	private function evaluate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $newObject, ?ObjectEntity $oldObject): void {
 		try {
-			$context = $this->resolveContext(newObject: $newObject, oldObject: $oldObject);
+			$context = $this->contextOf(event: $event, newObject: $newObject, oldObject: $oldObject);
 			if ($context === null) {
 				return;
 			}
 
-			$changed = $this->applyConsentProperties(
-				event: $event,
-				properties: $context['properties'],
-				incomingData: $context['incoming'],
-				persistedData: $context['persisted']
-			);
-
-			if ($event->isPropagationStopped() === true) {
-				// Refused — the event already carries the reason.
-				return;
-			}
-
+			// A refusal returns null too: the event already carries the reason.
+			$changed = $this->applyConsentProperties(context: $context);
 			if ($changed !== null) {
 				// Mutate the entity directly, the same idiom
 				// CalculationOnSaveListener uses (`$object->setObject($data)`),
@@ -154,96 +145,123 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 			// (mirrors UniqueConstraintListener's fail-open-on-internal-error
 			// posture — this guards against a bug in this listener, not
 			// against a caller's malformed input, which is refused above).
-			$this->logger->warning(
-				message: '[ConsentEnvelopeOnSaveListener] The evaluation itself failed, allowing the save: ' . $failure->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
-			);
+			$this->logEvaluationFailure(failure: $failure);
 		}//end try
 	}//end evaluate()
+
+	/**
+	 * Name a failed evaluation in the log; the save goes ahead.
+	 *
+	 * @param Throwable $failure Why the evaluation failed.
+	 *
+	 * @return void
+	 */
+	private function logEvaluationFailure(Throwable $failure): void {
+		$this->logger->warning(
+			message: '[ConsentEnvelopeOnSaveListener] The evaluation itself failed, allowing the save: ' . $failure->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
+		);
+	}//end logEvaluationFailure()
 
 	/**
 	 * Resolve the schema's consent-shaped properties plus the incoming and
 	 * previously persisted payloads for one write, or null when there is
 	 * nothing for this listener to do.
 	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event that can refuse the save.
 	 * @param ObjectEntity $newObject The object as the caller submitted it.
 	 * @param ObjectEntity|null $oldObject The previously persisted object, or null on create.
 	 *
-	 * @return array{properties: array<string, array<string, mixed>>, incoming: array<string, mixed>, persisted: array<string, mixed>}|null
+	 * @return ConsentSaveContext|null
 	 */
-	private function resolveContext(ObjectEntity $newObject, ?ObjectEntity $oldObject): ?array {
-		$reference = $newObject->getSchema();
-		if ($reference === null || $reference === '') {
+	private function contextOf(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $newObject, ?ObjectEntity $oldObject): ?ConsentSaveContext {
+		$consentProperties = $this->consentPropertiesOf(object: $newObject);
+		$incomingData = $newObject->getObject();
+		if ($consentProperties === [] || is_array($incomingData) === false) {
 			return null;
+		}
+
+		return new ConsentSaveContext(
+			event: $event,
+			properties: $consentProperties,
+			incoming: $incomingData,
+			persisted: self::persistedDataOf(oldObject: $oldObject)
+		);
+	}//end contextOf()
+
+	/**
+	 * The consent properties of the object's schema; empty when it names none or no schema.
+	 *
+	 * @param ObjectEntity $object The object being saved.
+	 *
+	 * @return array<string, array<string, mixed>> Each consent property's annotation, by name.
+	 */
+	private function consentPropertiesOf(ObjectEntity $object): array {
+		$reference = (string)$object->getSchema();
+		if ($reference === '') {
+			return [];
 		}
 
 		$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
-		$consentProperties = $this->consentProperties(schema: $schema);
-		if ($consentProperties === []) {
-			return null;
+		return $this->consentProperties(schema: $schema);
+	}//end consentPropertiesOf()
+
+	/**
+	 * The stored object data, or an empty array on a create.
+	 *
+	 * @param ObjectEntity|null $oldObject The stored object, null on a create.
+	 *
+	 * @return array<string, mixed> The stored data.
+	 */
+	private static function persistedDataOf(?ObjectEntity $oldObject): array {
+		$persisted = $oldObject?->getObject();
+		if (is_array($persisted) === false) {
+			return [];
 		}
 
-		$incomingData = $newObject->getObject();
-		if (is_array($incomingData) === false) {
-			return null;
-		}
-
-		$persistedData = [];
-		if ($oldObject !== null && is_array($oldObject->getObject()) === true) {
-			$persistedData = $oldObject->getObject();
-		}
-
-		return [
-			'properties' => $consentProperties,
-			'incoming' => $incomingData,
-			'persisted' => $persistedData,
-		];
-	}//end resolveContext()
+		return $persisted;
+	}//end persistedDataOf()
 
 	/**
 	 * Evaluate every declared consent-shaped property against one write.
 	 *
-	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event (refused via `setErrors()`+`stopPropagation()`).
-	 * @param array<string, array<string, mixed>> $properties The schema's `x-openregister-consent` properties.
-	 * @param array<string, mixed> $incomingData The caller-submitted object payload.
-	 * @param array<string, mixed> $persistedData The previously persisted object payload (empty on create).
+	 * @param ConsentSaveContext $context The save: its event (refused via `setErrors()`+`stopPropagation()`), the schema's
+	 *                                    `x-openregister-consent` properties, the submitted and the persisted payload.
 	 *
 	 * @return array<string, mixed>|null The updated payload to persist, or null when nothing changed
 	 *     (also null once the event is stopped — the caller checks `isPropagationStopped()`).
 	 */
-	private function applyConsentProperties(
-		ObjectCreatingEvent|ObjectUpdatingEvent $event,
-		array $properties,
-		array $incomingData,
-		array $persistedData
-	): ?array {
-		$changed = false;
-		foreach ($properties as $name => $annotation) {
-			$result = $this->evaluateProperty(
-				event: $event,
-				name: $name,
-				annotation: $annotation,
-				incoming: ($incomingData[$name] ?? []),
-				persisted: ($persistedData[$name] ?? []),
-				allData: $incomingData
-			);
-
-			if ($event->isPropagationStopped() === true) {
+	private function applyConsentProperties(ConsentSaveContext $context): ?array {
+		$data = $context->incoming;
+		foreach (array_keys($context->properties) as $name) {
+			$result = $this->evaluateProperty(context: $context, name: $name, data: $data);
+			if ($context->event->isPropagationStopped() === true) {
 				return null;
 			}
 
-			if ($result !== ($incomingData[$name] ?? [])) {
-				$incomingData[$name] = $result;
-				$changed = true;
+			if ($result !== ($data[$name] ?? [])) {
+				$data[$name] = $result;
 			}
 		}
 
-		if ($changed === false) {
+		return self::changedPayload(before: $context->incoming, after: $data);
+	}//end applyConsentProperties()
+
+	/**
+	 * The payload after evaluation when it differs from the submitted one, else null.
+	 *
+	 * @param array<string, mixed> $before The submitted payload.
+	 * @param array<string, mixed> $after  The payload after evaluation.
+	 *
+	 * @return array<string, mixed>|null The changed payload.
+	 */
+	private static function changedPayload(array $before, array $after): ?array {
+		if ($after === $before) {
 			return null;
 		}
 
-		return $incomingData;
-	}//end applyConsentProperties()
+		return $after;
+	}//end changedPayload()
 
 	/**
 	 * The `x-openregister-consent` properties declared on a schema, keyed by property name.
@@ -260,12 +278,8 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 
 		$found = [];
 		foreach ($properties as $name => $definition) {
-			if (is_array($definition) === false) {
-				continue;
-			}
-
-			$annotation = ($definition[self::ANNOTATION_KEY] ?? null);
-			if (is_array($annotation) === true) {
+			$annotation = self::consentAnnotationOf(definition: $definition);
+			if ($annotation !== null) {
 				$found[(string)$name] = $annotation;
 			}
 		}
@@ -274,40 +288,50 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	}//end consentProperties()
 
 	/**
+	 * The `x-openregister-consent` declaration of one property definition, or null.
+	 *
+	 * @param mixed $definition The property definition.
+	 *
+	 * @return array<string, mixed>|null The declaration.
+	 */
+	private static function consentAnnotationOf(mixed $definition): ?array {
+		if (is_array($definition) === false) {
+			return null;
+		}
+
+		$annotation = ($definition[self::ANNOTATION_KEY] ?? null);
+		if (is_array($annotation) === false) {
+			return null;
+		}
+
+		return $annotation;
+	}//end consentAnnotationOf()
+
+	/**
 	 * Evaluate one consent-shaped property: resolves the NC-coupled inputs
 	 * (acting identity, IP, user agent) and delegates the pure append-only
 	 * check + evidence fill to {@see ConsentEnvelopeEvaluator}.
 	 *
-	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event (refused via `setErrors()`+`stopPropagation()`).
+	 * @param ConsentSaveContext $context The save: its event, the property's declaration and its persisted value.
 	 * @param string $name The property name (for error messages).
-	 * @param array<string, mixed> $annotation The property's `x-openregister-consent` declaration.
-	 * @param mixed $incoming The caller-submitted value for this property.
-	 * @param mixed $persisted The previously persisted value for this property.
-	 * @param array<string, mixed> $allData The full incoming object payload (for `subjectProperty` resolution).
+	 * @param array<string, mixed> $data The incoming object payload so far (for the value and `subjectProperty` resolution).
 	 *
 	 * @return array<int, array<string, mixed>> The array to persist (unchanged from the caller's array
 	 *     when the event was stopped — the caller must check `isPropagationStopped()`).
 	 */
-	private function evaluateProperty(
-		ObjectCreatingEvent|ObjectUpdatingEvent $event,
-		string $name,
-		array $annotation,
-		mixed $incoming,
-		mixed $persisted,
-		array $allData
-	): array {
+	private function evaluateProperty(ConsentSaveContext $context, string $name, array $data): array {
 		$result = $this->evaluator->evaluate(
 			name: $name,
-			annotation: $annotation,
-			incoming: $incoming,
-			persisted: $persisted,
-			actingIdentity: $this->resolveActingIdentity(annotation: $annotation, allData: $allData),
+			annotation: $context->properties[$name],
+			incoming: ($data[$name] ?? []),
+			persisted: ($context->persisted[$name] ?? []),
+			actingIdentity: $this->resolveActingIdentity(annotation: $context->properties[$name], allData: $data),
 			ipAddress: $this->safeRemoteAddress(),
 			userAgent: $this->safeUserAgent()
 		);
 
 		if ($result['refused'] === true) {
-			$this->refuse(event: $event, name: $name, message: (string)$result['message']);
+			$this->refuse(event: $context->event, name: $name, message: (string)$result['message']);
 		}
 
 		return $result['value'];

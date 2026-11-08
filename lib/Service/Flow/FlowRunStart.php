@@ -126,15 +126,7 @@ final class FlowRunStart {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function streamPass(Workflow $workflow, FlowStreamWalk $streams): FlowStreamPass {
-		$pass = new FlowStreamPass(
-			flow: $this->flow,
-			workflow: $workflow,
-			store: $this->store,
-			subject: $this->subject,
-			dispatcher: $this->dispatcher,
-			context: $this->context,
-			streams: $streams
-		);
+		$pass = new FlowStreamPass(start: $this, workflow: $workflow, streams: $streams);
 		$pass->items = $this->items;
 		$pass->placeItems = $this->placeItems;
 

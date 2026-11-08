@@ -63,8 +63,26 @@ class RepeatingGroupDeclarationValidator {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function validate(array $property, string $path): void {
-		$isGroup = (($property['repeatingGroup'] ?? false) === true);
+		if (($property['repeatingGroup'] ?? false) !== true) {
+			$this->assertNoGroupKeys(property: $property, path: $path);
+			return;
+		}
 
+		$members = $this->declaredMembers(property: $property, path: $path);
+		$this->validateLabel(label: ($property['groupLabel'] ?? null), members: $members, path: $path);
+	}//end validate()
+
+	/**
+	 * Refuse group keys on a property that is not a repeating group.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws PropertyVocabularyException When a group key is declared without the group.
+	 *
+	 * @return void
+	 */
+	private function assertNoGroupKeys(array $property, string $path): void {
 		// Present AND non-null, which is what every other check in the
 		// validator asks. A null says the key is spelled correctly and asserts
 		// nothing about its value, and `PropertyVocabularyTest` probes the whole
@@ -75,37 +93,40 @@ class RepeatingGroupDeclarationValidator {
 			|| ($property['groupLabel'] ?? null) !== null
 		);
 
-		if ($isGroup === false) {
-			if ($hasGroupKey === false) {
-				return;
-			}
-
-			$this->refuse(
-				code: 'repeating-group-not-declared',
-				path: $path,
-				message: "'groupOrdered' and 'groupLabel' at '$path' need 'repeatingGroup: true'."
-			);
+		if ($hasGroupKey === false) {
+			return;
 		}
 
+		$this->refuse(
+			code: 'repeating-group-not-declared',
+			path: $path,
+			message: "'groupOrdered' and 'groupLabel' at '$path' need 'repeatingGroup: true'."
+		);
+	}//end assertNoGroupKeys()
+
+	/**
+	 * The members a repeating group declares, refusing a group that is no list or names none.
+	 *
+	 * @param array  $property The property definition to check.
+	 * @param string $path     The current path in the schema, for the message.
+	 *
+	 * @throws PropertyVocabularyException When the group is not an array or declares no members.
+	 *
+	 * @return array The declared members.
+	 */
+	private function declaredMembers(array $property, string $path): array {
 		if (($property['type'] ?? null) !== 'array') {
-			$this->refuse(
-				code: 'repeating-group-not-an-array',
-				path: $path,
-				message: "A repeating group at '$path' has to be type 'array'. Rows are a list."
-			);
+			$this->refuse(code: 'repeating-group-not-an-array', path: $path, message: "A repeating group at '$path' has to be type 'array'. Rows are a list.");
 		}
 
 		$members = ($property['items']['properties'] ?? null);
 		if (is_array($members) === false || $members === []) {
-			$this->refuse(
-				code: 'repeating-group-without-members',
-				path: $path,
-				message: "A repeating group at '$path' has to declare its members under 'items.properties'."
-			);
+			$message = "A repeating group at '$path' has to declare its members under 'items.properties'.";
+			$this->refuse(code: 'repeating-group-without-members', path: $path, message: $message);
 		}
 
-		$this->validateLabel(label: ($property['groupLabel'] ?? null), members: $members, path: $path);
-	}//end validate()
+		return $members;
+	}//end declaredMembers()
 
 	/**
 	 * Check that `groupLabel`, when declared, names a member that exists.

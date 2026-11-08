@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantsReport;
@@ -86,7 +88,7 @@ class ObjectGrantsController extends Controller {
 	public function index(string $register, string $schema, string $id, ?string $principalTypes = null): JSONResponse {
 		$object = $this->gate->resolve(register: $register, schema: $schema, id: $id);
 		if ($object === null) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
+			return ObjectSharingEndpoint::notFound();
 		}
 
 		if ($this->gate->mayReadGrants(object: $object) === false) {
@@ -98,6 +100,19 @@ class ObjectGrantsController extends Controller {
 
 		$types = array_values(array_filter(array_map('trim', explode(',', (string)$principalTypes))));
 
+		return $this->rows(object: $object, id: $id, types: $types);
+	}//end index()
+
+	/**
+	 * The rows of the object, or a 500 when a source could not be read.
+	 *
+	 * @param ObjectEntity  $object The object.
+	 * @param string        $id     Object uuid.
+	 * @param array<string> $types  The principal types to keep; all when empty.
+	 *
+	 * @return JSONResponse The rows, or 500.
+	 */
+	private function rows(ObjectEntity $object, string $id, array $types): JSONResponse {
 		try {
 			return new JSONResponse(
 				$this->report->rowsFor(
@@ -110,14 +125,26 @@ class ObjectGrantsController extends Controller {
 		} catch (\Throwable $e) {
 			// An empty list means "nobody but the owner", so a source that
 			// could not be read must never turn into one.
-			$this->logger->error(
-				message: '[ObjectGrantsController] The grants of {uuid} could not be listed: {error}',
-				context: ['uuid' => $id, 'error' => $e->getMessage(), 'exception' => $e]
-			);
-			return new JSONResponse(
-				['message' => 'The grants of this object could not be listed'],
-				Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->unlisted(exception: $e, id: $id);
 		}//end try
-	}//end index()
+	}//end rows()
+
+	/**
+	 * Log why the rows could not be listed, and answer a generic 500.
+	 *
+	 * @param \Throwable $exception The failure.
+	 * @param string     $id        Object uuid.
+	 *
+	 * @return JSONResponse The 500.
+	 */
+	private function unlisted(\Throwable $exception, string $id): JSONResponse {
+		$this->logger->error(
+			message: '[ObjectGrantsController] The grants of {uuid} could not be listed: {error}',
+			context: ['uuid' => $id, 'error' => $exception->getMessage(), 'exception' => $exception]
+		);
+		return new JSONResponse(
+			['message' => 'The grants of this object could not be listed'],
+			Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end unlisted()
 }//end class

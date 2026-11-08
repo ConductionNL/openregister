@@ -61,10 +61,7 @@ interface QualityStatisticsServiceInterface {
 	 * @param int|string $register Register id, uuid or slug.
 	 * @param int|string $schema Schema id, uuid or slug.
 	 * @param string|null $qualityStatus Optional status filter (`good`/`fair`/`poor`).
-	 * @param string $sort Sort field: `qualityScore` (default) or `qualityStatus`.
-	 * @param string $order Sort order: `asc` (default) or `desc`.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param QualityListingWindow $window Sort field and order, page size and offset.
 	 *
 	 * @return array{
 	 *   items: array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}>,
@@ -79,9 +76,6 @@ interface QualityStatisticsServiceInterface {
 		$register,
 		$schema,
 		?string $qualityStatus = null,
-		string $sort = 'qualityScore',
-		string $order = 'asc',
-		int $limit = self::DEFAULT_LIMIT,
-		int $offset = 0,
+		QualityListingWindow $window = new QualityListingWindow(),
 	): array;
 }//end interface

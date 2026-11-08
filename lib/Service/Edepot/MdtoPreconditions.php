@@ -103,20 +103,7 @@ class MdtoPreconditions {
 		// mapping keeps today's behaviour; see MdtoMappingResolver.
 		$unfilled = $this->mappingResolver->unfilledMandatoryElements(object: $object);
 		if ($unfilled !== []) {
-			$lead = 'these mandatory elements: ';
-			$them = 'them';
-			if (count($unfilled) === 1) {
-				$lead = 'the mandatory element ';
-				$them = 'it';
-			}
-
-			throw new InvalidArgumentException(
-				'Cannot transfer object ' . $object->getUuid()
-				. ' to an e-Depot: its schema declares an MDTO mapping that does not fill '
-				. $lead . implode(', ', $unfilled)
-				. '. Map ' . $them
-				. ' in x-openregister-mdto-mapping, or the e-Depot will refuse the package.'
-			);
+			throw new InvalidArgumentException(self::unmappedRefusal(object: $object, unfilled: $unfilled));
 		}
 	}//end assertTransferPreconditions()
 
@@ -181,44 +168,12 @@ class MdtoPreconditions {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-mdto-generator-must-report-the-limits-of-its-own-validation
 	 */
 	public function assertGeneratorPreconditions(ObjectEntity $object, array $files): void {
-		$missing = [];
-
-		if (empty($object->getUuid()) === true) {
-			$missing[] = 'uuid';
-		}
-
-		if ($this->sourceReader->name(object: $object) === '') {
-			$missing[] = 'naam';
-		}
-
-		$facts = $this->sourceReader->coreFacts(object: $object);
-		$nominatie = $facts['appraisal'];
-		if ($nominatie === null || isset(MdtoXmlGenerator::APPRAISAL_MAP[$nominatie]) === false) {
-			$missing[] = 'archiefnominatie (one of: ' . implode(', ', array_keys(MdtoXmlGenerator::APPRAISAL_MAP)) . ')';
-		}
-
-		$period = $facts['retentionPeriod'];
-		if ($period !== null && self::isXsdDuration(value: $period) === false) {
-			$missing[] = 'bewaartermijn (an ISO-8601 / xsd:duration such as P20Y)';
-		}
-
-		if ($this->appConfig->getValueString('openregister', 'organisation_identifier', '') === '') {
-			$missing[] = 'app_setting:organisation_identifier';
-		}
-
-		$missing = array_merge($missing, $this->bestandGenerator->missingInputs(files: $files));
-
+		$missing = array_merge(
+			$this->missingObjectInputs(object: $object),
+			$this->bestandGenerator->missingInputs(files: $files)
+		);
 		if (empty($missing) === false) {
-			$missingStr = implode(', ', $missing);
-			$this->logger->error(
-				message: '[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: ' . $missingStr,
-				context: ['objectUuid' => $object->getUuid()]
-			);
-			throw new InvalidArgumentException(
-				'Cannot generate MDTO XML for object ' . $object->getUuid()
-				. '. These generator inputs are missing: ' . $missingStr
-				. '. This check covers the generator inputs only and is not an MDTO validity check.'
-			);
+			$this->refuseGeneration(object: $object, missing: $missing);
 		}
 	}//end assertGeneratorPreconditions()
 
@@ -243,6 +198,103 @@ class MdtoPreconditions {
 			context: ['objectUuid' => $object->getUuid(), 'gaps' => $gaps]
 		);
 	}//end reportMdtoRequiredElementGaps()
+
+
+	/**
+	 * Log and refuse a generation whose inputs are missing.
+	 *
+	 * @param ObjectEntity $object  The object to check.
+	 * @param list<string> $missing The missing inputs.
+	 *
+	 * @return never
+	 *
+	 * @throws InvalidArgumentException Always.
+	 */
+	private function refuseGeneration(ObjectEntity $object, array $missing): never {
+		$missingStr = implode(', ', $missing);
+		$this->logger->error(
+			message: '[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: ' . $missingStr,
+			context: ['objectUuid' => $object->getUuid()]
+		);
+		throw new InvalidArgumentException(
+			'Cannot generate MDTO XML for object ' . $object->getUuid()
+			. '. These generator inputs are missing: ' . $missingStr
+			. '. This check covers the generator inputs only and is not an MDTO validity check.'
+		);
+	}//end refuseGeneration()
+
+
+	/**
+	 * The refusal for a schema mapping that leaves mandatory elements unfilled.
+	 *
+	 * @param ObjectEntity $object   The object about to be packaged.
+	 * @param list<string> $unfilled The unfilled mandatory elements.
+	 *
+	 * @return string The refusal.
+	 */
+	private static function unmappedRefusal(ObjectEntity $object, array $unfilled): string {
+		$lead = 'these mandatory elements: ';
+		$them = 'them';
+		if (count($unfilled) === 1) {
+			$lead = 'the mandatory element ';
+			$them = 'it';
+		}
+
+		return 'Cannot transfer object ' . $object->getUuid()
+			. ' to an e-Depot: its schema declares an MDTO mapping that does not fill '
+			. $lead . implode(', ', $unfilled)
+			. '. Map ' . $them
+			. ' in x-openregister-mdto-mapping, or the e-Depot will refuse the package.';
+	}//end unmappedRefusal()
+
+
+	/**
+	 * The object's own missing or malformed generator inputs, in report order.
+	 *
+	 * @param ObjectEntity $object The object to check.
+	 *
+	 * @return list<string> The missing inputs.
+	 */
+	private function missingObjectInputs(ObjectEntity $object): array {
+		$missing = [];
+		if (empty($object->getUuid()) === true) {
+			$missing[] = 'uuid';
+		}
+
+		if ($this->sourceReader->name(object: $object) === '') {
+			$missing[] = 'naam';
+		}
+
+		$missing = array_merge($missing, self::missingFacts(facts: $this->sourceReader->coreFacts(object: $object)));
+		if ($this->appConfig->getValueString('openregister', 'organisation_identifier', '') === '') {
+			$missing[] = 'app_setting:organisation_identifier';
+		}
+
+		return $missing;
+	}//end missingObjectInputs()
+
+
+	/**
+	 * The appraisal and retention period refusals of the core facts.
+	 *
+	 * @param array<string, mixed> $facts The core facts.
+	 *
+	 * @return list<string> The missing inputs.
+	 */
+	private static function missingFacts(array $facts): array {
+		$missing   = [];
+		$nominatie = $facts['appraisal'];
+		if ($nominatie === null || isset(MdtoXmlGenerator::APPRAISAL_MAP[$nominatie]) === false) {
+			$missing[] = 'archiefnominatie (one of: ' . implode(', ', array_keys(MdtoXmlGenerator::APPRAISAL_MAP)) . ')';
+		}
+
+		$period = $facts['retentionPeriod'];
+		if ($period !== null && self::isXsdDuration(value: $period) === false) {
+			$missing[] = 'bewaartermijn (an ISO-8601 / xsd:duration such as P20Y)';
+		}
+
+		return $missing;
+	}//end missingFacts()
 
 
 	/**

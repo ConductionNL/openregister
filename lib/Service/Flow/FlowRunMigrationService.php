@@ -76,21 +76,35 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	public const LOG_ENTRY = 'migrated';
 
 	/**
+	 * Open timers of a run.
+	 *
+	 * @var FlowTimerMapper
+	 */
+	private readonly FlowTimerMapper $timers;
+
+	/**
+	 * Supersession.
+	 *
+	 * @var FlowTimerService
+	 */
+	private readonly FlowTimerService $timerService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapperInterface               $runs         The run store.
-	 * @param FlowRunMigrationValidator   $validator    Whether a run fits the target version.
-	 * @param FlowTimerMapper             $timers       Open timers of a run.
-	 * @param FlowTimerService            $timerService Supersession.
-	 * @param LoggerInterface             $logger       The logger.
+	 * @param FlowRunMapperInterface    $runs      The run store.
+	 * @param FlowRunMigrationValidator $validator Whether a run fits the target version.
+	 * @param FlowRunMigrationTimers    $timers    Open timers of a run, and their supersession.
+	 * @param LoggerInterface           $logger    The logger.
 	 */
 	public function __construct(
 		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunMigrationValidator $validator,
-		private readonly FlowTimerMapper $timers,
-		private readonly FlowTimerService $timerService,
+		FlowRunMigrationTimers $timers,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->timers       = $timers->timers;
+		$this->timerService = $timers->timerService;
 	}//end __construct()
 
 	/**

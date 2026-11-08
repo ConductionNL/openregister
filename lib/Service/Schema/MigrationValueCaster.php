@@ -197,16 +197,29 @@ class MigrationValueCaster {
 	 * @throws RuntimeException When the value cannot be parsed as a date.
 	 */
 	private function castDate(mixed $value, ?string $format): string {
-		if (is_string($value) === false && is_numeric($value) === false) {
-			throw new RuntimeException('Cannot cast non-string value to date.');
-		}
-
+		$this->assertDateCastable(value: $value);
 		if ($format !== null && $format !== '') {
 			return $this->castDateWithFormat(value: (string)$value, format: $format);
 		}
 
 		return $this->castDateFreeForm(value: (string)$value);
 	}//end castDate()
+
+	/**
+	 * Refuse a value that is neither a string nor numeric.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the value cannot be read as a date.
+	 */
+	private function assertDateCastable(mixed $value): void {
+		if (is_string($value) === false && is_numeric($value) === false) {
+			throw new RuntimeException('Cannot cast non-string value to date.');
+		}
+
+	}//end assertDateCastable()
 
 	/**
 	 * Parse a date in the given format.
@@ -253,10 +266,9 @@ class MigrationValueCaster {
 	 * @return string A short description.
 	 */
 	private function describe(mixed $value): string {
-		if (is_scalar($value) === true) {
-			return (string)$value;
-		}
-
-		return gettype($value);
+		return match (is_scalar($value)) {
+			true => (string)$value,
+			false => gettype($value),
+		};
 	}//end describe()
 }//end class
