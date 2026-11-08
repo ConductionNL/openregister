@@ -24,8 +24,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Files\FilesRegistrar;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
@@ -59,7 +57,6 @@ final class F10FilesInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		FileRestrictionGuard::class => [FileRestrictionGuardInterface::class, FilesRegistrar::class],
 		FileSharingHandler::class => [FileSharingHandlerInterface::class, FilesRegistrar::class],
-		FileOwnershipHandler::class => [FileOwnershipHandlerInterface::class, FilesRegistrar::class],
 		RegisterFolderProvisioner::class => [RegisterFolderProvisionerInterface::class, FilesRegistrar::class],
 		NoteService::class => [NoteServiceInterface::class, FilesRegistrar::class],
 	];

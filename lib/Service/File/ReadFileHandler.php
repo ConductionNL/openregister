@@ -24,7 +24,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -68,7 +68,7 @@ class ReadFileHandler {
 	 * @param IRootFolder                $rootFolder           Root folder for file operations.
 	 * @param FolderManagementHandler    $folderMgmtHandler    Folder management handler.
 	 * @param FileValidationHandler      $fileValidHandler     File validation handler.
-	 * @param FileOwnershipHandlerInterface       $fileOwnershipHandler File ownership handler.
+	 * @param FileOwnershipHandler       $fileOwnershipHandler File ownership handler.
 	 * @param MagicObjectFinderInterface $objectMapper         Object mapper for magic table operations.
 	 * @param LoggerInterface            $logger               Logger for logging operations.
 	 * @param FileMapperInterface|null   $fileMapper           Optional OR-side metadata mapper for category-based
@@ -78,7 +78,7 @@ class ReadFileHandler {
 		private readonly IRootFolder $rootFolder,
 		private readonly FolderManagementHandler $folderMgmtHandler,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
+		private readonly FileOwnershipHandler $fileOwnershipHandler,
 		private readonly MagicObjectFinderInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ?FileMapperInterface $fileMapper = null,

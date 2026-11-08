@@ -34,10 +34,10 @@ final class FileFolderHandlers {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param FileValidationHandler   $fileValidHandler     File validation handler
-	 * @param FolderManagementHandler $folderMgmtHandler    Folder management handler
-	 * @param FileOwnershipHandlerInterface    $fileOwnershipHandler File ownership handler
-	 * @param FileSharingHandlerInterface      $fileSharingHandler   File sharing handler
+	 * @param FileValidationHandler         $fileValidHandler     File validation handler
+	 * @param FolderManagementHandler       $folderMgmtHandler    Folder management handler
+	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler
+	 * @param FileSharingHandlerInterface   $fileSharingHandler   File sharing handler
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */

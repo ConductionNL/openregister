@@ -477,7 +477,7 @@ class ImportHandler {
 	 * Inject the provisioner importFromApp() uses to give imported registers their folder.
 	 *
 	 * @param RegisterFolderProvisionerInterface|null $provisioner Optional provisioner; without it the
-	 *                                                    first upload makes the folder instead.
+	 *                                                             first upload makes the folder instead.
 	 *
 	 * @return void
 	 *

@@ -47,6 +47,13 @@ use Psr\Log\LoggerInterface;
  */
 class FileOwnershipHandler implements FileOwnershipHandlerInterface {
 	/**
+	 * Application user name.
+	 *
+	 * @var string
+	 */
+	public const APP_USER = 'openregister';
+
+	/**
 	 * Application group name.
 	 *
 	 * @var string

@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -52,7 +52,7 @@ class DeleteFileHandler {
 	 * @param IRootFolder           $rootFolder           Root folder for file operations.
 	 * @param ReadFileHandler       $readFileHandler      Read file handler.
 	 * @param FileValidationHandler $fileValidHandler     File validation handler.
-	 * @param FileOwnershipHandlerInterface  $fileOwnershipHandler File ownership handler.
+	 * @param FileOwnershipHandler  $fileOwnershipHandler File ownership handler.
 	 * @param LoggerInterface       $logger               Logger for logging operations.
 	 * @param FileLockHandler       $fileLockHandler      Lock handler used to release / verify file locks on delete.
 	 */
@@ -60,7 +60,7 @@ class DeleteFileHandler {
 		private readonly IRootFolder $rootFolder,
 		private readonly ReadFileHandler $readFileHandler,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
+		private readonly FileOwnershipHandler $fileOwnershipHandler,
 		private readonly LoggerInterface $logger,
 		private readonly FileLockHandler $fileLockHandler,
 	) {

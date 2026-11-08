@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Listener\Support\NodeWriteTarget;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -102,7 +102,7 @@ class FrozenNodeWriteListener implements IEventListener {
 	 *
 	 * @var string
 	 */
-	private const HOME = '/' . FileOwnershipHandlerInterface::APP_USER . '/files/';
+	private const HOME = '/' . FileOwnershipHandler::APP_USER . '/files/';
 
 	/**
 	 * What the user reads when the object that owns a file could not be checked.
@@ -423,11 +423,11 @@ class FrozenNodeWriteListener implements IEventListener {
 	 * @return array{node: Node, exact: bool}|null The twin, or null when the node is not one of the app's files.
 	 */
 	private function twinInHome(array $stored): ?array {
-		if ($stored['owner']?->getUID() !== FileOwnershipHandlerInterface::APP_USER) {
+		if ($stored['owner']?->getUID() !== FileOwnershipHandler::APP_USER) {
 			return null;
 		}
 
-		$twins = $this->rootFolder->getUserFolder(FileOwnershipHandlerInterface::APP_USER)->getById($stored['id']);
+		$twins = $this->rootFolder->getUserFolder(FileOwnershipHandler::APP_USER)->getById($stored['id']);
 		foreach ($twins as $twin) {
 			if (str_starts_with($twin->getPath(), self::HOME) === true) {
 				return ['node' => $twin, 'exact' => $stored['exact']];
