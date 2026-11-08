@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\MapMarkerSource;
 use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCA\OpenRegister\Search\Service\MapsOverviewSources;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -107,7 +108,7 @@ final class MapsOverviewServicePointsGoldenTest extends TestCase {
 	 */
 	#[DataProvider('limits')]
 	public function testCap(?int $limit, int $expected): void {
-		$this->service('alice', false)->queryPoints('r', 's', [], null, $limit);
+		$this->service('alice', false)->queryPoints(new MapMarkerSource('r', 's', null, []), $limit);
 		$this->assertSame($expected, $this->finds[0]['limit']);
 	}//end testCap()
 
@@ -117,9 +118,9 @@ final class MapsOverviewServicePointsGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testAccessScope(): void {
-		$this->service(null, false)->queryPoints('r', 's');
-		$this->service('bob', false)->queryPoints('r', 's');
-		$this->service('root', true)->ensureReadablePoints(3, 4, ['register' => 'x', 'page' => 2, 'status' => 'open']);
+		$this->service(null, false)->queryPoints(new MapMarkerSource('r', 's'));
+		$this->service('bob', false)->queryPoints(new MapMarkerSource('r', 's'));
+		$this->service('root', true)->ensureReadablePoints(new MapMarkerSource(3, 4, null, ['register' => 'x', 'page' => 2, 'status' => 'open']));
 
 		$this->assertSame(
 			[
@@ -144,7 +145,7 @@ final class MapsOverviewServicePointsGoldenTest extends TestCase {
 			['id' => 'b', 'naam' => 'no geometry'],
 			['id' => 'c', 'location' => ['type' => 'Point', 'coordinates' => [4.9, 52.3]]],
 		];
-		$points = $this->service('alice', false, $rows)->queryPoints('r', 's', [], 'location');
+		$points = $this->service('alice', false, $rows)->queryPoints(new MapMarkerSource('r', 's', 'location', []));
 
 		$this->assertSame(['a', 'c'], array_column($points, 'id'));
 		$this->assertSame([52.1, 5.1], [$points[0]['lat'], $points[0]['lng']]);
@@ -158,13 +159,13 @@ final class MapsOverviewServicePointsGoldenTest extends TestCase {
 	public function testRefusals(): void {
 		$outcomes = [];
 		$calls = [
-			fn (MapsOverviewService $s) => $s->queryPoints('', 's'),
-			fn (MapsOverviewService $s) => $s->queryPoints('r', ''),
-			fn (MapsOverviewService $s) => $s->queryPoints(0, 0),
-			fn (MapsOverviewService $s) => $s->registerOverview('  ', 'r', 's'),
-			fn (MapsOverviewService $s) => $s->registerOverview('k', '', 's'),
-			fn (MapsOverviewService $s) => $s->registerOverview('k', 'r', ''),
-			fn (MapsOverviewService $s) => $s->registerOverview('k', 0, 0)['id'],
+			fn (MapsOverviewService $s) => $s->queryPoints(new MapMarkerSource('', 's')),
+			fn (MapsOverviewService $s) => $s->queryPoints(new MapMarkerSource('r', '')),
+			fn (MapsOverviewService $s) => $s->queryPoints(new MapMarkerSource(0, 0)),
+			fn (MapsOverviewService $s) => $s->registerOverview('  ', new MapMarkerSource('r', 's')),
+			fn (MapsOverviewService $s) => $s->registerOverview('k', new MapMarkerSource('', 's')),
+			fn (MapsOverviewService $s) => $s->registerOverview('k', new MapMarkerSource('r', '')),
+			fn (MapsOverviewService $s) => $s->registerOverview('k', new MapMarkerSource(0, 0))['id'],
 		];
 		foreach ($calls as $call) {
 			try {
@@ -211,7 +212,7 @@ final class MapsOverviewServicePointsGoldenTest extends TestCase {
 			['id' => 11, 'g' => ['type' => 'Point', 'coordinates' => []]],
 			['id' => 12, 'g' => ['type' => 'Point', 'coordinates' => [[[[[[1, 2]]]]]]]],
 		];
-		$points = $this->service('alice', false, $rows)->queryPoints('r', 's', [], 'g');
+		$points = $this->service('alice', false, $rows)->queryPoints(new MapMarkerSource('r', 's', 'g', []));
 
 		$this->assertSame(
 			[

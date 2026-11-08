@@ -31,6 +31,7 @@ use OCA\OpenRegister\Search\Db\ViewMapperAccess;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Search\ObjectsProviderOutput;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\MapMarkerSource;
 use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCA\OpenRegister\Search\Service\MapsOverviewSources;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -137,9 +138,9 @@ class SearchAccessWiringGoldenTest extends TestCase {
 	 */
 	public function testMapsPointScope(): void {
 		$reads = [];
-		$this->maps('alice', $reads)->queryPoints(register: 'r', schema: 's');
-		$this->maps(null, $reads)->queryPoints(register: 'r', schema: 's');
-		$this->maps('root', $reads)->queryPoints(register: 'r', schema: 's');
+		$this->maps('alice', $reads)->queryPoints(source: new MapMarkerSource(register: 'r', schema: 's'));
+		$this->maps(null, $reads)->queryPoints(source: new MapMarkerSource(register: 'r', schema: 's'));
+		$this->maps('root', $reads)->queryPoints(source: new MapMarkerSource(register: 'r', schema: 's'));
 
 		$this->assertSame([[true, true], [true, true], [false, false]], $reads);
 	}//end testMapsPointScope()
