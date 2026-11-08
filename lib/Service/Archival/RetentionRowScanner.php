@@ -106,21 +106,47 @@ class RetentionRowScanner {
 	private const MAGIC_RETENTION_COLUMN = '_retention';
 
 	/**
+	 * Database connection for the row scans.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Register repository, used to enumerate pairs.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema repository, used to enumerate pairs.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Magic-table resolver and row hydrator.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection   $db             Database connection for the row scans.
-	 * @param RegisterMapperInterface  $registerMapper Register repository, used to enumerate pairs.
-	 * @param SchemaMapperInterface    $schemaMapper   Schema repository, used to enumerate pairs.
-	 * @param MagicMapperInterface     $objectMapper   Magic-table resolver and row hydrator.
-	 * @param LoggerInterface $logger         Logger for skipped sources and truncated runs.
+	 * @param RetentionScanStores $stores The database and the repositories the scan walks.
+	 * @param LoggerInterface     $logger Logger for skipped sources and truncated runs.
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
+		RetentionScanStores $stores,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->db = $stores->db;
+		$this->registerMapper = $stores->registerMapper;
+		$this->schemaMapper = $stores->schemaMapper;
+		$this->objectMapper = $stores->objectMapper;
 	}//end __construct()
 
 	/**

@@ -203,9 +203,11 @@ class AnonymisationRun {
 		$after = $this->service->apply(payload: $payload, profile: $this->planner->profileOf(annotation: $annotation), salt: $salt);
 		$report = $this->service->report(before: $payload, after: $after, profileName: $profileName);
 
+		$change = new AnonymisedPayload(
+			before: $payload, after: $after, changedProperties: array_keys($report['changed']), keptProperties: $report['kept']
+		);
 		$plan = new AnonymisationPlan(
-			objectUuid: $objectUuid, profileName: $profileName, before: $payload, after: $after,
-			changedProperties: array_keys($report['changed']), keptProperties: $report['kept'], saltFingerprint: $this->fingerprint(salt: $salt)
+			objectUuid: $objectUuid, profileName: $profileName, payload: $change, saltFingerprint: $this->fingerprint(salt: $salt)
 		);
 
 		if ($plan->touchesAnything() === false) {

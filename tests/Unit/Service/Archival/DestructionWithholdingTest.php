@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
@@ -48,9 +49,7 @@ class DestructionWithholdingTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$this->service = new DestructionService(
-			objectMapper: $this->createMock(MagicMapper::class),
-			appConfig: $this->createMock(IAppConfig::class),
-			jobList: $this->createMock(IJobList::class),
+			infrastructure: new DestructionInfrastructure(objectMapper: $this->createMock(MagicMapper::class), appConfig: $this->createMock(IAppConfig::class), jobList: $this->createMock(IJobList::class)),
 			userSession: $session,
 			logger: $this->createMock(LoggerInterface::class),
 		);

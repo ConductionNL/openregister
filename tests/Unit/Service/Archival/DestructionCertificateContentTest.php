@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -88,9 +89,7 @@ class DestructionCertificateContentTest extends TestCase {
 			->getMock();
 
 		$this->destructionService = new DestructionService(
-			$objectMapper,
-			$appConfig,
-			$this->jobList,
+			new DestructionInfrastructure($objectMapper, $appConfig, $this->jobList),
 			$userSession,
 			$this->createMock(LoggerInterface::class)
 		);

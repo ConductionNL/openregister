@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Archival\AnonymisedPayload;
 use OCA\OpenRegister\Service\Archival\AnonymisationPlan;
 use OCA\OpenRegister\Service\Archival\AnonymisationPlanner;
 use OCA\OpenRegister\Service\Archival\AnonymisationRefusedException;
@@ -233,7 +234,7 @@ class AnonymisationGoldenTest extends TestCase {
 
 	public function testApplyPreparesEverythingBeforeWritingAndSaysHowFarItGot(): void {
 		$run = new AnonymisationRun();
-		$plan = new AnonymisationPlan('u', 'p', [], [], ['a'], ['b'], 'fp');
+		$plan = new AnonymisationPlan('u', 'p', new AnonymisedPayload([], [], ['a'], ['b']), 'fp');
 
 		$log = [];
 		$marker = $run->apply($plan, [$this->target('db', $log), $this->target('index', $log)]);
