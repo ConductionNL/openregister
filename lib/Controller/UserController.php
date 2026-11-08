@@ -29,7 +29,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\UserControllerServices;
 use OCA\OpenRegister\Controller\Support\UserResponses;
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\LoginSecurityInterface;
 use OCA\OpenRegister\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -80,9 +80,9 @@ class UserController extends Controller {
 	/**
 	 * Security service for input sanitization
 	 *
-	 * @var SecurityService
+	 * @var LoginSecurityInterface
 	 */
-	private readonly SecurityService $securityService;
+	private readonly LoginSecurityInterface $securityService;
 
 	/**
 	 * User manager for authentication

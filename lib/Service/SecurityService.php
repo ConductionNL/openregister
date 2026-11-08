@@ -25,9 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use InvalidArgumentException;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
-use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
+use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -53,7 +52,7 @@ use Psr\Log\LoggerInterface;
  *   (UserController and RateLimitMiddleware); splitting into sub-services would scatter
  *   the security surface without reducing per-method complexity.
  */
-class SecurityService {
+class SecurityService implements LoginSecurityInterface, RateLimitResetInterface, InboundAuthRateLimitInterface {
 
 	/**
 	 * Cache instance for storing rate limit data
@@ -196,44 +195,11 @@ class SecurityService {
 	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-every-outbound-registry-url-must-be-ssrf-guarded-and-must-not-follow-redirects
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.StaticAccess) The check lives in SafeFetchUrl, a static helper.
 	 */
 	public static function assertSafeFetchUrl(string $url): void {
-		$guard = new OutboundAddressGuard();
-		$ips   = $guard->addressesOf(host: self::fetchableHost(url: $url));
-		if (empty($ips) === true) {
-			// Fail closed: a host we cannot resolve must not be fetched.
-			throw new InvalidArgumentException('URL host could not be resolved.');
-		}
-
-		foreach ($ips as $ip) {
-			if ($guard->isInternal(ipAddress: $ip) === true) {
-				throw new InvalidArgumentException('URL resolves to a non-public address and cannot be fetched.');
-			}
-		}
+		SafeFetchUrl::assert(url: $url);
 	}//end assertSafeFetchUrl()
-
-	/**
-	 * The host of a URL that is well-formed and http(s), or a refusal.
-	 *
-	 * @param string $url The user-supplied URL.
-	 *
-	 * @return string The host to resolve.
-	 *
-	 * @throws InvalidArgumentException When the URL is malformed or not http(s).
-	 */
-	private static function fetchableHost(string $url): string {
-		$parts = parse_url($url);
-		if ($parts === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
-			throw new InvalidArgumentException('Invalid URL.');
-		}
-
-		if (in_array(strtolower($parts['scheme']), ['http', 'https'], true) === false) {
-			throw new InvalidArgumentException('Only http and https URLs are allowed.');
-		}
-
-		return $parts['host'];
-	}//end fetchableHost()
 
 	/**
 	 * Check if login attempt is allowed based on rate limiting rules
