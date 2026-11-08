@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\LoginSecurityInterface;
 use OCA\OpenRegister\Service\UserServiceInterface;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -36,16 +36,16 @@ final class UserDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param UserServiceInterface     $userService     User service for user operations
-	 * @param SecurityService $securityService Security service for input sanitization
-	 * @param IUserManager    $userManager     User manager for authentication
-	 * @param IUserSession    $userSession     User session manager
+	 * @param UserServiceInterface   $userService     User service for user operations
+	 * @param LoginSecurityInterface $securityService Security service for input sanitization
+	 * @param IUserManager           $userManager     User manager for authentication
+	 * @param IUserSession           $userSession     User session manager
 	 *
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function __construct(
 		public readonly UserServiceInterface $userService,
-		public readonly SecurityService $securityService,
+		public readonly LoginSecurityInterface $securityService,
 		public readonly IUserManager $userManager,
 		public readonly IUserSession $userSession,
 	) {

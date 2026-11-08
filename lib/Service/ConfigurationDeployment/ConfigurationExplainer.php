@@ -41,7 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use DateTime;
-use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
+use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -58,11 +58,11 @@ class ConfigurationExplainer {
 	 * Constructor.
 	 *
 	 * @param ConfigurationValueStore       $store       The live values.
-	 * @param ConfigurationDeploymentMapper $deployments The append-only history.
+	 * @param ConfigurationDeploymentMapperInterface $deployments The append-only history.
 	 */
 	public function __construct(
 		private readonly ConfigurationValueStore $store,
-		private readonly ConfigurationDeploymentMapper $deployments
+		private readonly ConfigurationDeploymentMapperInterface $deployments
 	) {
 
 	}//end __construct()
@@ -85,19 +85,28 @@ class ConfigurationExplainer {
 		?string $bundle = null,
 		?string $subject = null
 	): array {
-		$chain = $this->chainFor(
+		return $this->answerFor(
 			configKey: $configKey,
-			register: $register,
-			bundle: $bundle,
-			subject: $subject
+			chain: $this->chainFor(
+				configKey: $configKey,
+				register: $register,
+				bundle: $bundle,
+				subject: $subject
+			)
 		);
 
-		$effective = null;
-		foreach ($chain as $snapshot) {
-			if ($snapshot->present === true) {
-				$effective = $snapshot;
-			}
-		}
+	}//end explain()
+
+	/**
+	 * The explanation of one key from its chain.
+	 *
+	 * @param string                            $configKey The configuration key.
+	 * @param array<int, ConfigurationSnapshot> $chain     Every layer's answer, lowest precedence first.
+	 *
+	 * @return array<string, mixed> The effective value, its layer, and its deployment.
+	 */
+	private function answerFor(string $configKey, array $chain): array {
+		$effective = $this->effectiveOf(chain: $chain);
 
 		if ($effective === null) {
 			return [
@@ -133,7 +142,26 @@ class ConfigurationExplainer {
 			'chain' => array_map(static fn ($item) => $item->jsonSerialize(), $chain),
 		];
 
-	}//end explain()
+	}//end answerFor()
+
+	/**
+	 * The highest-precedence snapshot that holds a value.
+	 *
+	 * @param array<int, ConfigurationSnapshot> $chain Every layer's answer, lowest precedence first.
+	 *
+	 * @return ConfigurationSnapshot|null The effective snapshot, or null when no layer holds one.
+	 */
+	private function effectiveOf(array $chain): ?ConfigurationSnapshot {
+		$effective = null;
+		foreach ($chain as $snapshot) {
+			if ($snapshot->present === true) {
+				$effective = $snapshot;
+			}
+		}
+
+		return $effective;
+
+	}//end effectiveOf()
 
 	/**
 	 * Every layer's answer for one key, lowest precedence first.

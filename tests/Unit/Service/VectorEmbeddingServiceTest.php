@@ -5,6 +5,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\RankedResults;
 
 /**
  * Unit tests for VectorSearchHandler (cosine similarity, RRF)
@@ -104,7 +105,7 @@ class VectorEmbeddingServiceTest extends TestCase {
 			$this->makeSolrResult('C', 8.0),
 		];
 
-		$merged = $this->invokeMethod('reciprocalRankFusion', [$vector, $solr]);
+		$merged = $this->invokeMethod('reciprocalRankFusion', [new RankedResults($vector, 0.5), new RankedResults($solr, 0.5)]);
 
 		$this->assertCount(3, $merged);
 		// B is in both lists, should be ranked first.
@@ -118,7 +119,7 @@ class VectorEmbeddingServiceTest extends TestCase {
 			$this->makeVectorResult('A', 0.9),
 			$this->makeVectorResult('B', 0.8),
 		];
-		$merged = $this->invokeMethod('reciprocalRankFusion', [$vector, []]);
+		$merged = $this->invokeMethod('reciprocalRankFusion', [new RankedResults($vector, 0.5), new RankedResults([], 0.5)]);
 
 		$this->assertCount(2, $merged);
 		$this->assertEquals('A', $merged[0]['entity_id']);
@@ -130,7 +131,7 @@ class VectorEmbeddingServiceTest extends TestCase {
 			$this->makeSolrResult('X', 10.0),
 			$this->makeSolrResult('Y', 8.0),
 		];
-		$merged = $this->invokeMethod('reciprocalRankFusion', [[], $solr]);
+		$merged = $this->invokeMethod('reciprocalRankFusion', [new RankedResults([], 0.5), new RankedResults($solr, 0.5)]);
 
 		$this->assertCount(2, $merged);
 		$this->assertEquals('X', $merged[0]['entity_id']);
@@ -143,8 +144,8 @@ class VectorEmbeddingServiceTest extends TestCase {
 		$vector = [$this->makeVectorResult('A', 0.9)];
 		$solr = [$this->makeSolrResult('B', 10.0)];
 
-		$merged1 = $this->invokeMethod('reciprocalRankFusion', [$vector, $solr, 0.9, 0.1]);
-		$merged2 = $this->invokeMethod('reciprocalRankFusion', [$vector, $solr, 0.1, 0.9]);
+		$merged1 = $this->invokeMethod('reciprocalRankFusion', [new RankedResults($vector, 0.9), new RankedResults($solr, 0.1)]);
+		$merged2 = $this->invokeMethod('reciprocalRankFusion', [new RankedResults($vector, 0.1), new RankedResults($solr, 0.9)]);
 
 		// With high vector weight, A should be first.
 		$this->assertEquals('A', $merged1[0]['entity_id']);
@@ -163,7 +164,7 @@ class VectorEmbeddingServiceTest extends TestCase {
 		]];
 		$solr = [];
 
-		$merged = $this->invokeMethod('reciprocalRankFusion', [$vector, $solr]);
+		$merged = $this->invokeMethod('reciprocalRankFusion', [new RankedResults($vector, 0.5), new RankedResults($solr, 0.5)]);
 
 		$this->assertEquals('A', $merged[0]['entity_id']);
 		$this->assertEquals('Some text', $merged[0]['chunk_text']);
@@ -187,7 +188,7 @@ class VectorEmbeddingServiceTest extends TestCase {
 		$solr[1]['entity_id'] = 'V2';
 		$solr[2]['entity_id'] = 'V3';
 
-		$merged = $this->invokeMethod('reciprocalRankFusion', [$vector, $solr]);
+		$merged = $this->invokeMethod('reciprocalRankFusion', [new RankedResults($vector, 0.5), new RankedResults($solr, 0.5)]);
 
 		$topIds = array_slice(array_column($merged, 'entity_id'), 0, 5);
 		$this->assertContains('V1', $topIds);

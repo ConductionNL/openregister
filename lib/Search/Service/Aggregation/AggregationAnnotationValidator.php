@@ -59,7 +59,7 @@ namespace OCA\OpenRegister\Search\Service\Aggregation;
  *   - multi-field object:  `{ "fields": ["a", "b"] }`
  *   - plain ordered list:  `[ "a", "b" ]`
  */
-final class AggregationAnnotationValidator {
+final class AggregationAnnotationValidator implements AggregationAnnotationValidatorInterface {
 
 	public const VALID_METRICS = ['count', 'sum', 'avg', 'min', 'max', 'count_distinct'];
 

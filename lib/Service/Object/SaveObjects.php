@@ -2719,10 +2719,10 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function processObjectsChunk(BulkSaveRun $run, array $objects): array {
-		$chunk = new BulkChunkRun(result: $this->emptyChunkResult());
-		$rows  = $this->guardedChunkRows(run: $run, objects: $objects, chunk: $chunk);
+		$chunk = new BulkChunkRun(result: $this->emptyChunkResult(), run: $run);
+		$rows  = $this->guardedChunkRows(chunk: $chunk, objects: $objects);
 		if ($rows !== []) {
-			$this->persistChunkRows(run: $run, rows: $rows, chunk: $chunk);
+			$this->persistChunkRows(chunk: $chunk, rows: $rows);
 		}
 
 		$chunk->result['statistics']['phaseMs'] = $chunk->phaseMs;
@@ -2737,13 +2737,13 @@ class SaveObjects {
 	 * schema validation, mirroring the single-object save path, are moved into the
 	 * chunk's invalid rows BEFORE anything is persisted.
 	 *
-	 * @param BulkSaveRun  $run     The bulk save call.
+	 * @param BulkChunkRun $chunk   The chunk's bulk save call, result and timings.
 	 * @param array        $objects The chunk's prepared objects.
-	 * @param BulkChunkRun $chunk   The chunk's result and timings.
 	 *
 	 * @return array The rows to persist; empty when none are left.
 	 */
-	private function guardedChunkRows(BulkSaveRun $run, array $objects, BulkChunkRun $chunk): array {
+	private function guardedChunkRows(BulkChunkRun $chunk, array $objects): array {
+		$run = $chunk->run;
 		$phaseStart = microtime(true);
 		$rows = $this->transformChunk(objects: $objects, schemaCache: $run->schemaCache, result: $chunk->result);
 		$chunk->finishPhase(phase: 'transform', start: $phaseStart);
@@ -2762,18 +2762,18 @@ class SaveObjects {
 	/**
 	 * STEP 2, 3 and 3b: persist the rows, classify the outcome, and write the audit trail and events.
 	 *
-	 * @param BulkSaveRun  $run   The bulk save call.
+	 * @param BulkChunkRun $chunk The chunk's bulk save call, result and timings.
 	 * @param array        $rows  The rows that passed the guards (not empty).
-	 * @param BulkChunkRun $chunk The chunk's result and timings.
 	 *
 	 * @return void
 	 */
-	private function persistChunkRows(BulkSaveRun $run, array $rows, BulkChunkRun $chunk): void {
+	private function persistChunkRows(BulkChunkRun $chunk, array $rows): void {
+		$run = $chunk->run;
 		$chunk->eventTargets = $this->bulkEventTargets(
 			transformedObjects: $rows,
 			context: ['events' => $run->events, 'schemas' => $run->schemaCache, 'register' => $run->register, 'schema' => $run->schema]
 		);
-		$bulkResult = $this->timedPersist(run: $run, rows: $rows, chunk: $chunk);
+		$bulkResult = $this->timedPersist(chunk: $chunk, rows: $rows);
 
 		// Build and classify results from bulk operation output. Returns the
 		// hydrated entities (with pre-update state for updates) for side effects.
@@ -2781,7 +2781,7 @@ class SaveObjects {
 		$sideEffects = $this->buildChunkResults(bulkResult: $bulkResult, transformedObjects: $rows, result: $chunk->result);
 		$chunk->finishPhase(phase: 'buildResults', start: $phaseStart);
 
-		$this->timedSideEffects(run: $run, sideEffects: $sideEffects, chunk: $chunk);
+		$this->timedSideEffects(chunk: $chunk, sideEffects: $sideEffects);
 		// Processing time in the result for transparency and performance monitoring.
 		$chunk->result['statistics']['processingTimeMs'] = round((microtime(true) - $chunk->startTime) * 1000, 2);
 	}//end persistChunkRows()
@@ -2800,13 +2800,13 @@ class SaveObjects {
 	 * 1.574 ms vs Index Only Scan 0.537 ms per 100 rows, on 2.3 KB rows —
 	 * and real tables here run to 4.2 KB a row, where the gap is wider.
 	 *
-	 * @param BulkSaveRun  $run   The bulk save call.
+	 * @param BulkChunkRun $chunk The chunk's bulk save call, timings and event targets.
 	 * @param array        $rows  The rows to persist.
-	 * @param BulkChunkRun $chunk The chunk's timings and event targets.
 	 *
 	 * @return mixed The bulk operation result from the mapper.
 	 */
-	private function timedPersist(BulkSaveRun $run, array $rows, BulkChunkRun $chunk): mixed {
+	private function timedPersist(BulkChunkRun $chunk, array $rows): mixed {
+		$run = $chunk->run;
 		$phaseStart = microtime(true);
 		$bulkResult = $this->persistChunk(
 			transformedObjects: $rows,
@@ -2827,13 +2827,13 @@ class SaveObjects {
 	 * parity with single-object save. Audit rows are written with streamed batched multi-row
 	 * INSERTs (100 rows per statement) instead of one INSERT (plus hash-chain queries) per object.
 	 *
-	 * @param BulkSaveRun  $run         The bulk save call.
+	 * @param BulkChunkRun $chunk       The chunk's bulk save call, timings and event targets.
 	 * @param array        $sideEffects As buildChunkResults() returns them.
-	 * @param BulkChunkRun $chunk       The chunk's timings and event targets.
 	 *
 	 * @return void
 	 */
-	private function timedSideEffects(BulkSaveRun $run, array $sideEffects, BulkChunkRun $chunk): void {
+	private function timedSideEffects(BulkChunkRun $chunk, array $sideEffects): void {
+		$run = $chunk->run;
 		$phaseStart = microtime(true);
 		$this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $run->events, _audit: $run->audit);
 		$this->emitTargetedEvents(sideEffects: $sideEffects, targets: $chunk->eventTargets);

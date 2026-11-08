@@ -59,14 +59,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-an-upload-completion-lands-as-a-file-attachment-on-the-case-object
  */
-class PortalTaskService {
-
-	/**
-	 * The outcome a portal completion records when the party names none.
-	 *
-	 * @var string
-	 */
-	public const DEFAULT_OUTCOME = 'submitted';
+class PortalTaskService implements PortalTaskServiceInterface {
 
 	/**
 	 * The tag every stored upload carries, so the case's file list can say

@@ -90,14 +90,9 @@ SPDX-License-Identifier: EUPL-1.2
 						}}</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Remove Deck card')"
-					@click="unlinkCard(card)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Remove Deck card')"
+					@unlink="unlinkCard(card)" />
 			</li>
 		</ul>
 	</div>
@@ -105,11 +100,11 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import TableLarge from 'vue-material-design-icons/TableLarge.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
 import TableRemove from 'vue-material-design-icons/TableRemove.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
 import { useDeckRelationsStore } from '../../store/modules/object-relations/deck.js'
 import { storeRelationTab } from './relationTab.js'
 
@@ -135,7 +130,7 @@ export default {
 		TableLarge,
 		TableLargePlus,
 		TableRemove,
-		CloseCircleOutline,
+		UnlinkButton,
 	},
 
 	mixins: [storeRelationTab(useDeckRelationsStore)],

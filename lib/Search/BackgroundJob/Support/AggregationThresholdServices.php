@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Search\BackgroundJob\Support;
 
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService;
-use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
+use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 
 /**
  * What re-fetches a deferred entry, finds its schema and evaluates the schema's thresholds.
@@ -35,14 +35,14 @@ final class AggregationThresholdServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param DeferredEntryObjectResolver $resolver     Stale-safe entry re-fetch.
+	 * @param DeferredEntryObjectResolverInterface $resolver     Stale-safe entry re-fetch.
 	 * @param SchemaMapperInterface       $schemaMapper Schema lookup mapper.
 	 * @param ThresholdEvaluationService  $evaluator    Shared threshold evaluation logic.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function __construct(
-		public readonly DeferredEntryObjectResolver $resolver,
+		public readonly DeferredEntryObjectResolverInterface $resolver,
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly ThresholdEvaluationService $evaluator,
 	) {

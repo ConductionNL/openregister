@@ -69,24 +69,57 @@ use Throwable;
 class DraftActivation implements DraftActivationInterface {
 
 	/**
+	 * The schema's full validator.
+	 *
+	 * @var ObjectValidatorInterface
+	 */
+	private readonly ObjectValidatorInterface $validator;
+
+	/**
+	 * Turns a refusal into per-property findings.
+	 *
+	 * @var FormPayloadFindings
+	 */
+	private readonly FormPayloadFindings $findings;
+
+	/**
+	 * Announces the object that left draft.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $events;
+
+	/**
+	 * The clock, for the moment of receipt.
+	 *
+	 * @var ITimeFactory
+	 */
+	private readonly ITimeFactory $time;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface       $objects   Reads and saves objects.
-	 * @param ObjectValidatorInterface      $validator The schema's full validator.
-	 * @param FormPayloadFindings $findings  Turns a refusal into per-property findings.
-	 * @param IEventDispatcher    $events    Announces the object that left draft.
-	 * @param ITimeFactory        $time      The clock, for the moment of receipt.
-	 * @param IL10N               $l10n      Translations.
+	 * @param ObjectOperationsInterface $objects Reads and saves objects.
+	 * @param DraftActivationChecks     $checks  The validator, its findings and the words of a refusal.
+	 * @param DraftActivationSignals    $signals The event dispatcher and the clock.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly ObjectValidatorInterface $validator,
-		private readonly FormPayloadFindings $findings,
-		private readonly IEventDispatcher $events,
-		private readonly ITimeFactory $time,
-		private readonly IL10N $l10n,
+		DraftActivationChecks $checks,
+		DraftActivationSignals $signals,
 	) {
-
+		$this->validator = $checks->validator;
+		$this->findings = $checks->findings;
+		$this->l10n = $checks->l10n;
+		$this->events = $signals->events;
+		$this->time = $signals->time;
 	}//end __construct()
 
 	/**
@@ -186,25 +219,7 @@ class DraftActivation implements DraftActivationInterface {
 	 * @throws DraftActivationRefusedException 404, 409 or 403.
 	 */
 	private function ownDraft(Register $register, Schema $schema, string $draftId, DraftOwner $owner): ObjectEntity {
-		$draft = null;
-		if ($draftId !== '') {
-			try {
-				// RBAC off for the read only: the owner comparison below is
-				// stricter than any read rule, and a scope-value owner has
-				// no session to read with.
-				$draft = $this->objects->find(
-					id: $draftId,
-					register: $register,
-					schema: $schema,
-					_rbac: false,
-					_multitenancy: false,
-					_render: false,
-					_audit: false
-				);
-			} catch (Throwable) {
-				$draft = null;
-			}
-		}
+		$draft = $this->readDraft(register: $register, schema: $schema, draftId: $draftId);
 
 		if ($draft === null) {
 			throw new DraftActivationRefusedException(
@@ -229,6 +244,41 @@ class DraftActivation implements DraftActivationInterface {
 
 		return $draft;
 	}//end ownDraft()
+
+	/**
+	 * Read a draft by id with RBAC off; an empty id or a failed read is no draft.
+	 *
+	 * RBAC is off for the read only: the owner comparison in ownDraft() is
+	 * stricter than any read rule, and a scope-value owner has no session to
+	 * read with.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 * @param string   $draftId  The draft id.
+	 *
+	 * @return ObjectEntity|null The object read
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
+	 */
+	private function readDraft(Register $register, Schema $schema, string $draftId): ?ObjectEntity {
+		if ($draftId === '') {
+			return null;
+		}
+
+		try {
+			return $this->objects->find(
+				id: $draftId,
+				register: $register,
+				schema: $schema,
+				_rbac: false,
+				_multitenancy: false,
+				_render: false,
+				_audit: false
+			);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end readDraft()
 
 	/**
 	 * Judge the object against every rule of its schema, whatever its hard-validation flag.

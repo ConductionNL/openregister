@@ -210,31 +210,44 @@ class BulkJobExecutor {
 		?IUser $actor,
 		bool $addedAtCommit = false
 	): void {
+		$pass = new BulkJobPass(job: $job, action: $action, actor: $actor, objects: $objects);
 		foreach ($uuids as $uuid) {
-			$object = ($objects[$uuid] ?? null);
-			$result = $this->rehearse(object: $object, action: $action, job: $job, actor: $actor);
-
-			$version = null;
-			if ($object !== null) {
-				$version = $this->schemaVersionOf(object: $object);
-			}
-
-			$plan = $this->reversalPlanOf(action: $action, object: $object, job: $job);
-
-			$this->memberMapper->createFromArray(
-				[
-					'jobId' => $job->getId(),
-					'objectUuid' => $uuid,
-					'outcome' => $result->getOutcome(),
-					'reason' => $result->getReason(),
-					'schemaVersion' => $version,
-					'addedAtCommit' => $addedAtCommit,
-					'priorValues' => ($plan[ReversibleBulkActionInterface::PLAN_PRIOR] ?? null),
-					'appliedValues' => ($plan[ReversibleBulkActionInterface::PLAN_APPLIED] ?? null),
-				]
-			);
+			$row = $this->previewRow(pass: $pass, uuid: $uuid);
+			$row['addedAtCommit'] = $addedAtCommit;
+			$this->memberMapper->createFromArray($row);
 		}
 	}//end writePreviewMembers()
+
+	/**
+	 * Rehearse one selected uuid and build its member row.
+	 *
+	 * @param BulkJobPass $pass The preview pass.
+	 * @param string      $uuid The selected uuid.
+	 *
+	 * @return array<string, mixed> The member row; `addedAtCommit` is false until the caller sets it.
+	 */
+	private function previewRow(BulkJobPass $pass, string $uuid): array {
+		$object = $pass->object(uuid: $uuid);
+		$result = $this->rehearse(pass: $pass, object: $object);
+
+		$version = null;
+		if ($object !== null) {
+			$version = $this->schemaVersionOf(object: $object);
+		}
+
+		$plan = $this->reversalPlanOf(pass: $pass, object: $object);
+
+		return [
+			'jobId' => $pass->job->getId(),
+			'objectUuid' => $uuid,
+			'outcome' => $result->getOutcome(),
+			'reason' => $result->getReason(),
+			'schemaVersion' => $version,
+			'addedAtCommit' => false,
+			'priorValues' => ($plan[ReversibleBulkActionInterface::PLAN_PRIOR] ?? null),
+			'appliedValues' => ($plan[ReversibleBulkActionInterface::PLAN_APPLIED] ?? null),
+		];
+	}//end previewRow()
 
 	/**
 	 * Walk one batch of a committed job.
@@ -247,7 +260,7 @@ class BulkJobExecutor {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function processBatch(BulkJob $job, int $batchSize): bool {
-		$action = null;
+		$pass = null;
 		$members = $this->memberMapper->findPendingBatch(
 			jobId: (int)$job->getId(),
 			cursor: new IdCursor(afterId: $job->getCursor(), limit: $batchSize)
@@ -276,8 +289,8 @@ class BulkJobExecutor {
 				return false;
 			}
 
-			$action ??= $this->actionOf(job: $job);
-			$this->commitMember(job: $job, member: $member, objects: $objects, action: $action, actor: $actor);
+			$pass ??= new BulkJobPass(job: $job, action: $this->actionOf(job: $job), actor: $actor, objects: $objects);
+			$this->commitMember(pass: $pass, member: $member);
 			$job->setCursor((int)$member->getId());
 		}//end foreach
 
@@ -323,50 +336,40 @@ class BulkJobExecutor {
 	/**
 	 * Rehearse the action against one object.
 	 *
+	 * @param BulkJobPass $pass The preview pass (job, action, actor).
 	 * @param ObjectEntity|null $object The object, or null when unreadable.
-	 * @param BulkActionInterface $action The action.
-	 * @param BulkJob $job The job.
-	 * @param IUser|null $actor The user the job runs as.
 	 *
 	 * @return BulkActionResult What would happen.
 	 */
-	private function rehearse(?ObjectEntity $object, BulkActionInterface $action, BulkJob $job, ?IUser $actor): BulkActionResult {
+	private function rehearse(BulkJobPass $pass, ?ObjectEntity $object): BulkActionResult {
 		if ($object === null) {
 			return BulkActionResult::refused(rule: self::RULE_NOT_VISIBLE);
 		}
 
-		$refusal = $this->refusalFor(object: $object, actorUid: (string)$job->getStartedBy());
+		$refusal = $this->refusalFor(object: $object, actorUid: (string)$pass->job->getStartedBy());
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		return $action->apply(
+		return $pass->action->apply(
 			object: $object,
-			parameters: ($job->getParameters() ?? []),
+			parameters: ($pass->job->getParameters() ?? []),
 			commit: false,
-			actor: $actor
+			actor: $pass->actor
 		);
 	}//end rehearse()
 
 	/**
 	 * Apply the action to one member and record what happened.
 	 *
-	 * @param BulkJob $job The job.
+	 * @param BulkJobPass $pass The batch pass (job, action, actor, hydrated batch).
 	 * @param BulkJobMember $member The member.
-	 * @param array<string, ObjectEntity> $objects The hydrated batch.
-	 * @param BulkActionInterface $action The action.
-	 * @param IUser|null $actor The user the job runs as.
 	 *
 	 * @return void
 	 */
-	private function commitMember(
-		BulkJob $job,
-		BulkJobMember $member,
-		array $objects,
-		BulkActionInterface $action,
-		?IUser $actor
-	): void {
-		$object = ($objects[(string)$member->getObjectUuid()] ?? null);
+	private function commitMember(BulkJobPass $pass, BulkJobMember $member): void {
+		$job = $pass->job;
+		$object = $pass->object(uuid: (string)$member->getObjectUuid());
 
 		if ($object === null) {
 			$this->recordOutcome(member: $member, result: BulkActionResult::refused(rule: self::RULE_NOT_VISIBLE));
@@ -385,13 +388,13 @@ class BulkJobExecutor {
 		// copy. Minutes or hours may have passed since the rehearsal, and a
 		// prior value captured then would restore the object to a state it
 		// left before this job ever wrote (D-2).
-		$plan = $this->reversalPlanOf(action: $action, object: $object, job: $job);
+		$plan = $this->reversalPlanOf(pass: $pass, object: $object);
 
-		$result = $action->apply(
+		$result = $pass->action->apply(
 			object: $object,
 			parameters: ($job->getParameters() ?? []),
 			commit: true,
-			actor: $actor
+			actor: $pass->actor
 		);
 
 		if ($result->isApplied() === true) {
@@ -448,20 +451,20 @@ class BulkJobExecutor {
 	 * whole of the "irreversible is declared" rule at the member level: no
 	 * prior value is stored, so no reversal can pretend to have one (D-4).
 	 *
-	 * @param BulkActionInterface $action The action.
-	 * @param ObjectEntity|null   $object The object, or null when unreadable.
-	 * @param BulkJob             $job    The job, for its parameters.
+	 * @param BulkJobPass       $pass   The pass (its action, and its job for the parameters).
+	 * @param ObjectEntity|null $object The object, or null when unreadable.
 	 *
 	 * @return array{prior: array<string, mixed>, applied: array<string, mixed>}|null The plan.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	private function reversalPlanOf(BulkActionInterface $action, ?ObjectEntity $object, BulkJob $job): ?array {
+	private function reversalPlanOf(BulkJobPass $pass, ?ObjectEntity $object): ?array {
+		$action = $pass->action;
 		if ($object === null || ($action instanceof ReversibleBulkActionInterface) === false) {
 			return null;
 		}
 
-		$plan = $action->reversalPlanFor(object: $object, parameters: ($job->getParameters() ?? []));
+		$plan = $action->reversalPlanFor(object: $object, parameters: ($pass->job->getParameters() ?? []));
 
 		if (isset($plan[ReversibleBulkActionInterface::PLAN_PRIOR]) === false) {
 			return null;

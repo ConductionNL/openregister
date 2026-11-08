@@ -163,12 +163,7 @@ import {
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
 			<NcButton
 				v-if="!success"
 				:disabled="loading || !applicationItem.name.trim()"
@@ -198,13 +193,13 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
 import RbacTable from '../../components/RbacTable.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
@@ -226,7 +221,7 @@ export default {
 		RbacTable,
 		// Icons
 		ContentSaveOutline,
-		Cancel,
+		CloseCancelButton,
 		Plus,
 		Cog,
 		Database,

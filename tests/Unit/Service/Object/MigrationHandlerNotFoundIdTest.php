@@ -126,10 +126,8 @@ class MigrationHandlerNotFoundIdTest extends TestCase {
 		$handler = $this->migrationHandler(mapper: $mapper, utility: $utility, dataManip: $dataManip);
 
 		return $handler->migrateObjects(
-			sourceRegister: '1',
-			sourceSchema: '2',
-			targetRegister: 'target',
-			targetSchema: 'target',
+			source: ['1', '2'],
+			target: ['target', 'target'],
 			objectIds: $objectIds,
 			mapping: ['title' => 'title']
 		);

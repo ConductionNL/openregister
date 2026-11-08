@@ -19,6 +19,7 @@ use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
 use OCA\OpenRegister\Service\Export\ExportRunFile;
 use OCA\OpenRegister\Service\Export\ExportRunOrigin;
@@ -149,7 +150,7 @@ class ExampleSetExportRunsTest extends TestCase {
 		];
 
 		$this->assertSame('', $kind->refusal(data: $data, users: ['pieter']));
-		$made = $kind->write(app: 'dossiq', key: 'export-woo-q3', data: $data);
+		$made = $kind->write(row: new ExampleSetRow(app: 'dossiq', key: 'export-woo-q3', data: $data));
 
 		$this->assertSame('', $made['error']);
 		$this->assertSame("zaak;titel\n2026-0110;Verlichting fietspad Lindelaan\n", $this->files['Exports/woo-2026-q3.csv']);
@@ -184,7 +185,7 @@ class ExampleSetExportRunsTest extends TestCase {
 		$binary = ['user' => 'pieter', 'fileName' => 'b.xlsx', 'format' => 'xlsx', 'contentBase64' => base64_encode("PK\x03\x04 sheet")];
 		$this->assertSame('', $kind->refusal(data: $binary, users: ['pieter']));
 		$this->assertStringContainsString('content', $kind->refusal(data: (['contentBase64' => '%%%'] + $binary), users: ['pieter']));
-		$made = $kind->write(app: 'dossiq', key: 'export-xlsx', data: $binary);
+		$made = $kind->write(row: new ExampleSetRow(app: 'dossiq', key: 'export-xlsx', data: $binary));
 		$this->assertSame("PK\x03\x04 sheet", $this->files['Exports/b.xlsx'], (string) $made['error']);
 	}//end testAnExportThatCannotBeWrittenIsRefused()
 

@@ -45,7 +45,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDi
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -104,9 +104,9 @@ class TaskScheduledNotificationJob extends TimedJob {
 	/**
 	 * The row the adapter is built from.
 	 *
-	 * @var TaskInboxService
+	 * @var TaskInboxServiceInterface
 	 */
-	private readonly TaskInboxService $inbox;
+	private readonly TaskInboxServiceInterface $inbox;
 
 	/**
 	 * The operator-object filter evaluator.

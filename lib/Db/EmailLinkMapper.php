@@ -205,6 +205,22 @@ class EmailLinkMapper extends QBMapper implements EmailLinkMapperInterface {
 		int $mailMessageId,
 		?string $mailMessageUid,
 	): ?EmailLink {
+		$qb = $this->objectAccountQuery(objectUuid: $objectUuid, mailAccountId: $mailAccountId);
+		$this->matchMessageId(qb: $qb, mailMessageId: $mailMessageId);
+		$this->matchMessageUid(qb: $qb, mailMessageUid: $mailMessageUid);
+
+		return $this->findSingleOrNull(qb: $qb);
+	}//end findByObjectAccountMessageUid()
+
+	/**
+	 * The links of one object to one mail account, before the message predicates.
+	 *
+	 * @param string $objectUuid    The object UUID.
+	 * @param int    $mailAccountId The mail account ID.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function objectAccountQuery(string $objectUuid, int $mailAccountId): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -214,18 +230,27 @@ class EmailLinkMapper extends QBMapper implements EmailLinkMapperInterface {
 					'mail_account_id',
 					$qb->createNamedParameter($mailAccountId, IQueryBuilder::PARAM_INT)
 				)
-			)
-			->andWhere(
-				$qb->expr()->eq(
-					'mail_message_id',
-					$qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)
-				)
 			);
 
-		$this->matchMessageUid(qb: $qb, mailMessageUid: $mailMessageUid);
+		return $qb;
+	}//end objectAccountQuery()
 
-		return $this->findSingleOrNull(qb: $qb);
-	}//end findByObjectAccountMessageUid()
+	/**
+	 * Match one mail message id.
+	 *
+	 * @param IQueryBuilder $qb            The query being built.
+	 * @param int           $mailMessageId The mail message ID.
+	 *
+	 * @return void
+	 */
+	private function matchMessageId(IQueryBuilder $qb, int $mailMessageId): void {
+		$qb->andWhere(
+			$qb->expr()->eq(
+				'mail_message_id',
+				$qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)
+			)
+		);
+	}//end matchMessageId()
 
 	/**
 	 * Match the message uid exactly, or require it to be unset when there is none.

@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Survivorship;
  *
  * @spec openspec/changes/mdm-survivorship-engine/tasks.md#3.2
  */
-class SurvivorshipAnnotationValidator {
+class SurvivorshipAnnotationValidator implements SurvivorshipAnnotationValidatorInterface {
 	/**
 	 * Default ordered tier list (weakest first) when the annotation omits one.
 	 *

@@ -33,16 +33,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ObjectDerivation;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\ObjectRelationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectRelationsPurposeScope;
 use OCA\OpenRegister\Controller\Support\ObjectRelationsRequest;
+use OCA\OpenRegister\Controller\Support\ProseReference;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Export\ExportGate;
+use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
-use OCA\OpenRegister\Service\Relation\AffectedSet;
 use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
+use OCA\OpenRegister\Service\Relation\AffectedSets;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
@@ -101,9 +104,9 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * The export verb, checked before the graph leaves.
 	 *
-	 * @var ExportGate
+	 * @var ExportGateInterface
 	 */
-	private readonly ExportGate $exportGate;
+	private readonly ExportGateInterface $exportGate;
 
 	/**
 	 * Resolves an object under the caller's own RBAC.
@@ -227,9 +230,8 @@ class ObjectRelationsController extends Controller {
 		}
 
 		$target = $this->params->stringParam(name: 'target');
-		$anchor = $this->params->stringParam(name: 'anchor');
 		if ($target !== null) {
-			return $this->addProseReference(source: $object, register: $register, schema: $schema, target: $target, anchor: $anchor);
+			return $this->addProseReference(source: $object, far: new ObjectLinkRoute(register: $register, schema: $schema, id: $target));
 		}
 
 		return $this->addExternalLink(object: $object);
@@ -282,17 +284,18 @@ class ObjectRelationsController extends Controller {
 	 * on the far object, and writing onto an object somebody may not see would
 	 * let a reference leak the existence of one they may.
 	 *
-	 * @param ObjectEntity $source The object the text belongs to.
-	 * @param string $register The register slug or id.
-	 * @param string $schema The schema slug or id.
-	 * @param string $target The object the text names.
-	 * @param string|null $anchor What identifies the text, so it can be withdrawn.
+	 * The anchor, what identifies the text so it can be withdrawn, is read
+	 * off the request here.
+	 *
+	 * @param ObjectEntity    $source The object the text belongs to.
+	 * @param ObjectLinkRoute $far    The object the text names, in the route's register and schema.
 	 *
 	 * @return JSONResponse The rows, or the refusal.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function addProseReference(ObjectEntity $source, string $register, string $schema, string $target, ?string $anchor): JSONResponse {
+	private function addProseReference(ObjectEntity $source, ObjectLinkRoute $far): JSONResponse {
+		$anchor = $this->params->stringParam(name: 'anchor');
 		if ($anchor === null) {
 			return new JSONResponse(
 				data: ['error' => 'A reference recorded from text needs an "anchor", or nothing can withdraw it'],
@@ -300,30 +303,28 @@ class ObjectRelationsController extends Controller {
 			);
 		}
 
-		$far = $this->access->readable(register: $register, schema: $schema, id: $target);
-		if ($far === null) {
+		$named = $this->access->readable(register: $far->register, schema: $far->schema, id: $far->id);
+		if ($named === null) {
 			return $this->access->notReadable();
 		}
 
-		return $this->proseAnswer(rendered: $this->recordProse(source: $source, far: $far, anchor: $anchor));
+		return $this->proseAnswer(rendered: $this->recordProse(reference: new ProseReference(source: $source, far: $named, anchor: $anchor)));
 	}//end addProseReference()
 
 	/**
 	 * Write the rows of one prose reference and render them.
 	 *
-	 * @param ObjectEntity $source The object the text belongs to.
-	 * @param ObjectEntity $far    The object the text names, already read under the caller's RBAC.
-	 * @param string       $anchor What identifies the text.
+	 * @param ProseReference $reference The two ends, the far one already read under the caller's RBAC, and the anchor.
 	 *
 	 * @return array<int, array<string, mixed>> The rendered rows written; none when the mention was already there.
 	 */
-	private function recordProse(ObjectEntity $source, ObjectEntity $far, string $anchor): array {
+	private function recordProse(ProseReference $reference): array {
 		$rows = $this->relations->recordProseReference(
-			sourceUuid: (string)$source->getUuid(),
-			targetUuid: (string)$far->getUuid(),
-			anchor: $anchor,
+			sourceUuid: (string)$reference->source->getUuid(),
+			targetUuid: (string)$reference->far->getUuid(),
+			anchor: $reference->anchor,
 			relationType: $this->params->stringParam(name: 'type'),
-			scope: $this->proseScope(source: $source, far: $far)
+			scope: $this->proseScope(source: $reference->source, far: $reference->far)
 		);
 
 		$rendered = [];
@@ -481,25 +482,24 @@ class ObjectRelationsController extends Controller {
 			);
 		}
 
-		return $this->deriveFrom(source: $source, data: $data, register: $register, schema: $schema);
+		return $this->deriveFrom(derivation: new ObjectDerivation(source: $source, register: $register, schema: $schema), data: $data);
 	}//end derive()
 
 	/**
 	 * Create the derived object and record where it came from.
 	 *
-	 * @param ObjectEntity         $source   The object it comes out of, already read under the caller's RBAC.
-	 * @param array<string, mixed> $data     The body the new object starts from.
-	 * @param string               $register The register slug or id.
-	 * @param string               $schema   The schema slug or id.
+	 * @param ObjectDerivation     $derivation The object it comes out of, already read under the caller's RBAC, and where the new one goes.
+	 * @param array<string, mixed> $data       The body the new object starts from.
 	 *
 	 * @return JSONResponse The created object and the relation row, or the refusal.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function deriveFrom(ObjectEntity $source, array $data, string $register, string $schema): JSONResponse {
+	private function deriveFrom(ObjectDerivation $derivation, array $data): JSONResponse {
+		$source = $derivation->source;
 		$link = $this->declaredLink(source: $source);
 		$applied = $this->relations->applyInheritance(parent: $source, childData: $data, inherits: $link['inherits']);
-		$created = $this->saveDerived(data: $applied['data'], register: $register, schema: $schema);
+		$created = $this->saveDerived(data: $applied['data'], derivation: $derivation);
 		if ($created instanceof JSONResponse) {
 			return $created;
 		}
@@ -576,18 +576,17 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * Save the derived object.
 	 *
-	 * @param array<string, mixed> $data     The object's data, with what it inherited.
-	 * @param string               $register The register slug or id.
-	 * @param string               $schema   The schema slug or id.
+	 * @param array<string, mixed> $data       The object's data, with what it inherited.
+	 * @param ObjectDerivation     $derivation The register and schema the new object goes into.
 	 *
 	 * @return ObjectEntity|JSONResponse The created object, or the 422 when the save refuses it.
 	 */
-	private function saveDerived(array $data, string $register, string $schema): ObjectEntity|JSONResponse {
+	private function saveDerived(array $data, ObjectDerivation $derivation): ObjectEntity|JSONResponse {
 		try {
 			return $this->objectService->saveObject(
 				object: $data,
-				register: $register,
-				schema: $schema
+				register: $derivation->register,
+				schema: $derivation->schema
 			);
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
@@ -658,7 +657,7 @@ class ObjectRelationsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function graph(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->readableWithinPurpose(register: $register, schema: $schema, id: $id);
+		$object = $this->readableWithinPurpose(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
@@ -684,7 +683,7 @@ class ObjectRelationsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function affected(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->readableWithinPurpose(register: $register, schema: $schema, id: $id);
+		$object = $this->readableWithinPurpose(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
@@ -695,7 +694,7 @@ class ObjectRelationsController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}
 
-		return new JSONResponse(data: (new AffectedSet())->derive(graph: $this->graphWithinPurpose(object: $object), query: $query));
+		return new JSONResponse(data: AffectedSets::deriver()->derive(graph: $this->graphWithinPurpose(object: $object), query: $query));
 	}//end affected()
 
 	/**
@@ -719,16 +718,14 @@ class ObjectRelationsController extends Controller {
 	 * The read check comes first, so a purpose refusal never confirms an
 	 * object the caller may not see.
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema The schema slug or id.
-	 * @param string $id The object's uuid.
+	 * @param ObjectLinkRoute $route The object as the route names it.
 	 *
 	 * @return ObjectEntity|JSONResponse The object, or the 404 or purpose refusal.
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	private function readableWithinPurpose(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
+	private function readableWithinPurpose(ObjectLinkRoute $route): ObjectEntity|JSONResponse {
+		$object = $this->access->readable(register: $route->register, schema: $route->schema, id: $route->id);
 		if ($object === null) {
 			return $this->access->notReadable();
 		}
@@ -774,7 +771,7 @@ class ObjectRelationsController extends Controller {
 	#[NoCSRFRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
 	public function tree(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->readableWithinPurpose(register: $register, schema: $schema, id: $id);
+		$object = $this->readableWithinPurpose(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
@@ -823,7 +820,7 @@ class ObjectRelationsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function exportGraph(string $register, string $schema, string $id): DataDownloadResponse|JSONResponse {
-		$object = $this->readableWithinPurpose(register: $register, schema: $schema, id: $id);
+		$object = $this->readableWithinPurpose(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}

@@ -80,7 +80,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .ruleTrace dl {
 	display: grid;
 	grid-template-columns: max-content 1fr;
@@ -96,14 +98,5 @@ export default {
 	margin: 0;
 }
 
-.verdictSentence,
-.operandValue {
-	display: block;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-}
-
-.muted {
-	color: var(--color-text-maxcontrast);
-}
+@include rule-detail-text('.verdictSentence', '.operandValue');
 </style>

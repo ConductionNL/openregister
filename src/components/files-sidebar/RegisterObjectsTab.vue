@@ -54,7 +54,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import DatabaseOffOutline from 'vue-material-design-icons/DatabaseOffOutline.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
-import { fetchFileTab } from './fileTabFetch.js'
+import { fetchFileTab, fileTab } from './fileTabFetch.js'
 
 export default {
 	name: 'RegisterObjectsTab',
@@ -66,36 +66,12 @@ export default {
 		DatabaseOffOutline,
 	},
 
-	props: {
-		fileId: {
-			type: Number,
-			required: true,
-		},
-	},
+	mixins: [fileTab('fetchObjects')],
 
 	data() {
 		return {
-			loading: false,
-			error: false,
-			errorMessage: '',
 			objects: [],
 		}
-	},
-
-	watch: {
-		fileId: {
-			/**
-			 * @param {number} newVal
-			 * @spec exclude watcher refetching objects on fileId change, UI plumbing
-			 */
-			handler(newVal) {
-				if (newVal) {
-					this.fetchObjects()
-				}
-			},
-
-			immediate: true,
-		},
 	},
 
 	methods: {
@@ -211,11 +187,7 @@ export default {
 	margin: 0 4px;
 }
 
-.material-design-icon {
-	display: inline-flex;
-}
-
-@include material-design-icon-deep-svg;
+@include material-design-icon-block;
 
 @media (prefers-reduced-motion: reduce) {
 	.register-objects-tab__link {

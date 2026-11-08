@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 
 /**
@@ -39,9 +39,9 @@ final class PurposeBoundTables {
 	/**
 	 * Constructor.
 	 *
-	 * @param PurposeGuard $guard The doelbinding guard.
+	 * @param PurposeGuardInterface $guard The doelbinding guard.
 	 */
-	public function __construct(private readonly PurposeGuard $guard) {
+	public function __construct(private readonly PurposeGuardInterface $guard) {
 	}//end __construct()
 
 	/**

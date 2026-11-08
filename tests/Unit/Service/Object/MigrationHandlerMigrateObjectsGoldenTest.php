@@ -121,10 +121,8 @@ class MigrationHandlerMigrateObjectsGoldenTest extends TestCase {
 
 		try {
 			$result = $this->handler()->migrateObjects(
-				sourceRegister: $sourceRegister,
-				sourceSchema: $sourceSchema,
-				targetRegister: $targetRegister,
-				targetSchema: $targetSchema,
+				source: [$sourceRegister, $sourceSchema],
+				target: [$targetRegister, $targetSchema],
 				objectIds: $scenario['ids'],
 				mapping: $scenario['mapping']
 			);

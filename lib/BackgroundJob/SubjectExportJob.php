@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportAssemblerInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -43,14 +43,14 @@ class SubjectExportJob extends QueuedJob {
 	 * Wire the job.
 	 *
 	 * @param ITimeFactory         $time    The clock the job base class needs.
-	 * @param SubjectExportService $exports The assembler.
+	 * @param SubjectExportAssemblerInterface $exports The assembler.
 	 * @param LoggerInterface      $logger  PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SubjectExportService $exports,
+		private readonly SubjectExportAssemblerInterface $exports,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

@@ -28,7 +28,7 @@ use OCA\OpenRegister\Event\ViewCreatedEvent;
 use OCA\OpenRegister\Event\ViewDeletedEvent;
 use OCA\OpenRegister\Event\ViewUpdatedEvent;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
-use OCA\OpenRegister\Service\Rbac\ViewShareResolver;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -330,7 +330,7 @@ class ViewMapper extends QBMapper implements ViewMapperInterface {
 
 		$this->applyOrganisationFilter(qb: $qb);
 
-		$resolver = new ViewShareResolver();
+		$resolver = RbacChecks::viewShares();
 		$visible = [];
 		foreach ($this->findEntities(query: $qb) as $entity) {
 			$view = $entity->jsonSerialize();

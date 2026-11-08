@@ -57,7 +57,7 @@ use Psr\Log\LoggerInterface;
  * and one is the memo reset the write path needs. Splitting them would put the single
  * permission rule in more than one class, which is the drift this class prevents.
  */
-class ReadStateService {
+class ReadStateService implements ReadStateServiceInterface {
 
 	/**
 	 * The uuids the current user has already seen, loaded once per request.

@@ -47,6 +47,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
@@ -101,7 +102,7 @@ class OpenAnonymiserEntityTypesTest extends TestCase {
 
 		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectWithOpenAnonymiser');
 
-		return $method->invoke($handler, 'Jan de Vries, jan@example.nl, NL91ABNA0417164300', $entityTypes, 0.5);
+		return $method->invoke($handler, new EntityDetectionQuery('Jan de Vries, jan@example.nl, NL91ABNA0417164300', $entityTypes, 0.5));
 
 	}//end detect()
 

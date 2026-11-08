@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
 use OCA\OpenRegister\Controller\Support\ConversationFailure;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
@@ -57,7 +58,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ConversationController extends Controller {
+class ConversationController extends Controller implements ChatFamilyControllerInterface {
 
 	/**
 	 * Conversation mapper

@@ -173,7 +173,8 @@ class RematerialiseStaleSnapshotTest extends TestCase {
 
 		$command = new RematerialiseCalculationsCommand(
 			new RematerialiseStorage($registers, $schemas, $magic, $objects),
-			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), $aggregates)
+			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), $aggregates),
+			new \OCA\OpenRegister\Service\Object\SchemaTypeConverter()
 		);
 
 		$output = new BufferedOutput();

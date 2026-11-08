@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
-use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
+use OCA\OpenRegister\Service\Object\UpsertOnKeyHandlerInterface;
 use OCA\OpenRegister\Service\WebhookService;
 
 /**
@@ -39,7 +39,7 @@ final class ObjectTransfer {
 	 * @param ObjectExporterInterface $exportService      The export service.
 	 * @param ObjectImporterInterface $importService      The import service.
 	 * @param ?WebhookService         $webhookService     The webhook service, null when absent.
-	 * @param ?UpsertOnKeyHandler     $upsertOnKeyHandler Upsert on a declared key, null when absent.
+	 * @param ?UpsertOnKeyHandlerInterface $upsertOnKeyHandler Upsert on a declared key, null when absent.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
@@ -47,7 +47,7 @@ final class ObjectTransfer {
 		public readonly ObjectExporterInterface $exportService,
 		public readonly ObjectImporterInterface $importService,
 		public readonly ?WebhookService $webhookService = null,
-		public readonly ?UpsertOnKeyHandler $upsertOnKeyHandler = null,
+		public readonly ?UpsertOnKeyHandlerInterface $upsertOnKeyHandler = null,
 	) {
 	}//end __construct()
 }//end class

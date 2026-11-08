@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\InboundAuthRateLimitInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -71,14 +71,14 @@ class RateLimitMiddleware extends Middleware {
 	 * @param IRequest $request The current request
 	 * @param IUserSession $userSession The user session
 	 * @param IControllerMethodReflector $reflector Reflector for controller annotations
-	 * @param SecurityService $securityService The security service
+	 * @param InboundAuthRateLimitInterface $securityService The security service
 	 * @param LoggerInterface $logger Logger for security events
 	 */
 	public function __construct(
 		private readonly IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly IControllerMethodReflector $reflector,
-		private readonly SecurityService $securityService,
+		private readonly InboundAuthRateLimitInterface $securityService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

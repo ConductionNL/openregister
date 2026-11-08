@@ -33,11 +33,11 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ConfigDeploymentControllerServices;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistryInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayerInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewServiceInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -65,16 +65,16 @@ class ConfigurationDeploymentController extends Controller {
 	/**
 	 * The diff.
 	 *
-	 * @var DeploymentPreviewService
+	 * @var DeploymentPreviewServiceInterface
 	 */
-	private readonly DeploymentPreviewService $previews;
+	private readonly DeploymentPreviewServiceInterface $previews;
 
 	/**
 	 * The apply and the rollback.
 	 *
-	 * @var DeploymentService
+	 * @var DeploymentServiceInterface
 	 */
-	private readonly DeploymentService $deployments;
+	private readonly DeploymentServiceInterface $deployments;
 
 	/**
 	 * The effective-configuration read.
@@ -89,13 +89,13 @@ class ConfigurationDeploymentController extends Controller {
 	 * @param string                    $appName    The app name.
 	 * @param IRequest                  $request    The request.
 	 * @param ConfigDeploymentControllerServices $services The configuration deployment controller services.
-	 * @param ConfigurationKeyRegistry  $registry   The draftable vocabulary.
+	 * @param ConfigurationKeyRegistryInterface $registry   The draftable vocabulary.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		ConfigDeploymentControllerServices $services,
-		private readonly ConfigurationKeyRegistry $registry,
+		private readonly ConfigurationKeyRegistryInterface $registry,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->drafts = $services->drafts;
@@ -211,7 +211,7 @@ class ConfigurationDeploymentController extends Controller {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function draftValue(string $id): JSONResponse {
-		$layer = (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayer::INSTANCE);
+		$layer = (string)($this->request->getParam(key: 'layer') ?? ConfigurationLayerInterface::INSTANCE);
 		$layerRef = $this->optional(key: 'layerRef');
 		$configKey = (string)($this->request->getParam(key: 'key') ?? '');
 

@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/organisation-usage-measured/spec.md
  */
-class OrganisationUsageService {
+class OrganisationUsageService implements OrganisationUsageServiceInterface {
 	/**
 	 * Constructor.
 	 *

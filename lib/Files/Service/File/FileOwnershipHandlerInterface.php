@@ -32,6 +32,13 @@ use OCP\IUser;
 interface FileOwnershipHandlerInterface {
 
 	/**
+	 * Application user name: the account openregister owns its files under.
+	 *
+	 * @var string
+	 */
+	public const APP_USER = 'openregister';
+
+	/**
 	 * Gets or creates the OpenRegister user for file operations.
 	 *
 	 * @throws \Exception If OpenRegister user cannot be created.
@@ -54,7 +61,7 @@ interface FileOwnershipHandlerInterface {
 	 * Transfer file ownership to OpenRegister user and share with current user.
 	 *
 	 * @param File                    $file               The file to potentially transfer ownership for.
-	 * @param FileSharingHandler|null $fileSharingHandler Optional sharing handler for creating shares.
+	 * @param FileSharingHandlerInterface|null $fileSharingHandler Optional sharing handler for creating shares.
 	 *
 	 * @return void
 	 *
@@ -62,13 +69,13 @@ interface FileOwnershipHandlerInterface {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function transferFileOwnershipIfNeeded(File $file, ?FileSharingHandler $fileSharingHandler=null): void;
+	public function transferFileOwnershipIfNeeded(File $file, ?FileSharingHandlerInterface $fileSharingHandler=null): void;
 
 	/**
 	 * Transfer folder ownership to OpenRegister user and share with current user.
 	 *
 	 * @param Node                    $folder             The folder to potentially transfer ownership for.
-	 * @param FileSharingHandler|null $fileSharingHandler Optional sharing handler for creating shares.
+	 * @param FileSharingHandlerInterface|null $fileSharingHandler Optional sharing handler for creating shares.
 	 *
 	 * @return void
 	 *
@@ -76,5 +83,5 @@ interface FileOwnershipHandlerInterface {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function transferFolderOwnershipIfNeeded(Node $folder, ?FileSharingHandler $fileSharingHandler=null): void;
+	public function transferFolderOwnershipIfNeeded(Node $folder, ?FileSharingHandlerInterface $fileSharingHandler=null): void;
 }//end interface

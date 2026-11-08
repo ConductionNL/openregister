@@ -6282,10 +6282,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         );
 
         $report = $this->migrationHandler->migrateObjects(
-            sourceRegister: $sourceRegister,
-            sourceSchema: $sourceSchema,
-            targetRegister: $targetRegister,
-            targetSchema: $targetSchema,
+            source: [$sourceRegister, $sourceSchema],
+            target: [$targetRegister, $targetSchema],
             objectIds: $permitted,
             mapping: $mapping
         );

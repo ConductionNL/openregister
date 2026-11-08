@@ -76,6 +76,17 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	private const MAX_LIMIT = 200;
 
 	/**
+	 * The page of a read that is refused or has nothing to serve.
+	 *
+	 * @var array{results: array<int,array<string,mixed>>, total: int, nextCursor: null}
+	 */
+	private const EMPTY_PAGE = [
+		'results' => [],
+		'total' => 0,
+		'nextCursor' => null,
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db NC DB connection.
@@ -125,49 +136,70 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 		?int $cursor = null,
 		?string $visibility = null,
 	): array {
-		if ($this->isActivityAvailable() === false) {
-			return [
-				'results' => [],
-				'total' => 0,
-				'nextCursor' => null,
-			];
+		if ($this->servesEntries(visibility: $visibility) === false) {
+			return self::EMPTY_PAGE;
 		}
 
-		if (is_string($visibility) === true
-			&& strtolower(trim($visibility)) === TimelineVisibilityServiceInterface::PUBLIC_ENTRY
-		) {
-			return [
-				'results' => [],
-				'total' => 0,
-				'nextCursor' => null,
-			];
-		}
-
-		$limit = $this->clampLimit(limit: $limit);
 		$filter = new ActivityFilter(objectUuid: $objectUuid, type: $type, actor: $actor, after: $after);
-		$rows = $this->queryRows(filter: $filter->withCursor(cursor: $cursor), limit: ($limit + 1));
+		return $this->entryPage(filter: $filter->withCursor(cursor: $cursor), limit: $this->clampLimit(limit: $limit));
+	}//end getActivityEntries()
+
+	/**
+	 * Whether a read is served at all: the activity app must be there, and a
+	 * public-only read gets nothing because every row of this source is internal.
+	 *
+	 * @param string|null $visibility The requested `internal` / `public` filter, or null.
+	 *
+	 * @return bool
+	 */
+	private function servesEntries(?string $visibility): bool {
+		if ($this->isActivityAvailable() === false) {
+			return false;
+		}
+
+		return (is_string($visibility) === true
+			&& strtolower(trim($visibility)) === TimelineVisibilityServiceInterface::PUBLIC_ENTRY) === false;
+	}//end servesEntries()
+
+	/**
+	 * One page of normalised entries, the total without the cursor, and the next cursor.
+	 *
+	 * @param ActivityFilter $filter The filters, including the cursor.
+	 * @param int            $limit  The clamped page size.
+	 *
+	 * @return array{results: array<int,array<string,mixed>>, total: int, nextCursor: ?int}
+	 */
+	private function entryPage(ActivityFilter $filter, int $limit): array {
+		$rows = $this->queryRows(filter: $filter, limit: ($limit + 1));
 
 		$hasMore = (count($rows) > $limit);
-		if ($hasMore === true) {
-			$rows = array_slice($rows, 0, $limit);
-		}
-
 		$results = [];
-		foreach ($rows as $row) {
+		foreach (array_slice($rows, 0, $limit) as $row) {
 			$results[] = $this->normaliseRow(row: $row);
-		}
-
-		$nextCursor = null;
-		if ($hasMore === true && empty($results) === false) {
-			$nextCursor = (int)($results[(count($results) - 1)]['timestamp'] ?? 0);
 		}
 
 		return [
 			'results' => $results,
-			'total' => $this->countRows(filter: $filter),
-			'nextCursor' => $nextCursor,
+			'total' => $this->countRows(filter: $filter->withCursor(cursor: null)),
+			'nextCursor' => $this->nextCursor(results: $results, hasMore: $hasMore),
 		];
-	}//end getActivityEntries()
+	}//end entryPage()
+
+	/**
+	 * The cursor of the next page: the timestamp of the last entry, when more follow.
+	 *
+	 * @param array<int,array<string,mixed>> $results The normalised entries of this page.
+	 * @param bool                           $hasMore Whether a further row was found.
+	 *
+	 * @return int|null
+	 */
+	private function nextCursor(array $results, bool $hasMore): ?int {
+		if ($hasMore === false || empty($results) === true) {
+			return null;
+		}
+
+		return (int)($results[(count($results) - 1)]['timestamp'] ?? 0);
+	}//end nextCursor()
 
 	/**
 	 * Distinct activity `type` values for the dropdown source.
@@ -224,43 +256,43 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 			$qb->expr()->iLike('subject', $qb->createNamedParameter('%' . $marker . '%'))
 		);
 
-		$this->andWhereEquals(qb: $qb, column: 'type', value: $filter->type);
-		$this->andWhereEquals(qb: $qb, column: 'affecteduser', value: $filter->actor);
-		$this->andWhereTimestamp(qb: $qb, operator: 'gte', timestamp: $filter->after);
-		$this->andWhereTimestamp(qb: $qb, operator: 'lt', timestamp: $filter->cursor());
+		$this->andWhereEquals(qb: $qb, values: ['type' => $filter->type, 'affecteduser' => $filter->actor]);
+		$this->andWhereTimestamps(qb: $qb, bounds: ['gte' => $filter->after, 'lt' => $filter->cursor()]);
 	}//end applyFilters()
 
 	/**
-	 * Restrict a column to a value, unless the value is null or ''.
+	 * Restrict each column to its value, in order, skipping a value that is null or ''.
 	 *
 	 * @param \OCP\DB\QueryBuilder\IQueryBuilder $qb     Query builder.
-	 * @param string                             $column The column.
-	 * @param string|null                        $value  The value, or null/'' for no restriction.
+	 * @param array<string,string|null>          $values The value per column.
 	 *
 	 * @return void
 	 */
-	private function andWhereEquals(\OCP\DB\QueryBuilder\IQueryBuilder $qb, string $column, ?string $value): void {
-		if (($value ?? '') !== '') {
-			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+	private function andWhereEquals(\OCP\DB\QueryBuilder\IQueryBuilder $qb, array $values): void {
+		foreach ($values as $column => $value) {
+			if (($value ?? '') !== '') {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+			}
 		}
 	}//end andWhereEquals()
 
 	/**
-	 * Bound the timestamp column with the given comparison, unless the bound is null.
+	 * Bound the timestamp column with each comparison, in order, skipping a null bound.
 	 *
-	 * @param \OCP\DB\QueryBuilder\IQueryBuilder $qb        Query builder.
-	 * @param string                             $operator  Expression-builder comparison: 'gte' or 'lt'.
-	 * @param int|null                           $timestamp The bound, or null for none.
+	 * @param \OCP\DB\QueryBuilder\IQueryBuilder $qb     Query builder.
+	 * @param array<string,int|null>             $bounds The bound per expression-builder comparison ('gte', 'lt').
 	 *
 	 * @return void
 	 */
-	private function andWhereTimestamp(\OCP\DB\QueryBuilder\IQueryBuilder $qb, string $operator, ?int $timestamp): void {
-		if ($timestamp !== null) {
-			$qb->andWhere(
-				$qb->expr()->{$operator}('timestamp', $qb->createNamedParameter($timestamp, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT))
-			);
+	private function andWhereTimestamps(\OCP\DB\QueryBuilder\IQueryBuilder $qb, array $bounds): void {
+		foreach ($bounds as $operator => $timestamp) {
+			if ($timestamp !== null) {
+				$qb->andWhere(
+					$qb->expr()->{$operator}('timestamp', $qb->createNamedParameter($timestamp, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT))
+				);
+			}
 		}
-	}//end andWhereTimestamp()
+	}//end andWhereTimestamps()
 
 	/**
 	 * Run the paged SELECT and return raw rows.

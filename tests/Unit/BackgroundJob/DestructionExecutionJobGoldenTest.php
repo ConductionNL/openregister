@@ -16,6 +16,7 @@ use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -131,7 +132,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
         $services = [
             LoggerInterface::class           => $this->logger(),
             RetentionServiceInterface::class => $this->retention(),
-            ObjectRetentionHandler::class    => $this->settings($case),
+            ArchivalSettingsReaderInterface::class => $this->settings($case),
             MagicMapperInterface::class      => $this->mapper($case),
             AuditTrailMapperInterface::class => $this->audit(),
             DeleteObject::class              => $this->deleter(),

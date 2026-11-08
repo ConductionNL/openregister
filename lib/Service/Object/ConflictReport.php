@@ -101,20 +101,47 @@ class ConflictReport implements ConflictReportInterface {
 	 */
 	public function build(ObjectEntity $stored, Schema $schema, array $sent, array $intervening): array {
 		$current = $stored->getMatchEnvelope();
-		$changedByOthers = $this->changedByOthers(intervening: $intervening);
+		$conflicts = $this->conflictsOf(
+			schema: $schema,
+			current: $current,
+			sent: $sent,
+			changedByOthers: $this->changedByOthers(intervening: $intervening)
+		);
+		$cause = $this->causeOf(entry: ($intervening[0] ?? null));
 
+		return [
+			'error' => self::ERROR,
+			'code' => self::CODE,
+			'message' => self::messageFor(conflicts: $conflicts),
+			'conflicts' => $conflicts,
+			'changedBy' => $cause['changedBy'],
+			'changedAt' => $cause['changedAt'],
+		];
+	}//end build()
+
+	/**
+	 * The properties the caller changed that somebody else changed too, with their readings.
+	 *
+	 * @param Schema $schema          The schema.
+	 * @param array  $current         The stored object's match envelope.
+	 * @param array  $sent            What the caller sent.
+	 * @param array  $changedByOthers The value each intervening write found, per property.
+	 *
+	 * @return array<string, array> The conflicts
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 */
+	private function conflictsOf(Schema $schema, array $current, array $sent, array $changedByOthers): array {
 		$conflicts = [];
 		foreach ($sent as $property => $sentValue) {
 			$property = (string)$property;
 
-			// 🔑 BOTH HALVES OF THE INTERSECTION. The caller has to have
-			// CHANGED it (sending the same value back is not a conflict, it is
-			// agreement), and somebody else has to have changed it too.
-			if ($this->same(a: $sentValue, b: ($current[$property] ?? null)) === true) {
-				continue;
-			}
-
-			if (array_key_exists($property, $changedByOthers) === false) {
+		// 🔑 BOTH HALVES OF THE INTERSECTION. The caller has to have
+		// CHANGED it (sending the same value back is not a conflict, it is
+		// agreement), and somebody else has to have changed it too.
+			if ($this->same(a: $sentValue, b: ($current[$property] ?? null)) === true
+				|| array_key_exists($property, $changedByOthers) === false
+			) {
 				continue;
 			}
 
@@ -127,34 +154,50 @@ class ConflictReport implements ConflictReportInterface {
 			);
 		}
 
-		$cause = ($intervening[0] ?? null);
+		return $conflicts;
+	}//end conflictsOf()
+
+	/**
+	 * The refusal sentence: a plain one without conflicts, else naming field or fields.
+	 *
+	 * @param array $conflicts The conflicts.
+	 *
+	 * @return string The message
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 */
+	private static function messageFor(array $conflicts): string {
+		if ($conflicts === []) {
+			return 'This object changed since you read it. Re-read it and try again.';
+		}
 
 		$noun = 'fields';
 		if (count($conflicts) === 1) {
 			$noun = 'field';
 		}
 
-		$message = 'This object changed since you read it, and somebody else wrote the same ' . $noun . '.';
-		if ($conflicts === []) {
-			$message = 'This object changed since you read it. Re-read it and try again.';
-		}
+		return 'This object changed since you read it, and somebody else wrote the same ' . $noun . '.';
+	}//end messageFor()
 
-		$changedBy = null;
-		$changedAt = null;
-		if ($cause !== null) {
-			$changedBy = $this->actorOf(entry: $cause);
-			$changedAt = $cause->getCreated()?->format(DateTimeInterface::ATOM);
+	/**
+	 * Who made the first intervening write, and when; both null without one.
+	 *
+	 * @param AuditTrail|null $entry The first intervening write.
+	 *
+	 * @return array{changedBy: string|null, changedAt: string|null} The cause
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
+	 */
+	private function causeOf(?AuditTrail $entry): array {
+		if ($entry === null) {
+			return ['changedBy' => null, 'changedAt' => null];
 		}
 
 		return [
-			'error' => self::ERROR,
-			'code' => self::CODE,
-			'message' => $message,
-			'conflicts' => $conflicts,
-			'changedBy' => $changedBy,
-			'changedAt' => $changedAt,
+			'changedBy' => $this->actorOf(entry: $entry),
+			'changedAt' => $entry->getCreated()?->format(DateTimeInterface::ATOM),
 		];
-	}//end build()
+	}//end causeOf()
 
 	/**
 	 * The three readings of one property, filtered by what the caller may read.

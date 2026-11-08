@@ -32,6 +32,13 @@ use OCA\OpenRegister\Db\Schema;
 interface PurposeGuardInterface {
 
 	/**
+	 * The audit action a refused read is recorded under.
+	 *
+	 * @var string
+	 */
+	public const ACTION_REFUSED = 'purpose.query-refused';
+
+	/**
 	 * Enforce doelbinding on a read, and remember the purpose it ran under.
 	 *
 	 * Returns null when the read needs no purpose, which is every read on an
@@ -49,4 +56,19 @@ interface PurposeGuardInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function enforce(?Register $register, ?Schema $schema): ?string;
+
+	/**
+	 * Whether a read of this table may run, without recording a refusal.
+	 *
+	 * For a search that spans tables and leaves out the ones it may not read,
+	 * rather than refusing the whole search.
+	 *
+	 * @param Register|null $register The register being read.
+	 * @param Schema|null   $schema   The schema being read.
+	 *
+	 * @return bool True when no purpose is needed or the declared one is accepted.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function allows(?Register $register, ?Schema $schema): bool;
 }//end interface

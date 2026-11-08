@@ -46,7 +46,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
-use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Service\Survivorship\TrustTierResolverInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -103,7 +103,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 * @param SchemaMapperInterface         $schemaMapper         Schema lookup mapper.
 	 * @param ObjectOperationsInterface     $objectService        Object read path (RBAC + tenant scoped).
 	 * @param SurvivorshipResolverInterface $resolver             Pure golden-record resolver.
-	 * @param TrustTierResolver             $trustResolver        Pure trust-tier lookup + decay engine.
+	 * @param TrustTierResolverInterface    $trustResolver        Pure trust-tier lookup + decay engine.
 	 * @param SourceRecordResolverInterface $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
 	 * @param LoggerInterface               $logger               PSR logger for warnings.
 	 *
@@ -116,7 +116,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly SurvivorshipResolverInterface $resolver,
-		private readonly TrustTierResolver $trustResolver,
+		private readonly TrustTierResolverInterface $trustResolver,
 		private readonly SourceRecordResolverInterface $sourceRecordResolver,
 		private readonly LoggerInterface $logger,
 	) {

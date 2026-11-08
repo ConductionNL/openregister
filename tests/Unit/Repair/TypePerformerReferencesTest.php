@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Repair\TypePerformerReferences;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistryInterface;
 use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -173,7 +174,7 @@ final class TypePerformerReferencesTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($mapper, $registry) {
-				return ($id === PrincipalResolverRegistry::class) ? $registry : $mapper;
+				return ($id === PrincipalResolverRegistryInterface::class) ? $registry : $mapper;
 			}
 		);
 

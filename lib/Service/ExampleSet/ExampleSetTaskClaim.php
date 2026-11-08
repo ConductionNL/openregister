@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
-use OCA\OpenRegister\Db\TaskAuditMapper;
+use OCA\OpenRegister\Db\TaskAuditMapperInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -69,23 +69,45 @@ class ExampleSetTaskClaim {
 	public function refusal(array $data, ?DateTime $moment): string {
 		$claimedBy = (string) ($data['claimedBy'] ?? '');
 		if ($claimedBy === '') {
-			if (isset($data['claimedAt']) === true) {
-				return 'claimedAt needs claimedBy';
-			}
-
-			return '';
+			return $this->unclaimedRefusal(data: $data);
 		}
 
 		if ($claimedBy !== (string) ($data['assignee'] ?? '')) {
 			return 'claimedBy is the assignee: "'.$claimedBy.'" is not';
 		}
 
-		if ($moment !== null && $moment > new DateTime()) {
+		if ($this->isFuture(moment: $moment) === true) {
 			return 'claimedAt lies in the future';
 		}
 
 		return '';
 	}//end refusal()
+
+	/**
+	 * Whether a declared claim moment lies after now; false when none is declared.
+	 *
+	 * @param DateTime|null $moment The claim's moment, or null.
+	 *
+	 * @return bool
+	 */
+	private function isFuture(?DateTime $moment): bool {
+		return $moment !== null && $moment > new DateTime();
+	}//end isFuture()
+
+	/**
+	 * A task without a claimant may not carry a claim moment.
+	 *
+	 * @param array<string, mixed> $data The filled task fields.
+	 *
+	 * @return string
+	 */
+	private function unclaimedRefusal(array $data): string {
+		if (isset($data['claimedAt']) === true) {
+			return 'claimedAt needs claimedBy';
+		}
+
+		return '';
+	}//end unclaimedRefusal()
 
 	/**
 	 * Append the task's claim to its audit, when it declares one.
@@ -111,6 +133,6 @@ class ExampleSetTaskClaim {
 		$entry->setPerformerType($task->getPerformerType());
 		$entry->setAuthorized(true);
 		$entry->setCreated(($moment ?? new DateTime()));
-		$this->container->get(TaskAuditMapper::class)->insert($entry);
+		$this->container->get(TaskAuditMapperInterface::class)->insert($entry);
 	}//end write()
 }//end class

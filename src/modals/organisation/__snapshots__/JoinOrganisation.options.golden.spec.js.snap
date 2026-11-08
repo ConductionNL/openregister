@@ -1,0 +1,229 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`JoinOrganisation option loading (golden) loads and searches organisations 1`] = `
+[
+  [
+    "",
+    20,
+    0,
+  ],
+  [
+    "tw",
+    20,
+    0,
+  ],
+  [
+    "two",
+    20,
+    0,
+  ],
+  [
+    "",
+    20,
+    0,
+  ],
+]
+`;
+
+exports[`JoinOrganisation option loading (golden) loads and searches organisations 2`] = `
+[
+  {
+    "error": false,
+    "loadingUsers": false,
+    "organisationOptions": [
+      {
+        "description": "First",
+        "id": "u-1",
+        "isDefault": true,
+        "label": "One",
+        "name": "One",
+        "users": [
+          "a",
+        ],
+        "uuid": "u-1",
+      },
+      {
+        "description": undefined,
+        "id": 2,
+        "isDefault": undefined,
+        "label": "Two",
+        "name": "Two",
+        "users": [],
+        "uuid": 2,
+      },
+    ],
+    "searchLoading": false,
+    "selectedUser": null,
+    "userOptions": [],
+  },
+  {
+    "error": null,
+    "loadingUsers": false,
+    "organisationOptions": [
+      {
+        "description": "First",
+        "id": "u-1",
+        "isDefault": true,
+        "label": "One",
+        "name": "One",
+        "users": [
+          "a",
+        ],
+        "uuid": "u-1",
+      },
+      {
+        "description": undefined,
+        "id": 2,
+        "isDefault": undefined,
+        "label": "Two",
+        "name": "Two",
+        "users": [],
+        "uuid": 2,
+      },
+    ],
+    "searchLoading": false,
+    "selectedUser": null,
+    "userOptions": [],
+  },
+  {
+    "error": "Failed to search organisations: down",
+    "loadingUsers": false,
+    "organisationOptions": [],
+    "searchLoading": false,
+    "selectedUser": null,
+    "userOptions": [],
+  },
+  {
+    "error": "Failed to search organisations: down",
+    "loadingUsers": false,
+    "organisationOptions": [],
+    "searchLoading": false,
+    "selectedUser": null,
+    "userOptions": [],
+  },
+]
+`;
+
+exports[`JoinOrganisation option loading (golden) loads and searches users 1`] = `
+[
+  [
+    "/ocs/v2.php/cloud/users?search=bo&limit=20",
+    {
+      "headers": {
+        "Accept": "application/json",
+        "OCS-APIRequest": "true",
+      },
+    },
+  ],
+]
+`;
+
+exports[`JoinOrganisation option loading (golden) loads and searches users 2`] = `
+[
+  {
+    "error": false,
+    "loadingUsers": false,
+    "organisationOptions": [],
+    "searchLoading": false,
+    "selectedUser": {
+      "displayName": "Me",
+      "id": "me",
+      "label": "Me",
+    },
+    "userOptions": [
+      {
+        "displayName": "ann",
+        "id": "ann",
+        "label": "ann",
+      },
+      {
+        "displayName": "me",
+        "id": "me",
+        "label": "me",
+      },
+    ],
+  },
+  {
+    "error": false,
+    "loadingUsers": false,
+    "organisationOptions": [],
+    "searchLoading": false,
+    "selectedUser": {
+      "displayName": "Me",
+      "id": "me",
+      "label": "Me",
+    },
+    "userOptions": [
+      {
+        "displayName": "Me",
+        "id": "me",
+        "label": "Me",
+      },
+      {
+        "displayName": "bob",
+        "id": "bob",
+        "label": "bob",
+      },
+    ],
+  },
+  {
+    "error": false,
+    "loadingUsers": false,
+    "organisationOptions": [],
+    "searchLoading": false,
+    "selectedUser": {
+      "displayName": "Me",
+      "id": "me",
+      "label": "Me",
+    },
+    "userOptions": [
+      {
+        "displayName": "Me",
+        "id": "me",
+        "label": "Me",
+      },
+      {
+        "displayName": "bob",
+        "id": "bob",
+        "label": "bob",
+      },
+    ],
+  },
+  {
+    "error": false,
+    "loadingUsers": false,
+    "organisationOptions": [],
+    "searchLoading": false,
+    "selectedUser": {
+      "displayName": "Me",
+      "id": "me",
+      "label": "Me",
+    },
+    "userOptions": [
+      {
+        "displayName": "Me",
+        "id": "me",
+        "label": "Me",
+      },
+    ],
+  },
+  {
+    "error": false,
+    "loadingUsers": false,
+    "organisationOptions": [],
+    "searchLoading": false,
+    "selectedUser": {
+      "displayName": "Me",
+      "id": "me",
+      "label": "Me",
+    },
+    "userOptions": [
+      {
+        "displayName": "Me",
+        "id": "me",
+        "label": "Me",
+      },
+    ],
+  },
+]
+`;

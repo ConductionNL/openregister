@@ -44,7 +44,7 @@ use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -110,16 +110,16 @@ class RematerialiseCalculationsCommand extends Command {
 	/**
 	 * Restores the stored form of `type: string` values the read decoded.
 	 *
-	 * @var SchemaTypeConverter
+	 * @var SchemaTypeConverterInterface
 	 */
-	private readonly SchemaTypeConverter $types;
+	private readonly SchemaTypeConverterInterface $types;
 
 	/**
 	 * Wire the mappers, evaluator, and object service used by the command.
 	 *
 	 * @param RematerialiseStorage    $storage    Register, schema and object stores.
 	 * @param RematerialiseEvaluation $evaluation Evaluator and reference pre-resolvers.
-	 * @param SchemaTypeConverter     $types      Restores the stored form of `type: string` values the read decoded.
+	 * @param SchemaTypeConverterInterface $types      Restores the stored form of `type: string` values the read decoded.
 	 *
 	 * @return void
 	 *
@@ -130,7 +130,7 @@ class RematerialiseCalculationsCommand extends Command {
 	public function __construct(
 		RematerialiseStorage $storage,
 		RematerialiseEvaluation $evaluation,
-		SchemaTypeConverter $types=new SchemaTypeConverter(),
+		SchemaTypeConverterInterface $types,
 	) {
 		$this->registerMapper = $storage->registerMapper;
 		$this->schemaMapper = $storage->schemaMapper;

@@ -24,7 +24,7 @@
  * so there is no degraded path to get wrong.
  *
  * Security (ADR-005 / ADR-080):
- *   - Every outbound URL is SSRF-guarded by SecurityService::assertSafeFetchUrl
+ *   - Every outbound URL is SSRF-guarded by SafeFetchUrl::assert
  *     (rejects private/reserved/loopback hosts and non-http(s) schemes),
  *     fail-closed.
  *   - Redirects are NEVER followed. assertSafeFetchUrl validates the URL at one
@@ -57,7 +57,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Service;
 
 use OCA\OpenRegister\AppHost\Store\StorePublishRules;
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
@@ -444,7 +444,7 @@ class GenericStoreService {
 	 *
 	 * @return IResponse|null The answer, or null when the URL was refused or the request failed.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) SecurityService::assertSafeFetchUrl is
+	 * @SuppressWarnings(PHPMD.StaticAccess) SafeFetchUrl::assert is
 	 * static upstream, and calling it directly is the point of moving this client
 	 * into OpenRegister — the previous app-local copy reached it through a dynamic
 	 * class-string with a weaker fallback (ADR-080 Context).
@@ -454,7 +454,7 @@ class GenericStoreService {
 	private function send(StoreDescriptor $descriptor, string $method, array $options): ?IResponse {
 		try {
 			$url = $this->buildUrl(descriptor: $descriptor);
-			SecurityService::assertSafeFetchUrl($url);
+			SafeFetchUrl::assert(url: $url);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'AppHost store (' . $descriptor->appId . '): rejected unsafe/invalid registry URL: ' . $e->getMessage()

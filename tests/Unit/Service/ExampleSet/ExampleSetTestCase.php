@@ -100,6 +100,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
+use OCA\OpenRegister\Db\TaskAuditMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -329,7 +330,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
 			FlowRunMapperInterface::class      => $this->flowRunMapper(),
-			TaskAuditMapper::class    => $this->taskAuditMapper(),
+			TaskAuditMapperInterface::class => $this->taskAuditMapper(),
 			ExampleSetDeckStore::class => $this->deckStore(),
 			ExampleSetCollectivesStore::class => $this->collectivesStore(),
 			ExampleSetTalkStore::class => $this->talkStore(),

@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task\WriteBack;
 
 use OCA\OpenRegister\Db\TaskAudit;
-use OCA\OpenRegister\Db\TaskAuditMapper;
+use OCA\OpenRegister\Db\TaskAuditMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -37,11 +37,11 @@ final class WriteBackRefusalAudit {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskAuditMapper $audits Where the entry is appended.
+	 * @param TaskAuditMapperInterface $audits Where the entry is appended.
 	 * @param LoggerInterface $logger Where a failed append is reported.
 	 */
 	public function __construct(
-		private readonly TaskAuditMapper $audits,
+		private readonly TaskAuditMapperInterface $audits,
 		private readonly LoggerInterface $logger,
 	) {
 

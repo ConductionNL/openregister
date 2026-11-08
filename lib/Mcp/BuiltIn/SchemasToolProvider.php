@@ -30,10 +30,9 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
-use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
-use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
-use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use RuntimeException;
 
 /**
@@ -58,11 +57,11 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 	 * Constructor
 	 *
 	 * @param SchemaMapperInterface          $schemaMapper Schema database mapper
-	 * @param DefinitionWriteRights $rights       The rights of the signed-in user
+	 * @param DefinitionWriteRightsInterface $rights       The rights of the signed-in user
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly DefinitionWriteRights $rights,
+		private readonly DefinitionWriteRightsInterface $rights,
 	) {
 	}//end __construct()
 
@@ -211,7 +210,7 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function refuseOrphanCleanupChange(Schema $schema, array $document): void {
-		if ((new OrphanCleanupFlag())->changedBy(schema: $schema, document: $document) === true && $this->rights->isAdmin() === false) {
+		if (RbacRuleChecks::orphanCleanupFlag()->changedBy(schema: $schema, document: $document) === true && $this->rights->isAdmin() === false) {
 			throw new InvalidArgumentException('Only an administrator can change orphanCleanup on a schema');
 		}
 	}//end refuseOrphanCleanupChange()
@@ -273,7 +272,7 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 			return $data;
 		}
 
-		$change = new CrossOrganisationMarkerChange();
+		$change = RbacRuleChecks::crossOrganisationMarkerChange();
 		$stored = $change->asStored(authorization: $data['authorization']);
 		if ($change->widens(old: $old, new: $stored) === true && $this->rights->isAdmin() === false) {
 			throw new RuntimeException('Only an administrator may let a rule read across organisations (crossOrganisation: true)');
@@ -283,7 +282,7 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 			return $data;
 		}
 
-		if ((new ExternalGrantGuard())->refusalFor($stored) !== null) {
+		if (RbacChecks::externalGrants()->refusalFor($stored) !== null) {
 			throw new RuntimeException('An external grant needs an end date');
 		}
 

@@ -8,7 +8,7 @@
  * @copyright 2026 Conduction B.V.
  */
 import ImportRegister from '../../modals/register/ImportRegister.vue'
-import DashboardSideBar from '../dashboard/DashboardSideBar.vue'
+import StatisticsScopeFilter from '../StatisticsScopeFilter.vue'
 import RegistersSideBar from './RegistersSideBar.vue'
 import { registerStore, schemaStore } from '../../store/store.js'
 
@@ -109,7 +109,8 @@ function computedOf(component) {
  * @return {object} The context
  */
 function instance(component, state = {}) {
-	const ctx = { ...component.data.call({ t: (a, s) => s }), ...state }
+	const data = component.data ? component.data.call({ t: (a, s) => s }) : {}
+	const ctx = { ...data, ...state }
 	for (const [name, getter] of Object.entries(computedOf(component))) {
 		if (!(name in state)) {
 			Object.defineProperty(ctx, name, {
@@ -149,8 +150,9 @@ function bagData(bag, key) {
 
 const COMPONENTS = {
 	import: ImportRegister,
-	dashboard: DashboardSideBar,
-	registers: RegistersSideBar,
+	// The dashboard and registers sidebars both render these pickers.
+	dashboard: StatisticsScopeFilter,
+	registers: StatisticsScopeFilter,
 }
 
 /**

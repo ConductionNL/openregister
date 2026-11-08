@@ -33,7 +33,8 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -152,7 +153,7 @@ class ContextsController extends Controller {
 		// `$register->getSchemas()`. This is the same boundary, applied to the
 		// single-schema variant.
 		try {
-			$schemaEntity = (new RegisterScopedSchemaResolver(
+			$schemaEntity = (RegisterScopedSchemaResolvers::over(
 				registerMapper: $this->registerMapper,
 				schemaMapper: $this->schemaMapper
 			))->resolveSchemaWithin(register: $registerEntity, schemaRef: $schema);

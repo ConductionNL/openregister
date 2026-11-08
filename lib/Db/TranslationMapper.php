@@ -36,7 +36,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<Translation>
  */
-class TranslationMapper extends QBMapper implements TranslationMapperInterface {
+class TranslationMapper extends QBMapper implements TranslationMapperInterface, TranslationSourceLanguageBackfillInterface {
 	/**
 	 * Construct the mapper bound to the translations table.
 	 *

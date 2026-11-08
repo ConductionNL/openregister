@@ -42,10 +42,10 @@ use OCA\OpenRegister\Controller\Support\HardeningControllerServices;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorExceptionInterface;
-use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
+use OCA\OpenRegister\Service\Hardening\HardeningFloorsInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
@@ -85,9 +85,9 @@ class HardeningController extends Controller {
 	/**
 	 * Reads the floors in force.
 	 *
-	 * @var HardeningPolicy
+	 * @var HardeningFloorsInterface
 	 */
-	private readonly HardeningPolicy $policy;
+	private readonly HardeningFloorsInterface $policy;
 
 	/**
 	 * Guards the administration writes with a fresh sign-in.
@@ -163,8 +163,8 @@ class HardeningController extends Controller {
 		$baselines = [];
 		$comparators = [];
 		foreach (array_keys($floors) as $control) {
-			$baselines[$control] = HardeningPolicy::baseline(control: $control);
-			$comparators[$control] = HardeningPolicy::comparator(control: $control);
+			$baselines[$control] = $this->policy::baseline(control: $control);
+			$comparators[$control] = $this->policy::comparator(control: $control);
 		}
 
 		return new JSONResponse(
@@ -291,7 +291,7 @@ class HardeningController extends Controller {
 	 * @contract tests/Unit/Controller/HardeningControllerTest.php
 	 */
 	#[NoCSRFRequired]
-	#[BruteForceProtection(action: ThrottledSurfaces::ELEVATION)]
+	#[BruteForceProtection(action: ThrottledSurfacesInterface::ELEVATION)]
 	public function elevate(): JSONResponse {
 		$password = (string)($this->request->getParam('password') ?? '');
 
@@ -300,7 +300,7 @@ class HardeningController extends Controller {
 				data: ['error' => 'That password was not confirmed.', 'elevationRequired' => true],
 				statusCode: Http::STATUS_UNAUTHORIZED
 			);
-			$refused->throttle(['action' => ThrottledSurfaces::ELEVATION]);
+			$refused->throttle(['action' => ThrottledSurfacesInterface::ELEVATION]);
 
 			return $refused;
 		}

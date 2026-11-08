@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -37,12 +37,12 @@ final class ReachSources {
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Reads the schemas whose rules grant reach.
 	 * @param DerivedGrantStore     $derived      The derived grants.
-	 * @param DelegationGrantMapper $delegations  The delegation grants.
+	 * @param DelegationGrantMapperInterface $delegations  The delegation grants.
 	 */
 	public function __construct(
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly DerivedGrantStore $derived,
-		public readonly DelegationGrantMapper $delegations,
+		public readonly DelegationGrantMapperInterface $delegations,
 	) {
 	}//end __construct()
 }//end class

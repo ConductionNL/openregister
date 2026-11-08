@@ -142,15 +142,6 @@ final class ExampleSetTaskDates {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-requester-and-expiry
 	 */
 	public static function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		$moment = date_create($value);
-		if ($moment === false) {
-			return null;
-		}
-
-		return $moment;
+		return ExampleSetDateValue::moment(value: $value);
 	}//end moment()
 }//end class

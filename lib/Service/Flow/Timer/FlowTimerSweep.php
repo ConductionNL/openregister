@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
@@ -57,9 +57,9 @@ class FlowTimerSweep implements FlowTimerSweepInterface {
 	/**
 	 * The two timer range scans.
 	 *
-	 * @var FlowTimerMapper
+	 * @var FlowTimerMapperInterface
 	 */
-	private readonly FlowTimerMapper $timers;
+	private readonly FlowTimerMapperInterface $timers;
 
 	/**
 	 * Fires expiries and rungs.
