@@ -83,7 +83,7 @@ use Throwable;
  * separate classes would put the refusals further from the write they protect,
  * which is the arrangement that produces a guard nothing calls.
  */
-class ObjectOwnershipService {
+class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 	/**
 	 * The typed audit action one handover writes.
