@@ -19,7 +19,7 @@
 namespace OCA\OpenRegister\Twig;
 
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Service\AuthenticationService;
+use OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface;
 use Twig\Extension\RuntimeExtensionInterface;
 
 /**
@@ -31,12 +31,12 @@ class AuthenticationRuntime implements RuntimeExtensionInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuthenticationService $authService The authentication service
+	 * @param AuthenticationTokenFetcherInterface $authService The authentication service
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly AuthenticationService $authService,
+		private readonly AuthenticationTokenFetcherInterface $authService,
 	) {
 
 	}//end __construct()
