@@ -25,16 +25,38 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCP\IServerContainer;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+
 /**
  * Looks a service id up in the app container, then the server container.
  *
- * The using class provides `$container` (OR's app container), `$serverContainer`
- * (the injected IServerContainer, used instead of the static \OC::$server
- * accessor which lib/ bans) and `$logger`.
+ * The trait also owns the using class's constructor, so the three lifecycle
+ * registries (guards, actions, providers) declare their identical wiring once:
+ * `$container` (OR's app container), `$serverContainer` (the injected
+ * IServerContainer, used instead of the static \OC::$server accessor which
+ * lib/ bans) and `$logger`.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
 trait ResolvesThroughContainers {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ContainerInterface $container OR app container, asked first (covers OR-internal services).
+	 * @param IServerContainer $serverContainer NC server container, the fallback for FQCN-tagged services in other apps.
+	 * @param LoggerInterface $logger Logger for resolution diagnostics.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function __construct(
+		private readonly ContainerInterface $container,
+		private readonly IServerContainer $serverContainer,
+		private readonly LoggerInterface $logger,
+	) {
+	}//end __construct()
 
 	/**
 	 * Look a service id up, app container first, then the server container.

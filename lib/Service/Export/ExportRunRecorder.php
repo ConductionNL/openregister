@@ -105,42 +105,20 @@ class ExportRunRecorder {
 	/**
 	 * Record one produced export.
 	 *
-	 * @param string      $source           What produced it, for example `scheduled-report`.
-	 * @param string      $actor            Who asked for it.
-	 * @param string      $format           csv, json and so on.
-	 * @param int         $rowCount         How many rows went out.
-	 * @param string|null $profile          The profile or report it came from.
-	 * @param string|null $filename         The name it was written or served under.
-	 * @param string|null $registerName     The register it read.
-	 * @param string|null $schemaName       The schema it read.
-	 * @param int|null    $fileId           The Nextcloud file it produced, when it produced one.
-	 * @param string|null $filePath         Where that file was written.
-	 * @param int|null    $retentionSeconds How long the file is kept, or null to keep it.
-	 * @param int         $downloadCount    How often the register has already served it.
-	 * @param string|null $status           The status to write, defaulting to available.
+	 * @param ExportRunOrigin  $origin           Who and what produced it, and the status to write.
+	 * @param ExportRunContent $content          What it read and wrote out.
+	 * @param ExportRunFile    $file             The file it produced or served; none by default.
+	 * @param int|null         $retentionSeconds How long the file is kept, or null to keep it.
 	 *
 	 * @return ExportRun The recorded run.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A run names what it was, who made it,
-	 *     what it read and how long it lives; every one of those is on the record the
-	 *     proposal asks for, and grouping them into an array would only hide them.
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
 	public function record(
-		string $source,
-		string $actor,
-		string $format,
-		int $rowCount,
-		?string $profile = null,
-		?string $filename = null,
-		?string $registerName = null,
-		?string $schemaName = null,
-		?int $fileId = null,
-		?string $filePath = null,
-		?int $retentionSeconds = self::DEFAULT_RETENTION_SECONDS,
-		int $downloadCount = 0,
-		?string $status = null,
+		ExportRunOrigin $origin,
+		ExportRunContent $content,
+		ExportRunFile $file=new ExportRunFile(),
+		?int $retentionSeconds=self::DEFAULT_RETENTION_SECONDS,
 	): ExportRun {
 		$now = $this->now();
 
@@ -153,19 +131,19 @@ class ExportRunRecorder {
 
 		$run = new ExportRun();
 		$run->setUuid(Uuid::v4()->toRfc4122());
-		$run->setSource($source);
-		$run->setProfile($profile);
-		$run->setActor($actor);
-		$run->setRegisterName($registerName);
-		$run->setSchemaName($schemaName);
-		$run->setFormat($format);
-		$run->setFilename($filename);
-		$run->setRowCount($rowCount);
-		$run->setFileId($fileId);
-		$run->setFilePath($filePath);
-		$run->setDownloadCount($downloadCount);
+		$run->setSource($origin->source);
+		$run->setProfile($origin->profile);
+		$run->setActor($origin->actor);
+		$run->setRegisterName($content->registerName);
+		$run->setSchemaName($content->schemaName);
+		$run->setFormat($content->format);
+		$run->setFilename($file->filename);
+		$run->setRowCount($content->rowCount);
+		$run->setFileId($file->fileId);
+		$run->setFilePath($file->filePath);
+		$run->setDownloadCount($file->downloadCount);
 		$run->setRetentionSeconds($retention);
-		$run->setStatus($status ?? ExportRun::STATUS_AVAILABLE);
+		$run->setStatus($origin->status ?? ExportRun::STATUS_AVAILABLE);
 		$run->setProducedAt($now);
 		$run->setExpiresAt($expiresAt);
 		$run->setCreated($now);

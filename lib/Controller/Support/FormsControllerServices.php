@@ -31,14 +31,14 @@ final class FormsControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param FormsMappers  $mappers  The mappers bundle.
+	 * @param FlowNodeRunMappers $mappers  The mappers bundle.
 	 * @param FormsDomain   $domain   The domain bundle.
 	 * @param FormsPlatform $platform The platform bundle.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function __construct(
-		public readonly FormsMappers $mappers,
+		public readonly FlowNodeRunMappers $mappers,
 		public readonly FormsDomain $domain,
 		public readonly FormsPlatform $platform,
 	) {

@@ -33,14 +33,14 @@ final class ObjectActionsControllerServices {
 	 *
 	 * @param ObjectActionsCatalogue $catalogue The catalogue bundle.
 	 * @param ObjectActionsExecution $execution The execution bundle.
-	 * @param ObjectActionsPlatform  $platform  The platform bundle.
+	 * @param ConversationPlatform   $platform  The platform bundle.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-the-actions-a-user-may-run-on-an-object-are-listed-in-one-place
 	 */
 	public function __construct(
 		public readonly ObjectActionsCatalogue $catalogue,
 		public readonly ObjectActionsExecution $execution,
-		public readonly ObjectActionsPlatform $platform,
+		public readonly ConversationPlatform $platform,
 	) {
 	}//end __construct()
 }//end class

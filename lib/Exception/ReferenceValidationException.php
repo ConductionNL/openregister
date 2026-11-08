@@ -38,25 +38,44 @@ use Throwable;
  */
 class ReferenceValidationException extends ValidationException {
 	/**
+	 * The schema property name carrying the broken reference.
+	 *
+	 * @var string
+	 */
+	private readonly string $propertyName;
+
+	/**
+	 * The UUID that did not resolve.
+	 *
+	 * @var string
+	 */
+	private readonly string $referencedUuid;
+
+	/**
+	 * Slug of the target schema, or the raw `$ref` value.
+	 *
+	 * @var string
+	 */
+	private readonly string $targetSchemaSlug;
+
+	/**
+	 * The register the reference was searched in, or null.
+	 *
+	 * @var string|null
+	 */
+	private readonly ?string $targetRegister;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $propertyName The schema property name
-	 *                             carrying the broken
-	 *                             reference.
-	 * @param string $referencedUuid The UUID that did not resolve.
-	 * @param string $targetSchemaSlug Slug of the target schema
-	 *                                 (or the raw `$ref` value
-	 *                                 if the slug couldn't be
-	 *                                 resolved).
-	 * @param string|null $targetRegister The register the reference
-	 *                                    was searched in, or null
-	 *                                    when no register context
-	 *                                    applies.
+	 * @param BrokenReference $reference The property, UUID, target schema
+	 *                                   and register of the reference
+	 *                                   that did not resolve.
 	 * @param string|null $message Optional override for the
 	 *                             human-readable message;
 	 *                             defaults to a structured
 	 *                             sentence built from the
-	 *                             fields above.
+	 *                             reference.
 	 * @param int $code HTTP status code (default
 	 *                  422 — Unprocessable
 	 *                  Entity).
@@ -67,20 +86,22 @@ class ReferenceValidationException extends ValidationException {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-1
 	 */
 	public function __construct(
-		private readonly string $propertyName,
-		private readonly string $referencedUuid,
-		private readonly string $targetSchemaSlug,
-		private readonly ?string $targetRegister = null,
+		BrokenReference $reference,
 		?string $message = null,
 		int $code = 422,
 		?Throwable $previous = null,
 	) {
+		$this->propertyName = $reference->propertyName;
+		$this->referencedUuid = $reference->referencedUuid;
+		$this->targetSchemaSlug = $reference->targetSchemaSlug;
+		$this->targetRegister = $reference->targetRegister;
+
 		if ($message === null || $message === '') {
 			$message = sprintf(
 				"Referenced object '%s' not found in schema '%s' for property '%s'",
-				$referencedUuid,
-				$targetSchemaSlug,
-				$propertyName
+				$reference->referencedUuid,
+				$reference->targetSchemaSlug,
+				$reference->propertyName
 			);
 		}
 

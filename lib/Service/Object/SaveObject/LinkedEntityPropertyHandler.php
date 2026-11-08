@@ -191,14 +191,32 @@ class LinkedEntityPropertyHandler {
 			return null;
 		}
 
-		$ids = array_map(fn (mixed $value): ?string => $this->extractIdFromEnvelope(value: $value), array_values($values));
-		$ids = array_values(array_filter($ids, static fn (?string $id): bool => $id !== null));
+		$ids = $this->idsInEnvelopes(values: $values);
 		if ($ids === []) {
 			return null;
 		}
 
 		return new LinkedEntityIds(ncType: $ncType, ids: $ids);
 	}//end envelopeIds()
+
+	/**
+	 * The ids the envelopes in a list hold, in order; values without an id are skipped.
+	 *
+	 * @param array $values The envelopes.
+	 *
+	 * @return list<string>
+	 */
+	private function idsInEnvelopes(array $values): array {
+		$ids = [];
+		foreach ($values as $value) {
+			$id = $this->extractIdFromEnvelope(value: $value);
+			if ($id !== null) {
+				$ids[] = $id;
+			}
+		}
+
+		return $ids;
+	}//end idsInEnvelopes()
 
 	/**
 	 * Extract the `id` field from a reference envelope.
@@ -214,8 +232,8 @@ class LinkedEntityPropertyHandler {
 	 */
 	private function extractIdFromEnvelope(mixed $value): ?string {
 		// Full envelope: { "type": "NcMail", "id": "1/6", "label": "..." }.
-		if (is_array($value) === true && isset($value['id']) === true) {
-			return (string)$value['id'];
+		if (is_array($value) === true) {
+			return $this->envelopeId(envelope: $value);
 		}
 
 		// Plain string ID (for simple references).
@@ -225,6 +243,21 @@ class LinkedEntityPropertyHandler {
 
 		return null;
 	}//end extractIdFromEnvelope()
+
+	/**
+	 * The `id` of a full envelope, as a string, or null when it has none.
+	 *
+	 * @param array $envelope The envelope.
+	 *
+	 * @return string|null
+	 */
+	private function envelopeId(array $envelope): ?string {
+		if (isset($envelope['id']) === true) {
+			return (string)$envelope['id'];
+		}
+
+		return null;
+	}//end envelopeId()
 
 	/**
 	 * Merge extracted IDs into the object's metadata column, preserving existing ad-hoc links.

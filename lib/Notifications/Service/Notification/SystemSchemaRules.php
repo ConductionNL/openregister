@@ -48,6 +48,41 @@ class SystemSchemaRules {
 	public const SLUG_WEBHOOK = 'openregister_webhook';
 
 	/**
+	 * Every system rule notifies the administrators.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const ADMINS = [['kind' => 'groups', 'groups' => ['admin']]];
+
+	/**
+	 * Every system rule notifies in-app.
+	 *
+	 * @var array<int, string>
+	 */
+	private const IN_APP = ['nc-notification'];
+
+	/**
+	 * Fires on any update of the entity.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ON_UPDATE = ['type' => 'updated'];
+
+	/**
+	 * Fires when an update leaves the entity in the `error` status.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const ON_ERROR_STATUS = [
+		'type' => 'updated',
+		'condition' => [
+			'field' => 'status',
+			'operator' => 'equals',
+			'value' => 'error',
+		],
+	];
+
+	/**
 	 * All declared system-schema rules, keyed by canonical slug.
 	 *
 	 * Rules follow the same x-openregister-notifications schema as stored-object
@@ -58,9 +93,9 @@ class SystemSchemaRules {
 	private const RULES = [
 		self::SLUG_REGISTER => [
 			'register-changed' => [
-				'trigger' => ['type' => 'updated'],
-				'recipients' => [['kind' => 'groups', 'groups' => ['admin']]],
-				'channels' => ['nc-notification'],
+				'trigger' => self::ON_UPDATE,
+				'recipients' => self::ADMINS,
+				'channels' => self::IN_APP,
 				'subject' => [
 					'nl' => 'Register "{{title}}" is bijgewerkt',
 					'en' => 'Register "{{title}}" was updated',
@@ -69,9 +104,9 @@ class SystemSchemaRules {
 		],
 		self::SLUG_SCHEMA => [
 			'schema-changed' => [
-				'trigger' => ['type' => 'updated'],
-				'recipients' => [['kind' => 'groups', 'groups' => ['admin']]],
-				'channels' => ['nc-notification'],
+				'trigger' => self::ON_UPDATE,
+				'recipients' => self::ADMINS,
+				'channels' => self::IN_APP,
 				'subject' => [
 					'nl' => 'Schema "{{title}}" is bijgewerkt',
 					'en' => 'Schema "{{title}}" was updated',
@@ -80,9 +115,9 @@ class SystemSchemaRules {
 		],
 		self::SLUG_CONFIGURATION => [
 			'configuration-changed' => [
-				'trigger' => ['type' => 'updated'],
-				'recipients' => [['kind' => 'groups', 'groups' => ['admin']]],
-				'channels' => ['nc-notification'],
+				'trigger' => self::ON_UPDATE,
+				'recipients' => self::ADMINS,
+				'channels' => self::IN_APP,
 				'subject' => [
 					'nl' => 'Configuratie "{{title}}" is bijgewerkt',
 					'en' => 'Configuration "{{title}}" was updated',
@@ -91,25 +126,18 @@ class SystemSchemaRules {
 		],
 		self::SLUG_SOURCE => [
 			'source-unhealthy' => [
-				'trigger' => [
-					'type' => 'updated',
-					'condition' => [
-						'field' => 'status',
-						'operator' => 'equals',
-						'value' => 'error',
-					],
-				],
-				'recipients' => [['kind' => 'groups', 'groups' => ['admin']]],
-				'channels' => ['nc-notification'],
+				'trigger' => self::ON_ERROR_STATUS,
+				'recipients' => self::ADMINS,
+				'channels' => self::IN_APP,
 				'subject' => [
 					'nl' => 'Bron "{{title}}" is niet beschikbaar',
 					'en' => 'Source "{{title}}" is unhealthy',
 				],
 			],
 			'source-changed' => [
-				'trigger' => ['type' => 'updated'],
-				'recipients' => [['kind' => 'groups', 'groups' => ['admin']]],
-				'channels' => ['nc-notification'],
+				'trigger' => self::ON_UPDATE,
+				'recipients' => self::ADMINS,
+				'channels' => self::IN_APP,
 				'subject' => [
 					'nl' => 'Bron "{{title}}" is bijgewerkt',
 					'en' => 'Source "{{title}}" was updated',
@@ -118,25 +146,18 @@ class SystemSchemaRules {
 		],
 		self::SLUG_AGENT => [
 			'agent-unhealthy' => [
-				'trigger' => [
-					'type' => 'updated',
-					'condition' => [
-						'field' => 'status',
-						'operator' => 'equals',
-						'value' => 'error',
-					],
-				],
-				'recipients' => [['kind' => 'groups', 'groups' => ['admin']]],
-				'channels' => ['nc-notification'],
+				'trigger' => self::ON_ERROR_STATUS,
+				'recipients' => self::ADMINS,
+				'channels' => self::IN_APP,
 				'subject' => [
 					'nl' => 'Agent "{{name}}" is niet beschikbaar',
 					'en' => 'Agent "{{name}}" is unhealthy',
 				],
 			],
 			'agent-changed' => [
-				'trigger' => ['type' => 'updated'],
-				'recipients' => [['kind' => 'groups', 'groups' => ['admin']]],
-				'channels' => ['nc-notification'],
+				'trigger' => self::ON_UPDATE,
+				'recipients' => self::ADMINS,
+				'channels' => self::IN_APP,
 				'subject' => [
 					'nl' => 'Agent "{{name}}" is bijgewerkt',
 					'en' => 'Agent "{{name}}" was updated',
@@ -145,9 +166,9 @@ class SystemSchemaRules {
 		],
 		self::SLUG_WEBHOOK => [
 			'webhook-changed' => [
-				'trigger' => ['type' => 'updated'],
-				'recipients' => [['kind' => 'groups', 'groups' => ['admin']]],
-				'channels' => ['nc-notification'],
+				'trigger' => self::ON_UPDATE,
+				'recipients' => self::ADMINS,
+				'channels' => self::IN_APP,
 				'subject' => [
 					'nl' => 'Webhook "{{name}}" is bijgewerkt',
 					'en' => 'Webhook "{{name}}" was updated',

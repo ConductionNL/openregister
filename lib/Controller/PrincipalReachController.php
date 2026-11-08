@@ -79,10 +79,7 @@ class PrincipalReachController extends Controller {
 	public function show(string $principal): JSONResponse {
 		$principal = trim($principal);
 		if ($principal === '') {
-			return new JSONResponse(
-				data: ['error' => 'principal is required'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->principalRequired();
 		}
 
 		return new JSONResponse(data: $this->reach->listFor(principal: $principal));
@@ -104,10 +101,7 @@ class PrincipalReachController extends Controller {
 	public function revoke(string $principal): JSONResponse {
 		$principal = trim($principal);
 		if ($principal === '') {
-			return new JSONResponse(
-				data: ['error' => 'principal is required'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->principalRequired();
 		}
 
 		return new JSONResponse(
@@ -117,4 +111,16 @@ class PrincipalReachController extends Controller {
 			)
 		);
 	}//end revoke()
+
+	/**
+	 * The 400 for a blank principal.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function principalRequired(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'principal is required'],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end principalRequired()
 }//end class

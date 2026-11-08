@@ -25,7 +25,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\SaveObjectInterface;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -79,7 +79,7 @@ class SelectionListSeeder {
 	 * @param RegisterMapperInterface         $registerMapper  Resolves the register.
 	 * @param SchemaMapperInterface           $schemaMapper    Resolves the schema.
 	 * @param MagicMapperInterface            $objectMapper    Reads the rows already stored.
-	 * @param SaveObjectInterface             $saveObject      Writes a row.
+	 * @param SaveObjectWriterInterface             $saveObject      Writes a row.
 	 * @param LoggerInterface        $logger          Reports a row that could not be stored.
 	 */
 	public function __construct(
@@ -87,7 +87,7 @@ class SelectionListSeeder {
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly SaveObjectInterface $saveObject,
+		private readonly SaveObjectWriterInterface $saveObject,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
@@ -114,7 +115,7 @@ class TextExtractionServiceCoverageTest extends TestCase {
 		$this->riskLevelService = $this->createMock(RiskLevelService::class);
 		$this->emlParser = $this->createMock(EmlParser::class);
 
-		$this->service = new TextExtractionService(
+		$this->service = TextExtractionServiceFactory::create(
 			fileMapper: $this->fileMapper,
 			chunkMapper: $this->chunkMapper,
 			rootFolder: $this->rootFolder,
