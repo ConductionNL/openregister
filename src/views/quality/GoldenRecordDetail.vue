@@ -55,32 +55,13 @@
 				</NcEmptyContent>
 			</template>
 
-			<table v-else class="provenanceTable" data-testid="provenance-table">
-				<thead>
-					<tr>
-						<th scope="col">
-							{{ t('openregister', 'Attribute') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Winning source') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Confidence') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Timestamp') }}
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="entry in provenanceEntries" :key="entry.attribute">
-						<td>{{ entry.attribute }}</td>
-						<td>{{ entry.source }}</td>
-						<td>{{ entry.confidence ?? '—' }}</td>
-						<td>{{ entry.timestamp ?? '—' }}</td>
-					</tr>
-				</tbody>
-			</table>
+			<CnDataTable
+				v-else
+				class="provenanceTable"
+				data-testid="provenance-table"
+				:columns="provenanceColumns"
+				:rows="provenanceEntries"
+				rowKey="attribute" />
 		</template>
 
 		<MdmConflictResolutionModal
@@ -92,6 +73,7 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcEmptyContent } from '@nextcloud/vue'
 import AccountBoxOutline from 'vue-material-design-icons/AccountBoxOutline.vue'
@@ -109,6 +91,7 @@ export default {
 	name: 'GoldenRecordDetail',
 
 	components: {
+		CnDataTable,
 		NcButton,
 		NcEmptyContent,
 		AccountBoxOutline,
@@ -143,6 +126,19 @@ export default {
 		objectForModal() {
 			if (!this.object) return null
 			return { ...this.object, sources: this.resolvedSources }
+		},
+
+		/**
+		 * @spec exclude UI plumbing — static column definitions for the provenance table
+		 * @return {Array<object>}
+		 */
+		provenanceColumns() {
+			return [
+				{ key: 'attribute', label: t('openregister', 'Attribute') },
+				{ key: 'source', label: t('openregister', 'Winning source') },
+				{ key: 'confidence', label: t('openregister', 'Confidence') },
+				{ key: 'timestamp', label: t('openregister', 'Timestamp') },
+			]
 		},
 
 		/**
@@ -265,15 +261,6 @@ export default {
 }
 
 .provenanceTable {
-	width: 100%;
-	border-collapse: collapse;
 	margin-top: 12px;
-}
-
-.provenanceTable th,
-.provenanceTable td {
-	text-align: left;
-	padding: 8px;
-	border-bottom: 1px solid var(--color-border);
 }
 </style>
