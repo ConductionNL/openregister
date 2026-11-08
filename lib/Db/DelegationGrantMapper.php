@@ -60,7 +60,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/delegation-grants/spec.md
  */
-class DelegationGrantMapper extends QBMapper {
+class DelegationGrantMapper extends QBMapper implements DelegationGrantMapperInterface {
 
 	/**
 	 * Constructor.

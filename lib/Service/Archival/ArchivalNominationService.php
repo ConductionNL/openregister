@@ -55,22 +55,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  */
-class ArchivalNominationService {
-
-	/**
-	 * The nomination was derived and written.
-	 */
-	public const STATUS_NOMINATED = 'nominated';
-
-	/**
-	 * Nothing could decide this record's archival future. Reported, never silent.
-	 */
-	public const STATUS_UNNOMINATABLE = 'unnominatable';
-
-	/**
-	 * The schema does not ask for archiving at all.
-	 */
-	public const STATUS_NOT_APPLICABLE = 'not_applicable';
+class ArchivalNominationService implements ArchivalNominationServiceInterface {
 
 	/**
 	 * The selectielijst row the schema's classification points at decided it.

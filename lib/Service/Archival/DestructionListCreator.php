@@ -40,7 +40,7 @@ use Throwable;
  * one, so the review, approval and execution that follow do not know or care
  * who asked for it.
  */
-class DestructionListCreator {
+class DestructionListCreator implements DestructionListCreatorInterface {
 
 	/**
 	 * A uuid the caller named that does not resolve to an object.

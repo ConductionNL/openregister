@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Legal holds require coordination with multiple services
  */
-class LegalHoldService {
+class LegalHoldService implements LegalHoldServiceInterface {
 
 	/**
 	 * Object entity mapper.
