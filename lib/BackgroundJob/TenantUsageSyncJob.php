@@ -27,7 +27,8 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\TenantUsageMapperInterface;
+use OCA\OpenRegister\Db\UsageMeasurement;
 use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -44,13 +45,13 @@ class TenantUsageSyncJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
+	 * @param TenantUsageMapperInterface $tenantUsageMapper Usage mapper
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly TenantUsageMapper $tenantUsageMapper,
+		private readonly TenantUsageMapperInterface $tenantUsageMapper,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -132,11 +133,9 @@ class TenantUsageSyncJob extends TimedJob {
 
 			try {
 				$this->tenantUsageMapper->upsertUsage(
-					$orgUuid,
-					$period,
-					(int)$requestCount,
-					(int)$bandwidthBytes,
-					0
+					organisationUuid: $orgUuid,
+					period: $period,
+					measurement: new UsageMeasurement(requestCount: $requestCount, bandwidthBytes: $bandwidthBytes, storageBytes: 0)
 				);
 				$syncedCount++;
 			} catch (\Exception $e) {
