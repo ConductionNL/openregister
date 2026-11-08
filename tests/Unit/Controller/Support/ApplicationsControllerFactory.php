@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\ApplicationsController;
 
 /**
- * Builds ApplicationsController from its services as separate arguments.
+ * Builds ApplicationsController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class ApplicationsControllerFactory {
 	/**
@@ -36,9 +36,11 @@ final class ApplicationsControllerFactory {
 		return [
 			$appName,
 			$request,
-			$applicationService,
-			$applicationMapper,
-			$logger,
+			new \OCA\OpenRegister\Controller\Support\ApplicationsControllerServices(
+				applicationService: $applicationService,
+				applicationMapper: $applicationMapper,
+				logger: $logger,
+			),
 		];
 	}//end args()
 

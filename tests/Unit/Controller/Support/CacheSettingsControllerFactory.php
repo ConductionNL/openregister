@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
 
 /**
- * Builds CacheSettingsController from its services as separate arguments.
+ * Builds CacheSettingsController from its services as separate arguments, wrapped into its constructor bundle; the app data factory stays a separate argument.
  */
 final class CacheSettingsControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class CacheSettingsControllerFactory {
 		return [
 			$appName,
 			$request,
-			$settingsService,
-			$logger,
+			new \OCA\OpenRegister\Controller\Support\CacheSettingsControllerServices(
+				settingsService: $settingsService,
+				logger: $logger,
+				appConfig: $appConfig,
+			),
 			$appDataFactory,
-			$appConfig,
 		];
 	}//end args()
 

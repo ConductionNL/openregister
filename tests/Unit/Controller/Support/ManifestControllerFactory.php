@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\ManifestController;
 
 /**
- * Builds ManifestController from its services as separate arguments.
+ * Builds ManifestController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class ManifestControllerFactory {
 	/**
@@ -36,9 +36,11 @@ final class ManifestControllerFactory {
 		return [
 			$appName,
 			$request,
-			$manifestService,
-			$appManager,
-			$logger,
+			new \OCA\OpenRegister\Controller\Support\ManifestControllerServices(
+				manifestService: $manifestService,
+				appManager: $appManager,
+				logger: $logger,
+			),
 		];
 	}//end args()
 

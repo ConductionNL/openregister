@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\ContextsController;
 
 /**
- * Builds ContextsController from its services as separate arguments.
+ * Builds ContextsController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class ContextsControllerFactory {
 	/**
@@ -36,9 +36,11 @@ final class ContextsControllerFactory {
 		return [
 			$appName,
 			$request,
-			$registerMapper,
-			$schemaMapper,
-			$contextService,
+			new \OCA\OpenRegister\Controller\Support\ContextsControllerServices(
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				contextService: $contextService,
+			),
 		];
 	}//end args()
 
