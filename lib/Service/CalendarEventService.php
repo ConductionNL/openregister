@@ -97,25 +97,23 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 * Constructor.
 	 *
 	 * @param CalDavBackend $calDavBackend CalDAV backend
-	 * @param IUserSession $userSession User session
+	 * @param LinkSessionRuntime $runtime User session and logger
 	 * @param IConfig $config NC config (user-value store)
-	 * @param LoggerInterface $logger Logger
 	 * @param IURLGenerator $urlGenerator URL generator for deep links
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		CalDavBackend $calDavBackend,
-		IUserSession $userSession,
+		LinkSessionRuntime $runtime,
 		IConfig $config,
-		LoggerInterface $logger,
 		IURLGenerator $urlGenerator,
 	) {
 		$this->calDavBackend = $calDavBackend;
-		$this->userSession = $userSession;
+		$this->userSession = $runtime->userSession;
 		$this->urlGenerator = $urlGenerator;
-		$this->logger = $logger;
-		$this->calendarSelector = new UserCalendarSelector(config: $config, logger: $logger);
+		$this->logger = $runtime->logger;
+		$this->calendarSelector = new UserCalendarSelector(config: $config, logger: $runtime->logger);
 		$this->veventCodec = new VeventCodec();
 	}//end __construct()
 

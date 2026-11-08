@@ -22,7 +22,7 @@ exports[`confirm dialog auditTrail asks 1`] = `
       <p><strong>t:ID:</strong> 5</p>
       <p><strong>t:Action:</strong><span class="action-badge action-create">CREATE</span></p>
       <p><strong>t:Object:</strong> 9</p>
-      <p><strong>t:Created:</strong> 1/1/2026, 1:00:00 AM</p>
+      <p><strong>t:Created:</strong> 1/1/2026, 12:00:00 AM</p>
     </div></slot-default>
 </x-ncdialog>"
 `;
@@ -58,7 +58,7 @@ exports[`confirm dialog auditTrail closed by hand after a success, stops its tim
       <p><strong>t:ID:</strong> 5</p>
       <p><strong>t:Action:</strong><span class="action-badge action-create">CREATE</span></p>
       <p><strong>t:Object:</strong> 9</p>
-      <p><strong>t:Created:</strong> 1/1/2026, 1:00:00 AM</p>
+      <p><strong>t:Created:</strong> 1/1/2026, 12:00:00 AM</p>
     </div></slot-default>
 </x-ncdialog>"
 `;
@@ -141,7 +141,7 @@ exports[`confirm dialog auditTrail shows the busy state 1`] = `
       <p><strong>t:ID:</strong> 5</p>
       <p><strong>t:Action:</strong><span class="action-badge action-create">CREATE</span></p>
       <p><strong>t:Object:</strong> 9</p>
-      <p><strong>t:Created:</strong> 1/1/2026, 1:00:00 AM</p>
+      <p><strong>t:Created:</strong> 1/1/2026, 12:00:00 AM</p>
     </div></slot-default>
 </x-ncdialog>"
 `;

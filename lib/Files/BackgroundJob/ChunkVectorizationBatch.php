@@ -30,6 +30,10 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerI
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject;
 
 /**
  * Embeds one batch of unvectorized chunks, stores their vectors and marks them vectorized
@@ -183,19 +187,24 @@ final class ChunkVectorizationBatch {
 	 */
 	private function storeVector(Chunk $chunk, array $embeddingData): void {
 		$this->storageHandler->storeVector(
-			entityType: (string)$chunk->getSourceType(),
-			entityId: (string)$chunk->getSourceId(),
-			embedding: $embeddingData['embedding'],
-			model: (string)$embeddingData['model'],
-			dimensions: (int)$embeddingData['dimensions'],
-			chunkIndex: (int)$chunk->getChunkIndex(),
-			totalChunks: max(1, $this->totalChunksOf(chunk: $chunk)),
-			chunkText: substr((string)$chunk->getTextContent(), 0, 500),
-			metadata: [
-				'source_id' => $chunk->getSourceId(),
-				'start_offset' => $chunk->getStartOffset(),
-				'end_offset' => $chunk->getEndOffset(),
-			]
+			vector: new StoredVector(
+				subject: new VectorSubject(entityType: (string)$chunk->getSourceType(), entityId: (string)$chunk->getSourceId()),
+				payload: new VectorPayload(
+					embedding: $embeddingData['embedding'],
+					model: (string)$embeddingData['model'],
+					dimensions: (int)$embeddingData['dimensions']
+				),
+				position: new VectorChunkPosition(
+					chunkIndex: (int)$chunk->getChunkIndex(),
+					totalChunks: max(1, $this->totalChunksOf(chunk: $chunk)),
+					chunkText: substr((string)$chunk->getTextContent(), 0, 500)
+				),
+				metadata: [
+					'source_id' => $chunk->getSourceId(),
+					'start_offset' => $chunk->getStartOffset(),
+					'end_offset' => $chunk->getEndOffset(),
+				]
+			)
 		);
 	}//end storeVector()
 
