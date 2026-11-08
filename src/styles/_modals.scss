@@ -621,6 +621,22 @@
 	}
 }
 
+// One option of a select: its name in bold above a muted line of detail.
+@mixin stacked-select-option {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+
+	strong {
+		font-size: 14px;
+	}
+
+	small {
+		color: var(--color-text-maxcontrast);
+		font-size: 12px;
+	}
+}
+
 @mixin form-group {
 	.form-group {
 		margin-bottom: 20px;
