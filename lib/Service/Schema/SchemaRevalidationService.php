@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
-use OCA\OpenRegister\Db\SchemaRunEntryMapper;
+use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
 use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -73,7 +73,7 @@ class SchemaRevalidationService {
 	 * Constructor.
 	 *
 	 * @param SchemaRunMapperInterface $runMapper Run persistence.
-	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
+	 * @param SchemaRunEntryMapperInterface $runEntryMapper Per-object run entries.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
 	 * @param ObjectOperationsInterface $objectService Object read/save pipeline.
 	 * @param ObjectValidatorInterface $validateObject Single write-path validator.
@@ -81,7 +81,7 @@ class SchemaRevalidationService {
 	 */
 	public function __construct(
 		private readonly SchemaRunMapperInterface $runMapper,
-		private readonly SchemaRunEntryMapper $runEntryMapper,
+		private readonly SchemaRunEntryMapperInterface $runEntryMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly ObjectValidatorInterface $validateObject,

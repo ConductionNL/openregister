@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\FormLink;
-use OCA\OpenRegister\Db\FormLinkMapper;
+use OCA\OpenRegister\Db\FormLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -87,14 +87,14 @@ class FormsProvider extends AbstractIntegrationProvider {
 	 * @param IDBConnection $db NC DB connection.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IL10N $l10n Localisation.
-	 * @param FormLinkMapper $formLinkMapper Form-link mapper (Tier-2 link table).
+	 * @param FormLinkMapperInterface $formLinkMapper Form-link mapper (Tier-2 link table).
 	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
 	 */
 	public function __construct(
 		private IDBConnection $db,
 		private IAppManager $appManager,
 		private IL10N $l10n,
-		private FormLinkMapper $formLinkMapper,
+		private FormLinkMapperInterface $formLinkMapper,
 		private LoggerInterface $logger,
 	) {
 
@@ -119,9 +119,9 @@ class FormsProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return FormLinkMapper
+	 * @return FormLinkMapperInterface
 	 */
-	protected function linkMapper(): FormLinkMapper {
+	protected function linkMapper(): FormLinkMapperInterface {
 		return $this->formLinkMapper;
 	}//end linkMapper()
 

@@ -37,7 +37,7 @@ use DateTime;
 use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
@@ -174,7 +174,7 @@ class FlowRunWorker extends TimedJob {
 	 *                                           a sweep that skips looks exactly
 	 *                                           like one that found nothing.
 	 * @param FlowClaimMapper|null $claims Place claims, for the abandoned-claim reaper.
-	 * @param FlowStreamMapper|null $streams Run streams, for failing an abandoned branch.
+	 * @param FlowStreamMapperInterface|null $streams Run streams, for failing an abandoned branch.
 	 * @param FlowLocatorInterface|null $flows Resolves the run's flow, for the abandoned step's `onError` policy.
 	 * @param RunLockReleaseInterface|null $locks Run-held object locks, for the orphaned-lock sweep.
 	 *
@@ -194,7 +194,7 @@ class FlowRunWorker extends TimedJob {
 		private readonly LoggerInterface $logger,
 		private readonly ?DelegationService $delegation = null,
 		private readonly ?FlowClaimMapper $claims = null,
-		private readonly ?FlowStreamMapper $streams = null,
+		private readonly ?FlowStreamMapperInterface $streams = null,
 		private readonly ?FlowLocatorInterface $flows = null,
 		private readonly ?RunLockReleaseInterface $locks = null,
 	) {

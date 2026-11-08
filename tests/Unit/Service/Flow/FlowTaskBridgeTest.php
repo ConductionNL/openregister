@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
@@ -60,7 +61,7 @@ class FlowTaskBridgeTest extends TestCase {
 				return match ($id) {
 					FlowRunServiceInterface::class => $this->runService,
 					FlowRunAdvancer::class => $this->advancer,
-					FlowStreamMapper::class => $this->streams,
+					FlowStreamMapperInterface::class => $this->streams,
 					default => throw new RuntimeException('unexpected service ' . $id),
 				};
 			}

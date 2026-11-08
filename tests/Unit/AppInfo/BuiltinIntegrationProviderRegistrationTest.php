@@ -137,7 +137,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
-			'OCA\OpenRegister\Db\FormLinkMapper',
+			'OCA\OpenRegister\Db\FormLinkMapperInterface',
 			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\SharesProvider' => [
@@ -293,13 +293,13 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Service\Schema\SchemaDiffService',
 			'OCA\OpenRegister\Db\SchemaChangelogMapperInterface',
 			'OCA\OpenRegister\Db\SchemaRunMapperInterface',
-			'OCA\OpenRegister\Db\SchemaRunEntryMapper',
+			'OCA\OpenRegister\Db\SchemaRunEntryMapperInterface',
 			'OCP\IUserSession',
 			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\Schema\SchemaRevalidationService' => [
 			'OCA\OpenRegister\Db\SchemaRunMapperInterface',
-			'OCA\OpenRegister\Db\SchemaRunEntryMapper',
+			'OCA\OpenRegister\Db\SchemaRunEntryMapperInterface',
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
 			'OCA\OpenRegister\Service\Object\ValidateObject',
@@ -308,7 +308,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		'OCA\OpenRegister\Service\Schema\SchemaMigrationService' => [
 			'OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner',
 			'OCA\OpenRegister\Db\SchemaRunMapperInterface',
-			'OCA\OpenRegister\Db\SchemaRunEntryMapper',
+			'OCA\OpenRegister\Db\SchemaRunEntryMapperInterface',
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
 			'Psr\Log\LoggerInterface',

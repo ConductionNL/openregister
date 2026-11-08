@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
-use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 
 /**
  * One run's streams, for one worker pass.
@@ -112,9 +112,9 @@ class FlowStreamWalk {
 	/**
 	 * The stream rows.
 	 *
-	 * @var FlowStreamMapper
+	 * @var FlowStreamMapperInterface
 	 */
-	private readonly FlowStreamMapper $streamMapper;
+	private readonly FlowStreamMapperInterface $streamMapper;
 
 	/**
 	 * This pass's claim token.

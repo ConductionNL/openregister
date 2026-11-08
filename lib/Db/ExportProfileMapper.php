@@ -36,7 +36,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportProfileMapper extends QBMapper {
+class ExportProfileMapper extends QBMapper implements ExportProfileMapperInterface {
 
 	use SelectByColumnTrait;
 	/**
