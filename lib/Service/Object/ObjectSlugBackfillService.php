@@ -90,13 +90,28 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `dryRun` is the documented command option.
 	 */
 	public function run(Register $register, Schema $schema, bool $dryRun=false): array {
+		return $this->runRequest(request: new ObjectSlugBackfillRequest(register: $register, schema: $schema, dryRun: $dryRun));
+	}//end run()
+
+	/**
+	 * Check the schema, report the duplicates, plan the fill and write it unless dry.
+	 *
+	 * @param ObjectSlugBackfillRequest $request The run's register, schema and mode.
+	 *
+	 * @return array{duplicates: array<string, list<string>>, plan: list<array>, summary: array<string, int>} As run().
+	 *
+	 * @throws InvalidArgumentException When the schema has no `objectSlugField`.
+	 * @throws \OCA\OpenRegister\Exception\SlugBackfillWriteException When a write chunk fails.
+	 */
+	private function runRequest(ObjectSlugBackfillRequest $request): array {
+		$register = $request->register;
+		$schema = $request->schema;
 		if ($this->slugHandler->isManaged(schema: $schema) === false) {
 			throw new InvalidArgumentException(
 				sprintf('Schema %s has no objectSlugField; there is nothing to backfill', (string)($schema->getSlug() ?? $schema->getId()))
 			);
 		}
 
-		$request = new ObjectSlugBackfillRequest(register: $register, schema: $schema, dryRun: $dryRun);
 		$duplicates = $this->magicMapper->findDuplicateSlugs(register: $register, schema: $schema);
 		$this->logDuplicates(request: $request, duplicates: $duplicates);
 
@@ -112,12 +127,13 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 			'skipped' => 0,
 		];
 
-		if ($dryRun === false) {
-			$summary['skipped'] = $this->writer->write(planned: new ObjectSlugChangeSet(register: $register, schema: $schema, changes: $plan, summary: $summary));
+		if ($request->dryRun === false) {
+			$planned = new ObjectSlugChangeSet(register: $register, schema: $schema, changes: $plan, summary: $summary);
+			$summary['skipped'] = $this->writer->write(planned: $planned);
 		}
 
 		return ['duplicates' => $duplicates, 'plan' => $plan, 'summary' => $summary];
-	}//end run()
+	}//end runRequest()
 
 	/**
 	 * Warn about every slug more than one object holds already; they stay as they are.

@@ -125,7 +125,12 @@ class ObjectSlugBackfillWriter {
 		$this->db->beginTransaction();
 		try {
 			foreach ($chunk->changes as $step) {
-				$skipped = $this->takenMeanwhile(step: $step, holders: $holders) === true ? $this->takenWarning(step: $step, chunk: $chunk) : $this->writeStep(step: $step, chunk: $chunk);
+				// A slug another object took meanwhile is not written.
+				$skipped = $this->takenWarning(step: $step, chunk: $chunk);
+				if ($this->takenMeanwhile(step: $step, holders: $holders) === false) {
+					$skipped = $this->writeStep(step: $step, chunk: $chunk);
+				}
+
 				if ($skipped === null) {
 					$written[] = $step;
 					continue;

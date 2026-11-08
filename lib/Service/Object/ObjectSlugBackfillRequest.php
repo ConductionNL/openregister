@@ -53,6 +53,8 @@ final class ObjectSlugBackfillRequest {
 	 * The register and schema as the slug rules take them.
 	 *
 	 * @return ObjectSlugScope The scope.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function scope(): ObjectSlugScope {
 		return new ObjectSlugScope(register: $this->register, schema: $this->schema);

@@ -57,6 +57,8 @@ final class ObjectSlugChangeSet {
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $changes The changes.
 	 *
 	 * @return self The new set.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function withChanges(array $changes): self {
 		return new self(register: $this->register, schema: $this->schema, changes: $changes, summary: $this->summary);
@@ -68,6 +70,8 @@ final class ObjectSlugChangeSet {
 	 * @param array<string, int> $counters The counters to merge in.
 	 *
 	 * @return self The new set.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function withCounters(array $counters): self {
 		return new self(register: $this->register, schema: $this->schema, changes: $this->changes, summary: array_merge($this->summary, $counters));
