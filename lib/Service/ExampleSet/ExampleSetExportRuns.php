@@ -149,17 +149,14 @@ class ExampleSetExportRuns extends ExampleSetEngineRows {
 	/**
 	 * Write the file and the run that names it.
 	 *
-	 * @param string               $app  The app that ships the fragment.
-	 * @param string               $key  The row's key in the fragment.
-	 * @param array<string, mixed> $data The filled fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string, user: string, path: string}|null}
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the engine rows' contract.
-	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-give-an-account-an-export-it-made
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$user = (string) $data['user'];
 		$path = self::FOLDER.'/'.(string) $data['fileName'];
 		try {
