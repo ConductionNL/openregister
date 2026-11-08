@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The F06 Db mappers (register, translation, record template, timer fire) are reached through their interfaces.
+ * The F06 Db mappers (record template, timer fire) are reached through their interfaces.
  *
  * Each class listed here was named directly by a lib file in another component.
  * It now has an interface next to it; outside callers type against and resolve
@@ -27,10 +27,6 @@ use OCA\OpenRegister\Db\FlowTimerFireMapper;
 use OCA\OpenRegister\Db\FlowTimerFireMapperInterface;
 use OCA\OpenRegister\Db\RecordTemplateMapper;
 use OCA\OpenRegister\Db\RecordTemplateMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\TranslationMapper;
-use OCA\OpenRegister\Db\TranslationMapperInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -56,8 +52,6 @@ final class F06DbLookupsInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		FlowTimerFireMapper::class => [FlowTimerFireMapperInterface::class, DbRegistrar::class],
 		RecordTemplateMapper::class => [RecordTemplateMapperInterface::class, DbRegistrar::class],
-		RegisterMapper::class => [RegisterMapperInterface::class, DbRegistrar::class],
-		TranslationMapper::class => [TranslationMapperInterface::class, DbRegistrar::class],
 	];
 
 	/**

@@ -67,12 +67,9 @@ final class D1InterfaceBindingsTest extends TestCase {
 	/**
 	 * Class => the outside callers deliberately left naming it, relative to lib/.
 	 *
-	 *
-	 * BackfillTranslationSourceLanguageCommand is an occ command, whose
-	 * checked against; permission code is out of scope for this refactor, so
-	 * it keeps its concrete RegisterMapper and SchemaMapper.
 	 * ObjectActionElevationEntries resolves the ids a permission elevation is
-	 * public signature this refactor keeps unchanged.
+	 * checked against; permission code is out of scope for this refactor, so
+	 * it keeps its concrete SchemaMapper.
 	 *
 	 * ExportHandler and ImportHandler are rewritten by the open flow
 	 * export/import PR (#5968); they and the registrar that builds them keep
@@ -86,9 +83,7 @@ final class D1InterfaceBindingsTest extends TestCase {
 			'Service/Configuration/ExportHandler.php',
 			'Service/Configuration/ImportHandler.php',
 		],
-		RegisterMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
 		SchemaMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
-		TranslationMapper::class => ['Command/BackfillTranslationSourceLanguageCommand.php'],
 	];
 
 	/**
