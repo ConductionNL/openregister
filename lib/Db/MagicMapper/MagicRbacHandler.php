@@ -95,7 +95,7 @@ use Throwable;
  *      interpreters apply the byte-identical transform. Injecting it would let this one be constructed without it and
  *      silently diverge from the PHP-layer evaluator on which entries are inert — the exact drift ADR-011 warns about.
  */
-class MagicRbacHandler {
+class MagicRbacHandler implements RelatedRowRbacInterface {
 
 	/**
 	 * Raw-SQL impossible predicate used to fail closed on the SQL-string RBAC path.

@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -80,7 +80,7 @@ class RelationHandler {
 	 *
 	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas.
-	 * @param MagicRbacHandler $rbacHandler Handler for RBAC operations.
+	 * @param RelatedRowRbacInterface $rbacHandler Handler for RBAC operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param RegisterMapperInterface $registerMapper Mapper for registers.
 	 * @param RelationTypeResolver|null $relationTypes Resolves what a relation is called from each side.
@@ -92,7 +92,7 @@ class RelationHandler {
 	public function __construct(
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicRbacHandler $rbacHandler,
+		private readonly RelatedRowRbacInterface $rbacHandler,
 		private readonly LoggerInterface $logger,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ?RelationTypeResolver $relationTypes = null,
