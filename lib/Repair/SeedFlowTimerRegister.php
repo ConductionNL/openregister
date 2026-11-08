@@ -42,13 +42,7 @@ use Throwable;
 /**
  * Imports the flow-timers register descriptor idempotently on upgrade/install.
  */
-class SeedFlowTimerRegister implements IRepairStep {
-	/**
-	 * App-relative path to the register descriptor imported by this step.
-	 *
-	 * @var string
-	 */
-	public const REGISTER_PATH = '/lib/Settings/flow_timer_register.json';
+class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterface {
 
 	/**
 	 * Descriptor version passed to the importer's version_compare gate.

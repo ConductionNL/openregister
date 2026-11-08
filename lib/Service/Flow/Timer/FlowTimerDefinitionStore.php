@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
-use OCA\OpenRegister\Repair\SeedFlowTimerRegister;
+use OCA\OpenRegister\Repair\FlowTimerRegisterPathInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -190,7 +190,7 @@ class FlowTimerDefinitionStore {
 	 */
 	private function fromDescriptor(string $schema): array {
 		try {
-			$path = $this->appManager->getAppPath('openregister') . SeedFlowTimerRegister::REGISTER_PATH;
+			$path = $this->appManager->getAppPath('openregister') . FlowTimerRegisterPathInterface::REGISTER_PATH;
 			if (is_file($path) === false) {
 				$this->logger->warning('[FlowTimerDefinitionStore] Descriptor absent: ' . $path);
 
