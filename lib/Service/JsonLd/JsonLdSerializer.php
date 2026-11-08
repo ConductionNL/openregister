@@ -62,6 +62,19 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	private const RAW_PREFIX = 'or:raw#';
 
 	/**
+	 * Pagination keys of an `index()` result and the `or:` term each is
+	 * emitted under, in emission order.
+	 *
+	 * @var array<string, string>
+	 */
+	private const PAGINATION_TERMS = [
+		'total' => 'or:total',
+		'page' => 'or:page',
+		'pages' => 'or:pages',
+		'limit' => 'or:limit',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param JsonLdContextService $contextService The context-document service.
@@ -92,43 +105,106 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 			return false;
 		}
 
-		$best = null;
-		$bestQ = -1.0;
-		$bestRank = -1;
-
-		foreach (explode(',', $accept) as $part) {
-			$segments = explode(';', trim($part));
-			$type = strtolower(trim($segments[0]));
-			if ($type === '') {
-				continue;
+		$best = ['type' => null, 'q' => -1.0, 'rank' => -1];
+		foreach ($this->acceptCandidates(accept: $accept) as $candidate) {
+			if ($this->outranks(candidate: $candidate, best: $best) === true) {
+				$best = $candidate;
 			}
+		}
 
-			$q = 1.0;
-			foreach (array_slice($segments, 1) as $paramSegment) {
-				$paramSegment = trim($paramSegment);
-				if (stripos($paramSegment, 'q=') === 0) {
-					$q = (float)substr($paramSegment, 2);
-				}
-			}
-
-			// Specificity rank: explicit type beats subtype-wildcard beats `*/*`.
-			$rank = 2;
-			if ($type === '*/*') {
-				$rank = 0;
-			} elseif (str_ends_with($type, '/*') === true) {
-				$rank = 1;
-			}
-
-			// Highest q wins; ties broken by specificity.
-			if ($q > $bestQ || ($q === $bestQ && $rank > $bestRank)) {
-				$bestQ = $q;
-				$bestRank = $rank;
-				$best = $type;
-			}
-		}//end foreach
-
-		return $best === self::MEDIA_TYPE && $bestQ > 0.0;
+		return $best['type'] === self::MEDIA_TYPE && $best['q'] > 0.0;
 	}//end wantsJsonLd()
+
+	/**
+	 * Parse the non-empty media ranges of an `Accept` header, in header order.
+	 *
+	 * @param string $accept The raw `Accept` header.
+	 *
+	 * @return array<int, array{type: string, q: float, rank: int}> The parsed media ranges.
+	 */
+	private function acceptCandidates(string $accept): array {
+		$candidates = [];
+		foreach (explode(',', $accept) as $part) {
+			$candidate = $this->parseAcceptPart(part: $part);
+			if ($candidate !== null) {
+				$candidates[] = $candidate;
+			}
+		}
+
+		return $candidates;
+	}//end acceptCandidates()
+
+	/**
+	 * Parse one media range of an `Accept` header.
+	 *
+	 * @param string $part One comma-separated part of the header.
+	 *
+	 * @return array{type: string, q: float, rank: int}|null The media range, or null when it names no type.
+	 */
+	private function parseAcceptPart(string $part): ?array {
+		$segments = explode(';', trim($part));
+		$type = strtolower(trim($segments[0]));
+		if ($type === '') {
+			return null;
+		}
+
+		return [
+			'type' => $type,
+			'q' => $this->qualityOf(segments: $segments),
+			'rank' => $this->specificityOf(type: $type),
+		];
+	}//end parseAcceptPart()
+
+	/**
+	 * The `q` weight of a media range; the last `q=` parameter wins, default 1.
+	 *
+	 * @param array<int, string> $segments The `;`-separated segments of the range.
+	 *
+	 * @return float The weight.
+	 */
+	private function qualityOf(array $segments): float {
+		$q = 1.0;
+		foreach (array_slice($segments, 1) as $paramSegment) {
+			$paramSegment = trim($paramSegment);
+			if (stripos($paramSegment, 'q=') === 0) {
+				$q = (float)substr($paramSegment, 2);
+			}
+		}
+
+		return $q;
+	}//end qualityOf()
+
+	/**
+	 * Specificity rank: explicit type beats subtype-wildcard beats `*`/`*`.
+	 *
+	 * @param string $type The lower-cased media type.
+	 *
+	 * @return int The rank (2 explicit, 1 subtype wildcard, 0 full wildcard).
+	 */
+	private function specificityOf(string $type): int {
+		if ($type === '*/*') {
+			return 0;
+		}
+
+		if (str_ends_with($type, '/*') === true) {
+			return 1;
+		}
+
+		return 2;
+	}//end specificityOf()
+
+	/**
+	 * Whether a media range beats the best so far: highest q wins, ties broken
+	 * by specificity, and the earlier range wins a full tie.
+	 *
+	 * @param array{type: string, q: float, rank: int}      $candidate The media range.
+	 * @param array{type: string|null, q: float, rank: int} $best      The best range so far.
+	 *
+	 * @return bool True when the candidate replaces the best.
+	 */
+	private function outranks(array $candidate, array $best): bool {
+		return $candidate['q'] > $best['q'] || ($candidate['q'] === $best['q'] && $candidate['rank'] > $best['rank']);
+	}//end outranks()
 
 	/**
 	 * Serialize a single rendered object array as a JSON-LD node document.
@@ -163,6 +239,38 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	public function serializeCollection(array $paginatedResult, Schema $schema, Register $register): array {
+		$graph = $this->buildGraph(paginatedResult: $paginatedResult, schema: $schema, register: $register);
+
+		$document = [
+			'@context' => $this->contextService->getSchemaContextUrl($register, $schema),
+			'@graph' => $graph,
+		];
+
+		// Pagination metadata under or: terms (keeps the document valid JSON-LD).
+		foreach (self::PAGINATION_TERMS as $key => $term) {
+			if (array_key_exists($key, $paginatedResult) === true) {
+				$document[$term] = $paginatedResult[$key];
+			}
+		}
+
+		$next = $this->buildNextLink(paginatedResult: $paginatedResult);
+		if ($next !== null) {
+			$document['or:next'] = $next;
+		}
+
+		return $document;
+	}//end serializeCollection()
+
+	/**
+	 * Build the `@graph` nodes of a paginated result; non-array rows are skipped.
+	 *
+	 * @param array<string, mixed> $paginatedResult The `index()` result.
+	 * @param Schema               $schema          The collection's schema.
+	 * @param Register             $register        The collection's register.
+	 *
+	 * @return array<int, array<string, mixed>> The nodes.
+	 */
+	private function buildGraph(array $paginatedResult, Schema $schema, Register $register): array {
 		$results = ($paginatedResult['results'] ?? []);
 		if (is_array($results) === false) {
 			$results = [];
@@ -178,35 +286,8 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 			$graph[] = $this->buildNode(renderedObject: $rendered, schema: $schema, register: $register);
 		}
 
-		$document = [
-			'@context' => $this->contextService->getSchemaContextUrl($register, $schema),
-			'@graph' => $graph,
-		];
-
-		// Pagination metadata under or: terms (keeps the document valid JSON-LD).
-		if (array_key_exists('total', $paginatedResult) === true) {
-			$document['or:total'] = $paginatedResult['total'];
-		}
-
-		if (array_key_exists('page', $paginatedResult) === true) {
-			$document['or:page'] = $paginatedResult['page'];
-		}
-
-		if (array_key_exists('pages', $paginatedResult) === true) {
-			$document['or:pages'] = $paginatedResult['pages'];
-		}
-
-		if (array_key_exists('limit', $paginatedResult) === true) {
-			$document['or:limit'] = $paginatedResult['limit'];
-		}
-
-		$next = $this->buildNextLink(paginatedResult: $paginatedResult);
-		if ($next !== null) {
-			$document['or:next'] = $next;
-		}
-
-		return $document;
-	}//end serializeCollection()
+		return $graph;
+	}//end buildGraph()
 
 	/**
 	 * Build a single JSON-LD node (no `@context`) from a rendered object array.
@@ -234,6 +315,23 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 		}
 
 		// Copy the object's data properties, escaping reserved keys.
+		foreach ($this->dataProperties(renderedObject: $renderedObject) as $key => $value) {
+			$node[$key] = $value;
+		}
+
+		return $node;
+	}//end buildNode()
+
+	/**
+	 * The data properties of a rendered object: `@self` dropped (it is lifted
+	 * to `or:` terms) and other `@`-keys escaped under the raw prefix.
+	 *
+	 * @param array<string, mixed> $renderedObject The rendered object.
+	 *
+	 * @return array<int|string, mixed> The properties to copy onto the node, in order.
+	 */
+	private function dataProperties(array $renderedObject): array {
+		$properties = [];
 		foreach ($renderedObject as $key => $value) {
 			if ($key === '@self') {
 				// Replaced by the lifted or: terms; never emitted.
@@ -241,15 +339,15 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 			}
 
 			if ($this->isReservedKey(key: $key) === true) {
-				$node[self::RAW_PREFIX . ltrim((string)$key, '@')] = $value;
+				$properties[self::RAW_PREFIX . ltrim((string)$key, '@')] = $value;
 				continue;
 			}
 
-			$node[$key] = $value;
+			$properties[$key] = $value;
 		}
 
-		return $node;
-	}//end buildNode()
+		return $properties;
+	}//end dataProperties()
 
 	/**
 	 * Resolve a node's `@id`: the canonical object URI, else the absolute
@@ -289,12 +387,8 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	private function liftSelfMetadata(array $self): array {
 		$lifted = [];
 		foreach ($self as $key => $value) {
-			if ($key === 'uri') {
-				// Exposed as @id, not duplicated.
-				continue;
-			}
-
-			if ($value === null || $value === '' || $value === []) {
+			// The uri is exposed as @id, not duplicated; empty values are skipped.
+			if ($key === 'uri' || $this->isEmptyMetadata(value: $value) === true) {
 				continue;
 			}
 
@@ -303,6 +397,17 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 
 		return $lifted;
 	}//end liftSelfMetadata()
+
+	/**
+	 * Whether a `@self` value is empty (null, empty string or empty array).
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True when the value is left off the node.
+	 */
+	private function isEmptyMetadata(mixed $value): bool {
+		return $value === null || $value === '' || $value === [];
+	}//end isEmptyMetadata()
 
 	/**
 	 * Build the `or:next` page URL from a paginated result, when there is a
@@ -320,12 +425,35 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 
 		$page = ($paginatedResult['page'] ?? null);
 		$pages = ($paginatedResult['pages'] ?? null);
-		if (is_int($page) === false || is_int($pages) === false || $page >= $pages) {
+		if ($this->hasNextPage(page: $page, pages: $pages) === false) {
 			return null;
 		}
 
 		// Derive next-page URL from the current request URI when available.
-		$current = ($paginatedResult['@self']['self'] ?? null);
+		return $this->nextPageUrl(current: ($paginatedResult['@self']['self'] ?? null), page: $page);
+	}//end buildNextLink()
+
+	/**
+	 * Whether integer pagination values say there is a page after this one.
+	 *
+	 * @param mixed $page  The current page.
+	 * @param mixed $pages The page count.
+	 *
+	 * @return bool True when both are integers and the page is before the last.
+	 */
+	private function hasNextPage(mixed $page, mixed $pages): bool {
+		return is_int($page) === true && is_int($pages) === true && $page < $pages;
+	}//end hasNextPage()
+
+	/**
+	 * Append `_page={page + 1}` to the current request URI.
+	 *
+	 * @param mixed $current The current request URI, if known.
+	 * @param int   $page    The current page.
+	 *
+	 * @return string|null The next-page URL, or null without a current URI.
+	 */
+	private function nextPageUrl(mixed $current, int $page): ?string {
 		if (is_string($current) === false || $current === '') {
 			return null;
 		}
@@ -337,7 +465,7 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 		}
 
 		return $current . $separator . '_page=' . ($page + 1);
-	}//end buildNextLink()
+	}//end nextPageUrl()
 
 	/**
 	 * Whether a data key is a reserved JSON-LD keyword that must be escaped to
