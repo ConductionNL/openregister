@@ -88,9 +88,11 @@ class MapsOverviewServiceTest extends TestCase {
 		$registry = $this->buildRegistry();
 
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $registry,
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$registry
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -124,9 +126,11 @@ class MapsOverviewServiceTest extends TestCase {
 	 */
 	public function testRegisterHonoursBaseLayerOverride(): void {
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -150,9 +154,11 @@ class MapsOverviewServiceTest extends TestCase {
 	 */
 	public function testRegisterRejectsEmptyKey(): void {
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -168,9 +174,11 @@ class MapsOverviewServiceTest extends TestCase {
 	 */
 	public function testRegisterRejectsMissingScope(): void {
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -186,9 +194,11 @@ class MapsOverviewServiceTest extends TestCase {
 	 */
 	public function testEnsureCanRegisterRejectsAnonymous(): void {
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession(null),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -231,9 +241,11 @@ class MapsOverviewServiceTest extends TestCase {
 			->willReturn($rows);
 
 		$service = new MapsOverviewService(
-			objectService: $objectService,
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$objectService,
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -291,9 +303,11 @@ class MapsOverviewServiceTest extends TestCase {
 			->willReturn([$point, $geometryless]);
 
 		$service = new MapsOverviewService(
-			objectService: $objectService,
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$objectService,
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -327,9 +341,11 @@ class MapsOverviewServiceTest extends TestCase {
 
 		// Anonymous caller — must scope with _rbac: true.
 		$service = new MapsOverviewService(
-			objectService: $objectService,
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$objectService,
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession(null),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -362,9 +378,11 @@ class MapsOverviewServiceTest extends TestCase {
 		);
 
 		$service = new MapsOverviewService(
-			objectService: $objectService,
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$objectService,
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('root'),
 			groupManager: $this->buildGroupManager(true),
 		);
@@ -393,9 +411,11 @@ class MapsOverviewServiceTest extends TestCase {
 		);
 
 		$service = new MapsOverviewService(
-			objectService: $objectService,
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$objectService,
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -419,9 +439,11 @@ class MapsOverviewServiceTest extends TestCase {
 	 */
 	public function testQueryPointsRejectsMissingScope(): void {
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);

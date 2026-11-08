@@ -162,11 +162,9 @@ class ObjectsProvider implements IFilteringProvider {
 	/**
 	 * Constructor for the ObjectsProvider class
 	 *
-	 * @param IL10N $l10n The localization service
 	 * @param ObjectOperationsInterface $objectService The object service for search operations
-	 * @param LoggerInterface $logger Logger for debugging search operations
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for the searchable-schema opt-out
-	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service
+	 * @param ObjectsProviderOutput $output The localization service, shared result formatter and logger
 	 * @param RegisterMapperInterface|null $registerMapper Resolves a register named in a search scope. Nullable and last
 	 *                                            so no positional caller shifts; absent, a scope naming a
 	 *                                            register narrows nothing, which is the pre-scope behaviour
@@ -176,11 +174,9 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		IL10N $l10n,
 		ObjectOperationsInterface $objectService,
-		LoggerInterface $logger,
 		SchemaMapperInterface $schemaMapper,
-		ObjectSearchResultFormatter $resultFormatter,
+		ObjectsProviderOutput $output,
 		// Appended LAST and nullable, deliberately: a new constructor argument
 		// inserted anywhere else shifts every positional caller, and the
 		// resulting TypeError names the argument AFTER the one that moved.
@@ -188,11 +184,11 @@ class ObjectsProvider implements IFilteringProvider {
 		// is the pre-scope behaviour.
 		?RegisterMapperInterface $registerMapper = null,
 	) {
-		$this->l10n = $l10n;
+		$this->l10n = $output->l10n;
 		$this->objectService = $objectService;
-		$this->logger = $logger;
+		$this->logger = $output->logger;
 		$this->schemaMapper = $schemaMapper;
-		$this->resultFormatter = $resultFormatter;
+		$this->resultFormatter = $output->resultFormatter;
 		$this->registerMapper = $registerMapper;
 	}//end __construct()
 

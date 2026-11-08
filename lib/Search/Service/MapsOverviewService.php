@@ -93,23 +93,43 @@ class MapsOverviewService {
 	];
 
 	/**
+	 * Canonical RBAC-scoped object read facade.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private ObjectOperationsInterface $objectService;
+
+	/**
+	 * Extracts geometry from object rows.
+	 *
+	 * @var GeoFeatureCollectionBuilder
+	 */
+	private GeoFeatureCollectionBuilder $geoBuilder;
+
+	/**
+	 * Registry for the page-widget surface.
+	 *
+	 * @var PageWidgetRegistryInterface
+	 */
+	private PageWidgetRegistryInterface $registry;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objectService Canonical RBAC-scoped object read facade.
-	 * @param GeoFeatureCollectionBuilder $geoBuilder Extracts geometry from object rows.
-	 * @param PageWidgetRegistryInterface $registry Registry for the page-widget surface.
+	 * @param MapsOverviewSources $sources The object read facade, geometry builder and page-widget registry.
 	 * @param IUserSession $userSession Current user (RBAC / write guard).
 	 * @param IGroupManager $groupManager Admin check (RBAC bypass for admins).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private ObjectOperationsInterface $objectService,
-		private GeoFeatureCollectionBuilder $geoBuilder,
-		private PageWidgetRegistryInterface $registry,
+		MapsOverviewSources $sources,
 		private IUserSession $userSession,
 		private IGroupManager $groupManager,
 	) {
+		$this->objectService = $sources->objectService;
+		$this->geoBuilder    = $sources->geoBuilder;
+		$this->registry      = $sources->registry;
 	}//end __construct()
 
 	/**
