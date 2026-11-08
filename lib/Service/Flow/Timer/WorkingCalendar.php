@@ -48,7 +48,7 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
  * single-letter names of the published anonymous Gregorian computus so the
  * code can be checked line by line against its reference.
  */
-final class WorkingCalendar {
+final class WorkingCalendar implements WorkingCalendarInterface {
 
 	/**
 	 * The seeded national default.

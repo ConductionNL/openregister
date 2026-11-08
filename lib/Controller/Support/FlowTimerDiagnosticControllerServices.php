@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -37,14 +37,14 @@ final class FlowTimerDiagnosticControllerServices {
 	 *
 	 * @param IUserSession $userSession Who is asking.
 	 * @param IGroupManager $groupManager Whether they are an administrator.
-	 * @param TermDiagnostic $diagnostic The engine, narrating.
+	 * @param TermDiagnosticInterface $diagnostic The engine, narrating.
 	 *
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
 	public function __construct(
 		public readonly IUserSession $userSession,
 		public readonly IGroupManager $groupManager,
-		public readonly TermDiagnostic $diagnostic,
+		public readonly TermDiagnosticInterface $diagnostic,
 	) {
 	}//end __construct()
 }//end class
