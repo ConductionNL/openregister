@@ -73,8 +73,7 @@ class OAuth2AccountIdentity {
 	 * Ask who the connection belongs to, and record the answer on the credential.
 	 *
 	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $credentialId The credential just minted or repaired.
-	 * @param string $scope The credential scope.
+	 * @param TokenSetAddress $address The credential just minted or repaired, and its scope.
 	 * @param OAuth2TokenSet $set The token set just stored.
 	 * @param string $owner The credential's owner, asserted for this sessionless call.
 	 *
@@ -82,7 +81,8 @@ class OAuth2AccountIdentity {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
 	 */
-	public function record(array $provider, string $credentialId, string $scope, OAuth2TokenSet $set, string $owner): void {
+	public function record(array $provider, TokenSetAddress $address, OAuth2TokenSet $set, string $owner): void {
+		$credentialId = $address->credentialId;
 		$identity = ($provider['identity'] ?? null);
 		if (is_array($identity) === false || trim((string)($identity['path'] ?? '')) === '') {
 			return;
@@ -91,7 +91,8 @@ class OAuth2AccountIdentity {
 		try {
 			$decoded = $this->answer(identity: $identity, credentialId: $credentialId, owner: $owner);
 			if ($decoded !== null) {
-				$this->refresh->persist(credentialId: $credentialId, scope: $scope, set: $this->withAccount(set: $set, identity: $identity, decoded: $decoded));
+				$withAccount = $this->withAccount(set: $set, identity: $identity, decoded: $decoded);
+				$this->refresh->persist(credentialId: $credentialId, scope: $address->scope, set: $withAccount);
 			}
 		} catch (Throwable $failure) {
 			$this->logger->warning('[OAuth2AccountIdentity] could not read the connected account for ' . $credentialId . ': ' . $failure->getMessage());
