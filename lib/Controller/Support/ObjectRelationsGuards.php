@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
 
@@ -37,14 +37,14 @@ final class ObjectRelationsGuards {
 	 *
 	 * @param ObjectReadAccess  $access       Resolves an object under the caller's own RBAC.
 	 * @param ObjectTreeService $trees        The bounded walk along a schema's parent property.
-	 * @param PurposeGuard      $purposeGuard The doelbinding guard the object read runs, asked before a tree or a graph is answered.
+	 * @param PurposeGuardInterface      $purposeGuard The doelbinding guard the object read runs, asked before a tree or a graph is answered.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectReadAccess $access,
 		public readonly ObjectTreeService $trees,
-		public readonly PurposeGuard $purposeGuard,
+		public readonly PurposeGuardInterface $purposeGuard,
 	) {
 	}//end __construct()
 }//end class

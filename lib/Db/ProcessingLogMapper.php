@@ -44,7 +44,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
-class ProcessingLogMapper extends QBMapper {
+class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterface {
 	/**
 	 * Constructor.
 	 *
