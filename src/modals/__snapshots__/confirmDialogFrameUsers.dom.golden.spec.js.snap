@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`dialog application asks 1`] = `
-"<x-ncdialog name="t:Delete Application" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone.">
+"<x-ncdialog name="t:Delete Application" size="small" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone." noclose="false">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -9,13 +9,15 @@ exports[`dialog application asks 1`] = `
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error">
+    <x-ncbutton disabled="false" variant="error">
       <slot-default> t:Delete</slot-default>
       <slot-icon>
         <x-trashcanoutline size="20"></x-trashcanoutline>
       </slot-icon>
     </x-ncbutton>
   </slot-actions>
+  <slot-default>
+  </slot-default>
 </x-ncdialog>"
 `;
 
@@ -32,7 +34,7 @@ exports[`dialog application cancels 1`] = `
 `;
 
 exports[`dialog application confirms 1`] = `
-"<x-ncdialog name="t:Delete Application" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone.">
+"<x-ncdialog name="t:Delete Application" size="small" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone." noclose="false">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -40,13 +42,15 @@ exports[`dialog application confirms 1`] = `
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error">
+    <x-ncbutton disabled="false" variant="error">
       <slot-default> t:Delete</slot-default>
       <slot-icon>
         <x-trashcanoutline size="20"></x-trashcanoutline>
       </slot-icon>
     </x-ncbutton>
   </slot-actions>
+  <slot-default>
+  </slot-default>
 </x-ncdialog>"
 `;
 
@@ -82,7 +86,7 @@ exports[`dialog application dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog application reports a refusal 1`] = `
-"<x-ncdialog name="t:Delete Application" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone.">
+"<x-ncdialog name="t:Delete Application" size="small" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone." noclose="false">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -90,18 +94,20 @@ exports[`dialog application reports a refusal 1`] = `
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error">
+    <x-ncbutton disabled="false" variant="error">
       <slot-default> t:Delete</slot-default>
       <slot-icon>
         <x-trashcanoutline size="20"></x-trashcanoutline>
       </slot-icon>
     </x-ncbutton>
   </slot-actions>
+  <slot-default>
+  </slot-default>
 </x-ncdialog>"
 `;
 
 exports[`dialog application shows the busy state 1`] = `
-"<x-ncdialog name="t:Delete Application" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone.">
+"<x-ncdialog name="t:Delete Application" size="small" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone." noclose="false">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -109,18 +115,20 @@ exports[`dialog application shows the busy state 1`] = `
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error">
+    <x-ncbutton disabled="false" variant="error">
       <slot-default> t:Delete</slot-default>
       <slot-icon>
         <x-trashcanoutline size="20"></x-trashcanoutline>
       </slot-icon>
     </x-ncbutton>
   </slot-actions>
+  <slot-default>
+  </slot-default>
 </x-ncdialog>"
 `;
 
 exports[`dialog configuration asks 1`] = `
-"<x-ncdialog name="Delete Configuration" size="small" noclose="">
+"<x-ncdialog name="Delete Configuration" size="small" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -129,7 +137,7 @@ exports[`dialog configuration asks 1`] = `
       </slot-icon>
     </x-ncbutton>
     <x-ncbutton disabled="false" variant="error">
-      <slot-default> Delete </slot-default>
+      <slot-default> Delete</slot-default>
       <slot-icon>
         <x-delete size="20"></x-delete>
       </slot-icon>
@@ -185,7 +193,7 @@ exports[`dialog configuration dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog configuration reports a refusal 1`] = `
-"<x-ncdialog name="Delete Configuration" size="small" noclose="">
+"<x-ncdialog name="Delete Configuration" size="small" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -194,28 +202,28 @@ exports[`dialog configuration reports a refusal 1`] = `
       </slot-icon>
     </x-ncbutton>
     <x-ncbutton disabled="false" variant="error">
-      <slot-default> Delete </slot-default>
+      <slot-default> Delete</slot-default>
       <slot-icon>
         <x-delete size="20"></x-delete>
       </slot-icon>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
+    <div class="formContainer">
+      <p> Are you sure you want to delete the configuration "C"? </p>
+      <p>t:This action cannot be undone.</p>
+    </div>
     <x-ncnotecard type="error">
       <slot-default>
         <p>refused</p>
       </slot-default>
     </x-ncnotecard>
-    <div class="formContainer">
-      <p> Are you sure you want to delete the configuration "C"? </p>
-      <p>t:This action cannot be undone.</p>
-    </div>
   </slot-default>
 </x-ncdialog>"
 `;
 
 exports[`dialog configuration shows the busy state 1`] = `
-"<x-ncdialog name="Delete Configuration" size="small" noclose="">
+"<x-ncdialog name="Delete Configuration" size="small" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -224,7 +232,7 @@ exports[`dialog configuration shows the busy state 1`] = `
       </slot-icon>
     </x-ncbutton>
     <x-ncbutton disabled="true" variant="error">
-      <slot-default> Delete </slot-default>
+      <slot-default> Delete</slot-default>
       <slot-icon>
         <x-ncloadingicon size="20"></x-ncloadingicon>
       </slot-icon>
@@ -240,7 +248,7 @@ exports[`dialog configuration shows the busy state 1`] = `
 `;
 
 exports[`dialog endpoint asks 1`] = `
-"<x-ncdialog name="Delete Endpoint">
+"<x-ncdialog name="Delete Endpoint" size="small" noclose="false">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -248,8 +256,8 @@ exports[`dialog endpoint asks 1`] = `
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error">
-      <slot-default> Delete </slot-default>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete</slot-default>
       <slot-icon>
         <x-trashcanoutline size="20"></x-trashcanoutline>
       </slot-icon>
@@ -310,7 +318,7 @@ exports[`dialog endpoint dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog endpoint reports a refusal 1`] = `
-"<x-ncdialog name="Delete Endpoint">
+"<x-ncdialog name="Delete Endpoint" size="small" noclose="false">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -318,8 +326,8 @@ exports[`dialog endpoint reports a refusal 1`] = `
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error">
-      <slot-default> Delete </slot-default>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete</slot-default>
       <slot-icon>
         <x-trashcanoutline size="20"></x-trashcanoutline>
       </slot-icon>
@@ -335,7 +343,7 @@ exports[`dialog endpoint reports a refusal 1`] = `
 `;
 
 exports[`dialog endpoint shows the busy state 1`] = `
-"<x-ncdialog name="Delete Endpoint">
+"<x-ncdialog name="Delete Endpoint" size="small" noclose="false">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -343,8 +351,8 @@ exports[`dialog endpoint shows the busy state 1`] = `
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton variant="error">
-      <slot-default> Delete </slot-default>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete</slot-default>
       <slot-icon>
         <x-trashcanoutline size="20"></x-trashcanoutline>
       </slot-icon>
@@ -360,9 +368,9 @@ exports[`dialog endpoint shows the busy state 1`] = `
 `;
 
 exports[`dialog removeConnection asks 1`] = `
-"<x-ncdialog name="t:Remove connection" noclose="false" class="or-remove-connection-dialog">
+"<x-ncdialog name="t:Remove connection" size="small" noclose="false" class="or-remove-connection-dialog">
   <slot-actions>
-    <x-ncbutton disabled="false">
+    <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
@@ -396,9 +404,9 @@ exports[`dialog removeConnection cancels 1`] = `
 `;
 
 exports[`dialog removeConnection confirms 1`] = `
-"<x-ncdialog name="t:Remove connection" noclose="false" class="or-remove-connection-dialog">
+"<x-ncdialog name="t:Remove connection" size="small" noclose="false" class="or-remove-connection-dialog">
   <slot-actions>
-    <x-ncbutton disabled="false">
+    <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
@@ -444,7 +452,7 @@ exports[`dialog removeConnection dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog removeConnection shows the busy state 1`] = `
-"<x-ncdialog name="t:Remove connection" noclose="true" class="or-remove-connection-dialog">
+"<x-ncdialog name="t:Remove connection" size="small" noclose="true" class="or-remove-connection-dialog">
   <slot-actions>
     <x-ncbutton disabled="true">
       <slot-default> t:Cancel</slot-default>
@@ -569,7 +577,7 @@ exports[`dialog removeUser shows the busy state 1`] = `
 `;
 
 exports[`dialog schemaObjects asks 1`] = `
-"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="">
+"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -578,7 +586,7 @@ exports[`dialog schemaObjects asks 1`] = `
       </slot-icon>
     </x-ncbutton>
     <x-ncbutton disabled="false" variant="error">
-      <slot-default> Delete All Objects </slot-default>
+      <slot-default> Delete All Objects</slot-default>
       <slot-icon>
         <x-deletesweep size="20"></x-deletesweep>
       </slot-icon>
@@ -621,7 +629,7 @@ exports[`dialog schemaObjects cancels 1`] = `
 `;
 
 exports[`dialog schemaObjects confirms 1`] = `
-"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="">
+"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Close</slot-default>
@@ -668,7 +676,7 @@ exports[`dialog schemaObjects dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog schemaObjects shows the busy state 1`] = `
-"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="">
+"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -688,7 +696,7 @@ exports[`dialog schemaObjects shows the busy state 1`] = `
 `;
 
 exports[`dialog schemaObjects with a failing request reports the refusal 1`] = `
-"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="">
+"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> Cancel</slot-default>
@@ -728,16 +736,16 @@ exports[`dialog schemaObjects with a failing request reports the refusal 1`] = `
 `;
 
 exports[`dialog schemaProperty asks 1`] = `
-"<x-ncdialog name="Verwijder Schema-eigenschap" noclose="">
+"<x-ncdialog name="Verwijder Schema-eigenschap" size="small" noclose="true">
   <slot-actions>
-    <x-ncbutton disabled="false" icon="">
+    <x-ncbutton>
       <slot-default> Annuleren</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton disabled="false" icon="Delete" variant="error">
-      <slot-default> Verwijder </slot-default>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Verwijder</slot-default>
       <slot-icon>
         <x-delete size="20"></x-delete>
       </slot-icon>
@@ -750,16 +758,16 @@ exports[`dialog schemaProperty asks 1`] = `
 `;
 
 exports[`dialog schemaProperty blocked by objects that use it disables the confirm button 1`] = `
-"<x-ncdialog name="Verwijder Schema-eigenschap" noclose="">
+"<x-ncdialog name="Verwijder Schema-eigenschap" size="small" noclose="true">
   <slot-actions>
-    <x-ncbutton disabled="false" icon="">
+    <x-ncbutton>
       <slot-default> Annuleren</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton disabled="true" icon="Delete" variant="error">
-      <slot-default> Verwijder </slot-default>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Verwijder</slot-default>
       <slot-icon>
         <x-delete size="20"></x-delete>
       </slot-icon>
@@ -793,9 +801,9 @@ exports[`dialog schemaProperty cancels 1`] = `
 `;
 
 exports[`dialog schemaProperty confirms 1`] = `
-"<x-ncdialog name="Verwijder Schema-eigenschap" noclose="">
+"<x-ncdialog name="Verwijder Schema-eigenschap" size="small" noclose="true">
   <slot-actions>
-    <x-ncbutton disabled="false" icon="">
+    <x-ncbutton>
       <slot-default> Sluiten</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
@@ -857,16 +865,16 @@ exports[`dialog schemaProperty dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog schemaProperty reports a refusal 1`] = `
-"<x-ncdialog name="Verwijder Schema-eigenschap" noclose="">
+"<x-ncdialog name="Verwijder Schema-eigenschap" size="small" noclose="true">
   <slot-actions>
-    <x-ncbutton disabled="false" icon="">
+    <x-ncbutton>
       <slot-default> Annuleren</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton disabled="false" icon="Delete" variant="error">
-      <slot-default> Verwijder </slot-default>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Verwijder</slot-default>
       <slot-icon>
         <x-delete size="20"></x-delete>
       </slot-icon>
@@ -891,16 +899,16 @@ exports[`dialog schemaProperty reports a refusal 1`] = `
 `;
 
 exports[`dialog schemaProperty shows the busy state 1`] = `
-"<x-ncdialog name="Verwijder Schema-eigenschap" noclose="">
+"<x-ncdialog name="Verwijder Schema-eigenschap" size="small" noclose="true">
   <slot-actions>
-    <x-ncbutton disabled="true" icon="">
+    <x-ncbutton disabled="true">
       <slot-default> Annuleren</slot-default>
       <slot-icon>
         <x-cancel size="20"></x-cancel>
       </slot-icon>
     </x-ncbutton>
-    <x-ncbutton disabled="true" icon="Delete" variant="error">
-      <slot-default> Verwijder </slot-default>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Verwijder</slot-default>
       <slot-icon>
         <x-ncloadingicon size="20"></x-ncloadingicon>
       </slot-icon>

@@ -2,8 +2,9 @@
 	<NcDialog
 		:name="name"
 		:size="size"
-		:noClose="noClose"
-		@closing="$emit('cancel')">
+		:message="message"
+		:noClose="!closable"
+		@closing="closable && $emit('cancel')">
 		<slot />
 		<NcNoteCard v-if="success && successText" type="success">
 			<p>{{ successText }}</p>
@@ -15,7 +16,7 @@
 		<template #actions>
 			<CloseCancelButton
 				:label="closeLabel"
-				:disabled="cancelDisabled"
+				:disabled="cancelDisabled || undefined"
 				@click="$emit('cancel')" />
 			<NcButton
 				v-if="showConfirm"
@@ -43,7 +44,7 @@ import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
  * The frame of a dialog that asks before an irreversible action: the question
  * in its default slot, the outcome below it and the two buttons.
  *
- * It asks to be answered through its buttons unless `noClose` is false; then
+ * It asks to be answered through its buttons unless it is `closable`; then
  * the dialog's own close (button, Escape) emits `cancel` as well.
  *
  * @spec exclude Presentational dialog frame shared by the confirm dialogs.
@@ -62,9 +63,11 @@ export default {
 	props: {
 		name: { type: String, required: true },
 		size: { type: String, default: 'normal' },
-		noClose: { type: Boolean, default: true },
-		/** Disables the cancel button; unset leaves it out of the markup. */
-		cancelDisabled: { type: Boolean, default: undefined },
+		/** NcDialog's own text, for a question that needs no markup. */
+		message: { type: String, default: undefined },
+		/** Offer the dialog's own close (button, Escape), which emits `cancel`. */
+		closable: { type: Boolean, default: false },
+		cancelDisabled: { type: Boolean, default: false },
 		closeLabel: { type: String, required: true },
 		confirmLabel: { type: String, required: true },
 		showConfirm: { type: Boolean, default: false },
