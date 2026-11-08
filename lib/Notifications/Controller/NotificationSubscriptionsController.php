@@ -43,6 +43,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
 
 /**
  * DEPRECATED per-user (register, schema) notification subscription surface.
@@ -57,6 +58,8 @@ use OCP\IUserSession;
  * @deprecated Use NotificationPreferencesController (override-only user-config).
  */
 class NotificationSubscriptionsController extends Controller {
+	use NotificationRequestTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -92,7 +95,7 @@ class NotificationSubscriptionsController extends Controller {
 	public function index(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		$rows = $this->mapper->findByUser(userId: $userId);
@@ -119,51 +122,86 @@ class NotificationSubscriptionsController extends Controller {
 	public function create(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		$params = $this->request->getParams();
 		$registerId = $this->coerceNullableInt(value: ($params['registerId'] ?? null));
 		$schemaId = $this->coerceNullableInt(value: ($params['schemaId'] ?? null));
-
-		// SECURITY (M2): verify the caller has read access to the referenced
-		// register/schema before persisting the subscription.
-		// Use _multitenancy: true to enforce tenant-scope — a user in org A
-		// must not be allowed to subscribe to org B's register/schema events.
-		if ($registerId !== null) {
-			try {
-				$this->registerMapper->find($registerId, _multitenancy: true);
-			} catch (\Throwable $e) {
-				return new JSONResponse(
-					data: ['error' => 'Register not found or not accessible'],
-					statusCode: 404
-				);
-			}
+		$refusal = $this->refuseScope(registerId: $registerId, schemaId: $schemaId);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		if ($schemaId !== null) {
-			try {
-				$this->schemaMapper->find($schemaId, _multitenancy: true);
-			} catch (\Throwable $e) {
-				return new JSONResponse(
-					data: ['error' => 'Schema not found or not accessible'],
-					statusCode: 404
-				);
-			}
+		return $this->subscribe(userId: $userId, registerId: $registerId, schemaId: $schemaId);
+	}//end create()
+
+	/**
+	 * Refuse a register or schema the caller cannot reach.
+	 *
+	 * Both are looked up under multitenancy, so a register or schema of
+	 * another tenant answers 404 exactly as an absent one does.
+	 *
+	 * @param int|null $registerId The register asked for, or null.
+	 * @param int|null $schemaId   The schema asked for, or null.
+	 *
+	 * @return JSONResponse|null The 404, or null when both are reachable.
+	 */
+	private function refuseScope(?int $registerId, ?int $schemaId): ?JSONResponse {
+		$register = $this->refuseUnreachable(
+			id: $registerId,
+			find: fn (int $id): mixed => $this->registerMapper->find($id, _multitenancy: true),
+			error: 'Register not found or not accessible'
+		);
+
+		return ($register ?? $this->refuseUnreachable(
+			id: $schemaId,
+			find: fn (int $id): mixed => $this->schemaMapper->find($id, _multitenancy: true),
+			error: 'Schema not found or not accessible'
+		));
+	}//end refuseScope()
+
+	/**
+	 * A 404 when an asked-for id cannot be found; null when none was asked for or it was found.
+	 *
+	 * @param int|null                $id    The id, or null when none was asked for.
+	 * @param callable(int): mixed    $find  Looks the id up; throws when it is unreachable.
+	 * @param string                  $error The error the 404 carries.
+	 *
+	 * @return JSONResponse|null The 404, or null.
+	 */
+	private function refuseUnreachable(?int $id, callable $find, string $error): ?JSONResponse {
+		if ($id === null) {
+			return null;
 		}
 
 		try {
-			$entity = $this->mapper->subscribe(
-				userId: $userId,
-				registerId: $registerId,
-				schemaId: $schemaId
-			);
+			$find($id);
+		} catch (\Throwable $e) {
+			return new JSONResponse(data: ['error' => $error], statusCode: 404);
+		}
+
+		return null;
+	}//end refuseUnreachable()
+
+	/**
+	 * Subscribe the caller, answering 422 when the mapper refuses the scope.
+	 *
+	 * @param string   $userId     The caller.
+	 * @param int|null $registerId The register, or null.
+	 * @param int|null $schemaId   The schema, or null.
+	 *
+	 * @return JSONResponse The subscription, or a 422.
+	 */
+	private function subscribe(string $userId, ?int $registerId, ?int $schemaId): JSONResponse {
+		try {
+			$entity = $this->mapper->subscribe(userId: $userId, registerId: $registerId, schemaId: $schemaId);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
 
 		return new JSONResponse(data: $entity->jsonSerialize(), statusCode: 201);
-	}//end create()
+	}//end subscribe()
 
 	/**
 	 * Unsubscribe the current user from a (register, schema) tuple.
@@ -180,7 +218,7 @@ class NotificationSubscriptionsController extends Controller {
 	public function destroy(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		$registerId = $this->coerceNullableInt(value: $this->request->getParam('registerId'));
@@ -194,23 +232,6 @@ class NotificationSubscriptionsController extends Controller {
 
 		return new JSONResponse(data: ['deleted' => $deleted]);
 	}//end destroy()
-
-	/**
-	 * Resolve the current user's UID, or null when anonymous.
-	 *
-	 * @return ?string
-	 *
-	 * @spec exclude Private helper: resolves the session UID (null when anonymous);
-	 *              the subscription endpoints are owned by notificatie-engine/tasks.md.
-	 */
-	private function resolveUserId(): ?string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return null;
-		}
-
-		return $user->getUID();
-	}//end resolveUserId()
 
 	/**
 	 * Coerce a request value to a nullable int. Empty string and null
