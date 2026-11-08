@@ -34,11 +34,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
-use OCA\OpenRegister\Service\Deletion\DeletionWindow;
+use OCA\OpenRegister\Service\Deletion\DeletionWindowInterface;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
-use OCA\OpenRegister\Service\Deletion\DestructionScope;
+use OCA\OpenRegister\Service\Deletion\DestructionActionInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Controller;
@@ -461,7 +460,7 @@ class DeletedController extends Controller {
 	 * reversible and a destruction is not.
 	 *
 	 * @param ObjectEntity $object The object restored.
-	 * @param \OCA\OpenRegister\Service\Deletion\DeletionWindow|null $window The window it was restored inside.
+	 * @param DeletionWindowInterface|null $window The window it was restored inside.
 	 *
 	 * @return void
 	 *
@@ -718,14 +717,14 @@ class DeletedController extends Controller {
 	 *
 	 * @param ObjectEntity $object The object being purged.
 	 * @param Schema|null $schema The object's resolved schema.
-	 * @param DeletionWindow|null $window The published recovery window.
+	 * @param DeletionWindowInterface|null $window The published recovery window.
 	 * @param bool $force Whether the caller explicitly waived the window.
 	 *
 	 * @return JSONResponse|null The refusal, or null when the destruction may proceed.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function refuseDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindow $window, bool $force): ?JSONResponse {
+	private function refuseDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindowInterface $window, bool $force): ?JSONResponse {
 		$refusal = $this->services->store->deletion->destroyRight->refusalFor(object: $object, schema: $schema);
 		if ($refusal !== null) {
 			return new JSONResponse(
@@ -768,14 +767,14 @@ class DeletedController extends Controller {
 	 *
 	 * @param ObjectEntity $object The object being purged.
 	 * @param Schema|null $schema The object's resolved schema.
-	 * @param DeletionWindow|null $window The published recovery window.
+	 * @param DeletionWindowInterface|null $window The published recovery window.
 	 * @param bool $force Whether the caller explicitly waived the window.
 	 *
 	 * @return JSONResponse The destruction record, or the scope refusal.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	private function performDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindow $window, bool $force): JSONResponse {
+	private function performDestruction(ObjectEntity $object, ?Schema $schema, ?DeletionWindowInterface $window, bool $force): JSONResponse {
 		try {
 			$scopeReport = $this->services->store->deletion->scope->destroy(object: $object, schema: $schema);
 			$record = $this->services->store->deletion->recorder->record(
@@ -898,7 +897,7 @@ class DeletedController extends Controller {
 			$records = $this->services->access->authorizer->readableDestructionRecords(
 				records: $this->services->store->auditTrailMapper->findForObjectByAction(
 					objectUuid: $id,
-					actions: [DestructionScope::DESTRUCTION_ACTION]
+					actions: [DestructionActionInterface::DESTRUCTION_ACTION]
 				)
 			);
 
