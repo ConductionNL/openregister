@@ -47,7 +47,7 @@ use UnexpectedValueException;
 /**
  * Serialises and installs a whole configuration set through the engine.
  */
-class ConfigSetShareableConfigType implements IShareableConfigType {
+class ConfigSetShareableConfigType implements IShareableConfigType, ConfigSetShareableConfigTypeInterface {
 	/**
 	 * Constructor.
 	 *

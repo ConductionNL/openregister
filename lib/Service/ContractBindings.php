@@ -78,6 +78,12 @@ use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
 use OCA\OpenRegister\Service\Config\SchemaShareableConfigScannerInterface;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
+use OCA\OpenRegister\Service\Config\Types\ConfigSetShareableConfigType;
+use OCA\OpenRegister\Service\Config\Types\ConfigSetShareableConfigTypeInterface;
+use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigType;
+use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigTypeInterface;
+use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigType;
+use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigTypeInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
@@ -159,6 +165,16 @@ use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
+use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
+use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheckInterface;
+use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltCheck;
+use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltCheckInterface;
+use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolver;
+use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolverInterface;
+use OCA\OpenRegister\Service\Flow\Principal\GroupPrincipalResolver;
+use OCA\OpenRegister\Service\Flow\Principal\GroupPrincipalResolverInterface;
+use OCA\OpenRegister\Service\Flow\Principal\UserPrincipalResolver;
+use OCA\OpenRegister\Service\Flow\Principal\UserPrincipalResolverInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
@@ -564,6 +580,14 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectWriterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		UserPrincipalResolverInterface::class => UserPrincipalResolver::class,
+		GroupPrincipalResolverInterface::class => GroupPrincipalResolver::class,
+		AgentPrincipalResolverInterface::class => AgentPrincipalResolver::class,
+		KillSwitchCheckInterface::class => KillSwitchCheck::class,
+		OrganisationHaltCheckInterface::class => OrganisationHaltCheck::class,
+		FlowShareableConfigTypeInterface::class => FlowShareableConfigType::class,
+		RegisterSchemaShareableConfigTypeInterface::class => RegisterSchemaShareableConfigType::class,
+		ConfigSetShareableConfigTypeInterface::class => ConfigSetShareableConfigType::class,
 	];
 
 	/**
