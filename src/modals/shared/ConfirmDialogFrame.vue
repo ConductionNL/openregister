@@ -14,14 +14,7 @@
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton v-if="$slots.cancelIcon" @click="$emit('cancel')">
-				<template #icon>
-					<slot name="cancelIcon" />
-				</template>
-				{{ closeLabel }}
-			</NcButton>
 			<CloseCancelButton
-				v-else
 				:label="closeLabel"
 				:disabled="cancelDisabled || undefined"
 				@click="$emit('cancel')" />
@@ -50,9 +43,6 @@ import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 /**
  * The frame of a dialog that asks before an irreversible action: the question
  * in its default slot, the outcome below it and the two buttons.
- *
- * The cancel button is CloseCancelButton unless the `cancelIcon` slot gives
- * it another icon.
  *
  * It asks to be answered through its buttons unless it is `closable`; then
  * the dialog's own close (button, Escape) emits `cancel` as well.
