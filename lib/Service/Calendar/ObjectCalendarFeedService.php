@@ -199,39 +199,70 @@ class ObjectCalendarFeedService {
 		$timeZone = $this->tenantTimeZone();
 		$objects = $this->listObjects(token: $token, scope: $scope);
 
-		$lines = [];
-		$years = [(int)date('Y')];
+		$events = $this->collectEvents(objects: $objects, timeZone: $timeZone);
+
+		return $this->writer->calendar(
+			calendarName: $scope['name'],
+			timeZone: $timeZone,
+			componentLines: $events['lines'],
+			fromYear: min($events['years']),
+			toYear: max($events['years'])
+		);
+	}//end renderAsCurrentUser()
+
+	/**
+	 * The events of every publishable object, with the years they touch.
+	 *
+	 * The current year is always covered, so an empty feed still carries a
+	 * usable VTIMEZONE.
+	 *
+	 * @param array<int, mixed> $objects The objects the scope lists.
+	 * @param DateTimeZone $timeZone The tenant zone.
+	 *
+	 * @return array{lines: array<int, string>, years: array<int, int>} The unfolded lines and years.
+	 */
+	private function collectEvents(array $objects, DateTimeZone $timeZone): array {
+		$events = ['lines' => [], 'years' => [(int)date('Y')]];
 
 		foreach ($objects as $object) {
 			if ($object instanceof ObjectEntity === false || $this->isPublishable(object: $object) === false) {
 				continue;
 			}
 
-			foreach ($this->declarationsFor(object: $object) as $declaration) {
-				$event = $this->eventBuilder->build(
-					object: $object,
-					schemaId: (string)$object->getSchema(),
-					declaration: $declaration,
-					timeZone: $timeZone
-				);
-
-				if ($event === null) {
-					continue;
-				}
-
-				$lines = array_merge($lines, $event['lines']);
-				$years = array_merge($years, $event['years']);
-			}
+			$events = $this->addObjectEvents(events: $events, object: $object, timeZone: $timeZone);
 		}
 
-		return $this->writer->calendar(
-			calendarName: $scope['name'],
-			timeZone: $timeZone,
-			componentLines: $lines,
-			fromYear: min($years),
-			toYear: max($years)
-		);
-	}//end renderAsCurrentUser()
+		return $events;
+	}//end collectEvents()
+
+	/**
+	 * Append the events of every date one object declares.
+	 *
+	 * @param array{lines: array<int, string>, years: array<int, int>} $events The events so far.
+	 * @param ObjectEntity $object The publishable object.
+	 * @param DateTimeZone $timeZone The tenant zone.
+	 *
+	 * @return array{lines: array<int, string>, years: array<int, int>} The events with the object's added.
+	 */
+	private function addObjectEvents(array $events, ObjectEntity $object, DateTimeZone $timeZone): array {
+		foreach ($this->declarationsFor(object: $object) as $declaration) {
+			$event = $this->eventBuilder->build(
+				object: $object,
+				schemaId: (string)$object->getSchema(),
+				declaration: $declaration,
+				timeZone: $timeZone
+			);
+
+			if ($event === null) {
+				continue;
+			}
+
+			$events['lines'] = array_merge($events['lines'], $event['lines']);
+			$events['years'] = array_merge($events['years'], $event['years']);
+		}
+
+		return $events;
+	}//end addObjectEvents()
 
 	/**
 	 * Resolve what a token covers: one schema, or one saved view.
