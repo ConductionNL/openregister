@@ -65,6 +65,7 @@ final class DbRegistrar {
 		ApiCallRecordMapperInterface::class => ApiCallRecordMapper::class,
 		ApplicationMapperInterface::class => ApplicationMapper::class,
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
+		AuditTrailPageQueryInterface::class => AuditTrailPageQuery::class,
 		BookmarkLinkMapperInterface::class => BookmarkLinkMapper::class,
 		BulkJobMapperInterface::class => BulkJobMapper::class,
 		BulkJobMemberMapperInterface::class => BulkJobMemberMapper::class,

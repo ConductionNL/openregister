@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Db\AuditTrailPageQuery;
+use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
 use OCA\OpenRegister\Service\LogService;
 
 /**
@@ -36,11 +36,11 @@ final class AuditExportSource {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param AuditTrailPageQuery $pageQuery  Selects the rows.
+	 * @param AuditTrailPageQueryInterface $pageQuery  Selects the rows.
 	 * @param LogService          $logService Renders them.
 	 */
 	public function __construct(
-		public readonly AuditTrailPageQuery $pageQuery,
+		public readonly AuditTrailPageQueryInterface $pageQuery,
 		public readonly LogService $logService,
 	) {
 	}//end __construct()
