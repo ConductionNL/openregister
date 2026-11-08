@@ -86,6 +86,7 @@ final class DbRegistrar {
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
 		ErasurePreviewMapperInterface::class => ErasurePreviewMapper::class,
 		FederatedShareMapperInterface::class => FederatedShareMapper::class,
+		FeedbackMapperInterface::class => FeedbackMapper::class,
 		FlowDefinitionMapperInterface::class => FlowDefinitionMapper::class,
 		FlowLinkMapperInterface::class => FlowLinkMapper::class,
 		FlowRunMapperInterface::class => FlowRunMapper::class,

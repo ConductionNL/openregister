@@ -53,7 +53,7 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  */
-class FieldEncryptionHandler {
+class FieldEncryptionHandler implements FieldEncryptionHandlerInterface {
 	/**
 	 * Prefix that marks a stored value as an OpenRegister encryption envelope.
 	 *

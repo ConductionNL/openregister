@@ -30,13 +30,13 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\ChatControllerServices;
-use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
-use OCA\OpenRegister\Mcp\Db\Conversation;
-use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Db\Feedback;
-use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
+use OCA\OpenRegister\Db\FeedbackMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\Entity;
@@ -103,9 +103,9 @@ class ChatController extends Controller {
 	 *
 	 * Handles database operations for feedback entities.
 	 *
-	 * @var FeedbackMapper Feedback mapper instance
+	 * @var FeedbackMapperInterface Feedback mapper instance
 	 */
-	private readonly FeedbackMapper $feedbackMapper;
+	private readonly FeedbackMapperInterface $feedbackMapper;
 
 	/**
 	 * Agent mapper

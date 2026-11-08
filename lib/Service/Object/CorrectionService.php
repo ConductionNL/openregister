@@ -62,7 +62,7 @@ use Throwable;
  * correction entry instead, because rewriting a sealed row is tampering
  * whoever does it and for whatever reason.
  */
-class CorrectionService {
+class CorrectionService implements CorrectionServiceInterface {
 
 	/**
 	 * The named right a correction requires.
