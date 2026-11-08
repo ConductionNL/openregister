@@ -35,9 +35,9 @@ final class TransitionSubjects {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectOperationsInterface   Reads and saves the object.
-	 * @param SchemaMapperInterface        Resolves the object's schema and its lifecycle.
-	 * @param RegisterMapperInterface    Resolves the object's register.
+	 * @param ObjectOperationsInterface $objectService  Reads and saves the object.
+	 * @param SchemaMapperInterface     $schemaMapper   Resolves the object's schema and its lifecycle.
+	 * @param RegisterMapperInterface   $registerMapper Resolves the object's register.
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
