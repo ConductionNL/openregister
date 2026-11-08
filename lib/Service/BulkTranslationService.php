@@ -108,12 +108,42 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 		}
 
 		$request = new ObjectTranslationRequest(object: $object, fromLong: $fromLong, toLong: $toLong);
-		$result = ['translated' => [], 'skipped' => []];
-		foreach ($translatableProps as $property) {
-			if (is_array($properties) === true && in_array($property, $properties, true) === false) {
-				continue;
-			}
+		return $this->translateProperties(
+			request: $request,
+			properties: $this->selectedProperties(translatable: $translatableProps, whitelist: $properties)
+		);
+	}//end translateObject()
 
+	/**
+	 * The translatable properties, narrowed to the whitelist when one is given, in schema order.
+	 *
+	 * @param array<int|string,string> $translatable The schema's translatable properties.
+	 * @param array<int,string>|null   $whitelist    Property names to limit to, or null for all.
+	 *
+	 * @return array<int|string,string>
+	 */
+	private function selectedProperties(array $translatable, ?array $whitelist): array {
+		if ($whitelist === null) {
+			return $translatable;
+		}
+
+		return array_filter(
+			$translatable,
+			static fn (mixed $property): bool => in_array($property, $whitelist, true) === true
+		);
+	}//end selectedProperties()
+
+	/**
+	 * Translate each property, collecting the translated texts and the skip reasons.
+	 *
+	 * @param ObjectTranslationRequest $request    The object and language pair.
+	 * @param array<int|string,string> $properties The properties to translate.
+	 *
+	 * @return array{translated: array<string,string>, skipped: array<string,string>}
+	 */
+	private function translateProperties(ObjectTranslationRequest $request, array $properties): array {
+		$result = ['translated' => [], 'skipped' => []];
+		foreach ($properties as $property) {
 			$value = $this->translateProperty(request: $request, property: $property);
 			if ($value['translated'] === true) {
 				$result['translated'][$property] = $value['text'];
@@ -124,7 +154,7 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 		}
 
 		return $result;
-	}//end translateObject()
+	}//end translateProperties()
 
 	/**
 	 * Translate one property into its target-language slot and mirror it into the sidecar.
@@ -140,7 +170,7 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 	private function translateProperty(ObjectTranslationRequest $request, string $property): array {
 		$existing = $request->data[$property] ?? null;
 		$sourceValue = $this->sourceValue(existing: $existing, fromLong: $request->fromLong);
-		if (is_string($sourceValue) === false || $sourceValue === '') {
+		if ($this->isText(value: $sourceValue) === false) {
 			return ['translated' => false, 'text' => 'no-source-value'];
 		}
 
@@ -164,13 +194,24 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 			return ['translated' => false, 'text' => 'provider-error: ' . $e->getMessage()];
 		}
 
-		if (is_string($translatedValue) === false || $translatedValue === '') {
+		if ($this->isText(value: $translatedValue) === false) {
 			return ['translated' => false, 'text' => 'provider-returned-empty'];
 		}
 
 		$this->mirrorTranslation(request: $request, translation: ['property' => $property, 'value' => $translatedValue]);
 		return ['translated' => true, 'text' => $translatedValue];
 	}//end translateProperty()
+
+	/**
+	 * Whether a value is a non-empty string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private function isText(mixed $value): bool {
+		return is_string($value) === true && $value !== '';
+	}//end isText()
 
 	/**
 	 * The source-language value of a property: its `fromLong` slot, or a plain string as legacy

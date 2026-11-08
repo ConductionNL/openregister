@@ -275,7 +275,7 @@
       "count": 8
     },
     "no-console": {
-      "count": 8
+      "count": 1
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -604,9 +604,6 @@
     }
   },
   "src/modals/settings/LLMConfigModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 4
-    },
     "no-console": {
       "count": 2
     },

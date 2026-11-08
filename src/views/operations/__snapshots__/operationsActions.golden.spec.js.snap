@@ -1,0 +1,436 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`operations console actions golden act when ok 1`] = `
+{
+  "acting": null,
+  "error": "",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/bulk-jobs/job-1/retry",
+      "job-1",
+      "",
+    ],
+    [
+      "load",
+      "job-1",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden act when refusedBare 1`] = `
+{
+  "acting": null,
+  "error": "t:That did not go through.",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/bulk-jobs/job-1/retry",
+      "job-1",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden act when refusedWithError 1`] = `
+{
+  "acting": null,
+  "error": "Locked",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/bulk-jobs/job-1/retry",
+      "job-1",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden act when refusedWithMessage 1`] = `
+{
+  "acting": null,
+  "error": "t:That did not go through.",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/bulk-jobs/job-1/retry",
+      "job-1",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden enterMaintenance when ok 1`] = `
+{
+  "acting": null,
+  "error": "",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/maintenance",
+      {
+        "message": "Back soon",
+      },
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "holds": true,
+    "message": "Closed",
+  },
+}
+`;
+
+exports[`operations console actions golden enterMaintenance when refusedBare 1`] = `
+{
+  "acting": null,
+  "error": "t:That did not go through.",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/maintenance",
+      {
+        "message": "Back soon",
+      },
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "holds": false,
+    "message": "Back soon",
+  },
+}
+`;
+
+exports[`operations console actions golden enterMaintenance when refusedWithError 1`] = `
+{
+  "acting": null,
+  "error": "Held",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/maintenance",
+      {
+        "message": "Back soon",
+      },
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "holds": false,
+    "message": "Back soon",
+  },
+}
+`;
+
+exports[`operations console actions golden enterMaintenance when refusedWithMessage 1`] = `
+{
+  "acting": null,
+  "error": "Held by run 7",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/maintenance",
+      {
+        "message": "Back soon",
+      },
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "holds": false,
+    "message": "Back soon",
+  },
+}
+`;
+
+exports[`operations console actions golden enterMaintenanceSilently when ok 1`] = `
+{
+  "acting": null,
+  "error": "",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/maintenance",
+      {
+        "message": undefined,
+      },
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "holds": true,
+    "message": "Closed",
+  },
+}
+`;
+
+exports[`operations console actions golden enterMaintenanceSilently when refusedBare 1`] = `
+{
+  "acting": null,
+  "error": "t:That did not go through.",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/maintenance",
+      {
+        "message": undefined,
+      },
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden enterMaintenanceSilently when refusedWithError 1`] = `
+{
+  "acting": null,
+  "error": "Held",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/maintenance",
+      {
+        "message": undefined,
+      },
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden enterMaintenanceSilently when refusedWithMessage 1`] = `
+{
+  "acting": null,
+  "error": "Held by run 7",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/maintenance",
+      {
+        "message": undefined,
+      },
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden leaveMaintenance when ok 1`] = `
+{
+  "acting": null,
+  "error": "",
+  "log": [
+    [
+      "delete",
+      "/apps/openregister/api/operations/maintenance",
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "holds": true,
+    "message": "Closed",
+  },
+}
+`;
+
+exports[`operations console actions golden leaveMaintenance when refusedBare 1`] = `
+{
+  "acting": null,
+  "error": "t:That did not go through.",
+  "log": [
+    [
+      "delete",
+      "/apps/openregister/api/operations/maintenance",
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden leaveMaintenance when refusedWithError 1`] = `
+{
+  "acting": null,
+  "error": "Held",
+  "log": [
+    [
+      "delete",
+      "/apps/openregister/api/operations/maintenance",
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden leaveMaintenance when refusedWithMessage 1`] = `
+{
+  "acting": null,
+  "error": "Held by run 7",
+  "log": [
+    [
+      "delete",
+      "/apps/openregister/api/operations/maintenance",
+      "maintenance",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden runNow when ok 1`] = `
+{
+  "acting": null,
+  "error": "",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/run-now",
+      {
+        "job": "cleanup",
+      },
+      "cleanup",
+      "",
+    ],
+    [
+      "loadRuns",
+      "cleanup",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden runNow when refusedBare 1`] = `
+{
+  "acting": null,
+  "error": "t:That did not go through.",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/run-now",
+      {
+        "job": "cleanup",
+      },
+      "cleanup",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden runNow when refusedWithError 1`] = `
+{
+  "acting": null,
+  "error": "Held",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/run-now",
+      {
+        "job": "cleanup",
+      },
+      "cleanup",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;
+
+exports[`operations console actions golden runNow when refusedWithMessage 1`] = `
+{
+  "acting": null,
+  "error": "Held by run 7",
+  "log": [
+    [
+      "post",
+      "/apps/openregister/api/operations/run-now",
+      {
+        "job": "cleanup",
+      },
+      "cleanup",
+      "",
+    ],
+  ],
+  "maintenance": {
+    "actor": null,
+    "holds": false,
+    "message": "",
+  },
+}
+`;

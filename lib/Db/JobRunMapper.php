@@ -114,10 +114,10 @@ class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function countRecent(
-		?string $jobClass = null,
-		?string $outcome = null,
-		?DateTime $since = null,
-		?DateTime $until = null,
+		string|null $jobClass = null,
+		string|null $outcome = null,
+		DateTime|null $since = null,
+		DateTime|null $until = null,
 	): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))->from($this->getTableName());

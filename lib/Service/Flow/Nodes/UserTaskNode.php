@@ -325,6 +325,26 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			throw $this->suspension(config: $config, items: $items);
 		}
 
+		return $this->answerFromTask(items: $items, config: $config, context: $context, taskUuid: $taskUuid);
+	}//end execute()
+
+	/**
+	 * Read the task this step is waiting on: suspend again until it is terminal, then place its outcome.
+	 *
+	 * @param array                $items    The input items.
+	 * @param array                $config   The step configuration.
+	 * @param array<string, mixed> $context  Run-level metadata.
+	 * @param string               $taskUuid The task held in this node's slot.
+	 *
+	 * @return array The items, each carrying the outcome.
+	 *
+	 * @throws RuntimeException When the task no longer exists.
+	 * @throws FlowSuspension   While the task is not terminal.
+	 * @throws FlowStop         On a rejection the flow opted to stop on.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function answerFromTask(array $items, array $config, array $context, string $taskUuid): array {
 		$task = $this->bridge->taskOrNull(uuid: $taskUuid);
 		if ($task === null) {
 			// The row this run was waiting on is gone. Waiting further would
@@ -351,6 +371,25 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 
 		$bag = FlowTaskBridge::outcomeBagFor(task: $task);
 
+		$this->refuseIfRejected(items: $items, config: $config, bag: $bag);
+
+		return $this->placeOutcome(items: $items, config: $config, bag: $bag);
+	}//end answerFromTask()
+
+	/**
+	 * Stop the run on a rejection, when the flow opted in with `failOnReject`.
+	 *
+	 * @param array                $items  The input items.
+	 * @param array                $config The step configuration.
+	 * @param array<string, mixed> $bag    The outcome bag.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowStop On an opted-in rejection.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function refuseIfRejected(array $items, array $config, array $bag): void {
 		if ($bag['rejected'] === true && ($config['failOnReject'] ?? false) === true) {
 			throw new FlowStop(
 				reason: sprintf(
@@ -361,8 +400,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			);
 		}
 
-		return $this->placeOutcome(items: $items, config: $config, bag: $bag);
-	}//end execute()
+	}//end refuseIfRejected()
 
 	/**
 	 * Create the one task and remember it in this node's slot.
@@ -427,9 +465,13 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 
 		$this->armDeadline(
 			config: $config,
-			taskUuid: (string)$task->getUuid(),
-			runUuid: $runUuid,
-			nodeId: $resume->nodeId(),
+			binding: [
+				'subjectType' => 'task',
+				'subjectUuid' => (string)$task->getUuid(),
+				'runUuid' => $runUuid,
+				'nodeId' => $resume->nodeId(),
+				'appId' => 'openregister',
+			],
 			context: $context
 		);
 
@@ -460,48 +502,80 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 * recorded as provenance, which is what the timer model asks for — a timer
 	 * is subject-bound, and its run is optional context.
 	 *
-	 * @param array<string, mixed> $config The node configuration.
-	 * @param string $taskUuid The uuid of the task just created.
-	 * @param string $runUuid The run this node is executing in.
-	 * @param string $nodeId This node's id.
+	 * @param array<string, mixed> $config  The node configuration.
+	 * @param array<string, mixed> $binding The timer's subject (the task just created) and provenance (run, node, app).
 	 * @param array<string, mixed> $context The execution context.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	private function armDeadline(array $config, string $taskUuid, string $runUuid, string $nodeId, array $context): void {
-		$sla = ($config['sla'] ?? null);
-		if ($sla === null || $sla === '' || $sla === []) {
+	private function armDeadline(array $config, array $binding, array $context): void {
+		if ($this->declaresSla(config: $config) === false) {
 			return;
 		}
 
-		$title = trim((string)($config['title'] ?? ''));
-		if ($title === '') {
-			$title = null;
-		}
-
-		$timerConfig = [
-			'subjectType' => 'task',
-			'subjectUuid' => $taskUuid,
-			'runUuid' => $runUuid,
-			'nodeId' => $nodeId,
-			'appId' => 'openregister',
-			'title' => $title,
-			'sla' => $sla,
-		];
-
-		// Only forward what the author actually set: `build()` applies its own
-		// defaults, and passing an explicit null would override them.
-		foreach (['calendar', 'ladder', 'escalationRules', 'purpose', 'legalEffect', 'onExpiry', 'organisation'] as $key) {
-			if (array_key_exists($key, $config) === true && $config[$key] !== null && $config[$key] !== '') {
-				$timerConfig[$key] = $config[$key];
-			}
-		}
+		$timerConfig = $binding + ['title' => $this->timerTitle(config: $config), 'sla' => $config['sla']]
+			+ $this->optionalTimerKeys(config: $config);
 
 		$this->timers->arm(config: $timerConfig, actor: $this->actingIdentity(context: $context));
 
 	}//end armDeadline()
+
+	/**
+	 * Whether the node declares an SLA at all: absent, null, '' and [] do not.
+	 *
+	 * @param array<string, mixed> $config The node configuration.
+	 *
+	 * @return bool True when a deadline should be armed.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function declaresSla(array $config): bool {
+		$sla = ($config['sla'] ?? null);
+		return $sla !== null && $sla !== '' && $sla !== [];
+	}//end declaresSla()
+
+	/**
+	 * The timer's title: the node's trimmed title, or null when it has none.
+	 *
+	 * @param array<string, mixed> $config The node configuration.
+	 *
+	 * @return string|null The title.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function timerTitle(array $config): ?string {
+		$title = trim((string)($config['title'] ?? ''));
+		if ($title === '') {
+			return null;
+		}
+
+		return $title;
+	}//end timerTitle()
+
+	/**
+	 * The optional timer keys the author actually set.
+	 *
+	 * Only forward what the author actually set: `build()` applies its own
+	 * defaults, and passing an explicit null would override them.
+	 *
+	 * @param array<string, mixed> $config The node configuration.
+	 *
+	 * @return array<string, mixed> The keys that are present, not null and not ''.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function optionalTimerKeys(array $config): array {
+		$set = [];
+		foreach (['calendar', 'ladder', 'escalationRules', 'purpose', 'legalEffect', 'onExpiry', 'organisation'] as $key) {
+			if (array_key_exists($key, $config) === true && $config[$key] !== null && $config[$key] !== '') {
+				$set[$key] = $config[$key];
+			}
+		}
+
+		return $set;
+	}//end optionalTimerKeys()
 
 	/**
 	 * Write the outcome bag onto every item, under the configured key.

@@ -277,8 +277,8 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 	 * @psalm-return list<\OCA\OpenRegister\Db\Application>
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
+		int|null $limit = null,
+		int|null $offset = null,
 		array $filters = [],
 		array $searchConditions = [],
 		array $searchParams = [],
@@ -296,6 +296,27 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 			->orderBy('created', 'DESC');
 
 		// Apply simple equality filters.
+		$this->applyEqualityFilters(qb: $qb, filters: $filters);
+
+		// Apply complex search conditions (OR logic).
+		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
+
+		// Apply organisation filter (all users including admins must have active org).
+		$this->applyOrganisationFilter(qb: $qb);
+
+		// Execute query and return entities.
+		return $this->findEntities(query: $qb);
+	}//end findAll()
+
+	/**
+	 * One equality condition per filter.
+	 *
+	 * @param IQueryBuilder        $qb      The query to add the conditions to.
+	 * @param array<string, mixed> $filters Column name to value.
+	 *
+	 * @return void
+	 */
+	private function applyEqualityFilters(IQueryBuilder $qb, array $filters): void {
 		foreach ($filters as $key => $value) {
 			$qb->andWhere(
 				$qb->expr()->eq(
@@ -304,23 +325,31 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 				)
 			);
 		}
+	}//end applyEqualityFilters()
 
-		// Apply complex search conditions (OR logic).
-		if (empty($searchConditions) === false) {
-			$qb->andWhere($qb->expr()->orX(...$searchConditions));
-
-			// Set parameters for search conditions.
-			foreach ($searchParams as $key => $value) {
-				$qb->setParameter($key, $value);
-			}
+	/**
+	 * OR the search conditions into the query and bind their parameters.
+	 *
+	 * Nothing is added, and no parameter is bound, when there are no conditions.
+	 *
+	 * @param IQueryBuilder        $qb               The query to add the conditions to.
+	 * @param array                $searchConditions Conditions, joined with OR.
+	 * @param array<string, mixed> $searchParams     Parameter name to value for those conditions.
+	 *
+	 * @return void
+	 */
+	private function applySearchConditions(IQueryBuilder $qb, array $searchConditions, array $searchParams): void {
+		if (empty($searchConditions) === true) {
+			return;
 		}
 
-		// Apply organisation filter (all users including admins must have active org).
-		$this->applyOrganisationFilter(qb: $qb);
+		$qb->andWhere($qb->expr()->orX(...$searchConditions));
 
-		// Execute query and return entities.
-		return $this->findEntities(query: $qb);
-	}//end findAll()
+		// Set parameters for search conditions.
+		foreach ($searchParams as $key => $value) {
+			$qb->setParameter($key, $value);
+		}
+	}//end applySearchConditions()
 
 	/**
 	 * Insert a new application

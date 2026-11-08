@@ -350,6 +350,7 @@ class ViewService {
 		}//end try
 	}//end update()
 
+
 	/**
 	 * Delete a view by ID.
 	 *
@@ -463,42 +464,75 @@ class ViewService {
 
 		$viewType = $presentation['viewType'] ?? 'table';
 
-		if ($viewType === 'table') {
-			return;
-		}
-
-		if ($viewType === 'kanban') {
-			$groupByField = $presentation['kanban']['groupByField'] ?? null;
-			if (is_string($groupByField) === false || $groupByField === '') {
-				throw new InvalidArgumentException('A kanban presentation requires a non-empty kanban.groupByField');
-			}
-
-			$this->assertFieldExistsOnViewSchema(field: $groupByField, query: $query, label: 'kanban.groupByField');
-			return;
-		}
-
-		if ($viewType === 'calendar') {
-			$dateField = $presentation['calendar']['dateField'] ?? null;
-			if (is_string($dateField) === false || $dateField === '') {
-				throw new InvalidArgumentException('A calendar presentation requires a non-empty calendar.dateField');
-			}
-
-			$this->assertFieldExistsOnViewSchema(field: $dateField, query: $query, label: 'calendar.dateField');
-
-			$endDateField = $presentation['calendar']['endDateField'] ?? null;
-			if ($endDateField !== null) {
-				if (is_string($endDateField) === false || $endDateField === '') {
-					throw new InvalidArgumentException('calendar.endDateField must be a non-empty string when provided');
-				}
-
-				$this->assertFieldExistsOnViewSchema(field: $endDateField, query: $query, label: 'calendar.endDateField');
-			}
-
-			return;
-		}
-
-		throw new InvalidArgumentException('Unknown presentation viewType: ' . (string)$viewType);
+		match ($viewType) {
+			'table' => null,
+			'kanban' => $this->validateKanbanPresentation(presentation: $presentation, query: $query),
+			'calendar' => $this->validateCalendarPresentation(presentation: $presentation, query: $query),
+			default => throw new InvalidArgumentException('Unknown presentation viewType: ' . (string)$viewType),
+		};
 	}//end validatePresentationConfig()
+
+	/**
+	 * A kanban presentation must declare a groupByField on the view's schema.
+	 *
+	 * @param array $presentation The presentation config
+	 * @param array<string, mixed> $query The view's query (used to resolve its schema)
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the presentation cannot render
+	 */
+	private function validateKanbanPresentation(array $presentation, array $query): void {
+		$groupByField = $presentation['kanban']['groupByField'] ?? null;
+		if (is_string($groupByField) === false || $groupByField === '') {
+			throw new InvalidArgumentException('A kanban presentation requires a non-empty kanban.groupByField');
+		}
+
+		$this->assertFieldExistsOnViewSchema(field: $groupByField, query: $query, label: 'kanban.groupByField');
+	}//end validateKanbanPresentation()
+
+	/**
+	 * A calendar presentation must declare a dateField, and may declare an
+	 * endDateField, each on the view's schema.
+	 *
+	 * @param array $presentation The presentation config
+	 * @param array<string, mixed> $query The view's query (used to resolve its schema)
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the presentation cannot render
+	 */
+	private function validateCalendarPresentation(array $presentation, array $query): void {
+		$dateField = $presentation['calendar']['dateField'] ?? null;
+		if (is_string($dateField) === false || $dateField === '') {
+			throw new InvalidArgumentException('A calendar presentation requires a non-empty calendar.dateField');
+		}
+
+		$this->assertFieldExistsOnViewSchema(field: $dateField, query: $query, label: 'calendar.dateField');
+		$this->validateCalendarEndDateField(endDateField: $presentation['calendar']['endDateField'] ?? null, query: $query);
+	}//end validateCalendarPresentation()
+
+	/**
+	 * An optional calendar endDateField must, when given, be on the view's schema.
+	 *
+	 * @param mixed $endDateField The declared endDateField, or null when absent
+	 * @param array<string, mixed> $query The view's query (used to resolve its schema)
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the field is malformed or not on the schema
+	 */
+	private function validateCalendarEndDateField(mixed $endDateField, array $query): void {
+		if ($endDateField === null) {
+			return;
+		}
+
+		if (is_string($endDateField) === false || $endDateField === '') {
+			throw new InvalidArgumentException('calendar.endDateField must be a non-empty string when provided');
+		}
+
+		$this->assertFieldExistsOnViewSchema(field: $endDateField, query: $query, label: 'calendar.endDateField');
+	}//end validateCalendarEndDateField()
 
 	/**
 	 * Assert that a field name is a real property on the view's (first) schema.

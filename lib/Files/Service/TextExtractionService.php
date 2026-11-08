@@ -33,6 +33,7 @@ use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
 use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
 use OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis;
@@ -255,12 +256,14 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		// Persist textual chunks and include the metadata chunk at the end.
 		$this->persistChunksForSource(
-			sourceType: 'file',
-			sourceId: $fileId,
+			source: new ChunkSource(
+				sourceType: 'file',
+				sourceId: $fileId,
+				owner: $payload['owner'] ?? null,
+				organisation: $payload['organisation'] ?? null,
+				sourceTimestamp: $sourceTimestamp
+			),
 			chunks: $chunks,
-			owner: $payload['owner'] ?? null,
-			organisation: $payload['organisation'] ?? null,
-			sourceTimestamp: $sourceTimestamp,
 			payload: $payload
 		);
 
@@ -573,12 +576,14 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		);
 
 		$this->persistChunksForSource(
-			sourceType: 'object',
-			sourceId: $objectId,
+			source: new ChunkSource(
+				sourceType: 'object',
+				sourceId: $objectId,
+				owner: $payload['owner'],
+				organisation: $payload['organisation'],
+				sourceTimestamp: $sourceTimestamp
+			),
 			chunks: $chunks,
-			owner: $payload['owner'],
-			organisation: $payload['organisation'],
-			sourceTimestamp: $sourceTimestamp,
 			payload: $payload
 		);
 
@@ -832,52 +837,30 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Persist textual chunks for a source.
 	 *
-	 * @param string $sourceType Source type identifier.
-	 * @param int $sourceId Source identifier.
+	 * @param ChunkSource $source The source the chunks belong to.
 	 * @param array<int,array<string,mixed>> $chunks Chunk payloads.
-	 * @param string|null $owner Owner identifier.
-	 * @param string|null $organisation Organisation identifier.
-	 * @param int $sourceTimestamp Source modification timestamp.
 	 * @param array<string,mixed> $payload Extraction payload for metadata chunk creation.
-	 *
-	 * @phpstan-param non-empty-string $sourceType
-	 * @psalm-param   non-empty-string $sourceType
 	 *
 	 * @return void
 	 */
-	private function persistChunksForSource(
-		string $sourceType,
-		int $sourceId,
-		array $chunks,
-		?string $owner,
-		?string $organisation,
-		int $sourceTimestamp,
-		array $payload,
-	): void {
+	private function persistChunksForSource(ChunkSource $source, array $chunks, array $payload): void {
 		$this->storage->db->beginTransaction();
 
 		try {
 			// Remove all existing chunks for this source to avoid stale data.
-			$this->chunkMapper->deleteBySource(sourceType: $sourceType, sourceId: $sourceId);
+			$this->chunkMapper->deleteBySource(sourceType: $source->sourceType, sourceId: $source->sourceId);
 
 			foreach ($chunks as $chunkData) {
-				$chunkEntity = $this->hydrateChunkEntity(
-					sourceType: $sourceType,
-					sourceId: $sourceId,
-					chunkData: $chunkData,
-					owner: $owner,
-					organisation: $organisation,
-					sourceTimestamp: $sourceTimestamp
-				);
+				$chunkEntity = $this->hydrateChunkEntity(source: $source, chunkData: $chunkData);
 
 				$this->chunkMapper->insert($chunkEntity);
 			}
 
 			$this->persistMetadataChunk(
-				sourceType: $sourceType,
-				sourceId: $sourceId,
+				sourceType: $source->sourceType,
+				sourceId: $source->sourceId,
 				payload: $payload,
-				sourceTimestamp: $sourceTimestamp
+				sourceTimestamp: $source->sourceTimestamp
 			);
 
 			$this->storage->db->commit();
@@ -890,30 +873,16 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Create a Chunk entity from an array payload.
 	 *
-	 * @param string $sourceType Source type identifier.
-	 * @param int $sourceId Source identifier.
+	 * @param ChunkSource $source The source the chunk belongs to.
 	 * @param array<string,mixed> $chunkData Chunk payload.
-	 * @param string|null $owner Owner identifier.
-	 * @param string|null $organisation Organisation identifier.
-	 * @param int $sourceTimestamp Source modification timestamp.
-	 *
-	 * @phpstan-param non-empty-string $sourceType
-	 * @psalm-param   non-empty-string $sourceType
 	 *
 	 * @return Chunk
 	 */
-	private function hydrateChunkEntity(
-		string $sourceType,
-		int $sourceId,
-		array $chunkData,
-		?string $owner,
-		?string $organisation,
-		int $sourceTimestamp,
-	): Chunk {
+	private function hydrateChunkEntity(ChunkSource $source, array $chunkData): Chunk {
 		$chunk = new Chunk();
 		$chunk->setUuid(Uuid::v4()->toRfc4122());
-		$chunk->setSourceType($sourceType);
-		$chunk->setSourceId($sourceId);
+		$chunk->setSourceType($source->sourceType);
+		$chunk->setSourceId($source->sourceId);
 		$chunk->setChunkIndex((int)($chunkData['chunk_index'] ?? 0));
 		$chunk->setTextContent((string)$chunkData['text_content']);
 		$chunk->setStartOffset((int)($chunkData['start_offset'] ?? 0));
@@ -927,11 +896,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$chunk->setVectorized(false);
 		$chunk->setEmbeddingProvider($chunkData['embedding_provider'] ?? null);
 		$chunk->setOverlapSize((int)($chunkData['overlap_size'] ?? 0));
-		$chunk->setOwner($owner);
-		$chunk->setOrganisation($organisation);
+		$chunk->setOwner($source->owner);
+		$chunk->setOrganisation($source->organisation);
 		$chunk->setChecksum($chunkData['checksum'] ?? null);
 
-		$createdAt = (new DateTime())->setTimestamp($sourceTimestamp);
+		$createdAt = (new DateTime())->setTimestamp($source->sourceTimestamp);
 		$chunk->setCreatedAt($createdAt);
 		$chunk->setUpdatedAt(new DateTime());
 
@@ -974,12 +943,14 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		];
 
 		$chunkEntity = $this->hydrateChunkEntity(
-			sourceType: $sourceType,
-			sourceId: $sourceId,
-			chunkData: $chunkData,
-			owner: $payload['owner'] ?? null,
-			organisation: $payload['organisation'] ?? null,
-			sourceTimestamp: $sourceTimestamp
+			source: new ChunkSource(
+				sourceType: $sourceType,
+				sourceId: $sourceId,
+				owner: $payload['owner'] ?? null,
+				organisation: $payload['organisation'] ?? null,
+				sourceTimestamp: $sourceTimestamp
+			),
+			chunkData: $chunkData
 		);
 
 		$this->chunkMapper->insert($chunkEntity);

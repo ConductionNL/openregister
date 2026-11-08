@@ -143,32 +143,7 @@ class DocxSanitizer implements SanitizerInterface {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	public function sanitize(string $sourcePath, string $destPath): SanitizationReport {
-		if ($sourcePath !== $destPath) {
-			if (copy($sourcePath, $destPath) === false) {
-				throw new SanitizationException(
-					reason: SanitizationException::REASON_INTERNAL,
-					message: 'Could not copy source document to destination'
-				);
-			}
-		}
-
-		$zip = new ZipArchive();
-		$code = $zip->open($destPath);
-		if ($code !== true) {
-			throw $this->mapOpenFailure(code: $code);
-		}
-
-		// Encryption probe: an OOXML CFB (encrypted) package exposes an
-		// "EncryptedPackage" stream rather than the OPC part names. If the
-		// central directory does not contain [Content_Types].xml, treat it as
-		// encrypted/corrupt rather than producing garbage output.
-		if ($zip->locateName('[Content_Types].xml') === false) {
-			$zip->close();
-			throw new SanitizationException(
-				reason: SanitizationException::REASON_ENCRYPTED,
-				message: 'Document is encrypted or not a valid OOXML package'
-			);
-		}
+		$zip = $this->openPackage(sourcePath: $sourcePath, destPath: $destPath);
 
 		$counts = [
 			'commentsRemoved' => 0,
@@ -191,7 +166,6 @@ class DocxSanitizer implements SanitizerInterface {
 		// here and the two index parts are reconciled exactly once at the end.
 		$overridePartNames = [];
 		$documentRelTargets = [];
-		$documentRelIds = [];
 
 		// Part-level removals (each deletes a distinct part — safe in-session).
 		$this->removeCommentParts(zip: $zip, counts: $counts, overridePartNames: $overridePartNames, documentRelTargets: $documentRelTargets);
@@ -201,16 +175,7 @@ class DocxSanitizer implements SanitizerInterface {
 		$this->scrubMetadata(zip: $zip, counts: $counts);
 
 		// Inline body-part surgery: read once, run every inline pass, write once.
-		foreach ($bodyParts as $part) {
-			$relIds = $this->processBodyPart(zip: $zip, part: $part, counts: $counts);
-			if ($part === 'word/document.xml') {
-				$documentRelIds = array_merge($documentRelIds, $relIds);
-			} elseif ($relIds !== []) {
-				// Non-document body parts keep their own rels file (single touch).
-				$relsName = 'word/_rels/' . basename($part) . '.rels';
-				$this->reconcileRels(zip: $zip, relsName: $relsName, targetBasenames: [], hyperlinkIds: $relIds);
-			}
-		}
+		$documentRelIds = $this->processBodyParts(zip: $zip, bodyParts: $bodyParts, counts: $counts);
 
 		// Single reconciliation of the two heavily-shared index parts.
 		$this->reconcileContentTypes(zip: $zip, partNames: $overridePartNames);
@@ -223,6 +188,103 @@ class DocxSanitizer implements SanitizerInterface {
 
 		$zip->close();
 
+		return $this->buildReport(counts: $counts);
+	}//end sanitize()
+
+	/**
+	 * Copy the source to the destination (when they differ) and open it.
+	 *
+	 * Encryption probe: an OOXML CFB (encrypted) package exposes an
+	 * "EncryptedPackage" stream rather than the OPC part names. If the
+	 * central directory does not contain [Content_Types].xml, treat it as
+	 * encrypted/corrupt rather than producing garbage output.
+	 *
+	 * @param string $sourcePath Path to the source DOCX.
+	 * @param string $destPath Path the sanitized DOCX is written to.
+	 *
+	 * @return ZipArchive The open destination archive.
+	 *
+	 * @throws SanitizationException When the copy fails or the package cannot be opened.
+	 */
+	private function openPackage(string $sourcePath, string $destPath): ZipArchive {
+		$this->copyToDestination(sourcePath: $sourcePath, destPath: $destPath);
+
+		$zip = new ZipArchive();
+		$code = $zip->open($destPath);
+		if ($code !== true) {
+			throw $this->mapOpenFailure(code: $code);
+		}
+
+		if ($zip->locateName('[Content_Types].xml') === false) {
+			$zip->close();
+			throw new SanitizationException(
+				reason: SanitizationException::REASON_ENCRYPTED,
+				message: 'Document is encrypted or not a valid OOXML package'
+			);
+		}
+
+		return $zip;
+	}//end openPackage()
+
+	/**
+	 * Copy the source document to the destination when the paths differ.
+	 *
+	 * @param string $sourcePath Path to the source DOCX.
+	 * @param string $destPath Path the sanitized DOCX is written to.
+	 *
+	 * @return void
+	 *
+	 * @throws SanitizationException When the copy fails.
+	 */
+	private function copyToDestination(string $sourcePath, string $destPath): void {
+		if ($sourcePath === $destPath) {
+			return;
+		}
+
+		if (copy($sourcePath, $destPath) === false) {
+			throw new SanitizationException(
+				reason: SanitizationException::REASON_INTERNAL,
+				message: 'Could not copy source document to destination'
+			);
+		}
+	}//end copyToDestination()
+
+	/**
+	 * Run the inline passes over every body part.
+	 *
+	 * Non-document body parts keep their own rels file, reconciled here in a
+	 * single touch; the document part's hyperlink ids are returned for the
+	 * shared reconciliation at the end.
+	 *
+	 * @param ZipArchive $zip The open archive.
+	 * @param string[] $bodyParts Body part names.
+	 * @param array<string, int> $counts Mutable counter map.
+	 *
+	 * @return string[] Hyperlink relationship ids flattened in word/document.xml.
+	 */
+	private function processBodyParts(ZipArchive $zip, array $bodyParts, array &$counts): array {
+		$documentRelIds = [];
+		foreach ($bodyParts as $part) {
+			$relIds = $this->processBodyPart(zip: $zip, part: $part, counts: $counts);
+			if ($part === 'word/document.xml') {
+				$documentRelIds = array_merge($documentRelIds, $relIds);
+			} elseif ($relIds !== []) {
+				$relsName = 'word/_rels/' . basename($part) . '.rels';
+				$this->reconcileRels(zip: $zip, relsName: $relsName, targetBasenames: [], hyperlinkIds: $relIds);
+			}
+		}
+
+		return $documentRelIds;
+	}//end processBodyParts()
+
+	/**
+	 * Build the per-category report from the counter map.
+	 *
+	 * @param array<string, int> $counts Counter map.
+	 *
+	 * @return SanitizationReport
+	 */
+	private function buildReport(array $counts): SanitizationReport {
 		return new SanitizationReport(
 			revisions: new SanitizationRevisionCounts(
 				commentsRemoved: $counts['commentsRemoved'],
@@ -238,7 +300,7 @@ class DocxSanitizer implements SanitizerInterface {
 			),
 			sentinelApplied: $this->sentinel
 		);
-	}//end sanitize()
+	}//end buildReport()
 
 	/**
 	 * Body-bearing XML parts that may contain inline markup.
@@ -646,61 +708,97 @@ class DocxSanitizer implements SanitizerInterface {
 	 * @return int The number of fields removed.
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential field-char state machine.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same — linear begin/separate/end scan.
 	 */
 	private function stripComplexFields(DOMDocument $dom): int {
 		$count = 0;
 		$xpath = $this->wXpath(dom: $dom);
 		foreach (iterator_to_array($xpath->query('//w:p')) as $paragraph) {
 			$runs = iterator_to_array($xpath->query('./w:r', $paragraph));
-			$runsCount = count($runs);
-
-			$cursor = 0;
-			while ($cursor < $runsCount) {
-				$fldType = $this->fldCharType(xpath: $xpath, run: $runs[$cursor]);
-				if ($fldType !== 'begin') {
-					$cursor++;
-					continue;
-				}
-
-				// Collect instruction text and span until matching end.
-				$instr = '';
-				$end = $cursor;
-				$depth = 0;
-				for ($scan = $cursor; $scan < $runsCount; $scan++) {
-					$type = $this->fldCharType(xpath: $xpath, run: $runs[$scan]);
-					if ($type === 'begin') {
-						$depth++;
-					} elseif ($type === 'end') {
-						$depth--;
-						if ($depth === 0) {
-							$end = $scan;
-							break;
-						}
-					}
-
-					$instrNodes = $xpath->query('.//w:instrText', $runs[$scan]);
-					foreach (iterator_to_array($instrNodes) as $instrNode) {
-						$instr .= $instrNode->textContent;
-					}
-				}
-
-				if ($this->instructionMatches(instr: $instr) === true) {
-					for ($remove = $cursor; $remove <= $end; $remove++) {
-						$runs[$remove]->parentNode?->removeChild($runs[$remove]);
-					}
-
-					$count++;
-				}
-
-				$cursor = ($end + 1);
-			}//end while
-		}//end foreach
+			$count += $this->stripParagraphComplexFields(xpath: $xpath, runs: $runs);
+		}
 
 		return $count;
 	}//end stripComplexFields()
+
+	/**
+	 * Strip the matching complex fields among one paragraph's runs.
+	 *
+	 * @param DOMXPath $xpath The xpath context.
+	 * @param DOMNode[] $runs The paragraph's <w:r> runs, in order.
+	 *
+	 * @return int The number of fields removed.
+	 */
+	private function stripParagraphComplexFields(DOMXPath $xpath, array $runs): int {
+		$count = 0;
+		$runsCount = count($runs);
+		$cursor = 0;
+		while ($cursor < $runsCount) {
+			if ($this->fldCharType(xpath: $xpath, run: $runs[$cursor]) !== 'begin') {
+				$cursor++;
+				continue;
+			}
+
+			[$instr, $end] = $this->scanComplexField(xpath: $xpath, runs: $runs, cursor: $cursor);
+
+			if ($this->instructionMatches(instr: $instr) === true) {
+				for ($remove = $cursor; $remove <= $end; $remove++) {
+					$runs[$remove]->parentNode?->removeChild($runs[$remove]);
+				}
+
+				$count++;
+			}
+
+			$cursor = ($end + 1);
+		}//end while
+
+		return $count;
+	}//end stripParagraphComplexFields()
+
+	/**
+	 * Collect a complex field's instruction text and find its matching end.
+	 *
+	 * Without a matching end the field spans only its begin run.
+	 *
+	 * @param DOMXPath $xpath The xpath context.
+	 * @param DOMNode[] $runs The paragraph's <w:r> runs, in order.
+	 * @param int $cursor Index of the field's begin run.
+	 *
+	 * @return array{0: string, 1: int} The instruction text and the end-run index.
+	 */
+	private function scanComplexField(DOMXPath $xpath, array $runs, int $cursor): array {
+		$instr = '';
+		$depth = 0;
+		$runsCount = count($runs);
+		for ($scan = $cursor; $scan < $runsCount; $scan++) {
+			$type = $this->fldCharType(xpath: $xpath, run: $runs[$scan]);
+			if ($type === 'begin') {
+				$depth++;
+			} elseif ($type === 'end' && --$depth === 0) {
+				return [$instr, $scan];
+			}
+
+			$instr .= $this->runInstructionText(xpath: $xpath, run: $runs[$scan]);
+		}
+
+		return [$instr, $cursor];
+	}//end scanComplexField()
+
+	/**
+	 * Concatenated <w:instrText> content of one run.
+	 *
+	 * @param DOMXPath $xpath The xpath context.
+	 * @param DOMNode $run The <w:r> run node.
+	 *
+	 * @return string
+	 */
+	private function runInstructionText(DOMXPath $xpath, DOMNode $run): string {
+		$instr = '';
+		foreach (iterator_to_array($xpath->query('.//w:instrText', $run)) as $instrNode) {
+			$instr .= $instrNode->textContent;
+		}
+
+		return $instr;
+	}//end runInstructionText()
 
 	/**
 	 * Read the w:fldCharType of a run, or empty string if it has no fldChar.

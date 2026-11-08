@@ -401,7 +401,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 
 		$out = [];
 		foreach ($reports as $report) {
-			$row = $this->pickerRowFromReport(report: (array)$report, needle: $needle);
+			$row = $this->pickerRowFromReport(report: (array)$report, needle: $needle ?? '');
 			if ($row !== null) {
 				$out[] = $row;
 			}
@@ -473,19 +473,19 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * the optional name filter.
 	 *
 	 * @param array<string,mixed> $report A normalised report row.
-	 * @param string|null $needle Lower-cased name-substring filter, or null.
+	 * @param string $needle Lower-cased name-substring filter, or '' for none.
 	 *
 	 * @return array<string,mixed>|null The picker row, or null when the
 	 *                                  report is unreadable or filtered out.
 	 */
-	private function pickerRowFromReport(array $report, ?string $needle): ?array {
+	private function pickerRowFromReport(array $report, string $needle): ?array {
 		$reportId = (int)($report['id'] ?? 0);
 		if ($reportId === 0) {
 			return null;
 		}
 
 		$row = $this->pickerRow(report: $report, reportId: $reportId);
-		if ($needle !== null && str_contains(mb_strtolower($row['name']), $needle) === false) {
+		if ($needle !== '' && str_contains(mb_strtolower($row['name']), $needle) === false) {
 			return null;
 		}
 
@@ -639,7 +639,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * @return DateTime|null
 	 */
 	private function parseTimestamp(mixed $value): ?DateTime {
-		if ($value === null || $value === '' || $value === 0) {
+		if ($this->isUnsetTimestamp(value: $value) === true) {
 			return null;
 		}
 
@@ -649,6 +649,17 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 			return null;
 		}
 	}//end parseTimestamp()
+
+	/**
+	 * Whether a timestamp value means "no timestamp": null, '' or 0.
+	 *
+	 * @param mixed $value Raw timestamp value.
+	 *
+	 * @return bool
+	 */
+	private function isUnsetTimestamp(mixed $value): bool {
+		return $value === null || $value === '' || $value === 0;
+	}//end isUnsetTimestamp()
 
 	/**
 	 * An epoch number or a datetime string as a DateTime.

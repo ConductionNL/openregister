@@ -693,6 +693,7 @@ import SelectOption from '../../components/shared/SelectOption.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import { freshState } from '../../services/initialState.js'
+import { optionSearchMethods, searchUrl } from './optionSearch.js'
 
 /**
  * The entities a configuration links to: its key and API path, the selection
@@ -800,6 +801,83 @@ const INITIAL_STATE = {
 	agentSearchDebounce: null,
 	viewSearchDebounce: null,
 	applicationSearchDebounce: null,
+}
+
+/**
+ * The debounced option searches of the entity selects: the fields each one
+ * fills and the URL it asks. Objects are narrowed to the selected registers
+ * and schemas.
+ *
+ * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
+ */
+const OPTION_SEARCHES = {
+	searchRegisters: {
+		timer: 'registerSearchDebounce',
+		loading: 'loadingRegisters',
+		options: 'registerOptions',
+		selected: 'selectedRegisters',
+		label: 'registers',
+		url: (query) => searchUrl('registers', query),
+	},
+	searchSchemas: {
+		timer: 'schemaSearchDebounce',
+		loading: 'loadingSchemas',
+		options: 'schemaOptions',
+		selected: 'selectedSchemas',
+		label: 'schemas',
+		url: (query) => searchUrl('schemas', query),
+	},
+	searchObjects: {
+		timer: 'objectSearchDebounce',
+		loading: 'loadingObjects',
+		options: 'objectOptions',
+		selected: 'selectedObjects',
+		label: 'objects',
+		url: (query, vm) => {
+			const params = new URLSearchParams()
+			params.append('_search', query)
+			params.append('_limit', '10')
+			vm.selectedRegisters.forEach((register) => {
+				params.append('_register[]', register.id)
+			})
+			vm.selectedSchemas.forEach((schema) => {
+				params.append('_schema[]', schema.id)
+			})
+			return `/index.php/apps/openregister/api/objects?${params.toString()}`
+		},
+	},
+	searchSources: {
+		timer: 'sourceSearchDebounce',
+		loading: 'loadingSources',
+		options: 'sourceOptions',
+		selected: 'selectedSources',
+		label: 'sources',
+		url: (query) => searchUrl('sources', query),
+	},
+	searchAgents: {
+		timer: 'agentSearchDebounce',
+		loading: 'loadingAgents',
+		options: 'agentOptions',
+		selected: 'selectedAgents',
+		label: 'agents',
+		url: (query) => searchUrl('agents', query),
+	},
+	searchViews: {
+		timer: 'viewSearchDebounce',
+		loading: 'loadingViews',
+		options: 'viewOptions',
+		selected: 'selectedViews',
+		label: 'views',
+		url: (query) => searchUrl('views', query),
+	},
+	searchApplications: {
+		timer: 'applicationSearchDebounce',
+		loading: 'loadingApplications',
+		options: 'applicationOptions',
+		selected: 'selectedManagedApplications',
+		label: 'applications',
+		url: (query) => searchUrl('applications', query),
+	},
 }
 
 export default {
@@ -1301,233 +1379,7 @@ export default {
 		},
 
 		// Search methods with debouncing
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchRegisters(query) {
-			clearTimeout(this.registerSearchDebounce)
-			this.registerSearchDebounce = setTimeout(async () => {
-				this.loadingRegisters = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/registers?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.registerOptions = data.results || data || []
-					// Include already selected items
-					this.selectedRegisters.forEach((selected) => {
-						if (
-							!this.registerOptions.find((r) => r.id === selected.id)
-						) {
-							this.registerOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching registers:', error)
-					this.registerOptions = []
-				} finally {
-					this.loadingRegisters = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchSchemas(query) {
-			clearTimeout(this.schemaSearchDebounce)
-			this.schemaSearchDebounce = setTimeout(async () => {
-				this.loadingSchemas = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/schemas?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.schemaOptions = data.results || data || []
-					// Include already selected items
-					this.selectedSchemas.forEach((selected) => {
-						if (!this.schemaOptions.find((s) => s.id === selected.id)) {
-							this.schemaOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching schemas:', error)
-					this.schemaOptions = []
-				} finally {
-					this.loadingSchemas = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch (register/schema-filtered) populating select options; UI search plumbing.
-		 */
-		searchObjects(query) {
-			clearTimeout(this.objectSearchDebounce)
-			this.objectSearchDebounce = setTimeout(async () => {
-				this.loadingObjects = true
-				try {
-					// Build filter params based on selected registers and schemas
-					const params = new URLSearchParams()
-					params.append('_search', query)
-					params.append('_limit', '10')
-
-					// Filter by selected registers
-					if (this.selectedRegisters.length > 0) {
-						this.selectedRegisters.forEach((register) => {
-							params.append('_register[]', register.id)
-						})
-					}
-
-					// Filter by selected schemas
-					if (this.selectedSchemas.length > 0) {
-						this.selectedSchemas.forEach((schema) => {
-							params.append('_schema[]', schema.id)
-						})
-					}
-
-					const response = await fetch(
-						`/index.php/apps/openregister/api/objects?${params.toString()}`,
-					)
-					const data = await response.json()
-					this.objectOptions = data.results || data || []
-					// Include already selected items
-					this.selectedObjects.forEach((selected) => {
-						if (!this.objectOptions.find((o) => o.id === selected.id)) {
-							this.objectOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching objects:', error)
-					this.objectOptions = []
-				} finally {
-					this.loadingObjects = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchSources(query) {
-			clearTimeout(this.sourceSearchDebounce)
-			this.sourceSearchDebounce = setTimeout(async () => {
-				this.loadingSources = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/sources?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.sourceOptions = data.results || data || []
-					// Include already selected items
-					this.selectedSources.forEach((selected) => {
-						if (!this.sourceOptions.find((s) => s.id === selected.id)) {
-							this.sourceOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching sources:', error)
-					this.sourceOptions = []
-				} finally {
-					this.loadingSources = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchAgents(query) {
-			clearTimeout(this.agentSearchDebounce)
-			this.agentSearchDebounce = setTimeout(async () => {
-				this.loadingAgents = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/agents?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.agentOptions = data.results || data || []
-					// Include already selected items
-					this.selectedAgents.forEach((selected) => {
-						if (!this.agentOptions.find((a) => a.id === selected.id)) {
-							this.agentOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching agents:', error)
-					this.agentOptions = []
-				} finally {
-					this.loadingAgents = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchViews(query) {
-			clearTimeout(this.viewSearchDebounce)
-			this.viewSearchDebounce = setTimeout(async () => {
-				this.loadingViews = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/views?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.viewOptions = data.results || data || []
-					// Include already selected items
-					this.selectedViews.forEach((selected) => {
-						if (!this.viewOptions.find((v) => v.id === selected.id)) {
-							this.viewOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching views:', error)
-					this.viewOptions = []
-				} finally {
-					this.loadingViews = false
-				}
-			}, 300)
-		},
-
-		/**
-		 * @param {string} query
-		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
-		 */
-		searchApplications(query) {
-			clearTimeout(this.applicationSearchDebounce)
-			this.applicationSearchDebounce = setTimeout(async () => {
-				this.loadingApplications = true
-				try {
-					const response = await fetch(
-						`/index.php/apps/openregister/api/applications?_search=${encodeURIComponent(query)}&_limit=10`,
-					)
-					const data = await response.json()
-					this.applicationOptions = data.results || data || []
-					// Include already selected items
-					this.selectedManagedApplications.forEach((selected) => {
-						if (
-							!this.applicationOptions.find(
-								(a) => a.id === selected.id,
-							)
-						) {
-							this.applicationOptions.unshift(selected)
-						}
-					})
-				} catch (error) {
-					console.error('Error searching applications:', error)
-					this.applicationOptions = []
-				} finally {
-					this.loadingApplications = false
-				}
-			}, 300)
-		},
+		...optionSearchMethods(OPTION_SEARCHES),
 
 		/**
 		 * @spec exclude Dialog close-event passthrough to closeModal; UI plumbing.

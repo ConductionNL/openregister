@@ -205,6 +205,23 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 			return null;
 		}
 
+		$key = $this->registrationKey(registerId: $registerId, schemaId: $schemaId);
+		if ($key === null) {
+			return null;
+		}
+
+		return self::$registrations[$key] ?? null;
+	}//end resolve()
+
+	/**
+	 * The `{registerSlug}::{schemaSlug}` key of a register/schema id pair, or null when a slug is unknown.
+	 *
+	 * @param int $registerId The register database ID.
+	 * @param int $schemaId   The schema database ID.
+	 *
+	 * @return string|null
+	 */
+	private function registrationKey(int $registerId, int $schemaId): ?string {
 		$this->ensureIdMaps();
 
 		$registerSlug = self::$registerIdMap[$registerId] ?? null;
@@ -214,9 +231,8 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 			return null;
 		}
 
-		$key = $registerSlug . '::' . $schemaSlug;
-		return self::$registrations[$key] ?? null;
-	}//end resolve()
+		return $registerSlug . '::' . $schemaSlug;
+	}//end registrationKey()
 
 	/**
 	 * Resolve a URL for a search result, falling back to null if no registration exists.
@@ -314,13 +330,9 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 		self::$appsAsked = true;
 
 		try {
+			$dispatcher ??= $this->containerDispatcher();
 			if ($dispatcher === null) {
-				$candidate = $this->container->get(IEventDispatcher::class);
-				if ($candidate instanceof IEventDispatcher === false) {
-					return;
-				}
-
-				$dispatcher = $candidate;
+				return;
 			}
 
 			$dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $this));
@@ -331,6 +343,20 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 			);
 		}
 	}//end requestRegistrations()
+
+	/**
+	 * The event dispatcher from the app container, or null when it serves something else.
+	 *
+	 * @return IEventDispatcher|null
+	 */
+	private function containerDispatcher(): ?IEventDispatcher {
+		$candidate = $this->container->get(IEventDispatcher::class);
+		if ($candidate instanceof IEventDispatcher === false) {
+			return null;
+		}
+
+		return $candidate;
+	}//end containerDispatcher()
 
 	/**
 	 * Lazily build the ID↔slug maps from database.

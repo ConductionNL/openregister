@@ -312,10 +312,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 		// mapper unchanged we paginate via offset derived from the
 		// numeric cursor's row index — which falls back gracefully to
 		// first-page when cursor is null.
-		$offset = 0;
-		if ($cursor !== null && $cursor !== '') {
-			$offset = max(0, (int)$cursor);
-		}
+		$offset = $this->cursorOffset(cursor: $cursor ?? '');
 
 		$links = $this->mapper->findByObjectUuid($objectUuid, $limit + 1, $offset);
 		$total = $this->mapper->countByObjectUuid($objectUuid);
@@ -341,6 +338,21 @@ class EmailLinkService implements EmailLinkServiceInterface {
 			'nextCursor' => $nextCursor,
 		];
 	}//end getLinkedEmails()
+
+	/**
+	 * The row offset a paging cursor stands for: 0 for none, never negative.
+	 *
+	 * @param string $cursor The cursor; '' for the first page.
+	 *
+	 * @return int
+	 */
+	private function cursorOffset(string $cursor): int {
+		if ($cursor === '') {
+			return 0;
+		}
+
+		return max(0, (int)$cursor);
+	}//end cursorOffset()
 
 	/**
 	 * Return the IMAP accounts visible to the current user.

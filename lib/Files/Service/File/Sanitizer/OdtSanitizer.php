@@ -117,31 +117,7 @@ class OdtSanitizer implements SanitizerInterface {
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
 	public function sanitize(string $sourcePath, string $destPath): SanitizationReport {
-		if ($sourcePath !== $destPath) {
-			if (copy($sourcePath, $destPath) === false) {
-				throw new SanitizationException(
-					reason: SanitizationException::REASON_INTERNAL,
-					message: 'Could not copy source document to destination'
-				);
-			}
-		}
-
-		$zip = new ZipArchive();
-		$code = $zip->open($destPath);
-		if ($code !== true) {
-			throw new SanitizationException(
-				reason: SanitizationException::REASON_CORRUPT_ZIP,
-				message: sprintf('Could not open ODT ZIP (code %d)', $code)
-			);
-		}
-
-		if ($zip->locateName('content.xml') === false) {
-			$zip->close();
-			throw new SanitizationException(
-				reason: SanitizationException::REASON_ENCRYPTED,
-				message: 'Document is encrypted or not a valid ODT package'
-			);
-		}
+		$zip = $this->openPackage(sourcePath: $sourcePath, destPath: $destPath);
 
 		$counts = [
 			'commentsRemoved' => 0,
@@ -152,19 +128,7 @@ class OdtSanitizer implements SanitizerInterface {
 			'fieldCodesStripped' => 0,
 		];
 
-		$contentXml = $zip->getFromName('content.xml');
-		if ($contentXml !== false) {
-			$dom = $this->loadXml(xml: $contentXml);
-			$xpath = $this->xpath(dom: $dom);
-
-			$this->removeAnnotations(xpath: $xpath, counts: $counts);
-			$this->acceptTrackedChanges(xpath: $xpath, counts: $counts);
-			$this->flattenHyperlinks(xpath: $xpath, counts: $counts);
-			$this->removeIdentityPlaceholders(xpath: $xpath, counts: $counts);
-
-			$zip->addFromString('content.xml', $dom->saveXML());
-		}
-
+		$this->sanitizeContent(zip: $zip, counts: $counts);
 		$this->scrubMetadata(zip: $zip, counts: $counts);
 
 		$zip->close();
@@ -185,6 +149,87 @@ class OdtSanitizer implements SanitizerInterface {
 			sentinelApplied: $this->sentinel
 		);
 	}//end sanitize()
+
+	/**
+	 * Copy the source to the destination (when they differ) and open it.
+	 *
+	 * @param string $sourcePath Path to the source ODT.
+	 * @param string $destPath Path the sanitized ODT is written to.
+	 *
+	 * @return ZipArchive The open destination archive.
+	 *
+	 * @throws SanitizationException When the copy fails or the package cannot be opened.
+	 */
+	private function openPackage(string $sourcePath, string $destPath): ZipArchive {
+		$this->copyToDestination(sourcePath: $sourcePath, destPath: $destPath);
+
+		$zip = new ZipArchive();
+		$code = $zip->open($destPath);
+		if ($code !== true) {
+			throw new SanitizationException(
+				reason: SanitizationException::REASON_CORRUPT_ZIP,
+				message: sprintf('Could not open ODT ZIP (code %d)', $code)
+			);
+		}
+
+		if ($zip->locateName('content.xml') === false) {
+			$zip->close();
+			throw new SanitizationException(
+				reason: SanitizationException::REASON_ENCRYPTED,
+				message: 'Document is encrypted or not a valid ODT package'
+			);
+		}
+
+		return $zip;
+	}//end openPackage()
+
+	/**
+	 * Copy the source document to the destination when the paths differ.
+	 *
+	 * @param string $sourcePath Path to the source ODT.
+	 * @param string $destPath Path the sanitized ODT is written to.
+	 *
+	 * @return void
+	 *
+	 * @throws SanitizationException When the copy fails.
+	 */
+	private function copyToDestination(string $sourcePath, string $destPath): void {
+		if ($sourcePath === $destPath) {
+			return;
+		}
+
+		if (copy($sourcePath, $destPath) === false) {
+			throw new SanitizationException(
+				reason: SanitizationException::REASON_INTERNAL,
+				message: 'Could not copy source document to destination'
+			);
+		}
+	}//end copyToDestination()
+
+	/**
+	 * Run the content.xml passes (one load / one save).
+	 *
+	 * @param ZipArchive $zip The open archive.
+	 * @param array<string, int> $counts Mutable counter map.
+	 *
+	 * @return void
+	 */
+	private function sanitizeContent(ZipArchive $zip, array &$counts): void {
+		$contentXml = $zip->getFromName('content.xml');
+		if ($contentXml === false) {
+			return;
+		}
+
+		$dom = $this->loadXml(xml: $contentXml);
+		$xpath = $this->xpath(dom: $dom);
+
+		$this->removeAnnotations(xpath: $xpath, counts: $counts);
+		$this->acceptTrackedChanges(xpath: $xpath, counts: $counts);
+		$this->flattenHyperlinks(xpath: $xpath, counts: $counts);
+		$this->removeIdentityPlaceholders(xpath: $xpath, counts: $counts);
+
+		$zip->addFromString('content.xml', $dom->saveXML());
+	}//end sanitizeContent()
 
 	/**
 	 * Remove office:annotation comments.

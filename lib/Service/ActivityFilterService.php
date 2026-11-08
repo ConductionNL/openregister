@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCP\App\IAppManager;
+use OCP\DB\IResult;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -143,14 +144,8 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 		}
 
 		$limit = $this->clampLimit(limit: $limit);
-		$rows = $this->queryRows(
-			objectUuid: $objectUuid,
-			type: $type,
-			actor: $actor,
-			after: $after,
-			cursor: $cursor,
-			limit: ($limit + 1)
-		);
+		$filter = new ActivityFilter(objectUuid: $objectUuid, type: $type, actor: $actor, after: $after);
+		$rows = $this->queryRows(filter: $filter->withCursor(cursor: $cursor), limit: ($limit + 1));
 
 		$hasMore = (count($rows) > $limit);
 		if ($hasMore === true) {
@@ -169,7 +164,7 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 
 		return [
 			'results' => $results,
-			'total' => $this->countRows(objectUuid: $objectUuid, type: $type, actor: $actor, after: $after),
+			'total' => $this->countRows(filter: $filter),
 			'nextCursor' => $nextCursor,
 		];
 	}//end getActivityEntries()
@@ -216,89 +211,79 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	}//end clampLimit()
 
 	/**
-	 * Build the shared marker + filter WHERE clause onto a query builder.
+	 * Apply the object marker and the optional type, actor, after and cursor filters.
 	 *
-	 * @param \OCP\DB\QueryBuilder\IQueryBuilder $qb Query builder to mutate.
-	 * @param string $objectUuid OR object UUID.
-	 * @param string|null $type Optional type filter.
-	 * @param string|null $actor Optional actor filter.
-	 * @param int|null $after Optional timestamp lower bound.
-	 * @param int|null $cursor Optional cursor upper bound.
+	 * @param \OCP\DB\QueryBuilder\IQueryBuilder $qb     Query builder.
+	 * @param ActivityFilter                     $filter The filters to apply.
 	 *
 	 * @return void
 	 */
-	private function applyFilters(
-		\OCP\DB\QueryBuilder\IQueryBuilder $qb,
-		string $objectUuid,
-		?string $type,
-		?string $actor,
-		?int $after,
-		?int $cursor,
-	): void {
-		$marker = self::MARKER_PREFIX . $objectUuid . ']';
+	private function applyFilters(\OCP\DB\QueryBuilder\IQueryBuilder $qb, ActivityFilter $filter): void {
+		$marker = self::MARKER_PREFIX . $filter->objectUuid . ']';
 		$qb->where(
 			$qb->expr()->iLike('subject', $qb->createNamedParameter('%' . $marker . '%'))
 		);
 
-		if ($type !== null && $type !== '') {
-			$qb->andWhere($qb->expr()->eq('type', $qb->createNamedParameter($type)));
-		}
-
-		if ($actor !== null && $actor !== '') {
-			$qb->andWhere($qb->expr()->eq('affecteduser', $qb->createNamedParameter($actor)));
-		}
-
-		if ($after !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('timestamp', $qb->createNamedParameter($after, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT))
-			);
-		}
-
-		if ($cursor !== null) {
-			$qb->andWhere(
-				$qb->expr()->lt('timestamp', $qb->createNamedParameter($cursor, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT))
-			);
-		}
+		$this->andWhereEquals(qb: $qb, column: 'type', value: $filter->type);
+		$this->andWhereEquals(qb: $qb, column: 'affecteduser', value: $filter->actor);
+		$this->andWhereTimestamp(qb: $qb, operator: 'gte', timestamp: $filter->after);
+		$this->andWhereTimestamp(qb: $qb, operator: 'lt', timestamp: $filter->cursor());
 	}//end applyFilters()
 
 	/**
-	 * Run the filtered, ordered, limited row query.
+	 * Restrict a column to a value, unless the value is null or ''.
 	 *
-	 * @param string $objectUuid OR object UUID.
-	 * @param string|null $type Optional type filter.
-	 * @param string|null $actor Optional actor filter.
-	 * @param int|null $after Optional timestamp lower bound.
-	 * @param int|null $cursor Optional cursor upper bound.
-	 * @param int $limit Row limit.
+	 * @param \OCP\DB\QueryBuilder\IQueryBuilder $qb     Query builder.
+	 * @param string                             $column The column.
+	 * @param string|null                        $value  The value, or null/'' for no restriction.
+	 *
+	 * @return void
+	 */
+	private function andWhereEquals(\OCP\DB\QueryBuilder\IQueryBuilder $qb, string $column, ?string $value): void {
+		if (($value ?? '') !== '') {
+			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+		}
+	}//end andWhereEquals()
+
+	/**
+	 * Bound the timestamp column with the given comparison, unless the bound is null.
+	 *
+	 * @param \OCP\DB\QueryBuilder\IQueryBuilder $qb        Query builder.
+	 * @param string                             $operator  Expression-builder comparison: 'gte' or 'lt'.
+	 * @param int|null                           $timestamp The bound, or null for none.
+	 *
+	 * @return void
+	 */
+	private function andWhereTimestamp(\OCP\DB\QueryBuilder\IQueryBuilder $qb, string $operator, ?int $timestamp): void {
+		if ($timestamp !== null) {
+			$qb->andWhere(
+				$qb->expr()->{$operator}('timestamp', $qb->createNamedParameter($timestamp, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT))
+			);
+		}
+	}//end andWhereTimestamp()
+
+	/**
+	 * Run the paged SELECT and return raw rows.
+	 *
+	 * @param ActivityFilter $filter The filters, including the cursor.
+	 * @param int            $limit  Page size (+1 for has-more detection).
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	private function queryRows(
-		string $objectUuid,
-		?string $type,
-		?string $actor,
-		?int $after,
-		?int $cursor,
-		int $limit,
-	): array {
+	private function queryRows(ActivityFilter $filter, int $limit): array {
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->select('activity_id', 'subject', 'type', 'affecteduser', 'timestamp', 'object_id')
 				->from('activity');
-			$this->applyFilters(qb: $qb, objectUuid: $objectUuid, type: $type, actor: $actor, after: $after, cursor: $cursor);
+			$this->applyFilters(qb: $qb, filter: $filter);
 			$qb->orderBy('timestamp', 'DESC')
 				->addOrderBy('activity_id', 'DESC')
 				->setMaxResults($limit);
 
 			$result = $qb->executeQuery();
-			$rows = [];
-			$row = $result->fetch();
-			while ($row !== false) {
-				$rows[] = $row;
-				$row = $result->fetch();
-			}
-
+			$rows = $this->fetchRows(result: $result);
 			$result->closeCursor();
+
 			return $rows;
 		} catch (Throwable $e) {
 			$this->logFailure(context: 'queryRows', e: $e);
@@ -307,20 +292,35 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 	}//end queryRows()
 
 	/**
-	 * Count total matching rows (ignoring cursor — total over the filter set).
+	 * Every remaining row of a query result.
 	 *
-	 * @param string $objectUuid OR object UUID.
-	 * @param string|null $type Optional type filter.
-	 * @param string|null $actor Optional actor filter.
-	 * @param int|null $after Optional timestamp lower bound.
+	 * @param IResult $result The query result.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function fetchRows(IResult $result): array {
+		$rows = [];
+		$row = $result->fetch();
+		while ($row !== false) {
+			$rows[] = $row;
+			$row = $result->fetch();
+		}
+
+		return $rows;
+	}//end fetchRows()
+
+	/**
+	 * Count all rows matching the filters, without the cursor.
+	 *
+	 * @param ActivityFilter $filter The filters.
 	 *
 	 * @return int
 	 */
-	private function countRows(string $objectUuid, ?string $type, ?string $actor, ?int $after): int {
+	private function countRows(ActivityFilter $filter): int {
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->select($qb->func()->count('*', 'cnt'))->from('activity');
-			$this->applyFilters(qb: $qb, objectUuid: $objectUuid, type: $type, actor: $actor, after: $after, cursor: null);
+			$this->applyFilters(qb: $qb, filter: $filter);
 
 			$result = $qb->executeQuery();
 			$row = $result->fetch();
@@ -349,7 +349,7 @@ class ActivityFilterService implements ActivityFilterServiceInterface {
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->selectDistinct($column)->from('activity');
-			$this->applyFilters(qb: $qb, objectUuid: $objectUuid, type: null, actor: null, after: null, cursor: null);
+			$this->applyFilters(qb: $qb, filter: new ActivityFilter(objectUuid: $objectUuid, type: null, actor: null, after: null));
 			$qb->orderBy($column, 'ASC');
 
 			$result = $qb->executeQuery();
