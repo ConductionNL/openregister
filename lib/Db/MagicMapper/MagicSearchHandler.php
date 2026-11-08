@@ -1919,10 +1919,12 @@ class MagicSearchHandler {
 					column: $quotedCol,
 					build: fn (mixed $criterion): array => $this->objectFieldConditionsSql(
 						value: $criterion,
-						quotedCol: $quotedCol,
-						propertyType: $propertyType,
-						connection: $connection,
-						isPostgres: $isPostgres
+						field: new RawObjectFieldFilter(
+							quotedCol: $quotedCol,
+							propertyType: $propertyType,
+							connection: $connection,
+							isPostgres: $isPostgres
+						)
 					)
 				)
 			);
@@ -1934,29 +1936,20 @@ class MagicSearchHandler {
 	/**
 	 * The SQL conditions one object-field filter contributes on the raw UNION path
 	 *
-	 * @param mixed $value The filter value, without its `orNull` modifier
-	 * @param string $quotedCol Quoted column identifier
-	 * @param string $propertyType The property's declared JSON-Schema type
-	 * @param object $connection Database connection for value quoting
-	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 * @param mixed                $value The filter value, without its `orNull` modifier
+	 * @param RawObjectFieldFilter $field The column, its declared type, the quoting connection and the platform
 	 *
 	 * @return string[] The field's conditions, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	private function objectFieldConditionsSql(
-		mixed $value,
-		string $quotedCol,
-		string $propertyType,
-		object $connection,
-		bool $isPostgres,
-	): array {
+	private function objectFieldConditionsSql(mixed $value, RawObjectFieldFilter $field): array {
 		$fieldConditions = [];
 
 		// `like` first, for every column type; see applyObjectFilters().
 		if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-			$likeCondition = $this->likeConditionSql(column: $quotedCol, value: $value[LikeOperator::KEY], connection: $connection);
+			$likeCondition = $this->likeConditionSql(column: $field->quotedCol, value: $value[LikeOperator::KEY], connection: $field->connection);
 			if ($likeCondition !== null) {
 				$fieldConditions[] = $likeCondition;
 			}
@@ -1968,17 +1961,17 @@ class MagicSearchHandler {
 		}
 
 		// Handle array-type properties (JSONB columns) with JSON containment operator.
-		if ($propertyType === 'array') {
+		if ($field->propertyType === 'array') {
 			$fieldConditions[] = $this->buildArrayPropertyConditionSql(
-				columnName: $quotedCol,
+				columnName: $field->quotedCol,
 				value: $value,
-				connection: $connection
+				connection: $field->connection
 			);
 			return $fieldConditions;
 		}
 
 		// A PHP boolean compares in its string form (boolean-filter-values).
-		$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
+		$value = FilterParams::comparableValue(value: $value, propertyType: $field->propertyType);
 
 		// Handle array filter values: comparison operators
 		// (gte/lte/gt/lt/in/notIn/ne) or a bare IN clause.
@@ -1987,29 +1980,14 @@ class MagicSearchHandler {
 			if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
 				return array_merge(
 					$fieldConditions,
-					$this->objectOperatorConditionsSql(
-						value: $value,
-						quotedCol: $quotedCol,
-						propertyType: $propertyType,
-						connection: $connection,
-						isPostgres: $isPostgres
-					)
+					$this->objectOperatorConditionsSql(value: $value, field: $field)
 				);
 			}
 
 			if (empty($value) === false) {
-				$colRef = $this->buildFilterColumnRef(
-					columnRef: $quotedCol,
-					propertyType: $propertyType,
-					value: $value,
-					isPostgres: $isPostgres
-				);
-				$quotedValues = array_map(
-					fn ($v) => $connection->quote((string)$v),
-					$value
-				);
-				$fieldConditions[] = "{$colRef} IN (" . implode(', ', $quotedValues) . ')';
-			}//end if
+				$colRef = $this->rawColumnRef(field: $field, value: $value);
+				$fieldConditions[] = "{$colRef} IN (" . $field->quoteList(values: $value) . ')';
+			}
 
 			return $fieldConditions;
 		}//end if
@@ -2017,47 +1995,28 @@ class MagicSearchHandler {
 		// Simple equality filter. Cast numeric columns to text when filtered
 		// by a non-numeric (e.g. UUID) value so PostgreSQL does not abort the
 		// whole UNION query with SQLSTATE[22P02].
-		$colRef = $this->buildFilterColumnRef(
-			columnRef: $quotedCol,
-			propertyType: $propertyType,
-			value: $value,
-			isPostgres: $isPostgres
-		);
-		$fieldConditions[] = "{$colRef} = " . $connection->quote((string)$value);
+		$colRef = $this->rawColumnRef(field: $field, value: $value);
+		$fieldConditions[] = "{$colRef} = " . $field->quote(value: $value);
 		return $fieldConditions;
 	}//end objectFieldConditionsSql()
 
 	/**
 	 * The conditions of one object field's operator bag on the raw UNION path
 	 *
-	 * @param array $value The operator bag, in its comparable form
-	 * @param string $quotedCol Quoted column identifier
-	 * @param string $propertyType The property's declared JSON-Schema type
-	 * @param object $connection Database connection for value quoting
-	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 * @param array                $value The operator bag, in its comparable form
+	 * @param RawObjectFieldFilter $field The column, its declared type, the quoting connection and the platform
 	 *
 	 * @return string[] The conditions, to be ANDed
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	private function objectOperatorConditionsSql(
-		array $value,
-		string $quotedCol,
-		string $propertyType,
-		object $connection,
-		bool $isPostgres,
-	): array {
+	private function objectOperatorConditionsSql(array $value, RawObjectFieldFilter $field): array {
 		$fieldConditions = [];
 		foreach (['gte' => '>=', 'lte' => '<=', 'gt' => '>', 'lt' => '<'] as $operator => $sqlOperator) {
 			if (isset($value[$operator]) === true) {
-				$colRef = $this->buildFilterColumnRef(
-					columnRef: $quotedCol,
-					propertyType: $propertyType,
-					value: $value[$operator],
-					isPostgres: $isPostgres
-				);
-				$fieldConditions[] = "{$colRef} {$sqlOperator} " . $connection->quote((string)$value[$operator]);
+				$colRef = $this->rawColumnRef(field: $field, value: $value[$operator]);
+				$fieldConditions[] = "{$colRef} {$sqlOperator} " . $field->quote(value: $value[$operator]);
 			}
 		}
 
@@ -2067,14 +2026,8 @@ class MagicSearchHandler {
 				$inValues = $value['in'];
 			}
 
-			$colRef = $this->buildFilterColumnRef(
-				columnRef: $quotedCol,
-				propertyType: $propertyType,
-				value: $inValues,
-				isPostgres: $isPostgres
-			);
-			$quotedValues = array_map(fn ($v) => $connection->quote((string)$v), $inValues);
-			$fieldConditions[] = "{$colRef} IN (" . implode(', ', $quotedValues) . ')';
+			$colRef = $this->rawColumnRef(field: $field, value: $inValues);
+			$fieldConditions[] = "{$colRef} IN (" . $field->quoteList(values: $inValues) . ')';
 		}
 
 		if (isset($value['notIn']) === true) {
@@ -2086,25 +2039,14 @@ class MagicSearchHandler {
 			// An empty exclusion list excludes nothing — skip the
 			// clause rather than emit `NOT IN ()`.
 			if (count($notInValues) > 0) {
-				$colRef = $this->buildFilterColumnRef(
-					columnRef: $quotedCol,
-					propertyType: $propertyType,
-					value: $notInValues,
-					isPostgres: $isPostgres
-				);
-				$quotedValues = array_map(fn ($v) => $connection->quote((string)$v), $notInValues);
-				$fieldConditions[] = "{$colRef} NOT IN (" . implode(', ', $quotedValues) . ')';
+				$colRef = $this->rawColumnRef(field: $field, value: $notInValues);
+				$fieldConditions[] = "{$colRef} NOT IN (" . $field->quoteList(values: $notInValues) . ')';
 			}
 		}
 
 		if (isset($value['ne']) === true) {
-			$colRef = $this->buildFilterColumnRef(
-				columnRef: $quotedCol,
-				propertyType: $propertyType,
-				value: $value['ne'],
-				isPostgres: $isPostgres
-			);
-			$fieldConditions[] = "{$colRef} <> " . $connection->quote((string)$value['ne']);
+			$colRef = $this->rawColumnRef(field: $field, value: $value['ne']);
+			$fieldConditions[] = "{$colRef} <> " . $field->quote(value: $value['ne']);
 		}
 
 		if (isset($value['isnull']) === true) {
@@ -2116,11 +2058,28 @@ class MagicSearchHandler {
 				$predicate = 'IS NULL';
 			}
 
-			$fieldConditions[] = "{$quotedCol} {$predicate}";
+			$fieldConditions[] = "{$field->quotedCol} {$predicate}";
 		}
 
 		return $fieldConditions;
 	}//end objectOperatorConditionsSql()
+
+	/**
+	 * The column reference of a raw-path field, text-cast when a value is not numeric.
+	 *
+	 * @param RawObjectFieldFilter $field The field being filtered.
+	 * @param mixed                $value The value (or values) it is compared with.
+	 *
+	 * @return string The (optionally text-cast) column reference.
+	 */
+	private function rawColumnRef(RawObjectFieldFilter $field, mixed $value): string {
+		return $this->buildFilterColumnRef(
+			columnRef: $field->quotedCol,
+			propertyType: $field->propertyType,
+			value: $value,
+			isPostgres: $field->isPostgres
+		);
+	}//end rawColumnRef()
 
 	/**
 	 * Build SQL condition for array-type (JSONB) property filtering
@@ -3092,7 +3051,7 @@ class MagicSearchHandler {
 		$isPostgres = $this->isPostgresPlatform();
 
 		[$filters, $nestedFilters] = $this->nestedPaths->split(filters: $filters, properties: $properties ?? []);
-		$this->applyNestedPathFilters(qb: $qb, nestedFilters: $nestedFilters, properties: $properties ?? [], isPostgres: $isPostgres, schema: $schema);
+		$this->applyNestedPathFilters(qb: $qb, nestedFilters: $nestedFilters, isPostgres: $isPostgres, schema: $schema);
 
 		foreach ($filters as $field => $value) {
 			// Check if this field exists as a column in the schema.
@@ -3394,9 +3353,8 @@ class MagicSearchHandler {
 	 *
 	 * @param IQueryBuilder                                                  $qb            Query builder to modify.
 	 * @param list<array{root: string, path: list<string>, value: mixed}> $nestedFilters The path filters from NestedPathFilter::split().
-	 * @param array<string,mixed>                                            $properties    The schema's properties.
 	 * @param bool                                                           $isPostgres    Whether the platform is PostgreSQL.
-	 * @param Schema                                                         $schema        The schema, for the property read rule.
+	 * @param Schema                                                         $schema        The schema, for its properties and the property read rule.
 	 *
 	 * @return void
 	 *
@@ -3405,7 +3363,8 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
-	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres, Schema $schema): void {
+	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, bool $isPostgres, Schema $schema): void {
+		$properties = ($schema->getProperties() ?? []);
 		foreach ($nestedFilters as $filter) {
 			if (($properties[$filter['root']]['x-openregister-encrypted'] ?? false) === true) {
 				throw new EncryptedFieldFilterException(property: $filter['root']);
