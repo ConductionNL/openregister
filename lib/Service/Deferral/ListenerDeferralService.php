@@ -237,30 +237,16 @@ class ListenerDeferralService {
 	): void {
 		try {
 			$this->captureActor();
+			$this->ensureBuffer(jobClass: $jobClass, chunkSize: $chunkSize);
 
-			if (isset($this->buffers[$jobClass]) === false) {
-				$this->buffers[$jobClass] = [
-					'entries' => [],
-					'dedupe' => [],
-					'chunkSize' => max(1, $chunkSize),
-				];
-			}
-
-			if ($dedupeKey !== null) {
-				if (isset($this->buffers[$jobClass]['dedupe'][$dedupeKey]) === true) {
-					return;
-				}
-
-				$this->buffers[$jobClass]['dedupe'][$dedupeKey] = true;
+			if ($this->isDuplicate(jobClass: $jobClass, dedupeKey: $dedupeKey) === true) {
+				return;
 			}
 
 			$this->buffers[$jobClass]['entries'][] = $entry;
 
 			$this->hookShutdown();
-
-			if (count($this->buffers[$jobClass]['entries']) >= $this->buffers[$jobClass]['chunkSize']) {
-				$this->flushBuffer(jobClass: $jobClass);
-			}
+			$this->flushWhenFull(jobClass: $jobClass);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[ListenerDeferralService] Failed to buffer deferred listener entry',
@@ -273,6 +259,58 @@ class ListenerDeferralService {
 			);
 		}//end try
 	}//end defer()
+
+	/**
+	 * Open the buffer of a job class on its first entry; its chunk size is fixed then.
+	 *
+	 * @param string $jobClass  The job class.
+	 * @param int    $chunkSize The requested chunk size (at least 1 is used).
+	 *
+	 * @return void
+	 */
+	private function ensureBuffer(string $jobClass, int $chunkSize): void {
+		if (isset($this->buffers[$jobClass]) === false) {
+			$this->buffers[$jobClass] = [
+				'entries' => [],
+				'dedupe' => [],
+				'chunkSize' => max(1, $chunkSize),
+			];
+		}
+	}//end ensureBuffer()
+
+	/**
+	 * Whether the dedupe key was already buffered for this job class; marks it seen otherwise.
+	 *
+	 * @param string      $jobClass  The job class.
+	 * @param string|null $dedupeKey The dedupe key, or null for none.
+	 *
+	 * @return bool
+	 */
+	private function isDuplicate(string $jobClass, ?string $dedupeKey): bool {
+		if ($dedupeKey === null) {
+			return false;
+		}
+
+		if (isset($this->buffers[$jobClass]['dedupe'][$dedupeKey]) === true) {
+			return true;
+		}
+
+		$this->buffers[$jobClass]['dedupe'][$dedupeKey] = true;
+		return false;
+	}//end isDuplicate()
+
+	/**
+	 * Flush the buffer of a job class once it holds a full chunk.
+	 *
+	 * @param string $jobClass The job class.
+	 *
+	 * @return void
+	 */
+	private function flushWhenFull(string $jobClass): void {
+		if (count($this->buffers[$jobClass]['entries']) >= $this->buffers[$jobClass]['chunkSize']) {
+			$this->flushBuffer(jobClass: $jobClass);
+		}
+	}//end flushWhenFull()
 
 	/**
 	 * Flush every remaining buffer to the job list.
@@ -341,68 +379,118 @@ class ListenerDeferralService {
 		// adds its own length plus the comma that joins it to the next.
 		$budget = ($this->getArgumentLimit() - strlen((string)json_encode($envelope->toJobArguments())));
 
-		$chunks  = [];
-		$current = [];
-		$used    = 0;
+		$packing = ['chunks' => [], 'current' => [], 'used' => 0];
 		foreach ($entries as $entry) {
-			$length = (strlen((string)json_encode($entry)) + 1);
-			if ($length > $budget && array_key_exists('oldData', $entry) === true) {
-				// The previous data is the bulk of a large update. Losing it beats
-				// losing the entry, but it is not free: rules that compare old
-				// against new fail closed without it and are skipped.
-				$reduced = $entry;
-				unset($reduced['oldData']);
-				$reducedLength = (strlen((string)json_encode($reduced)) + 1);
-				if ($reducedLength <= $budget) {
-					$this->logger->warning(
-						message: '[ListenerDeferralService] A deferred listener entry was too large for a background job; '
-							. 'it was enqueued without its previous data; conditioned updated rules and '
-							. 'calculatedChange rules are skipped for this object',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'jobClass' => $jobClass,
-							'uuid' => (string)($entry['uuid'] ?? ''),
-							'length' => $length,
-							'limit' => $this->getArgumentLimit(),
-						]
-					);
-					$entry  = $reduced;
-					$length = $reducedLength;
-				}
+			$fitted = $this->fitEntry(jobClass: $jobClass, entry: $entry, budget: $budget);
+			if ($fitted !== null) {
+				$this->pack(packing: $packing, fitted: $fitted, budget: $budget);
 			}
-
-			if ($length > $budget) {
-				$this->logger->error(
-					message: '[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'jobClass' => $jobClass,
-						'uuid' => (string)($entry['uuid'] ?? ''),
-						'length' => $length,
-						'limit' => $this->getArgumentLimit(),
-					]
-				);
-				continue;
-			}
-
-			if ($current !== [] && ($used + $length) > $budget) {
-				$chunks[] = $current;
-				$current  = [];
-				$used     = 0;
-			}
-
-			$current[] = $entry;
-			$used     += $length;
-		}//end foreach
-
-		if ($current !== []) {
-			$chunks[] = $current;
 		}
 
-		return $chunks;
+		if ($packing['current'] !== []) {
+			$packing['chunks'][] = $packing['current'];
+		}
+
+		return $packing['chunks'];
 	}//end chunksUnderLimit()
+
+	/**
+	 * An entry with its encoded length, reduced if it must be, or null when it
+	 * cannot fit a job at all (logged as an error; the entry is not enqueued).
+	 *
+	 * @param string               $jobClass The job class (for the log).
+	 * @param array<string, mixed> $entry    The entry.
+	 * @param int                  $budget   The room an entry may take in a job.
+	 *
+	 * @return array{entry: array<string, mixed>, length: int}|null
+	 */
+	private function fitEntry(string $jobClass, array $entry, int $budget): ?array {
+		$fitted = $this->withoutOldDataWhenTooLarge(jobClass: $jobClass, entry: $entry, budget: $budget);
+		if ($fitted['length'] <= $budget) {
+			return $fitted;
+		}
+
+		$this->logger->error(
+			message: '[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'jobClass' => $jobClass,
+				'uuid' => (string)($fitted['entry']['uuid'] ?? ''),
+				'length' => $fitted['length'],
+				'limit' => $this->getArgumentLimit(),
+			]
+		);
+		return null;
+	}//end fitEntry()
+
+	/**
+	 * An entry with its encoded length; an oversized entry whose previous data
+	 * is the bulk loses `oldData` when that makes it fit (logged as a warning).
+	 *
+	 * The previous data is the bulk of a large update. Losing it beats losing
+	 * the entry, but it is not free: rules that compare old against new fail
+	 * closed without it and are skipped.
+	 *
+	 * @param string               $jobClass The job class (for the log).
+	 * @param array<string, mixed> $entry    The entry.
+	 * @param int                  $budget   The room an entry may take in a job.
+	 *
+	 * @return array{entry: array<string, mixed>, length: int}
+	 */
+	private function withoutOldDataWhenTooLarge(string $jobClass, array $entry, int $budget): array {
+		// Measured the way the job list measures: plain json_encode, plus the
+		// comma that joins the entry to the next.
+		$length = (strlen((string)json_encode($entry)) + 1);
+		if ($length <= $budget || array_key_exists('oldData', $entry) === false) {
+			return ['entry' => $entry, 'length' => $length];
+		}
+
+		$reduced = $entry;
+		unset($reduced['oldData']);
+		$reducedLength = (strlen((string)json_encode($reduced)) + 1);
+		if ($reducedLength > $budget) {
+			return ['entry' => $entry, 'length' => $length];
+		}
+
+		$this->logger->warning(
+			message: '[ListenerDeferralService] A deferred listener entry was too large for a background job; '
+				. 'it was enqueued without its previous data; conditioned updated rules and '
+				. 'calculatedChange rules are skipped for this object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'jobClass' => $jobClass,
+				'uuid' => (string)($entry['uuid'] ?? ''),
+				'length' => $length,
+				'limit' => $this->getArgumentLimit(),
+			]
+		);
+		return ['entry' => $reduced, 'length' => $reducedLength];
+	}//end withoutOldDataWhenTooLarge()
+
+	/**
+	 * Add a fitted entry to the current chunk, starting a new chunk when it would overflow.
+	 *
+	 * The packing state holds `chunks` (closed chunks), `current` (the open
+	 * chunk) and `used` (the encoded length of the open chunk).
+	 *
+	 * @param array<string, mixed>                            $packing The packing state, updated in place.
+	 * @param array{entry: array<string, mixed>, length: int} $fitted  The fitted entry.
+	 * @param int                                             $budget  The room entries may take in a job.
+	 *
+	 * @return void
+	 */
+	private function pack(array &$packing, array $fitted, int $budget): void {
+		if ($packing['current'] !== [] && ($packing['used'] + $fitted['length']) > $budget) {
+			$packing['chunks'][] = $packing['current'];
+			$packing['current']  = [];
+			$packing['used']     = 0;
+		}
+
+		$packing['current'][] = $fitted['entry'];
+		$packing['used']     += $fitted['length'];
+	}//end pack()
 
 	/**
 	 * Enqueue one chunk job.
