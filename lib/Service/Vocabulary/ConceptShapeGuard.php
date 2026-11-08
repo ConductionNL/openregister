@@ -37,7 +37,7 @@ use OCA\OpenRegister\Service\VocabularyImportService;
 /**
  * Validates a concept against the shape its own scheme declares.
  */
-class ConceptShapeGuard {
+class ConceptShapeGuard implements ConceptShapeGuardInterface {
 
 	/**
 	 * Constructor.

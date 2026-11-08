@@ -48,7 +48,7 @@ use OCP\Lock\LockedException;
 /**
  * Decides create, update or refuse for an upsert on a declared key.
  */
-class UpsertOnKeyHandler {
+class UpsertOnKeyHandler implements UpsertOnKeyHandlerInterface {
 
 	/**
 	 * How often to try for a key lock another call holds.
@@ -92,51 +92,93 @@ class UpsertOnKeyHandler {
 	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
 	 */
 	public function upsert(string $constraintName, array $object, Register $register, Schema $schema, callable $save): array {
-		$constraint = $this->resolveConstraint(constraintName: $constraintName, schema: $schema);
-		$values     = $this->keyValues(constraint: $constraint, object: $object);
-		$lockPath   = $this->lockPath(register: $register, schema: $schema, constraint: $constraint, values: $values);
+		$request = new UpsertOnKeyRequest(constraintName: $constraintName, object: $object, register: $register, schema: $schema);
+
+		return $this->upsertLocked(request: $request, save: $save);
+	}//end upsert()
+
+	/**
+	 * Resolve the key, hold its lock, look it up and save.
+	 *
+	 * @param UpsertOnKeyRequest              $request The key's name, the body and where it goes.
+	 * @param callable(?string): ObjectEntity $save    Saves the body; null creates, a uuid updates that record.
+	 *
+	 * @return array{created: bool, object: ObjectEntity} Whether a record was created, and the saved record.
+	 *
+	 * @throws UpsertOnKeyException When the upsert is refused; the exception carries the answer.
+	 */
+	private function upsertLocked(UpsertOnKeyRequest $request, callable $save): array {
+		$constraint = $this->resolveConstraint(constraintName: $request->constraintName, schema: $request->schema);
+		$lockPath   = $this->lockPath(request: $request, constraint: $constraint);
 
 		$this->acquire(lockPath: $lockPath);
 		try {
-			try {
-				$uuids = $this->matchResolver->resolve(
-					object: $object,
-					matchKey: $constraint['properties'],
-					register: $register,
-					schema: $schema
-				);
-			} catch (MatchLookupFailedException $exception) {
-				// A lookup that could not run is not "no match": creating now
-				// would duplicate the record the key should have found.
-				throw new UpsertOnKeyException(
-					statusCode: 503,
-					body: ['error' => 'The key could not be looked up, so nothing was written. Try again.'],
-					headers: ['Retry-After' => '5'],
-					previous: $exception
-				);
-			}
-
-			if (count($uuids) > 1) {
-				throw new UpsertOnKeyException(
-					statusCode: 409,
-					body: [
-						'error' => 'More than one record holds this key, so none was changed.',
-						'constraint' => $constraint['name'],
-						'matches' => $uuids,
-					]
-				);
-			}
-
-			$uuid = ($uuids[0] ?? null);
+			$uuid = $this->singleMatch(request: $request, constraint: $constraint);
 
 			return [
 				'created' => ($uuid === null),
-				'object' => $this->save(save: $save, uuid: $uuid, constraint: $constraint),
+				'object' => $this->save(save: static fn (): ObjectEntity => $save($uuid), constraint: $constraint),
 			];
 		} finally {
 			$this->lockingProvider->releaseLock($lockPath, ILockingProvider::LOCK_EXCLUSIVE);
-		}//end try
-	}//end upsert()
+		}
+	}//end upsertLocked()
+
+	/**
+	 * The one record the key names, null when none does, or a 409 when several do.
+	 *
+	 * @param UpsertOnKeyRequest                                             $request    The body and where it goes.
+	 * @param array{name:string,properties:array<int,string>,action:string} $constraint The constraint.
+	 *
+	 * @return string|null The matching record's uuid.
+	 *
+	 * @throws UpsertOnKeyException When the lookup fails or more than one record holds the key.
+	 */
+	private function singleMatch(UpsertOnKeyRequest $request, array $constraint): ?string {
+		$uuids = $this->lookup(request: $request, constraint: $constraint);
+		if (count($uuids) > 1) {
+			throw new UpsertOnKeyException(
+				statusCode: 409,
+				body: [
+					'error' => 'More than one record holds this key, so none was changed.',
+					'constraint' => $constraint['name'],
+					'matches' => $uuids,
+				]
+			);
+		}
+
+		return ($uuids[0] ?? null);
+	}//end singleMatch()
+
+	/**
+	 * The uuids holding the key, or a 503 when the lookup could not run.
+	 *
+	 * @param UpsertOnKeyRequest                                             $request    The body and where it goes.
+	 * @param array{name:string,properties:array<int,string>,action:string} $constraint The constraint.
+	 *
+	 * @return array The matching uuids.
+	 *
+	 * @throws UpsertOnKeyException When the lookup could not run.
+	 */
+	private function lookup(UpsertOnKeyRequest $request, array $constraint): array {
+		try {
+			return $this->matchResolver->resolve(
+				object: $request->object,
+				matchKey: $constraint['properties'],
+				register: $request->register,
+				schema: $request->schema
+			);
+		} catch (MatchLookupFailedException $exception) {
+			// A lookup that could not run is not "no match": creating now
+			// would duplicate the record the key should have found.
+			throw new UpsertOnKeyException(
+				statusCode: 503,
+				body: ['error' => 'The key could not be looked up, so nothing was written. Try again.'],
+				headers: ['Retry-After' => '5'],
+				previous: $exception
+			);
+		}
+	}//end lookup()
 
 	/**
 	 * The refuse constraint the call names, or a 400 listing the ones it may name.
@@ -210,15 +252,16 @@ class UpsertOnKeyHandler {
 	 * varchar(64), and a longer path made pgsql refuse every lock. `sha1` keeps
 	 * the path at 60 characters; this is a lock name, not a secret.
 	 *
-	 * @param Register                                                       $register   The register.
-	 * @param Schema                                                         $schema     The schema.
+	 * @param UpsertOnKeyRequest                                             $request    The body and where it goes.
 	 * @param array{name:string,properties:array<int,string>,action:string} $constraint The constraint.
-	 * @param array<string, mixed>                                           $values     The key's values.
 	 *
 	 * @return string The lock path.
+	 *
+	 * @throws UpsertOnKeyException When a key property has no value.
 	 */
-	private function lockPath(Register $register, Schema $schema, array $constraint, array $values): string {
-		$digest = hash('sha1', (string)json_encode([$register->getId(), $schema->getId(), $constraint['name'], $values]));
+	private function lockPath(UpsertOnKeyRequest $request, array $constraint): string {
+		$values = $this->keyValues(constraint: $constraint, object: $request->object);
+		$digest = hash('sha1', (string)json_encode([$request->register->getId(), $request->schema->getId(), $constraint['name'], $values]));
 
 		return 'openregister/upsert/'.$digest;
 	}//end lockPath()
@@ -258,17 +301,16 @@ class UpsertOnKeyHandler {
 	/**
 	 * Save, turning a refusal by a holder the caller cannot see into a 409 that names no uuid.
 	 *
-	 * @param callable(?string): ObjectEntity                                $save       The save.
-	 * @param string|null                                                    $uuid       The record to update, or null to create.
+	 * @param callable(): ObjectEntity                                       $save       The save, bound to the record to update (or none).
 	 * @param array{name:string,properties:array<int,string>,action:string} $constraint The constraint.
 	 *
 	 * @return ObjectEntity The saved record.
 	 *
 	 * @throws UpsertOnKeyException When a record the caller cannot see holds the key.
 	 */
-	private function save(callable $save, ?string $uuid, array $constraint): ObjectEntity {
+	private function save(callable $save, array $constraint): ObjectEntity {
 		try {
-			return $save($uuid);
+			return $save();
 		} catch (HookStoppedException $exception) {
 			$errors = $exception->getErrors();
 			if (($errors['code'] ?? null) !== UniqueConstraintListenerInterface::ERROR_CODE) {

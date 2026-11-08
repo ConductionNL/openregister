@@ -29,13 +29,13 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Archival\DestructionReviewService;
-use OCA\OpenRegister\Service\Archival\RecordState;
+use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
+use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
-use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\Notification\IManager as INotificationManager;
@@ -59,7 +59,7 @@ final class DestructionListRun {
 	/**
 	 * Review answers that forbid destroying the entry carrying them.
 	 *
-	 * Read from DestructionReviewService's own constants rather than copied as
+	 * Read from DestructionReviewServiceInterface's own constants rather than copied as
 	 * literals: the class that writes the value and the class that refuses to
 	 * act on it must not be able to drift apart. The third answer, `destroy`,
 	 * is the one this job exists to carry out.
@@ -67,8 +67,8 @@ final class DestructionListRun {
 	 * @var string[]
 	 */
 	private const WITHHELD_DECISIONS = [
-		DestructionReviewService::ANSWER_RETAIN,
-		DestructionReviewService::ANSWER_TRANSFER,
+		DestructionReviewServiceInterface::ANSWER_RETAIN,
+		DestructionReviewServiceInterface::ANSWER_TRANSFER,
 	];
 
 	/**
@@ -102,9 +102,9 @@ final class DestructionListRun {
 	/**
 	 * Saves the destruction certificate.
 	 *
-	 * @var SaveObject
+	 * @var SaveObjectWriterInterface
 	 */
-	private readonly SaveObject $saveObject;
+	private readonly SaveObjectWriterInterface $saveObject;
 
 	/**
 	 * Archival settings.
@@ -147,11 +147,11 @@ final class DestructionListRun {
 		private readonly LoggerInterface $logger,
 	) {
 		$this->retentionService = $container->get(RetentionServiceInterface::class);
-		$settingsHandler        = $container->get(ObjectRetentionHandler::class);
+		$settingsHandler        = $container->get(ArchivalSettingsReaderInterface::class);
 		$this->objectMapper     = $container->get(MagicMapperInterface::class);
 		$this->auditMapper      = $container->get(AuditTrailMapperInterface::class);
 		$this->deleteObject     = $container->get(DeleteObject::class);
-		$this->saveObject       = $container->get(SaveObject::class);
+		$this->saveObject       = $container->get(SaveObjectWriterInterface::class);
 		$this->settings         = $settingsHandler->getArchivalSettingsOnly();
 	}//end __construct()
 
@@ -303,7 +303,7 @@ final class DestructionListRun {
 		}
 
 		$retention = $object->getRetention() ?? [];
-		$retention['archiefstatus'] = RecordState::DESTROYED;
+		$retention['archiefstatus'] = RecordStateInterface::DESTROYED;
 		$object->setRetention($retention);
 		$this->audit(object: $object, objRef: $objRef);
 

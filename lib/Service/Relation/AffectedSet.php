@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\Relation;
  *
  * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
  */
-class AffectedSet {
+class AffectedSet implements AffectedSetInterface {
 
 	/**
 	 * A reached node that is a record.
@@ -219,18 +219,38 @@ class AffectedSet {
 		$paths = [$root => []];
 		$queue = [$root];
 		while ($queue !== []) {
-			$from = (string)array_shift($queue);
-			foreach (($outgoing[$from] ?? []) as $to => $type) {
-				if (array_key_exists($to, $paths) === false) {
-					$paths[$to] = array_merge($paths[$from], [['from' => $from, 'to' => (string)$to, 'type' => $type]]);
-					$queue[] = (string)$to;
-				}
+			$from  = (string)array_shift($queue);
+			$found = self::newlyReached(from: $from, outgoing: $outgoing, paths: $paths);
+			$paths = $paths + $found;
+			foreach (array_keys($found) as $to) {
+				$queue[] = (string)$to;
 			}
 		}
 
 		unset($paths[$root]);
 		return $paths;
 	}//end reachableFrom()
+
+
+	/**
+	 * The paths to the neighbours of one node that no earlier path reached.
+	 *
+	 * @param string                                           $from     The node.
+	 * @param array<string, array<string, string>>             $outgoing The outgoing edges.
+	 * @param array<string, array<int, array<string, string>>> $paths    The paths found so far.
+	 *
+	 * @return array<string, array<int, array<string, string>>> The path to each newly reached uuid, in edge order.
+	 */
+	private static function newlyReached(string $from, array $outgoing, array $paths): array {
+		$found = [];
+		foreach (($outgoing[$from] ?? []) as $to => $type) {
+			if (array_key_exists($to, $paths) === false) {
+				$found[$to] = array_merge($paths[$from], [['from' => $from, 'to' => (string)$to, 'type' => $type]]);
+			}
+		}
+
+		return $found;
+	}//end newlyReached()
 
 	/**
 	 * The kept edges grouped by the node they leave: from => [to => type], first edge wins.

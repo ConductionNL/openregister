@@ -50,7 +50,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use stdClass;
 use UnexpectedValueException;
@@ -58,7 +57,7 @@ use UnexpectedValueException;
 /**
  * Executes a named flow as a step, optionally waiting for its result.
  */
-class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class SubFlowNode extends LogicNodeBase implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * How deep a chain of sub-flows may go before it is refused.
@@ -89,10 +88,10 @@ class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKey
 	public function __construct(
 		private readonly FlowLocator $resolvers,
 		private readonly FlowRunServiceInterface $runs,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		IL10N $l10n,
+		IURLGenerator $urls,
 	) {
-
+		parent::__construct(l10n: $l10n, urls: $urls);
 	}//end __construct()
 
 	/**
@@ -130,18 +129,6 @@ class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKey
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/external.svg');
 	}//end getIcon()
-
-	/**
-	 * Running a sub-flow grants no privilege of its own; the sub-run enforces
-	 * whatever its own steps require.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a sub-flow step.
@@ -221,25 +208,12 @@ class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKey
 		// child because object-write iterates items itself, which is fine until
 		// you want per-record isolation, per-record retry, or a trace that shows
 		// one run per object.
+		$target = new SubFlowTarget(flow: $flow, flowId: $flowId, stack: $stack);
 		if (($config['fanOut'] ?? false) === true) {
-			return $this->fanOut(
-				items: $items,
-				flow: $flow,
-				flowId: $flowId,
-				stack: $stack,
-				config: $config,
-				context: $context
-			);
+			return $this->fanOut(items: $items, target: $target, config: $config, context: $context);
 		}
 
-		return $this->invoke(
-			items: $items,
-			flow: $flow,
-			flowId: $flowId,
-			stack: $stack,
-			config: $config,
-			context: $context
-		);
+		return $this->invoke(items: $items, target: $target, config: $config, context: $context);
 	}//end execute()
 
 	/**
@@ -250,28 +224,19 @@ class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKey
 	 * step completed while some records were silently not processed, and the
 	 * count of child runs would be the only surviving evidence.
 	 *
-	 * @param array $items The input items.
-	 * @param array $flow The resolved sub-flow document.
-	 * @param string $flowId The sub-flow id.
-	 * @param array $stack The recursion stack.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param array         $items   The input items.
+	 * @param SubFlowTarget $target  The resolved sub-flow, its id and the recursion stack.
+	 * @param array         $config  The step configuration.
+	 * @param array         $context Run-level metadata.
 	 *
 	 * @return array Everything the children produced, in item order.
 	 *
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function fanOut(array $items, array $flow, string $flowId, array $stack, array $config, array $context): array {
+	private function fanOut(array $items, SubFlowTarget $target, array $config, array $context): array {
 		$out = [];
 		foreach ($items as $item) {
-			$produced = $this->invoke(
-				items: [$item],
-				flow: $flow,
-				flowId: $flowId,
-				stack: $stack,
-				config: $config,
-				context: $context
-			);
+			$produced = $this->invoke(items: [$item], target: $target, config: $config, context: $context);
 
 			foreach ($produced as $one) {
 				$out[] = $one;
@@ -284,21 +249,20 @@ class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKey
 	/**
 	 * One invocation of the sub-flow with the given items.
 	 *
-	 * @param array $items The items to seed the child with.
-	 * @param array $flow The resolved sub-flow document.
-	 * @param string $flowId The sub-flow id.
-	 * @param array $stack The recursion stack.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param array         $items   The items to seed the child with.
+	 * @param SubFlowTarget $target  The resolved sub-flow, its id and the recursion stack.
+	 * @param array         $config  The step configuration.
+	 * @param array         $context Run-level metadata.
 	 *
 	 * @return array What the child produced, or the input when fire-and-forget.
 	 *
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	private function invoke(array $items, array $flow, string $flowId, array $stack, array $config, array $context): array {
+	private function invoke(array $items, SubFlowTarget $target, array $config, array $context): array {
+		$flowId = $target->flowId;
 		$subject = $this->subjectDescriptor(context: $context);
 		$childCtx = $context;
-		$childCtx[self::STACK_KEY] = $stack;
+		$childCtx[self::STACK_KEY] = $target->stack;
 
 		// The child gets its OWN token, seeded with the parent's values rather
 		// than the parent's instance. Sharing one instance would let a
@@ -364,7 +328,7 @@ class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKey
 
 		$run = $this->runs->execute(
 			run: $run,
-			flow: $flow,
+			flow: $target->flow,
 			subject: new stdClass(),
 			seedItems: $items
 		);
@@ -494,16 +458,4 @@ class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKey
 		return IFlowNodeTaxonomy::KIND_SUB_PROCESS;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

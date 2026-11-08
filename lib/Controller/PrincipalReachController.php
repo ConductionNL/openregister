@@ -32,11 +32,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
-use OCA\OpenRegister\Service\Rbac\ReachRevocationService;
+use OCA\OpenRegister\Service\Rbac\PrincipalReachListerInterface;
+use OCA\OpenRegister\Service\Rbac\ReachRevocationServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 
 /**
@@ -48,14 +48,14 @@ class PrincipalReachController extends Controller {
 	 *
 	 * @param string                 $appName    The app name.
 	 * @param IRequest               $request    The request.
-	 * @param PrincipalReachService  $reach      The listing.
-	 * @param ReachRevocationService $revocation The one act.
+	 * @param PrincipalReachListerInterface  $reach      The listing.
+	 * @param ReachRevocationServiceInterface $revocation The one act.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PrincipalReachService $reach,
-		private readonly ReachRevocationService $revocation,
+		private readonly PrincipalReachListerInterface $reach,
+		private readonly ReachRevocationServiceInterface $revocation,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -79,10 +79,7 @@ class PrincipalReachController extends Controller {
 	public function show(string $principal): JSONResponse {
 		$principal = trim($principal);
 		if ($principal === '') {
-			return new JSONResponse(
-				data: ['error' => 'principal is required'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->principalRequired();
 		}
 
 		return new JSONResponse(data: $this->reach->listFor(principal: $principal));
@@ -104,10 +101,7 @@ class PrincipalReachController extends Controller {
 	public function revoke(string $principal): JSONResponse {
 		$principal = trim($principal);
 		if ($principal === '') {
-			return new JSONResponse(
-				data: ['error' => 'principal is required'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->principalRequired();
 		}
 
 		return new JSONResponse(
@@ -117,4 +111,16 @@ class PrincipalReachController extends Controller {
 			)
 		);
 	}//end revoke()
+
+	/**
+	 * The 400 for a blank principal.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function principalRequired(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'principal is required'],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end principalRequired()
 }//end class

@@ -36,10 +36,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -88,9 +87,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 * Wire collaborators.
 	 *
 	 * @param ObjectOperationsInterface $objectService Object query path (RBAC + tenant scoped).
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the dedup annotation.
-	 * @param RegisterMapperInterface $registerMapper Register lookup — the boundary the schema resolves inside.
-	 * @param SimilarityCalculator $similarity Pure field-similarity primitives, for the comparator.
+	 * @param DedupScoringSources $sources Schema and register lookup and the similarity primitives.
 	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -100,16 +97,14 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
-		SchemaMapperInterface $schemaMapper,
-		RegisterMapperInterface $registerMapper,
-		SimilarityCalculator $similarity,
+		DedupScoringSources $sources,
 		private readonly DismissedPairStore $dismissals,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->ruleResolver = new DedupRuleResolver(
-			scopedSchemaResolver: new RegisterScopedSchemaResolver(registerMapper: $registerMapper, schemaMapper: $schemaMapper)
+			scopedSchemaResolver: RegisterScopedSchemaResolvers::over(registerMapper: $sources->registerMapper, schemaMapper: $sources->schemaMapper)
 		);
-		$this->comparator = new PayloadComparator(similarity: $similarity);
+		$this->comparator = new PayloadComparator(similarity: $sources->similarity);
 	}//end __construct()
 
 

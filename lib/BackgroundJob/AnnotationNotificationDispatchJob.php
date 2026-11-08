@@ -41,7 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
+use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -64,7 +64,7 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 	 * @param IUserManager $userManager Resolver for the captured user id.
 	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
+	 * @param DeferredEntryObjectResolverInterface $resolver Stale-safe entry re-fetch.
 	 * @param NotificationRuleDispatcherInterface $dispatcher Notification dispatcher doing the real work.
 	 *
 	 * @return void
@@ -75,7 +75,7 @@ class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 		IUserManager $userManager,
 		OrganisationServiceInterface $organisation,
 		LoggerInterface $logger,
-		private readonly DeferredEntryObjectResolver $resolver,
+		private readonly DeferredEntryObjectResolverInterface $resolver,
 		private readonly NotificationRuleDispatcherInterface $dispatcher,
 	) {
 		parent::__construct(

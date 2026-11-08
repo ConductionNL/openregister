@@ -58,48 +58,16 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 	 *
 	 * PostgreSQL is the sole vector storage backend.
 	 *
-	 * @param string $entityType Entity type ('object' or 'file')
-	 * @param string $entityId Entity UUID
-	 * @param array $embedding Vector embedding (array of floats)
-	 * @param string $model Model used to generate embedding
-	 * @param int $dimensions Number of dimensions
-	 * @param int $chunkIndex Chunk index (0 for objects, N for file chunks)
-	 * @param int $totalChunks Total number of chunks
-	 * @param string|null $chunkText The text that was embedded
-	 * @param array $metadata Additional metadata as associative array
+	 * @param StoredVector $vector The entity, its embedding and its chunk position
 	 *
 	 * @return int The ID of the inserted vector
 	 *
 	 * @throws \Exception If storage fails
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function storeVector(
-		string $entityType,
-		string $entityId,
-		array $embedding,
-		string $model,
-		int $dimensions,
-		int $chunkIndex = 0,
-		int $totalChunks = 1,
-		?string $chunkText = null,
-		array $metadata = [],
-	): int {
-		return $this->storeVectorInDatabase(
-			vector: new StoredVector(
-				entityType: $entityType,
-				entityId: $entityId,
-				embedding: $embedding,
-				model: $model,
-				dimensions: $dimensions,
-				chunkIndex: $chunkIndex,
-				totalChunks: $totalChunks,
-				chunkText: $chunkText,
-				metadata: $metadata
-			)
-		);
+	public function storeVector(StoredVector $vector): int {
+		return $this->storeVectorInDatabase(vector: $vector);
 	}//end storeVector()
 
 	/**
@@ -340,95 +308,29 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 	 *
 	 * @return array{converted: int, failed: int, last_id: int, remaining: int}
 	 *
-	 * @SuppressWarnings(PHPMD.ErrorControlOperator)  @unserialize: malformed BLOBs emit
-	 *   E_WARNING; the false return is handled explicitly (row skipped + logged).
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  One bounded batch loop with explicit
-	 *   per-row failure handling (resource normalisation, parse check, upsert outcome).
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Selection + per-row tolerance +
-	 *   remaining-count reporting belong to one atomic batch step.
-	 *
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#2.2
 	 */
 	public function backfillEmbeddingVectors(int $batchSize = 100, int $afterId = 0): array {
+		$tally = [
+			'converted' => 0,
+			'failed' => 0,
+			'last_id' => $afterId,
+			'remaining' => 0,
+		];
+
 		$columnDimension = $this->pgVector->getVectorColumnDimension();
 
 		if ($columnDimension === null) {
-			return [
-				'converted' => 0,
-				'failed' => 0,
-				'last_id' => $afterId,
-				'remaining' => 0,
-			];
+			return $tally;
 		}
 
-		$converted = 0;
-		$failed = 0;
-		$lastId = $afterId;
-		$sidecar = PgVectorPlatform::SIDECAR_TABLE;
-
 		try {
-			$result = $this->db->executeQuery(
-				'SELECT v.id, v.embedding FROM *PREFIX*openregister_vectors v '
-				. "LEFT JOIN $sidecar a ON a.vector_id = v.id "
-				. 'WHERE a.vector_id IS NULL AND v.embedding_dimensions = ? AND v.id > ? '
-				. 'ORDER BY v.id ASC LIMIT ' . ((int)$batchSize),
-				[(string)$columnDimension, (string)$afterId]
-			);
-			$rows = $result->fetchAll();
-			$result->closeCursor();
+			foreach ($this->selectBackfillRows(columnDimension: $columnDimension, batchSize: $batchSize, afterId: $afterId) as $row) {
+				$tally['last_id'] = (int)$row['id'];
+				$tally[$this->backfillRow(row: $row, columnDimension: $columnDimension)]++;
+			}
 
-			foreach ($rows as $row) {
-				$lastId = (int)$row['id'];
-
-				// PostgreSQL returns BLOB columns as stream resources
-				// (live-verified on PG16); normalise to a string first.
-				$blob = $row['embedding'];
-				if (is_resource($blob) === true) {
-					$blob = stream_get_contents($blob);
-				}
-
-				// SEC-SVC-9: embeddings are plain float arrays; never allow
-				// object instantiation during unserialize. The error-control
-				// operator suppresses the E_WARNING malformed input emits —
-				// the false return value is handled explicitly below.
-				$embedding = false;
-				if (is_string($blob) === true) {
-					$embedding = @unserialize($blob, ['allowed_classes' => false]);
-				}
-
-				if (is_array($embedding) === false || count($embedding) !== $columnDimension) {
-					$failed++;
-					$this->logger->warning(
-						message: '[VectorStorageHandler] Skipping backfill for unparseable embedding BLOB',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'vector_id' => $row['id'],
-						]
-					);
-					continue;
-				}
-
-				$populated = $this->populateVectorColumn(vectorId: (int)$row['id'], embedding: $embedding);
-
-				if ($populated === true) {
-					$converted++;
-				}
-
-				if ($populated === false) {
-					// The populate call logged the failure already.
-					$failed++;
-				}
-			}//end foreach
-
-			$remainingResult = $this->db->executeQuery(
-				'SELECT COUNT(*) FROM *PREFIX*openregister_vectors v '
-				. "LEFT JOIN $sidecar a ON a.vector_id = v.id "
-				. 'WHERE a.vector_id IS NULL AND v.embedding_dimensions = ?',
-				[(string)$columnDimension]
-			);
-			$remaining = (int)$remainingResult->fetchOne();
-			$remainingResult->closeCursor();
+			$tally['remaining'] = $this->countRemainingBackfill(columnDimension: $columnDimension);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[VectorStorageHandler] pgvector warm-up backfill batch failed',
@@ -439,21 +341,116 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 				]
 			);
 
-			return [
-				'converted' => $converted,
-				'failed' => $failed,
-				'last_id' => $lastId,
-				'remaining' => 0,
-			];
+			$tally['remaining'] = 0;
 		}//end try
 
-		return [
-			'converted' => $converted,
-			'failed' => $failed,
-			'last_id' => $lastId,
-			'remaining' => $remaining,
-		];
+		return $tally;
 	}//end backfillEmbeddingVectors()
+
+	/**
+	 * Select the next batch of sidecar-less, dimension-matched vector rows.
+	 *
+	 * @param int $columnDimension Sidecar column dimension
+	 * @param int $batchSize Maximum rows to select
+	 * @param int $afterId Only rows with id > this cursor
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function selectBackfillRows(int $columnDimension, int $batchSize, int $afterId): array {
+		$sidecar = PgVectorPlatform::SIDECAR_TABLE;
+		$result = $this->db->executeQuery(
+			'SELECT v.id, v.embedding FROM *PREFIX*openregister_vectors v '
+			. "LEFT JOIN $sidecar a ON a.vector_id = v.id "
+			. 'WHERE a.vector_id IS NULL AND v.embedding_dimensions = ? AND v.id > ? '
+			. 'ORDER BY v.id ASC LIMIT ' . ((int)$batchSize),
+			[(string)$columnDimension, (string)$afterId]
+		);
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return $rows;
+	}//end selectBackfillRows()
+
+	/**
+	 * Count the vector rows still lacking a sidecar row.
+	 *
+	 * @param int $columnDimension Sidecar column dimension
+	 *
+	 * @return int
+	 */
+	private function countRemainingBackfill(int $columnDimension): int {
+		$sidecar = PgVectorPlatform::SIDECAR_TABLE;
+		$remainingResult = $this->db->executeQuery(
+			'SELECT COUNT(*) FROM *PREFIX*openregister_vectors v '
+			. "LEFT JOIN $sidecar a ON a.vector_id = v.id "
+			. 'WHERE a.vector_id IS NULL AND v.embedding_dimensions = ?',
+			[(string)$columnDimension]
+		);
+		$remaining = (int)$remainingResult->fetchOne();
+		$remainingResult->closeCursor();
+
+		return $remaining;
+	}//end countRemainingBackfill()
+
+	/**
+	 * Convert one BLOB row into a sidecar row.
+	 *
+	 * @param array<string, mixed> $row Vector row (id, embedding)
+	 * @param int $columnDimension Sidecar column dimension
+	 *
+	 * @return string The tally key: 'converted' or 'failed'
+	 */
+	private function backfillRow(array $row, int $columnDimension): string {
+		$embedding = $this->decodeEmbeddingBlob(blob: $row['embedding']);
+
+		if (is_array($embedding) === false || count($embedding) !== $columnDimension) {
+			$this->logger->warning(
+				message: '[VectorStorageHandler] Skipping backfill for unparseable embedding BLOB',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'vector_id' => $row['id'],
+				]
+			);
+
+			return 'failed';
+		}
+
+		// A false populate result was logged by populateVectorColumn already.
+		if ($this->populateVectorColumn(vectorId: (int)$row['id'], embedding: $embedding) === true) {
+			return 'converted';
+		}
+
+		return 'failed';
+	}//end backfillRow()
+
+	/**
+	 * Decode a stored embedding BLOB.
+	 *
+	 * PostgreSQL returns BLOB columns as stream resources (live-verified on
+	 * PG16); they are normalised to a string first. SEC-SVC-9: embeddings are
+	 * plain float arrays; never allow object instantiation during unserialize.
+	 * The error-control operator suppresses the E_WARNING malformed input
+	 * emits — the false return value is handled by the caller.
+	 *
+	 * @param mixed $blob Raw column value
+	 *
+	 * @return mixed The decoded value, false when undecodable
+	 *
+	 * @SuppressWarnings(PHPMD.ErrorControlOperator)  @unserialize: malformed BLOBs emit
+	 *   E_WARNING; the false return is handled explicitly (row skipped + logged).
+	 */
+	private function decodeEmbeddingBlob(mixed $blob): mixed {
+		if (is_resource($blob) === true) {
+			$blob = stream_get_contents($blob);
+		}
+
+		if (is_string($blob) === false) {
+			return false;
+		}
+
+		return @unserialize($blob, ['allowed_classes' => false]);
+	}//end decodeEmbeddingBlob()
 
 	/**
 	 * Sanitize text to prevent UTF-8 encoding errors

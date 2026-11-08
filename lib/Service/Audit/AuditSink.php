@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class AuditSink {
+class AuditSink implements AuditSinkInterface, AuditSinkShipperInterface {
 	/**
 	 * The app the configuration belongs to.
 	 *
@@ -112,13 +112,6 @@ class AuditSink {
 	 * @var int
 	 */
 	public const LINE_VERSION = 1;
-
-	/**
-	 * The audit action a failure to ship is recorded under.
-	 *
-	 * @var string
-	 */
-	public const ACTION_SINK_FAILED = 'audit.sink-failed';
 
 	/**
 	 * Default attempts per line.

@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -62,7 +63,7 @@ class ExampleSetFlowsGoldenTest extends TestCase {
 		foreach ($this->updates() as $name => $case) {
 			$this->calls = [];
 			$this->world = $case['world'];
-			$answer      = $this->subject()->update($case['entry'], 'zaak', 'intake', $case['data']);
+			$answer      = $this->subject()->update($case['entry'], new ExampleSetRow('zaak', 'intake', $case['data']));
 			$actual['update '.$name] = ['answer' => $answer, 'calls' => $this->calls];
 		}
 

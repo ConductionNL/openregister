@@ -46,13 +46,15 @@ use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\View\ViewAlert;
-use OCA\OpenRegister\Service\View\ViewObjectQuery;
+use OCA\OpenRegister\Service\View\ViewObjectQueryInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
 
 /**
  * Evaluates due view alerts, a bounded batch at a time.
@@ -82,23 +84,65 @@ class ViewAlertSweepJob extends TimedJob {
 	private const INTERVAL_SECONDS = 300;
 
 	/**
+	 * The saved views.
+	 *
+	 * @var ViewMapperInterface
+	 */
+	private readonly ViewMapperInterface $views;
+
+	/**
+	 * Counts a view's query.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * Resolves the owner to count as.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $users;
+
+	/**
+	 * Announces a crossing.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $dispatcher;
+
+	/**
+	 * Diagnostics.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Turns a view's stored query into the search query it counts.
+	 *
+	 * @var ViewObjectQueryInterface
+	 */
+	private readonly ViewObjectQueryInterface $viewQuery;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory      $time       Time factory for TimedJob.
-	 * @param ViewMapperInterface        $views      The saved views.
-	 * @param ObjectOperationsInterface     $objects    Counts a view's query.
-	 * @param IUserManager      $users      Resolves the owner to count as.
-	 * @param IEventDispatcher  $dispatcher Announces a crossing.
-	 * @param LoggerInterface   $logger     Diagnostics.
+	 * @param ITimeFactory              $time       Time factory for TimedJob.
+	 * @param ViewAlertSweepSources $sources Saved views, object counting and the view query.
+	 * @param ViewAlertSweepPlatform $platform Users, event dispatcher and logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ViewMapperInterface $views,
-		private readonly ObjectOperationsInterface $objects,
-		private readonly IUserManager $users,
-		private readonly IEventDispatcher $dispatcher,
-		private readonly LoggerInterface $logger,
+		ViewAlertSweepSources $sources,
+		ViewAlertSweepPlatform $platform,
 	) {
+		$this->views = $sources->views;
+		$this->objects = $sources->objects;
+		$this->users = $platform->users;
+		$this->dispatcher = $platform->dispatcher;
+		$this->logger = $platform->logger;
+		$this->viewQuery = $sources->viewQuery;
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 	}//end __construct()
@@ -218,7 +262,7 @@ class ViewAlertSweepJob extends TimedJob {
 		// The VIEW's rows: its registers, schemas, filters and search terms.
 		// ObjectService::count() reads none of those, only the service's ambient
 		// register/schema context, which this sweep never sets (O5, 5 Oct).
-		$query = (new ViewObjectQuery())->forView(viewQuery: (array)($view->getQuery() ?? []));
+		$query = $this->viewQuery->forView(viewQuery: (array)($view->getQuery() ?? []));
 		if ($query === null) {
 			return 0;
 		}

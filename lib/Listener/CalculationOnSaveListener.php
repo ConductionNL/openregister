@@ -29,21 +29,19 @@ namespace OCA\OpenRegister\Listener;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
-use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveEngine;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveLookups;
+use OCA\OpenRegister\Listener\Support\CalculationSaveRun;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
-use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
-use OCA\OpenRegister\Service\SequenceServiceInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -56,6 +54,8 @@ use Throwable;
  * may reference another calculation declared earlier. The validator's
  * cycle check guarantees the graph is acyclic.
  *
+ * @spec openspec/specs/computed-fields/spec.md
+ *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The listener legitimately wires the
@@ -67,13 +67,9 @@ class CalculationOnSaveListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up schema calculations.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param RegisterMapperInterface $registerMapper Register lookup mapper (for sequence scope id).
-	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
-	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
-	 * @param SequenceServiceInterface $sequences Atomic running-number reservation service.
+	 * @param CalculationOnSaveLookups $lookups  Schema, register, counter and log.
+	 * @param CalculationOnSaveEngine  $engine   Evaluator and payload builder.
 	 * @param RuleRunRecorderInterface $ruleRuns Records each calculation's verdict for the rule inventory.
-	 * @param LoggerInterface $logger PSR logger for warnings.
 	 *
 	 * @return void
 	 *
@@ -83,13 +79,9 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly CalculationEvaluatorInterface $evaluator,
-		private readonly CalculationPayloadBuilder $payloadBuilder,
-		private readonly SequenceServiceInterface $sequences,
+		private readonly CalculationOnSaveLookups $lookups,
+		private readonly CalculationOnSaveEngine $engine,
 		private readonly RuleRunRecorderInterface $ruleRuns,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -117,149 +109,198 @@ class CalculationOnSaveListener implements IEventListener {
 	/**
 	 * Apply each materialised calculation to the object data.
 	 *
+	 * The evaluation payload is the object's data enriched with the synthetic
+	 * `@self` system metadata, pre-resolved `@ref.<name>` cross-object
+	 * references and pre-resolved `@aggregate.<name>` aggregate references,
+	 * shared with the temporal re-evaluation sweep via CalculationPayloadBuilder
+	 * so both paths evaluate against one payload shape. References are read as
+	 * the system, bounded by the saving object's tenant (ReferenceTenantGuard),
+	 * and never fail the save.
+	 *
+	 * The sequence-consumption context is built ONLY on create. Passing it to
+	 * the evaluator lets `{ "sequence": … }` nodes reserve exactly one running
+	 * number per object; on update the context is null so a re-materialise
+	 * never burns a fresh number.
+	 *
 	 * @param ObjectEntity $object Object being created or updated.
 	 * @param bool $isUpdate True when the object is being updated.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-	 * @SuppressWarnings(PHPMD.StaticAccess)        RuleTrace::fired and ::errored are named
-	 *   constructors on an immutable value object, not a collaborator to inject.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method runs the linear save-time
-	 *   materialisation pipeline (inject @self, @ref, @aggregate, then evaluate each calc and
-	 *   strip the synthetic keys); the steps share one payload and must stay in order, so
-	 *   extracting them would only scatter a strictly-sequential flow across helpers.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	private function process(ObjectEntity $object, bool $isUpdate): void {
 		$schema = $this->loadSchema(object: $object);
-		if ($schema === null) {
-			return;
-		}
-
 		$calcs = $this->getCalculations(schema: $schema);
 		if ($calcs === null) {
 			return;
 		}
 
-		$changed = false;
-
-		// Build the evaluation payload — the object's data enriched with the
-		// synthetic `@self` system metadata, pre-resolved `@ref.<name>`
-		// cross-object references, and pre-resolved `@aggregate.<name>`
-		// aggregate references. Shared with the temporal re-evaluation sweep
-		// via CalculationPayloadBuilder so both paths evaluate against one
-		// payload shape. References are read as the system, bounded by the
-		// saving object's tenant (ReferenceTenantGuard), and never fail the
-		// save.
-		$data = $this->payloadBuilder->build(object: $object, schema: $schema);
-
-		// Build the sequence-consumption context ONLY on create. Passing it to
-		// the evaluator lets `{ "sequence": … }` nodes reserve exactly one
-		// running number per object; on update the context is null so a
-		// re-materialise never burns a fresh number.
+		$data = $this->engine->payloadBuilder->build(object: $object, schema: $schema);
 		$sequenceContext = null;
 		if ($isUpdate === false) {
 			$sequenceContext = $this->buildSequenceContext(object: $object, schema: $schema);
 		}
 
 		$slug = (string)($schema->getSlug() ?? '');
-
-		foreach ($calcs as $name => $spec) {
-			if (is_array($spec) === false) {
-				continue;
-			}
-
-			// A calculation switched off from the rule inventory is not
-			// evaluated and writes nothing. The switch has to bite HERE, at the
-			// one place a materialised calculation is applied, or it is a
-			// control that reports a state it does not cause.
-			if (($spec['enabled'] ?? true) === false) {
-				continue;
-			}
-
-			$materialise = ($spec['materialise'] ?? false);
-			if ($materialise !== true) {
-				continue;
-			}
-
-			// A `sequence` reserves its number exactly once, on create, through the
-			// SequenceContext built above. On update the context is deliberately
-			// null — but the evaluator then resolves the `sequence` node to null and
-			// `concat` renders that as "", so re-materialising would OVERWRITE the
-			// number assigned at create ("2026-0013" -> "2026-"). Skip the field and
-			// leave the stored value untouched. openregister#3075.
-			if ($sequenceContext === null
-				&& $this->evaluator->expressionUsesSequence($spec['expression'] ?? null) === true
-			) {
-				continue;
-			}
-
-			// A calculation that reads a reference which had something to
-			// resolve and still came back empty (target missing, outside the
-			// tenant, read failed) would evaluate against nothing and write null
-			// over a good stored value. Keep the stored value and say why in
-			// the rule run log instead.
-			$unresolved = $this->payloadBuilder->unresolvedReferencesUsedBy(
-				payload: $data,
-				expression: ($spec['expression'] ?? null)
-			);
-			if ($unresolved !== []) {
-				$this->recordRun(
-					object: $object,
-					slug: $slug,
-					name: (string)$name,
-					trace: RuleTrace::errored(
-						message: sprintf(
-							'Reference %s could not be resolved; the stored value was kept.',
-							implode(', ', $unresolved)
-						)
-					)
-				);
-				continue;
-			}
-
-			try {
-				$value = $this->evaluator->evaluate($data, $spec['expression'] ?? null, $sequenceContext);
-			} catch (EvaluationException $e) {
-				$this->logger->warning(
-					sprintf(
-						'Calculation "%s" failed on %s: %s',
-						(string)$name,
-						(string)$object->getUuid(),
-						$e->getMessage()
-					)
-				);
-				$this->recordRun(
-					object: $object,
-					slug: $slug,
-					name: (string)$name,
-					trace: RuleTrace::errored(message: $e->getMessage())
-				);
-				continue;
-			}
-
-			$this->recordRun(object: $object, slug: $slug, name: (string)$name, trace: RuleTrace::fired());
-
-			$serialised = $this->serialise(value: $value);
-			if (($data[(string)$name] ?? null) !== $serialised) {
-				$data[(string)$name] = $serialised;
-				$changed = true;
-			}
-		}//end foreach
-
-		// Strip the synthetic @self, @ref and @aggregate before persisting;
-		// they're a runtime aid for the evaluator, not user data.
-		$data = $this->payloadBuilder->stripSyntheticKeys(data: $data);
-
-		if ($changed === true) {
-			$object->setObject($data);
-		}
+		$run = new CalculationSaveRun(object: $object, slug: $slug, sequenceContext: $sequenceContext, payload: $data);
+		$this->applyAll(run: $run, calcs: $calcs);
 	}//end process()
+
+	/**
+	 * Apply every calculation in declaration order, then write the payload back.
+	 *
+	 * The synthetic @self, @ref and @aggregate are stripped before persisting;
+	 * they are a runtime aid for the evaluator, not user data.
+	 *
+	 * @param CalculationSaveRun   $run   The pass.
+	 * @param array<string, mixed> $calcs The declared calculations.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function applyAll(CalculationSaveRun $run, array $calcs): void {
+		foreach ($calcs as $name => $spec) {
+			$this->applyOne(run: $run, name: (string)$name, spec: $spec);
+		}
+
+		$data = $this->engine->payloadBuilder->stripSyntheticKeys(data: $run->payload());
+		if ($run->changed() === true) {
+			$run->object->setObject($data);
+		}
+	}//end applyAll()
+
+	/**
+	 * Apply one declared calculation, when it is due.
+	 *
+	 * @param CalculationSaveRun $run  The pass.
+	 * @param string             $name The calculation's name.
+	 * @param mixed              $spec Its declaration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function applyOne(CalculationSaveRun $run, string $name, mixed $spec): void {
+		if ($this->isDue(spec: $spec, sequenceContext: $run->sequenceContext) === false) {
+			return;
+		}
+
+		if ($this->keptForUnresolvedReference(run: $run, name: $name, expression: ($spec['expression'] ?? null)) === true) {
+			return;
+		}
+
+		$this->evaluateInto(run: $run, name: $name, expression: ($spec['expression'] ?? null));
+	}//end applyOne()
+
+	/**
+	 * Whether a declaration is a materialised calculation this save evaluates.
+	 *
+	 * A calculation switched off from the rule inventory is not evaluated and
+	 * writes nothing: the switch has to bite HERE, at the one place a
+	 * materialised calculation is applied, or it is a control that reports a
+	 * state it does not cause.
+	 *
+	 * @param mixed                $spec            The declaration.
+	 * @param SequenceContext|null $sequenceContext The create-only context.
+	 *
+	 * @return bool True when it is evaluated.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function isDue(mixed $spec, ?SequenceContext $sequenceContext): bool {
+		if (is_array($spec) === false || ($spec['enabled'] ?? true) === false) {
+			return false;
+		}
+
+		if (($spec['materialise'] ?? false) !== true) {
+			return false;
+		}
+
+		return $this->keepsStoredNumber(expression: ($spec['expression'] ?? null), sequenceContext: $sequenceContext) === false;
+	}//end isDue()
+
+	/**
+	 * Whether an update must leave a sequence-bearing calculation alone.
+	 *
+	 * A `sequence` reserves its number exactly once, on create, through the
+	 * SequenceContext. On update the context is deliberately null, but the
+	 * evaluator then resolves the `sequence` node to null and `concat` renders
+	 * that as "", so re-materialising would OVERWRITE the number assigned at
+	 * create ("2026-0013" -> "2026-"). The field is skipped and the stored
+	 * value left untouched. openregister#3075.
+	 *
+	 * @param mixed                $expression      The calculation's expression.
+	 * @param SequenceContext|null $sequenceContext The create-only context.
+	 *
+	 * @return bool True when the stored value is kept.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function keepsStoredNumber(mixed $expression, ?SequenceContext $sequenceContext): bool {
+		return $sequenceContext === null
+			&& $this->engine->evaluator->expressionUsesSequence($expression) === true;
+	}//end keepsStoredNumber()
+
+	/**
+	 * Keep the stored value when a reference the expression reads came back empty.
+	 *
+	 * A calculation that reads a reference which had something to resolve and
+	 * still came back empty (target missing, outside the tenant, read failed)
+	 * would evaluate against nothing and write null over a good stored value.
+	 * The stored value is kept and the rule run log says why.
+	 *
+	 * @param CalculationSaveRun $run        The pass.
+	 * @param string             $name       The calculation's name.
+	 * @param mixed              $expression Its expression.
+	 *
+	 * @return bool True when the calculation is skipped.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function keptForUnresolvedReference(CalculationSaveRun $run, string $name, mixed $expression): bool {
+		$unresolved = $this->engine->payloadBuilder->unresolvedReferencesUsedBy(
+			payload: $run->payload(),
+			expression: $expression
+		);
+		if ($unresolved === []) {
+			return false;
+		}
+
+		$message = sprintf('Reference %s could not be resolved; the stored value was kept.', implode(', ', $unresolved));
+		$this->recordRun(run: $run, name: $name, trace: new RuleTrace(verdict: RuleVocabulary::VERDICT_ERROR, message: $message));
+		return true;
+	}//end keptForUnresolvedReference()
+
+	/**
+	 * Evaluate one calculation and write its value into the payload.
+	 *
+	 * @param CalculationSaveRun $run        The pass.
+	 * @param string             $name       The calculation's name.
+	 * @param mixed              $expression Its expression.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function evaluateInto(CalculationSaveRun $run, string $name, mixed $expression): void {
+		try {
+			$value = $this->engine->evaluator->evaluate($run->payload(), $expression, $run->sequenceContext);
+		} catch (EvaluationException $e) {
+			$this->lookups->logger->warning(
+				sprintf('Calculation "%s" failed on %s: %s', $name, (string)$run->object->getUuid(), $e->getMessage())
+			);
+			$this->recordRun(run: $run, name: $name, trace: new RuleTrace(verdict: RuleVocabulary::VERDICT_ERROR, message: $e->getMessage()));
+			return;
+		}
+
+		$this->recordRun(run: $run, name: $name, trace: new RuleTrace(verdict: RuleVocabulary::VERDICT_FIRED));
+		$run->write(name: $name, value: $this->serialise(value: $value));
+	}//end evaluateInto()
 
 	/**
 	 * Record one calculation's verdict against the rule run log.
@@ -269,10 +310,9 @@ class CalculationOnSaveListener implements IEventListener {
 	 * `no_match` to reach and inventing one would put a verdict in the log
 	 * that the engine can never mean.
 	 *
-	 * @param ObjectEntity $object The object being saved.
-	 * @param string $slug The schema's slug.
-	 * @param string $name The calculation's name.
-	 * @param RuleTrace $trace The verdict this evaluation reached.
+	 * @param CalculationSaveRun $run   The pass (object and schema slug).
+	 * @param string             $name  The calculation's name.
+	 * @param RuleTrace          $trace The verdict this evaluation reached.
 	 *
 	 * @return void
 	 *
@@ -282,21 +322,17 @@ class CalculationOnSaveListener implements IEventListener {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function recordRun(ObjectEntity $object, string $slug, string $name, RuleTrace $trace): void {
-		if ($slug === '') {
+	private function recordRun(CalculationSaveRun $run, string $name, RuleTrace $trace): void {
+		if ($run->slug === '') {
 			return;
 		}
 
 		$this->ruleRuns->record(
-			ruleId: RuleDescriptor::idFor(
-				kind: RuleVocabulary::KIND_CALCULATION,
-				schemaSlug: $slug,
-				key: $name
-			),
-			schemaSlug: $slug,
+			ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_CALCULATION, schemaSlug: $run->slug, key: $name),
+			schemaSlug: $run->slug,
 			trace: $trace,
-			objectUuid: ($object->getUuid() ?? null),
-			registerSlug: ($object->getRegister() ?? null)
+			objectUuid: ($run->object->getUuid() ?? null),
+			registerSlug: ($run->object->getRegister() ?? null)
 		);
 	}//end recordRun()
 
@@ -315,35 +351,45 @@ class CalculationOnSaveListener implements IEventListener {
 	 */
 	private function buildSequenceContext(ObjectEntity $object, Schema $schema): ?SequenceContext {
 		$schemaId = (int)$schema->getId();
-		if ($schemaId <= 0) {
-			return null;
-		}
-
-		$registerRef = $object->getRegister();
-		if ($registerRef === null || $registerRef === '') {
-			return null;
-		}
-
-		try {
-			// Bypass RBAC + multitenancy: the create event fires in a context
-			// that may have no active organisation, so the default tenant-scoped
-			// find() would not resolve a register referenced purely by its
-			// numeric id and the `sequence` node would silently yield null.
-			$register = $this->registerMapper->find($registerRef, false, false);
-			$registerId = (int)$register->getId();
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				sprintf('Sequence context: could not resolve register "%s": %s', (string)$registerRef, $e->getMessage())
-			);
-			return null;
+		$registerId = 0;
+		if ($schemaId > 0) {
+			$registerId = $this->registerIdOf(object: $object);
 		}
 
 		if ($registerId <= 0) {
 			return null;
 		}
 
-		return new SequenceContext(service: $this->sequences, registerId: $registerId, schemaId: $schemaId);
+		return new SequenceContext(service: $this->lookups->sequences, registerId: $registerId, schemaId: $schemaId);
 	}//end buildSequenceContext()
+
+	/**
+	 * The numeric id of the object's register, or 0 when it cannot be resolved.
+	 *
+	 * RBAC and multitenancy are bypassed: the create event fires in a context
+	 * that may have no active organisation, so the default tenant-scoped find()
+	 * would not resolve a register referenced purely by its numeric id and the
+	 * `sequence` node would silently yield null.
+	 *
+	 * @param ObjectEntity $object The object being created.
+	 *
+	 * @return int The register id, or 0.
+	 */
+	private function registerIdOf(ObjectEntity $object): int {
+		$registerRef = $object->getRegister();
+		if ($registerRef === null || $registerRef === '') {
+			return 0;
+		}
+
+		try {
+			return (int)$this->lookups->registerMapper->find($registerRef, false, false)->getId();
+		} catch (Throwable $e) {
+			$this->lookups->logger->warning(
+				sprintf('Sequence context: could not resolve register "%s": %s', (string)$registerRef, $e->getMessage())
+			);
+			return 0;
+		}
+	}//end registerIdOf()
 
 	/**
 	 * Render a calculation result into a JSON-friendly value.
@@ -378,8 +424,8 @@ class CalculationOnSaveListener implements IEventListener {
 		}
 
 		try {
-			return $this->schemaMapper->find($ref, _multitenancy: false);
-		} catch (\Throwable $e) {
+			return $this->lookups->schemaMapper->find($ref, _multitenancy: false);
+		} catch (Throwable $e) {
 			return null;
 		}
 	}//end loadSchema()
@@ -388,33 +434,45 @@ class CalculationOnSaveListener implements IEventListener {
 	 * Read every declared calculation: the `x-openregister-calculations`
 	 * configuration block, plus the `calculation` key on each property.
 	 *
-	 * @param Schema $schema Schema to inspect.
+	 * A `calculation` key a property form forwarded materialises through
+	 * exactly this path, so an authored expression and a hand-written
+	 * annotation produce the same stored value.
+	 *
+	 * @param Schema|null $schema Schema to inspect, or null when none was found.
 	 *
 	 * @return array<string, mixed>|null Calculations map, or null when nothing is declared.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
-	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	private function getCalculations(Schema $schema): ?array {
+	private function getCalculations(?Schema $schema): ?array {
+		if ($schema === null) {
+			return null;
+		}
+
 		$config = ($schema->getConfiguration() ?? []);
-		$annotation = ($config['x-openregister-calculations'] ?? []);
-		if (is_array($annotation) === false) {
-			$annotation = [];
-		}
-
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($properties) === false) {
-			$properties = [];
-		}
-
-		// A `calculation` key a property form forwarded materialises through
-		// exactly this path, so an authored expression and a hand-written
-		// annotation produce the same stored value.
-		$merged = (new PropertyCalculations())->merge(annotation: $annotation, properties: $properties);
+		$merged = SchemaDeclarationValidators::propertyCalculations()->merge(
+			annotation: $this->arrayOrEmpty(value: ($config['x-openregister-calculations'] ?? [])),
+			properties: $this->arrayOrEmpty(value: ($schema->getProperties() ?? []))
+		);
 		if ($merged === []) {
 			return null;
 		}
 
 		return $merged;
 	}//end getCalculations()
+
+	/**
+	 * The value when it is an array, else the empty array.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<mixed>
+	 */
+	private function arrayOrEmpty(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end arrayOrEmpty()
 }//end class

@@ -33,7 +33,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
-use OCA\OpenRegister\Db\RegistrySubscriptionMapper;
+use OCA\OpenRegister\Db\RegistrySubscriptionMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -45,24 +45,38 @@ use Throwable;
  *
  * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md
  */
-class RegistrySubscriptionService {
+class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterface, RegistrySubscriptionServiceInterface {
+
+	/**
+	 * Applies inbound updates through the ordinary save path.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Resolves a row's schema and checks owned properties.
+	 *
+	 * @var RegistryUpdateTargetGuard
+	 */
+	private readonly RegistryUpdateTargetGuard $updateTargetGuard;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param RegistrySubscriptionMapper $subscriptionMapper Reads/writes the state table.
-	 * @param ObjectOperationsInterface $objectService Applies inbound updates through the ordinary save path.
+	 * @param RegistrySubscriptionMapperInterface $subscriptionMapper Reads/writes the state table.
 	 * @param RegistrySubscriptionNotifier $notifier Dispatches events and writes audit rows.
-	 * @param RegistryUpdateTargetGuard $updateTargetGuard Resolves a row's schema and checks owned properties.
+	 * @param RegistryInboundServices $inbound Checks and writes inbound updates.
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
-		private readonly RegistrySubscriptionMapper $subscriptionMapper,
-		private readonly ObjectOperationsInterface $objectService,
+		private readonly RegistrySubscriptionMapperInterface $subscriptionMapper,
 		private readonly RegistrySubscriptionNotifier $notifier,
-		private readonly RegistryUpdateTargetGuard $updateTargetGuard,
+		RegistryInboundServices $inbound,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectService     = $inbound->objectService;
+		$this->updateTargetGuard = $inbound->updateTargetGuard;
 	}//end __construct()
 
 	/**
@@ -145,8 +159,6 @@ class RegistrySubscriptionService {
 
 		$this->notifier->requested(
 			object: $object,
-			register: (string)$object->getRegister(),
-			schema: (string)$object->getSchema(),
 			registry: $annotation['registry'],
 			identityValue: $identityValue,
 		);

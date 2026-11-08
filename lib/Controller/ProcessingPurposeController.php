@@ -22,18 +22,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Closure;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\GdprRegisterAccess;
+use OCA\OpenRegister\Controller\Support\GdprRegisterReplies;
+use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ProcessingPurpose;
-use OCA\OpenRegister\Db\ProcessingPurposeMapper;
-use OCA\OpenRegister\Service\Audit\PurposeRegistry;
+use OCA\OpenRegister\Db\ProcessingPurposeMapperInterface;
+use OCA\OpenRegister\Service\Audit\PurposeRegistryInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Throwable;
 
 /**
@@ -49,41 +51,49 @@ use Throwable;
  */
 class ProcessingPurposeController extends Controller {
 	/**
-	 * The user session.
+	 * The caller and the admin check.
 	 *
-	 * @var IUserSession
+	 * @var GdprRegisterAccess
 	 */
-	private readonly IUserSession $userSession;
+	private readonly GdprRegisterAccess $access;
 
 	/**
-	 * The group manager.
+	 * The refusal envelopes.
 	 *
-	 * @var IGroupManager
+	 * @var GdprRegisterReplies
 	 */
-	private readonly IGroupManager $groupManager;
+	private readonly GdprRegisterReplies $replies;
+
+	/**
+	 * The optional query parameters.
+	 *
+	 * @var GdprRequestParams
+	 */
+	private readonly GdprRequestParams $params;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string                  $appName      App identifier.
-	 * @param IRequest                $request      Active request.
-	 * @param ProcessingPurposeMapper $purposes     The administered list.
-	 * @param PurposeRegistry         $registry     Resolves a purpose to its activity.
-	 * @param AuditTrailMapperInterface        $auditTrail   Counts entries per purpose.
-	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param string                    $appName    App identifier.
+	 * @param IRequest                  $request    Active request.
+	 * @param ProcessingPurposeMapperInterface   $purposes   The administered list.
+	 * @param PurposeRegistryInterface           $registry   Resolves a purpose to its activity.
+	 * @param AuditTrailMapperInterface $auditTrail Counts entries per purpose.
+	 * @param ControllerSession         $session    Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ProcessingPurposeMapper $purposes,
-		private readonly PurposeRegistry $registry,
+		private readonly ProcessingPurposeMapperInterface $purposes,
+		private readonly PurposeRegistryInterface $registry,
 		private readonly AuditTrailMapperInterface $auditTrail,
-		ControllerSession $session,
+		private readonly ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
-		$this->userSession = $session->userSession;
-		$this->groupManager = $session->groupManager;
+		$this->access = new GdprRegisterAccess(session: $this->session);
+		$this->replies = new GdprRegisterReplies();
+		$this->params = new GdprRequestParams(request: $request);
 	}//end __construct()
 
 	/**
@@ -103,13 +113,13 @@ class ProcessingPurposeController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function index(): JSONResponse {
-		if ($this->userSession->getUser() === null) {
-			return $this->unauthorized();
+		if ($this->access->user() === null) {
+			return $this->replies->unauthorized();
 		}
 
 		$rows = $this->purposes->findAll(
-			status: $this->optionalParam(key: 'status'),
-			organisationId: $this->optionalParam(key: 'organisation')
+			status: $this->params->trimmed(key: 'status'),
+			organisationId: $this->params->trimmed(key: 'organisation')
 		);
 
 		$results = [];
@@ -140,16 +150,13 @@ class ProcessingPurposeController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function show(string $id): JSONResponse {
-		if ($this->userSession->getUser() === null) {
-			return $this->unauthorized();
+		if ($this->access->user() === null) {
+			return $this->replies->unauthorized();
 		}
 
 		$purpose = $this->resolve(identifier: $id);
 		if ($purpose === null) {
-			return new JSONResponse(
-				data: ['error' => 'Not Found', 'identifier' => $id],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return $this->replies->notFound(error: 'Not Found', identifier: $id);
 		}
 
 		return new JSONResponse(data: $this->serialize(purpose: $purpose));
@@ -166,42 +173,21 @@ class ProcessingPurposeController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function create(): JSONResponse {
-		if ($this->isAdmin() === false) {
+		if ($this->access->isAdmin() === false) {
 			return $this->forbidden();
 		}
 
 		$code = trim((string)($this->request->getParam(key: 'code') ?? ''));
-		if ($code === '') {
-			return new JSONResponse(
-				data: ['error' => 'code is required'],
-				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-
-		if ($this->purposes->findByCode(code: $code) !== null) {
-			return new JSONResponse(
-				data: ['error' => 'A purpose with that code already exists', 'code' => $code],
-				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
+		$refusal = $this->refuseCode(code: $code);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		$purpose = new ProcessingPurpose();
 		$purpose->setCode($code);
 		$this->hydrate(purpose: $purpose);
 
-		try {
-			$persisted = $this->purposes->insert($purpose);
-		} catch (Throwable $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-
-		return new JSONResponse(
-			data: $this->serialize(purpose: $persisted),
-			statusCode: Http::STATUS_CREATED
-		);
+		return $this->persist(write: fn () => $this->purposes->insert($purpose), status: Http::STATUS_CREATED);
 	}//end create()
 
 	/**
@@ -217,30 +203,14 @@ class ProcessingPurposeController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function update(string $id): JSONResponse {
-		if ($this->isAdmin() === false) {
-			return $this->forbidden();
-		}
-
-		$purpose = $this->resolve(identifier: $id);
-		if ($purpose === null) {
-			return new JSONResponse(
-				data: ['error' => 'Not Found', 'identifier' => $id],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		$purpose = $this->administered(identifier: $id);
+		if ($purpose instanceof JSONResponse) {
+			return $purpose;
 		}
 
 		$this->hydrate(purpose: $purpose);
 
-		try {
-			$persisted = $this->purposes->update($purpose);
-		} catch (Throwable $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-
-		return new JSONResponse(data: $this->serialize(purpose: $persisted));
+		return $this->persist(write: fn () => $this->purposes->update($purpose), status: Http::STATUS_OK);
 	}//end update()
 
 	/**
@@ -261,16 +231,9 @@ class ProcessingPurposeController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function destroy(string $id): JSONResponse {
-		if ($this->isAdmin() === false) {
-			return $this->forbidden();
-		}
-
-		$purpose = $this->resolve(identifier: $id);
-		if ($purpose === null) {
-			return new JSONResponse(
-				data: ['error' => 'Not Found', 'identifier' => $id],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		$purpose = $this->administered(identifier: $id);
+		if ($purpose instanceof JSONResponse) {
+			return $purpose;
 		}
 
 		$purpose->setStatus(ProcessingPurpose::STATUS_RETIRED);
@@ -299,30 +262,89 @@ class ProcessingPurposeController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
 	 */
 	public function report(): JSONResponse {
-		if ($this->userSession->getUser() === null) {
-			return $this->unauthorized();
+		if ($this->access->user() === null) {
+			return $this->replies->unauthorized();
 		}
 
-		if ($this->isAdmin() === false) {
-			return new JSONResponse(
-				data: ['error' => 'The purpose report counts the whole trail and requires the admin group'],
-				statusCode: Http::STATUS_FORBIDDEN
+		if ($this->access->isAdmin() === false) {
+			return $this->replies->forbidden(
+				message: 'The purpose report counts the whole trail and requires the admin group'
 			);
 		}
 
-		$counts = $this->auditTrail->countByPurpose(
-			from: $this->optionalDate(key: 'from'),
-			to: $this->optionalDate(key: 'to')
-		);
+		$counts = $this->auditTrail->countByPurpose(from: $this->dateParam(key: 'from'), to: $this->dateParam(key: 'to'));
 
 		return new JSONResponse(
-			data: [
-				'counts' => $counts,
-				'total' => array_sum($counts),
-				'unattributed' => ($counts['null'] ?? 0),
-			]
+			data: ['counts' => $counts, 'total' => array_sum($counts), 'unattributed' => ($counts['null'] ?? 0)]
 		);
 	}//end report()
+
+	/**
+	 * The refusal for a code a new purpose may not take, or null.
+	 *
+	 * @param string $code The trimmed code.
+	 *
+	 * @return JSONResponse|null HTTP 422 when blank or taken, else null.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function refuseCode(string $code): ?JSONResponse {
+		if ($code === '') {
+			return $this->replies->unprocessable(message: 'code is required');
+		}
+
+		if ($this->purposes->findByCode(code: $code) !== null) {
+			return new JSONResponse(
+				data: ['error' => 'A purpose with that code already exists', 'code' => $code],
+				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		return null;
+	}//end refuseCode()
+
+	/**
+	 * The purpose an administrator asked to change, or the refusal.
+	 *
+	 * The admin check runs before the purpose is looked up.
+	 *
+	 * @param string $identifier The path identifier.
+	 *
+	 * @return ProcessingPurpose|JSONResponse The purpose, or HTTP 403 / 404.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function administered(string $identifier): ProcessingPurpose|JSONResponse {
+		if ($this->access->isAdmin() === false) {
+			return $this->forbidden();
+		}
+
+		$purpose = $this->resolve(identifier: $identifier);
+		if ($purpose === null) {
+			return $this->replies->notFound(error: 'Not Found', identifier: $identifier);
+		}
+
+		return $purpose;
+	}//end administered()
+
+	/**
+	 * Write a purpose and publish it, or answer 422 with the failure.
+	 *
+	 * @param Closure $write  Inserts or updates the purpose and returns it.
+	 * @param int      $status The status of the success response.
+	 *
+	 * @return JSONResponse The persisted purpose, or HTTP 422.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function persist(Closure $write, int $status): JSONResponse {
+		$persisted = $this->replies->attempt(write: $write, catch: Throwable::class);
+		if ($persisted instanceof JSONResponse) {
+			return $persisted;
+		}
+
+		return new JSONResponse(data: $this->serialize(purpose: $persisted), statusCode: $status);
+	}//end persist()
 
 	/**
 	 * Write the mutable fields from the request onto a purpose.
@@ -338,13 +360,13 @@ class ProcessingPurposeController extends Controller {
 	 */
 	private function hydrate(ProcessingPurpose $purpose): void {
 		foreach (['name', 'description', 'activity', 'organisationId'] as $field) {
-			$value = $this->optionalParam(key: $field);
+			$value = $this->params->trimmed(key: $field);
 			if ($value !== null) {
 				$purpose->{'set' . ucfirst($field)}($value);
 			}
 		}
 
-		$status = $this->optionalParam(key: 'status');
+		$status = $this->params->trimmed(key: 'status');
 		if ($status !== null && ProcessingPurpose::isValidStatus(status: $status) === true) {
 			$purpose->setStatus($status);
 		}
@@ -400,24 +422,6 @@ class ProcessingPurposeController extends Controller {
 	}//end serialize()
 
 	/**
-	 * Read an optional string parameter.
-	 *
-	 * @param string $key The parameter name.
-	 *
-	 * @return string|null The trimmed value, or null when absent or empty.
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
-	 */
-	private function optionalParam(string $key): ?string {
-		$value = $this->request->getParam(key: $key);
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return trim($value);
-	}//end optionalParam()
-
-	/**
 	 * Read an optional ISO 8601 date parameter.
 	 *
 	 * @param string $key The parameter name.
@@ -426,52 +430,9 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	private function optionalDate(string $key): ?DateTime {
-		$value = $this->optionalParam(key: $key);
-		if ($value === null) {
-			return null;
-		}
-
-		try {
-			return new DateTime($value);
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end optionalDate()
-
-	/**
-	 * Whether the caller is an instance administrator.
-	 *
-	 * @return bool True when the caller is in the admin group.
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
-	 */
-	private function isAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return in_array(
-			needle: 'admin',
-			haystack: $this->groupManager->getUserGroupIds($user),
-			strict: true
-		);
-	}//end isAdmin()
-
-	/**
-	 * The unauthenticated response.
-	 *
-	 * @return JSONResponse HTTP 401.
-	 *
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
-	 */
-	private function unauthorized(): JSONResponse {
-		return new JSONResponse(
-			data: ['error' => 'Authentication required'],
-			statusCode: Http::STATUS_UNAUTHORIZED
-		);
-	}//end unauthorized()
+	private function dateParam(string $key): ?DateTime {
+		return $this->params->date(value: $this->params->trimmed(key: $key));
+	}//end dateParam()
 
 	/**
 	 * The non-admin response.
@@ -481,9 +442,6 @@ class ProcessingPurposeController extends Controller {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function forbidden(): JSONResponse {
-		return new JSONResponse(
-			data: ['error' => 'Administering the purpose list requires the admin group'],
-			statusCode: Http::STATUS_FORBIDDEN
-		);
+		return $this->replies->forbidden(message: 'Administering the purpose list requires the admin group');
 	}//end forbidden()
 }//end class

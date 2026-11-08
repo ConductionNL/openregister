@@ -28,15 +28,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\RecordTemplate;
 
 use OCA\OpenRegister\Db\RecordTemplate;
-use OCA\OpenRegister\Db\RecordTemplateMapper;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\Rbac\ViewShareResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -54,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
  */
-class RecordTemplateService {
+class RecordTemplateService implements RecordTemplateStoreInterface {
 
 	/**
 	 * Reads the shares the way a saved view does.
@@ -80,20 +77,16 @@ class RecordTemplateService {
 	/**
 	 * Constructor.
 	 *
-	 * @param RecordTemplateMapper $mapper      The template store.
-	 * @param SchemaMapperInterface         $schemas     Reads the template's schema.
-	 * @param PermissionHandlerInterface    $permissions Answers whether a caller may create in a schema.
+	 * @param RecordTemplateCollaborators $store The template rows, the schema lookups and the log.
+	 * @param PermissionCheckInterface    $permissions Answers whether a caller may create in a schema.
 	 * @param ViewerReachResolver  $viewers     Validates shares against existing groups.
-	 * @param LoggerInterface      $logger      Logger.
 	 *
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function __construct(
-		private readonly RecordTemplateMapper $mapper,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly PermissionHandlerInterface $permissions,
+		private readonly RecordTemplateCollaborators $store,
+		private readonly PermissionCheckInterface $permissions,
 		private readonly ViewerReachResolver $viewers,
-		private readonly LoggerInterface $logger,
 	) {
 		$this->shares = new ViewShareResolver();
 		$this->input = new RecordTemplateInput();
@@ -112,7 +105,7 @@ class RecordTemplateService {
 	 */
 	public function listFor(ViewerReach $reach, ?string $register=null, ?string $schema=null): array {
 		$usable = [];
-		foreach ($this->mapper->findCandidates(userId: $reach->userId, register: $register, schema: $schema) as $template) {
+		foreach ($this->store->mapper->findCandidates(userId: $reach->userId, register: $register, schema: $schema) as $template) {
 			if ($this->resolveUse(template: $template, reach: $reach) === true) {
 				$usable[] = $template;
 			}
@@ -162,7 +155,7 @@ class RecordTemplateService {
 		$this->input->apply(template: $template, fields: $fields);
 		$template->setOwner($reach->userId);
 
-		$stored = $this->mapper->insert(entity: $template);
+		$stored = $this->store->mapper->insert(entity: $template);
 		$stored->setAccess(ViewShareResolver::ACCESS_OWNER);
 
 		return $stored;
@@ -192,7 +185,7 @@ class RecordTemplateService {
 		}
 
 		$this->input->apply(template: $template, fields: $fields);
-		$stored = $this->mapper->update(entity: $template);
+		$stored = $this->store->mapper->update(entity: $template);
 		$this->resolveUse(template: $stored, reach: $reach);
 
 		return $stored;
@@ -211,7 +204,7 @@ class RecordTemplateService {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function delete(string $uuid, ViewerReach $reach): void {
-		$this->mapper->delete(entity: $this->administered(uuid: $uuid, reach: $reach));
+		$this->store->mapper->delete(entity: $this->administered(uuid: $uuid, reach: $reach));
 	}//end delete()
 
 	/**
@@ -267,7 +260,7 @@ class RecordTemplateService {
 	 */
 	private function find(string $uuid): RecordTemplate {
 		try {
-			return $this->mapper->findByUuid(uuid: $uuid);
+			return $this->store->mapper->findByUuid(uuid: $uuid);
 		} catch (DoesNotExistException $e) {
 			throw new RecordTemplateRefused(status: 404, message: 'No such record template.');
 		}
@@ -310,14 +303,14 @@ class RecordTemplateService {
 			$verdict = false;
 			try {
 				$verdict = $this->permissions->hasPermission(
-					schema: $this->schemas->find(id: $schema, _rbac: false),
+					schema: $this->store->schemas->find(id: $schema, _rbac: false),
 					action: 'create',
 					userId: $reach->userId
 				);
 			} catch (DoesNotExistException $e) {
 				$verdict = false;
 			} catch (Throwable $e) {
-				$this->logger->warning(
+				$this->store->logger->warning(
 					'[RecordTemplateService] Could not read create rights; the template is not offered.',
 					['schema' => $schema, 'exception' => $e->getMessage()]
 				);

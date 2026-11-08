@@ -397,17 +397,17 @@ final class ExtendingFormDeclaration implements ExtendingFormDeclarationInterfac
 	 * @return string|null The refusal template, or null when there is exactly one spelling.
 	 */
 	private function spellingRefusal(array $annotation): ?string {
-		$hasMap = is_array($annotation['map'] ?? null);
+		$hasMap      = is_array($annotation['map'] ?? null);
 		$hasForwards = is_array($annotation['forwards'] ?? null);
-		if ($hasMap === true && $hasForwards === true) {
+		if ($hasMap !== $hasForwards) {
+			return null;
+		}
+
+		if ($hasMap === true) {
 			return 'two-spellings';
 		}
 
-		if ($hasMap === false && $hasForwards === false) {
-			return 'forwards-nothing';
-		}
-
-		return null;
+		return 'forwards-nothing';
 	}//end spellingRefusal()
 
 	/**

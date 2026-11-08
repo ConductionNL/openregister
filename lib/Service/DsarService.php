@@ -56,7 +56,7 @@ use RuntimeException;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class DsarService {
+class DsarService implements DsarServiceInterface {
 
 	/**
 	 * App-config key for the DSAR processing-activity reference.

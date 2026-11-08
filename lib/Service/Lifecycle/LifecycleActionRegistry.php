@@ -32,11 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
-use OCA\OpenRegister\Lifecycle\Action\SetFieldsAction;
+use OCA\OpenRegister\Lifecycle\BuiltinLifecycleActionsInterface;
 use OCA\OpenRegister\Lifecycle\LifecycleActionInterface;
-use OCP\IServerContainer;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -67,10 +64,7 @@ class LifecycleActionRegistry {
 	 *
 	 * @var array<string, class-string<LifecycleActionInterface>>
 	 */
-	private const BUILTINS = [
-		'set-fields' => SetFieldsAction::class,
-		'set-field' => SetFieldsAction::class,
-	];
+	private const BUILTINS = BuiltinLifecycleActionsInterface::BUILTINS;
 
 	/**
 	 * Per-request cache.
@@ -78,22 +72,6 @@ class LifecycleActionRegistry {
 	 * @var array<string, LifecycleActionInterface>
 	 */
 	private array $cache = [];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param ContainerInterface $container OR app container, used for built-ins + OR-internal handlers.
-	 * @param IServerContainer $serverContainer NC server container, used as fallback for FQCN-tagged handlers in other apps.
-	 * @param LoggerInterface $logger Logger for resolution diagnostics.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly IServerContainer $serverContainer,
-		private readonly LoggerInterface $logger,
-	) {
-	}//end __construct()
 
 	/**
 	 * Resolve a declared action name to its handler.

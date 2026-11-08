@@ -65,7 +65,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiVersion
  */
-class ApiCapabilitiesService {
+class ApiCapabilitiesService implements ApiCapabilitiesServiceInterface {
 
 	/**
 	 * The app the operational switches live under.

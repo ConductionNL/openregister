@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Notifications\Controller;
 
 use Exception;
 use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -111,47 +112,11 @@ class NotesController extends Controller {
 		string $schema,
 		string $id,
 	): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(
-					data: ['error' => 'Object not found'],
-					statusCode: 404
-				);
-			}
-
-			$params = $this->request->getParams();
-			$limit = (int)($params['limit'] ?? 50);
-			$offset = (int)($params['offset'] ?? 0);
-
-			$requested = null;
-			if (isset($params['visibility']) === true && is_string($params['visibility']) === true) {
-				$requested = $params['visibility'];
-			}
-
-			$mayManage = $this->services->visibility->mayManage(object: $object);
-			$filter = $this->services->visibility->effectiveFilter(object: $object, requested: $requested);
-
-			$notes = $this->noteService->getNotesForObject(
-				objectUuid: $object->getUuid(),
-				limit: $limit,
-				offset: $offset,
-				visibility: $filter
-			);
-
-			return new JSONResponse(
-				data: [
-					'results' => $notes,
-					'total' => count($notes),
-					'visibility' => $filter,
-					'canSetVisibility' => $mayManage,
-				]
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-		}//end try
+		return $this->onObject(
+			path: [$register, $schema, $id],
+			action: fn (ObjectEntity $object): JSONResponse => $this->listNotes(object: $object),
+			failure: $this->failureWith(status: 500)
+		);
 	}//end index()
 
 	/**
@@ -173,60 +138,11 @@ class NotesController extends Controller {
 		string $schema,
 		string $id,
 	): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(
-					data: ['error' => 'Object not found'],
-					statusCode: 404
-				);
-			}
-
-			$data = $this->request->getParams();
-
-			// Validate required fields.
-			if (empty($data['message']) === true) {
-				return new JSONResponse(
-					data: ['error' => 'Note message is required'],
-					statusCode: 400
-				);
-			}
-
-			$visibility = null;
-			if (array_key_exists('visibility', $data) === true) {
-				$refusal = $this->refuseVisibility(object: $object, requested: $data['visibility']);
-				if ($refusal !== null) {
-					return $refusal;
-				}
-
-				$visibility = (string)$data['visibility'];
-			}
-
-			$note = $this->noteService->createNote(
-				objectUuid: $object->getUuid(),
-				message: $data['message'],
-				visibility: $visibility
-			);
-
-			// The one line this endpoint gains. A note written here still
-			// behaves exactly as it did — same payload, same shape, no kind
-			// and no fields — but it now also has a record, so the entry
-			// search can find it. Half a timeline that cannot be searched is
-			// worse than none. The projection never throws.
-			$entry = $this->services->timeline->projectNote(
-				object: $object,
-				note: new NoteProjection(note: $note, register: $register, schema: $schema)
-			);
-			if ($entry !== null) {
-				$note['entryId'] = $entry->getUuid();
-			}
-
-			return new JSONResponse(data: $note, statusCode: 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+		return $this->onObject(
+			path: [$register, $schema, $id],
+			action: fn (ObjectEntity $object): JSONResponse => $this->createOn(object: $object, register: $register, schema: $schema),
+			failure: $this->failureWith(status: 400)
+		);
 	}//end create()
 
 	/**
@@ -250,81 +166,11 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(
-					data: ['error' => 'Object not found'],
-					statusCode: 404
-				);
-			}
-
-			$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: (int)$noteId);
-
-			$write = $this->resolveNoteWrite(
-				object: $object,
-				data: $this->request->getParams(),
-				noteId: (int)$noteId
-			);
-			if ($write['refusal'] !== null) {
-				return $write['refusal'];
-			}
-
-			$note = $this->noteService->updateNote(
-				noteId: (int)$noteId,
-				message: $write['message'],
-				visibility: $write['visibility'],
-				mayManage: $this->services->visibility->mayManageObject(object: $object)
-			);
-
-			if ($write['message'] !== null) {
-				// The trail records that the note changed and who changed it;
-				// the text it used to carry stays in the versions, which is
-				// what keeps the trail small and readable.
-				$this->noteService->auditEdit(
-					object: $object,
-					noteId: (int)$noteId,
-					versions: (int)($note['versionCount'] ?? 0)
-				);
-			}
-
-			// Keep the record and its references in step with the text that
-			// was just rewritten: an index answering with yesterday's sentence
-			// is worse than no index, because it looks like a hit.
-			$this->services->timeline->rewrite(
-				object: $object,
-				rewrite: new NoteRewrite(commentId: (int)$noteId, message: $write['message'], visibility: $write['visibility'])
-			);
-
-			if ($write['previous'] !== null) {
-				$this->services->visibility->auditVisibilityChange(
-					object: $object,
-					noteId: (int)$noteId,
-					from: $write['previous'],
-					to: (string)($note['visibility'] ?? '')
-				);
-			}
-
-			return new JSONResponse(data: $note);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (NoteWriteRefusedException $e) {
-			// Caught ahead of the generic Exception below, which it extends:
-			// a locked note answers 423 and a note the caller may not rewrite
-			// answers 403, each legible as what it is rather than as a bad
-			// request. The refusal carries its own status.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $e->getHttpStatus()
-			);
-		} catch (Exception $e) {
-			$status = 400;
-			if ($e->getCode() === 404) {
-				$status = 404;
-			}
-
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status);
-		}//end try
+		return $this->onObject(
+			path: [$register, $schema, $id],
+			action: fn (ObjectEntity $object): JSONResponse => $this->updateOn(object: $object, noteId: (int)$noteId),
+			failure: fn (Exception $e): JSONResponse => $this->updateFailure(e: $e)
+		);
 	}//end update()
 
 	/**
@@ -381,46 +227,11 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(
-					data: ['error' => 'Object not found'],
-					statusCode: 404
-				);
-			}
-
-			try {
-				$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: (int)$noteId);
-				$note = $this->noteService->getNote(noteId: (int)$noteId);
-			} catch (Exception $e) {
-				// A note that is not there is a 404, not the 400 a generic
-				// failure would give: the caller asked for something absent,
-				// it did not ask wrongly.
-				return new JSONResponse(data: ['error' => 'Note not found'], statusCode: 404);
-			}
-
-			// The same filter the note list applies, asked of one note: a
-			// reader who may not see an internal note may not read the texts
-			// it replaced either.
-			$filter = $this->services->visibility->effectiveFilter(object: $object, requested: null);
-			if (count($this->services->visibility->filterRows(rows: [$note], filter: $filter)) === 0) {
-				return new JSONResponse(data: ['error' => 'Note not found'], statusCode: 404);
-			}
-
-			$versions = $this->noteService->noteVersions(noteId: (int)$noteId);
-
-			return new JSONResponse(
-				data: [
-					'results' => $versions,
-					'total' => count($versions),
-				]
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+		return $this->onObject(
+			path: [$register, $schema, $id],
+			action: fn (ObjectEntity $object): JSONResponse => $this->versionsOf(object: $object, noteId: (int)$noteId),
+			failure: $this->failureWith(status: 400)
+		);
 	}//end versions()
 
 	/**
@@ -444,41 +255,329 @@ class NotesController extends Controller {
 		string $id,
 		string $noteId,
 	): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(
-					data: ['error' => 'Object not found'],
-					statusCode: 404
-				);
-			}
-
-			$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: (int)$noteId);
-
-			// Read the record BEFORE the note goes, so its references can be
-			// forgotten by id: after the delete there is nothing left to look
-			// the entry up by.
-			$entry = $this->services->timeline->entryForNote(commentId: (int)$noteId);
-
-			$this->noteService->deleteNote((int)$noteId);
-
-			$this->services->timeline->forgetNote(
-				commentId: (int)$noteId,
-				entryUuid: $entry?->getUuid()
-			);
-
-			return new JSONResponse(data: ['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (Exception $e) {
-			$status = 400;
-			if ($e->getCode() === 404) {
-				$status = 404;
-			}
-
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status);
-		}
+		return $this->onObject(
+			path: [$register, $schema, $id],
+			action: fn (ObjectEntity $object): JSONResponse => $this->destroyOn(object: $object, noteId: (int)$noteId),
+			failure: fn (Exception $e): JSONResponse => $this->failureWith(status: $this->statusFor(e: $e))($e)
+		);
 	}//end destroy()
+
+	/**
+	 * Run an action on the object the path names, translating the shared outcomes.
+	 *
+	 * An object that cannot be resolved, or that does not exist, answers 404
+	 * before the action runs; any other failure is handed to `$failure`. A
+	 * `DoesNotExistException` raised by the action itself answers the same 404.
+	 *
+	 * @param array{0: string, 1: string, 2: string} $path    The register, schema and object id.
+	 * @param \Closure(ObjectEntity): JSONResponse     $action  What to do with the object.
+	 * @param \Closure(Exception): JSONResponse        $failure How to answer any other failure.
+	 *
+	 * @return JSONResponse The answer.
+	 */
+	private function onObject(array $path, \Closure $action, \Closure $failure): JSONResponse {
+		try {
+			$object = $this->validateObject(register: $path[0], schema: $path[1], id: $path[2]);
+			if ($object === null) {
+				return $this->notFound(what: 'Object');
+			}
+
+			return $action($object);
+		} catch (DoesNotExistException $e) {
+			return $this->notFound(what: 'Object');
+		} catch (Exception $e) {
+			return $failure($e);
+		}
+	}//end onObject()
+
+	/**
+	 * A 404 naming what was not found.
+	 *
+	 * @param string $what "Object" or "Note".
+	 *
+	 * @return JSONResponse The 404.
+	 */
+	private function notFound(string $what): JSONResponse {
+		return new JSONResponse(data: ['error' => $what . ' not found'], statusCode: 404);
+	}//end notFound()
+
+	/**
+	 * Answers a failure with its message under the given status.
+	 *
+	 * @param int $status The status.
+	 *
+	 * @return \Closure(Exception): JSONResponse The answer.
+	 */
+	private function failureWith(int $status): \Closure {
+		return static fn (Exception $e): JSONResponse => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status);
+	}//end failureWith()
+
+	/**
+	 * 404 for a failure that says it is one, 400 for any other.
+	 *
+	 * @param Exception $e The failure.
+	 *
+	 * @return int The status.
+	 */
+	private function statusFor(Exception $e): int {
+		if ($e->getCode() === 404) {
+			return 404;
+		}
+
+		return 400;
+	}//end statusFor()
+
+	/**
+	 * How an update failure is answered.
+	 *
+	 * A refused write carries its own status: a locked note answers 423 and a
+	 * note the caller may not rewrite answers 403, each legible as what it is
+	 * rather than as a bad request. Any other failure is a 404 when it says so,
+	 * else a 400.
+	 *
+	 * @param Exception $e The failure.
+	 *
+	 * @return JSONResponse The answer.
+	 */
+	private function updateFailure(Exception $e): JSONResponse {
+		if ($e instanceof NoteWriteRefusedException) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatus());
+		}
+
+		return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $this->statusFor(e: $e));
+	}//end updateFailure()
+
+	/**
+	 * List the object's notes the caller may read.
+	 *
+	 * A caller without `update` on the object is served the public view even
+	 * when it asks for none: the flag is what makes a single timeline safe to
+	 * show a citizen, and a filter a caller can drop is no filter at all.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The notes.
+	 */
+	private function listNotes(ObjectEntity $object): JSONResponse {
+		$params = $this->request->getParams();
+		$mayManage = $this->services->visibility->mayManage(object: $object);
+		$filter = $this->services->visibility->effectiveFilter(object: $object, requested: $this->requestedVisibility(params: $params));
+
+		$notes = $this->noteService->getNotesForObject(
+			objectUuid: $object->getUuid(),
+			limit: (int)($params['limit'] ?? 50),
+			offset: (int)($params['offset'] ?? 0),
+			visibility: $filter
+		);
+
+		return new JSONResponse(data: ['results' => $notes, 'total' => count($notes), 'visibility' => $filter, 'canSetVisibility' => $mayManage]);
+	}//end listNotes()
+
+	/**
+	 * The visibility a list request asks for, or null when it names none.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return string|null The visibility, or null.
+	 */
+	private function requestedVisibility(array $params): ?string {
+		if (isset($params['visibility']) === true && is_string($params['visibility']) === true) {
+			return $params['visibility'];
+		}
+
+		return null;
+	}//end requestedVisibility()
+
+	/**
+	 * Create a note on the object, refusing a visibility the caller may not set.
+	 *
+	 * @param ObjectEntity $object   The object.
+	 * @param string       $register The register from the path.
+	 * @param string       $schema   The schema from the path.
+	 *
+	 * @return JSONResponse The created note, or the refusal.
+	 */
+	private function createOn(ObjectEntity $object, string $register, string $schema): JSONResponse {
+		$data = $this->request->getParams();
+		if (empty($data['message']) === true) {
+			return new JSONResponse(data: ['error' => 'Note message is required'], statusCode: 400);
+		}
+
+		$refusal = $this->refuseRequestedVisibility(object: $object, data: $data);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$note = $this->noteService->createNote(objectUuid: $object->getUuid(), message: $data['message'], visibility: $this->visibilityOf(data: $data));
+
+		return $this->projected(object: $object, note: $note, register: $register, schema: $schema);
+	}//end createOn()
+
+	/**
+	 * Refuse the payload's visibility when it carries one the caller may not set.
+	 *
+	 * @param ObjectEntity         $object The object.
+	 * @param array<string, mixed> $data   The payload.
+	 *
+	 * @return JSONResponse|null The refusal, or null when there is none to make.
+	 */
+	private function refuseRequestedVisibility(ObjectEntity $object, array $data): ?JSONResponse {
+		if (array_key_exists('visibility', $data) === false) {
+			return null;
+		}
+
+		return $this->refuseVisibility(object: $object, requested: $data['visibility']);
+	}//end refuseRequestedVisibility()
+
+	/**
+	 * The payload's visibility as text, or null when it carries none.
+	 *
+	 * @param array<string, mixed> $data The payload.
+	 *
+	 * @return string|null The visibility, or null.
+	 */
+	private function visibilityOf(array $data): ?string {
+		if (array_key_exists('visibility', $data) === false) {
+			return null;
+		}
+
+		return (string)$data['visibility'];
+	}//end visibilityOf()
+
+	/**
+	 * Answer a created note, after giving it a timeline record.
+	 *
+	 * The one line this endpoint gains. A note written here still behaves
+	 * exactly as it did — same payload, same shape, no kind and no fields —
+	 * but it now also has a record, so the entry search can find it. Half a
+	 * timeline that cannot be searched is worse than none. The projection
+	 * never throws.
+	 *
+	 * @param ObjectEntity         $object   The object.
+	 * @param array<string, mixed> $note     The created note.
+	 * @param string               $register The register from the path.
+	 * @param string               $schema   The schema from the path.
+	 *
+	 * @return JSONResponse The note, with its `entryId` when it got a record.
+	 */
+	private function projected(ObjectEntity $object, array $note, string $register, string $schema): JSONResponse {
+		$entry = $this->services->timeline->projectNote(
+			object: $object,
+			note: new NoteProjection(note: $note, register: $register, schema: $schema)
+		);
+		if ($entry !== null) {
+			$note['entryId'] = $entry->getUuid();
+		}
+
+		return new JSONResponse(data: $note, statusCode: 201);
+	}//end projected()
+
+	/**
+	 * Update one of the object's notes.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param int          $noteId The note.
+	 *
+	 * @return JSONResponse The updated note, or the refusal.
+	 */
+	private function updateOn(ObjectEntity $object, int $noteId): JSONResponse {
+		$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: $noteId);
+
+		$write = $this->resolveNoteWrite(object: $object, data: $this->request->getParams(), noteId: $noteId);
+		if ($write['refusal'] !== null) {
+			return $write['refusal'];
+		}
+
+		$mayManage = $this->services->visibility->mayManageObject(object: $object);
+		$note = $this->noteService->updateNote(noteId: $noteId, message: $write['message'], visibility: $write['visibility'], mayManage: $mayManage);
+		$this->recordUpdate(object: $object, noteId: $noteId, write: $write, note: $note);
+
+		return new JSONResponse(data: $note);
+	}//end updateOn()
+
+	/**
+	 * Record what an update changed: the audit trail, the timeline record, the visibility move.
+	 *
+	 * The trail records that the note changed and who changed it; the text it
+	 * used to carry stays in the versions, which is what keeps the trail small
+	 * and readable. The record and its references are kept in step with the
+	 * text that was just rewritten: an index answering with yesterday's
+	 * sentence is worse than no index, because it looks like a hit.
+	 *
+	 * @param ObjectEntity                                                                    $object The object.
+	 * @param int                                                                             $noteId The note.
+	 * @param array{refusal: null, message: string|null, visibility: string|null, previous: string|null} $write  The write made.
+	 * @param array<string, mixed>                                                            $note   The updated note.
+	 *
+	 * @return void
+	 */
+	private function recordUpdate(ObjectEntity $object, int $noteId, array $write, array $note): void {
+		if ($write['message'] !== null) {
+			$this->noteService->auditEdit(object: $object, noteId: $noteId, versions: (int)($note['versionCount'] ?? 0));
+		}
+
+		$this->services->timeline->rewrite(
+			object: $object,
+			rewrite: new NoteRewrite(commentId: $noteId, message: $write['message'], visibility: $write['visibility'])
+		);
+
+		if ($write['previous'] !== null) {
+			$to = (string)($note['visibility'] ?? '');
+			$this->services->visibility->auditVisibilityChange(object: $object, noteId: $noteId, from: $write['previous'], to: $to);
+		}
+	}//end recordUpdate()
+
+	/**
+	 * List what one of the object's notes used to say.
+	 *
+	 * Reading the history is reading the note: a note that is not there is a
+	 * 404, and a reader who may not see an internal note may not read the
+	 * texts it replaced either — the same filter the note list applies.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param int          $noteId The note.
+	 *
+	 * @return JSONResponse The versions, newest first, or a 404.
+	 */
+	private function versionsOf(ObjectEntity $object, int $noteId): JSONResponse {
+		try {
+			$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: $noteId);
+			$note = $this->noteService->getNote(noteId: $noteId);
+		} catch (Exception $e) {
+			return $this->notFound(what: 'Note');
+		}
+
+		$filter = $this->services->visibility->effectiveFilter(object: $object, requested: null);
+		if (count($this->services->visibility->filterRows(rows: [$note], filter: $filter)) === 0) {
+			return $this->notFound(what: 'Note');
+		}
+
+		$versions = $this->noteService->noteVersions(noteId: $noteId);
+
+		return new JSONResponse(data: ['results' => $versions, 'total' => count($versions)]);
+	}//end versionsOf()
+
+	/**
+	 * Delete one of the object's notes and forget its timeline record.
+	 *
+	 * The record is read BEFORE the note goes, so its references can be
+	 * forgotten by id: after the delete there is nothing left to look the
+	 * entry up by.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param int          $noteId The note.
+	 *
+	 * @return JSONResponse The confirmation.
+	 */
+	private function destroyOn(ObjectEntity $object, int $noteId): JSONResponse {
+		$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: $noteId);
+		$entry = $this->services->timeline->entryForNote(commentId: $noteId);
+
+		$this->noteService->deleteNote($noteId);
+		$this->services->timeline->forgetNote(commentId: $noteId, entryUuid: $entry?->getUuid());
+
+		return new JSONResponse(data: ['success' => true]);
+	}//end destroyOn()
 
 	/**
 	 * Work out what an update writes, or why it may not be written.
@@ -490,7 +589,7 @@ class NotesController extends Controller {
 	 * `previous` is null whenever the caller did not ask to move the flag, so
 	 * the caller audits nothing.
 	 *
-	 * @param \OCA\OpenRegister\Db\ObjectEntity $object The object the note hangs on
+	 * @param ObjectEntity $object The object the note hangs on
 	 * @param array<string,mixed> $data The request payload
 	 * @param int $noteId The note being updated
 	 *
@@ -499,50 +598,58 @@ class NotesController extends Controller {
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	private function resolveNoteWrite(
-		\OCA\OpenRegister\Db\ObjectEntity $object,
-		array $data,
-		int $noteId,
-	): array {
-		$write = [
-			'refusal' => null,
-			'message' => null,
-			'visibility' => null,
-			'previous' => null,
-		];
-
-		$wantsVisibility = array_key_exists('visibility', $data);
-		$hasMessage = (empty($data['message']) === false);
-
-		if ($hasMessage === false && $wantsVisibility === false) {
-			$write['refusal'] = new JSONResponse(
-				data: ['error' => 'Note message is required'],
-				statusCode: 400
-			);
-
-			return $write;
+	private function resolveNoteWrite(ObjectEntity $object, array $data, int $noteId): array {
+		$message = $this->messageOf(data: $data);
+		$write = ['refusal' => null, 'message' => $message, 'visibility' => null, 'previous' => null];
+		if (array_key_exists('visibility', $data) === true) {
+			return $this->withVisibility(write: $write, object: $object, requested: $data['visibility'], noteId: $noteId);
 		}
 
-		if ($hasMessage === true) {
-			$write['message'] = (string)$data['message'];
+		if ($message === null) {
+			$write['refusal'] = new JSONResponse(data: ['error' => 'Note message is required'], statusCode: 400);
 		}
-
-		if ($wantsVisibility === false) {
-			return $write;
-		}
-
-		$refusal = $this->refuseVisibility(object: $object, requested: $data['visibility']);
-		if ($refusal !== null) {
-			$write['refusal'] = $refusal;
-
-			return $write;
-		}
-
-		$write['visibility'] = (string)$data['visibility'];
-		$write['previous'] = (string)($this->noteService->getNote(noteId: $noteId)['visibility'] ?? '');
 
 		return $write;
 	}//end resolveNoteWrite()
+
+	/**
+	 * The payload's message, or null when it carries none (an empty one counts as none).
+	 *
+	 * @param array<string, mixed> $data The payload.
+	 *
+	 * @return string|null The message, or null.
+	 */
+	private function messageOf(array $data): ?string {
+		if (empty($data['message']) === true) {
+			return null;
+		}
+
+		return (string)$data['message'];
+	}//end messageOf()
+
+	/**
+	 * Add a visibility move to a write, or the refusal of it.
+	 *
+	 * @param array{refusal: JSONResponse|null, message: string|null, visibility: string|null, previous: string|null} $write     The write so far.
+	 * @param ObjectEntity                                                                                     $object    The object the note hangs on.
+	 * @param mixed                                                                                            $requested The raw `visibility` value.
+	 * @param int                                                                                              $noteId    The note being updated.
+	 *
+	 * @return array{refusal: JSONResponse|null, message: string|null, visibility: string|null, previous: string|null}
+	 *         The write, with its visibility and the previous one, or with a refusal.
+	 */
+	private function withVisibility(array $write, ObjectEntity $object, mixed $requested, int $noteId): array {
+		$refusal = $this->refuseVisibility(object: $object, requested: $requested);
+		if ($refusal !== null) {
+			$write['refusal'] = $refusal;
+			return $write;
+		}
+
+		$write['visibility'] = (string)$requested;
+		$write['previous'] = (string)($this->noteService->getNote(noteId: $noteId)['visibility'] ?? '');
+
+		return $write;
+	}//end withVisibility()
 
 	/**
 	 * Refuse a visibility write the caller may not make, or one it spelled wrong.
@@ -552,31 +659,26 @@ class NotesController extends Controller {
 	 * a note across the counter is a write on the object's audience, not on
 	 * the note's text, so the author's own right is not enough.
 	 *
-	 * @param \OCA\OpenRegister\Db\ObjectEntity $object The object the note hangs on
+	 * @param ObjectEntity $object The object the note hangs on
 	 * @param mixed $requested The raw `visibility` value from the payload
 	 *
 	 * @return JSONResponse|null A 400 or 403 response, or null when the write is allowed
 	 *
 	 * @spec openspec/changes/timeline-entry-visibility/specs/object-interactions/spec.md
 	 */
-	private function refuseVisibility(\OCA\OpenRegister\Db\ObjectEntity $object, mixed $requested): ?JSONResponse {
+	private function refuseVisibility(ObjectEntity $object, mixed $requested): ?JSONResponse {
 		$value = null;
 		if (is_string($requested) === true) {
 			$value = $requested;
 		}
 
 		if ($this->services->visibility->isKnownValue(value: $value) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Visibility must be either internal or public'],
-				statusCode: 400
-			);
+			return new JSONResponse(data: ['error' => 'Visibility must be either internal or public'], statusCode: 400);
 		}
 
 		if ($this->services->visibility->mayManage(object: $object) === false) {
-			return new JSONResponse(
-				data: ['error' => 'You do not have permission to set the visibility of this note'],
-				statusCode: 403
-			);
+			$error = 'You do not have permission to set the visibility of this note';
+			return new JSONResponse(data: ['error' => $error], statusCode: 403);
 		}
 
 		return null;
@@ -589,7 +691,7 @@ class NotesController extends Controller {
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The object ID
 	 *
-	 * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
+	 * @return ObjectEntity|null The object or null
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
 	 *
@@ -602,7 +704,7 @@ class NotesController extends Controller {
 		string $register,
 		string $schema,
 		string $id,
-	): ?\OCA\OpenRegister\Db\ObjectEntity {
+	): ?ObjectEntity {
 		// REGISTER FIRST. `setSchema()` scopes its slug lookup to whatever
 		// register is currently set, and ObjectService is reused across many
 		// operations in one process — so setting the schema first resolves it

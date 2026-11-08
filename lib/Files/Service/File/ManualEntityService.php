@@ -34,12 +34,12 @@ namespace OCA\OpenRegister\Files\Service\File;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\DetectionMethod;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Exception\ChunkMatcherException;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
@@ -80,9 +80,9 @@ class ManualEntityService {
 	/**
 	 * Catalogue mapper.
 	 *
-	 * @var GdprEntityMapper
+	 * @var GdprEntityMapperInterface
 	 */
-	private readonly GdprEntityMapper $gdprEntityMapper;
+	private readonly GdprEntityMapperInterface $gdprEntityMapper;
 
 	/**
 	 * Relation mapper.
@@ -94,9 +94,9 @@ class ManualEntityService {
 	/**
 	 * Chunk reader for the target file.
 	 *
-	 * @var ChunkMapper
+	 * @var ChunkSourceReaderInterface
 	 */
-	private readonly ChunkMapper $chunkMapper;
+	private readonly ChunkSourceReaderInterface $chunkMapper;
 
 	/**
 	 * Chunk-aware string-match utility.

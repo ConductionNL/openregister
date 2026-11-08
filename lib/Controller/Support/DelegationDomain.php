@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
-use OCA\OpenRegister\Service\Delegation\DelegationNotifier;
+use OCA\OpenRegister\Service\Delegation\DelegationConsentServiceInterface;
+use OCA\OpenRegister\Service\Delegation\DelegationNotifierInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 
 /**
@@ -35,15 +35,15 @@ final class DelegationDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param DelegationConsentService $consent       Owns the lifecycle and its rules.
-	 * @param DelegationNotifier       $notifier      Tells a person they were asked.
+	 * @param DelegationConsentServiceInterface $consent       Owns the lifecycle and its rules.
+	 * @param DelegationNotifierInterface       $notifier      Tells a person they were asked.
 	 * @param OrganisationServiceInterface      $organisations Bounds who a caller may ask.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
 	public function __construct(
-		public readonly DelegationConsentService $consent,
-		public readonly DelegationNotifier $notifier,
+		public readonly DelegationConsentServiceInterface $consent,
+		public readonly DelegationNotifierInterface $notifier,
 		public readonly OrganisationServiceInterface $organisations,
 	) {
 	}//end __construct()

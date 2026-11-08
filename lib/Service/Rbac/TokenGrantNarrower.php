@@ -90,21 +90,14 @@ class TokenGrantNarrower {
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
 	public function narrow(
-		?array $authorization,
-		?TokenGrant $grant,
-		?string $schemaSlug,
-		?string $registerSlug,
-		?DateTimeInterface $now = null
-	): ?array {
+		array|null $authorization,
+		TokenGrant|null $grant,
+		string|null $schemaSlug,
+		string|null $registerSlug,
+		DateTimeInterface|null $now = null
+	): array|null {
 		if ($grant === null) {
-			// No token: the block is whatever it was, MINUS any marker a schema
-			// happens to declare. A declared marker must not be able to stand in
-			// for a real grant in either direction.
-			if (is_array($authorization) === true && array_key_exists(self::MARKER, $authorization) === true) {
-				unset($authorization[self::MARKER]);
-			}
-
-			return $authorization;
+			return $this->withoutMarker(authorization: $authorization);
 		}
 
 		$now = ($now ?? new DateTimeImmutable());
@@ -131,23 +124,54 @@ class TokenGrantNarrower {
 			'inScope' => $grant->covers(schemaSlug: $schemaSlug, registerSlug: $registerSlug),
 		];
 
-		foreach ($this->verbsIn(block: $authorization) as $verb) {
-			if (in_array($verb, $permitted, true) === false) {
-				$block[$verb] = [self::IMPOSSIBLE];
-			}
-		}
+		$block = $this->refuseUnpermitted(block: $block, declared: $this->verbsIn(block: $authorization), permitted: $permitted);
 
 		// A block that was empty (default-open) and is now scoped needs at
 		// least one rule of its own, or `empty()` would read it as unconfigured
 		// and grant everything the grant just refused.
 		if ($permitted === []) {
-			foreach ($this->catalogueVerbs() as $verb) {
+			$block = $this->refuseUnpermitted(block: $block, declared: $this->catalogueVerbs(), permitted: []);
+		}
+
+		return $block;
+	}//end narrow()
+
+	/**
+	 * A block passed through without a token, minus any marker a schema declares.
+	 *
+	 * A declared marker must not be able to stand in for a real grant in
+	 * either direction.
+	 *
+	 * @param array|null $authorization The resolved block.
+	 *
+	 * @return array|null The block without a marker.
+	 */
+	private function withoutMarker(array|null $authorization): array|null {
+		if (is_array($authorization) === true && array_key_exists(self::MARKER, $authorization) === true) {
+			unset($authorization[self::MARKER]);
+		}
+
+		return $authorization;
+	}//end withoutMarker()
+
+	/**
+	 * Replace the rule of every verb the grant does not permit with the impossible principal.
+	 *
+	 * @param array    $block     The block being narrowed.
+	 * @param string[] $declared  The verbs to consider, in order.
+	 * @param string[] $permitted The verbs the grant permits.
+	 *
+	 * @return array The block.
+	 */
+	private function refuseUnpermitted(array $block, array $declared, array $permitted): array {
+		foreach ($declared as $verb) {
+			if (in_array($verb, $permitted, true) === false) {
 				$block[$verb] = [self::IMPOSSIBLE];
 			}
 		}
 
 		return $block;
-	}//end narrow()
+	}//end refuseUnpermitted()
 
 	/**
 	 * Whether the marker in a block permits one action.
@@ -207,6 +231,17 @@ class TokenGrantNarrower {
 			return [];
 		}
 
+		return $this->grantedVerbs(grant: $grant);
+	}//end permittedVerbs()
+
+	/**
+	 * The grant's verbs that it may actually grant, as strings.
+	 *
+	 * @param TokenGrant $grant The token's grant.
+	 *
+	 * @return string[] The verbs.
+	 */
+	private function grantedVerbs(TokenGrant $grant): array {
 		$permitted = [];
 		foreach ($grant->verbs as $verb) {
 			if ($grant->permits((string)$verb) === true) {
@@ -215,7 +250,7 @@ class TokenGrantNarrower {
 		}
 
 		return $permitted;
-	}//end permittedVerbs()
+	}//end grantedVerbs()
 
 	/**
 	 * The verb keys a block declares, ignoring its control keys.
@@ -229,18 +264,21 @@ class TokenGrantNarrower {
 			return [];
 		}
 
-		$verbs = [];
-		foreach (array_keys($block) as $key) {
-			$key = (string)$key;
-			if (in_array($key, PermissionCatalogue::CONTROL_KEYS, true) === true || $key === self::MARKER) {
-				continue;
-			}
+		$keys = array_map(static fn (int|string $key): string => (string)$key, array_keys($block));
 
-			$verbs[] = $key;
-		}
-
-		return $verbs;
+		return array_values(array_filter($keys, self::isVerbKey(...)));
 	}//end verbsIn()
+
+	/**
+	 * Whether one block key is a verb rather than a control key or the grant marker.
+	 *
+	 * @param string $key The block key.
+	 *
+	 * @return bool
+	 */
+	private static function isVerbKey(string $key): bool {
+		return in_array($key, PermissionCatalogueInterface::CONTROL_KEYS, true) === false && $key !== self::MARKER;
+	}//end isVerbKey()
 
 	/**
 	 * The canonical verbs, used to close a block that had no rules at all.
@@ -248,6 +286,6 @@ class TokenGrantNarrower {
 	 * @return array<int, string> The verbs.
 	 */
 	private function catalogueVerbs(): array {
-		return array_keys(PermissionCatalogue::CANONICAL);
+		return array_keys(PermissionCatalogueInterface::CANONICAL);
 	}//end catalogueVerbs()
 }//end class

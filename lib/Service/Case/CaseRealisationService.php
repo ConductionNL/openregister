@@ -52,6 +52,34 @@ use Throwable;
  * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
  */
 class CaseRealisationService {
+	/**
+	 * The task lifecycle (its trusted creation path).
+	 *
+	 * @var TaskServiceInterface
+	 */
+	private readonly TaskServiceInterface $tasks;
+
+	/**
+	 * The task table, for the terminal-outcome read.
+	 *
+	 * @var TaskMapper
+	 */
+	private readonly TaskMapper $taskRows;
+
+	/**
+	 * The one queue funnel.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runs;
+
+	/**
+	 * The run table, for the terminal-outcome read.
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $runRows;
+
 
 	/**
 	 * The trigger name a stage-queued run carries.
@@ -61,19 +89,19 @@ class CaseRealisationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskServiceInterface $tasks The task lifecycle (its trusted creation path).
-	 * @param TaskMapper $taskRows The task table, for the terminal-outcome read.
-	 * @param FlowRunServiceInterface $runs The one queue funnel.
-	 * @param FlowRunMapperInterface $runRows The run table, for the terminal-outcome read.
+	 * @param CaseRealisationTasks $tasks The task lifecycle and the task table.
+	 * @param CaseRealisationRuns $runs The queue funnel and the run table.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly TaskServiceInterface $tasks,
-		private readonly TaskMapper $taskRows,
-		private readonly FlowRunServiceInterface $runs,
-		private readonly FlowRunMapperInterface $runRows,
+		CaseRealisationTasks $tasks,
+		CaseRealisationRuns $runs,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->tasks    = $tasks->tasks;
+		$this->taskRows = $tasks->taskRows;
+		$this->runs     = $runs->runs;
+		$this->runRows  = $runs->runRows;
 
 	}//end __construct()
 
@@ -90,9 +118,7 @@ class CaseRealisationService {
 	 */
 	public function realise(CaseItem $item, string $actor): void {
 		if ($item->getPlanItemType() === CaseItem::TYPE_HUMAN_TASK) {
-			$task = $this->tasks->import(data: $this->taskDataFor(item: $item, actor: $actor), actor: $actor);
-			$item->setRealisationKind(CaseItem::REALISATION_TASK);
-			$item->setRealisationUuid($task->getUuid());
+			$this->realiseAsTask(item: $item, actor: $actor);
 
 			return;
 		}
@@ -100,29 +126,7 @@ class CaseRealisationService {
 		$flow = trim((string)($item->getPlanSettings()['flows'][(string)$item->getItemKey()] ?? ''));
 		$runnable = in_array($item->getPlanItemType(), [CaseItem::TYPE_STAGE, CaseItem::TYPE_PROCESS_TASK], true);
 		if ($runnable === true && $flow !== '') {
-			// `system:<app>` and the cascade's own `case-plan` are labels for the audit, not accounts. As the run's
-			// user either would become its `runAs`, and every scoped step would be refused ("not a user account"),
-			// so the run is queued without a caller. FlowRunAttribution then lets the `case` trigger answer from
-			// the identity the flow's schedule trigger declares (validated and delegation-checked at save time);
-			// a flow that declares none is refused as unattributed, loudly, rather than run as a label.
-			$user = null;
-			if ($this->isAccountActor(actor: $actor) === true) {
-				$user = $actor;
-			}
-
-			$run = $this->runs->queue(
-				flowId: $flow,
-				subject: [
-					'uuid' => (string)$item->getObjectUuid(),
-					'register' => (string)$item->getRegisterId(),
-					'schema' => (string)$item->getSchemaId(),
-				],
-				trigger: self::RUN_TRIGGER,
-				context: ['caseItem' => (string)$item->getUuid()],
-				user: $user
-			);
-			$item->setRealisationKind(CaseItem::REALISATION_RUN);
-			$item->setRealisationUuid($run->getUuid());
+			$this->realiseAsRun(item: $item, flow: $flow, actor: $actor);
 
 			return;
 		}
@@ -169,24 +173,12 @@ class CaseRealisationService {
 		}
 
 		try {
-			if ($item->getRealisationKind() === CaseItem::REALISATION_TASK) {
-				$task = $this->taskRows->findByUuid(uuid: $uuid);
-
-				return $this->outcomeOfTask(task: $task);
-			}
-
-			if ($item->getRealisationKind() === CaseItem::REALISATION_RUN) {
-				$run = $this->runRows->findByUuid(uuid: $uuid);
-
-				return $this->outcomeOfRun(run: $run);
-			}
+			return $this->outcomeOf(item: $item, uuid: $uuid);
 		} catch (DoesNotExistException) {
 			// A realisation that no longer exists cannot complete anything;
 			// it is terminated work.
 			return CaseItem::STATE_TERMINATED;
 		}
-
-		return null;
 	}//end terminalOutcome()
 
 	/**
@@ -210,20 +202,8 @@ class CaseRealisationService {
 			return;
 		}
 
-		$source = sprintf('case-item:%s', (string)$item->getUuid());
 		if ($item->getRealisationKind() === CaseItem::REALISATION_TASK) {
-			try {
-				$this->tasks->terminateAsMoot(uuid: $uuid, reason: $reason, source: $source);
-			} catch (DoesNotExistException) {
-				// Nothing left to terminate.
-				return;
-			} catch (Throwable $failure) {
-				$this->logger->warning(
-					'[CaseRealisationService] Could not terminate a task realisation: ' . $failure->getMessage(),
-					['item' => $item->getUuid(), 'task' => $uuid]
-				);
-				throw $failure;
-			}
+			$this->terminateTask(item: $item, uuid: $uuid, reason: $reason);
 
 			return;
 		}
@@ -251,66 +231,35 @@ class CaseRealisationService {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
 	public function taskDataFor(CaseItem $item, string $actor): array {
-		$users = ($item->getCandidateUsers() ?? []);
-		$groups = ($item->getCandidateGroups() ?? []);
-		$role = trim((string)$item->getCandidateRole());
-
 		$data = [
 			'title' => (string)($item->getName() ?? $item->getItemKey()),
 			'description' => $item->getDescription(),
-			'state' => $this->initialState(users: $users, groups: $groups, role: $role),
-			'performerType' => $this->performerType(users: $users, groups: $groups),
+			'state' => $this->initialState(item: $item),
+			'performerType' => $this->performerType(item: $item),
 			'requester' => (string)($item->getCreatedBy() ?? $actor),
 			'objectUuid' => $item->getObjectUuid(),
 			'registerId' => $item->getRegisterId(),
 			'schemaId' => $item->getSchemaId(),
 			'appId' => 'openregister',
-			'metadata' => [
-				'caseItem' => $item->getUuid(),
-				'caseItemKey' => $item->getItemKey(),
-				'realisationCount' => $item->getRealisationCount(),
-				'doorlooptijd' => $item->getDoorlooptijd(),
-				'servicenorm' => $item->getServicenorm(),
-			],
+			'metadata' => self::taskMetadata(item: $item),
 		];
 
-		if ($users !== []) {
-			$data['candidateUsers'] = array_values($users);
-		}
-
-		if ($groups !== []) {
-			$data['candidateGroups'] = array_values($groups);
-		}
-
-		if ($role !== '') {
-			$data['candidateRole'] = $role;
-		}
-
-		if ($item->getDueAt() !== null) {
-			$data['dueAt'] = $item->getDueAt()->format('c');
-		}
-
-		if ($item->getExpiresAt() !== null) {
-			$data['expiresAt'] = $item->getExpiresAt()->format('c');
-		}
-
-		return $data;
+		return $data + self::candidatesOf(item: $item) + self::deadlinesOf(item: $item);
 	}//end taskDataFor()
 
 	/**
 	 * A task with candidates starts pooled (`enabled`); one without starts
 	 * `available`. The case layer never assigns.
 	 *
-	 * @param array<int, mixed> $users Candidate uids.
-	 * @param array<int, mixed> $groups Candidate group ids.
-	 * @param string $role Candidate role.
+	 * @param CaseItem $item The human plan item.
 	 *
 	 * @return string The initial task state.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
-	private function initialState(array $users, array $groups, string $role): string {
-		if ($users !== [] || $groups !== [] || $role !== '') {
+	private function initialState(CaseItem $item): string {
+		$role = trim((string)$item->getCandidateRole());
+		if (($item->getCandidateUsers() ?? []) !== [] || ($item->getCandidateGroups() ?? []) !== [] || $role !== '') {
 			return Task::STATE_ENABLED;
 		}
 
@@ -320,20 +269,193 @@ class CaseRealisationService {
 	/**
 	 * Groups-only candidates make a group task; anything else a user task.
 	 *
-	 * @param array<int, mixed> $users Candidate uids.
-	 * @param array<int, mixed> $groups Candidate group ids.
+	 * @param CaseItem $item The human plan item.
 	 *
 	 * @return string The performer type.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
-	private function performerType(array $users, array $groups): string {
-		if ($users === [] && $groups !== []) {
+	private function performerType(CaseItem $item): string {
+		if (($item->getCandidateUsers() ?? []) === [] && ($item->getCandidateGroups() ?? []) !== []) {
 			return Task::PERFORMER_GROUP;
 		}
 
 		return Task::PERFORMER_USER;
 	}//end performerType()
+
+	/**
+	 * Create the task a human item is realised by, through the trusted creation path.
+	 *
+	 * @param CaseItem $item The human item entering active.
+	 * @param string $actor The identity the task is created by.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private function realiseAsTask(CaseItem $item, string $actor): void {
+		$task = $this->tasks->import(data: $this->taskDataFor(item: $item, actor: $actor), actor: $actor);
+		$item->setRealisationKind(CaseItem::REALISATION_TASK);
+		$item->setRealisationUuid($task->getUuid());
+	}//end realiseAsTask()
+
+	/**
+	 * Queue the run a flow-bound stage or process task is realised by.
+	 *
+	 * `system:<app>` and the cascade's own `case-plan` are labels for the
+	 * audit, not accounts. As the run's user either would become its
+	 * `runAs`, and every scoped step would be refused ("not a user
+	 * account"), so the run is queued without a caller. FlowRunAttribution
+	 * then lets the `case` trigger answer from the identity the flow's
+	 * schedule trigger declares (validated and delegation-checked at save
+	 * time); a flow that declares none is refused as unattributed, loudly,
+	 * rather than run as a label.
+	 *
+	 * @param CaseItem $item The item entering active.
+	 * @param string $flow The flow it is bound to.
+	 * @param string $actor The identity the realisation is created by.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private function realiseAsRun(CaseItem $item, string $flow, string $actor): void {
+		$run = $this->runs->queue(
+			flowId: $flow,
+			subject: [
+				'uuid' => (string)$item->getObjectUuid(),
+				'register' => (string)$item->getRegisterId(),
+				'schema' => (string)$item->getSchemaId(),
+			],
+			trigger: self::RUN_TRIGGER,
+			context: ['caseItem' => (string)$item->getUuid()],
+			user: $this->runUser(actor: $actor)
+		);
+		$item->setRealisationKind(CaseItem::REALISATION_RUN);
+		$item->setRealisationUuid($run->getUuid());
+	}//end realiseAsRun()
+
+	/**
+	 * The user a run is queued for: the actor when it is an account, nobody for an audit label.
+	 *
+	 * @param string $actor The acting identity.
+	 *
+	 * @return string|null The uid, or null.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 */
+	private function runUser(string $actor): ?string {
+		if ($this->isAccountActor(actor: $actor) === true) {
+			return $actor;
+		}
+
+		return null;
+	}//end runUser()
+
+	/**
+	 * How the realisation of an item ended, read from its own table.
+	 *
+	 * @param CaseItem $item An active item with a realisation.
+	 * @param string $uuid The realisation's uuid.
+	 *
+	 * @return string|null `completed` | `terminated`, or null while open or when the item realises nothing.
+	 *
+	 * @throws DoesNotExistException When the realisation no longer exists.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private function outcomeOf(CaseItem $item, string $uuid): ?string {
+		if ($item->getRealisationKind() === CaseItem::REALISATION_TASK) {
+			return $this->outcomeOfTask(task: $this->taskRows->findByUuid(uuid: $uuid));
+		}
+
+		if ($item->getRealisationKind() === CaseItem::REALISATION_RUN) {
+			return $this->outcomeOfRun(run: $this->runRows->findByUuid(uuid: $uuid));
+		}
+
+		return null;
+	}//end outcomeOf()
+
+	/**
+	 * Terminate a task realisation as moot; one that is gone needs nothing.
+	 *
+	 * @param CaseItem $item The exited item.
+	 * @param string $uuid The task's uuid.
+	 * @param string $reason Why, recorded on the task and its audit.
+	 *
+	 * @return void
+	 *
+	 * @throws Throwable Any other failure, after logging it.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private function terminateTask(CaseItem $item, string $uuid, string $reason): void {
+		try {
+			$this->tasks->terminateAsMoot(uuid: $uuid, reason: $reason, source: sprintf('case-item:%s', (string)$item->getUuid()));
+		} catch (DoesNotExistException) {
+			// Nothing left to terminate.
+			return;
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				'[CaseRealisationService] Could not terminate a task realisation: ' . $failure->getMessage(),
+				['item' => $item->getUuid(), 'task' => $uuid]
+			);
+			throw $failure;
+		}
+	}//end terminateTask()
+
+	/**
+	 * The carried terms of a human item, as task metadata.
+	 *
+	 * @param CaseItem $item The human plan item.
+	 *
+	 * @return array<string, mixed> The metadata.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private static function taskMetadata(CaseItem $item): array {
+		return [
+			'caseItem' => $item->getUuid(),
+			'caseItemKey' => $item->getItemKey(),
+			'realisationCount' => $item->getRealisationCount(),
+			'doorlooptijd' => $item->getDoorlooptijd(),
+			'servicenorm' => $item->getServicenorm(),
+		];
+	}//end taskMetadata()
+
+	/**
+	 * The candidates a task carries, each only when there is one.
+	 *
+	 * @param CaseItem $item The human plan item.
+	 *
+	 * @return array<string, mixed> candidateUsers, candidateGroups and candidateRole, as present.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private static function candidatesOf(CaseItem $item): array {
+		$candidates = [
+			'candidateUsers' => array_values($item->getCandidateUsers() ?? []),
+			'candidateGroups' => array_values($item->getCandidateGroups() ?? []),
+			'candidateRole' => trim((string)$item->getCandidateRole()),
+		];
+
+		return array_filter($candidates, static fn (array|string $value): bool => $value !== [] && $value !== '');
+	}//end candidatesOf()
+
+	/**
+	 * The deadlines a task carries, each only when set.
+	 *
+	 * @param CaseItem $item The human plan item.
+	 *
+	 * @return array<string, string> dueAt and expiresAt, as ISO 8601.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 */
+	private static function deadlinesOf(CaseItem $item): array {
+		$deadlines = ['dueAt' => $item->getDueAt()?->format('c'), 'expiresAt' => $item->getExpiresAt()?->format('c')];
+
+		return array_filter($deadlines, static fn (?string $value): bool => $value !== null);
+	}//end deadlinesOf()
 
 	/**
 	 * A task's terminal outcome as a plan-item state.

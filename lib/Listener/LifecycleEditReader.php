@@ -26,7 +26,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolverInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -41,14 +41,14 @@ class LifecycleEditReader {
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface       $schemaMapper       Schema lookup mapper.
-	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is.
+	 * @param LifecycleTransitionResolverInterface $transitionResolver Decides which declared transition an edit is.
 	 * @param LoggerInterface             $logger             Logger for failed lookups.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly LifecycleTransitionResolver $transitionResolver,
+		private readonly LifecycleTransitionResolverInterface $transitionResolver,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

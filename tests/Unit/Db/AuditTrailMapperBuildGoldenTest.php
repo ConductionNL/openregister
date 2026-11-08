@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -130,7 +131,7 @@ class AuditTrailMapperBuildGoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new AuditTrailMapper($this->createMock(IDBConnection::class), $container, $session, $request, $this->createMock(LoggerInterface::class));
+		return new AuditTrailMapper($this->createMock(IDBConnection::class), $session, $request, new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class)));
 	}//end mapper()
 
 	#[DataProvider('cases')]

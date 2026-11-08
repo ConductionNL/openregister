@@ -21,6 +21,7 @@ jest.mock('../../eventBus.js', () => ({
 }))
 jest.mock('vue-material-design-icons/ChartLine.vue', () => ({}))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({}))
+jest.mock('vue-material-design-icons/Delete.vue', () => ({}))
 jest.mock('vue-material-design-icons/Eye.vue', () => ({}))
 jest.mock('vue-material-design-icons/FilterOffOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/FilterOutline.vue', () => ({}))
@@ -61,6 +62,10 @@ jest.mock('../../store/store.js', () => ({
  */
 function sidebar(query = {}) {
 	return {
+		...Object.assign(
+			{},
+			...AuditTrailSideBar.mixins.map((mixin) => mixin.methods),
+		),
 		...AuditTrailSideBar.methods,
 		...AuditTrailSideBar.data(),
 		$route: { path: '/audit-trails', query },

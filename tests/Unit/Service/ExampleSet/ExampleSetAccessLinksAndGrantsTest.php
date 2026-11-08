@@ -31,6 +31,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapper;
+use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetActingAs;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -43,7 +44,9 @@ use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ShareTimeWriter;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSecrets;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCP\Files\Folder;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
@@ -147,7 +150,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$mapper = $this->linkMapper();
 		$this->services = [
 			ExampleSetActingAs::class   => new ExampleSetActingAs(userSession: $this->session, userManager: $this->users, cli: true),
-			AccessLinkMapper::class     => $mapper,
+			AccessLinkMapperInterface::class => $mapper,
 			AccessLinkService::class    => $this->linkService(mapper: $mapper),
 			AccessLinkMintGuard::class  => $this->mintGuard(),
 			ObjectSharingService::class => $this->sharingService(session: $this->session),
@@ -833,11 +836,9 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 
 		return new AccessLinkService(
 			mapper: $mapper,
-			auditTrail: $this->createMock(AuditTrailMapper::class),
-			secureRandom: $random,
-			hasher: $this->createMock(IHasher::class),
-			urlGenerator: $urls,
-			logger: new NullLogger()
+			useLog: new AccessLinkUseLog(auditTrail: $this->createMock(AuditTrailMapper::class), logger: new NullLogger()),
+			secrets: new AccessLinkSecrets(secureRandom: $random, hasher: $this->createMock(IHasher::class)),
+			urlGenerator: $urls
 		);
 	}//end linkService()
 

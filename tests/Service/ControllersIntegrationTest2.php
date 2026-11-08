@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiTokenSettingsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CacheSettingsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
@@ -1968,7 +1969,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	 */
 	private function buildFileSettingsController(): FileSettingsController {
 		return new FileSettingsController(
-			'openregister',
 			$this->request,
 			\OC::$server->get(ContainerInterface::class),
 			\OC::$server->get(SettingsService::class),
@@ -2003,7 +2003,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return CacheSettingsController
 	 */
 	private function buildCacheSettingsController(): CacheSettingsController {
-		return new CacheSettingsController(
+		return CacheSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(SettingsService::class),

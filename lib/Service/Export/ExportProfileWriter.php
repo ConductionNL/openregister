@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use Throwable;
 
 /**
@@ -53,24 +53,17 @@ use Throwable;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportProfileWriter {
-	/**
-	 * The prefix of the CSV metadata line.
-	 *
-	 * @var string
-	 */
-	public const CSV_METADATA_PREFIX = '#openregister-export ';
-
+class ExportProfileWriter implements ExportProfileWriterInterface {
 	/**
 	 * Wire the name resolver and the value renderer.
 	 *
-	 * @param CacheHandlerInterface        $cacheHandler Uuid to name resolution for rendered relations.
+	 * @param ObjectNameCacheInterface        $cacheHandler Uuid to name resolution for rendered relations.
 	 * @param ExportValueRenderer $renderer     What a single cell says, in the profile's mode.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CacheHandlerInterface $cacheHandler,
+		private readonly ObjectNameCacheInterface $cacheHandler,
 		private readonly ExportValueRenderer $renderer,
 	) {
 	}//end __construct()

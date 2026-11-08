@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSidecarTableInterface;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -100,7 +100,7 @@ final class HybridSearchDiagnostics {
 	public function report(bool $isPostgres): array {
 		$diagnostics = self::NOTHING_FOUND;
 		if ($isPostgres === true) {
-			$sidecar = PgVectorPlatform::SIDECAR_TABLE;
+			$sidecar = VectorSidecarTableInterface::SIDECAR_TABLE;
 			$diagnostics = array_replace($diagnostics, $this->annSidecar(sidecar: $sidecar), $this->searchIndexes());
 			$diagnostics['vectors'] = $this->vectorCounts(sidecar: $sidecar);
 		}

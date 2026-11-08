@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -48,6 +49,7 @@ use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -161,68 +163,79 @@ class ObjectDraftController extends Controller {
 	public function activate(string $register, string $schema, string $id): JSONResponse {
 		$user = $this->session->getUser();
 		if ($user === null) {
-			return $this->refusal(
-				message: $this->l10n->t('Please sign in to make this draft definitive.'),
-				reason: 'not-signed-in',
-				status: Http::STATUS_UNAUTHORIZED
-			);
+			return $this->notSignedIn();
 		}
 
 		// Through the RBAC boundary first: a record the caller may not read
 		// answers the same 404 an unknown id gets, so this endpoint cannot be
 		// used to probe which ids exist.
-		$registerEntity = null;
-		$schemaEntity = null;
-		$readable = null;
+		$draft = $this->readableDraft(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
+		if ($draft === null) {
+			return $this->notFound();
+		}
+
+		return $this->activateFor(draft: $draft, user: $user);
+	}//end activate()
+
+	/**
+	 * The register and schema of a draft the caller may read, or null when it is unknown or not readable.
+	 *
+	 * The register and the schema are looked up as the object API looks them
+	 * up (ObjectService::setRegister()): past the organisation filter. A draft
+	 * in a register an administrator made in another organisation is still its
+	 * owner's; the read of the draft is the authorisation.
+	 *
+	 * @param ObjectLinkRoute $route Register slug or id, schema slug or id, and the draft's uuid.
+	 *
+	 * @return array{register: \OCA\OpenRegister\Db\Register, schema: \OCA\OpenRegister\Db\Schema, id: string}|null The register,
+	 *         schema and uuid.
+	 */
+	private function readableDraft(ObjectLinkRoute $route): ?array {
 		try {
-			// The register and the schema are looked up as the object API
-			// looks them up (ObjectService::setRegister()): past the
-			// organisation filter. A draft in a register an administrator made
-			// in another organisation is still its owner's; the read of the
-			// draft below is the authorisation.
-			$registerEntity = $this->registers->find(id: $register, _rbac: false, _multitenancy: false);
-			$schemaEntity = $this->schemas->find(id: $schema, _rbac: false, _multitenancy: false);
-			$readable = $this->objects->find(id: $id, register: $registerEntity, schema: $schemaEntity, _render: false, _audit: false);
+			$registerEntity = $this->registers->find(id: $route->register, _rbac: false, _multitenancy: false);
+			$schemaEntity = $this->schemas->find(id: $route->schema, _rbac: false, _multitenancy: false);
+			$readable = $this->objects->find(id: $route->id, register: $registerEntity, schema: $schemaEntity, _render: false, _audit: false);
 		} catch (Throwable) {
-			$readable = null;
+			return null;
 		}
 
-		if ($registerEntity === null || $schemaEntity === null || ($readable instanceof ObjectEntity) === false) {
-			return $this->refusal(
-				message: $this->l10n->t('This draft does not exist.'),
-				reason: DraftActivationRefusedException::NOT_FOUND,
-				status: Http::STATUS_NOT_FOUND
-			);
+		if (($readable instanceof ObjectEntity) === false) {
+			return null;
 		}
 
+		return ['register' => $registerEntity, 'schema' => $schemaEntity, 'id' => $route->id];
+	}//end readableDraft()
+
+	/**
+	 * The property values the body lays over the stored draft; none when it sends no object.
+	 *
+	 * @return array<string, mixed> The changes.
+	 */
+	private function changesFromRequest(): array {
 		$changes = $this->request->getParam('object');
 		if (is_array($changes) === false) {
-			$changes = [];
+			return [];
 		}
 
+		return $changes;
+	}//end changesFromRequest()
+
+	/**
+	 * Make a readable draft definitive for its asserted owner, and answer the outcome.
+	 *
+	 * @param array<string, mixed> $draft The draft's register, schema and uuid.
+	 * @param IUser                $user  The signed-in user.
+	 *
+	 * @return JSONResponse The activated object, or the refusal.
+	 */
+	private function activateFor(array $draft, IUser $user): JSONResponse {
 		try {
-			$activated = $this->activation->activateAsUser(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				draftId: $id,
-				user: $user,
-				changes: $changes
-			);
+			$activated = $this->activateDraft(draft: $draft, user: $user);
 		} catch (DraftActivationRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		} catch (Throwable $exception) {
-			// The message is never echoed: it can carry storage details.
-			$this->logger->error(
-				message: '[ObjectDraftController] activate: ' . $exception->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
-			);
-
-			return $this->refusal(
-				message: $this->l10n->t('The draft could not be made definitive right now. Nothing was changed; try again later.'),
-				reason: 'unavailable',
-				status: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
+			return $this->unavailable(exception: $exception);
+		}
 
 		// The saved entity goes through the render boundary the object API reads
 		// through: a `writeOnly` property is "may be sent, never returned", a
@@ -232,7 +245,75 @@ class ObjectDraftController extends Controller {
 		// applied hands back an entity of its own, so it is rendered here once
 		// more: rendering is idempotent.
 		return $this->renderedActivation(activated: $activated);
-	}//end activate()
+	}//end activateFor()
+
+	/**
+	 * Make the draft definitive as the signed-in user.
+	 *
+	 * The property values the request body lays over the draft are read here.
+	 *
+	 * @param array<string, mixed> $draft The draft's register, schema and uuid.
+	 * @param IUser                $user  The signed-in user.
+	 *
+	 * @return ObjectEntity The activated object.
+	 *
+	 * @throws DraftActivationRefusedException When the draft may not be made definitive.
+	 */
+	private function activateDraft(array $draft, IUser $user): ObjectEntity {
+		return $this->activation->activateAsUser(
+			register: $draft['register'],
+			schema: $draft['schema'],
+			draftId: $draft['id'],
+			user: $user,
+			changes: $this->changesFromRequest()
+		);
+	}//end activateDraft()
+
+	/**
+	 * The 401 for a caller who is not signed in.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function notSignedIn(): JSONResponse {
+		return $this->refusal(
+			message: $this->l10n->t('Please sign in to make this draft definitive.'),
+			reason: 'not-signed-in',
+			status: Http::STATUS_UNAUTHORIZED
+		);
+	}//end notSignedIn()
+
+	/**
+	 * The 404 for a draft that is unknown or that the caller may not read.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function notFound(): JSONResponse {
+		return $this->refusal(
+			message: $this->l10n->t('This draft does not exist.'),
+			reason: DraftActivationRefusedException::NOT_FOUND,
+			status: Http::STATUS_NOT_FOUND
+		);
+	}//end notFound()
+
+	/**
+	 * The 500 for an activation that failed for another reason; the message is never echoed, it can carry storage details.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function unavailable(Throwable $exception): JSONResponse {
+		$this->logger->error(
+			message: '[ObjectDraftController] activate: ' . $exception->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
+		);
+
+		return $this->refusal(
+			message: $this->l10n->t('The draft could not be made definitive right now. Nothing was changed; try again later.'),
+			reason: 'unavailable',
+			status: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end unavailable()
 
 	/**
 	 * The answer for an activation that was committed: the rendered object, or its id and status when rendering fails.

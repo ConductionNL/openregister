@@ -56,7 +56,8 @@ namespace OCA\OpenRegister\Middleware;
 use Exception;
 use OCA\OpenRegister\Middleware\Exception\ApiVersionRefusedException;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiation;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
@@ -98,13 +99,13 @@ class ApiVersionMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param ApiVersionNegotiator $negotiator Resolves the version a request speaks.
+	 * @param ApiVersionNegotiatorInterface $negotiator Resolves the version a request speaks.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly ApiVersionNegotiator $negotiator,
+		private readonly ApiVersionNegotiatorInterface $negotiator,
 	) {
 
 	}//end __construct()
@@ -130,24 +131,36 @@ class ApiVersionMiddleware extends Middleware {
 			return;
 		}
 
-		$negotiation = $this->negotiator->negotiate(request: $this->request);
+		$refusal = $this->refusalFor(negotiation: $this->negotiator->negotiate(request: $this->request));
+		if ($refusal !== null) {
+			throw $refusal;
+		}
 
+	}//end beforeController()
+
+	/**
+	 * The refusal for a negotiation naming an undeclared or withdrawn version, or null.
+	 *
+	 * @param ApiVersionNegotiation $negotiation The negotiated version.
+	 *
+	 * @return ApiVersionRefusedException|null The refusal, or null when the version may answer.
+	 *
+	 * @spec openspec/specs/openapi-generation/spec.md
+	 */
+	private function refusalFor(ApiVersionNegotiation $negotiation): ?ApiVersionRefusedException {
 		if ($negotiation->isUnknown() === true) {
-			throw ApiVersionRefusedException::unknown(
-				requestedId: (string)$negotiation->requestedId,
-				acceptable: $this->negotiator->acceptableIdentifiers(),
-			);
+			$requestedId = (string)$negotiation->requestedId;
+			return ApiVersionRefusedException::unknown(requestedId: $requestedId, acceptable: $this->negotiator->acceptableIdentifiers());
 		}
 
 		$version = $negotiation->version;
 		if ($version !== null && $version->isServed() === false) {
-			throw ApiVersionRefusedException::withdrawn(
-				version: $version,
-				acceptable: $this->negotiator->acceptableIdentifiers(),
-			);
+			return ApiVersionRefusedException::withdrawn(version: $version, acceptable: $this->negotiator->acceptableIdentifiers());
 		}
 
-	}//end beforeController()
+		return null;
+
+	}//end refusalFor()
 
 	/**
 	 * Turn a refusal into its response; re-throw anything else.
@@ -196,7 +209,7 @@ class ApiVersionMiddleware extends Middleware {
 			return $response;
 		}
 
-		$response->addHeader(ApiVersionNegotiator::RESPONSE_HEADER, $version->id);
+		$response->addHeader(ApiVersionNegotiatorInterface::RESPONSE_HEADER, $version->id);
 
 		if ($version->isDeprecated() === false) {
 			return $response;

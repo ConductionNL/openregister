@@ -53,32 +53,63 @@ class SlaDeclaration {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validateSla(mixed $sla): array {
-		if (is_array($sla) === false || array_key_exists('value', $sla) === false || array_key_exists('unit', $sla) === false) {
-			throw new FlowTimerValidationException(message: 'An SLA must have the shape {value, unit}.');
-		}
+		$this->refuseUnlessShaped(sla: $sla);
 
-		$value = $sla['value'];
-		if (is_string($value) === true && preg_match('/^\d+$/', $value) === 1) {
-			$value = (int)$value;
-		}
-
-		if (is_int($value) === false || $value < SlaCalculator::MIN_VALUE || $value > SlaCalculator::MAX_VALUE) {
-			throw new FlowTimerValidationException(
-				message: sprintf(
-					"SLA value '%s' is refused: it must be an integer from %d to %d.",
-					var_export($sla['value'], true),
-					SlaCalculator::MIN_VALUE,
-					SlaCalculator::MAX_VALUE
-				)
-			);
-		}
+		$value = $this->validValue(value: $sla['value']);
 
 		return [
 			'value' => $value,
 			'unit' => $this->validateUnit(unit: $sla['unit']),
-			'rollToWorkingDay' => $this->validateRoll(roll: ($sla['rollToWorkingDay'] ?? SlaCalculator::ROLL_NONE)),
+			'rollToWorkingDay' => $this->validateRoll(roll: ($sla['rollToWorkingDay'] ?? SlaCalculatorInterface::ROLL_NONE)),
 		];
 	}//end validateSla()
+
+	/**
+	 * Refuse anything that is not an array carrying both `value` and `unit`.
+	 *
+	 * @param mixed $sla The declared SLA.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowTimerValidationException When the shape is wrong.
+	 *
+	 * @phpstan-assert array<mixed> $sla
+	 */
+	private function refuseUnlessShaped(mixed $sla): void {
+		if (is_array($sla) === false || array_key_exists('value', $sla) === false || array_key_exists('unit', $sla) === false) {
+			throw new FlowTimerValidationException(message: 'An SLA must have the shape {value, unit}.');
+		}
+
+	}//end refuseUnlessShaped()
+
+	/**
+	 * The declared value as an in-range integer; a string of digits counts.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return int The value.
+	 *
+	 * @throws FlowTimerValidationException When it is not an integer in range.
+	 */
+	private function validValue(mixed $value): int {
+		$number = $value;
+		if (is_string($number) === true && preg_match('/^\d+$/', $number) === 1) {
+			$number = (int)$number;
+		}
+
+		if (is_int($number) === false || $number < SlaCalculatorInterface::MIN_VALUE || $number > SlaCalculatorInterface::MAX_VALUE) {
+			throw new FlowTimerValidationException(
+				message: sprintf(
+					"SLA value '%s' is refused: it must be an integer from %d to %d.",
+					var_export($value, true),
+					SlaCalculatorInterface::MIN_VALUE,
+					SlaCalculatorInterface::MAX_VALUE
+				)
+			);
+		}
+
+		return $number;
+	}//end validValue()
 
 	/**
 	 * Validate a roll name.
@@ -98,15 +129,15 @@ class SlaDeclaration {
 	 */
 	public function validateRoll(mixed $roll): string {
 		if ($roll === null || $roll === '') {
-			return SlaCalculator::ROLL_NONE;
+			return SlaCalculatorInterface::ROLL_NONE;
 		}
 
-		if (is_string($roll) === false || in_array($roll, SlaCalculator::ROLLS, true) === false) {
+		if (is_string($roll) === false || in_array($roll, SlaCalculatorInterface::ROLLS, true) === false) {
 			throw new FlowTimerValidationException(
 				message: sprintf(
 					"rollToWorkingDay '%s' is refused: use one of %s.",
 					var_export($roll, true),
-					implode(', ', SlaCalculator::ROLLS)
+					implode(', ', SlaCalculatorInterface::ROLLS)
 				)
 			);
 		}
@@ -126,9 +157,9 @@ class SlaDeclaration {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validateUnit(mixed $unit): string {
-		if (is_string($unit) === false || in_array($unit, SlaCalculator::UNITS, true) === false) {
+		if (is_string($unit) === false || in_array($unit, SlaCalculatorInterface::UNITS, true) === false) {
 			throw new FlowTimerValidationException(
-				message: sprintf("Unit '%s' is refused: use one of %s.", var_export($unit, true), implode(', ', SlaCalculator::UNITS))
+				message: sprintf("Unit '%s' is refused: use one of %s.", var_export($unit, true), implode(', ', SlaCalculatorInterface::UNITS))
 			);
 		}
 

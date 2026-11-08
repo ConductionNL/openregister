@@ -59,6 +59,20 @@ use UnexpectedValueException;
  * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
  */
 class TaskFormReader {
+	/**
+	 * Resolves the subject schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * Reads a transition's declared inputs.
+	 *
+	 * @var TransitionEngine
+	 */
+	private readonly TransitionEngine $engine;
+
 
 	/**
 	 * The Nextcloud app the external kind depends on.
@@ -91,19 +105,19 @@ class TaskFormReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemas Resolves the subject schema.
-	 * @param TransitionEngine $engine Reads a transition's declared inputs.
+	 * @param TaskFormSources $sources The subject schema and the transition's declared inputs.
 	 * @param IAppManager $apps Answers whether the Forms app is installed.
 	 * @param IL10N $l10n Translations, for refusals an author reads.
 	 * @param FormDestinationValidator|null $validator The field check this reader delegates to; built from $l10n when absent.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemas,
-		private readonly TransitionEngine $engine,
+		TaskFormSources $sources,
 		private readonly IAppManager $apps,
 		private readonly IL10N $l10n,
 		?FormDestinationValidator $validator = null,
 	) {
+		$this->schemas = $sources->schemas;
+		$this->engine  = $sources->engine;
 		$this->validator = ($validator ?? new FormDestinationValidator(l10n: $l10n, rules: new FormFieldRules()));
 	}//end __construct()
 
@@ -220,18 +234,26 @@ class TaskFormReader {
 	 * @throws UnexpectedValueException When it names both or neither.
 	 */
 	private function refuseActionAndFieldsMix(?string $action, array $fields): void {
-		if ($action !== null && $fields !== []) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('Name a lifecycle action or list the fields, not both: the action already declares its fields.')
-			);
-		}
-
-		if ($action === null && $fields === []) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('A field form needs a lifecycle action to inherit its fields from, or a list of fields.')
-			);
+		// Both named, or neither: exactly one of the two must be given.
+		if (($action !== null) === ($fields !== [])) {
+			throw new UnexpectedValueException($this->actionAndFieldsMixMessage(action: $action));
 		}
 	}//end refuseActionAndFieldsMix()
+
+	/**
+	 * The refusal of a field form that names an action and lists fields, or does neither.
+	 *
+	 * @param string|null $action The lifecycle action, or null.
+	 *
+	 * @return string The translated message.
+	 */
+	private function actionAndFieldsMixMessage(?string $action): string {
+		if ($action !== null) {
+			return $this->l10n->t('Name a lifecycle action or list the fields, not both: the action already declares its fields.');
+		}
+
+		return $this->l10n->t('A field form needs a lifecycle action to inherit its fields from, or a list of fields.');
+	}//end actionAndFieldsMixMessage()
 
 	/**
 	 * Refuse a declaration no performer could complete, naming what and why.
@@ -557,10 +579,10 @@ class TaskFormReader {
 	 * @return string|null The value, or null when empty.
 	 */
 	private function nullIfEmpty(string $value): ?string {
-		if ($value === '') {
-			return null;
+		if ($value !== '') {
+			return $value;
 		}
 
-		return $value;
+		return null;
 	}//end nullIfEmpty()
 }//end class

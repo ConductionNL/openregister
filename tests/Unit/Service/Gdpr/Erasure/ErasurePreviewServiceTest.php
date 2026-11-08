@@ -33,8 +33,13 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\Erasure\CoSubjectProbe;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureBucket;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureCounters;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureProtectionResolver;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureSchemaResolver;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureScopeCounter;
 use OCA\OpenRegister\Service\Gdpr\Erasure\SubjectPartyCounter;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\DB\IResult;
@@ -153,16 +158,9 @@ final class ErasurePreviewServiceTest extends TestCase {
 		$scopeService = $this->createMock(DestructionScopeService::class);
 		$scopeService->method('preview')->willReturn(['counts' => $scope, 'total' => array_sum($scope)]);
 
-		return new ErasurePreviewService(
-			$subjects,
-			$guard,
-			$retention,
-			$scopeService,
-			$this->createMock(SchemaMapper::class),
-			new SubjectPartyCounter(),
-			$this->db($coRows),
-			new NullLogger()
-		);
+		$parties = new SubjectPartyCounter();
+
+		return new ErasurePreviewService($subjects, new ErasureProtectionResolver($guard, $retention, new NullLogger()), new ErasureCounters(new CoSubjectProbe($this->db($coRows), $parties, new NullLogger()), new ErasureScopeCounter($scopeService, new ErasureSchemaResolver($this->createMock(SchemaMapper::class)), new NullLogger()), $parties));
 	}//end service()
 
 	public function testTheGemeenteCanAnswerTheSubjectHonestly(): void {
@@ -365,16 +363,12 @@ final class ErasurePreviewServiceTest extends TestCase {
 		$scopeService = $this->createMock(DestructionScopeService::class);
 		$scopeService->method('preview')->willReturn(['counts' => [], 'total' => 0]);
 
-		$service = new ErasurePreviewService(
-			$subjects,
-			$this->createMock(ArchivalRetentionGuard::class),
-			$this->createMock(RetentionService::class),
-			$scopeService,
-			$this->createMock(SchemaMapper::class),
-			new SubjectPartyCounter(),
-			$db,
-			new NullLogger()
-		);
+		$parties = new SubjectPartyCounter();
+		$service = new ErasurePreviewService($subjects, new ErasureProtectionResolver(
+				$this->createMock(ArchivalRetentionGuard::class),
+				$this->createMock(RetentionService::class),
+				new NullLogger()
+			), new ErasureCounters(new CoSubjectProbe($db, $parties, new NullLogger()), new ErasureScopeCounter($scopeService, new ErasureSchemaResolver($this->createMock(SchemaMapper::class)), new NullLogger()), $parties));
 
 		$preview = $service->preview(self::SUBJECT, null, DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
 

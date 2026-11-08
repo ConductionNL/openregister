@@ -190,11 +190,9 @@ exports[`DashboardSideBar golden renders without statistics 1`] = `
         </div>
         <div class="section">
           <h3 class="sectionTitle">t:Totals</h3>
-          
         </div>
         <div class="section">
           <h3 class="sectionTitle">t:Orphaned Items</h3>
-          
         </div>
       </slot-default>
       <slot-icon>

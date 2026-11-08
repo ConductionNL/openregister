@@ -114,31 +114,27 @@ class AnonymisationRun {
 	 */
 	public function refuse(array $marker, bool $hasLegalHold, string $holdReason, string $saltFingerprint): ?string {
 		if ($hasLegalHold === true) {
-			$reason = trim($holdReason);
-			if ($reason === '') {
-				$reason = 'no reason was recorded with the hold';
-			}
-
-			return sprintf(
-				'This record is under a legal hold (%s), so it is not anonymised. A hold says somebody '
-				.'may still need it as it is, and as it is includes the name.',
-				$reason
-			);
+			return $this->heldRefusal(holdReason: $holdReason);
 		}
 
 		$state = (string)($marker['state'] ?? '');
-
 		if ($state === self::COMPLETE) {
-			return sprintf(
-				'This record was already anonymised on %s under the profile "%s". Running again would '
-				.'change nothing it has not changed, and under a rotated salt it would give its '
-				.'pseudonyms new values, so rows that used to join would stop joining with nothing '
-				.'on screen to say so.',
-				(string)($marker['anonymisedAt'] ?? 'an unrecorded date'),
-				(string)($marker['profile'] ?? 'unnamed')
-			);
+			return $this->finishedRefusal(marker: $marker);
 		}
 
+		return $this->resaltedRefusal(state: $state, marker: $marker, saltFingerprint: $saltFingerprint);
+	}//end refuse()
+
+	/**
+	 * The refusal for a record left half anonymised under another salt, or null.
+	 *
+	 * @param string               $state           The marker's state.
+	 * @param array<string, mixed> $marker          Its anonymisation marker.
+	 * @param string               $saltFingerprint The salt this run would use.
+	 *
+	 * @return string|null The refusal, or null when it may run.
+	 */
+	private function resaltedRefusal(string $state, array $marker, string $saltFingerprint): string|null {
 		if ($state === self::IN_PROGRESS && (string)($marker['saltFingerprint'] ?? '') !== $saltFingerprint) {
 			return 'This record was left half anonymised under a different salt. Finishing it now would '
 				.'leave one record carrying two families of pseudonym, so it needs the original salt '
@@ -146,7 +142,45 @@ class AnonymisationRun {
 		}
 
 		return null;
-	}//end refuse()
+	}//end resaltedRefusal()
+
+	/**
+	 * The refusal for a record under a legal hold.
+	 *
+	 * @param string $holdReason The hold's reason.
+	 *
+	 * @return string The refusal.
+	 */
+	private function heldRefusal(string $holdReason): string {
+		$reason = trim($holdReason);
+		if ($reason === '') {
+			$reason = 'no reason was recorded with the hold';
+		}
+
+		return sprintf(
+			'This record is under a legal hold (%s), so it is not anonymised. A hold says somebody '
+			.'may still need it as it is, and as it is includes the name.',
+			$reason
+		);
+	}//end heldRefusal()
+
+	/**
+	 * The refusal for a record that was already anonymised.
+	 *
+	 * @param array<string, mixed> $marker Its anonymisation marker.
+	 *
+	 * @return string The refusal.
+	 */
+	private function finishedRefusal(array $marker): string {
+		return sprintf(
+			'This record was already anonymised on %s under the profile "%s". Running again would '
+			.'change nothing it has not changed, and under a rotated salt it would give its '
+			.'pseudonyms new values, so rows that used to join would stop joining with nothing '
+			.'on screen to say so.',
+			(string)($marker['anonymisedAt'] ?? 'an unrecorded date'),
+			(string)($marker['profile'] ?? 'unnamed')
+		);
+	}//end finishedRefusal()
 
 	/**
 	 * Build the plan for one record, or refuse it.
@@ -166,18 +200,12 @@ class AnonymisationRun {
 	public function plan(string $objectUuid, array $payload, array $annotation, string $salt, string $profileName = ''): AnonymisationPlan {
 		$this->planner->assertSound(annotation: $annotation, declaredProperties: array_keys($payload));
 
-		$profile = $this->planner->profileOf(annotation: $annotation);
-		$after = $this->service->apply(payload: $payload, profile: $profile, salt: $salt);
+		$after = $this->service->apply(payload: $payload, profile: $this->planner->profileOf(annotation: $annotation), salt: $salt);
 		$report = $this->service->report(before: $payload, after: $after, profileName: $profileName);
 
 		$plan = new AnonymisationPlan(
-			objectUuid: $objectUuid,
-			profileName: $profileName,
-			before: $payload,
-			after: $after,
-			changedProperties: array_keys($report['changed']),
-			keptProperties: $report['kept'],
-			saltFingerprint: $this->fingerprint(salt: $salt)
+			objectUuid: $objectUuid, profileName: $profileName, before: $payload, after: $after,
+			changedProperties: array_keys($report['changed']), keptProperties: $report['kept'], saltFingerprint: $this->fingerprint(salt: $salt)
 		);
 
 		if ($plan->touchesAnything() === false) {
@@ -186,10 +214,7 @@ class AnonymisationRun {
 			// afterwards be marked anonymised while holding every value it held
 			// before.
 			throw new AnonymisationRefusedException(
-				message: sprintf(
-					'Anonymising %s would change nothing: the declared profile touches no property this record carries.',
-					$objectUuid
-				)
+				message: sprintf('Anonymising %s would change nothing: the declared profile touches no property this record carries.', $objectUuid)
 			);
 		}
 
@@ -213,61 +238,102 @@ class AnonymisationRun {
 			// Nothing to apply to is not a successful anonymisation. It is a
 			// misconfiguration that would otherwise mark the record anonymised
 			// while leaving every copy of it intact.
-			throw new AnonymisationRefusedException(
-				message: sprintf('Anonymising %s was asked for with no stores to reach.', $plan->objectUuid)
-			);
+			throw new AnonymisationRefusedException(message: sprintf('Anonymising %s was asked for with no stores to reach.', $plan->objectUuid));
 		}
 
 		foreach ($targets as $target) {
-			try {
-				$target->prepare(plan: $plan);
-			} catch (Throwable $error) {
-				throw new AnonymisationRefusedException(
-					message: sprintf(
-						'Anonymising %s was stopped before anything was written: %s could not be reached (%s). The record is unchanged.',
-						$plan->objectUuid,
-						$target->name(),
-						$error->getMessage()
-					),
-					previous: $error
-				);
-			}
+			$this->prepareTarget(plan: $plan, target: $target);
 		}
 
 		$applied = [];
 		foreach ($targets as $target) {
-			try {
-				$target->apply(plan: $plan);
-				$applied[] = $target->name();
-			} catch (Throwable $error) {
-				$written = 'no store was written';
-				if ($applied !== []) {
-					$written = 'writing '.implode(', ', $applied);
-				}
-
-				// 🔴 THIS IS THE CASE THAT CANNOT BE UNDONE, AND THE MESSAGE
-				// SAYS SO RATHER THAN IMPLYING A ROLLBACK THAT DID NOT HAPPEN.
-				// The stores are separate and no transaction spans them. What
-				// the run guarantees instead is that the record is marked
-				// in_progress with this salt, so a resume re-derives the same
-				// plan and re-applies every target.
-				throw new AnonymisationRefusedException(
-					message: sprintf(
-						'Anonymising %s was interrupted after %s. The record is marked in progress and '
-						.'can be finished by running it again with the same salt; it must not be '
-						.'treated as anonymised until it is. %s failed: %s',
-						$plan->objectUuid,
-						$written,
-						$target->name(),
-						$error->getMessage()
-					),
-					previous: $error
-				);
-			}
+			$this->applyTarget(plan: $plan, target: $target, applied: $applied);
+			$applied[] = $target->name();
 		}
 
 		return $this->marker(plan: $plan, state: self::COMPLETE);
 	}//end apply()
+
+	/**
+	 * Prepare one target, refusing the whole run before anything is written when it cannot be reached.
+	 *
+	 * @param AnonymisationPlan   $plan   The plan.
+	 * @param AnonymisationTarget $target The target.
+	 *
+	 * @return void
+	 *
+	 * @throws AnonymisationRefusedException When the target cannot be reached.
+	 */
+	private function prepareTarget(AnonymisationPlan $plan, AnonymisationTarget $target): void {
+		try {
+			$target->prepare(plan: $plan);
+		} catch (Throwable $error) {
+			throw new AnonymisationRefusedException(
+				message: sprintf(
+					'Anonymising %s was stopped before anything was written: %s could not be reached (%s). The record is unchanged.',
+					$plan->objectUuid,
+					$target->name(),
+					$error->getMessage()
+				),
+				previous: $error
+			);
+		}
+	}//end prepareTarget()
+
+	/**
+	 * Apply one target, saying how far the run got when it fails.
+	 *
+	 * 🔴 THIS IS THE CASE THAT CANNOT BE UNDONE, AND THE MESSAGE SAYS SO RATHER
+	 * THAN IMPLYING A ROLLBACK THAT DID NOT HAPPEN. The stores are separate and
+	 * no transaction spans them. What the run guarantees instead is that the
+	 * record is marked in_progress with this salt, so a resume re-derives the
+	 * same plan and re-applies every target.
+	 *
+	 * @param AnonymisationPlan   $plan    The plan.
+	 * @param AnonymisationTarget $target  The target.
+	 * @param string[]            $applied The targets already written.
+	 *
+	 * @return void
+	 *
+	 * @throws AnonymisationRefusedException When the write fails.
+	 */
+	private function applyTarget(AnonymisationPlan $plan, AnonymisationTarget $target, array $applied): void {
+		try {
+			$target->apply(plan: $plan);
+		} catch (Throwable $error) {
+			throw new AnonymisationRefusedException(
+				message: $this->interruptedMessage(plan: $plan, target: $target, applied: $applied, error: $error),
+				previous: $error
+			);
+		}
+	}//end applyTarget()
+
+	/**
+	 * What an interrupted run says: how far it got, and that it is not finished.
+	 *
+	 * @param AnonymisationPlan   $plan    The plan.
+	 * @param AnonymisationTarget $target  The target that failed.
+	 * @param string[]            $applied The targets already written.
+	 * @param Throwable           $error   The failure.
+	 *
+	 * @return string The message.
+	 */
+	private function interruptedMessage(AnonymisationPlan $plan, AnonymisationTarget $target, array $applied, Throwable $error): string {
+		$written = 'no store was written';
+		if ($applied !== []) {
+			$written = 'writing '.implode(', ', $applied);
+		}
+
+		return sprintf(
+			'Anonymising %s was interrupted after %s. The record is marked in progress and '
+			.'can be finished by running it again with the same salt; it must not be '
+			.'treated as anonymised until it is. %s failed: %s',
+			$plan->objectUuid,
+			$written,
+			$target->name(),
+			$error->getMessage()
+		);
+	}//end interruptedMessage()
 
 	/**
 	 * The marker written on the record before the first write, and after the last.

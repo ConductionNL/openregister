@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
+use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -42,9 +42,10 @@ use Throwable;
 /**
  * Imports the flow-timers register descriptor idempotently on upgrade/install.
  */
-class SeedFlowTimerRegister implements IRepairStep {
+class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterface {
+
 	/**
-	 * App-relative path to the register descriptor imported by this step.
+	 * The descriptor this step imports, as a literal so the step's own code names the file.
 	 *
 	 * @var string
 	 */
@@ -71,12 +72,12 @@ class SeedFlowTimerRegister implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationServiceInterface $configurationService The OR configuration importer.
+	 * @param AppConfigurationImporterInterface $configurationService The OR configuration importer.
 	 * @param IAppManager $appManager Resolves the openregister app path on disk.
 	 * @param LoggerInterface $logger Logger for import diagnostics.
 	 */
 	public function __construct(
-		private readonly ConfigurationServiceInterface $configurationService,
+		private readonly AppConfigurationImporterInterface $configurationService,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {

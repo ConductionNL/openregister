@@ -43,18 +43,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\CaseTokenService;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\Service\CaseTokenServiceInterface;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\Attribute\AnonRateLimit;
-use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Public case-token resolve controller.
@@ -66,27 +67,25 @@ class CaseTokenController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfaces::CASE_TOKEN;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::CASE_TOKEN;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
-	 * @param CaseTokenService $tokenService Case-token mint/resolve/revoke service.
+	 * @param CaseTokenServiceInterface $tokenService Case-token mint/resolve/revoke service.
 	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private CaseTokenService $tokenService,
+		private CaseTokenServiceInterface $tokenService,
 		private IThrottler $throttler,
 		private LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

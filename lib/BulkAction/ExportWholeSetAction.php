@@ -37,9 +37,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
-use OCA\OpenRegister\Service\Export\ExportProfileService;
-use OCA\OpenRegister\Service\Export\ExportProfileWriter;
+use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
+use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
+use OCA\OpenRegister\Service\Export\ExportProfileWriterInterface;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -77,20 +77,20 @@ class ExportWholeSetAction implements BulkActionInterface {
 	/**
 	 * Wire the collaborators.
 	 *
-	 * @param ExportProfileService $profiles     Profile lookups and scope.
-	 * @param ExportProfileWriter  $writer       Projection and CSV lines.
+	 * @param ExportProfileServiceInterface $profiles     Profile lookups and scope.
+	 * @param ExportProfileWriterInterface  $writer       Projection and CSV lines.
 	 * @param ExportRightService   $rightService The export verb.
-	 * @param ExportAuditRecorder  $recorder     The audit trail.
+	 * @param ExportAuditRecorderInterface  $recorder     The audit trail.
 	 * @param SchemaMapperInterface         $schemaMapper Schema lookups for the per-schema file.
 	 * @param IRootFolder          $rootFolder   The actor's Files folder.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExportProfileService $profiles,
-		private readonly ExportProfileWriter $writer,
+		private readonly ExportProfileServiceInterface $profiles,
+		private readonly ExportProfileWriterInterface $writer,
 		private readonly ExportRightService $rightService,
-		private readonly ExportAuditRecorder $recorder,
+		private readonly ExportAuditRecorderInterface $recorder,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IRootFolder $rootFolder,
 	) {

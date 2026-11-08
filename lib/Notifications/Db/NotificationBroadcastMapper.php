@@ -27,7 +27,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Db;
 
 use DateTime;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -45,6 +44,8 @@ use OCP\IDBConnection;
  * @psalm-suppress PossiblyUnusedMethod
  */
 class NotificationBroadcastMapper extends QBMapper {
+	use NotificationQueryTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -62,32 +63,28 @@ class NotificationBroadcastMapper extends QBMapper {
 	/**
 	 * Record one broadcast.
 	 *
-	 * @param string $uuid Stable identifier.
-	 * @param string $subject The one-line message.
-	 * @param string|null $body The longer text, when there is one.
-	 * @param string $sender The uid of whoever sent it.
-	 * @param DateTime $startsAt When it starts showing.
-	 * @param DateTime $endsAt When it stops showing.
+	 * @param string           $uuid    Stable identifier.
+	 * @param string           $sender  The uid of whoever sent it.
+	 * @param BroadcastMessage $message The subject and the longer text.
+	 * @param BroadcastWindow  $window  When it starts and stops showing.
 	 *
 	 * @return NotificationBroadcast The persisted row.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One row's columns, passed as they are stored.
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function record(
 		string $uuid,
-		string $subject,
-		?string $body,
 		string $sender,
-		DateTime $startsAt,
-		DateTime $endsAt,
+		BroadcastMessage $message,
+		BroadcastWindow $window,
 	): NotificationBroadcast {
 		$entity = new NotificationBroadcast();
 		$entity->setUuid($uuid);
-		$entity->setSubject($subject);
-		$entity->setBody($body);
+		$entity->setSubject($message->subject);
+		$entity->setBody($message->body);
 		$entity->setSender($sender);
-		$entity->setStartsAt($startsAt);
-		$entity->setEndsAt($endsAt);
+		$entity->setStartsAt($window->startsAt);
+		$entity->setEndsAt($window->endsAt);
 		$entity->setCreated(new DateTime());
 
 		return $this->insert(entity: $entity);
@@ -102,18 +99,12 @@ class NotificationBroadcastMapper extends QBMapper {
 	 * @return NotificationBroadcast|null The row, or null when there is none.
 	 */
 	public function findByUuid(string $uuid): ?NotificationBroadcast {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findFirstOrNull(qb: $this->selectWhereEquals(columns: ['uuid' => $uuid]));
+		if ($found instanceof NotificationBroadcast) {
+			return $found;
 		}
 
+		return null;
 	}//end findByUuid()
 
 	/**
@@ -129,17 +120,9 @@ class NotificationBroadcastMapper extends QBMapper {
 		$qb->select('*')
 			->from($this->getTableName())
 			->orderBy('created', 'DESC');
-
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		$this->page(qb: $qb, limit: $limit, offset: $offset);
 
 		return $this->findEntities(query: $qb);
-
 	}//end findAllBroadcasts()
 
 	/**
@@ -185,11 +168,6 @@ class NotificationBroadcastMapper extends QBMapper {
 	 * @return boolean True when a row was removed.
 	 */
 	public function deleteByUuid(string $uuid): bool {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		return ($qb->executeStatement() > 0);
-
+		return ($this->deleteWhereEquals(columns: ['uuid' => $uuid])->executeStatement() > 0);
 	}//end deleteByUuid()
 }//end class

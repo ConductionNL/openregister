@@ -81,112 +81,58 @@ import {
 				</template>
 			</NcEmptyContent>
 
-			<div v-else class="viewTableContainer">
-				<table class="viewTable itemsTable">
-					<thead>
-						<tr>
-							<th class="tableColumnCheckbox">
-								<NcCheckboxRadioSwitch
-									:modelValue="allSelected"
-									:indeterminate="someSelected"
-									:aria-label="t('openregister', 'Select All')"
-									@update:modelValue="toggleSelectAll" />
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Title') }}
-							</th>
-							<th scope="col" class="tableColumnConstrained">
-								{{ t('openregister', 'Register') }}
-							</th>
-							<th scope="col" class="tableColumnConstrained">
-								{{ t('openregister', 'Schema') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Deleted Date') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Deleted By') }}
-							</th>
-							<th scope="col">
-								{{ t('openregister', 'Destroyable from') }}
-							</th>
-							<th scope="col" class="tableColumnConstrained">
-								{{ t('openregister', 'Days left') }}
-							</th>
-							<th scope="col" class="tableColumnActions">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr
-							v-for="item in paginatedItems"
-							:key="item.id"
-							class="viewTableRow itemRow table-row-selectable"
-							:class="{
-								'viewTableRowSelected table-row-selected':
-									selectedItems.includes(item.id),
-							}"
-							@click="handleRowClick(item.id, $event)">
-							<td class="tableColumnCheckbox">
-								<NcCheckboxRadioSwitch
-									:modelValue="selectedItems.includes(item.id)"
-									:aria-labelledby="`deleted-row-title-${item.id}`"
-									@update:modelValue="
-										(checked) =>
-											toggleItemSelection(item.id, checked)
-									" />
-							</td>
-							<td
-								:id="`deleted-row-title-${item.id}`"
-								class="tableColumnTitle">
-								<div class="titleContent">
-									<strong>{{ getItemTitle(item) }}</strong>
-									<span
-										v-if="getItemDescription(item)"
-										class="textDescription textEllipsis"
-										>{{ getItemDescription(item) }}</span
-									>
-								</div>
-							</td>
-							<td class="tableColumnConstrained">
-								{{ getRegisterName(item['@self']?.register) }}
-							</td>
-							<td class="tableColumnConstrained">
-								{{ getSchemaName(item['@self']?.schema) }}
-							</td>
-							<td>
-								<span v-if="item['@self']?.deleted?.deleted">{{
-									formatPurgeDate(item['@self'].deleted.deleted)
-								}}</span>
-								<span v-else>{{
-									t('openregister', 'Unknown')
-								}}</span>
-							</td>
-							<td>
-								{{
-									item['@self']?.deleted?.deletedBy
-									|| t('openregister', 'Unknown')
-								}}
-							</td>
-							<td>
-								<span v-if="destroyableFrom(item)">{{
-									formatPurgeDate(destroyableFrom(item))
-								}}</span>
-								<span v-else>{{
-									t('openregister', 'No purge date set')
-								}}</span>
-							</td>
-							<td class="tableColumnConstrained">
-								{{ daysLeftLabel(item) }}
-							</td>
-							<td class="tableColumnActions">
-								<ActionMenu :actions="itemActions(item)" />
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+			<CnDataTable
+				v-else
+				class="itemsTable"
+				:columns="columns"
+				:rows="paginatedItems"
+				selectable
+				:selectedIds="selectedItems"
+				:selectAllLabel="t('openregister', 'Select All')"
+				@select="selectedItems = $event">
+				<template #column-title="{ row: item }">
+					<div class="titleContent">
+						<strong>{{ getItemTitle(item) }}</strong>
+						<span
+							v-if="getItemDescription(item)"
+							class="textDescription textEllipsis"
+							>{{ getItemDescription(item) }}</span
+						>
+					</div>
+				</template>
+				<template #column-register="{ row: item }">
+					{{ getRegisterName(item['@self']?.register) }}
+				</template>
+				<template #column-schema="{ row: item }">
+					{{ getSchemaName(item['@self']?.schema) }}
+				</template>
+				<template #column-deleted="{ row: item }">
+					{{
+						item['@self']?.deleted?.deleted
+							? formatPurgeDate(item['@self'].deleted.deleted)
+							: t('openregister', 'Unknown')
+					}}
+				</template>
+				<template #column-deletedBy="{ row: item }">
+					{{ item['@self']?.deleted?.deletedBy || t('openregister', 'Unknown') }}
+				</template>
+				<template #column-destroyableFrom="{ row: item }">
+					{{
+						destroyableFrom(item)
+							? formatPurgeDate(destroyableFrom(item))
+							: t('openregister', 'No purge date set')
+					}}
+				</template>
+				<template #column-daysLeft="{ row: item }">
+					{{ daysLeftLabel(item) }}
+				</template>
+				<template #actions-header>
+					{{ t('openregister', 'Actions') }}
+				</template>
+				<template #row-actions="{ row: item }">
+					<ActionMenu :actions="itemActions(item)" />
+				</template>
+			</CnDataTable>
 
 			<!-- Pagination -->
 			<PaginationComponent
@@ -202,34 +148,34 @@ import {
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import {
 	NcActionButton,
 	NcActions,
 	NcAppContent,
-	NcCheckboxRadioSwitch,
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import eventBus from '../../eventBus.js'
 import { refreshAction } from '../../services/menuActions.js'
+import { storePaging } from '../storePaging.js'
 
 export default {
 	name: 'DeletedIndex',
 	components: {
 		ActionMenu,
+		CnDataTable,
 		ListActionsBar,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
-		NcCheckboxRadioSwitch,
 		NcActions,
 		NcActionButton,
 		DeleteEmpty,
@@ -239,6 +185,15 @@ export default {
 		PaginationComponent,
 	},
 
+	mixins: [
+		storePaging({
+			fetch: (options) => deletedStore.fetchDeleted(options),
+			limit: () => deletedStore.deletedPagination.limit,
+			selection: 'selectedItems',
+			logPageError: false,
+		}),
+	],
+
 	data() {
 		return {
 			selectedItems: [],
@@ -246,6 +201,24 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The trash table columns; the row menu adds the "Actions" column.
+		 *
+		 * @spec exclude list-view table layout
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		columns() {
+			return [
+				{ key: 'title', label: t('openregister', 'Title'), cellClass: 'cn-cell--wrap' },
+				{ key: 'register', label: t('openregister', 'Register'), class: 'tableColumnConstrained' },
+				{ key: 'schema', label: t('openregister', 'Schema'), class: 'tableColumnConstrained' },
+				{ key: 'deleted', label: t('openregister', 'Deleted Date') },
+				{ key: 'deletedBy', label: t('openregister', 'Deleted By') },
+				{ key: 'destroyableFrom', label: t('openregister', 'Destroyable from') },
+				{ key: 'daysLeft', label: t('openregister', 'Days left'), class: 'tableColumnConstrained' },
+			]
+		},
+
 		/**
 		 * @spec exclude list-view store passthrough for filtered deleted items (computed; archivering-vernietiging contract)
 		 */
@@ -276,24 +249,7 @@ export default {
 			return deletedStore.deletedPagination.page || 1
 		},
 
-		/**
-		 * @spec exclude list-view select-all checkbox state (computed)
-		 */
-		allSelected() {
-			return (
-				this.paginatedItems.length > 0
-				&& this.paginatedItems.every((item) =>
-					this.selectedItems.includes(item.id),
-				)
-			)
-		},
 
-		/**
-		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
-		 */
-		someSelected() {
-			return this.selectedItems.length > 0 && !this.allSelected
-		},
 
 		/**
 		 * @spec exclude list-view empty-state title text helper (computed)
@@ -554,50 +510,7 @@ export default {
 			return schema?.title || `Schema ${schemaId}`
 		},
 
-		/**
-		 * Toggle selection for all items on current page
-		 *
-		 * @spec exclude list-view select-all checkbox plumbing
-		 * @param {boolean} checked - Whether to select or deselect all
-		 * @return {void}
-		 */
-		toggleSelectAll(checked) {
-			if (checked) {
-				this.paginatedItems.forEach((item) => {
-					if (!this.selectedItems.includes(item.id)) {
-						this.selectedItems.push(item.id)
-					}
-				})
-			} else {
-				this.paginatedItems.forEach((item) => {
-					const index = this.selectedItems.indexOf(item.id)
-					if (index > -1) {
-						this.selectedItems.splice(index, 1)
-					}
-				})
-			}
-		},
 
-		/**
-		 * Toggle selection for individual item
-		 *
-		 * @spec exclude list-view single-row selection toggle plumbing
-		 * @param {string} itemId - ID of the item to toggle
-		 * @param {boolean} checked - Whether to select or deselect
-		 * @return {void}
-		 */
-		toggleItemSelection(itemId, checked) {
-			if (checked) {
-				if (!this.selectedItems.includes(itemId)) {
-					this.selectedItems.push(itemId)
-				}
-			} else {
-				const index = this.selectedItems.indexOf(itemId)
-				if (index > -1) {
-					this.selectedItems.splice(index, 1)
-				}
-			}
-		},
 
 		/**
 		 * Restore selected items using dialog
@@ -671,16 +584,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async handleObjectsDeleted(objectIds) {
-			// Remove from selection if they were selected
-			objectIds.forEach((id) => {
-				const index = this.selectedItems.indexOf(id)
-				if (index > -1) {
-					this.selectedItems.splice(index, 1)
-				}
-			})
-
-			// Refresh the list
-			await this.loadItems()
+			await this.deselectAndReload(objectIds)
 		},
 
 		/**
@@ -691,6 +595,17 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async handleObjectsRestored(objectIds) {
+			await this.deselectAndReload(objectIds)
+		},
+
+		/**
+		 * Drop these objects from the selection, then reload the list.
+		 *
+		 * @spec exclude list-view event handler; clears selection and reloads after a bulk modal action
+		 * @param {Array<string>} objectIds - IDs of the objects the modal handled
+		 * @return {Promise<void>}
+		 */
+		async deselectAndReload(objectIds) {
 			// Remove from selection if they were selected
 			objectIds.forEach((id) => {
 				const index = this.selectedItems.indexOf(id)
@@ -716,46 +631,6 @@ export default {
 		},
 
 		/**
-		 * Handle page change from pagination component
-		 *
-		 * @spec exclude list-view pagination page-change handler
-		 * @param {number} page - The page number to change to
-		 * @return {Promise<void>}
-		 */
-		async onPageChanged(page) {
-			try {
-				await deletedStore.fetchDeleted({
-					page,
-					limit: deletedStore.deletedPagination.limit,
-				})
-				// Clear selection when page changes
-				this.selectedItems = []
-			} catch {
-				// Handle error silently
-			}
-		},
-
-		/**
-		 * Handle page size change from pagination component
-		 *
-		 * @spec exclude list-view pagination page-size-change handler
-		 * @param {number} pageSize - The new page size
-		 * @return {Promise<void>}
-		 */
-		async onPageSizeChanged(pageSize) {
-			try {
-				await deletedStore.fetchDeleted({
-					page: 1,
-					limit: pageSize,
-				})
-				// Clear selection when page size changes
-				this.selectedItems = []
-			} catch (error) {
-				console.error('Error changing page size:', error)
-			}
-		},
-
-		/**
 		 * Refresh items list
 		 *
 		 * @spec exclude list-view manual refresh plumbing
@@ -777,42 +652,7 @@ export default {
 			eventBus.emit('deleted-filtered-count', this.filteredItems.length)
 		},
 
-		/**
-		 * Handle row click for selection
-		 *
-		 * @spec exclude list-view row-click selection plumbing
-		 * @param {string} id - Item ID
-		 * @param {Event} event - Click event
-		 * @return {void}
-		 */
-		handleRowClick(id, event) {
-			// Don't select if clicking on the checkbox, actions button, or inside actions menu
-			if (
-				event.target.closest('.tableColumnCheckbox')
-				|| event.target.closest('.tableColumnActions')
-				|| event.target.closest('.actionsButton')
-			) {
-				return
-			}
 
-			// Toggle selection on row click
-			this.handleSelectItem(id)
-		},
-
-		/**
-		 * Handle item selection toggle
-		 *
-		 * @spec exclude list-view selection toggle plumbing
-		 * @param {string} id - Item ID
-		 * @return {void}
-		 */
-		handleSelectItem(id) {
-			if (this.selectedItems.includes(id)) {
-				this.selectedItems = this.selectedItems.filter((item) => item !== id)
-			} else {
-				this.selectedItems.push(id)
-			}
-		},
 
 		/**
 		 * Format purge date in ISO format yyyy:mm:dd hh:mm
@@ -881,35 +721,6 @@ export default {
 </script>
 
 <style scoped>
-/* Fix checkbox layout in table */
-.tableColumnCheckbox {
-	padding: 8px !important;
-}
-
-.tableColumnCheckbox :deep(.checkbox-radio-switch) {
-	margin: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.tableColumnCheckbox :deep(.checkbox-radio-switch__content) {
-	margin: 0;
-}
-
-/* Row selection styling */
-.table-row-selectable {
-	cursor: pointer;
-}
-
-.table-row-selectable:hover {
-	background-color: var(--color-background-hover);
-}
-
-.table-row-selected {
-	background-color: var(--color-primary-light) !important;
-}
-
 /* Actions button styling */
 .actionsButton > div > button {
 	margin-top: 0px !important;

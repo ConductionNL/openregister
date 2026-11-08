@@ -36,12 +36,11 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrant;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -55,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/authorization-rbac/spec.md
  */
-class ReachRevocationService {
+class ReachRevocationService implements ReachRevocationServiceInterface {
 	/**
 	 * The rule a revocation runs under, carried on every audit line.
 	 *
@@ -64,27 +63,43 @@ class ReachRevocationService {
 	public const RULE = 'reach-revoked-in-one-act';
 
 	/**
+	 * Schema authorization blocks.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Grants derived from sign-in claims.
+	 *
+	 * @var DerivedGrantStore
+	 */
+	private readonly DerivedGrantStore $derived;
+
+	/**
+	 * Delegations held.
+	 *
+	 * @var DelegationGrantMapperInterface
+	 */
+	private readonly DelegationGrantMapperInterface $delegations;
+
+	/**
 	 * Wire the act.
 	 *
-	 * @param PrincipalReachService     $reach        The listing the act runs from.
-	 * @param SchemaMapperInterface              $schemaMapper Schema authorization blocks.
-	 * @param DerivedGrantStore         $derived      Grants derived from sign-in claims.
-	 * @param DelegationGrantMapper     $delegations  Delegations held.
-	 * @param AuthorizationAuditService $audit        The record of what was removed.
-	 * @param IUserSession              $userSession  The acting administrator.
-	 * @param LoggerInterface           $logger       PSR logger.
-	 *
-	 * @return void
+	 * @param PrincipalReachService     $reach       The listing the act runs from.
+	 * @param ReachSources              $sources     Schema authorization blocks, derived grants and delegations held.
+	 * @param ReachRevocationLog $log The authorization audit and the PSR log a revocation is written to.
+	 * @param IUserSession              $userSession The acting administrator.
 	 */
 	public function __construct(
 		private readonly PrincipalReachService $reach,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly DerivedGrantStore $derived,
-		private readonly DelegationGrantMapper $delegations,
-		private readonly AuthorizationAuditService $audit,
+		ReachSources $sources,
+		private readonly ReachRevocationLog $log,
 		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->derived = $sources->derived;
+		$this->delegations = $sources->delegations;
 	}//end __construct()
 
 	/**
@@ -135,7 +150,7 @@ class ReachRevocationService {
 		// ONE ENTRY NAMES ALL OF THEM. Per-grant lines would let a reader
 		// believe a partial act was a whole one, and the question this answers
 		// is "what did this person still have on the day they left".
-		$this->logger->warning(
+		$this->log->logger->warning(
 			message: '[ReachRevocation] A principal\'s whole reach was revoked in one act',
             context: array_merge(['event_type' => AuthorizationAuditService::EVENT_TYPE], $record)
 		);
@@ -170,7 +185,7 @@ class ReachRevocationService {
 			try {
 				$schema->setAuthorization($after);
 				$this->schemaMapper->update($schema);
-				$this->audit->logSchemaAuthorizationChange(
+				$this->log->audit->logSchemaAuthorizationChange(
 					schemaId: (int)$schema->getId(),
 					schemaTitle: (string)$schema->getTitle(),
 					oldAuthorization: $before,
@@ -339,7 +354,7 @@ class ReachRevocationService {
 		try {
 			return $this->schemaMapper->findAll();
 		} catch (Throwable $e) {
-			$this->logger->error(
+			$this->log->logger->error(
 				message: '[ReachRevocation] Could not list the schemas, so nothing was revoked from them',
 				context: ['error' => $e->getMessage()]
 			);

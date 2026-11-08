@@ -46,6 +46,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
@@ -84,9 +85,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 		// and the gate's contract includes what the compiler derives.
 		$this->listener = new ApprovalChainGateListener(
 			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $logger),
-			$this->sequenceMapper,
-			$this->sequenceService,
-			new ApprovalChainAnnotationInstaller(logger: $logger),
+			new ApprovalChainSequences($this->sequenceMapper, $this->sequenceService, new ApprovalChainAnnotationInstaller(logger: $logger)),
 			$this->userSession,
 			$logger
 		);

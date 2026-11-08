@@ -7,6 +7,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -362,7 +363,7 @@ class TalkLinkServiceRefactorGoldenTest extends TestCase {
 			);
 		}
 
-		return new TalkLinkService($mapper, $container, $apps, $session, $l10n, $logger, $this->createMock(SchemaMapperInterface::class));
+		return new TalkLinkService($mapper, $container, $l10n, $this->createMock(SchemaMapperInterface::class), new LinkServiceRuntime($apps, $session, $logger));
 	}//end service()
 
 	/**

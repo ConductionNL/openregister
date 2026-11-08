@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TalkLink;
-use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -51,6 +51,11 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 * The conversation fields a fragment may set.
 	 */
 	public const FIELDS = ['object', 'name', 'owner', 'participants', 'call'];
+
+	/**
+	 * The fields a conversation needs, with what each holds.
+	 */
+	private const REQUIRED = ['object' => 'the object it is on', 'name' => 'a name', 'owner' => 'an owner'];
 
 	/**
 	 * Constructor.
@@ -97,84 +102,16 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
-		return $this->firstRefusal(
+		$rules = new ExampleSetFieldRules();
+		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $this->unknownRefusal(data: $data),
-				fn (): string => $this->missingRefusal(data: $data),
-				fn (): string => $this->strangerRefusal(people: $this->people(data: $data), users: $users),
+				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a talk conversation'),
+				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'a talk conversation'),
+				fn (): string => $rules->strangerRefusal(people: $this->people(data: $data), users: $users),
 				fn (): string => $this->callRefusal(call: ($data['call'] ?? null)),
 			]
 		);
 	}//end refusal()
-
-	/**
-	 * The first refusal of the checks, run in order until one refuses; '' when none does.
-	 *
-	 * @param array<int, callable(): string> $checks The checks.
-	 *
-	 * @return string
-	 */
-	private function firstRefusal(array $checks): string {
-		foreach ($checks as $check) {
-			$refusal = $check();
-			if ($refusal !== '') {
-				return $refusal;
-			}
-		}
-
-		return '';
-	}//end firstRefusal()
-
-	/**
-	 * Why a row names a field a set may not write, '' when it names none.
-	 *
-	 * @param array<string, mixed> $data The row's fields.
-	 *
-	 * @return string
-	 */
-	private function unknownRefusal(array $data): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a talk conversation field a set may write';
-		}
-
-		return '';
-	}//end unknownRefusal()
-
-	/**
-	 * Why a row lacks the object, name or owner a conversation needs, '' when it has them.
-	 *
-	 * @param array<string, mixed> $data The row's fields.
-	 *
-	 * @return string
-	 */
-	private function missingRefusal(array $data): string {
-		foreach (['object' => 'the object it is on', 'name' => 'a name', 'owner' => 'an owner'] as $field => $what) {
-			if (is_string($data[$field] ?? null) === false || trim($data[$field]) === '') {
-				return 'a talk conversation needs '.$what.' ('.$field.')';
-			}
-		}
-
-		return '';
-	}//end missingRefusal()
-
-	/**
-	 * Why one of the people is no account the set creates or adopts, '' when all are.
-	 *
-	 * @param array<int, string> $people The owner and the participants.
-	 * @param array<int, string> $users  The accounts the set creates or adopts.
-	 *
-	 * @return string
-	 */
-	private function strangerRefusal(array $people, array $users): string {
-		foreach ($people as $uid) {
-			if (in_array($uid, $users, true) === false) {
-				return '"'.$uid.'" is not an account the set creates or adopts';
-			}
-		}
-
-		return '';
-	}//end strangerRefusal()
 
 	/**
 	 * The owner and the participants a row names, the owner first.
@@ -190,9 +127,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	/**
 	 * Write one conversation, its held call and its link to the object.
 	 *
-	 * @param string               $app  The fragment's app.
-	 * @param string               $key  The row key.
-	 * @param array<string, mixed> $data The row's fields, placeholders filled.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{
 	 *     error: string,
@@ -201,7 +136,9 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-talk-conversations-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$found = $this->target(data: $data);
 		if ($found['error'] !== '') {
 			return ['error' => $found['error'], 'entry' => null];
@@ -310,7 +247,10 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 */
 	public function revert(array $entry): string {
 		try {
-			$this->container->get(TalkLinkMapper::class)->deleteByObjectAndRoom(objectUuid: (string) $entry['object'], roomToken: (string) $entry['token']);
+			$this->container->get(TalkLinkMapperInterface::class)->deleteByObjectAndRoom(
+				objectUuid: (string) $entry['object'],
+				roomToken: (string) $entry['token']
+			);
 			if (($entry['createdRoom'] ?? false) === true && $this->store()->roomExists(token: (string) $entry['token']) === true) {
 				$this->store()->deleteRoom(token: (string) $entry['token']);
 			}
@@ -330,7 +270,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 * @return int The link id.
 	 */
 	private function link(ObjectEntity $object, array $conversation): int {
-		$mapper   = $this->container->get(TalkLinkMapper::class);
+		$mapper   = $this->container->get(TalkLinkMapperInterface::class);
 		$existing = $mapper->findByObjectAndRoom((string) $conversation['data']['object'], $conversation['room']['token']);
 		if ($existing !== null) {
 			return (int) $existing->getId();

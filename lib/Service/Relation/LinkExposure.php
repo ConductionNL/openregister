@@ -48,7 +48,7 @@ namespace OCA\OpenRegister\Service\Relation;
  *
  * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
  */
-class LinkExposure {
+class LinkExposure implements LinkExposureInterface {
 
 	/**
 	 * The key a relation type declares its field set under.
@@ -203,24 +203,37 @@ class LinkExposure {
 		}
 
 		foreach ($relationType[self::KEY] as $property) {
-			$property = (string)$property;
-
-			if ($property === '') {
-				return sprintf('relation type "%s" exposes an unnamed property', $typeName);
-			}
-
-			// Refused at SAVE, because a name that matches nothing is silently
-			// absent from every projection afterwards — the author sees a 200
-			// and a link that exposes one field fewer than they wrote.
-			if (in_array($property, $farProperties, true) === false) {
-				return sprintf(
-					'relation type "%s" exposes "%s", which the linked schema does not declare',
-					$typeName,
-					$property
-				);
+			$refusal = self::propertyRefusal(property: (string)$property, farProperties: $farProperties, typeName: $typeName);
+			if ($refusal !== null) {
+				return $refusal;
 			}
 		}
 
 		return null;
 	}//end refusalFor()
+
+
+	/**
+	 * Why one exposed property may not be saved, or null when it may.
+	 *
+	 * @param string             $property      The exposed property name.
+	 * @param array<int, string> $farProperties The far schema's declared properties.
+	 * @param string             $typeName      The type, for the message.
+	 *
+	 * @return string|null The reason.
+	 */
+	private static function propertyRefusal(string $property, array $farProperties, string $typeName): string|null {
+		if ($property === '') {
+			return sprintf('relation type "%s" exposes an unnamed property', $typeName);
+		}
+
+		// Refused at SAVE, because a name that matches nothing is silently
+		// absent from every projection afterwards — the author sees a 200
+		// and a link that exposes one field fewer than they wrote.
+		if (in_array($property, $farProperties, true) === false) {
+			return sprintf('relation type "%s" exposes "%s", which the linked schema does not declare', $typeName, $property);
+		}
+
+		return null;
+	}//end propertyRefusal()
 }//end class

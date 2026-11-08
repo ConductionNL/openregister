@@ -40,7 +40,6 @@ use OCA\OpenRegister\Service\MappingService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
@@ -48,7 +47,7 @@ use UnexpectedValueException;
 /**
  * Transforms the item list through a stored mapping.
  */
-class MapNode implements IFlowNode, MapNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	/**
 	 * Constructor.
 	 *
@@ -58,12 +57,12 @@ class MapNode implements IFlowNode, MapNodeInterface, IFlowNodeConfigKeys, IFlow
 	 * @param MappingMapperInterface $mapper Resolves the mapping by id, uuid or slug.
 	 */
 	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		IL10N $l10n,
+		IURLGenerator $urls,
 		private readonly MappingService $mappings,
 		private readonly MappingMapperInterface $mapper,
 	) {
-
+		parent::__construct(l10n: $l10n, urls: $urls);
 	}//end __construct()
 
 	/**
@@ -109,19 +108,6 @@ class MapNode implements IFlowNode, MapNodeInterface, IFlowNodeConfigKeys, IFlow
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/rename.svg');
 	}//end getIcon()
-
-	/**
-	 * Mapping transforms data in memory and grants no privilege of its own.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a map step.
@@ -234,15 +220,7 @@ class MapNode implements IFlowNode, MapNodeInterface, IFlowNodeConfigKeys, IFlow
 	 */
 	private function resolve(string $reference) {
 		if (ctype_digit($reference) === true) {
-			try {
-				return $this->mapper->find((int)$reference);
-			} catch (DoesNotExistException $e) {
-				throw new RuntimeException(
-					sprintf('No mapping with id "%s".', $reference),
-					0,
-					$e
-				);
-			}
+			return $this->byId(reference: $reference);
 		}
 
 		// Resolving a uuid or a slug is find()'s job — it switches to matching those
@@ -256,6 +234,46 @@ class MapNode implements IFlowNode, MapNodeInterface, IFlowNodeConfigKeys, IFlow
 			// Fall through to the reference lookup below.
 		}
 
+		return $this->byReference(reference: $reference);
+
+	}//end resolve()
+
+	/**
+	 * The mapping with this numeric id.
+	 *
+	 * @param string $reference The mapping id, all digits.
+	 *
+	 * @return \OCA\OpenRegister\Db\Mapping The mapping.
+	 *
+	 * @throws RuntimeException When no mapping has that id.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	private function byId(string $reference) {
+		try {
+			return $this->mapper->find((int)$reference);
+		} catch (DoesNotExistException $e) {
+			throw new RuntimeException(
+				sprintf('No mapping with id "%s".', $reference),
+				0,
+				$e
+			);
+		}
+
+	}//end byId()
+
+	/**
+	 * The first mapping whose `reference` column matches.
+	 *
+	 * @param string $reference The mapping reference.
+	 *
+	 * @return \OCA\OpenRegister\Db\Mapping The mapping.
+	 *
+	 * @throws RuntimeException When no mapping matches.
+	 *
+	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+	 */
+	private function byReference(string $reference) {
 		try {
 			$byRef = $this->mapper->findByRef($reference);
 		} catch (Throwable $e) {
@@ -270,7 +288,7 @@ class MapNode implements IFlowNode, MapNodeInterface, IFlowNodeConfigKeys, IFlow
 			sprintf('No mapping matches "%s" by id, uuid, slug or reference.', $reference)
 		);
 
-	}//end resolve()
+	}//end byReference()
 
 	/**
 	 * What kind of step this is. Reshapes each item.
@@ -283,16 +301,4 @@ class MapNode implements IFlowNode, MapNodeInterface, IFlowNodeConfigKeys, IFlow
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

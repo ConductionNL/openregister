@@ -187,7 +187,25 @@ class ObjectVersionHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function parse(?string $version): ?array {
-		if ($version === null || trim($version) === '') {
+		$parts = self::partsOf(version: $version);
+		if ($parts === null) {
+			return null;
+		}
+
+		return self::numbersOf(parts: $parts);
+	}//end parse()
+
+	/**
+	 * The three dot-separated parts of a trimmed version, or null.
+	 *
+	 * @param string|null $version The version.
+	 *
+	 * @return list<string>|null The parts
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function partsOf(?string $version): ?array {
+		if (trim((string)$version) === '') {
 			return null;
 		}
 
@@ -196,6 +214,19 @@ class ObjectVersionHandler {
 			return null;
 		}
 
+		return $parts;
+	}//end partsOf()
+
+	/**
+	 * The parts as integers, or null when one is not all digits.
+	 *
+	 * @param list<string> $parts The parts.
+	 *
+	 * @return list<int>|null The numbers
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function numbersOf(array $parts): ?array {
 		$parsed = [];
 		foreach ($parts as $part) {
 			if (ctype_digit($part) === false) {
@@ -206,6 +237,6 @@ class ObjectVersionHandler {
 		}
 
 		return $parsed;
-	}//end parse()
+	}//end numbersOf()
 
 }//end class

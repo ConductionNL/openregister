@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -45,6 +46,7 @@ use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\AuditRetentionResolver;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\BulkDownloadArchive;
 use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
 use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
 use OCA\OpenRegister\Service\Object\IntegrityStorage;
@@ -125,10 +127,9 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$container,
 					$this->createMock(IUserSession::class),
 					$this->createMock(IRequest::class),
-					$this->createMock(LoggerInterface::class),
+					new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class)),
 				]
 			)
 			->onlyMethods(['insert'])
@@ -319,9 +320,11 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 
 		$handler->logBulkDownload(
 			object: $this->object(['bewaartermijn' => 'P10Y']),
-			fileIds: [1, 2],
-			fileNames: ['a.pdf', 'b.pdf'],
-			zipName: 'files.zip'
+			archive: new BulkDownloadArchive(
+				fileIds: [1, 2],
+				fileNames: ['a.pdf', 'b.pdf'],
+				zipName: 'files.zip'
+			)
 		);
 
 		$this->assertCount(1, $this->inserted);

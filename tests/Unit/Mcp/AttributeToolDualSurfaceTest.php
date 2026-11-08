@@ -49,6 +49,8 @@ use Psr\Container\ContainerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Listener\BuiltinDataTools;
+use OCA\OpenRegister\Mcp\Listener\BuiltinPlatformTools;
 
 require_once __DIR__ . '/Fixtures/AnnotationFixtureService.php';
 require_once __DIR__ . '/Fixtures/AttributeFixtureService.php';
@@ -181,13 +183,17 @@ class AttributeToolDualSurfaceTest extends TestCase {
 		);
 
 		$listener = new ToolRegistrationListener(
-			registerTool: $this->createMock(RegisterTool::class),
-			schemaTool: $this->createMock(SchemaTool::class),
-			objectsTool: $this->createMock(ObjectsTool::class),
-			applicationTool: $this->createMock(ApplicationTool::class),
-			agentTool: $this->createMock(AgentTool::class),
+			dataTools: new BuiltinDataTools(
+				registerTool: $this->createMock(RegisterTool::class),
+				schemaTool: $this->createMock(SchemaTool::class),
+				objectsTool: $this->createMock(ObjectsTool::class),
+			),
+			platformTools: new BuiltinPlatformTools(
+				applicationTool: $this->createMock(ApplicationTool::class),
+				agentTool: $this->createMock(AgentTool::class),
+			),
 			mcpToolsService: $mcpToolsService,
-			logger: $this->logger
+			logger: $this->logger,
 		);
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);

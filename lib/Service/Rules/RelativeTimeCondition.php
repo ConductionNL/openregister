@@ -52,7 +52,7 @@ namespace OCA\OpenRegister\Service\Rules;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use Throwable;
 
@@ -172,19 +172,19 @@ class RelativeTimeCondition {
 	 * @var array<string, string>
 	 */
 	private const ENGINE_UNITS = [
-		self::UNIT_HOURS => SlaCalculator::UNIT_HOURS,
-		self::UNIT_WORKING_HOURS => SlaCalculator::UNIT_BUSINESS_DAYS,
-		self::UNIT_CALENDAR_DAYS => SlaCalculator::UNIT_CALENDAR_DAYS,
-		self::UNIT_BUSINESS_DAYS => SlaCalculator::UNIT_BUSINESS_DAYS,
+		self::UNIT_HOURS => SlaCalculatorInterface::UNIT_HOURS,
+		self::UNIT_WORKING_HOURS => SlaCalculatorInterface::UNIT_BUSINESS_DAYS,
+		self::UNIT_CALENDAR_DAYS => SlaCalculatorInterface::UNIT_CALENDAR_DAYS,
+		self::UNIT_BUSINESS_DAYS => SlaCalculatorInterface::UNIT_BUSINESS_DAYS,
 	];
 
 	/**
 	 * Constructor.
 	 *
-	 * @param SlaCalculator $calculator The engine the timers use.
+	 * @param SlaCalculatorInterface $calculator The engine the timers use.
 	 */
 	public function __construct(
-		private readonly SlaCalculator $calculator,
+		private readonly SlaCalculatorInterface $calculator,
 	) {
 	}//end __construct()
 
@@ -535,8 +535,8 @@ class RelativeTimeCondition {
 		if ($unit === self::UNIT_WORKING_HOURS) {
 			$value = $this->calculator->convert(
 				value: $value,
-				fromUnit: SlaCalculator::UNIT_HOURS,
-				toUnit: SlaCalculator::UNIT_BUSINESS_DAYS,
+				fromUnit: SlaCalculatorInterface::UNIT_HOURS,
+				toUnit: SlaCalculatorInterface::UNIT_BUSINESS_DAYS,
 				calendar: $moment->calendar
 			);
 		}

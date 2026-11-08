@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use DateTime;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationBroadcastService;
 use OCP\AppFramework\Controller;
@@ -48,25 +49,26 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
 
 class NotificationBroadcastController extends Controller {
+	use NotificationRequestTrait;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param NotificationBroadcastService $broadcastService The broadcast store and its receipts.
 	 * @param IGroupManager $groupManager The authority on who is an administrator.
 	 * @param IUserSession $userSession Current-user session.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly NotificationBroadcastService $broadcastService,
 		private readonly IGroupManager $groupManager,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -106,44 +108,78 @@ class NotificationBroadcastController extends Controller {
 			return $refusal;
 		}
 
-		$params = $this->request->getParams();
-		$subject = $this->nonEmptyString(value: ($params['subject'] ?? null));
+		return $this->createFrom(params: $this->request->getParams());
+	}//end create()
+
+	/**
+	 * Read a broadcast from the payload and send it, or refuse the payload.
+	 *
+	 * @param array<string, mixed> $params The request payload.
+	 *
+	 * @return JSONResponse The created broadcast, or a 422.
+	 */
+	private function createFrom(array $params): JSONResponse {
+		$subject = $this->stringParam(params: $params, key: 'subject');
 		if ($subject === null) {
 			return new JSONResponse(data: ['error' => 'A "subject" is required'], statusCode: 422);
 		}
 
-		$body = null;
-		if (is_string(($params['body'] ?? null)) === true && $params['body'] !== '') {
-			$body = (string)$params['body'];
+		$window = $this->requestedWindow(startsAt: ($params['startsAt'] ?? null), endsAt: ($params['endsAt'] ?? null));
+		if ($window instanceof JSONResponse) {
+			return $window;
 		}
 
-		$startsAt = $this->parseMoment(value: ($params['startsAt'] ?? null), fallback: new DateTime());
-		$endsAt = $this->parseMoment(value: ($params['endsAt'] ?? null), fallback: null);
+		return $this->sendBroadcast(subject: $subject, body: $this->stringParam(params: $params, key: 'body'), window: $window);
+	}//end createFrom()
+
+	/**
+	 * The moments a broadcast runs between, or the 422 that refuses them.
+	 *
+	 * `startsAt` defaults to now; `endsAt` is required. Both must be readable.
+	 *
+	 * @param mixed $startsAt The raw `startsAt`.
+	 * @param mixed $endsAt   The raw `endsAt`.
+	 *
+	 * @return array{0: DateTime, 1: DateTime}|JSONResponse The start and end, or the refusal.
+	 */
+	private function requestedWindow(mixed $startsAt, mixed $endsAt): array|JSONResponse {
+		$startsAt = $this->parseMoment(value: $startsAt, fallback: new DateTime());
+		$endsAt = $this->parseMoment(value: $endsAt, fallback: null);
 		if ($startsAt === false || $endsAt === false) {
-			return new JSONResponse(
-				data: ['error' => 'Both "startsAt" and "endsAt" must be readable moments'],
-				statusCode: 422
-			);
+			return new JSONResponse(data: ['error' => 'Both "startsAt" and "endsAt" must be readable moments'], statusCode: 422);
 		}
 
 		if ($endsAt === null) {
 			return new JSONResponse(data: ['error' => 'An "endsAt" is required'], statusCode: 422);
 		}
 
+		return [$startsAt, $endsAt];
+	}//end requestedWindow()
+
+	/**
+	 * Send the broadcast as the current administrator.
+	 *
+	 * @param string                           $subject The subject.
+	 * @param string|null                      $body    The body, or null.
+	 * @param array{0: DateTime, 1: DateTime} $window  The start and end.
+	 *
+	 * @return JSONResponse The created broadcast, or a 422 when the service refuses it.
+	 */
+	private function sendBroadcast(string $subject, ?string $body, array $window): JSONResponse {
 		try {
 			$broadcast = $this->broadcastService->send(
 				subject: $subject,
 				body: $body,
 				sender: (string)$this->resolveUserId(),
-				startsAt: $startsAt,
-				endsAt: $endsAt
+				startsAt: $window[0],
+				endsAt: $window[1]
 			);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
 
 		return new JSONResponse(data: $broadcast->jsonSerialize(), statusCode: 201);
-	}//end create()
+	}//end sendBroadcast()
 
 	/**
 	 * Withdraw one broadcast.
@@ -182,7 +218,7 @@ class NotificationBroadcastController extends Controller {
 	public function active(): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		$rows = [];
@@ -208,7 +244,7 @@ class NotificationBroadcastController extends Controller {
 	public function acknowledge(string $uuid): JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		// Scoped to the caller's own uid, never a uid from the request: a
@@ -228,7 +264,7 @@ class NotificationBroadcastController extends Controller {
 	private function requireAdmin(): ?JSONResponse {
 		$userId = $this->resolveUserId();
 		if ($userId === null) {
-			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+			return $this->authenticationRequired();
 		}
 
 		if ($this->groupManager->isAdmin($userId) === false) {
@@ -273,33 +309,4 @@ class NotificationBroadcastController extends Controller {
 
 		return (int)$raw;
 	}//end intParam()
-
-	/**
-	 * Resolve the current user's UID, or null when anonymous.
-	 *
-	 * @return string|null
-	 */
-	private function resolveUserId(): ?string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return null;
-		}
-
-		return $user->getUID();
-	}//end resolveUserId()
-
-	/**
-	 * Coerce a request value to a non-empty string, or null.
-	 *
-	 * @param mixed $value Input.
-	 *
-	 * @return string|null
-	 */
-	private function nonEmptyString(mixed $value): ?string {
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end nonEmptyString()
 }//end class

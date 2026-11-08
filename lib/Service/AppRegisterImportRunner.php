@@ -43,7 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\AppHost\AppContainerLocator;
-use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
+use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use ReflectionMethod;
@@ -89,14 +89,16 @@ class AppRegisterImportRunner implements AppRegisterImportRunnerInterface {
 	 *
 	 * @param IAppManager          $appManager           Resolves the app's namespace and path.
 	 * @param AppContainerLocator  $containers           Reaches the app's own DI container.
-	 * @param ConfigurationServiceInterface $configurationService Imports on the fallback path.
+	 * @param AppConfigurationImporterInterface $configurationService Imports on the fallback path.
+	 * @param RegisterDocumentLoaderInterface $documents Reads the app's register document and fragments.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
 		private readonly AppContainerLocator $containers,
-		private readonly ConfigurationServiceInterface $configurationService,
+		private readonly AppConfigurationImporterInterface $configurationService,
+		private readonly RegisterDocumentLoaderInterface $documents,
 	) {
 	}//end __construct()
 
@@ -114,7 +116,7 @@ class AppRegisterImportRunner implements AppRegisterImportRunnerInterface {
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
 	public function document(string $appId): array {
-		[$data, $version] = (new RegisterDocumentLoader(appManager: $this->appManager))->load(appId: $appId);
+		[$data, $version] = $this->documents->load(appId: $appId);
 
 		$fragments = 0;
 		try {

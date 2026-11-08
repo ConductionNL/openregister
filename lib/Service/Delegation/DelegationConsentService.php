@@ -56,7 +56,7 @@ namespace OCA\OpenRegister\Service\Delegation;
 use DateInterval;
 use DateTime;
 use OCA\OpenRegister\Db\DelegationGrant;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use InvalidArgumentException;
 
 /**
@@ -64,7 +64,7 @@ use InvalidArgumentException;
  *
  * @spec openspec/specs/delegation-grants/spec.md
  */
-class DelegationConsentService {
+class DelegationConsentService implements DelegationConsentServiceInterface {
 
 	/**
 	 * How long a granted delegation lasts when the granter names no expiry.
@@ -97,10 +97,10 @@ class DelegationConsentService {
 	/**
 	 * Constructor.
 	 *
-	 * @param DelegationGrantMapper $grants Reads and writes grants.
+	 * @param DelegationGrantMapperInterface $grants Reads and writes grants.
 	 */
 	public function __construct(
-		private readonly DelegationGrantMapper $grants,
+		private readonly DelegationGrantMapperInterface $grants,
 	) {
 	}//end __construct()
 

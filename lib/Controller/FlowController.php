@@ -39,23 +39,20 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\FlowControllerServices;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 use OCA\OpenRegister\Exception\FlowRunRefused;
-use OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator;
-use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
-use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter;
-use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter;
-use OCA\OpenRegister\Service\Flow\EventCatalogService;
-use OCA\OpenRegister\Service\Flow\FlowAccess;
+use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface;
+use OCA\OpenRegister\Service\Flow\EventCatalogServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
-use OCA\OpenRegister\Service\Flow\FlowRunVersionPin;
+use OCA\OpenRegister\Service\Flow\FlowRunAuthorizationInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunVersionPinInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCP\AppFramework\Controller;
@@ -123,9 +120,9 @@ class FlowController extends Controller {
 	/**
 	 * The flow trigger catalog.
 	 *
-	 * @var EventCatalogService
+	 * @var EventCatalogServiceInterface
 	 */
-	private readonly EventCatalogService $eventCatalog;
+	private readonly EventCatalogServiceInterface $eventCatalog;
 
 	/**
 	 * The registered flow-step types.
@@ -137,9 +134,9 @@ class FlowController extends Controller {
 	/**
 	 * Reads state a flow keeps between runs.
 	 *
-	 * @var FlowStateMapper
+	 * @var FlowStateMapperInterface
 	 */
-	private readonly FlowStateMapper $flowState;
+	private readonly FlowStateMapperInterface $flowState;
 
 	/**
 	 * Resolves a document's step types.
@@ -158,9 +155,9 @@ class FlowController extends Controller {
 	/**
 	 * Who may do what with a flow.
 	 *
-	 * @var FlowAccess
+	 * @var FlowAccessInterface
 	 */
-	private readonly FlowAccess $access;
+	private readonly FlowAccessInterface $access;
 
 	/**
 	 * Reads, publishes, drafts and deprecates versions.
@@ -168,6 +165,13 @@ class FlowController extends Controller {
 	 * @var FlowVersionServiceInterface
 	 */
 	private readonly FlowVersionServiceInterface $flowVersionService;
+
+	/**
+	 * BPMN 2.0 export and import.
+	 *
+	 * @var FlowBpmnInterchangeInterface
+	 */
+	private readonly FlowBpmnInterchangeInterface $bpmn;
 
 	/**
 	 * Constructor.
@@ -189,6 +193,7 @@ class FlowController extends Controller {
 		$this->flows = $services->definitions->flows;
 		$this->access = $services->definitions->access;
 		$this->flowVersionService = $services->definitions->flowVersionService;
+		$this->bpmn = $services->catalogue->bpmn;
 	}//end __construct()
 
 	/**
@@ -407,33 +412,32 @@ class FlowController extends Controller {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
 		}
 
-		$stored = $this->flowState->findByFlow(flowId: $flowId);
-		$state = [];
-		$updated = null;
-
-		if ($stored !== null) {
-			$payload = $stored->jsonSerialize();
-			$state = (array)($payload['state'] ?? []);
-			$updated = ($payload['updated'] ?? null);
-		}
-
-		$body = [
-			'flowId' => $flowId,
-			'state' => $state,
-			'updated' => $updated,
-		];
-
+		$body = ['flowId' => $flowId] + $this->storedState(flowId: $flowId);
 		$list = trim((string)$this->request->getParam('list', ''));
 		if ($list !== '') {
-			$results = $this->asList(value: ($state[$list] ?? []));
-
-			$body['key'] = $list;
-			$body['results'] = $results;
-			$body['total'] = count($results);
+			$results = $this->asList(value: ($body['state'][$list] ?? []));
+			$body   += ['key' => $list, 'results' => $results, 'total' => count($results)];
 		}
 
 		return new JSONResponse($body);
 	}//end state()
+
+	/**
+	 * The stored state of a flow and when it was last updated.
+	 *
+	 * @param string $flowId The flow UUID
+	 *
+	 * @return array{state: array, updated: mixed} Empty state and null when none is stored
+	 */
+	private function storedState(string $flowId): array {
+		$stored = $this->flowState->findByFlow(flowId: $flowId);
+		if ($stored === null) {
+			return ['state' => [], 'updated' => null];
+		}
+
+		$payload = $stored->jsonSerialize();
+		return ['state' => (array)($payload['state'] ?? []), 'updated' => ($payload['updated'] ?? null)];
+	}//end storedState()
 
 	/**
 	 * Resolve a flow document's step types without saving it.
@@ -472,32 +476,35 @@ class FlowController extends Controller {
 		}
 
 		if ($this->preflight->looksLikeFlow(data: $flow) === false) {
-			return new JSONResponse(
-				[
-					'valid' => false,
-					'blocking' => [],
-					'warnings' => [],
-					'message' => 'Body does not describe a flow graph: it needs a non-empty "nodes" list whose '
-						. 'entries carry an "id", and a non-empty "edges" list whose entries carry "from"/"to".',
-				],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->notAFlowGraph();
 		}
 
 		$report = $this->preflight->inspect(flow: $flow);
-		$name = (string)($flow['name'] ?? 'flow');
-		$body = [
-			'valid' => ($report['blocking'] === []),
-			'blocking' => $report['blocking'],
-			'warnings' => $report['warnings'],
-		];
-
+		$body   = ['valid' => ($report['blocking'] === []), 'blocking' => $report['blocking'], 'warnings' => $report['warnings']];
 		if ($report['blocking'] !== []) {
-			$body['message'] = $this->preflight->describe(flow: $name, blocking: $report['blocking']);
+			$body['message'] = $this->preflight->describe(flow: (string)($flow['name'] ?? 'flow'), blocking: $report['blocking']);
 		}
 
 		return new JSONResponse($body);
 	}//end validate()
+
+	/**
+	 * The 400 answer to a body that does not describe a flow graph.
+	 *
+	 * @return JSONResponse The response
+	 */
+	private function notAFlowGraph(): JSONResponse {
+		return new JSONResponse(
+			[
+				'valid' => false,
+				'blocking' => [],
+				'warnings' => [],
+				'message' => 'Body does not describe a flow graph: it needs a non-empty "nodes" list whose '
+					. 'entries carry an "id", and a non-empty "edges" list whose entries carry "from"/"to".',
+			],
+			Http::STATUS_BAD_REQUEST
+		);
+	}//end notAFlowGraph()
 
 	/**
 	 * One state key as a list, with each entry carrying the key it was under.
@@ -519,18 +526,33 @@ class FlowController extends Controller {
 
 		$results = [];
 		foreach ($value as $key => $entry) {
-			$row = ['slot' => $key];
-			if (is_array($entry) === true) {
-				$row = array_merge($row, $entry);
-			} elseif ($entry !== null) {
-				$row['holder'] = $entry;
-			}
-
-			$results[] = $row;
+			$results[] = $this->slotRow(key: $key, entry: $entry);
 		}
 
 		return $results;
 	}//end asList()
+
+	/**
+	 * One slot of a keyed state list: an array entry is merged in, any other
+	 * non-null entry becomes its holder.
+	 *
+	 * @param int|string $key   The slot
+	 * @param mixed      $entry The entry
+	 *
+	 * @return array The row
+	 */
+	private function slotRow(int|string $key, mixed $entry): array {
+		$row = ['slot' => $key];
+		if (is_array($entry) === true) {
+			return array_merge($row, $entry);
+		}
+
+		if ($entry !== null) {
+			$row['holder'] = $entry;
+		}
+
+		return $row;
+	}//end slotRow()
 
 	/**
 	 * List flows, newest first.
@@ -552,36 +574,34 @@ class FlowController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
-		$limit = min(200, max(1, (int)$this->request->getParam('limit', 100)));
-		$offset = max(0, (int)$this->request->getParam('offset', 0));
-
-		$appFilter = $this->trimmedFilter(key: 'app');
+		$limit      = min(200, max(1, (int)$this->request->getParam('limit', 100)));
+		$offset     = max(0, (int)$this->request->getParam('offset', 0));
+		$appFilter  = $this->trimmedFilter(key: 'app');
 		$slugFilter = $this->trimmedFilter(key: 'applicationSlug');
+		$enabled    = $this->enabledFilter();
+		$flows      = $this->flows->findAll(app: $appFilter, applicationSlug: $slugFilter, enabled: $enabled, limit: $limit, offset: $offset);
 
-		$enabledFilter = null;
+		return new JSONResponse([
+			'results' => array_map(static fn (Flow $flow): array => $flow->jsonSerialize(), $flows),
+			'total' => $this->flows->count(app: $appFilter, applicationSlug: $slugFilter),
+			'limit' => $limit,
+			'offset' => $offset,
+		]);
+	}//end index()
+
+	/**
+	 * The `enabled` filter of a list request.
+	 *
+	 * @return bool|null The filter, or null when absent or empty
+	 */
+	private function enabledFilter(): ?bool {
 		$enabled = $this->request->getParam('enabled');
-		if ($enabled !== null && $enabled !== '') {
-			$enabledFilter = filter_var($enabled, FILTER_VALIDATE_BOOLEAN);
+		if ($enabled === null || $enabled === '') {
+			return null;
 		}
 
-		$flows = $this->flows->findAll(
-			app: $appFilter,
-			applicationSlug: $slugFilter,
-			enabled: $enabledFilter,
-			limit: $limit,
-			offset: $offset
-		);
-
-		return new JSONResponse(
-			[
-				'results' => array_map(static fn (Flow $flow): array => $flow->jsonSerialize(), $flows),
-				'total' => $this->flows->count(app: $appFilter, applicationSlug: $slugFilter),
-				'limit' => $limit,
-				'offset' => $offset,
-			]
-		);
-
-	}//end index()
+		return filter_var($enabled, FILTER_VALIDATE_BOOLEAN);
+	}//end enabledFilter()
 
 	/**
 	 * Read a request parameter, treating an absent or whitespace-only value
@@ -654,33 +674,32 @@ class FlowController extends Controller {
 			return new JSONResponse(['error' => 'No such flow: ' . $id], Http::STATUS_NOT_FOUND);
 		}
 
-		$exporter = new FlowBpmnExporter(
-			vocabulary: new BpmnVocabulary(),
-			validator: new BpmnSchemaValidator()
-		);
+		return $this->bpmnDownload(flow: $flow, id: $id);
+	}//end exportBpmn()
 
+	/**
+	 * A flow as a BPMN 2.0 download.
+	 *
+	 * @param Flow   $flow The flow
+	 * @param string $id   The flow UUID, the file name when the flow has no name
+	 *
+	 * @return DataDownloadResponse|JSONResponse The download, or 500 when our own output fails the schema
+	 */
+	private function bpmnDownload(Flow $flow, string $id): DataDownloadResponse|JSONResponse {
 		try {
-			$xml = $exporter->export(flow: $flow);
+			$xml = $this->bpmn->export(flow: $flow);
 		} catch (BpmnSchemaInvalid $invalid) {
 			// Our own output failed the standard's schema, which is a bug in
 			// the serializer rather than anything the caller did — so it is
 			// reported as one, with the element that broke it.
 			return new JSONResponse(
-				[
-					'error' => $invalid->getMessage(),
-					'element' => $invalid->getElement(),
-					'line' => $invalid->getViolationLine(),
-				],
+				['error' => $invalid->getMessage(), 'element' => $invalid->getElement(), 'line' => $invalid->getViolationLine()],
 				Http::STATUS_INTERNAL_SERVER_ERROR
 			);
 		}
 
-		return new DataDownloadResponse(
-			$xml,
-			sprintf('%s.bpmn', ($flow->getName() ?? $id)),
-			'application/xml'
-		);
-	}//end exportBpmn()
+		return new DataDownloadResponse($xml, sprintf('%s.bpmn', ($flow->getName() ?? $id)), 'application/xml');
+	}//end bpmnDownload()
 
 	/**
 	 * A BPMN 2.0 file as a new flow, plus the report of everything it lost.
@@ -706,69 +725,115 @@ class FlowController extends Controller {
 			return $denied;
 		}
 
-		$xml = (string)$this->request->getParam('xml', '');
-		if (trim($xml) === '') {
-			$upload = $this->readBpmnUpload();
-			if ($upload instanceof JSONResponse) {
-				return $upload;
-			}
-
-			$xml = $upload ?? (string)file_get_contents('php://input');
+		$xml = $this->requestedBpmn();
+		if ($xml instanceof JSONResponse) {
+			return $xml;
 		}
 
-		// 🔴 `(bool)'false'` IS TRUE, and a query string carries `?strict=false`
-		// rather than a JSON boolean — so a bare cast would turn every refusal
-		// into a failed import for a caller who asked for the opposite.
+		$result = $this->mapBpmn(xml: $xml, strict: $this->strictRequested());
+		if ($result instanceof JSONResponse) {
+			return $result;
+		}
+
+		return $this->storeImportedFlow(result: $result);
+	}//end importBpmn()
+
+	/**
+	 * The BPMN document of an import: the `xml` parameter, else the uploaded
+	 * `file`, else the raw request body.
+	 *
+	 * @return string|JSONResponse The document, or 400 for a failed upload
+	 */
+	private function requestedBpmn(): string|JSONResponse {
+		$xml = (string)$this->request->getParam('xml', '');
+		if (trim($xml) !== '') {
+			return $xml;
+		}
+
+		$upload = $this->readBpmnUpload();
+		if ($upload instanceof JSONResponse) {
+			return $upload;
+		}
+
+		return $upload ?? (string)file_get_contents('php://input');
+	}//end requestedBpmn()
+
+	/**
+	 * Whether the import must refuse unless every construct maps.
+	 *
+	 * 🔴 `(bool)'false'` IS TRUE, and a query string carries `?strict=false`
+	 * rather than a JSON boolean — so a bare cast would turn every refusal
+	 * into a failed import for a caller who asked for the opposite.
+	 *
+	 * @return bool Whether `strict` is true, or a string 1/true/yes
+	 */
+	private function strictRequested(): bool {
 		$strictParam = $this->request->getParam('strict', false);
-		$strict = ($strictParam === true
+		return ($strictParam === true
 			|| (is_string($strictParam) === true
 				&& in_array(strtolower(trim($strictParam)), ['1', 'true', 'yes'], true) === true));
+	}//end strictRequested()
 
-		$importer = new FlowBpmnImporter(
-			vocabulary: new BpmnVocabulary(),
-			validator: new BpmnSchemaValidator()
-		);
-
+	/**
+	 * Map a BPMN document onto a flow.
+	 *
+	 * The two importer calls are separate, not a flag: "import it and tell me
+	 * what was lost" and "refuse unless everything maps" are two requests, and
+	 * a flag dropped in the middle silently turns the second into the first.
+	 *
+	 * @param string $xml    The document
+	 * @param bool   $strict Whether to refuse unless everything maps
+	 *
+	 * @return array|JSONResponse The flow and report, or 422 for a malformed or refused document
+	 */
+	private function mapBpmn(string $xml, bool $strict): array|JSONResponse {
 		try {
-			// The two are separate calls, not a flag: "import it and tell me
-			// what was lost" and "refuse unless everything maps" are two
-			// requests, and a flag dropped in the middle silently turns the
-			// second into the first.
-			$result = match ($strict) {
-				true => $importer->importStrictly(xml: $xml),
-				false => $importer->import(xml: $xml),
+			return match ($strict) {
+				true => $this->bpmn->importStrictly(xml: $xml),
+				false => $this->bpmn->import(xml: $xml),
 			};
 		} catch (BpmnSchemaInvalid $invalid) {
-			// 🔴 A DIFFERENT ANSWER FROM A REFUSAL, deliberately. There is no
-			// report here and there must not be one: nothing was mapped, so
-			// every sentence a report could carry would be about constructs
-			// when the problem is the document. `malformed` is what tells the
-			// caller which of the two answers they got.
-			return new JSONResponse(
-				[
-					'error' => $invalid->getMessage(),
-					'malformed' => true,
-					'element' => $invalid->getElement(),
-					'line' => $invalid->getViolationLine(),
-				],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
+			return $this->malformedBpmn(invalid: $invalid);
 		} catch (BpmnImportRefused $refused) {
-			return new JSONResponse(
-				[
-					'error' => $refused->getMessage(),
-					'malformed' => false,
-					'report' => $refused->getReport()?->jsonSerialize(),
-				],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
+			$body = ['error' => $refused->getMessage(), 'malformed' => false, 'report' => $refused->getReport()?->jsonSerialize()];
+			return new JSONResponse($body, Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
+	}//end mapBpmn()
 
+	/**
+	 * The answer to a document that is not valid BPMN.
+	 *
+	 * 🔴 A DIFFERENT ANSWER FROM A REFUSAL, deliberately. There is no report
+	 * here and there must not be one: nothing was mapped, so every sentence a
+	 * report could carry would be about constructs when the problem is the
+	 * document. `malformed` is what tells the caller which of the two answers
+	 * they got.
+	 *
+	 * @param BpmnSchemaInvalid $invalid The schema violation
+	 *
+	 * @return JSONResponse The 422 response
+	 */
+	private function malformedBpmn(BpmnSchemaInvalid $invalid): JSONResponse {
+		return new JSONResponse(
+			['error' => $invalid->getMessage(), 'malformed' => true, 'element' => $invalid->getElement(), 'line' => $invalid->getViolationLine()],
+			Http::STATUS_UNPROCESSABLE_ENTITY
+		);
+	}//end malformedBpmn()
+
+	/**
+	 * Store a mapped flow.
+	 *
+	 * `save()`, not `create()` — FlowService has no `create()`, and a call to
+	 * one would have been a fatal at runtime that `php -l` cannot see and no
+	 * double would catch, because a mock invents the method it is asked for.
+	 * Asserted structurally in the test.
+	 *
+	 * @param array $result The mapped flow and its report
+	 *
+	 * @return JSONResponse The stored flow and report (201), or 422 when it cannot be stored
+	 */
+	private function storeImportedFlow(array $result): JSONResponse {
 		try {
-			// `save()`, not `create()` — FlowService has no `create()`, and a
-			// call to one would have been a fatal at runtime that `php -l`
-			// cannot see and no double would catch, because a mock invents the
-			// method it is asked for. Asserted structurally in the test.
 			$flow = $this->flows->save(data: $result['flow']);
 		} catch (Throwable $e) {
 			return new JSONResponse(
@@ -780,11 +845,8 @@ class FlowController extends Controller {
 			);
 		}
 
-		return new JSONResponse(
-			['flow' => $flow->jsonSerialize(), 'report' => $result['report']->jsonSerialize()],
-			Http::STATUS_CREATED
-		);
-	}//end importBpmn()
+		return new JSONResponse(['flow' => $flow->jsonSerialize(), 'report' => $result['report']->jsonSerialize()], Http::STATUS_CREATED);
+	}//end storeImportedFlow()
 
 	/**
 	 * The BPMN document sent as a multipart upload in the field `file`.
@@ -806,18 +868,25 @@ class FlowController extends Controller {
 
 		$tmpName = (string)($file['tmp_name'] ?? '');
 		$error   = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
-		if ($error !== UPLOAD_ERR_OK || $tmpName === '' || is_readable($tmpName) === false) {
-			return new JSONResponse(
-				[
-					'error' => sprintf('The upload of the BPMN file did not arrive (upload error %d). Send the file again.', $error),
-					'malformed' => false,
-				],
-				Http::STATUS_BAD_REQUEST
-			);
+		if ($this->uploadArrived(error: $error, tmpName: $tmpName) === false) {
+			$message = sprintf('The upload of the BPMN file did not arrive (upload error %d). Send the file again.', $error);
+			return new JSONResponse(['error' => $message, 'malformed' => false], Http::STATUS_BAD_REQUEST);
 		}
 
 		return (string)file_get_contents($tmpName);
 	}//end readBpmnUpload()
+
+	/**
+	 * Whether an upload arrived: no upload error and a readable temporary file.
+	 *
+	 * @param int    $error   The upload error code
+	 * @param string $tmpName The temporary file
+	 *
+	 * @return bool Whether the file can be read
+	 */
+	private function uploadArrived(int $error, string $tmpName): bool {
+		return $error === UPLOAD_ERR_OK && $tmpName !== '' && is_readable($tmpName) === true;
+	}//end uploadArrived()
 
 	/**
 	 * One flow, by its uuid.
@@ -1051,78 +1120,92 @@ class FlowController extends Controller {
 		$subject = $this->request->getParam('subject', []);
 		$context = $this->request->getParam('context', []);
 
-		// `sync` executes the run inline and answers with the FINISHED run
-		// rather than a queued one. Two callers want it: a person pressing Run
-		// in the editor, who should see the outcome instead of a row that says
-		// `queued`; and any test, which otherwise has to keep a background
-		// worker alive and poll — a harness whose absence makes a perfectly
-		// healthy engine look stuck.
-		//
-		// Accepts the string forms too: a query string carries `?sync=true`,
-		// not a JSON boolean, and `(bool) 'false'` is TRUE — so reading this
-		// with a bare cast would make sync=false run synchronously.
-		$syncParam = $this->request->getParam('sync', false);
-		$sync = ($syncParam === true || $syncParam === 'true' || $syncParam === '1' || $syncParam === 1);
+		return $this->queueTestRun(id: $id, input: ['subject' => (array)$subject, 'context' => (array)$context, 'sync' => $this->syncRequested()]);
+	}//end run()
 
+	/**
+	 * Whether the run executes inline.
+	 *
+	 * `sync` executes the run inline and answers with the FINISHED run
+	 * rather than a queued one. Two callers want it: a person pressing Run
+	 * in the editor, who should see the outcome instead of a row that says
+	 * `queued`; and any test, which otherwise has to keep a background
+	 * worker alive and poll — a harness whose absence makes a perfectly
+	 * healthy engine look stuck.
+	 *
+	 * Accepts the string forms too: a query string carries `?sync=true`,
+	 * not a JSON boolean, and `(bool) 'false'` is TRUE — so reading this
+	 * with a bare cast would make sync=false run synchronously.
+	 *
+	 * @return bool Whether `sync` is true, 'true', '1' or 1
+	 */
+	private function syncRequested(): bool {
+		$syncParam = $this->request->getParam('sync', false);
+		return ($syncParam === true || $syncParam === 'true' || $syncParam === '1' || $syncParam === 1);
+	}//end syncRequested()
+
+	/**
+	 * Queue the editor's interactive test run of a flow.
+	 *
+	 * THIS ENDPOINT IS THE EDITOR'S "RUN NOW", and that is the interactive
+	 * draft test run — the one documented exception to "a draft cannot back a
+	 * run" (`FlowPublishedGraph::overlayOnto`). Versioning (#3047) made every
+	 * other trigger require a published version, correctly. But this path
+	 * queued as MANUAL, so pressing Run in the editor on a flow that had never
+	 * been published was refused — the exception the design carves out could
+	 * not be reached from the only screen that needs it. Naming the trigger
+	 * here is what connects the two.
+	 *
+	 * Every refusal below is a refusal, not a fault: uncaught, each became an
+	 * HTML 500 that threw away the reason the caller needed.
+	 *
+	 * @param string $id    The flow UUID
+	 * @param array  $input The subject, context and sync flag
+	 *
+	 * @return JSONResponse The run (201), 404, or 409 with the reason
+	 */
+	private function queueTestRun(string $id, array $input): JSONResponse {
 		try {
-			// THIS ENDPOINT IS THE EDITOR'S "RUN NOW", and that is the
-			// interactive draft test run — the one documented exception to "a
-			// draft cannot back a run" (`FlowPublishedGraph::overlayOnto`).
-			//
-			// Versioning (#3047) made every other trigger require a published
-			// version, correctly. But this path queued as MANUAL, so pressing
-			// Run in the editor on a flow that had never been published was
-			// refused — the exception the design carves out could not be
-			// reached from the only screen that needs it. Naming the trigger
-			// here is what connects the two.
-			$flowRun = $this->flows->run(
-				uuid: $id,
-				subject: (array)$subject,
-				context: (array)$context,
-				sync: $sync,
-				trigger: FlowRunVersionPin::TRIGGER_TEST
-			);
+			$flowRun = $this->flows->run(uuid: $id, subject: $input['subject'], context: $input['context'],
+				sync: $input['sync'], trigger: FlowRunVersionPinInterface::TRIGGER_TEST);
 		} catch (FlowLifecycleRefused $e) {
-			// A REFUSAL, not a fault. It carries `reason` and `lifecycleStatus`
-			// precisely so the editor can offer the right button; letting it
-			// escape as a 500 threw that away and told the author only that
-			// something broke.
+			// Carries `reason` and `lifecycleStatus` so the editor can offer the right button.
 			return $this->refusal(refusal: $e);
 		} catch (FlowRunRefused $e) {
-			// A REFUSAL, not a fault. Uncaught it became an HTML 500, so "Run
-			// now" on an imported flow (which arrives with no owner) said only
-			// that something broke, while the reason was already written.
+			// "Run now" on an imported flow (which arrives with no owner).
 			return $this->runRefusal(refusal: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
 		} catch (FlowDeadEnd $e) {
-			// A REFUSAL, not a fault. `FlowRunService::queue()` declines to run
-			// a flow whose token cannot leave one of its nodes, and that is a
-			// verdict about the caller's document — the caller can fix it by
-			// wiring the node or ending it deliberately.
-			//
-			// Uncaught, it left the dispatcher to turn it into a bare 500 with
-			// an HTML body, so the one thing the author needed — WHICH node
-			// dead-ends — never reached them, and a routine authoring mistake
-			// was indistinguishable from the server falling over. Measured
-			// against the flow editor: pressing "Run now" on a single-step flow
-			// produced exactly that 500, and the UI showed nothing at all.
-			//
-			// 409 rather than 400: the document was understood and stored
-			// perfectly well: it is the flow's current STATE that conflicts
-			// with running it, which is also why the refusal is recorded on the
-			// flow itself (`status: error`) before this point.
-			return new JSONResponse(
-				[
-					'error' => $e->getMessage(),
-					'nodes' => $e->getNodeIds(),
-				],
-				Http::STATUS_CONFLICT
-			);
-		}//end try
+			return $this->deadEnd(deadEnd: $e);
+		}
 
 		return new JSONResponse($flowRun->jsonSerialize(), Http::STATUS_CREATED);
-	}//end run()
+	}//end queueTestRun()
+
+	/**
+	 * The answer to a flow whose token cannot leave one of its nodes.
+	 *
+	 * `FlowRunService::queue()` declines to run such a flow, and that is a
+	 * verdict about the caller's document — the caller can fix it by wiring
+	 * the node or ending it deliberately. Uncaught, it left the dispatcher to
+	 * turn it into a bare 500 with an HTML body, so the one thing the author
+	 * needed — WHICH node dead-ends — never reached them. Measured against the
+	 * flow editor: pressing "Run now" on a single-step flow produced exactly
+	 * that 500, and the UI showed nothing at all.
+	 *
+	 * 409 rather than 400: the document was understood and stored perfectly
+	 * well: it is the flow's current STATE that conflicts with running it,
+	 * which is also why the refusal is recorded on the flow itself
+	 * (`status: error`) before this point.
+	 *
+	 * @param FlowDeadEnd $deadEnd The refusal
+	 *
+	 * @return JSONResponse The 409 response naming the nodes
+	 */
+	private function deadEnd(FlowDeadEnd $deadEnd): JSONResponse {
+		return new JSONResponse(['error' => $deadEnd->getMessage(), 'nodes' => $deadEnd->getNodeIds()], Http::STATUS_CONFLICT);
+	}//end deadEnd()
 
 	/**
 	 * A run refusal as the answer the page can show, mapped the way
@@ -1136,7 +1219,7 @@ class FlowController extends Controller {
 	 */
 	private function runRefusal(FlowRunRefused $refusal): JSONResponse {
 		$status = Http::STATUS_FORBIDDEN;
-		if ($refusal->getVerdict() === FlowRunAuthorization::NO_SESSION) {
+		if ($refusal->getVerdict() === FlowRunAuthorizationInterface::NO_SESSION) {
 			$status = Http::STATUS_UNAUTHORIZED;
 		}
 
@@ -1160,7 +1243,28 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function versions(string $id): JSONResponse {
-		$denied = $this->denyUnless(action: 'flow.read');
+		return $this->withFlow(
+			right: 'flow.read',
+			id: $id,
+			then: function (Flow $flow): JSONResponse {
+				$rows = $this->flowVersionService->versionsOf(flowUuid: (string)$flow->getUuid());
+				return new JSONResponse(['results' => array_map(static fn ($row): array => $row->jsonSerialize(), $rows), 'total' => count($rows)]);
+			}
+		);
+	}//end versions()
+
+	/**
+	 * Run an action on a flow: the caller must hold the right first (401
+	 * anonymous, 403 without it), then the flow must exist (404).
+	 *
+	 * @param string   $right The action right (flow.read or flow.update)
+	 * @param string   $id    The flow UUID
+	 * @param callable $then  The action, given the flow
+	 *
+	 * @return JSONResponse The action's response or the refusal
+	 */
+	private function withFlow(string $right, string $id, callable $then): JSONResponse {
+		$denied = $this->denyUnless(action: $right);
 		if ($denied !== null) {
 			return $denied;
 		}
@@ -1171,13 +1275,8 @@ class FlowController extends Controller {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
 		}
 
-		$rows = $this->flowVersionService->versionsOf(flowUuid: (string)$flow->getUuid());
-
-		return new JSONResponse([
-			'results' => array_map(static fn ($row): array => $row->jsonSerialize(), $rows),
-			'total' => count($rows),
-		]);
-	}//end versions()
+		return $then($flow);
+	}//end withFlow()
 
 	/**
 	 * Read one version of a flow, including the graph it names.
@@ -1195,17 +1294,22 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function version(string $id, int $version): JSONResponse {
-		$denied = $this->denyUnless(action: 'flow.read');
-		if ($denied !== null) {
-			return $denied;
-		}
+		return $this->withFlow(
+			right: 'flow.read',
+			id: $id,
+			then: fn (Flow $flow): JSONResponse => $this->versionWithGraph(flow: $flow, version: $version)
+		);
+	}//end version()
 
-		try {
-			$flow = $this->flows->find(uuid: $id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
-		}
-
+	/**
+	 * One version of a flow with its graph.
+	 *
+	 * @param Flow $flow    The flow
+	 * @param int  $version The version number
+	 *
+	 * @return JSONResponse The version, or 404 when it does not exist
+	 */
+	private function versionWithGraph(Flow $flow, int $version): JSONResponse {
 		$row = $this->flowVersionService->versionOf(flowUuid: (string)$flow->getUuid(), number: $version);
 		if ($row === null) {
 			return new JSONResponse(['error' => 'No such version'], Http::STATUS_NOT_FOUND);
@@ -1215,7 +1319,7 @@ class FlowController extends Controller {
 		$body['graph'] = $this->flowVersionService->graphOfVersion(version: $row);
 
 		return new JSONResponse($body);
-	}//end version()
+	}//end versionWithGraph()
 
 	/**
 	 * What publishing this flow would be called, without publishing it.
@@ -1236,18 +1340,11 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function versionPreview(string $id): JSONResponse {
-		$denied = $this->denyUnless(action: 'flow.read');
-		if ($denied !== null) {
-			return $denied;
-		}
-
-		try {
-			$flow = $this->flows->find(uuid: $id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
-		}
-
-		return new JSONResponse($this->flowVersionService->previewPublish(flow: $flow));
+		return $this->withFlow(
+			right: 'flow.read',
+			id: $id,
+			then: fn (Flow $flow): JSONResponse => new JSONResponse($this->flowVersionService->previewPublish(flow: $flow))
+		);
 	}//end versionPreview()
 
 	/**
@@ -1265,17 +1362,17 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function publish(string $id): JSONResponse {
-		$denied = $this->denyUnless(action: 'flow.update');
-		if ($denied !== null) {
-			return $denied;
-		}
+		return $this->withFlow(right: 'flow.update', id: $id, then: fn (Flow $flow): JSONResponse => $this->publishVersion(flow: $flow));
+	}//end publish()
 
-		try {
-			$flow = $this->flows->find(uuid: $id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
-		}
-
+	/**
+	 * Publish the draft version of a flow.
+	 *
+	 * @param Flow $flow The flow
+	 *
+	 * @return JSONResponse The published version, or 409 when refused
+	 */
+	private function publishVersion(Flow $flow): JSONResponse {
 		try {
 			$version = $this->flowVersionService->publish(
 				flow: $flow,
@@ -1292,14 +1389,11 @@ class FlowController extends Controller {
 		} catch (FlowLifecycleRefused $e) {
 			return $this->refusal(refusal: $e);
 		} catch (\UnexpectedValueException $e) {
-			return new JSONResponse(
-				['error' => $e->getMessage(), 'kind' => 'version-bump-refused'],
-				Http::STATUS_CONFLICT
-			);
+			return new JSONResponse(['error' => $e->getMessage(), 'kind' => 'version-bump-refused'], Http::STATUS_CONFLICT);
 		}
 
 		return new JSONResponse($version->jsonSerialize());
-	}//end publish()
+	}//end publishVersion()
 
 	/**
 	 * Create a draft version from the published one.
@@ -1316,25 +1410,33 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function draft(string $id): JSONResponse {
-		$denied = $this->denyUnless(action: 'flow.update');
-		if ($denied !== null) {
-			return $denied;
-		}
+		return $this->withFlow(
+			right: 'flow.update',
+			id: $id,
+			then: fn (Flow $flow): JSONResponse => $this->lifecycleStep(
+				step: fn () => $this->flowVersionService->createDraft(flow: $flow),
+				status: Http::STATUS_CREATED
+			)
+		);
+	}//end draft()
 
+	/**
+	 * Run a lifecycle step that yields a version.
+	 *
+	 * @param callable $step   The step
+	 * @param int      $status The status of the success response
+	 *
+	 * @return JSONResponse The version, or 409 when the lifecycle refuses
+	 */
+	private function lifecycleStep(callable $step, int $status): JSONResponse {
 		try {
-			$flow = $this->flows->find(uuid: $id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
-		}
-
-		try {
-			$version = $this->flowVersionService->createDraft(flow: $flow);
+			$version = $step();
 		} catch (FlowLifecycleRefused $e) {
 			return $this->refusal(refusal: $e);
 		}
 
-		return new JSONResponse($version->jsonSerialize(), Http::STATUS_CREATED);
-	}//end draft()
+		return new JSONResponse($version->jsonSerialize(), $status);
+	}//end lifecycleStep()
 
 	/**
 	 * Retire the published version, so the flow backs no new runs.
@@ -1351,24 +1453,14 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function deprecate(string $id): JSONResponse {
-		$denied = $this->denyUnless(action: 'flow.update');
-		if ($denied !== null) {
-			return $denied;
-		}
-
-		try {
-			$flow = $this->flows->find(uuid: $id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
-		}
-
-		try {
-			$version = $this->flowVersionService->deprecate(flow: $flow);
-		} catch (FlowLifecycleRefused $e) {
-			return $this->refusal(refusal: $e);
-		}
-
-		return new JSONResponse($version->jsonSerialize());
+		return $this->withFlow(
+			right: 'flow.update',
+			id: $id,
+			then: fn (Flow $flow): JSONResponse => $this->lifecycleStep(
+				step: fn () => $this->flowVersionService->deprecate(flow: $flow),
+				status: Http::STATUS_OK
+			)
+		);
 	}//end deprecate()
 
 	/**
@@ -1403,31 +1495,25 @@ class FlowController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function adopt(string $id): JSONResponse {
-		$denied = $this->denyUnless(action: 'flow.update');
-		if ($denied !== null) {
-			return $denied;
-		}
+		return $this->withFlow(right: 'flow.update', id: $id, then: fn (Flow $flow): JSONResponse => $this->adoptFlow(flow: $flow));
+	}//end adopt()
 
-		try {
-			$flow = $this->flows->find(uuid: $id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
-		}
-
+	/**
+	 * Adopt a flow.
+	 *
+	 * @param Flow $flow The flow
+	 *
+	 * @return JSONResponse The adopted flow, or 409 when adoption is refused
+	 */
+	private function adoptFlow(Flow $flow): JSONResponse {
 		try {
 			$adopted = $this->flows->adopt(flow: $flow);
 		} catch (FlowAdoptionRefused $e) {
-			return new JSONResponse(
-				[
-					'error' => $e->getMessage(),
-					'reason' => $e->getReason(),
-				],
-				Http::STATUS_CONFLICT
-			);
+			return new JSONResponse(['error' => $e->getMessage(), 'reason' => $e->getReason()], Http::STATUS_CONFLICT);
 		}
 
 		return new JSONResponse($adopted->jsonSerialize());
-	}//end adopt()
+	}//end adoptFlow()
 
 	/**
 	 * The flow fields carried on a create or update request.

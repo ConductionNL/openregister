@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use Throwable;
@@ -47,12 +47,12 @@ class ObjectSlugStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface    $magicMapper    Slug queries on the magic tables.
+	 * @param MagicSlugStoreInterface    $magicMapper    Slug queries on the magic tables.
 	 * @param RegisterMapperInterface $registerMapper Resolves the register of an entity.
 	 * @param ObjectSlugLog  $log            Receives a register that does not resolve.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
+		private readonly MagicSlugStoreInterface $magicMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ObjectSlugLog $log,
 	) {
@@ -105,21 +105,32 @@ class ObjectSlugStore {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function register(int|string|null $registerId): ?Register {
+	public function register(int|string|null $registerId): Register|null {
 		if ($registerId === null || $registerId === '') {
 			return null;
 		}
 
 		$key = (string)$registerId;
 		if (array_key_exists($key, $this->registers) === false) {
-			try {
-				$this->registers[$key] = $this->registerMapper->find(id: (int)$registerId, _rbac: false, _multitenancy: false);
-			} catch (Throwable $e) {
-				$this->log->registerLookupFailed(registerId: $key, reason: $e->getMessage());
-				$this->registers[$key] = null;
-			}
+			$this->registers[$key] = $this->lookup(key: $key);
 		}
 
 		return $this->registers[$key];
 	}//end register()
+
+	/**
+	 * Find a register, logging the failure when it does not resolve.
+	 *
+	 * @param string $key The register id.
+	 *
+	 * @return Register|null The register, or null.
+	 */
+	private function lookup(string $key): Register|null {
+		try {
+			return $this->registerMapper->find(id: (int)$key, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			$this->log->registerLookupFailed(registerId: $key, reason: $e->getMessage());
+			return null;
+		}
+	}//end lookup()
 }//end class

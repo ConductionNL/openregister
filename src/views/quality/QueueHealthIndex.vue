@@ -35,34 +35,11 @@
 			<template v-else>
 				<section class="webhookHealthSection">
 					<h2>{{ t('openregister', 'Per-webhook health') }}</h2>
-					<table class="webhookHealthTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Webhook') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Delivered') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Failed') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Pending retries') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="webhook in webhooks" :key="webhook.id">
-								<td>{{ webhook.name || webhook.url }}</td>
-								<td>{{ statsFor(webhook.id).successful ?? 0 }}</td>
-								<td>{{ statsFor(webhook.id).failed ?? 0 }}</td>
-								<td>
-									{{ statsFor(webhook.id).pendingRetries ?? 0 }}
-								</td>
-							</tr>
-						</tbody>
-					</table>
+					<CnDataTable :columns="healthColumns" :rows="healthRows">
+						<template #column-name="{ value }">
+							{{ value }}
+						</template>
+					</CnDataTable>
 				</section>
 
 				<section class="recentFailuresSection">
@@ -74,38 +51,21 @@
 							<Webhook :size="48" />
 						</template>
 					</NcEmptyContent>
-					<table v-else class="recentFailuresTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Webhook') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Event') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Status code') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Error') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Created') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr
-								v-for="(log, index) in webhookFailures"
-								:key="log.id || index">
-								<td>{{ log.webhook }}</td>
-								<td>{{ log.eventClass }}</td>
-								<td>{{ log.statusCode ?? '—' }}</td>
-								<td>{{ log.errorMessage ?? '—' }}</td>
-								<td>{{ log.created ?? '—' }}</td>
-							</tr>
-						</tbody>
-					</table>
+					<CnDataTable
+						v-else
+						:columns="failureColumns"
+						:rows="failureRows"
+						rowKey="rowKey">
+						<template #column-webhook="{ value }">
+							{{ value }}
+						</template>
+						<template #column-eventClass="{ value }">
+							{{ value }}
+						</template>
+						<template #column-errorMessage="{ value }">
+							{{ value }}
+						</template>
+					</CnDataTable>
 				</section>
 			</template>
 		</div>
@@ -113,6 +73,8 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
+import { translate as t } from '@nextcloud/l10n'
 import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
 import { qualityStore } from '../../store/store.js'
@@ -121,6 +83,7 @@ export default {
 	name: 'QueueHealthIndex',
 
 	components: {
+		CnDataTable,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
@@ -147,6 +110,68 @@ export default {
 		 */
 		webhookFailures() {
 			return qualityStore.webhookFailures
+		},
+
+		/**
+		 * @spec exclude UI plumbing — static column definitions for the health table
+		 * @return {Array<object>}
+		 */
+		healthColumns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Webhook'), cellClass: 'cn-cell--wrap' },
+				{ key: 'successful', label: t('openregister', 'Delivered') },
+				{ key: 'failed', label: t('openregister', 'Failed') },
+				{ key: 'pendingRetries', label: t('openregister', 'Pending retries') },
+			]
+		},
+
+		/**
+		 * One row per webhook with its cached counts; a missing count reads 0.
+		 *
+		 * @spec exclude UI plumbing — shapes the store's webhooks and stats for the table
+		 * @return {Array<object>}
+		 */
+		healthRows() {
+			return this.webhooks.map((webhook) => {
+				const stats = this.statsFor(webhook.id)
+				return {
+					id: webhook.id,
+					name: webhook.name || webhook.url,
+					successful: stats.successful ?? 0,
+					failed: stats.failed ?? 0,
+					pendingRetries: stats.pendingRetries ?? 0,
+				}
+			})
+		},
+
+		/**
+		 * @spec exclude UI plumbing — static column definitions for the failures table
+		 * @return {Array<object>}
+		 */
+		failureColumns() {
+			return [
+				{ key: 'webhook', label: t('openregister', 'Webhook'), cellClass: 'cn-cell--wrap' },
+				{ key: 'eventClass', label: t('openregister', 'Event'), cellClass: 'cn-cell--wrap' },
+				{ key: 'statusCode', label: t('openregister', 'Status code') },
+				{ key: 'errorMessage', label: t('openregister', 'Error'), cellClass: 'cn-cell--wrap' },
+				{ key: 'created', label: t('openregister', 'Created') },
+			]
+		},
+
+		/**
+		 * The recent failures, keyed by id or position; an absent value reads '—'.
+		 *
+		 * @spec exclude UI plumbing — shapes the store's failures for the table
+		 * @return {Array<object>}
+		 */
+		failureRows() {
+			return this.webhookFailures.map((log, index) => ({
+				...log,
+				rowKey: log.id || index,
+				statusCode: log.statusCode ?? '—',
+				errorMessage: log.errorMessage ?? '—',
+				created: log.created ?? '—',
+			}))
 		},
 	},
 
@@ -183,29 +208,10 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
 
-@include view-container-3;
-
-.viewHeader h1 {
-	margin-bottom: 4px;
-}
+@include view-container-3-subtitled;
 
 .webhookHealthSection,
 .recentFailuresSection {
 	margin-top: 24px;
-}
-
-.webhookHealthTable,
-.recentFailuresTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.webhookHealthTable th,
-.webhookHealthTable td,
-.recentFailuresTable th,
-.recentFailuresTable td {
-	text-align: left;
-	padding: 8px;
-	border-bottom: 1px solid var(--color-border);
 }
 </style>

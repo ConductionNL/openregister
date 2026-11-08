@@ -36,12 +36,13 @@ use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 
 /**
  * Serialises and installs flows through the federated-config engine.
  */
-class FlowShareableConfigType implements IShareableConfigType {
+class FlowShareableConfigType implements IShareableConfigType, FlowShareableConfigTypeInterface {
 
 	/**
 	 * The portable fields a flow carries when shared (never id/uuid/owner/org).
@@ -232,11 +233,7 @@ class FlowShareableConfigType implements IShareableConfigType {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	private function newUuid(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
-
-		return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+		return Uuid::v4()->toRfc4122();
 	}//end newUuid()
 
 	/**

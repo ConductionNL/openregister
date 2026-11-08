@@ -37,13 +37,12 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
 /**
  * Loads, gates and disables brokered OAuth2 connections.
  */
-class OAuth2ConnectionRepository {
+class OAuth2ConnectionRepository implements OAuth2ConnectionRepositoryInterface {
 	/**
 	 * The organisation credential scope.
 	 *
@@ -76,38 +75,15 @@ class OAuth2ConnectionRepository {
 	 * @return ObjectEntity|null The credential, or null when absent or not manageable.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-re-authorisation-overrides-the-same-credential
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function findManageable(string $credentialId, string $uid): ?ObjectEntity {
 		try {
-			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $credentialId,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				_rbac: false,
-				_multitenancy: false,
-				_render: false
-			));
+			$entity = $this->objects()->find(credentialId: $credentialId);
 		} catch (Throwable $failure) {
 			return null;
 		}
 
-		if ($entity instanceof ObjectEntity === false) {
-			return null;
-		}
-
-		$data = $entity->jsonSerialize();
-		if ((string)($data['scope'] ?? 'personal') !== self::SCOPE_ORGANISATION) {
-			if ((string)$entity->getOwner() !== $uid) {
-				return null;
-			}
-
-			return $entity;
-		}
-
-		$organisation = (string)($data['organisation'] ?? '');
-		if ($organisation === '' || $this->organisationService->isOrganisationAdmin($organisation, $uid) === false) {
+		if ($entity === null || $this->mayManage(entity: $entity, uid: $uid) === false) {
 			return null;
 		}
 
@@ -132,17 +108,55 @@ class OAuth2ConnectionRepository {
 			return null;
 		}
 
-		$uuid = $this->organisationService->getActiveOrganisation()?->getUuid();
-		if ($uuid === null || $uuid === '') {
-			throw new InvalidArgumentException(message: 'no active organisation to connect for');
-		}
-
+		$uuid = $this->activeOrganisation();
 		if ($this->organisationService->isOrganisationAdmin($uuid, $uid) === false) {
 			throw new CredentialAccessDeniedException(message: 'only an organisation administrator may connect a shared account');
 		}
 
 		return $uuid;
 	}//end gatedOrganisation()
+
+	/**
+	 * Whether the caller may manage this connection.
+	 *
+	 * A personal connection is managed by its owner; an organisation connection by
+	 * an administrator of the organisation it names, and by nobody when it names none.
+	 *
+	 * @param ObjectEntity $entity The credential object.
+	 * @param string $uid The caller.
+	 *
+	 * @return boolean True when the caller may manage it.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-re-authorisation-overrides-the-same-credential
+	 */
+	private function mayManage(ObjectEntity $entity, string $uid): bool {
+		$data = $entity->jsonSerialize();
+		if ((string)($data['scope'] ?? 'personal') !== self::SCOPE_ORGANISATION) {
+			return (string)$entity->getOwner() === $uid;
+		}
+
+		$organisation = (string)($data['organisation'] ?? '');
+
+		return $organisation !== '' && $this->organisationService->isOrganisationAdmin($organisation, $uid) === true;
+	}//end mayManage()
+
+	/**
+	 * The caller's active organisation, refusing a connect when there is none.
+	 *
+	 * @return string The organisation UUID.
+	 *
+	 * @throws InvalidArgumentException When there is no active organisation.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 */
+	private function activeOrganisation(): string {
+		$uuid = (string)$this->organisationService->getActiveOrganisation()?->getUuid();
+		if ($uuid === '') {
+			throw new InvalidArgumentException(message: 'no active organisation to connect for');
+		}
+
+		return $uuid;
+	}//end activeOrganisation()
 
 	/**
 	 * Delete a connection's stored token set and mark it disabled.
@@ -166,14 +180,8 @@ class OAuth2ConnectionRepository {
 		$scope = (string)($data['scope'] ?? 'personal');
 		$this->credentialStore->delete($credentialId, $scope);
 
-		$this->objectService->saveObject(
-			object: array_merge($data, ['status' => 'disabled', 'lastError' => $lastError, 'expiresAt' => null]),
-			register: CredentialBrokerService::REGISTER,
-			schema: CredentialBrokerService::SCHEMA,
-			uuid: $credentialId,
-			_rbac: false,
-			_multitenancy: false
-		);
+		$disabled = array_merge($data, ['status' => 'disabled', 'lastError' => $lastError, 'expiresAt' => null]);
+		$this->objects()->save(credentialId: $credentialId, object: $disabled);
 	}//end disable()
 
 	/**
@@ -195,12 +203,17 @@ class OAuth2ConnectionRepository {
 	public function discard(string $credentialId, string $scope): void {
 		$this->credentialStore->delete($credentialId, $scope);
 
-		$this->objectService->deleteObject(
-			uuid: $credentialId,
-			register: CredentialBrokerService::REGISTER,
-			schema: CredentialBrokerService::SCHEMA,
-			_rbac: false,
-			_multitenancy: false
-		);
+		$this->objects()->delete(credentialId: $credentialId);
 	}//end discard()
+
+	/**
+	 * The credential-object lookup and writes, over this repository's object service.
+	 *
+	 * @return OAuth2CredentialObjects The credential objects.
+	 *
+	 * @spec exclude private accessor with no behaviour of its own
+	 */
+	private function objects(): OAuth2CredentialObjects {
+		return new OAuth2CredentialObjects(objectService: $this->objectService);
+	}//end objects()
 }//end class

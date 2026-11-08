@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Timeline;
 
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Notifications\Service\Timeline\WrittenEntry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -199,10 +201,15 @@ class EntryMentionGoldenTest extends TestCase {
 		$object->setSchema('3');
 		$object->setName('Case one');
 
+		$entry = new TimelineEntry();
+		$entry->setUuid('entry-9');
+
 		$pulled = $service->apply(
-			$object,
-			'entry-9',
-			'@handler asks @anna, @bob, @"carl" and @dora\'s team; @o\'brien, @nobody and info@anna.nl, @anna again',
+			new WrittenEntry(
+				$object,
+				$entry,
+				'@handler asks @anna, @bob, @"carl" and @dora\'s team; @o\'brien, @nobody and info@anna.nl, @anna again'
+			),
 			'zaken',
 			'zaak'
 		);

@@ -86,27 +86,11 @@
 						:series="histogramSeries"
 						:categories="histogramCategories"
 						@error="chartAvailable = false" />
-					<table
+					<CnDataTable
 						v-else
-						class="histogramTable"
-						data-testid="histogram-fallback-table">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Bucket') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Count') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="(count, index) in histogram" :key="index">
-								<td>{{ histogramCategories[index] }}</td>
-								<td>{{ count }}</td>
-							</tr>
-						</tbody>
-					</table>
+						data-testid="histogram-fallback-table"
+						:columns="histogramColumns"
+						:rows="histogramRows" />
 				</section>
 
 				<!-- Lowest-quality table -->
@@ -119,36 +103,14 @@
 							<ChartBoxOutline :size="48" />
 						</template>
 					</NcEmptyContent>
-					<table v-else class="lowestQualityTable">
-						<thead>
-							<tr>
-								<th scope="col">
-									{{ t('openregister', 'Id') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Quality score') }}
-								</th>
-								<th scope="col">
-									{{ t('openregister', 'Quality status') }}
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="item in lowQualityObjects" :key="item.id">
-								<td>{{ item.id }}</td>
-								<td>{{ item.qualityScore }}</td>
-								<td>
-									<span
-										:class="
-											'badge badge-status-'
-											+ item.qualityStatus
-										"
-										>{{ item.qualityStatus }}</span
-									>
-								</td>
-							</tr>
-						</tbody>
-					</table>
+					<CnDataTable v-else :columns="lowQualityColumns" :rows="lowQualityObjects">
+						<template #column-qualityScore="{ value }">
+							{{ value }}
+						</template>
+						<template #column-qualityStatus="{ row }">
+							<span :class="'badge badge-status-' + row.qualityStatus">{{ row.qualityStatus }}</span>
+						</template>
+					</CnDataTable>
 					<RangePager
 						:offset="lowQualityOffset"
 						:limit="lowQualityLimit"
@@ -162,7 +124,7 @@
 </template>
 
 <script>
-import { CnChartWidget } from '@conduction/nextcloud-vue'
+import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
@@ -180,6 +142,7 @@ export default {
 		NcEmptyContent,
 		NcLoadingIcon,
 		CnChartWidget,
+		CnDataTable,
 		ChartBoxOutline,
 		RegisterSchemaSelector,
 	},
@@ -236,6 +199,41 @@ export default {
 		 */
 		histogramSeries() {
 			return [{ name: t('openregister', 'Objects'), data: this.histogram }]
+		},
+
+		/**
+		 * @spec exclude UI plumbing — static column definitions for the histogram fallback table
+		 * @return {Array<object>}
+		 */
+		histogramColumns() {
+			return [
+				{ key: 'bucket', label: t('openregister', 'Bucket') },
+				{ key: 'count', label: t('openregister', 'Count') },
+			]
+		},
+
+		/**
+		 * @spec exclude UI plumbing — one fallback-table row per histogram bucket
+		 * @return {Array<object>}
+		 */
+		histogramRows() {
+			return this.histogram.map((count, index) => ({
+				id: index,
+				bucket: this.histogramCategories[index],
+				count,
+			}))
+		},
+
+		/**
+		 * @spec exclude UI plumbing — static column definitions for the lowest-quality table
+		 * @return {Array<object>}
+		 */
+		lowQualityColumns() {
+			return [
+				{ key: 'id', label: t('openregister', 'Id') },
+				{ key: 'qualityScore', label: t('openregister', 'Quality score') },
+				{ key: 'qualityStatus', label: t('openregister', 'Quality status') },
+			]
 		},
 
 		/**
@@ -321,11 +319,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
 
-@include view-container-3;
-
-.viewHeader h1 {
-	margin-bottom: 4px;
-}
+@include view-container-3-subtitled;
 
 .kpiRow {
 	display: flex;
@@ -356,21 +350,6 @@ export default {
 .histogramSection,
 .lowestQualitySection {
 	margin-top: 24px;
-}
-
-.histogramTable,
-.lowestQualityTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.histogramTable th,
-.histogramTable td,
-.lowestQualityTable th,
-.lowestQualityTable td {
-	text-align: left;
-	padding: 8px;
-	border-bottom: 1px solid var(--color-border);
 }
 
 @include pagination-2-rules;

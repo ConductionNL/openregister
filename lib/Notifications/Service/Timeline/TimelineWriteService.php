@@ -56,25 +56,45 @@ class TimelineWriteService {
 	use OptionalPayloadString;
 
 	/**
+	 * Records what the text points at.
+	 *
+	 * @var ReferenceService
+	 */
+	private readonly ReferenceService $references;
+
+	/**
+	 * Notifies and subscribes whoever was named.
+	 *
+	 * @var EntryMentionService
+	 */
+	private readonly EntryMentionService $mentions;
+
+	/**
+	 * Inserts administered canned text.
+	 *
+	 * @var TextBlockService
+	 */
+	private readonly TextBlockService $blocks;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param NoteServiceInterface          $notes      Writes the comment that carries the text.
-	 * @param TimelineEntryService $entries    Writes the record.
-	 * @param ReferenceService     $references Records what the text points at.
-	 * @param EntryMentionService  $mentions   Notifies and subscribes whoever was named.
-	 * @param TextBlockService     $blocks     Inserts administered canned text.
-	 * @param LoggerInterface      $logger     Logger for the derived steps that fail soft.
+	 * @param NoteServiceInterface     $notes   Writes the comment that carries the text.
+	 * @param TimelineEntryService     $entries Writes the record.
+	 * @param TimelineEntryDerivations $derived The references, mentions and text blocks of the text.
+	 * @param LoggerInterface          $logger  Logger for the derived steps that fail soft.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly NoteServiceInterface $notes,
 		private readonly TimelineEntryService $entries,
-		private readonly ReferenceService $references,
-		private readonly EntryMentionService $mentions,
-		private readonly TextBlockService $blocks,
+		TimelineEntryDerivations $derived,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->references = $derived->references;
+		$this->mentions = $derived->mentions;
+		$this->blocks = $derived->blocks;
 	}//end __construct()
 
 	/**
@@ -255,9 +275,7 @@ class TimelineWriteService {
 	private function applyMentions(WrittenEntry $written, array $data): void {
 		try {
 			$this->mentions->apply(
-				object: $written->object,
-				entryUuid: $written->uuid(),
-				text: $written->message,
+				written: $written,
 				register: $this->stringOrNull(data: $data, key: 'register'),
 				schema: $this->stringOrNull(data: $data, key: 'schema')
 			);

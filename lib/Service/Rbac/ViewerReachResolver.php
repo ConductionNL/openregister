@@ -46,7 +46,7 @@ use Throwable;
  *
  * @spec openspec/specs/saved-search-views/spec.md
  */
-class ViewerReachResolver {
+class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCheckInterface {
 
 	/**
 	 * The stateless resolver that reads a view's own share block.

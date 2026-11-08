@@ -26,14 +26,15 @@ use DateInterval;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
+use OCA\OpenRegister\BackgroundJob\Support\ProcessingLogRetentionStores;
 
 /**
  * Daily prune of `openregister_processing_log` by the `created` index.
@@ -70,21 +71,35 @@ class ProcessingLogRetentionJob extends TimedJob {
 	public const ACTION_PRUNED = 'processing-log.pruned';
 
 	/**
+	 * Deletes expired entries.
+	 *
+	 * @var ProcessingLogMapperInterface
+	 */
+	private readonly ProcessingLogMapperInterface $entries;
+
+	/**
+	 * Holds the record of each purge.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrail;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory        $time       The clock.
-	 * @param ProcessingLogMapper $entries    Deletes expired entries.
-	 * @param AuditTrailMapper    $auditTrail Holds the record of each purge.
+	 * @param ProcessingLogRetentionStores $stores Processing log and the audit trail of each purge.
 	 * @param IAppConfig          $config     Reads the retention period.
 	 * @param LoggerInterface     $logger     Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ProcessingLogMapper $entries,
-		private readonly AuditTrailMapper $auditTrail,
+		ProcessingLogRetentionStores $stores,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->entries = $stores->entries;
+		$this->auditTrail = $stores->auditTrail;
 		parent::__construct(time: $time);
 
 		$this->setInterval(seconds: 86400);

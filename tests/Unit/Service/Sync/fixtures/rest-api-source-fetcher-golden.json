@@ -1,0 +1,820 @@
+{
+    "apikey custom header": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json",
+                            "X-Token": "plain"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": [
+                "X-Token",
+                "plain"
+            ]
+        }
+    },
+    "apikey default header": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json",
+                            "X-Api-Key": "dec(secret)"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": [
+                "enc:secret"
+            ]
+        }
+    },
+    "apikey header Accept": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "k"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": [
+                "Accept",
+                "k"
+            ]
+        }
+    },
+    "apikey no key": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json",
+                            "X-Api-Key": ""
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "apikey numeric header": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json",
+                            "123": "k"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": [
+                "123",
+                "k"
+            ]
+        }
+    },
+    "bare list": {
+        "outcome": [
+            "b1",
+            "b2"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "basic auth": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json",
+                            "Authorization": "Basic ZGVjKGJvYik6ZGVjKHB3KQ=="
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": [
+                "enc:bob",
+                "enc:pw"
+            ]
+        }
+    },
+    "basic auth missing parts": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json",
+                            "Authorization": "Basic dTo="
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": [
+                "u"
+            ]
+        }
+    },
+    "data key": {
+        "outcome": [
+            "d1"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "fetch not json": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Non-JSON response fetching record 9."
+        },
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records/9",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "fetch record": {
+        "outcome": {
+            "id": "a b/1",
+            "name": "x"
+        },
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records/a%20b%2F1",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "fetch trailing slash base": {
+        "outcome": {
+            "id": 9
+        },
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records/9",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "fetch with basic auth": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records/9",
+                    {
+                        "headers": {
+                            "Accept": "application/json",
+                            "Authorization": "Basic dTpkZWMocCk="
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": [
+                "u",
+                "enc:p"
+            ]
+        }
+    },
+    "items key": {
+        "outcome": [
+            "i1"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "link header next": {
+        "outcome": [
+            "1",
+            "4"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ],
+                [
+                    "GET",
+                    "https://example.test/api/records?h=2",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "link header without next": {
+        "outcome": [
+            "1"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "links next href": {
+        "outcome": [
+            "1",
+            "3"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ],
+                [
+                    "GET",
+                    "https://example.test/api/records?p=2",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "links next numeric href": {
+        "outcome": [
+            "1"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ],
+                [
+                    "GET",
+                    "7",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "next empty string": {
+        "outcome": [
+            "1"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "next not a string": {
+        "outcome": [
+            "1"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "next top level": {
+        "outcome": [
+            "1",
+            "2"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ],
+                [
+                    "GET",
+                    "https://example.test/api/records?page=2",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "no auth type": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "no url": {
+        "outcome": {
+            "thrown": "RuntimeException",
+            "message": "Source has no endpoint URL configured."
+        },
+        "record": {
+            "requests": [],
+            "decrypted": []
+        }
+    },
+    "not json": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "not modified": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "object without list": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "page loop is bounded": {
+        "outcome": [
+            "same"
+        ],
+        "record": {
+            "requests": {
+                "count": 1000,
+                "first": [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            },
+            "decrypted": []
+        }
+    },
+    "results list": {
+        "outcome": [
+            "1",
+            "a"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "scalar json": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "second page not json": {
+        "outcome": [
+            "1"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ],
+                [
+                    "GET",
+                    "https://example.test/api/records?page=2",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "second page not modified": {
+        "outcome": [
+            "1"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ],
+                [
+                    "GET",
+                    "https://example.test/api/records?page=2",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "since and apikey": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json",
+                            "If-Modified-Since": "Thu, 01 Jan 2026 00:00:00 GMT"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": [
+                "If-Modified-Since",
+                "k"
+            ]
+        }
+    },
+    "since header": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json",
+                            "If-Modified-Since": "Wed, 04 Mar 2026 03:06:07 GMT"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "since unparseable": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    },
+    "unknown auth type": {
+        "outcome": [],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": [
+                "enc:x"
+            ]
+        }
+    },
+    "value key": {
+        "outcome": [
+            "v1"
+        ],
+        "record": {
+            "requests": [
+                [
+                    "GET",
+                    "https://example.test/api/records",
+                    {
+                        "headers": {
+                            "Accept": "application/json"
+                        },
+                        "timeout": 30,
+                        "connect_timeout": 5
+                    }
+                ]
+            ],
+            "decrypted": []
+        }
+    }
+}

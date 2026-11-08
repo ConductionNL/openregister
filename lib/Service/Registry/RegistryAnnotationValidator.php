@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Service\Registry;
  *
  * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md
  */
-final class RegistryAnnotationValidator {
+final class RegistryAnnotationValidator implements RegistryAnnotationValidatorInterface {
 
 	/**
 	 * Validate the registry annotation.

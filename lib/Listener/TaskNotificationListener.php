@@ -40,8 +40,8 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapters;
+use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Notification\IManager as INotificationManager;
@@ -62,14 +62,14 @@ class TaskNotificationListener implements IEventListener {
 	 *
 	 * @param NotificationRuleDispatcherInterface $dispatcher The one dispatcher.
 	 * @param TaskNotificationRulesInterface $rules The task rule registry.
-	 * @param TaskInboxService $inbox The row the adapter is built from.
+	 * @param TaskInboxServiceInterface $inbox The row the adapter is built from.
 	 * @param INotificationManager $notifications Withdrawal only, never delivery.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
 		private readonly NotificationRuleDispatcherInterface $dispatcher,
 		private readonly TaskNotificationRulesInterface $rules,
-		private readonly TaskInboxService $inbox,
+		private readonly TaskInboxServiceInterface $inbox,
 		private readonly INotificationManager $notifications,
 		private readonly LoggerInterface $logger,
 	) {
@@ -101,7 +101,7 @@ class TaskNotificationListener implements IEventListener {
 			}
 
 			$row = $this->inbox->enrich(task: $task);
-			$adapter = new TaskObjectAdapter(
+			$adapter = TaskObjectAdapters::forTask(
 				task: $task,
 				row: $row,
 				extra: ['previousAssignee' => $event->getPreviousAssignee()]

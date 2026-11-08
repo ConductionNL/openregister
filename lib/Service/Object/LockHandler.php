@@ -34,11 +34,9 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCP\IGroupManager;
-use OCP\IUserSession;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -60,29 +58,49 @@ use Psr\Log\LoggerInterface;
  */
 class LockHandler {
 	/**
+	 * Magic mapper for magic table operations.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Audit trail mapper for logging actions.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Pre-creation locks, for identifiers that do not resolve to a stored object.
+	 *
+	 * @var AdvisoryLockStore
+	 */
+	private readonly AdvisoryLockStore $advisory;
+
+	/**
+	 * Bookkeeping for run-held locks, so the terminal listener and the sweep can find them.
+	 *
+	 * @var RunLockRegistry|null
+	 */
+	private readonly ?RunLockRegistry $runLocks;
+
+	/**
 	 * Constructor
 	 *
-	 * @param MagicMapperInterface $magicMapper Magic mapper for magic table operations
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logging actions
-	 * @param LoggerInterface $logger PSR-3 logger
-	 * @param IUserSession $userSession User session for authorization checks
-	 * @param IGroupManager $groupManager Group manager for admin checks
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for resolving manage rules
-	 * @param AdvisoryLockStore $advisory Pre-creation locks, for identifiers that do not resolve to a stored object
-	 * @param RunLockRegistry|null $runLocks Bookkeeping for run-held locks, so the terminal listener and the sweep can find them without reading objects
-	 * @param PermissionHandlerInterface|null $permissionHandler RBAC, asked for update permission before a user takes a lock
+	 * @param LockStores        $stores        The magic, audit trail, advisory and run-lock stores
+	 * @param LoggerInterface   $logger        PSR-3 logger
+	 * @param LockAuthorization $authorization Who may take, release and break a lock
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		LockStores $stores,
 		private readonly LoggerInterface $logger,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly AdvisoryLockStore $advisory,
-		private readonly ?RunLockRegistry $runLocks = null,
-		private readonly ?PermissionHandlerInterface $permissionHandler = null,
+		private readonly LockAuthorization $authorization,
 	) {
+		$this->magicMapper      = $stores->magicMapper;
+		$this->auditTrailMapper = $stores->auditTrailMapper;
+		$this->advisory         = $stores->advisory;
+		$this->runLocks         = $stores->runLocks;
 	}//end __construct()
 
 	/**
@@ -120,130 +138,6 @@ class LockHandler {
 	}//end findObjectWithContext()
 
 	/**
-	 * Check if the current user has schema-manage permission on the schema
-	 * owning the given object.
-	 *
-	 * Default-SECURE: a schema with no `manage` authorization rule can only be
-	 * managed by administrators (admins always pass). When manage rules are
-	 * present, group-membership grants permission.
-	 *
-	 * @param ObjectEntity $object The object whose owning schema is checked.
-	 *
-	 * @return bool True if the current user may manage the owning schema.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 */
-	private function callerHasSchemaManagePermission(ObjectEntity $object): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		// Admins always pass.
-		if ($this->groupManager->isAdmin($user->getUID()) === true) {
-			return true;
-		}
-
-		$schemaId = $object->getSchema();
-		if ($schemaId === null || $schemaId === '') {
-			return false;
-		}
-
-		try {
-			$schema = $this->schemaMapper->find((int)$schemaId);
-			$authorization = $schema->getAuthorization();
-		} catch (\Throwable $e) {
-			return false;
-		}
-
-		if (empty($authorization) === true || isset($authorization['manage']) === false) {
-			// Default-secure: no manage rule defined → admin-only (failed above).
-			return false;
-		}
-
-		try {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
-		} catch (\Throwable $e) {
-			return false;
-		}
-
-		$manageRules = $authorization['manage'];
-		foreach ($userGroups as $groupId) {
-			foreach ($manageRules as $entry) {
-				if (is_string($entry) === true && $entry === $groupId) {
-					return true;
-				}
-
-				if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}//end callerHasSchemaManagePermission()
-
-	/**
-	 * Authorize an unlock request.
-	 *
-	 * The caller may unlock the object only when one of:
-	 *  - the caller is the lock holder (the user recorded in the lock payload), OR
-	 *  - the caller is the object owner (see `ObjectEntity::getOwner()`), OR
-	 *  - the caller has schema-manage permission on the owning schema, OR
-	 *  - the caller is a Nextcloud administrator.
-	 *
-	 * Anonymous callers are always refused. This closes the wave-3 C14
-	 * finding where any authenticated user could unlock any locked object.
-	 *
-	 * @param ObjectEntity $object The locked object the caller wants to unlock.
-	 * @param string|null $runUuid The flow run asking, when a run is asking.
-	 *
-	 * @return bool True if the caller may unlock this object.
-	 *
-	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-an-administrator-may-break-a-lock-and-the-break-is-recorded
-	 */
-	private function callerMayUnlock(ObjectEntity $object, ?string $runUuid = null): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		$userId = $user->getUID();
-
-		// Admins always pass. For a run lock this is the BREAK-LOCK route and
-		// the only one, so a wedged run cannot hold a case hostage; callers
-		// that mean to break a run's lock should use breakLock(), which
-		// records the displacement.
-		if ($this->groupManager->isAdmin($userId) === true) {
-			return true;
-		}
-
-		// The holder. For a run lock this admits only the holding run, and in
-		// particular NOT the run's own runAs user: a person must not be able
-		// to walk in behind the identity the run happens to execute as.
-		if ($object->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === false) {
-			return true;
-		}
-
-		// The object-owner and schema-manage routes are for USER locks only.
-		// Extending them to run locks would mean any case owner could quietly
-		// defeat the engine's mutual exclusion, which is the whole point of a
-		// run lock. They keep an administrator break as their escape hatch.
-		if ($object->getLockedByRun() !== null) {
-			return false;
-		}
-
-		// Object owner.
-		if ($object->getOwner() === $userId) {
-			return true;
-		}
-
-		// Schema-manage permission.
-		return $this->callerHasSchemaManagePermission(object: $object);
-	}//end callerMayUnlock()
-
-	/**
 	 * Lock an object
 	 *
 	 * Locks an object to prevent concurrent modifications.
@@ -275,84 +169,17 @@ class LockHandler {
 		?string $runUuid = null,
 		?string $nodeId = null,
 	): array {
-		$this->logger->debug(
-			message: '[LockHandler] Locking object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'identifier' => $identifier,
-				'process' => $process,
-				'duration' => $duration,
-				'advisory' => $advisory,
-			]
-		);
+		$request = new LockRequest(identifier: $identifier, process: $process, duration: $duration, runUuid: $runUuid, nodeId: $nodeId);
+		$this->logRequest(request: $request, advisory: $advisory);
 
-		// Advisory (pre-creation) fast-path: the caller knows the identifier is a
-		// synthetic key that does NOT resolve to a stored object (e.g. openbuild's
-		// `createApp:<slug>` guard). Go straight to the appConfig-backed advisory
-		// lock and skip findObjectWithContext, whose findAcrossAllMagicTables scan
-		// would otherwise query every magic table just to conclude "not found".
-		if ($advisory === true) {
-			return $this->advisory->acquire(identifier: $identifier, process: $process, duration: $duration);
-		}
-
-		try {
-			// Find the object and its register/schema context.
-			try {
-				$context = $this->findObjectWithContext(identifier: $identifier);
-			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-				// Pre-creation / advisory lock: the identifier does not resolve
-				// to a stored object (e.g. the openbuild wizard locks
-				// `createApp:<slug>` before the object exists). Fall back to an
-				// advisory lock keyed by the arbitrary string so create-then-store
-				// flows work instead of failing with a 404/422.
-				return $this->advisory->acquire(
-					identifier: $identifier,
-					process: $process,
-					duration: $duration
-				);
-			}
-
-			return $this->lockStoredObject(
-				context: $context,
-				duration: $duration,
-				process: $process,
-				runUuid: $runUuid,
-				nodeId: $nodeId
-			);
-		} catch (LockedException $e) {
-			$this->logger->warning(
-				message: '[LockHandler] Object is already locked',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $identifier,
-					'error' => $e->getMessage(),
-				]
-			);
-			throw $e;
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[LockHandler] Failed to lock object',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $identifier,
-					'error' => $e->getMessage(),
-				]
-			);
-			throw $e;
-		}//end try
+		return $this->acquire(request: $request, advisory: $advisory);
 	}//end lock()
 
 	/**
 	 * Take the lock on a resolved object and record it.
 	 *
-	 * @param array $context The resolved object with its register and schema.
-	 * @param int|null $duration Lock duration in seconds.
-	 * @param string|null $process What the lock was taken for.
-	 * @param string|null $runUuid Flow run taking the lock, for a run-scoped lock.
-	 * @param string|null $nodeId Flow node that took it, recorded for the sweep.
+	 * @param array       $context The resolved object with its register and schema.
+	 * @param LockRequest $request What the caller asked for.
 	 *
 	 * @return array Lock result with locked details and uuid.
 	 *
@@ -367,67 +194,23 @@ class LockHandler {
 	 *
 	 * @spec openspec/changes/lock-needs-update-permission/specs/lock-needs-update-permission/spec.md#requirement-a-user-lock-needs-update-permission-on-the-object
 	 */
-	private function lockStoredObject(
-		array $context,
-		?int $duration,
-		?string $process,
-		?string $runUuid,
-		?string $nodeId,
-	): array {
-		$objectBefore = $context['object'];
-
-		// A lock refuses every other writer, and one taken without a duration
-		// holds until it is unlocked, so taking it needs the right to update
-		// the object, not only to find it. A flow run is asked the same: it
-		// runs as its acting user, whom the session then names.
-		$this->permissionHandler?->checkPermission(
-			schema: $context['schema'],
-			action: 'update',
-			userId: null,
-			objectOwner: $objectBefore->getOwner(),
-			_rbac: true,
-			object: $objectBefore
-		);
+	private function lockStoredObject(array $context, LockRequest $request): array {
+		$this->authorization->assertMayLock(context: $context);
 
 		// Use MagicMapper for lock operation.
 		$objectAfter = $this->magicMapper->lockObjectEntity(
-			entity: $objectBefore,
+			entity: $context['object'],
 			register: $context['register'],
 			schema: $context['schema'],
-			lockDuration: $duration,
-			process: $process,
-			runUuid: $runUuid
+			lockDuration: $request->duration,
+			process: $request->process,
+			runUuid: $request->runUuid
 		);
+		$this->recordLock(before: $context['object'], after: $objectAfter, request: $request);
 
-		// Record a run's lock so the terminal listener and the sweep can find
-		// it without reading objects. Bookkeeping only: the payload on the
-		// object stays the sole authority for the write guard, so a failure
-		// to record must not undo a lock that was taken.
-		$this->runLocks?->record(object: $objectAfter, runUuid: $runUuid, nodeId: $nodeId);
-
-		// Record lock action in audit trail.
-		$this->auditTrailMapper->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'lock');
-
-		$this->logger->info(
-			message: '[LockHandler] Object locked successfully',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $objectAfter->getUuid(),
-				'process' => $process,
-			]
-		);
-
-		return [
-			'uuid' => $objectAfter->getUuid(),
-			'locked' => $objectAfter->getLocked(),
-			// Whether the lock this call just took is actually HELD, read back
-			// off the entity rather than assumed from the fact that the write
-			// did not throw. The endpoint reported `locked: true` as a
-			// literal, so it said yes to a lock that had already expired and
-			// no test could ever have caught it.
-			'held' => $objectAfter->isLocked(),
-		];
+		// `held` is read back off the entity rather than assumed from the fact that
+		// the write did not throw, so an already-expired lock is not reported as held.
+		return ['uuid' => $objectAfter->getUuid(), 'locked' => $objectAfter->getLocked(), 'held' => $objectAfter->isLocked()];
 	}//end lockStoredObject()
 
 	/**
@@ -467,141 +250,65 @@ class LockHandler {
 		?string $runUuid = null,
 		bool $break = false,
 	): bool {
+		return $this->unlockRequested(request: new UnlockRequest(identifier: $identifier, advisory: $advisory, runUuid: $runUuid, break: $break));
+	}//end unlock()
+
+	/**
+	 * Release the lock a request names: an advisory lock directly, any other through the lookup.
+	 *
+	 * @param UnlockRequest $request The object, the kind of lock and who releases it.
+	 *
+	 * @return bool True when a lock was released, false when there was none.
+	 *
+	 * @throws \Exception If unlock operation fails
+	 */
+	private function unlockRequested(UnlockRequest $request): bool {
 		$this->logger->debug(
 			message: '[LockHandler] Unlocking object',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $identifier, 'advisory' => $advisory]
+			context: $this->logContext(fields: ['identifier' => $request->identifier, 'advisory' => $request->advisory])
 		);
 
 		// Advisory (pre-creation) fast-path — mirror of lock(): release the
 		// appConfig-backed advisory lock directly and skip the all-tables scan.
-		if ($advisory === true) {
-			$this->advisory->release(identifier: $identifier);
-			return true;
+		if ($request->advisory === true) {
+			return $this->releaseAdvisory(identifier: $request->identifier);
 		}
 
-		try {
-			// Find the object and its register/schema context.
-			//
-			// SECURITY: bypass RBAC + multitenancy on the read so we can
-			// resolve cross-tenant lock holders, but perform an explicit
-			// authorization check before mutating state. Without the bypass
-			// a non-owner who was nonetheless the lock holder could not
-			// resolve the object at all and would be blocked from
-			// releasing their own lock; the explicit `callerMayUnlock`
-			// gate replaces the wave-3 C14 "any authenticated user can
-			// unlock anything" behavior.
-			try {
-				$context = $this->findObjectWithContext(identifier: $identifier, _rbacBypass: true);
-			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-				// Pre-creation / advisory lock release: identifier never
-				// resolved to a stored object. Clear any advisory lock held
-				// under this arbitrary key (no-op if none present).
-				$this->advisory->release(identifier: $identifier);
-				return true;
-			}
-
-			$objectBefore = $context['object'];
-
-			// No-op when the object isn't actually locked. Releasing a lock that
-			// does not exist must not require unlock permission: an empty or expired
-			// `_locked` means there is nothing to authorize. This keeps unlock
-			// idempotent and prevents spurious "permission to unlock" failures on
-			// flows that defensively unlock after a successful write (e.g. the
-			// object update endpoint's post-save unlock). See openregister#195.
-			if ($objectBefore->isLocked() === false) {
-				// FALSE means "there was nothing to release", not "this
-				// failed". The caller is not refused and nothing throws; the
-				// answer simply distinguishes a release from a no-op, which is
-				// what lets the endpoint answer 404 for one and 200 for the
-				// other.
-				return false;
-			}
-
-			if ($break === false && $this->callerMayUnlock(object: $objectBefore, runUuid: $runUuid) === false) {
-				$this->logger->warning(
-					message: '[LockHandler] Unauthorized unlock attempt',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $identifier,
-					]
-				);
-				throw new Exception('User does not have permission to unlock this object');
-			}
-
-			$this->releaseStoredLock(context: $context, runUuid: $runUuid, break: $break);
-
-			return true;
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[LockHandler] Failed to unlock object',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $identifier,
-					'error' => $e->getMessage(),
-				]
-			);
-			throw $e;
-		}//end try
-	}//end unlock()
+		return $this->unlockLogged(request: $request);
+	}//end unlockRequested()
 
 	/**
 	 * Release the lock on a resolved object, auditing what happened.
 	 *
-	 * @param array $context The resolved object with its register and schema.
-	 * @param string|null $runUuid Flow run releasing the lock, for a run-scoped lock.
-	 * @param bool $break Release regardless of holder; authorized at the call site.
+	 * A BREAK is recorded under its own action, naming the holder it displaced:
+	 * an administrator overriding somebody else's lock is not the same event as
+	 * a holder releasing their own.
+	 *
+	 * @param array         $context The resolved object with its register and schema.
+	 * @param UnlockRequest $request The run releasing the lock and whether this is a break.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors unlock()'s own break flag.
 	 */
-	private function releaseStoredLock(array $context, ?string $runUuid, bool $break): void {
+	private function releaseStoredLock(array $context, UnlockRequest $request): void {
 		$objectBefore = $context['object'];
 
 		// Capture the holder BEFORE the release, so a break can name what it
 		// displaced. After unlockObjectEntity() there is nothing left to name.
-		$displaced = $objectBefore->describeLockHolder();
-		$displacedRun = $objectBefore->getLockedByRun();
+		$displaced = ['displacedHolder' => $objectBefore->describeLockHolder(), 'displacedRun' => $objectBefore->getLockedByRun()];
 
 		$objectAfter = $this->magicMapper->unlockObjectEntity(
 			entity: $objectBefore,
 			register: $context['register'],
 			schema: $context['schema'],
-			runUuid: $runUuid,
-			break: $break
+			runUuid: $request->runUuid,
+			break: $request->break
 		);
-
-		if ($displacedRun !== null) {
-			$this->runLocks?->forget(runUuid: $displacedRun, objectUuid: (string)$objectAfter->getUuid());
+		$this->forgetDisplacedRun(displaced: $displaced, after: $objectAfter);
+		if ($request->break === true) {
+			$this->auditTrailMapper->createAuditTrailEntry(object: $objectAfter, action: 'lock.broken', context: $displaced);
 		}
 
-		// A BREAK is recorded under its own action, naming the holder it
-		// displaced. An administrator overriding somebody else's lock is not
-		// the same event as a holder releasing their own, and an audit trail
-		// that cannot tell them apart cannot answer who took the case back.
-		if ($break === true) {
-			$this->auditTrailMapper->createAuditTrailEntry(
-				object: $objectAfter,
-				action: 'lock.broken',
-				context: [
-					'displacedHolder' => $displaced,
-					'displacedRun' => $displacedRun,
-				]
-			);
-		}
-
-		$this->auditTrailMapper->createAuditTrail(old: $objectBefore, new: $objectAfter, action: 'unlock');
-
-		$this->logger->info(
-			message: '[LockHandler] Object unlocked successfully',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $objectAfter->getUuid(),
-			]
-		);
+		$this->recordUnlock(before: $objectBefore, after: $objectAfter);
 	}//end releaseStoredLock()
 
 	/**
@@ -623,8 +330,7 @@ class LockHandler {
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-an-administrator-may-break-a-lock-and-the-break-is-recorded
 	 */
 	public function breakLock(string $identifier): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null || $this->groupManager->isAdmin($user->getUID()) === false) {
+		if ($this->authorization->mayBreak() === false) {
 			throw new Exception('Only an administrator may break a lock');
 		}
 
@@ -643,28 +349,14 @@ class LockHandler {
 	 */
 	public function isLocked(string $identifier): bool {
 		try {
-			$context = $this->findObjectWithContext(identifier: $identifier);
-			$object = $context['object'];
-
 			// Delegate to the canonical ObjectEntity::isLocked() implementation,
-			// which understands both the current `{user, process, created, duration, expiration}`
-			// schema (see ObjectEntity::lock() at lib/Db/ObjectEntity.php:1042-1066) and the
-			// legacy lockedAt+duration fallback. Reading bespoke keys ('expiresAt', 'userId',
-			// 'lockedAt') here would never match what lock() writes, so a stale/expired lock
-			// could never be detected via this code path.
-			return $object->isLocked();
+			// which understands both the current lock payload and the legacy
+			// lockedAt+duration fallback.
+			return $this->findObjectWithContext(identifier: $identifier)['object']->isLocked();
 		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[LockHandler] Failed to check lock status',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $identifier,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logger->warning(message: '[LockHandler] Failed to check lock status', context: $this->failure(identifier: $identifier, error: $e));
 			return false;
-		}//end try
+		}
 	}//end isLocked()
 
 	/**
@@ -680,37 +372,296 @@ class LockHandler {
 	 */
 	public function getLockInfo(string $identifier): ?array {
 		try {
-			$context = $this->findObjectWithContext(identifier: $identifier);
-			$object = $context['object'];
-
-			// Delegate to ObjectEntity::getLockInfo() which returns the raw lock payload
-			// written by lock() — `{user, process, created, duration, expiration}` — or
-			// null if no active (non-expired) lock is present. Map to the public, snake_case
-			// representation expected by API consumers without re-inventing the key names.
-			$locked = $object->getLockInfo();
-
-			if ($locked === null) {
-				return null;
-			}
-
-			return [
-				'locked_at' => $locked['created'] ?? null,
-				'locked_by' => $locked['user'] ?? null,
-				'process' => $locked['process'] ?? null,
-				'expires_at' => $locked['expiration'] ?? null,
-				'duration' => $locked['duration'] ?? null,
-			];
+			// The raw lock payload written by lock(), or null if no active lock is present.
+			$locked = $this->findObjectWithContext(identifier: $identifier)['object']->getLockInfo();
 		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[LockHandler] Failed to get lock info',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $identifier,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logger->warning(message: '[LockHandler] Failed to get lock info', context: $this->failure(identifier: $identifier, error: $e));
 			return null;
-		}//end try
+		}
+
+		return $this->publicLockInfo(locked: $locked);
 	}//end getLockInfo()
+	/**
+	 * Log a lock request.
+	 *
+	 * @param LockRequest $request  What the caller asked for.
+	 * @param bool        $advisory Whether an advisory lock is asked for.
+	 *
+	 * @return void
+	 */
+	private function logRequest(LockRequest $request, bool $advisory): void {
+		$this->logger->debug(
+			message: '[LockHandler] Locking object',
+			context: $this->logContext(
+				fields: [
+					'identifier' => $request->identifier,
+					'process' => $request->process,
+					'duration' => $request->duration,
+					'advisory' => $advisory,
+				]
+			)
+		);
+	}//end logRequest()
+
+	/**
+	 * Take an advisory lock or a lock on a stored object.
+	 *
+	 * Advisory (pre-creation) fast-path: the caller knows the identifier is a
+	 * synthetic key that does NOT resolve to a stored object (e.g. openbuild's
+	 * `createApp:<slug>` guard). Go straight to the appConfig-backed advisory
+	 * lock and skip the all-tables scan that would only conclude "not found".
+	 *
+	 * @param LockRequest $request  What the caller asked for.
+	 * @param bool        $advisory Whether an advisory lock is asked for.
+	 *
+	 * @return array Lock result with locked details and uuid.
+	 *
+	 * @throws LockedException If object is already locked.
+	 * @throws \Exception If lock operation fails.
+	 */
+	private function acquire(LockRequest $request, bool $advisory): array {
+		if ($advisory === true) {
+			return $this->acquireAdvisory(request: $request);
+		}
+
+		return $this->lockLogged(request: $request);
+	}//end acquire()
+
+	/**
+	 * Lock a stored object or, when the identifier resolves to none, take an advisory lock; log a failure.
+	 *
+	 * @param LockRequest $request What the caller asked for.
+	 *
+	 * @return array Lock result with locked details and uuid.
+	 *
+	 * @throws LockedException If object is already locked.
+	 * @throws \Exception If lock operation fails.
+	 */
+	private function lockLogged(LockRequest $request): array {
+		try {
+			return $this->lockResolved(request: $request);
+		} catch (LockedException $e) {
+			$this->logger->warning(message: '[LockHandler] Object is already locked', context: $this->failure(identifier: $request->identifier, error: $e));
+			throw $e;
+		} catch (\Exception $e) {
+			$this->logger->error(message: '[LockHandler] Failed to lock object', context: $this->failure(identifier: $request->identifier, error: $e));
+			throw $e;
+		}
+	}//end lockLogged()
+
+	/**
+	 * Lock a stored object, or take an advisory lock when the identifier resolves to none.
+	 *
+	 * @param LockRequest $request What the caller asked for.
+	 *
+	 * @return array Lock result with locked details and uuid.
+	 *
+	 * @throws LockedException If object is already locked.
+	 * @throws \Exception If lock operation fails.
+	 */
+	private function lockResolved(LockRequest $request): array {
+		try {
+			$context = $this->findObjectWithContext(identifier: $request->identifier);
+		} catch (DoesNotExistException $e) {
+			// Pre-creation / advisory lock: the identifier does not resolve to a
+			// stored object (e.g. the openbuild wizard locks `createApp:<slug>`
+			// before the object exists), so create-then-store flows still work.
+			return $this->acquireAdvisory(request: $request);
+		}
+
+		return $this->lockStoredObject(context: $context, request: $request);
+	}//end lockResolved()
+
+	/**
+	 * Take an advisory lock keyed by the identifier.
+	 *
+	 * @param LockRequest $request What the caller asked for.
+	 *
+	 * @return array Lock result with locked details and uuid.
+	 *
+	 * @throws LockedException If the advisory lock is held.
+	 */
+	private function acquireAdvisory(LockRequest $request): array {
+		return $this->advisory->acquire(identifier: $request->identifier, process: $request->process, duration: $request->duration);
+	}//end acquireAdvisory()
+
+	/**
+	 * Record a lock that was taken: the run bookkeeping, the audit trail and the log.
+	 *
+	 * The run bookkeeping lets the terminal listener and the sweep find a run's
+	 * lock without reading objects. The payload on the object stays the sole
+	 * authority for the write guard.
+	 *
+	 * @param ObjectEntity $before  The object before the lock.
+	 * @param ObjectEntity $after   The locked object.
+	 * @param LockRequest  $request What the caller asked for.
+	 *
+	 * @return void
+	 */
+	private function recordLock(ObjectEntity $before, ObjectEntity $after, LockRequest $request): void {
+		$this->runLocks?->record(object: $after, runUuid: $request->runUuid, nodeId: $request->nodeId);
+		$this->auditTrailMapper->createAuditTrail(old: $before, new: $after, action: 'lock');
+		$this->logger->info(
+			message: '[LockHandler] Object locked successfully',
+			context: $this->logContext(fields: ['uuid' => $after->getUuid(), 'process' => $request->process])
+		);
+	}//end recordLock()
+
+	/**
+	 * Release the lock on a stored object, logging a failure before it is rethrown.
+	 *
+	 * @param UnlockRequest $request The object, the run releasing it and whether this is a break.
+	 *
+	 * @return bool True when a lock was released, false when there was none.
+	 *
+	 * @throws \Exception If unlock operation fails.
+	 */
+	private function unlockLogged(UnlockRequest $request): bool {
+		try {
+			return $this->unlockResolved(request: $request);
+		} catch (\Exception $e) {
+			$this->logger->error(message: '[LockHandler] Failed to unlock object', context: $this->failure(identifier: $request->identifier, error: $e));
+			throw $e;
+		}
+	}//end unlockLogged()
+
+	/**
+	 * Release the lock on the object an identifier resolves to, after authorizing the caller.
+	 *
+	 * SECURITY: the read bypasses RBAC + multitenancy so a cross-tenant lock
+	 * holder can still resolve the object, and the explicit authorization check
+	 * runs before any state is mutated.
+	 *
+	 * @param UnlockRequest $request The object, the run releasing it and whether this is a break.
+	 *
+	 * @return bool True when a lock was released, false when there was none.
+	 *
+	 * @throws Exception If the caller may not unlock this object.
+	 */
+	private function unlockResolved(UnlockRequest $request): bool {
+		try {
+			$context = $this->findObjectWithContext(identifier: $request->identifier, _rbacBypass: true);
+		} catch (DoesNotExistException $e) {
+			// Pre-creation / advisory lock release: the identifier never resolved
+			// to a stored object (no-op if no advisory lock is present).
+			return $this->releaseAdvisory(identifier: $request->identifier);
+		}
+
+		// Releasing a lock that does not exist needs no unlock permission: FALSE
+		// means "there was nothing to release", not "this failed" (openregister#195).
+		if ($context['object']->isLocked() === false) {
+			return false;
+		}
+
+		$this->assertMayUnlock(request: $request, object: $context['object']);
+		$this->releaseStoredLock(context: $context, request: $request);
+
+		return true;
+	}//end unlockResolved()
+
+	/**
+	 * Refuse an unlock the caller may not perform; a break is authorized at its call site.
+	 *
+	 * @param UnlockRequest $request The object, the run releasing it and whether this is a break.
+	 * @param ObjectEntity  $object  The locked object.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the caller may not unlock this object.
+	 */
+	private function assertMayUnlock(UnlockRequest $request, ObjectEntity $object): void {
+		if ($request->break === true || $this->authorization->mayUnlock(object: $object, runUuid: $request->runUuid) === true) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: '[LockHandler] Unauthorized unlock attempt',
+			context: $this->logContext(fields: ['identifier' => $request->identifier])
+		);
+		throw new Exception('User does not have permission to unlock this object');
+	}//end assertMayUnlock()
+
+	/**
+	 * Release an advisory lock.
+	 *
+	 * @param string $identifier The advisory key.
+	 *
+	 * @return bool Always true.
+	 */
+	private function releaseAdvisory(string $identifier): bool {
+		$this->advisory->release(identifier: $identifier);
+
+		return true;
+	}//end releaseAdvisory()
+
+	/**
+	 * Drop the run-lock bookkeeping of the run a release displaced, if it was a run lock.
+	 *
+	 * @param array        $displaced The holder and run the release displaced.
+	 * @param ObjectEntity $after     The released object.
+	 *
+	 * @return void
+	 */
+	private function forgetDisplacedRun(array $displaced, ObjectEntity $after): void {
+		if ($displaced['displacedRun'] !== null) {
+			$this->runLocks?->forget(runUuid: $displaced['displacedRun'], objectUuid: (string) $after->getUuid());
+		}
+	}//end forgetDisplacedRun()
+
+	/**
+	 * Record a release in the audit trail and the log.
+	 *
+	 * @param ObjectEntity $before The object before the release.
+	 * @param ObjectEntity $after  The released object.
+	 *
+	 * @return void
+	 */
+	private function recordUnlock(ObjectEntity $before, ObjectEntity $after): void {
+		$this->auditTrailMapper->createAuditTrail(old: $before, new: $after, action: 'unlock');
+		$this->logger->info(message: '[LockHandler] Object unlocked successfully', context: $this->logContext(fields: ['uuid' => $after->getUuid()]));
+	}//end recordUnlock()
+
+	/**
+	 * The public, snake_case lock info for a raw lock payload.
+	 *
+	 * @param array|null $locked The raw lock payload, or null when not locked.
+	 *
+	 * @return array|null The lock info, or null when not locked.
+	 */
+	private function publicLockInfo(?array $locked): ?array {
+		if ($locked === null) {
+			return null;
+		}
+
+		return [
+			'locked_at' => $locked['created'] ?? null,
+			'locked_by' => $locked['user'] ?? null,
+			'process' => $locked['process'] ?? null,
+			'expires_at' => $locked['expiration'] ?? null,
+			'duration' => $locked['duration'] ?? null,
+		];
+	}//end publicLockInfo()
+
+	/**
+	 * A log context for a failure on one identifier.
+	 *
+	 * @param string     $identifier Object ID or UUID.
+	 * @param \Exception $error      The failure.
+	 *
+	 * @return array<string, mixed> The log context.
+	 */
+	private function failure(string $identifier, \Exception $error): array {
+		return $this->logContext(fields: ['identifier' => $identifier, 'error' => $error->getMessage()]);
+	}//end failure()
+
+	/**
+	 * A log context naming this file, then the given fields.
+	 *
+	 * @param array<string, mixed> $fields The fields.
+	 *
+	 * @return array<string, mixed> The log context.
+	 */
+	private function logContext(array $fields): array {
+		return ['file' => __FILE__, 'line' => __LINE__] + $fields;
+	}//end logContext()
 }//end class

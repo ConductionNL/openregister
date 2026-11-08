@@ -43,7 +43,7 @@ use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
-use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -57,7 +57,7 @@ use Psr\Log\LoggerInterface;
  * and one is the memo reset the write path needs. Splitting them would put the single
  * permission rule in more than one class, which is the drift this class prevents.
  */
-class ReadStateService {
+class ReadStateService implements ReadStateServiceInterface {
 
 	/**
 	 * The uuids the current user has already seen, loaded once per request.
@@ -72,13 +72,13 @@ class ReadStateService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectReadStateMapper $mapper The read-state rows.
+	 * @param ObjectReadStateMapperInterface $mapper The read-state rows.
 	 * @param IUserSession $userSession Resolves the calling user.
 	 * @param UnreadCountCalculator $counter Counts what is unread on the tabs.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly ObjectReadStateMapper $mapper,
+		private readonly ObjectReadStateMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly UnreadCountCalculator $counter,
 		private readonly LoggerInterface $logger,

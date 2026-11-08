@@ -16,6 +16,8 @@ use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Listener\BuiltinDataTools;
+use OCA\OpenRegister\Mcp\Listener\BuiltinPlatformTools;
 
 class ToolRegistrationListenerTest extends TestCase {
 	private ToolRegistrationListener $listener;
@@ -38,11 +40,15 @@ class ToolRegistrationListenerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->listener = new ToolRegistrationListener(
-			registerTool: $this->registerTool,
-			schemaTool: $this->schemaTool,
-			objectsTool: $this->objectsTool,
-			applicationTool: $this->applicationTool,
-			agentTool: $this->agentTool,
+			dataTools: new BuiltinDataTools(
+				registerTool: $this->registerTool,
+				schemaTool: $this->schemaTool,
+				objectsTool: $this->objectsTool,
+			),
+			platformTools: new BuiltinPlatformTools(
+				applicationTool: $this->applicationTool,
+				agentTool: $this->agentTool,
+			),
 			mcpToolsService: $this->mcpToolsService,
 			logger: $this->logger,
 		);

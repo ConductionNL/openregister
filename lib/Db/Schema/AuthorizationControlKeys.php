@@ -20,9 +20,9 @@ namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
-use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 
 /**
  * Validates the reserved keys of an authorization block, which grant nothing.
@@ -102,8 +102,8 @@ final class AuthorizationControlKeys {
 	private function unvalidatedKeys(): array {
 		return array_values(
 			array_diff(
-				PermissionCatalogue::CONTROL_KEYS,
-				[ObjectScopeResolver::SCOPE_KEY, Schema::ROLES_KEY, ExplicitReveal::KEY]
+				PermissionCatalogueInterface::CONTROL_KEYS,
+				[ObjectScopeResolver::SCOPE_KEY, Schema::ROLES_KEY, ExplicitRevealInterface::KEY]
 			)
 		);
 	}//end unvalidatedKeys()
@@ -155,7 +155,7 @@ final class AuthorizationControlKeys {
 			return true;
 		}
 
-		if ($action === ExplicitReveal::KEY) {
+		if ($action === ExplicitRevealInterface::KEY) {
 			$this->validateRevealValue(reveal: $value, context: $context);
 			return true;
 		}
@@ -265,9 +265,9 @@ final class AuthorizationControlKeys {
 	 * @return void
 	 */
 	private function validateRevealValue(mixed $reveal, string $context): void {
-		if ($reveal !== ExplicitReveal::EXPLICIT) {
+		if ($reveal !== ExplicitRevealInterface::EXPLICIT) {
 			throw new InvalidAuthorizationRuleException(
-				message: "Authorization key '" . ExplicitReveal::KEY . "' in {$context} must be \"" . ExplicitReveal::EXPLICIT . '"'
+				message: "Authorization key '" . ExplicitRevealInterface::KEY . "' in {$context} must be \"" . ExplicitRevealInterface::EXPLICIT . '"'
 			);
 		}
 	}//end validateRevealValue()

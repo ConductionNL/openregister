@@ -23,7 +23,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\ApiTokenProbe;
 use OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Http\Client\IClientService;
@@ -96,9 +96,9 @@ class ApiTokenSettingsController extends Controller {
 	/**
 	 * Tells integriq's connection registry about saves and token tests.
 	 *
-	 * @var ConnectionReporter
+	 * @var ConnectionReporterInterface
 	 */
-	private readonly ConnectionReporter $connectionReporter;
+	private readonly ConnectionReporterInterface $connectionReporter;
 
 	/**
 	 * Constructor.
@@ -139,14 +139,9 @@ class ApiTokenSettingsController extends Controller {
 			$githubToken = $this->config->getValueString('openregister', 'github_api_token', '');
 			$gitlabToken = $this->config->getValueString('openregister', 'gitlab_api_token', '');
 			$gitlabUrl = $this->config->getValueString('openregister', 'gitlab_api_url', '');
+			$masked = ['github_token' => $this->masked(token: $githubToken), 'gitlab_token' => $this->masked(token: $gitlabToken)];
 
-			return new JSONResponse(
-				data: [
-					'github_token' => $this->masked(token: $githubToken),
-					'gitlab_token' => $this->masked(token: $gitlabToken),
-					'gitlab_url' => $gitlabUrl,
-				]
-			);
+			return new JSONResponse(data: array_merge($masked, ['gitlab_url' => $gitlabUrl]));
 		} catch (Exception $e) {
 			return $this->storeFailure(action: 'retrieve', e: $e);
 		}

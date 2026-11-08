@@ -49,7 +49,7 @@ use OCP\ICacheFactory;
  *
  * @psalm-suppress UnusedClass
  */
-class RateLimiterService {
+class RateLimiterService implements RateLimiterServiceInterface {
 	/**
 	 * Distributed cache namespace shared by all rate-limit buckets in this service.
 	 */
@@ -156,16 +156,7 @@ class RateLimiterService {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-18
 	 */
 	public function consumeDistinctKeyBudget(string $bucketKey, string $distinctKey, int $maxKeys, int $windowSeconds): ?int {
-		$bucket = $this->cache->get($bucketKey);
-		if (is_array($bucket) === false) {
-			$bucket = ['t' => time(), 'keys' => []];
-		}
-
-		$age = time() - (int)($bucket['t'] ?? 0);
-		if ($age >= $windowSeconds) {
-			$bucket = ['t' => time(), 'keys' => []];
-			$age = 0;
-		}
+		[$bucket, $age] = $this->liveBucket(bucket: $this->cache->get($bucketKey), windowSeconds: $windowSeconds);
 
 		$keys = (array)($bucket['keys'] ?? []);
 		if (in_array($distinctKey, $keys, true) === false) {
@@ -180,4 +171,26 @@ class RateLimiterService {
 		$this->cache->set($bucketKey, $bucket, $windowSeconds);
 		return null;
 	}//end consumeDistinctKeyBudget()
+
+	/**
+	 * The stored bucket and its age, or a fresh bucket of age 0 when none is
+	 * stored or the stored one is at least one window old.
+	 *
+	 * @param mixed $bucket        What the cache holds for the bucket key.
+	 * @param int   $windowSeconds Rolling window length.
+	 *
+	 * @return array{0: array<string, mixed>, 1: int} The bucket and its age in seconds.
+	 */
+	private function liveBucket(mixed $bucket, int $windowSeconds): array {
+		if (is_array($bucket) === false) {
+			$bucket = ['t' => time(), 'keys' => []];
+		}
+
+		$age = time() - (int)($bucket['t'] ?? 0);
+		if ($age >= $windowSeconds) {
+			return [['t' => time(), 'keys' => []], 0];
+		}
+
+		return [$bucket, $age];
+	}//end liveBucket()
 }//end class

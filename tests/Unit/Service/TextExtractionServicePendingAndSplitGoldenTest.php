@@ -21,11 +21,13 @@ use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
 use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\ChunkSizing;
 
 /**
  * Records extractPendingFiles() (windows asked, files extracted, log lines, result) and the
@@ -71,7 +73,7 @@ class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 
 		$service = $this->getMockBuilder(TextExtractionService::class)
 			->setConstructorArgs(
-				[
+				TextExtractionServiceFactory::args(
 					$fileMapper,
 					$this->createMock(ChunkMapper::class),
 					$this->createMock(IRootFolder::class),
@@ -87,7 +89,7 @@ class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 					new SpreadsheetExtractor($logger),
 					new PdfExtractor($logger),
 					new WordExtractor($logger),
-				]
+				)
 			)
 			->onlyMethods(['extractFile'])
 			->getMock();
@@ -182,7 +184,7 @@ class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 	public function testRecursiveSplitGolden(string $text, array $separators, int $size, int $overlap): void {
 		$service = $this->service([]);
 		$method = new ReflectionMethod(TextExtractionService::class, 'recursiveSplit');
-		$this->calls[] = ['chunks', $method->invoke($service, $text, $separators, $size, $overlap)];
+		$this->calls[] = ['chunks', $method->invoke($service, $text, $separators, new ChunkSizing($size, $overlap))];
 		$this->assertGolden();
 	}
 

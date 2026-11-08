@@ -36,6 +36,7 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\AgentRunRequestedEvent;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
@@ -43,6 +44,7 @@ use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCA\OpenRegister\Service\Task\TaskFormSources;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -156,8 +158,7 @@ final class UserTaskPerformersTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		return new TaskFormReader(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(TransitionEngine::class),
+			new TaskFormSources($this->createMock(SchemaMapper::class), $this->createMock(TransitionEngine::class)),
 			$this->createMock(IAppManager::class),
 			$l10n
 		);
@@ -311,15 +312,18 @@ final class UserTaskPerformersTest extends TestCase {
 	 */
 	public function testAnAgentIsAskedWithItsPrompt(): void {
 		$this->performers(null)->askAnyAgent(
-			config: [
-				'title' => 'Approve it',
-				'assignee' => ['type' => 'agent', 'id' => 'scribe'],
-				'prompt' => 'Summarise the objection.',
-				'outcomeKey' => 'advice',
-				'requiresApproval' => true,
-			],
-			task: $this->aTask(),
-			context: ['flowName' => 'Bezwaar']
+			step: new UserTaskStep(
+				items: [],
+				config: [
+					'title' => 'Approve it',
+					'assignee' => ['type' => 'agent', 'id' => 'scribe'],
+					'prompt' => 'Summarise the objection.',
+					'outcomeKey' => 'advice',
+					'requiresApproval' => true,
+				],
+				context: ['flowName' => 'Bezwaar']
+			),
+			task: $this->aTask()
 		);
 
 		$events = $this->agentEvents();
@@ -338,9 +342,12 @@ final class UserTaskPerformersTest extends TestCase {
 	 */
 	public function testAnAgentWithNoPromptIsAskedTheTitle(): void {
 		$this->performers(null)->askAnyAgent(
-			config: ['title' => 'Approve it', 'assignee' => ['type' => 'agent', 'id' => 'scribe']],
-			task: $this->aTask(),
-			context: []
+			step: new UserTaskStep(
+				items: [],
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'agent', 'id' => 'scribe']],
+				context: []
+			),
+			task: $this->aTask()
 		);
 
 		$this->assertSame('Approve it', $this->agentEvents()[0]->getPrompt());
@@ -359,14 +366,20 @@ final class UserTaskPerformersTest extends TestCase {
 		$performers = $this->performers(null);
 
 		$performers->askAnyAgent(
-			config: ['title' => 'Approve it', 'assignee' => 'alice'],
-			task: $this->aTask(),
-			context: []
+			step: new UserTaskStep(
+				items: [],
+				config: ['title' => 'Approve it', 'assignee' => 'alice'],
+				context: []
+			),
+			task: $this->aTask()
 		);
 		$performers->askAnyAgent(
-			config: ['title' => 'Approve it', 'assignee' => ['type' => 'group', 'id' => 'bezwaar']],
-			task: $this->aTask(),
-			context: []
+			step: new UserTaskStep(
+				items: [],
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'group', 'id' => 'bezwaar']],
+				context: []
+			),
+			task: $this->aTask()
 		);
 
 		$this->assertSame([], $this->agentEvents());
@@ -379,15 +392,18 @@ final class UserTaskPerformersTest extends TestCase {
 	 */
 	public function testAnAgentAmongSeveralPerformersIsFound(): void {
 		$this->performers(null)->askAnyAgent(
-			config: [
-				'title' => 'Approve it',
-				'assignee' => [
-					['type' => 'user', 'id' => 'alice'],
-					['type' => 'agent', 'id' => 'scribe'],
+			step: new UserTaskStep(
+				items: [],
+				config: [
+					'title' => 'Approve it',
+					'assignee' => [
+						['type' => 'user', 'id' => 'alice'],
+						['type' => 'agent', 'id' => 'scribe'],
+					],
 				],
-			],
-			task: $this->aTask(),
-			context: []
+				context: []
+			),
+			task: $this->aTask()
 		);
 
 		$this->assertSame('scribe', $this->agentEvents()[0]->getAgent());
@@ -404,9 +420,12 @@ final class UserTaskPerformersTest extends TestCase {
 	 */
 	public function testWithoutADispatcherNothingIsAskedAndNothingFails(): void {
 		$this->performers(null, withEvents: false)->askAnyAgent(
-			config: ['title' => 'Approve it', 'assignee' => ['type' => 'agent', 'id' => 'scribe']],
-			task: $this->aTask(),
-			context: []
+			step: new UserTaskStep(
+				items: [],
+				config: ['title' => 'Approve it', 'assignee' => ['type' => 'agent', 'id' => 'scribe']],
+				context: []
+			),
+			task: $this->aTask()
 		);
 
 		$this->assertSame([], $this->agentEvents());
@@ -419,16 +438,19 @@ final class UserTaskPerformersTest extends TestCase {
 	 */
 	public function testTheEventCarriesTheStepsOwnFields(): void {
 		$this->performers(null)->askAnyAgent(
-			config: [
-				'title' => 'Approve it',
-				'assignee' => ['type' => 'agent', 'id' => 'scribe'],
-				'subjectRegister' => 'cases',
-				'subjectSchema' => 'case',
-				'mode' => 'chat',
-				'skill' => 'summarise',
-			],
-			task: $this->aTask(),
-			context: ['flowName' => 'Bezwaar']
+			step: new UserTaskStep(
+				items: [],
+				config: [
+					'title' => 'Approve it',
+					'assignee' => ['type' => 'agent', 'id' => 'scribe'],
+					'subjectRegister' => 'cases',
+					'subjectSchema' => 'case',
+					'mode' => 'chat',
+					'skill' => 'summarise',
+				],
+				context: ['flowName' => 'Bezwaar']
+			),
+			task: $this->aTask()
 		);
 
 		$event = $this->agentEvents()[0];

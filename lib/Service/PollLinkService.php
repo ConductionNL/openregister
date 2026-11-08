@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\PollLink;
-use OCA\OpenRegister\Db\PollLinkMapper;
+use OCA\OpenRegister\Db\PollLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -72,20 +72,33 @@ use Throwable;
  */
 class PollLinkService implements PollLinkServiceInterface {
 	/**
+	 * Fixed `polls_polls` column values for a created poll: [value, parameter type].
+	 */
+	private const POLL_DEFAULTS = [
+		'deleted' => [0, IQueryBuilder::PARAM_INT],
+		'access' => ['private', IQueryBuilder::PARAM_STR],
+		'anonymous' => [0, IQueryBuilder::PARAM_INT],
+		'allow_maybe' => [1, IQueryBuilder::PARAM_INT],
+		'allow_proposals' => ['disallow', IQueryBuilder::PARAM_STR],
+		'show_results' => ['always', IQueryBuilder::PARAM_STR],
+		'admin_access' => [0, IQueryBuilder::PARAM_INT],
+		'allow_comment' => [1, IQueryBuilder::PARAM_INT],
+		'hide_booked_up' => [1, IQueryBuilder::PARAM_INT],
+		'use_no' => [1, IQueryBuilder::PARAM_INT],
+		'voting_variant' => ['simple', IQueryBuilder::PARAM_STR],
+	];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param PollLinkMapper $pollLinkMapper Persistence for link rows.
+	 * @param PollLinkMapperInterface $pollLinkMapper Persistence for link rows.
 	 * @param IDBConnection $db Database connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 */
 	public function __construct(
-		private readonly PollLinkMapper $pollLinkMapper,
+		private readonly PollLinkMapperInterface $pollLinkMapper,
 		private readonly IDBConnection $db,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -95,7 +108,7 @@ class PollLinkService implements PollLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isPollsAvailable(): bool {
-		return $this->appManager->isEnabledForUser('polls');
+		return $this->runtime->appManager()->isEnabledForUser('polls');
 	}//end isPollsAvailable()
 
 	/**
@@ -114,13 +127,8 @@ class PollLinkService implements PollLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function linkPoll(LinkTarget $target, int $pollId): PollLink {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
-
-		$existing = $this->pollLinkMapper->findByObjectAndPoll($target->objectUuid, $pollId);
-		if ($existing !== null) {
+		$user = $this->runtime->userSession()->getUser() ?? throw new Exception('No user logged in');
+		if ($this->pollLinkMapper->findByObjectAndPoll($target->objectUuid, $pollId) !== null) {
 			throw new Exception('Poll already linked to this object', 409);
 		}
 
@@ -128,28 +136,56 @@ class PollLinkService implements PollLinkServiceInterface {
 			throw new Exception('Polls is not available', 503);
 		}
 
-		$pollRow = $this->fetchPollRow(pollId: $pollId);
-		if ($pollRow === null) {
-			throw new Exception('Poll not found', 404);
-		}
-
-		$deadline = $this->expireToDateTime(expire: (int)($pollRow['expire'] ?? 0));
-		$closed = ($deadline !== null && $deadline->getTimestamp() <= time());
-		$voterCount = $this->fetchVoterCount(pollId: $pollId);
-		$optionCount = $this->fetchOptionCount(pollId: $pollId);
-
-		$link = new PollLink();
-		$link->setPollId($pollId);
-		$link->setPollTitle((string)($pollRow['title'] ?? ''));
-		$link->setPollType((string)($pollRow['type'] ?? ''));
-		$link->setDeadline($deadline);
-		$link->setVoterCount($voterCount);
-		$link->setOptionCount($optionCount);
-		$link->setClosed($closed);
+		$pollRow = $this->fetchPollRow(pollId: $pollId) ?? throw new Exception('Poll not found', 404);
+		$stats   = $this->liveStats(pollId: $pollId, pollRow: $pollRow);
+		$title   = (string)($pollRow['title'] ?? '');
+		$link    = $this->newPollLink(pollId: $pollId, title: $title, type: (string)($pollRow['type'] ?? ''), stats: $stats);
 		$target->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->pollLinkMapper->insert($link);
 	}//end linkPoll()
+
+	/**
+	 * The live deadline, closed flag and tallies of a poll row.
+	 *
+	 * @param int                 $pollId  Poll id.
+	 * @param array<string,mixed> $pollRow The `polls_polls` row.
+	 *
+	 * @return array{deadline:?DateTime,closed:bool,voterCount:int,optionCount:int}
+	 */
+	private function liveStats(int $pollId, array $pollRow): array {
+		$deadline = $this->expireToDateTime(expire: (int)($pollRow['expire'] ?? 0));
+
+		return [
+			'deadline' => $deadline,
+			'closed' => ($deadline !== null && $deadline->getTimestamp() <= time()),
+			'voterCount' => $this->fetchVoterCount(pollId: $pollId),
+			'optionCount' => $this->fetchOptionCount(pollId: $pollId),
+		];
+	}//end liveStats()
+
+	/**
+	 * Assemble an unsaved PollLink entity; the caller sets the object.
+	 *
+	 * @param int                 $pollId Polls poll id.
+	 * @param string              $title  Poll title.
+	 * @param string              $type   Poll type.
+	 * @param array<string,mixed> $stats  `{ deadline, closed, voterCount, optionCount }`.
+	 *
+	 * @return PollLink The unsaved entity.
+	 */
+	private function newPollLink(int $pollId, string $title, string $type, array $stats): PollLink {
+		$link = new PollLink();
+		$link->setPollId($pollId);
+		$link->setPollTitle($title);
+		$link->setPollType($type);
+		$link->setDeadline($stats['deadline']);
+		$link->setVoterCount($stats['voterCount']);
+		$link->setOptionCount($stats['optionCount']);
+		$link->setClosed($stats['closed']);
+
+		return $link;
+	}//end newPollLink()
 
 	/**
 	 * Unlink a poll from an object.
@@ -184,33 +220,17 @@ class PollLinkService implements PollLinkServiceInterface {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Conditional enrichment path (Polls
-	 *   available/unavailable) combined with per-link row hydration requires nested guards;
-	 *   the logic cannot be split without losing the "degrade gracefully" contract.
-	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getLinkedPolls(string $objectUuid): array {
-		$links = $this->pollLinkMapper->findByObjectUuid($objectUuid);
+		$links     = $this->pollLinkMapper->findByObjectUuid($objectUuid);
 		$available = $this->isPollsAvailable();
 
 		$results = [];
 		foreach ($links as $link) {
 			$row = $link->jsonSerialize();
-
 			if ($available === true) {
-				$pollId = (int)$link->getPollId();
-				$pollRow = $this->fetchPollRow(pollId: $pollId);
-
-				if ($pollRow !== null) {
-					$deadline = $this->expireToDateTime(expire: (int)($pollRow['expire'] ?? 0));
-					$row['pollTitle'] = (string)($pollRow['title'] ?? $row['pollTitle']);
-					$row['pollType'] = (string)($pollRow['type'] ?? $row['pollType']);
-					$row['deadline'] = $deadline?->format(DateTime::ATOM);
-					$row['voterCount'] = $this->fetchVoterCount(pollId: $pollId);
-					$row['optionCount'] = $this->fetchOptionCount(pollId: $pollId);
-					$row['closed'] = ($deadline !== null && $deadline->getTimestamp() <= time());
-				}
+				$row = $this->withLiveStats(row: $row, pollId: (int)$link->getPollId());
 			}
 
 			// NC Polls routes votes at /apps/polls/vote/{id}; the legacy
@@ -218,10 +238,36 @@ class PollLinkService implements PollLinkServiceInterface {
 			// doubled to /apps/polls/index.php/apps/polls/vote/… on navigation).
 			$row['url'] = '/apps/polls/vote/' . ($row['pollId'] ?? '');
 			$results[] = $row;
-		}//end foreach
+		}
 
 		return $results;
 	}//end getLinkedPolls()
+
+	/**
+	 * A serialised link row with title, type, deadline, tallies and closed flag
+	 * refreshed from `oc_polls_polls`; unchanged when the poll is gone.
+	 *
+	 * @param array<string,mixed> $row    The serialised link row.
+	 * @param int                 $pollId Poll id.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function withLiveStats(array $row, int $pollId): array {
+		$pollRow = $this->fetchPollRow(pollId: $pollId);
+		if ($pollRow === null) {
+			return $row;
+		}
+
+		$stats              = $this->liveStats(pollId: $pollId, pollRow: $pollRow);
+		$row['pollTitle']   = (string)($pollRow['title'] ?? $row['pollTitle']);
+		$row['pollType']    = (string)($pollRow['type'] ?? $row['pollType']);
+		$row['deadline']    = $stats['deadline']?->format(DateTime::ATOM);
+		$row['voterCount']  = $stats['voterCount'];
+		$row['optionCount'] = $stats['optionCount'];
+		$row['closed']      = $stats['closed'];
+
+		return $row;
+	}//end withLiveStats()
 
 	/**
 	 * Return polls visible to the current user (picker source).
@@ -240,48 +286,80 @@ class PollLinkService implements PollLinkServiceInterface {
 			return [];
 		}
 
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			return [];
 		}
 
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id', 'title', 'type', 'expire')
-				->from('polls_polls')
-				->where($qb->expr()->eq('owner', $qb->createNamedParameter($user->getUID())))
-				->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)))
-				->orderBy('id', 'DESC');
-
-			if ($search !== null && $search !== '') {
-				$qb->andWhere(
-					$qb->expr()->iLike('title', $qb->createNamedParameter('%' . $search . '%'))
-				);
-			}
-
-			$rows = $qb->executeQuery()->fetchAll();
-		} catch (Throwable $e) {
-			$this->logger->warning('PollLinkService::getAvailablePolls failed: ' . $e->getMessage());
-			return [];
-		}
-
 		$out = [];
-		foreach ($rows as $row) {
-			$pollId = (int)($row['id'] ?? 0);
-			$deadline = $this->expireToDateTime(expire: (int)($row['expire'] ?? 0));
-			$out[] = [
-				'id' => $pollId,
-				'title' => (string)($row['title'] ?? ''),
-				'type' => (string)($row['type'] ?? ''),
-				'deadline' => $deadline?->format(DateTime::ATOM),
-				'closed' => ($deadline !== null && $deadline->getTimestamp() <= time()),
-				'voterCount' => $this->fetchVoterCount(pollId: $pollId),
-				'optionCount' => $this->fetchOptionCount(pollId: $pollId),
-			];
+		foreach ($this->ownedPollRows(uid: $user->getUID(), search: $search) as $row) {
+			$out[] = $this->pickerRow(row: $row);
 		}
 
 		return $out;
 	}//end getAvailablePolls()
+
+	/**
+	 * The user's non-deleted polls, newest first, or none when the query fails.
+	 *
+	 * @param string      $uid    Owner user id.
+	 * @param string|null $search Optional title-substring filter.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function ownedPollRows(string $uid, ?string $search): array {
+		try {
+			return $this->ownedPollsQuery(uid: $uid, search: $search)->executeQuery()->fetchAll();
+		} catch (Throwable $e) {
+			$this->runtime->logger()->warning('PollLinkService::getAvailablePolls failed: ' . $e->getMessage());
+			return [];
+		}
+	}//end ownedPollRows()
+
+	/**
+	 * The query for the user's non-deleted polls, newest first.
+	 *
+	 * @param string      $uid    Owner user id.
+	 * @param string|null $search Optional title-substring filter.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function ownedPollsQuery(string $uid, ?string $search): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id', 'title', 'type', 'expire')
+			->from('polls_polls')
+			->where($qb->expr()->eq('owner', $qb->createNamedParameter($uid)))
+			->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'DESC');
+
+		if ($search !== null && $search !== '') {
+			$qb->andWhere($qb->expr()->iLike('title', $qb->createNamedParameter('%' . $search . '%')));
+		}
+
+		return $qb;
+	}//end ownedPollsQuery()
+
+	/**
+	 * A picker row for one `polls_polls` row, with live tallies.
+	 *
+	 * @param array<string,mixed> $row The poll row.
+	 *
+	 * @return array{id:int,title:string,type:string,deadline:?string,closed:bool,voterCount:int,optionCount:int}
+	 */
+	private function pickerRow(array $row): array {
+		$pollId = (int)($row['id'] ?? 0);
+		$stats  = $this->liveStats(pollId: $pollId, pollRow: $row);
+
+		return [
+			'id' => $pollId,
+			'title' => (string)($row['title'] ?? ''),
+			'type' => (string)($row['type'] ?? ''),
+			'deadline' => $stats['deadline']?->format(DateTime::ATOM),
+			'closed' => $stats['closed'],
+			'voterCount' => $stats['voterCount'],
+			'optionCount' => $stats['optionCount'],
+		];
+	}//end pickerRow()
 
 	/**
 	 * Create a new Polls poll and link it to an OR object in one operation.
@@ -300,10 +378,7 @@ class PollLinkService implements PollLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function createAndLinkPoll(LinkTarget $target, PollDraft $draft): PollLink {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
+		$user = $this->runtime->userSession()->getUser() ?? throw new Exception('No user logged in');
 
 		if ($this->isPollsAvailable() === false) {
 			throw new Exception('Polls is not available', 503);
@@ -335,46 +410,74 @@ class PollLinkService implements PollLinkServiceInterface {
 	private function insertPollRecord(PollDraft $draft): int {
 		try {
 			$insert = $this->db->getQueryBuilder();
-			$insert->insert('polls_polls')
-				->values(
-					[
-						'type' => $insert->createNamedParameter($draft->pollType()),
-						'title' => $insert->createNamedParameter($draft->storedTitle()),
-						'description' => $insert->createNamedParameter($draft->description),
-						'owner' => $insert->createNamedParameter($draft->owner()),
-						'created' => $insert->createNamedParameter($draft->created(), IQueryBuilder::PARAM_INT),
-						'expire' => $insert->createNamedParameter($draft->expire(), IQueryBuilder::PARAM_INT),
-						'deleted' => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-						'access' => $insert->createNamedParameter('private'),
-						'anonymous' => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-						'allow_maybe' => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-						'allow_proposals' => $insert->createNamedParameter('disallow'),
-						'show_results' => $insert->createNamedParameter('always'),
-						'admin_access' => $insert->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-						'allow_comment' => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-						'hide_booked_up' => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-						'use_no' => $insert->createNamedParameter(1, IQueryBuilder::PARAM_INT),
-						'voting_variant' => $insert->createNamedParameter('simple'),
-					]
-				);
+			$insert->insert('polls_polls')->values($this->pollRecordValues(insert: $insert, draft: $draft));
 			$insert->executeStatement();
 
-			// OCP\IDBConnection::lastInsertId(string $table) requires the table; a zero
-			// id falls through to the explicit throw below.
-			$pollId = (int)$this->db->lastInsertId('*PREFIX*polls_polls_id_seq');
-
-			if ($pollId === 0) {
-				throw new Exception('Failed to retrieve created poll id', 500);
-			}
-
+			$pollId = $this->createdPollId();
 			$this->insertPollOptions(pollId: $pollId, draft: $draft);
 		} catch (Throwable $e) {
-			$this->logger->warning('Failed to create poll: ' . $e->getMessage());
+			$this->runtime->logger()->warning('Failed to create poll: ' . $e->getMessage());
 			throw new Exception('Failed to create poll: ' . $e->getMessage(), 500);
-		}//end try
+		}
 
 		return $pollId;
 	}//end insertPollRecord()
+
+	/**
+	 * The id of the poll just inserted.
+	 *
+	 * @return int
+	 *
+	 * @throws Exception When the id cannot be retrieved (500).
+	 */
+	private function createdPollId(): int {
+		// OCP\IDBConnection::lastInsertId(string $table) requires the table; a zero
+		// id falls through to the explicit throw below.
+		$pollId = (int)$this->db->lastInsertId('*PREFIX*polls_polls_id_seq');
+		if ($pollId === 0) {
+			throw new Exception('Failed to retrieve created poll id', 500);
+		}
+
+		return $pollId;
+	}//end createdPollId()
+
+	/**
+	 * The `polls_polls` column values for a new poll: its content, then the fixed defaults.
+	 *
+	 * @param IQueryBuilder $insert The insert being built.
+	 * @param PollDraft     $draft  The poll, with owner and creation time.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function pollRecordValues(IQueryBuilder $insert, PollDraft $draft): array {
+		$values = [
+			'type' => $insert->createNamedParameter($draft->pollType()),
+			'title' => $insert->createNamedParameter($draft->storedTitle()),
+			'description' => $insert->createNamedParameter($draft->description),
+			'owner' => $insert->createNamedParameter($draft->owner()),
+			'created' => $insert->createNamedParameter($draft->created(), IQueryBuilder::PARAM_INT),
+			'expire' => $insert->createNamedParameter($draft->expire(), IQueryBuilder::PARAM_INT),
+		];
+
+		return array_merge($values, $this->namedValues(qb: $insert, columns: self::POLL_DEFAULTS));
+	}//end pollRecordValues()
+
+	/**
+	 * Named parameters for fixed column values.
+	 *
+	 * @param IQueryBuilder                                                                     $qb      The query being built.
+	 * @param array<string,array{0:int|string,1:IQueryBuilder::PARAM_INT|IQueryBuilder::PARAM_STR}> $columns Column => [value, type].
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function namedValues(IQueryBuilder $qb, array $columns): array {
+		$values = [];
+		foreach ($columns as $column => $spec) {
+			$values[$column] = $qb->createNamedParameter($spec[0], $spec[1]);
+		}
+
+		return $values;
+	}//end namedValues()
 
 	/**
 	 * Assemble an unsaved PollLink entity for a created poll; the caller sets the object.
@@ -385,16 +488,9 @@ class PollLinkService implements PollLinkServiceInterface {
 	 * @return PollLink The unsaved entity.
 	 */
 	private function buildPollLink(PollDraft $draft, int $pollId): PollLink {
-		$link = new PollLink();
-		$link->setPollId($pollId);
-		$link->setPollTitle($draft->storedTitle());
-		$link->setPollType($draft->pollType());
-		$link->setDeadline($draft->deadlineDateTime());
-		$link->setVoterCount(0);
-		$link->setOptionCount(count($draft->options()));
-		$link->setClosed(false);
+		$stats = ['deadline' => $draft->deadlineDateTime(), 'closed' => false, 'voterCount' => 0, 'optionCount' => count($draft->options())];
 
-		return $link;
+		return $this->newPollLink(pollId: $pollId, title: $draft->storedTitle(), type: $draft->pollType(), stats: $stats);
 	}//end buildPollLink()
 
 	/**
@@ -414,35 +510,93 @@ class PollLinkService implements PollLinkServiceInterface {
 			}
 
 			$order++;
-
-			$hash = substr(hash('sha256', $pollId . '-' . $text . '-' . $order), 0, 32);
-			$timestamp = 0;
-			if ($draft->pollType() === 'datePoll') {
-				$parsedTime = strtotime($text);
-				if ($parsedTime !== false) {
-					$timestamp = $parsedTime;
-				}
-			}
-
-			$qb = $this->db->getQueryBuilder();
-			$qb->insert('polls_options')->values(
-				[
-					'poll_id' => $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT),
-					'poll_option_text' => $qb->createNamedParameter(mb_substr($text, 0, 1024)),
-					'poll_option_hash' => $qb->createNamedParameter($hash),
-					'order' => $qb->createNamedParameter($order, IQueryBuilder::PARAM_INT),
-					'timestamp' => $qb->createNamedParameter($timestamp, IQueryBuilder::PARAM_INT),
-					'duration' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-					'confirmed' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-					'owner' => $qb->createNamedParameter($draft->owner()),
-					'released' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-					'deleted' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-					'created' => $qb->createNamedParameter($draft->created(), IQueryBuilder::PARAM_INT),
-				]
-			);
-			$qb->executeStatement();
-		}//end foreach
+			$this->insertPollOption(pollId: $pollId, draft: $draft, option: ['text' => $text, 'order' => $order]);
+		}
 	}//end insertPollOptions()
+
+	/**
+	 * Insert one poll option.
+	 *
+	 * @param int                          $pollId Created poll id.
+	 * @param PollDraft                    $draft  The poll, with owner and creation time.
+	 * @param array{text:string,order:int} $option The trimmed option text and its 1-based position.
+	 *
+	 * @return void
+	 */
+	private function insertPollOption(int $pollId, PollDraft $draft, array $option): void {
+		$option['hash']      = substr(hash('sha256', $pollId . '-' . $option['text'] . '-' . $option['order']), 0, 32);
+		$option['timestamp'] = $this->optionTimestamp(text: $option['text'], draft: $draft);
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->insert('polls_options')->values(
+			array_merge(
+				$this->optionContentValues(qb: $qb, pollId: $pollId, option: $option),
+				$this->optionMetaValues(qb: $qb, draft: $draft)
+			)
+		);
+		$qb->executeStatement();
+	}//end insertPollOption()
+
+	/**
+	 * The option's timestamp: the parsed date for a date poll, else 0.
+	 *
+	 * @param string    $text  The option text.
+	 * @param PollDraft $draft The poll.
+	 *
+	 * @return int
+	 */
+	private function optionTimestamp(string $text, PollDraft $draft): int {
+		if ($draft->pollType() !== 'datePoll') {
+			return 0;
+		}
+
+		$parsedTime = strtotime($text);
+		if ($parsedTime === false) {
+			return 0;
+		}
+
+		return $parsedTime;
+	}//end optionTimestamp()
+
+	/**
+	 * The `polls_options` columns that describe the option itself.
+	 *
+	 * @param IQueryBuilder       $qb     The insert being built.
+	 * @param int                 $pollId Created poll id.
+	 * @param array<string,mixed> $option `{ text, order, hash, timestamp }`.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function optionContentValues(IQueryBuilder $qb, int $pollId, array $option): array {
+		return [
+			'poll_id' => $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT),
+			'poll_option_text' => $qb->createNamedParameter(mb_substr($option['text'], 0, 1024)),
+			'poll_option_hash' => $qb->createNamedParameter($option['hash']),
+			'order' => $qb->createNamedParameter($option['order'], IQueryBuilder::PARAM_INT),
+			'timestamp' => $qb->createNamedParameter($option['timestamp'], IQueryBuilder::PARAM_INT),
+		];
+	}//end optionContentValues()
+
+	/**
+	 * The `polls_options` bookkeeping columns: fixed flags, owner and creation time.
+	 *
+	 * @param IQueryBuilder $qb    The insert being built.
+	 * @param PollDraft     $draft The poll, with owner and creation time.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function optionMetaValues(IQueryBuilder $qb, PollDraft $draft): array {
+		$int = IQueryBuilder::PARAM_INT;
+
+		return [
+			'duration' => $qb->createNamedParameter(0, $int),
+			'confirmed' => $qb->createNamedParameter(0, $int),
+			'owner' => $qb->createNamedParameter($draft->owner()),
+			'released' => $qb->createNamedParameter(0, $int),
+			'deleted' => $qb->createNamedParameter(0, $int),
+			'created' => $qb->createNamedParameter($draft->created(), $int),
+		];
+	}//end optionMetaValues()
 
 	/**
 	 * Fetch a poll row from `oc_polls_polls`.
@@ -454,11 +608,8 @@ class PollLinkService implements PollLinkServiceInterface {
 	private function fetchPollRow(int $pollId): ?array {
 		try {
 			$qb = $this->db->getQueryBuilder();
-			$qb->select('id', 'title', 'type', 'expire', 'owner', 'deleted')
-				->from('polls_polls')
-				->where($qb->expr()->eq('id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
-				->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
-
+			$qb->select('id', 'title', 'type', 'expire', 'owner', 'deleted')->from('polls_polls');
+			$this->whereLive(qb: $qb, column: 'id', pollId: $pollId);
 			$row = $qb->executeQuery()->fetch();
 			if ($row === false) {
 				return null;
@@ -466,10 +617,24 @@ class PollLinkService implements PollLinkServiceInterface {
 
 			return $row;
 		} catch (Throwable $e) {
-			$this->logger->debug('fetchPollRow failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('fetchPollRow failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end fetchPollRow()
+
+	/**
+	 * Restrict a query to the non-deleted rows of one poll.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param string        $column Poll id column (`id` or `poll_id`).
+	 * @param int           $pollId Poll id.
+	 *
+	 * @return void
+	 */
+	private function whereLive(IQueryBuilder $qb, string $column, int $pollId): void {
+		$qb->where($qb->expr()->eq($column, $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
+	}//end whereLive()
 
 	/**
 	 * Distinct user count that has cast at least one non-deleted vote.
@@ -481,12 +646,9 @@ class PollLinkService implements PollLinkServiceInterface {
 	private function fetchVoterCount(int $pollId): int {
 		try {
 			$qb = $this->db->getQueryBuilder();
-			$qb->selectDistinct('user_id')
-				->from('polls_votes')
-				->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
-				->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
-			$rows = $qb->executeQuery()->fetchAll();
-			return count($rows);
+			$qb->selectDistinct('user_id')->from('polls_votes');
+			$this->whereLive(qb: $qb, column: 'poll_id', pollId: $pollId);
+			return count($qb->executeQuery()->fetchAll());
 		} catch (Throwable $e) {
 			return 0;
 		}
@@ -502,16 +664,10 @@ class PollLinkService implements PollLinkServiceInterface {
 	private function fetchOptionCount(int $pollId): int {
 		try {
 			$qb = $this->db->getQueryBuilder();
-			$qb->select($qb->func()->count('*', 'cnt'))
-				->from('polls_options')
-				->where($qb->expr()->eq('poll_id', $qb->createNamedParameter($pollId, IQueryBuilder::PARAM_INT)))
-				->andWhere($qb->expr()->eq('deleted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
-			$fetchedCount = $qb->executeQuery()->fetchOne();
-			if ($fetchedCount === false || $fetchedCount === null) {
-				return 0;
-			}
-
-			return (int)$fetchedCount;
+			$qb->select($qb->func()->count('*', 'cnt'))->from('polls_options');
+			$this->whereLive(qb: $qb, column: 'poll_id', pollId: $pollId);
+			// A missing count (false or null) casts to 0.
+			return (int)$qb->executeQuery()->fetchOne();
 		} catch (Throwable $e) {
 			return 0;
 		}

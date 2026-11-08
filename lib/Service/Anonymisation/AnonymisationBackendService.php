@@ -27,7 +27,6 @@ use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
 use OCP\ICache;
-use OCP\ICacheFactory;
 use OCP\Server;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -45,7 +44,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Aggregates several OCP services by design.
  */
-class AnonymisationBackendService {
+class AnonymisationBackendService implements AnonymisationBackendServiceInterface, AnonymiserRequestInterface {
 	/**
 	 * App id of the AppAPI app required for ExApp detection.
 	 */
@@ -89,27 +88,66 @@ class AnonymisationBackendService {
 	private ?ICache $cache = null;
 
 	/**
+	 * App manager used for ExApp detection.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * App configuration store.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * HTTP client factory for endpoint probes.
+	 *
+	 * @var IClientService
+	 */
+	private readonly IClientService $clientService;
+
+	/**
+	 * Reads the stored entity-recognition settings.
+	 *
+	 * @var FileSettingsHandler
+	 */
+	private readonly FileSettingsHandler $fileSettingsHandler;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Reports an OpenAnonymiser connection test to integriq's connection registry.
+	 *
+	 * @var ConnectionReporter
+	 */
+	private readonly ConnectionReporter $connectionReporter;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager $appManager App manager used for ExApp detection.
-	 * @param IAppConfig $appConfig App configuration store.
-	 * @param ICacheFactory $cacheFactory Factory for the distributed probe cache.
-	 * @param IClientService $clientService HTTP client factory for endpoint probes.
-	 * @param FileSettingsHandler $fileSettingsHandler Reads the stored entity-recognition settings.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ConnectionReporter $connectionReporter Reports an OpenAnonymiser connection test to integriq's connection registry.
+	 * @param AnonymisationBackendPlatform      $platform      App manager, app config, cache factory and HTTP clients.
+	 * @param AnonymisationBackendCollaborators $collaborators File settings, logger and connection reporter.
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
-		private readonly IAppConfig $appConfig,
-		ICacheFactory $cacheFactory,
-		private readonly IClientService $clientService,
-		private readonly FileSettingsHandler $fileSettingsHandler,
-		private readonly LoggerInterface $logger,
-		private readonly ConnectionReporter $connectionReporter,
+		AnonymisationBackendPlatform $platform,
+		AnonymisationBackendCollaborators $collaborators,
 	) {
+		$this->appManager          = $platform->appManager;
+		$this->appConfig           = $platform->appConfig;
+		$this->clientService       = $platform->clientService;
+		$this->fileSettingsHandler = $collaborators->fileSettingsHandler;
+		$this->logger              = $collaborators->logger;
+		$this->connectionReporter  = $collaborators->connectionReporter;
+
 		try {
-			$this->cache = $cacheFactory->createDistributed('openregister_anon_probe');
+			$this->cache = $platform->cacheFactory->createDistributed('openregister_anon_probe');
 		} catch (Throwable $e) {
 			$this->logger->warning('[AnonymisationBackendService] cache backend unavailable: ' . $e->getMessage());
 			$this->cache = null;

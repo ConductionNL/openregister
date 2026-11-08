@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -47,17 +47,17 @@ use Throwable;
  *
  * @spec openspec/changes/aggregate-paths-ask-permission/specs/rbac-scopes/spec.md
  */
-class AggregateVisibility {
+class AggregateVisibility implements AggregateVisibilityInterface {
 
 	/**
 	 * The collaborators.
 	 *
-	 * @param PropertyRbacHandler|null $rbac   The one thing that decides property reads.
+	 * @param PropertyRbacHandlerInterface|null $rbac   The one thing that decides property reads.
 	 * @param LoggerInterface|null     $logger The logger.
 	 * @param ExplicitReveal|null      $reveal The request's trusted-code state; without it only a system operation is trusted.
 	 */
 	public function __construct(
-		private readonly ?PropertyRbacHandler $rbac = null,
+		private readonly ?PropertyRbacHandlerInterface $rbac = null,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?ExplicitReveal $reveal = null,
 	) {

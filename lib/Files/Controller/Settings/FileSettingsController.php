@@ -19,9 +19,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
+use OCA\OpenRegister\AppInfo\Application;
 use Exception;
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
-use OCA\OpenRegister\Service\Anonymisation\BackendState;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
+use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -48,20 +49,18 @@ class FileSettingsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
 	 * @param ContainerInterface $container DI container.
 	 * @param AppSettingsInterface $settingsService Settings service.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
 		private readonly ContainerInterface $container,
 		private readonly AppSettingsInterface $settingsService,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -115,13 +114,7 @@ class FileSettingsController extends Controller {
 				]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end updateFileSettings()
 
@@ -144,13 +137,7 @@ class FileSettingsController extends Controller {
 		try {
 			// Validate inputs.
 			if (empty($apiEndpoint) === true || empty($apiKey) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'API endpoint and API key are required',
-					],
-					statusCode: 400
-				);
+				return $this->error(message: 'API endpoint and API key are required', status: 400);
 			}
 
 			$headers = [
@@ -166,13 +153,7 @@ class FileSettingsController extends Controller {
 
 			return new JSONResponse(data: $result);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end testDolphinConnection()
 
@@ -194,13 +175,7 @@ class FileSettingsController extends Controller {
 		try {
 			// Validate inputs.
 			if (empty($apiEndpoint) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'API endpoint is required',
-					],
-					statusCode: 400
-				);
+				return $this->error(message: 'API endpoint is required', status: 400);
 			}
 
 			$result = $this->performHealthCheck(
@@ -216,13 +191,7 @@ class FileSettingsController extends Controller {
 
 			return new JSONResponse(data: $result);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end testPresidioConnection()
 
@@ -251,11 +220,11 @@ class FileSettingsController extends Controller {
 	public function testOpenAnonymiserConnection(string $apiEndpoint = ''): JSONResponse {
 		try {
 			/*
-			 * @var AnonymisationBackendService $service
+			 * @var AnonymisationBackendServiceInterface $service
 			 */
 
-			$service = $this->container->get(AnonymisationBackendService::class);
-			$probe = $service->testConnection(method: BackendState::METHOD_OPENANONYMISER);
+			$service = $this->container->get(AnonymisationBackendServiceInterface::class);
+			$probe = $service->testConnection(method: BackendMethodsInterface::METHOD_OPENANONYMISER);
 
 			if ($probe->reachable === true) {
 				return new JSONResponse(
@@ -273,13 +242,7 @@ class FileSettingsController extends Controller {
 				]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->error(message: $e->getMessage());
 		}//end try
 	}//end testOpenAnonymiserConnection()
 
@@ -316,7 +279,7 @@ class FileSettingsController extends Controller {
 	public function getFileExtractionStats(): JSONResponse {
 		try {
 			$fileMapper = $this->container->get(\OCA\OpenRegister\Files\Db\FileMapperInterface::class);
-			$chunkMapper = $this->container->get(\OCA\OpenRegister\Files\Db\ChunkMapper::class);
+			$chunkMapper = $this->container->get(\OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface::class);
 			$extractionStats = $this->container->get(\OCA\OpenRegister\Files\Service\TextExtractionService::class)->getStats();
 
 			$processedFiles = $chunkMapper->countFileSourceSummaries();
@@ -457,4 +420,16 @@ class FileSettingsController extends Controller {
 
 		return $capabilities;
 	}//end fetchPresidioCapabilities()
+
+	/**
+	 * A failed response: `success` false and the error.
+	 *
+	 * @param string $message The error.
+	 * @param int    $status  The HTTP status.
+	 *
+	 * @return JSONResponse
+	 */
+	private function error(string $message, int $status=500): JSONResponse {
+		return new JSONResponse(data: ['success' => false, 'error' => $message], statusCode: $status);
+	}//end error()
 }//end class

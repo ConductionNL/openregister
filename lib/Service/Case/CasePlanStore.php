@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Case;
 
-use OCA\OpenRegister\Db\CaseItemAuditMapper;
-use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CaseItemAuditMapperInterface;
+use OCA\OpenRegister\Db\CaseItemMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -37,14 +37,14 @@ final readonly class CasePlanStore {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param CaseItemMapper $items The plan-item table.
-	 * @param CaseItemAuditMapper $audits The append-only audit.
+	 * @param CaseItemMapperInterface $items The plan-item table.
+	 * @param CaseItemAuditMapperInterface $audits The append-only audit.
 	 * @param IDBConnection $db Holds the creation transactions.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		public CaseItemMapper $items,
-		public CaseItemAuditMapper $audits,
+		public CaseItemMapperInterface $items,
+		public CaseItemAuditMapperInterface $audits,
 		public IDBConnection $db,
 		public LoggerInterface $logger,
 	) {

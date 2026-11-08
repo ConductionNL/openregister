@@ -30,6 +30,7 @@ namespace Unit\Service\Vocabulary;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy;
 use OCA\OpenRegister\Service\Vocabulary\ConceptLifecycle;
+use OCA\OpenRegister\Service\Vocabulary\ConceptReading;
 use PHPUnit\Framework\TestCase;
 
 class ConceptHierarchyTest extends TestCase {
@@ -222,8 +223,7 @@ class ConceptHierarchyTest extends TestCase {
 		$tree = $this->hierarchy->tree(
 			rootUri: 'urn:vergunning',
 			conceptsByUri: $scheme,
-			language: 'nl',
-			at: new DateTimeImmutable('2026-09-14')
+			reading: new ConceptReading(language: 'nl', instant: new DateTimeImmutable('2026-09-14'))
 		);
 
 		$this->assertTrue($tree['offerable']);

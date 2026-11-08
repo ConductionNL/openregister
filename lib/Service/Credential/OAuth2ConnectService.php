@@ -7,25 +7,20 @@
  * HTTP shape and the authorization decisions; this owns what a provider is asked
  * for, what comes back, and how the answer becomes a credential.
  *
- * Three things here are decisions rather than plumbing.
- *
- * A RE-AUTHORISATION OVERWRITES IN PLACE. Every `socialAccount` and `searchProperty`
- * in a consuming app points at a credential id, so minting a second credential for
- * the same account would leave all of them pointing at the dead one. The provider
- * and, where one is pinned, the instance host are refused if they would change,
- * because that would be re-pointing a credential rather than repairing it.
- *
  * A FAILED EXCHANGE LEAVES NOTHING BEHIND. Nothing is written until the token
  * response is in hand, so a provider refusal produces no half-made connection for
- * somebody to find later and wonder about.
+ * somebody to find later and wonder about. The re-authorisation refusals run
+ * before the exchange, so a repair that would re-point a credential costs the
+ * provider nothing either.
  *
- * Two provider-specific jobs live BESIDE this rather than in it, and both are
- * reached through here so a caller has one connect seam rather than three:
+ * The jobs behind this seam live BESIDE it, and are reached through here so a
+ * caller has one connect seam rather than several:
  * {@see OAuth2InstanceClient} registers the OAuth2 application that a provider with
- * no central registry has no other way to get, and {@see OAuth2AccountIdentity} asks
- * the provider whose account was just connected. Each is a whole external exchange
- * with its own failure posture, and folding them in here made one class that did
- * three different things to three different servers.
+ * no central registry has no other way to get, {@see OAuth2CodeExchange} redeems the
+ * code, {@see OAuth2ConnectionWriter} repairs in place or mints (and owns the rule
+ * that a re-authorisation may not re-point a credential), and
+ * {@see OAuth2UpstreamRevoker} revokes at the provider on disconnect. Each is a
+ * whole step with its own failure posture.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
@@ -45,28 +40,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Credential;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\WriteCause;
-use OCP\Http\Client\IClientService;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
-use Throwable;
 
 /**
  * Builds authorization URLs and turns authorization codes into credentials.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The connect flow is by nature the
- * seam between the catalogue, the broker, the refresh service, an HTTP client and the
- * flow's own state; the count is the number of things a connect genuinely touches,
- * and four of them are the exception types that distinguish a refused grant from an
- * unreachable provider.
- * @SuppressWarnings(PHPMD.StaticAccess) Two calls, to a named constructor
- * ({@see OAuth2TokenSet}) and to a stateless security predicate
- * ({@see OAuth2InstanceHost}); neither has an instance, and injecting the host guard
- * would make the host-lock substitutable.
+ * @SuppressWarnings(PHPMD.StaticAccess) One call, to a named constructor
+ * ({@see OAuth2TokenSet}); a value object has no instance to call it on.
  */
-class OAuth2ConnectService {
+class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	/**
 	 * The credential kind this service mints.
 	 *
@@ -75,31 +57,65 @@ class OAuth2ConnectService {
 	public const KIND = 'oauth2-token-set';
 
 	/**
+	 * Declares every provider's endpoints and grants.
+	 *
+	 * @var ProviderCatalogue
+	 */
+	private readonly ProviderCatalogue $catalogue;
+
+	/**
+	 * Resolves the client id and secret for the exchange.
+	 *
+	 * @var OAuth2ClientResolver
+	 */
+	private readonly OAuth2ClientResolver $clients;
+
+	/**
+	 * Registers or reuses a per-instance OAuth2 application.
+	 *
+	 * @var OAuth2InstanceClient
+	 */
+	private readonly OAuth2InstanceClient $instanceClients;
+
+	/**
+	 * Redeems the authorization code at the token endpoint.
+	 *
+	 * @var OAuth2CodeExchange
+	 */
+	private readonly OAuth2CodeExchange $exchange;
+
+	/**
+	 * Repairs the targeted credential in place or mints a new one.
+	 *
+	 * @var OAuth2ConnectionWriter
+	 */
+	private readonly OAuth2ConnectionWriter $writer;
+
+	/**
+	 * Revokes a connection at the provider, best effort.
+	 *
+	 * @var OAuth2UpstreamRevoker
+	 */
+	private readonly OAuth2UpstreamRevoker $revoker;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ProviderCatalogue $catalogue Declares every provider's endpoints and grants.
-	 * @param CredentialBrokerService $broker Mints the credential and its metadata object.
-	 * @param OAuth2ClientResolver $clients Resolves the client id and secret for the exchange.
-	 * @param OAuth2RefreshService $refresh Persists a token set and mirrors its non-secret metadata.
-	 * @param OAuth2InstanceClient $instanceClients Registers or reuses a per-instance OAuth2 application.
-	 * @param OAuth2AccountIdentity $identities Reads and records whose account was connected.
-	 * @param ObjectOperationsInterface $objectService Loads the credential being re-authorised.
-	 * @param IClientService $clientService NC HTTP client factory.
-	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param OAuth2ConnectClients $sources The provider catalogue, client resolver and per-instance client registration.
+	 * @param OAuth2ConnectSteps   $steps   The code exchange, connection writer and upstream revoker.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ProviderCatalogue $catalogue,
-		private readonly CredentialBrokerService $broker,
-		private readonly OAuth2ClientResolver $clients,
-		private readonly OAuth2RefreshService $refresh,
-		private readonly OAuth2InstanceClient $instanceClients,
-		private readonly OAuth2AccountIdentity $identities,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly IClientService $clientService,
-		private readonly LoggerInterface $logger,
+		OAuth2ConnectClients $sources,
+		OAuth2ConnectSteps $steps,
 	) {
+		$this->catalogue = $sources->catalogue;
+		$this->clients = $sources->clients;
+		$this->instanceClients = $sources->instanceClients;
+		$this->exchange = $steps->exchange;
+		$this->writer = $steps->writer;
+		$this->revoker = $steps->revoker;
 	}//end __construct()
 
 	/**
@@ -166,50 +182,17 @@ class OAuth2ConnectService {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	public function authorizationUrl(
-		array $provider,
-		array $claims,
-		string $redirectUri,
-		string $state,
-		string $challenge,
-	): string {
-		$oauth2 = $provider['oauth2'];
-		$instanceBaseUrl = $this->pinnedHost(claims: $claims);
-		$scopes = $this->scopesOf(claims: $claims, provider: $provider);
-		$client = $this->clients->resolve(
-			credential: [
-				'clientId' => (string)($claims['cl'] ?? ''),
-				'clientCredentialRef' => (string)($claims['cr'] ?? ''),
-			],
-			provider: (string)($claims['p'] ?? ''),
-			actingUserId: (string)($claims['u'] ?? '')
+	public function authorizationUrl(array $provider, array $claims, string $redirectUri, string $state, string $challenge): string {
+		$flow = new OAuth2FlowClaims(claims: $claims);
+		$config = new OAuth2ProviderConfig(provider: $provider);
+		$instanceBaseUrl = $flow->pinnedHost();
+		$query = array_merge(
+			$this->authorizationQuery(flow: $flow, provider: $provider, redirectUri: $redirectUri, state: $state),
+			$this->pkceChallenge(config: $config, challenge: $challenge),
+			$config->authorizationParameters()
 		);
-		$clientId = $client['clientId'];
-		$separator = (string)($oauth2['scopeSeparator'] ?? ' ');
 
-		$query = [
-			'response_type' => 'code',
-			'client_id' => $clientId,
-			'redirect_uri' => $redirectUri,
-			'state' => $state,
-			'scope' => implode($separator, $scopes),
-		];
-
-		if ((string)($oauth2['pkce'] ?? 'none') === 'S256') {
-			$query['code_challenge'] = $challenge;
-			$query['code_challenge_method'] = 'S256';
-		}
-
-		$extra = ($oauth2['authorizationParameters'] ?? []);
-		if (is_array($extra) === true) {
-			$query = array_merge($query, $extra);
-		}
-
-		return $this->endpoint(
-			oauth2: $oauth2,
-			key: 'authorizationEndpoint',
-			instanceBaseUrl: $instanceBaseUrl
-		) . '?' . http_build_query($query);
+		return $config->endpoint(key: 'authorizationEndpoint', instanceBaseUrl: $instanceBaseUrl) . '?' . http_build_query($query);
 	}//end authorizationUrl()
 
 	/**
@@ -228,82 +211,21 @@ class OAuth2ConnectService {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
 	public function complete(array $claims, string $code, string $verifier, string $redirectUri): string {
-		$providerId = (string)($claims['p'] ?? '');
-		$provider = $this->oauth2Provider(providerId: $providerId);
-		$instanceBaseUrl = $this->pinnedHost(claims: $claims);
+		$flow = new OAuth2FlowClaims(claims: $claims);
+		$provider = $this->oauth2Provider(providerId: $flow->string(key: 'p'));
+		$instanceBaseUrl = $flow->pinnedHost();
+		$existing = $this->writer->reauthorisationTarget(flow: $flow, instanceBaseUrl: $instanceBaseUrl);
 
-		$existing = $this->existingCredential(claims: $claims, providerId: $providerId, instanceBaseUrl: $instanceBaseUrl);
-
-		// The claims win only where they SAY something. A re-authorisation whose
-		// claims carry no client is reusing the credential's own, and letting an
-		// empty claim overwrite it would strand a per-instance connection: the
-		// stored client id would be gone, and its secret would still be sitting on
-		// the account's own server with nothing left pointing at it.
-		$credentialData = array_merge(
-			($existing ?? []),
-			array_filter(
-				[
-					'provider' => $providerId,
-					'clientId' => trim((string)($claims['cl'] ?? '')),
-					'clientCredentialRef' => trim((string)($claims['cr'] ?? '')),
-				],
-				static fn (string $value): bool => $value !== ''
-			)
-		);
-
-		$client = $this->clients->resolve(
-			credential: $credentialData,
-			provider: $providerId,
-			actingUserId: (string)($claims['u'] ?? '')
-		);
-
-		$response = $this->exchangeCode(
+		$response = $this->exchange->redeem(
 			provider: $provider,
-			code: $code,
-			verifier: $verifier,
-			redirectUri: $redirectUri,
-			client: $client,
+			grant: ['code' => $code, 'code_verifier' => $verifier, 'redirect_uri' => $redirectUri],
+			client: $this->clientFor(flow: $flow, existing: $existing),
 			instanceBaseUrl: $instanceBaseUrl
 		);
 
-		$tokenSet = OAuth2TokenSet::fromTokenResponse(
-			response: $response,
-			requestedScopes: $this->scopesOf(claims: $claims, provider: $provider)
-		);
+		$tokenSet = OAuth2TokenSet::fromTokenResponse(response: $response, requestedScopes: $flow->scopes(provider: $provider));
 
-		$scope = (string)($claims['s'] ?? 'personal');
-
-		if ($existing !== null) {
-			$credentialId = (string)$claims['cid'];
-			$this->refresh->persist(credentialId: $credentialId, scope: $scope, set: $tokenSet, extraMetadata: ['status' => 'active']);
-			$this->identities->record(
-				provider: $provider,
-				credentialId: $credentialId,
-				scope: $scope,
-				set: $tokenSet,
-				owner: (string)($existing['owner'] ?? $claims['u'] ?? '')
-			);
-
-			return $credentialId;
-		}
-
-		$credentialId = $this->mintNew(
-			claims: $claims,
-			providerId: $providerId,
-			scope: $scope,
-			tokenSet: $tokenSet,
-			instanceBaseUrl: $instanceBaseUrl
-		);
-
-		$this->identities->record(
-			provider: $provider,
-			credentialId: $credentialId,
-			scope: $scope,
-			set: $tokenSet,
-			owner: (string)($claims['u'] ?? '')
-		);
-
-		return $credentialId;
+		return $this->writer->store(provider: $provider, flow: $flow, existing: $existing, tokenSet: $tokenSet);
 	}//end complete()
 
 	/**
@@ -322,301 +244,82 @@ class OAuth2ConnectService {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
 	 */
 	public function revokeUpstream(array $provider, array $credential, string $credentialId, string $scope): string {
-		$oauth2 = ($provider['oauth2'] ?? []);
-		if (is_array($oauth2) === false || ($oauth2['revokeEndpoint'] ?? null) === null) {
-			return '';
-		}
-
-		try {
-			$set = $this->refresh->storedSet(credentialId: $credentialId, scope: $scope);
-			$client = $this->clients->resolve(
-				credential: $credential,
-				provider: (string)($credential['provider'] ?? ''),
-				actingUserId: (string)($credential['owner'] ?? '')
-			);
-
-			$body = ['token' => $set->getAccessToken(), 'client_id' => $client['clientId']];
-			if ($client['clientSecret'] !== null) {
-				$body['client_secret'] = $client['clientSecret'];
-			}
-
-			$this->clientService->newClient()->post(
-				$this->endpoint(
-					oauth2: $oauth2,
-					key: 'revokeEndpoint',
-					instanceBaseUrl: (string)($credential['instanceBaseUrl'] ?? '')
-				),
-				['body' => $body, 'timeout' => 20]
-			);
-		} catch (Throwable $failure) {
-			$this->logger->warning('[OAuth2ConnectService] upstream revoke failed for ' . $credentialId . ': ' . $failure->getMessage());
-
-			return 'revoke_failed';
-		}//end try
-
-		return '';
+		return $this->revoker->revoke(provider: $provider, credential: $credential, credentialId: $credentialId, scope: $scope);
 	}//end revokeUpstream()
 
 	/**
-	 * Mint a brand-new connection.
+	 * Resolve the client the exchange authenticates as.
 	 *
-	 * @param array<string, mixed> $claims The verified state claims.
-	 * @param string $providerId The catalogue provider identifier.
-	 * @param string $scope The credential scope.
-	 * @param OAuth2TokenSet $tokenSet The token set to store.
-	 * @param string|null $instanceBaseUrl The pinned host, when the provider has one.
+	 * The claims win only where they SAY something. A re-authorisation whose
+	 * claims carry no client is reusing the credential's own, and letting an
+	 * empty claim overwrite it would strand a per-instance connection: the
+	 * stored client id would be gone, and its secret would still be sitting on
+	 * the account's own server with nothing left pointing at it.
 	 *
-	 * @return string The new credential UUID.
+	 * @param OAuth2FlowClaims $flow The verified state claims.
+	 * @param array<string, mixed>|null $existing The credential a repair targets, or null.
 	 *
-	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 * @return array{clientId: string, clientSecret: string|null} The resolved client.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-re-authorisation-overrides-the-same-credential
 	 */
-	private function mintNew(
-		array $claims,
-		string $providerId,
-		string $scope,
-		OAuth2TokenSet $tokenSet,
-		?string $instanceBaseUrl,
-	): string {
-		$metadata = [
-			'kind' => self::KIND,
-			'status' => 'active',
-			'scopes' => $tokenSet->getScopes(),
-			'account' => $tokenSet->getAccount(),
-			'expiresAt' => $tokenSet->getExpiresAt()?->format(DATE_ATOM),
-			'clientId' => (string)($claims['cl'] ?? ''),
-			'clientCredentialRef' => (string)($claims['cr'] ?? ''),
-		];
-		if ($instanceBaseUrl !== null) {
-			$metadata['instanceBaseUrl'] = $instanceBaseUrl;
-		}
-
-		$minted = $this->broker->mint(
-			name: (string)($claims['nm'] ?? $providerId),
-			provider: $providerId,
-			owner: (string)($claims['u'] ?? ''),
-			allowedApps: $this->allowedAppsOf(claims: $claims),
-			secret: $tokenSet->toStoredJson(),
-			scope: $scope,
-			organisation: ($claims['o'] ?? null),
-			metadata: $metadata
+	private function clientFor(OAuth2FlowClaims $flow, ?array $existing): array {
+		$providerId = $flow->string(key: 'p');
+		$credentialData = array_merge(
+			($existing ?? []),
+			array_filter(
+				['provider' => $providerId, 'clientId' => $flow->trimmed(key: 'cl'), 'clientCredentialRef' => $flow->trimmed(key: 'cr')],
+				static fn (string $value): bool => $value !== ''
+			)
 		);
 
-		return (string)$minted->getUuid();
-	}//end mintNew()
+		return $this->clients->resolve(credential: $credentialData, provider: $providerId, actingUserId: $flow->string(key: 'u'));
+	}//end clientFor()
 
 	/**
-	 * Load the credential a re-authorisation targets, refusing one it would re-point.
+	 * The core authorization request parameters, with the client resolved for them.
 	 *
-	 * @param array<string, mixed> $claims The verified state claims.
-	 * @param string $providerId The provider named in the claims.
-	 * @param string|null $instanceBaseUrl The host named in the claims.
-	 *
-	 * @return array<string, mixed>|null The existing credential's data, or null for a new connection.
-	 *
-	 * @throws RuntimeException When the credential is gone, or the re-authorisation would re-point it.
-	 *
-	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-re-authorised-credential-returns-to-active-in-place
-	 */
-	private function existingCredential(array $claims, string $providerId, ?string $instanceBaseUrl): ?array {
-		$credentialId = trim((string)($claims['cid'] ?? ''));
-		if ($credentialId === '') {
-			return null;
-		}
-
-		$entity = WriteCause::asLookup(fn () => $this->objectService->find(
-			id: $credentialId,
-			register: CredentialBrokerService::REGISTER,
-			schema: CredentialBrokerService::SCHEMA,
-			_rbac: false,
-			_multitenancy: false,
-			_render: false
-		));
-
-		if ($entity instanceof ObjectEntity === false) {
-			throw new RuntimeException(message: 'the credential being re-authorised no longer exists');
-		}
-
-		$data = $entity->jsonSerialize();
-		unset($data['@self']);
-
-		if ((string)($data['provider'] ?? '') !== $providerId) {
-			throw new RuntimeException(message: 'a re-authorisation may not change a credential\'s provider');
-		}
-
-		$pinned = trim((string)($data['instanceBaseUrl'] ?? ''));
-		if ($pinned !== '' && $pinned !== $instanceBaseUrl) {
-			throw new RuntimeException(message: 'a re-authorisation may not change a credential\'s pinned host');
-		}
-
-		return $data;
-	}//end existingCredential()
-
-	/**
-	 * Perform the authorization-code exchange.
-	 *
+	 * @param OAuth2FlowClaims $flow The flow's claims.
 	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $code The authorization code.
-	 * @param string $verifier The PKCE code verifier.
-	 * @param string $redirectUri The callback the code was issued against.
-	 * @param array{clientId: string, clientSecret: string|null} $client The resolved client.
-	 * @param string|null $instanceBaseUrl The pinned host, when the provider has one.
+	 * @param string $redirectUri The callback the provider must redirect to.
+	 * @param string $state The signed state.
 	 *
-	 * @return array<string, mixed> The decoded token response.
+	 * @return array<string, string> The query parameters.
 	 *
-	 * @throws RuntimeException When the exchange fails or the provider returns an error.
-	 *
-	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	private function exchangeCode(
-		array $provider,
-		string $code,
-		string $verifier,
-		string $redirectUri,
-		array $client,
-		?string $instanceBaseUrl,
-	): array {
-		$oauth2 = $provider['oauth2'];
-		$form = [
-			'grant_type' => 'authorization_code',
-			'code' => $code,
-			'redirect_uri' => $redirectUri,
+	private function authorizationQuery(OAuth2FlowClaims $flow, array $provider, string $redirectUri, string $state): array {
+		$scopes = $flow->scopes(provider: $provider);
+		$client = $this->clients->resolve(
+			credential: ['clientId' => $flow->string(key: 'cl'), 'clientCredentialRef' => $flow->string(key: 'cr')],
+			provider: $flow->string(key: 'p'),
+			actingUserId: $flow->string(key: 'u')
+		);
+
+		return [
+			'response_type' => 'code',
 			'client_id' => $client['clientId'],
+			'redirect_uri' => $redirectUri,
+			'state' => $state,
+			'scope' => implode((new OAuth2ProviderConfig(provider: $provider))->scopeSeparator(), $scopes),
 		];
-
-		if ((string)($oauth2['pkce'] ?? 'none') === 'S256') {
-			$form['code_verifier'] = $verifier;
-		}
-
-		$options = ['body' => $form, 'headers' => ['Accept' => 'application/json'], 'timeout' => 20];
-		if ($client['clientSecret'] !== null && (string)($oauth2['clientAuth'] ?? '') === 'client_secret_basic') {
-			$options['auth'] = [$client['clientId'], $client['clientSecret']];
-		}
-
-		if ($client['clientSecret'] !== null && (string)($oauth2['clientAuth'] ?? '') !== 'client_secret_basic') {
-			$form['client_secret'] = $client['clientSecret'];
-			$options['body'] = $form;
-		}
-
-		try {
-			$response = $this->clientService->newClient()->post(
-				$this->endpoint(oauth2: $oauth2, key: 'tokenEndpoint', instanceBaseUrl: $instanceBaseUrl),
-				$options
-			);
-			$decoded = json_decode((string)$response->getBody(), true);
-		} catch (Throwable $failure) {
-			throw new RuntimeException(message: 'token exchange failed: ' . $failure::class, previous: $failure);
-		}
-
-		if (is_array($decoded) === false) {
-			throw new RuntimeException(message: 'token endpoint returned a body that is not JSON');
-		}
-
-		$error = (string)($decoded['error'] ?? '');
-		if ($error !== '') {
-			throw new RuntimeException(message: 'token endpoint returned error ' . $error);
-		}
-
-		return $decoded;
-	}//end exchangeCode()
+	}//end authorizationQuery()
 
 	/**
-	 * Resolve one of the provider's endpoints to an absolute URL.
+	 * The PKCE challenge parameters, for a provider that requires them.
 	 *
-	 * @param array<string, mixed> $oauth2 The provider entry's `oauth2` block.
-	 * @param string $key The endpoint key.
-	 * @param string|null $instanceBaseUrl The pinned host, for a per-instance provider.
+	 * @param OAuth2ProviderConfig $config The provider's oauth2 block.
+	 * @param string $challenge The PKCE code challenge.
 	 *
-	 * @return string The absolute endpoint URL.
+	 * @return array<string, string> The challenge parameters, or an empty array.
 	 *
-	 * @throws InvalidArgumentException When the endpoint is absent or its host cannot be resolved.
-	 *
-	 * @spec openspec/specs/credential-broker/spec.md#requirement-the-catalogue-may-describe-an-oauth2-provider
+	 * @spec exclude private request builder with no behaviour of its own
 	 */
-	private function endpoint(array $oauth2, string $key, ?string $instanceBaseUrl): string {
-		$endpoint = trim((string)($oauth2[$key] ?? ''));
-		if ($endpoint === '') {
-			throw new InvalidArgumentException(message: 'the catalogue names no ' . $key . ' for this provider');
-		}
-
-		if (($oauth2['endpointsRelativeToInstance'] ?? false) !== true) {
-			return $endpoint;
-		}
-
-		return OAuth2InstanceHost::normalise(candidate: (string)$instanceBaseUrl) . '/' . ltrim($endpoint, '/');
-	}//end endpoint()
-
-	/**
-	 * The already-validated pinned host a flow carries, or null.
-	 *
-	 * @param array<string, mixed> $claims The verified state claims.
-	 *
-	 * @return string|null The normalised origin, or null.
-	 *
-	 * @spec exclude private claims accessor; the host rules live in OAuth2InstanceHost
-	 */
-	private function pinnedHost(array $claims): ?string {
-		$host = trim((string)($claims['h'] ?? ''));
-		if ($host === '') {
-			return null;
-		}
-
-		return OAuth2InstanceHost::normalise(candidate: $host);
-	}//end pinnedHost()
-
-	/**
-	 * The scopes a flow asked for, falling back to the provider's declared defaults.
-	 *
-	 * @param array<string, mixed> $claims The verified state claims.
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 *
-	 * @return array<int, string> The scopes.
-	 *
-	 * @spec exclude private claims accessor with no behaviour of its own
-	 */
-	private function scopesOf(array $claims, array $provider): array {
-		$scopes = ($claims['sc'] ?? null);
-		if (is_array($scopes) === true && $scopes !== []) {
-			return array_values(array_map('strval', $scopes));
-		}
-
-		$defaults = ($provider['oauth2']['defaultScopes'] ?? []);
-		if (is_array($defaults) === false) {
+	private function pkceChallenge(OAuth2ProviderConfig $config, string $challenge): array {
+		if ($config->usesPkce() === false) {
 			return [];
 		}
 
-		return array_values(array_map('strval', $defaults));
-	}//end scopesOf()
-
-	/**
-	 * The app ids a new connection is granted to.
-	 *
-	 * @param array<string, mixed> $claims The verified state claims.
-	 *
-	 * @return array<int, string> The app ids.
-	 *
-	 * @spec exclude private claims accessor with no behaviour of its own
-	 */
-	private function allowedAppsOf(array $claims): array {
-		$apps = ($claims['a'] ?? []);
-		if (is_array($apps) === false) {
-			$apps = [];
-		}
-
-		$apps = array_map('strval', $apps);
-
-		// OPENREGISTER IS ALWAYS ON THE LIST, and this is not a courtesy to itself.
-		// It is the app that reads the connected account's identity right after the
-		// mint, and that call goes through request(), whose allowedApps guard would
-		// otherwise deny it. Leaving it off would not produce an error a person sees:
-		// it would produce a connection that never learns whose account it holds, and
-		// a panel that says "not connected yet" beside a live token forever. It buys
-		// the app no reach the entry's own allow-rules do not already permit. The
-		// daily sweep is unaffected either way — it renews through the custody leaf
-		// and the token endpoint directly, never through the proxy.
-		if (in_array('openregister', $apps, true) === false) {
-			$apps[] = 'openregister';
-		}
-
-		return array_values($apps);
-	}//end allowedAppsOf()
+		return ['code_challenge' => $challenge, 'code_challenge_method' => 'S256'];
+	}//end pkceChallenge()
 }//end class

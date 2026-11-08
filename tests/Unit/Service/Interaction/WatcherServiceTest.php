@@ -26,6 +26,8 @@ use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherCaller;
+use OCA\OpenRegister\Service\Interaction\WatcherStore;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\IGroupManager;
@@ -111,13 +113,10 @@ class WatcherServiceTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($this->createMock(originalClassName: Schema::class));
 
 		return new WatcherService(
-			$this->mapper,
-			$session,
-			$groupManager,
-			$schemaMapper,
+			new WatcherStore($this->mapper, $schemaMapper, $this->createMock(originalClassName: LoggerInterface::class)),
+			new WatcherCaller($session, $groupManager),
 			$this->permissions,
-			new ObjectScopeResolver(),
-			$this->createMock(originalClassName: LoggerInterface::class)
+			new ObjectScopeResolver()
 		);
 	}//end makeService()
 

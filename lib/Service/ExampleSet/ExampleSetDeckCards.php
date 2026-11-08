@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTime;
 use OCA\OpenRegister\Db\DeckLink;
-use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\IUserManager;
@@ -50,6 +50,11 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 * The card fields a fragment may set.
 	 */
 	public const FIELDS = ['object', 'board', 'list', 'title', 'description', 'due', 'done', 'owner', 'assignees', 'labels', 'shareWith', 'color'];
+
+	/**
+	 * The fields a card needs, with what each holds.
+	 */
+	private const REQUIRED = ['object' => 'the object it is on', 'board' => 'a board', 'list' => 'a list', 'title' => 'a title', 'owner' => 'an owner'];
 
 	/**
 	 * The colour of a board or label the set writes without one.
@@ -91,6 +96,17 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	}//end noun()
 
 	/**
+	 * The owner and the assignees a card names, the owner first.
+	 *
+	 * @param array<string, mixed> $data The filled card fields.
+	 *
+	 * @return array<int, string>
+	 */
+	private function people(array $data): array {
+		return array_merge([(string) $data['owner']], array_map('strval', (array) ($data['assignees'] ?? [])));
+	}//end people()
+
+	/**
 	 * Why a filled card cannot be written, or ''.
 	 *
 	 * @param array<string, mixed> $data  The filled card fields.
@@ -101,34 +117,21 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a deck card field a set may write';
-		}
-
-		$required = ['object' => 'the object it is on', 'board' => 'a board', 'list' => 'a list', 'title' => 'a title', 'owner' => 'an owner'];
-		foreach ($required as $field => $what) {
-			if (is_string($data[$field] ?? null) === false || trim($data[$field]) === '') {
-				return 'a deck card needs '.$what.' ('.$field.')';
-			}
-		}
-
-		$people = array_merge([(string) $data['owner']], array_map('strval', (array) ($data['assignees'] ?? [])));
-		foreach ($people as $uid) {
-			if (in_array($uid, $users, true) === false) {
-				return '"'.$uid.'" is not an account the set creates or adopts';
-			}
-		}
-
-		return $this->datesRefusal(data: $data);
+		$rules = new ExampleSetFieldRules();
+		return $rules->firstRefusal(
+			checks: [
+				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a deck card'),
+				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'a deck card'),
+				fn (): string => $rules->strangerRefusal(people: $this->people(data: $data), users: $users),
+				fn (): string => $rules->datesRefusal(data: $data, fields: ['due', 'done']),
+			]
+		);
 	}//end refusal()
 
 	/**
 	 * Write the card on its board and list, and link it to the object.
 	 *
-	 * @param string               $app  The app that ships the fragment, recorded as the linker.
-	 * @param string               $key  The card's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled card fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{
 	 *     error: string,
@@ -141,7 +144,9 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$store = $this->store();
 		if ($store->available() === false) {
 			return ['error' => 'Deck is not installed', 'entry' => null];
@@ -152,6 +157,20 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 			return ['error' => 'no object "'.(string) $data['object'].'" to put the card on', 'entry' => null];
 		}
 
+		return $this->writeAndLink(store: $store, app: $app, object: $object, data: $data);
+	}//end write()
+
+	/**
+	 * Write the card and link it to the object.
+	 *
+	 * @param ExampleSetDeckStore  $store  The Deck store.
+	 * @param string               $app    The app that ships the fragment, recorded as the linker.
+	 * @param ObjectEntity         $object The object.
+	 * @param array<string, mixed> $data   The filled card fields.
+	 *
+	 * @return array{error: string, entry: array<string, mixed>|null} The record entry, or why the write failed.
+	 */
+	private function writeAndLink(ExampleSetDeckStore $store, string $app, ObjectEntity $object, array $data): array {
 		try {
 			$entry = $this->writeCard(store: $store, data: $data);
 			$link  = $this->link(app: $app, object: $object, entry: $entry, data: $data);
@@ -160,7 +179,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 		}
 
 		return ['error' => '', 'entry' => [...$entry, 'object' => (string) $data['object'], 'link' => $link]];
-	}//end write()
+	}//end writeAndLink()
 
 	/**
 	 * Whether a written card is no longer there.
@@ -190,23 +209,35 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 */
 	public function revert(array $entry): string {
 		try {
-			$store = $this->store();
-			$this->container->get(DeckLinkMapper::class)->deleteByObjectAndCard(objectUuid: (string) $entry['object'], cardId: (int) $entry['card']);
-			$store->deleteCard(card: (int) $entry['card']);
-			foreach ((array) ($entry['createdLabels'] ?? []) as $label) {
-				$store->deleteLabel(label: (int) $label);
-			}
-
-			$store->deleteUnused(
-				stack: $this->createdId(entry: $entry, flag: 'createdStack', id: 'stack'),
-				board: $this->createdId(entry: $entry, flag: 'createdBoard', id: 'board')
-			);
+			$this->deleteCard(store: $this->store(), entry: $entry);
 		} catch (Throwable) {
 			return 'failed';
 		}
 
 		return 'removed';
 	}//end revert()
+
+	/**
+	 * Delete the card, its link and the labels the set wrote for it, then the list and board the set wrote when
+	 * nobody else uses them.
+	 *
+	 * @param ExampleSetDeckStore  $store The Deck store.
+	 * @param array<string, mixed> $entry A record entry from write().
+	 *
+	 * @return void
+	 */
+	private function deleteCard(ExampleSetDeckStore $store, array $entry): void {
+		$this->container->get(DeckLinkMapperInterface::class)->deleteByObjectAndCard(objectUuid: (string) $entry['object'], cardId: (int) $entry['card']);
+		$store->deleteCard(card: (int) $entry['card']);
+		foreach ((array) ($entry['createdLabels'] ?? []) as $label) {
+			$store->deleteLabel(label: (int) $label);
+		}
+
+		$store->deleteUnused(
+			stack: $this->createdId(entry: $entry, flag: 'createdStack', id: 'stack'),
+			board: $this->createdId(entry: $entry, flag: 'createdBoard', id: 'board')
+		);
+	}//end deleteCard()
 
 	/**
 	 * Find or write the board, list and labels, then write the card.
@@ -220,20 +251,72 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 * } The board, list and card ids, which of them the set wrote, and the labels.
 	 */
 	private function writeCard(ExampleSetDeckStore $store, array $data): array {
-		$owner = (string) $data['owner'];
+		$place  = $this->place(store: $store, data: $data);
+		$labels = $this->labels(store: $store, board: $place['board'], data: $data);
+		$card   = $store->insertCard(stack: $place['stack'], card: $this->card(data: $data, labels: array_column($labels['labels'], 'id')));
+
+		return [...$place, 'card' => $card, 'createdLabels' => $labels['created'], 'labels' => $labels['labels']];
+	}//end writeCard()
+
+	/**
+	 * The card as the Deck store writes it.
+	 *
+	 * @param array<string, mixed> $data   The filled card fields.
+	 * @param array<int, int>      $labels The label ids.
+	 *
+	 * @return array{
+	 *     owner: string, title: string, description: string, due: ?DateTime, done: ?DateTime,
+	 *     labels: array<int, int>, assignees: array<int, string>
+	 * }
+	 */
+	private function card(array $data, array $labels): array {
+		return [
+			'owner'       => (string) $data['owner'],
+			'title'       => (string) $data['title'],
+			'description' => (string) ($data['description'] ?? ''),
+			'due'         => $this->dateOrNull(value: ($data['due'] ?? null)),
+			'done'        => $this->dateOrNull(value: ($data['done'] ?? null)),
+			'labels'      => $labels,
+			'assignees'   => array_map('strval', (array) ($data['assignees'] ?? [])),
+		];
+	}//end card()
+
+	/**
+	 * Find or write the board and the list the card goes on.
+	 *
+	 * @param ExampleSetDeckStore  $store The Deck store.
+	 * @param array<string, mixed> $data  The filled card fields.
+	 *
+	 * @return array{board: int, createdBoard: bool, stack: int, createdStack: bool}
+	 */
+	private function place(ExampleSetDeckStore $store, array $data): array {
 		$board = $store->board(
-			owner: $owner,
+			owner: (string) $data['owner'],
 			title: (string) $data['board'],
 			color: (string) ($data['color'] ?? self::DEFAULT_COLOR),
 			groups: array_map('strval', (array) ($data['shareWith'] ?? []))
 		);
 		$stack = $store->stack(board: $board['id'], title: (string) $data['list']);
 
+		return ['board' => $board['id'], 'createdBoard' => $board['created'], 'stack' => $stack['id'], 'createdStack' => $stack['created']];
+	}//end place()
+
+	/**
+	 * Find or write the card's labels on the board.
+	 *
+	 * @param ExampleSetDeckStore  $store The Deck store.
+	 * @param int                  $board The board id.
+	 * @param array<string, mixed> $data  The filled card fields.
+	 *
+	 * @return array{labels: array<int, array{id: int, title: string, color: string}>, created: array<int, int>}
+	 *         The labels, and the ids of those the set wrote.
+	 */
+	private function labels(ExampleSetDeckStore $store, int $board, array $data): array {
 		$labels  = [];
 		$created = [];
 		foreach ((array) ($data['labels'] ?? []) as $label) {
 			$label = $this->labelSpec(label: $label);
-			$found = $store->label(board: $board['id'], title: $label['title'], color: $label['color']);
+			$found = $store->label(board: $board, title: $label['title'], color: $label['color']);
 			if ($found['created'] === true) {
 				$created[] = $found['id'];
 			}
@@ -241,27 +324,8 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 			$labels[] = ['id' => $found['id'], 'title' => $label['title'], 'color' => $label['color']];
 		}
 
-		$card = $store->insertCard(
-			stack: $stack['id'],
-			owner: $owner,
-			title: (string) $data['title'],
-			description: (string) ($data['description'] ?? ''),
-			due: $this->dateOrNull(value: ($data['due'] ?? null)),
-			done: $this->dateOrNull(value: ($data['done'] ?? null)),
-			labels: array_column($labels, 'id'),
-			assignees: array_map('strval', (array) ($data['assignees'] ?? []))
-		);
-
-		return [
-			'board'         => $board['id'],
-			'createdBoard'  => $board['created'],
-			'stack'         => $stack['id'],
-			'createdStack'  => $stack['created'],
-			'card'          => $card,
-			'createdLabels' => $created,
-			'labels'        => $labels,
-		];
-	}//end writeCard()
+		return ['labels' => $labels, 'created' => $created];
+	}//end labels()
 
 	/**
 	 * Link the card to the object as a linked card, with its labels and assignees cached on the link.
@@ -274,28 +338,52 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 * @return int The link id.
 	 */
 	private function link(string $app, ObjectEntity $object, array $entry, array $data): int {
-		$users     = $this->container->get(IUserManager::class);
-		$assignees = [];
-		foreach (array_map('strval', (array) ($data['assignees'] ?? [])) as $uid) {
-			$assignees[] = ['uid' => $uid, 'type' => 'user', 'displayName' => ($users->get($uid)?->getDisplayName() ?? $uid)];
-		}
-
 		$link = new DeckLink();
 		$link->setObjectUuid((string) $data['object']);
 		$link->setRegisterId((int) $object->getRegister());
 		$link->setSchemaId((int) $object->getSchema());
+		$this->setCard(link: $link, entry: $entry, data: $data);
+		$link->setLinkedBy($app);
+		$link->setLinkedAt(new DateTime());
+
+		return (int) $this->container->get(DeckLinkMapperInterface::class)->insert($link)->getId();
+	}//end link()
+
+	/**
+	 * Put the card, its title, due date, labels and assignees on the link.
+	 *
+	 * @param DeckLink             $link  The link.
+	 * @param array<string, mixed> $entry The written card (board, stack, card, labels).
+	 * @param array<string, mixed> $data  The filled card fields.
+	 *
+	 * @return void
+	 */
+	private function setCard(DeckLink $link, array $entry, array $data): void {
 		$link->setBoardId((int) $entry['board']);
 		$link->setStackId((int) $entry['stack']);
 		$link->setCardId((int) $entry['card']);
 		$link->setCardTitle((string) $data['title']);
 		$link->setDueDate($this->dateOrNull(value: ($data['due'] ?? null)));
 		$link->setLabels((string) json_encode($entry['labels']));
-		$link->setAssignees((string) json_encode($assignees));
-		$link->setLinkedBy($app);
-		$link->setLinkedAt(new DateTime());
+		$link->setAssignees((string) json_encode($this->assignees(data: $data)));
+	}//end setCard()
 
-		return (int) $this->container->get(DeckLinkMapper::class)->insert($link)->getId();
-	}//end link()
+	/**
+	 * The card's assignees as the link caches them, with their display names.
+	 *
+	 * @param array<string, mixed> $data The filled card fields.
+	 *
+	 * @return array<int, array{uid: string, type: string, displayName: string}>
+	 */
+	private function assignees(array $data): array {
+		$users     = $this->container->get(IUserManager::class);
+		$assignees = [];
+		foreach (array_map('strval', (array) ($data['assignees'] ?? [])) as $uid) {
+			$assignees[] = ['uid' => $uid, 'type' => 'user', 'displayName' => ($users->get($uid)?->getDisplayName() ?? $uid)];
+		}
+
+		return $assignees;
+	}//end assignees()
 
 	/**
 	 * A label row as its title and colour.
@@ -343,29 +431,6 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 
 		return (int) $entry[$id];
 	}//end createdId()
-
-	/**
-	 * A due or done that is not a date.
-	 *
-	 * @param array<string, mixed> $data The filled card fields.
-	 *
-	 * @return string
-	 */
-	private function datesRefusal(array $data): string {
-		foreach (['due', 'done'] as $field) {
-			if (isset($data[$field]) === false) {
-				continue;
-			}
-
-			try {
-				new DateTime((string) $data[$field]);
-			} catch (Throwable) {
-				return $field.' "'.(string) $data[$field].'" is not a date';
-			}
-		}
-
-		return '';
-	}//end datesRefusal()
 
 	/**
 	 * The Deck store.

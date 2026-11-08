@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -69,10 +70,9 @@ class DraftRemovalAuditRowTest extends TestCase {
 		$this->record = new DraftRemovalRecord(
 			auditTrail: new AuditTrailMapper(
 				db: $this->database->idbConnection(),
-				container: $this->createMock(ContainerInterface::class),
 				userSession: $session,
 				request: $this->createMock(IRequest::class),
-				logger: new NullLogger()
+				services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger())
 			),
 			logger: new NullLogger()
 		);

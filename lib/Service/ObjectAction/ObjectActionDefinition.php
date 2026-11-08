@@ -50,14 +50,12 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 /**
  * A declared action: what it is called, where it is offered, what it takes and what it runs.
  *
- * @SuppressWarnings(PHPMD.ExcessiveParameterList) One readonly property per declared key; a
- *   bag array would lose the types every reader of the declaration relies on.
  * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionShape and ObjectActionElevation are stateless
  *   readers; the save path and the read path must reach the same answer.
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
  */
-final class ObjectActionDefinition {
+final class ObjectActionDefinition implements ObjectActionDefinitionInterface {
 
 	/**
 	 * The configuration key holding declared actions.
@@ -117,49 +115,136 @@ final class ObjectActionDefinition {
 	 */
 	public const MODES = ['sync', 'async'];
 
+
 	/**
-	 * The body keys; at most one may be present.
+	 * The action key, the word authorization grants.
+	 *
+	 * @var string
+	 */
+	public readonly string $key;
+
+	/**
+	 * The label, a string or a locale map.
+	 *
+	 * @var string|array<string,string>
+	 */
+	public readonly string|array $label;
+
+	/**
+	 * What the action does.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $description;
+
+	/**
+	 * The icon name.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $icon;
+
+	/**
+	 * Where a host offers it.
 	 *
 	 * @var list<string>
 	 */
-	private const BODIES = [self::KIND_TRANSITION, self::KIND_FLOW, self::KIND_STEPS, self::KIND_SELF_ASSIGN];
+	public readonly array $surfaces;
+
+	/**
+	 * The input JSON Schema, or null for none.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	public readonly ?array $inputs;
+
+	/**
+	 * The JSONLogic precondition, or null.
+	 *
+	 * @var mixed
+	 */
+	public readonly mixed $when;
+
+	/**
+	 * The reason given when `when` does not hold.
+	 *
+	 * @var mixed
+	 */
+	public readonly mixed $whenMessage;
+
+	/**
+	 * The confirmation text, or null.
+	 *
+	 * @var mixed
+	 */
+	public readonly mixed $confirm;
+
+	/**
+	 * `sync` or `async`.
+	 *
+	 * @var string
+	 */
+	public readonly string $mode;
+
+	/**
+	 * The declared `next` hint, or null.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $next;
+
+	/**
+	 * The body kind, or null for a bodiless action.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $kind;
+
+	/**
+	 * The body: a transition key, a flow name or uuid, or a step list.
+	 *
+	 * @var mixed
+	 */
+	public readonly mixed $body;
+
+	/**
+	 * The scoped elevations.
+	 *
+	 * @var list<array{register: string, schema: string, verbs: list<string>}>
+	 */
+	public readonly array $elevate;
+
+	/**
+	 * Whether a bulk run may be reversed.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $reversible;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string                    $key         The action key, the word authorization grants.
-	 * @param string|array<string,string> $label     The label, a string or a locale map.
-	 * @param string|null               $description What the action does.
-	 * @param string|null               $icon        The icon name.
-	 * @param list<string>              $surfaces    Where a host offers it.
-	 * @param array<string, mixed>|null $inputs      The input JSON Schema, or null for none.
-	 * @param mixed                     $when        The JSONLogic precondition, or null.
-	 * @param mixed                     $whenMessage The reason given when `when` does not hold.
-	 * @param mixed                     $confirm     The confirmation text, or null.
-	 * @param string                    $mode        `sync` or `async`.
-	 * @param string|null               $next        The declared `next` hint, or null.
-	 * @param string|null               $kind        The body kind, or null for a bodiless action.
-	 * @param mixed                     $body        The body: a transition key, a flow name or uuid, or a step list.
-	 * @param list<array{register: string, schema: string, verbs: list<string>}> $elevate The scoped elevations.
-	 * @param bool                      $reversible  Whether a bulk run may be reversed.
+	 * @param ObjectActionIdentity  $identity The key, label, description and icon.
+	 * @param ObjectActionOffer     $offer    The surfaces, inputs and precondition.
+	 * @param ObjectActionBody      $run      The body kind, body, mode and `next` hint.
+	 * @param ObjectActionRunPolicy $policy   The confirmation, elevations and reversibility.
 	 */
-	private function __construct(
-		public readonly string $key,
-		public readonly string|array $label,
-		public readonly ?string $description,
-		public readonly ?string $icon,
-		public readonly array $surfaces,
-		public readonly ?array $inputs,
-		public readonly mixed $when,
-		public readonly mixed $whenMessage,
-		public readonly mixed $confirm,
-		public readonly string $mode,
-		public readonly ?string $next,
-		public readonly ?string $kind,
-		public readonly mixed $body,
-		public readonly array $elevate,
-		public readonly bool $reversible,
-	) {
+	private function __construct(ObjectActionIdentity $identity, ObjectActionOffer $offer, ObjectActionBody $run, ObjectActionRunPolicy $policy) {
+		$this->key         = $identity->key;
+		$this->label       = $identity->label;
+		$this->description = $identity->description;
+		$this->icon        = $identity->icon;
+		$this->surfaces    = $offer->surfaces;
+		$this->inputs      = $offer->inputs;
+		$this->when        = $offer->when;
+		$this->whenMessage = $offer->whenMessage;
+		$this->mode        = $run->mode;
+		$this->next        = $run->next;
+		$this->kind        = $run->kind;
+		$this->body        = $run->body;
+		$this->confirm     = $policy->confirm;
+		$this->elevate     = $policy->elevate;
+		$this->reversible  = $policy->reversible;
 	}//end __construct()
 
 	/**
@@ -173,43 +258,14 @@ final class ObjectActionDefinition {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
 	 */
 	public static function fromDeclaration(string $key, array $definition): self {
-		$kind = self::kindOf(definition: $definition);
-		$body = null;
-		if ($kind !== null) {
-			$body = $definition[$kind];
-		}
-
-		$surfaces = self::DEFAULT_SURFACES;
-		if (is_array($definition['surfaces'] ?? null) === true) {
-			$surfaces = array_values(array_map('strval', $definition['surfaces']));
-		}
-
-		$inputs = null;
-		if (is_array($definition['inputs'] ?? null) === true) {
-			$inputs = $definition['inputs'];
-		}
-
-		$label = ($definition['label'] ?? ($definition['name'] ?? $key));
-		if (is_string($label) === false && is_array($label) === false) {
-			$label = $key;
-		}
-
 		return new self(
-			key: $key,
-			label: $label,
-			description: self::stringOrNull(value: ($definition['description'] ?? null)),
-			icon: self::stringOrNull(value: ($definition['icon'] ?? null)),
-			surfaces: $surfaces,
-			inputs: $inputs,
-			when: ($definition['when'] ?? null),
-			whenMessage: ($definition['whenMessage'] ?? null),
-			confirm: ($definition['confirm'] ?? null),
-			mode: (string)($definition['mode'] ?? 'sync'),
-			next: self::stringOrNull(value: ($definition['next'] ?? null)),
-			kind: $kind,
-			body: $body,
-			elevate: ObjectActionElevation::entriesOf(definition: $definition),
-			reversible: (($definition['reversible'] ?? false) === true)
+			identity: ObjectActionDeclarationReader::identity(key: $key, definition: $definition),
+			offer: ObjectActionDeclarationReader::offer(definition: $definition),
+			run: ObjectActionDeclarationReader::body(definition: $definition),
+			policy: ObjectActionDeclarationReader::policy(
+				definition: $definition,
+				elevate: ObjectActionElevation::entriesOf(definition: $definition)
+			)
 		);
 	}//end fromDeclaration()
 
@@ -334,21 +390,10 @@ final class ObjectActionDefinition {
 	 */
 	public function withoutElevation(): self {
 		return new self(
-			key: $this->key,
-			label: $this->label,
-			description: $this->description,
-			icon: $this->icon,
-			surfaces: $this->surfaces,
-			inputs: $this->inputs,
-			when: $this->when,
-			whenMessage: $this->whenMessage,
-			confirm: $this->confirm,
-			mode: $this->mode,
-			next: $this->next,
-			kind: $this->kind,
-			body: $this->body,
-			elevate: [],
-			reversible: $this->reversible
+			identity: new ObjectActionIdentity(key: $this->key, label: $this->label, description: $this->description, icon: $this->icon),
+			offer: new ObjectActionOffer(surfaces: $this->surfaces, inputs: $this->inputs, when: $this->when, whenMessage: $this->whenMessage),
+			run: new ObjectActionBody(mode: $this->mode, next: $this->next, kind: $this->kind, body: $this->body),
+			policy: new ObjectActionRunPolicy(confirm: $this->confirm, elevate: [], reversible: $this->reversible)
 		);
 	}//end withoutElevation()
 
@@ -362,43 +407,8 @@ final class ObjectActionDefinition {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
 	 */
 	public static function bodiesOf(array $definition): array {
-		return array_values(array_filter(self::BODIES, static fn (string $body): bool => array_key_exists($body, $definition)));
+		return ObjectActionDeclarationReader::bodiesOf(definition: $definition);
 	}//end bodiesOf()
-
-	/**
-	 * The body kind a declaration carries, or null when it has none.
-	 *
-	 * `macro: true` without `flow` has no body: that is a refusal the macro
-	 * binding reports, not a kind.
-	 *
-	 * @param array<string, mixed> $definition The declared entry.
-	 *
-	 * @return string|null The kind.
-	 */
-	private static function kindOf(array $definition): ?string {
-		foreach (self::BODIES as $body) {
-			if (array_key_exists($body, $definition) === true) {
-				return $body;
-			}
-		}
-
-		return null;
-	}//end kindOf()
-
-	/**
-	 * A non-empty string, or null.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The string.
-	 */
-	private static function stringOrNull(mixed $value): ?string {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringOrNull()
 
 	/**
 	 * The declared entries of a configuration, keyed by action.
@@ -408,20 +418,7 @@ final class ObjectActionDefinition {
 	 * @return array<string, array<string, mixed>> Action key => entry.
 	 */
 	public static function declarations(array $configuration): array {
-		$declared = ($configuration[self::ACTION_BLOCK] ?? null);
-		if (is_array($declared) === false) {
-			return [];
-		}
-
-		$definitions = [];
-		foreach ($declared as $key => $definition) {
-			if (is_string($key) === false || $key === '' || is_array($definition) === false) {
-				continue;
-			}
-
-			$definitions[$key] = $definition;
-		}
-
-		return $definitions;
+		return ObjectActionDeclarationReader::declarations(configuration: $configuration);
 	}//end declarations()
+
 }//end class

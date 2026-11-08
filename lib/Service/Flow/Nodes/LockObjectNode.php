@@ -61,13 +61,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
-use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
-use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -75,7 +72,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\IUser;
 use OCP\IUserManager;
 use OCP\WorkflowEngine\IManager;
 use RuntimeException;
@@ -144,22 +140,64 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	public const SLOT_ATTEMPTS = 'lockAttempts';
 
 	/**
+	 * Refusal when the run did not identify itself.
+	 *
+	 * @var string
+	 */
+	private const REFUSE_NO_RUN = 'A lock step needs the run it belongs to; this run did not identify itself.';
+
+	/**
+	 * Refusal when the run names no acting identity: a lock must be attributable.
+	 *
+	 * @var string
+	 */
+	private const REFUSE_NO_IDENTITY = 'This flow run has no acting identity (runAs); a lock must be attributable.';
+
+	/**
+	 * Refusal when an item names no object.
+	 *
+	 * @var string
+	 */
+	private const REFUSE_NO_TARGET = 'A lock step could not work out which object to lock from the item it received.';
+
+	/**
+	 * The run, owner and target checks this step shares with the other lock step.
+	 *
+	 * @var LockStepContext
+	 */
+	private readonly LockStepContext $lockContext;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Resolves the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objects Object lock operations, RBAC-enforcing.
 	 * @param IUserManager $userManager Resolves the run's acting identity.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 * @param FlowRunSubjectRecorder|null $subjects Records the locked object under the declared role.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly IUserManager $userManager,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		IUserManager $userManager,
+		FlowNodePresentation $presentation,
 		private readonly ?FlowRunSubjectRecorder $subjects = null,
 	) {
-
+		$this->l10n = $presentation->l10n;
+		$this->urls = $presentation->urls;
+		$this->lockContext = new LockStepContext(userManager: $userManager, l10n: $this->l10n);
 	}//end __construct()
 
 	/**
@@ -352,9 +390,9 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			);
 		}
 
-		$runUuid = $this->resolveRunUuid(context: $context);
-		$owner = $this->resolveOwner(context: $context);
-		$targets = $this->resolveTargets(items: $items, config: $config);
+		$runUuid = $this->lockContext->runUuid(context: $context, refusal: $this->l10n->t(self::REFUSE_NO_RUN));
+		$owner = $this->lockContext->owner(context: $context, refusal: $this->l10n->t(self::REFUSE_NO_IDENTITY));
+		$targets = $this->lockContext->targets(items: $items, config: $config, refusal: $this->l10n->t(self::REFUSE_NO_TARGET));
 
 		$duration = $this->seconds(config: $config, key: 'duration', default: self::DEFAULT_DURATION);
 		$process = trim((string)($config['process'] ?? ''));
@@ -425,8 +463,10 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 		// concrete cost of keeping the copy.
 		$this->subjects?->recordOne(
 			context: $context,
-			role: (string)($config['subjectRole'] ?? ''),
-			uuids: array_values(array_unique($targets))
+			candidates: new FlowSubjectCandidates(
+				role: (string)($config['subjectRole'] ?? ''),
+				uuids: array_values(array_unique($targets))
+			)
 		);
 
 	}//end recordSubject()
@@ -549,110 +589,6 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 
 		return (int)$raw;
 	}//end seconds()
-
-	/**
-	 * Which objects to lock.
-	 *
-	 * Defaults to the uuid each item carries, which is what `object-read`
-	 * injects for exactly this purpose. An explicit `uuid` is templated
-	 * against the item, and a placeholder that renders empty throws rather
-	 * than locking nothing and reporting success.
-	 *
-	 * @param array $items The incoming items.
-	 * @param array $config The step configuration.
-	 *
-	 * @return array<int, string> The distinct target uuids.
-	 *
-	 * @throws RuntimeException When a target cannot be resolved.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate is the engine's
-	 * stateless template renderer and every node calls it this way.
-	 */
-	private function resolveTargets(array $items, array $config): array {
-		$configured = ($config['uuid'] ?? null);
-		$targets = [];
-
-		foreach ($items as $item) {
-			$json = ($item[FlowItems::JSON] ?? []);
-			if (is_array($json) === false) {
-				$json = [];
-			}
-
-			$uuid = trim((string)($json['uuid'] ?? ''));
-			if (is_string($configured) === true && trim($configured) !== '') {
-				$uuid = trim((string)FlowValueTemplate::render($configured, $json));
-			}
-
-			if ($uuid === '') {
-				throw new RuntimeException(
-					$this->l10n->t('A lock step could not work out which object to lock from the item it received.')
-				);
-			}
-
-			$targets[$uuid] = $uuid;
-		}
-
-		return array_values($targets);
-	}//end resolveTargets()
-
-	/**
-	 * The run's uuid, which IS the lock holder's identity.
-	 *
-	 * @param array $context The run context.
-	 *
-	 * @return string The run uuid.
-	 *
-	 * @throws RuntimeException When the run cannot identify itself.
-	 */
-	private function resolveRunUuid(array $context): string {
-		$runUuid = trim((string)($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? '')));
-		if ($runUuid === '') {
-			// A run-scoped lock with no run is a lock nobody can release and
-			// the predicate refuses everybody for. Refuse to take it.
-			throw new RuntimeException(
-				$this->l10n->t('A lock step needs the run it belongs to; this run did not identify itself.')
-			);
-		}
-
-		return $runUuid;
-	}//end resolveRunUuid()
-
-	/**
-	 * The acting identity the lock is taken under.
-	 *
-	 * Load-bearing: `LockHandler::callerMayUnlock()` reads `IUserSession`
-	 * directly, and under the cron worker that is nobody, so an unwrapped
-	 * lock or unlock is refused as anonymous.
-	 *
-	 * @param array $context The run context.
-	 *
-	 * @return IUser The acting user.
-	 *
-	 * @throws RuntimeException When there is no usable acting identity.
-	 */
-	private function resolveOwner(array $context): IUser {
-		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
-		if (is_string($uid) === false || trim($uid) === '') {
-			throw new RuntimeException(
-				$this->l10n->t('This flow run has no acting identity (runAs); a lock must be attributable.')
-			);
-		}
-
-		$user = $this->userManager->get(trim($uid));
-		if ($user === null) {
-			throw new RuntimeException(
-				$this->l10n->t('This flow run acts as "%s", which is not a user account.', [trim($uid)])
-			);
-		}
-
-		if ($user->isEnabled() === false) {
-			throw new RuntimeException(
-				$this->l10n->t('This flow run acts as "%s", whose account is disabled.', [trim($uid)])
-			);
-		}
-
-		return $user;
-	}//end resolveOwner()
 
 	/**
 	 * What kind of step this is. Calls the register to lock.

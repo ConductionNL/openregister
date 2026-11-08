@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -46,14 +46,14 @@ use OCP\IUserSession;
  * @spec openspec/specs/deletion-audit-trail/spec.md
  * @spec openspec/specs/archival-annotation-vocabulary/spec.md
  */
-class DeletedObjectAuthorizer {
+class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 	/**
 	 * Wire the RBAC and schema collaborators.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param IUserSession $userSession The user session.
 	 * @param IGroupManager $groupManager The group manager for admin checks.
-	 * @param PermissionHandlerInterface $permissionHandler Handler for per-schema RBAC checks.
+	 * @param PermissionCheckInterface $permissionHandler Handler for per-schema RBAC checks.
 	 *
 	 * @return void
 	 */
@@ -61,7 +61,7 @@ class DeletedObjectAuthorizer {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly PermissionHandlerInterface $permissionHandler,
+		private readonly PermissionCheckInterface $permissionHandler,
 	) {
 	}//end __construct()
 

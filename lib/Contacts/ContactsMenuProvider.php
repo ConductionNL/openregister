@@ -27,8 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contacts;
 
+use OCA\OpenRegister\Contacts\Support\ContactsMenuPlatform;
+use OCA\OpenRegister\Contacts\Support\ContactsMenuSources;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
-use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\Contacts\ContactsMenu\IActionFactory;
 use OCP\Contacts\ContactsMenu\IEntry;
 use OCP\Contacts\ContactsMenu\IProvider;
@@ -58,9 +60,9 @@ class ContactsMenuProvider implements IProvider {
 	/**
 	 * The deep link registry service.
 	 *
-	 * @var DeepLinkRegistryServiceInterface
+	 * @var DeepLinkResolverInterface
 	 */
-	private readonly DeepLinkRegistryServiceInterface $deepLinkRegistry;
+	private readonly DeepLinkResolverInterface $deepLinkRegistry;
 
 	/**
 	 * The action factory for creating menu actions.
@@ -93,31 +95,23 @@ class ContactsMenuProvider implements IProvider {
 	/**
 	 * Constructor for ContactsMenuProvider.
 	 *
-	 * @param ContactMatcherInterface $matchingService The contact matching service
-	 * @param DeepLinkRegistryServiceInterface $deepLinkRegistry The deep link registry
-	 * @param IActionFactory $actionFactory The action factory
-	 * @param IURLGenerator $urlGenerator The URL generator
-	 * @param IL10N $l10n The localization service
-	 * @param LoggerInterface $logger The logger
+	 * @param ContactsMenuSources  $sources  Contact matcher and deep-link resolver.
+	 * @param ContactsMenuPlatform $platform Action factory, URL generator, translations and logger.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		ContactMatcherInterface $matchingService,
-		DeepLinkRegistryServiceInterface $deepLinkRegistry,
-		IActionFactory $actionFactory,
-		IURLGenerator $urlGenerator,
-		IL10N $l10n,
-		LoggerInterface $logger,
+		ContactsMenuSources $sources,
+		ContactsMenuPlatform $platform,
 	) {
-		$this->matchingService = $matchingService;
-		$this->deepLinkRegistry = $deepLinkRegistry;
-		$this->actionFactory = $actionFactory;
-		$this->urlGenerator = $urlGenerator;
-		$this->l10n = $l10n;
-		$this->logger = $logger;
+		$this->matchingService = $sources->matchingService;
+		$this->deepLinkRegistry = $sources->deepLinkRegistry;
+		$this->actionFactory = $platform->actionFactory;
+		$this->urlGenerator = $platform->urlGenerator;
+		$this->l10n = $platform->l10n;
+		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**

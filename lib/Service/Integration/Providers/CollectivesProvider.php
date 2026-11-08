@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\CollectiveLink;
-use OCA\OpenRegister\Db\CollectiveLinkMapper;
+use OCA\OpenRegister\Db\CollectiveLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -67,21 +67,41 @@ class CollectivesProvider extends AbstractIntegrationProvider {
 	];
 
 	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param CollectiveLinkMapper $collectiveLinkMapper Collective-link mapper (Tier-2 link table).
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafProviderPlatform          $platform             The DB connection, app manager and localisation.
+	 * @param CollectiveLinkMapperInterface $collectiveLinkMapper Collective-link mapper (Tier-2 link table).
+	 * @param LoggerInterface               $logger               Logger for the degraded marker-scan path.
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private CollectiveLinkMapper $collectiveLinkMapper,
+		LeafProviderPlatform $platform,
+		private CollectiveLinkMapperInterface $collectiveLinkMapper,
 		private LoggerInterface $logger,
 	) {
+		$this->db = $platform->db;
+		$this->appManager = $platform->appManager;
+		$this->l10n = $platform->l10n;
 	}//end __construct()
 
 	public function getId(): string {
@@ -103,9 +123,9 @@ class CollectivesProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return CollectiveLinkMapper
+	 * @return CollectiveLinkMapperInterface
 	 */
-	protected function linkMapper(): CollectiveLinkMapper {
+	protected function linkMapper(): CollectiveLinkMapperInterface {
 		return $this->collectiveLinkMapper;
 	}//end linkMapper()
 

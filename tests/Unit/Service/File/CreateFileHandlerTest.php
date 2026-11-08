@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\CreateFileSources;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -27,7 +28,6 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use OCP\Files\Folder;
-use OCP\Files\IRootFolder;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -46,11 +46,6 @@ class CreateFileHandlerTest extends TestCase {
 	 * @var CreateFileHandler
 	 */
 	private CreateFileHandler $handler;
-
-	/**
-	 * @var IRootFolder&MockObject
-	 */
-	private $rootFolder;
 
 	/**
 	 * @var FolderManagementHandler&MockObject
@@ -92,7 +87,6 @@ class CreateFileHandlerTest extends TestCase {
 			$this->markTestSkipped('Nextcloud server classes unavailable; run in the Docker test environment.');
 		}
 
-		$this->rootFolder = $this->createMock(IRootFolder::class);
 		$this->folderMgmtHandler = $this->createMock(FolderManagementHandler::class);
 		$this->fileValidHandler = $this->createMock(FileValidationHandler::class);
 		$this->fileOwnershipHandler = $this->createMock(FileOwnershipHandler::class);
@@ -101,12 +95,9 @@ class CreateFileHandlerTest extends TestCase {
 		$this->fileService = $this->createMock(FileService::class);
 
 		$this->handler = new CreateFileHandler(
-			$this->rootFolder,
-			$this->folderMgmtHandler,
+			new CreateFileSources($this->folderMgmtHandler, $this->objectEntityMapper, $this->logger),
 			$this->fileValidHandler,
-			$this->fileOwnershipHandler,
-			$this->objectEntityMapper,
-			$this->logger
+			$this->fileOwnershipHandler
 		);
 		$this->handler->setFileService($this->fileService);
 	}//end setUp()

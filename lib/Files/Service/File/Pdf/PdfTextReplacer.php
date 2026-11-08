@@ -373,22 +373,47 @@ class PdfTextReplacer {
 			return [];
 		}
 
-		// Whitespace-normalise the haystack so entity text that the PDF
-		// splits across line breaks ("14 mei\n2026") is still detected —
-		// smalot re-extraction inserts the line structure, but the entity
-		// is semantically present either way. Needles get the same
-		// treatment below so both sides compare in collapsed-space form.
-		//
-		// `preg_replace` with the /u modifier returns NULL on invalid
-		// UTF-8 (PREG_BAD_UTF8_ERROR) — a realistic mode here, since the
-		// encoding gaps SAPP tracks (font_encoding_misses,
-		// cid_split_mismatch, encoding_dict_unhandled) make smalot emit
-		// raw font-encoded bytes. A silent ""-fallback would make every
-		// probe below miss and strict mode pass unaudited output — the
-		// documents most at risk of residual PII are exactly the ones
-		// that would slip through. Both modes fall back to the
-		// un-normalised haystack instead, which keeps the
-		// pre-normalisation detection coverage.
+		$residual = $this->findResidualNeedles(
+			extracted: $extracted,
+			normalisedExtracted: $this->normaliseHaystack(extracted: $extracted),
+			substitutions: $substitutions
+		);
+
+		if (count($residual) > 0) {
+			$this->logResidual(residualCount: count($residual), replaceStats: $replaceStats);
+		}
+
+		// Best-effort: the anonymisation flow writes the output and surfaces
+		// the residual entities so the operator can iterate (manual
+		// entities, skip unselected occurrences). Logs stay PII-free per
+		// ADR-005; the authenticated anonymise response carries the values
+		// for the review UI.
+		return $residual;
+	}//end validateOutput()
+
+	/**
+	 * Whitespace-normalise the re-extracted haystack.
+	 *
+	 * Entity text that the PDF splits across line breaks ("14 mei\n2026") is
+	 * still detected — smalot re-extraction inserts the line structure, but
+	 * the entity is semantically present either way. Needles get the same
+	 * treatment so both sides compare in collapsed-space form.
+	 *
+	 * `preg_replace` with the /u modifier returns NULL on invalid UTF-8
+	 * (PREG_BAD_UTF8_ERROR) — a realistic mode here, since the encoding gaps
+	 * SAPP tracks (font_encoding_misses, cid_split_mismatch,
+	 * encoding_dict_unhandled) make smalot emit raw font-encoded bytes. A
+	 * silent ""-fallback would make every probe miss and strict mode pass
+	 * unaudited output — the documents most at risk of residual PII are
+	 * exactly the ones that would slip through. Both modes fall back to the
+	 * un-normalised haystack instead, which keeps the pre-normalisation
+	 * detection coverage.
+	 *
+	 * @param string $extracted Re-extracted output text.
+	 *
+	 * @return string The normalised haystack, or $extracted when normalisation fails.
+	 */
+	private function normaliseHaystack(string $extracted): string {
 		$normalisedExtracted = preg_replace('/\s+/u', ' ', $extracted);
 		if ($normalisedExtracted === null) {
 			$this->logger->warning(
@@ -398,9 +423,25 @@ class PdfTextReplacer {
 					'preg_error' => preg_last_error_msg(),
 				]
 			);
-			$normalisedExtracted = $extracted;
-		}//end if
+			return $extracted;
+		}
 
+		return $normalisedExtracted;
+	}//end normaliseHaystack()
+
+	/**
+	 * Collect the substitution-map keys still present in the output.
+	 *
+	 * @param string $extracted           Raw re-extracted output text.
+	 * @param string $normalisedExtracted Whitespace-normalised output text.
+	 * @param array  $substitutions       The original substitution map.
+	 *
+	 * @return string[] The residual needles, in substitution order.
+	 *
+	 * @phpstan-param array<string, string> $substitutions
+	 * @psalm-param   array<string, string> $substitutions
+	 */
+	private function findResidualNeedles(string $extracted, string $normalisedExtracted, array $substitutions): array {
 		$residual = [];
 		foreach (array_keys($substitutions) as $needleIndex => $needle) {
 			if ($needle === '') {
@@ -408,49 +449,85 @@ class PdfTextReplacer {
 			}
 
 			$rawNeedle = (string)$needle;
-			$normalisedNeedle = preg_replace('/\s+/u', ' ', $rawNeedle);
-			if ($normalisedNeedle === null) {
-				// Invalid-UTF-8 needle: do NOT silently skip — that would
-				// hide a residual this needle should have flagged. Probe
-				// the raw bytes instead (`strpos` is encoding-agnostic)
-				// and surface the degradation structurally (needle index
-				// only, never the needle text — ADR-005).
-				$this->logger->warning(
-					message: '[PdfTextReplacer] Needle normalisation failed — probing raw bytes',
-					context: [
-						'stage' => 'validate.normalise',
-						'needle_index' => $needleIndex,
-						'preg_error' => preg_last_error_msg(),
-					]
-				);
-				if (strpos($extracted, $rawNeedle) !== false) {
-					$residual[] = $rawNeedle;
-				}
-
-				continue;
-			}
-
-			$normalisedNeedle = trim($normalisedNeedle);
-			if ($normalisedNeedle === '') {
-				continue;
-			}
-
-			// Case-SENSITIVE, multibyte-safe substring check via `mb_strpos`
-			// — mirrors the replacement engine's guarantee. SAPP replaces
-			// exact-case needles only, so a case-insensitive probe here
-			// flagged text that was never a detected entity (e.g. the
-			// lowercase domain in "www.amsterdam.nl" tripping on the
-			// LOCATION needle "Amsterdam") and failed runs that were in
-			// fact fully anonymised.
-			if (mb_strpos($normalisedExtracted, $normalisedNeedle) !== false) {
+			if ($this->needleIsResidual(
+				needleIndex: $needleIndex,
+				rawNeedle: $rawNeedle,
+				extracted: $extracted,
+				normalisedExtracted: $normalisedExtracted
+			) === true
+			) {
 				$residual[] = $rawNeedle;
 			}
-		}//end foreach
+		}
 
-		if (count($residual) > 0) {
-			$diagnostic = [
+		return $residual;
+	}//end findResidualNeedles()
+
+	/**
+	 * Decide whether one needle is still present in the output.
+	 *
+	 * @param int    $needleIndex         Position of the needle in the map.
+	 * @param string $rawNeedle           The needle as given.
+	 * @param string $extracted           Raw re-extracted output text.
+	 * @param string $normalisedExtracted Whitespace-normalised output text.
+	 *
+	 * @return bool
+	 */
+	private function needleIsResidual(int $needleIndex, string $rawNeedle, string $extracted, string $normalisedExtracted): bool {
+		$normalisedNeedle = preg_replace('/\s+/u', ' ', $rawNeedle);
+		if ($normalisedNeedle === null) {
+			// Invalid-UTF-8 needle: do NOT silently skip — that would
+			// hide a residual this needle should have flagged. Probe
+			// the raw bytes instead (`strpos` is encoding-agnostic)
+			// and surface the degradation structurally (needle index
+			// only, never the needle text — ADR-005).
+			$this->logger->warning(
+				message: '[PdfTextReplacer] Needle normalisation failed — probing raw bytes',
+				context: [
+					'stage' => 'validate.normalise',
+					'needle_index' => $needleIndex,
+					'preg_error' => preg_last_error_msg(),
+				]
+			);
+			return strpos($extracted, $rawNeedle) !== false;
+		}
+
+		$normalisedNeedle = trim($normalisedNeedle);
+		if ($normalisedNeedle === '') {
+			return false;
+		}
+
+		// Case-SENSITIVE, multibyte-safe substring check via `mb_strpos`
+		// — mirrors the replacement engine's guarantee. SAPP replaces
+		// exact-case needles only, so a case-insensitive probe here
+		// flagged text that was never a detected entity (e.g. the
+		// lowercase domain in "www.amsterdam.nl" tripping on the
+		// LOCATION needle "Amsterdam") and failed runs that were in
+		// fact fully anonymised.
+		return mb_strpos($normalisedExtracted, $normalisedNeedle) !== false;
+	}//end needleIsResidual()
+
+	/**
+	 * Log the PII-free residual warning.
+	 *
+	 * PII-redacted log line per ADR-005. NEVER include the residual entity
+	 * text in logs — only the count + structural counters. The audit trail
+	 * (per ADR-022) handles the values.
+	 *
+	 * @param int   $residualCount Number of residual needles.
+	 * @param array $replaceStats  Stats returned by SAPP's replace API.
+	 *
+	 * @return void
+	 *
+	 * @phpstan-param array<string, mixed> $replaceStats
+	 * @psalm-param   array<string, mixed> $replaceStats
+	 */
+	private function logResidual(int $residualCount, array $replaceStats): void {
+		$this->logger->warning(
+			message: '[PdfTextReplacer] Partial anonymisation — residual entity text in output',
+			context: [
 				'stage' => 'validate.assert',
-				'residual_count' => count($residual),
+				'residual_count' => $residualCount,
 				'streams_scanned' => ($replaceStats['streams_scanned'] ?? null),
 				'streams_modified' => ($replaceStats['streams_modified'] ?? null),
 				'tj_arrays_modified' => ($replaceStats['tj_arrays_modified'] ?? null),
@@ -460,24 +537,9 @@ class PdfTextReplacer {
 				'encoding_dict_unhandled' => count(($replaceStats['encoding_dict_unhandled'] ?? [])),
 				'contents_array_pages' => count(($replaceStats['contents_array_pages'] ?? [])),
 				'rejected_substitutions' => count(($replaceStats['rejected_substitutions'] ?? [])),
-			];
-
-			// PII-redacted log line per ADR-005. NEVER include $residual's
-			// actual entity text in logs — only the count + structural
-			// counters. The audit trail (per ADR-022) handles the values.
-			$this->logger->warning(
-				message: '[PdfTextReplacer] Partial anonymisation — residual entity text in output',
-				context: $diagnostic
-			);
-		}//end if
-
-		// Best-effort: the anonymisation flow writes the output and surfaces
-		// the residual entities so the operator can iterate (manual
-		// entities, skip unselected occurrences). Logs stay PII-free per
-		// ADR-005; the authenticated anonymise response carries the values
-		// for the review UI.
-		return $residual;
-	}//end validateOutput()
+			]
+		);
+	}//end logResidual()
 
 	/**
 	 * Re-extract the text of the output PDF for the residual check.

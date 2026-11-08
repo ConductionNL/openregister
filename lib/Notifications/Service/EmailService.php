@@ -30,8 +30,8 @@ namespace OCA\OpenRegister\Notifications\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
-use OCA\OpenRegister\Db\EmailLinkMapper;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -51,9 +51,9 @@ class EmailService implements EmailServiceInterface {
 	/**
 	 * Email link mapper.
 	 *
-	 * @var EmailLinkMapper
+	 * @var EmailLinkMapperInterface
 	 */
-	private readonly EmailLinkMapper $emailLinkMapper;
+	private readonly EmailLinkMapperInterface $emailLinkMapper;
 
 	/**
 	 * App manager for checking Mail app availability.
@@ -93,20 +93,20 @@ class EmailService implements EmailServiceInterface {
 	/**
 	 * Magic mapper for cross-table _mail JSONB containment queries.
 	 *
-	 * @var MagicMapperInterface
+	 * @var MagicRelationReaderInterface
 	 */
-	private readonly MagicMapperInterface $magicMapper;
+	private readonly MagicRelationReaderInterface $magicMapper;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param EmailLinkMapper    $emailLinkMapper Email link mapper.
+	 * @param EmailLinkMapperInterface    $emailLinkMapper Email link mapper.
 	 * @param EmailMailAppReader $mailApp         App manager, database connection and user session for the Mail app.
 	 * @param EmailLinkedSchemas $linkedSchemas   Schema and object mappers for the mail-linked schemas.
 	 * @param LoggerInterface    $logger          Logger.
 	 */
 	public function __construct(
-		EmailLinkMapper $emailLinkMapper,
+		EmailLinkMapperInterface $emailLinkMapper,
 		EmailMailAppReader $mailApp,
 		EmailLinkedSchemas $linkedSchemas,
 		LoggerInterface $logger,

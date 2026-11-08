@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob\Support;
 
-use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
-use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
+use OCA\OpenRegister\Service\Archival\ArchiveReferenceReaderInterface;
+use OCA\OpenRegister\Service\Archival\DependantRetentionIndexInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 
 /**
@@ -35,15 +35,15 @@ final class RelatedRetentionRules {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param DependantRetentionIndex     $index      Knows the dependant schemas.
-	 * @param ArchiveActionDateCalculator $calculator Reads the reference a dependant holds.
+	 * @param DependantRetentionIndexInterface     $index      Knows the dependant schemas.
+	 * @param ArchiveReferenceReaderInterface $calculator Reads the reference a dependant holds.
 	 * @param RetentionServiceInterface   $retention  Recalculates one record.
 	 *
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
 	public function __construct(
-		public readonly DependantRetentionIndex $index,
-		public readonly ArchiveActionDateCalculator $calculator,
+		public readonly DependantRetentionIndexInterface $index,
+		public readonly ArchiveReferenceReaderInterface $calculator,
 		public readonly RetentionServiceInterface $retention,
 	) {
 	}//end __construct()

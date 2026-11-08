@@ -154,7 +154,7 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 		$logger = new NullLogger();
 		$conditionMatcher = new ConditionMatcher($userSession, $container, new OperatorEvaluator($logger), $logger);
 
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,

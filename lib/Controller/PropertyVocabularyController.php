@@ -26,12 +26,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Controller\Support\PropertyVocabularyControllerServices;
 
 /**
  * Discovery for the property vocabulary.
@@ -41,24 +43,44 @@ use OCP\IRequest;
 class PropertyVocabularyController extends Controller {
 
 	/**
+	 * The published vocabulary.
+	 *
+	 * @var PropertyVocabularyInterface
+	 */
+	private readonly PropertyVocabularyInterface $vocabulary;
+
+	/**
+	 * The extending-form declaration reader.
+	 *
+	 * @var ExtendingFormDeclarationInterface
+	 */
+	private readonly ExtendingFormDeclarationInterface $declarations;
+
+	/**
+	 * Schema lookup, for the declared narrowings.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param PropertyVocabularyInterface $vocabulary The published vocabulary.
-	 * @param ExtendingFormDeclarationInterface $declarations The extending-form declaration reader.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup, for the declared narrowings.
+	 * @param PropertyVocabularyControllerServices $services The services, bundled.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PropertyVocabularyInterface $vocabulary,
-		private readonly ExtendingFormDeclarationInterface $declarations,
-		private readonly SchemaMapperInterface $schemaMapper,
+		PropertyVocabularyControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->vocabulary = $services->vocabulary;
+		$this->declarations = $services->declarations;
+		$this->schemaMapper = $services->schemaMapper;
 
 	}//end __construct()
 
@@ -101,25 +123,7 @@ class PropertyVocabularyController extends Controller {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function extendingForms(): JSONResponse {
-		$rows = [];
-		foreach ($this->schemaMapper->findAll() as $schema) {
-			$configuration = ($schema->getConfiguration() ?? []);
-			$properties = ($schema->getProperties() ?? []);
-			if (is_array($configuration) === false) {
-				$configuration = [];
-			}
-
-			if (is_array($properties) === false) {
-				$properties = [];
-			}
-
-			$found = $this->declarations->fromSchema(configuration: $configuration, properties: $properties);
-			foreach ($found as $path => $annotation) {
-				$row = $this->declarations->describe(annotation: $annotation, path: $path);
-				$row['schema'] = (string)($schema->getSlug() ?? '');
-				$rows[] = $row;
-			}
-		}
+		$rows = $this->allDeclarationRows();
 
 		return new JSONResponse(
 			[
@@ -133,4 +137,56 @@ class PropertyVocabularyController extends Controller {
 		);
 
 	}//end extendingForms()
+
+	/**
+	 * The described extending-form declarations of every readable schema.
+	 *
+	 * @return array<int, array<string, mixed>> One row per declaration.
+	 */
+	private function allDeclarationRows(): array {
+		$rows = [];
+		foreach ($this->schemaMapper->findAll() as $schema) {
+			array_push($rows, ...$this->declarationRows(schema: $schema));
+		}
+
+		return $rows;
+	}//end allDeclarationRows()
+
+	/**
+	 * The described extending-form declarations of one schema.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int, array<string, mixed>> One row per declaration, naming the schema.
+	 */
+	private function declarationRows(Schema $schema): array {
+		$found = $this->declarations->fromSchema(
+			configuration: $this->arrayOr(value: $schema->getConfiguration()),
+			properties: $this->arrayOr(value: $schema->getProperties())
+		);
+
+		$rows = [];
+		foreach ($found as $path => $annotation) {
+			$row = $this->declarations->describe(annotation: $annotation, path: $path);
+			$row['schema'] = (string)($schema->getSlug() ?? '');
+			$rows[] = $row;
+		}
+
+		return $rows;
+	}//end declarationRows()
+
+	/**
+	 * The value when it is an array, else an empty array.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<mixed> The array.
+	 */
+	private function arrayOr(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end arrayOr()
 }//end class

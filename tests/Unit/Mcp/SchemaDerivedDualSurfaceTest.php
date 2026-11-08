@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Mcp\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Service\Mcp\ToolRegistryFacade;
@@ -44,6 +45,8 @@ use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Listener\BuiltinDataTools;
+use OCA\OpenRegister\Mcp\Listener\BuiltinPlatformTools;
 
 /**
  * Dual-surface + precedence tests for the schema-derived provider.
@@ -120,9 +123,11 @@ class SchemaDerivedDualSurfaceTest extends TestCase {
 			appId: 'pipelinq',
 			schemaEntries: [['schema' => $this->leadSchema(), 'register' => null]],
 			suppressedIds: $suppressedIds,
-			objectService: $this->objectService,
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->logger
+			services: new SchemaDerivedToolServices(
+				objectService: $this->objectService,
+				auditTrailMapper: $this->auditTrailMapper,
+				logger: $this->logger,
+			),
 		);
 
 	}//end derivedProvider()
@@ -230,13 +235,17 @@ class SchemaDerivedDualSurfaceTest extends TestCase {
 		);
 
 		$listener = new ToolRegistrationListener(
-			registerTool: $this->createMock(RegisterTool::class),
-			schemaTool: $this->createMock(SchemaTool::class),
-			objectsTool: $this->createMock(ObjectsTool::class),
-			applicationTool: $this->createMock(ApplicationTool::class),
-			agentTool: $this->createMock(AgentTool::class),
+			dataTools: new BuiltinDataTools(
+				registerTool: $this->createMock(RegisterTool::class),
+				schemaTool: $this->createMock(SchemaTool::class),
+				objectsTool: $this->createMock(ObjectsTool::class),
+			),
+			platformTools: new BuiltinPlatformTools(
+				applicationTool: $this->createMock(ApplicationTool::class),
+				agentTool: $this->createMock(AgentTool::class),
+			),
 			mcpToolsService: $mcpToolsService,
-			logger: $this->logger
+			logger: $this->logger,
 		);
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);

@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTime;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\Share\IManager;
@@ -122,14 +123,25 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 			return 'permissions '.(string) json_encode($permissions).' is not a number from 1 to 31';
 		}
 
-		foreach ((array) ($data['verbs'] ?? []) as $verb) {
+		return $this->verbsRefusal(verbs: (array) ($data['verbs'] ?? []));
+	}//end rightsRefusal()
+
+	/**
+	 * Why one of the declared verbs is not a word, or ''.
+	 *
+	 * @param array<int|string, mixed> $verbs The declared verbs.
+	 *
+	 * @return string
+	 */
+	private function verbsRefusal(array $verbs): string {
+		foreach ($verbs as $verb) {
 			if (is_string($verb) === false || trim($verb) === '') {
 				return 'verb '.(string) json_encode($verb).' is not a word';
 			}
 		}
 
 		return '';
-	}//end rightsRefusal()
+	}//end verbsRefusal()
 
 	/**
 	 * Why a filled grant cannot be made in this run, or '': refusal(), then the object, the principal and the dates.
@@ -153,6 +165,25 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 			return 'object '.(string) json_encode($data['object'] ?? null).' is not an object the set writes';
 		}
 
+		$why = $this->principalRefusal(data: $data, users: $users, context: $context);
+		if ($why !== '') {
+			return $why;
+		}
+
+		return $this->datesRefusal(data: $data, context: $context);
+	}//end refusalIn()
+
+	/**
+	 * Why the grant's principal is no account of the set (a user grant) or no group the set created (a group
+	 * grant), or ''.
+	 *
+	 * @param array<string, mixed> $data    The filled grant fields; `type` is user or group.
+	 * @param array<int, string>   $users   The account ids the set creates or adopts.
+	 * @param array<string, mixed> $context The context; `setGroups` holds the groups the set created.
+	 *
+	 * @return string
+	 */
+	private function principalRefusal(array $data, array $users, array $context): string {
 		$principals = $users;
 		if ($data['type'] === 'group') {
 			$principals = array_values(array_filter((array) ($context['setGroups'] ?? []), 'is_string'));
@@ -162,35 +193,46 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 			return 'shareWith '.(string) json_encode($data['shareWith'] ?? null).' is no '.$data['type'].' of the set';
 		}
 
+		return '';
+	}//end principalRefusal()
+
+	/**
+	 * Why a declared share or expiry date cannot be used, or '': the share date first; an expiry may not lie before
+	 * the install day.
+	 *
+	 * @param array<string, mixed> $data    The filled grant fields.
+	 * @param array<string, mixed> $context The context; `today` is the install day.
+	 *
+	 * @return string
+	 */
+	private function datesRefusal(array $data, array $context): string {
 		foreach (['sharedAt' => false, 'expiresAt' => true] as $field => $isEnd) {
-			if (isset($data[$field]) === true) {
-				$why = $this->dateRefusal(field: $field, value: $data[$field], context: $context, isEnd: $isEnd);
+			if (isset($data[$field]) === false) {
+				continue;
 			}
 
+			$why = $this->dateRefusal(field: $field, value: $data[$field], context: $context, isEnd: $isEnd);
 			if ($why !== '') {
 				return $why;
 			}
 		}
 
 		return '';
-	}//end refusalIn()
+	}//end datesRefusal()
 
 	/**
 	 * Share the object's folder with the principal, with the declared account as the active user.
 	 *
-	 * @param string               $app  The app that ships the fragment (unused: the share is the account's).
-	 * @param string               $key  The grant's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled grant fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{id: string, object: string, node: int, sharedBy: string,
 	 *         sharedWith: string, shareType: int}|null}
 	 *         The record entry (the share's id, its object and the fields held() matches), or why the grant failed.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $app and $key are the contract of every kind.
-	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$uuid   = (string) $data['object'];
 		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: $uuid);
 		if ($object === null) {
@@ -198,51 +240,33 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 		}
 
 		try {
-			$grant = $this->actingAs()->run(
-				uid: (string) $data['sharedBy'],
-				operation: fn (): array => $this->sharing()->grant(
-					object: $object,
-					type: (string) $data['type'],
-					shareWith: (string) $data['shareWith'],
-					permissions: (int) ($data['permissions'] ?? 1),
-					verbs: array_values((array) ($data['verbs'] ?? [])),
-					expiresAt: $this->moment(value: ($data['expiresAt'] ?? null)),
-					sharedAt: $this->moment(value: ($data['sharedAt'] ?? null))
-				)
-			);
+			$grant = $this->actingAs()->run(uid: (string) $data['sharedBy'], operation: fn (): array => $this->grant(object: $object, data: $data));
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		// The identity of the share grant() created, so lost() and revert() can tell it from another share later.
-		return [
-			'error' => '',
-			'entry' => [
-				'id'         => (string) $grant['id'],
-				'object'     => $uuid,
-				'node'       => (int) $grant['nodeId'],
-				'sharedBy'   => (string) $grant['sharedBy'],
-				'sharedWith' => (string) $grant['sharedWith'],
-				'shareType'  => (int) $grant['shareType'],
-			],
-		];
+		return ['error' => '', 'entry' => (new ExampleSetGrantIdentity())->entry(uuid: $uuid, grant: $grant)];
 	}//end write()
 
 	/**
-	 * The fields that make a share the one the set made.
+	 * Share the object's folder through the sharing service, which holds the guard; run as the declared account.
 	 *
-	 * @param IShare $share The share.
+	 * @param ObjectEntity         $object The object.
+	 * @param array<string, mixed> $data   The filled grant fields.
 	 *
-	 * @return array{node: int, sharedBy: string, sharedWith: string, shareType: int}
+	 * @return array<string, mixed> The share the service made.
 	 */
-	private function identity(IShare $share): array {
-		return [
-			'node'       => (int) $share->getNodeId(),
-			'sharedBy'   => (string) $share->getSharedBy(),
-			'sharedWith' => (string) $share->getSharedWith(),
-			'shareType'  => (int) $share->getShareType(),
-		];
-	}//end identity()
+	private function grant(ObjectEntity $object, array $data): array {
+		return $this->sharing()->grant(
+			object: $object,
+			type: (string) $data['type'],
+			shareWith: (string) $data['shareWith'],
+			permissions: (int) ($data['permissions'] ?? 1),
+			verbs: array_values((array) ($data['verbs'] ?? [])),
+			expiresAt: $this->moment(value: ($data['expiresAt'] ?? null)),
+			sharedAt: $this->moment(value: ($data['sharedAt'] ?? null))
+		);
+	}//end grant()
 
 	/**
 	 * The share a record entry holds, or null when there is none under its id or the share there is not the one the
@@ -263,13 +287,8 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 			return null;
 		}
 
-		$was = [
-			'node'       => (int) $entry['node'],
-			'sharedBy'   => (string) ($entry['sharedBy'] ?? ''),
-			'sharedWith' => (string) ($entry['sharedWith'] ?? ''),
-			'shareType'  => (int) ($entry['shareType'] ?? -1),
-		];
-		if ($this->identity(share: $share) !== $was) {
+		$identity = new ExampleSetGrantIdentity();
+		if ($identity->ofShare(share: $share) !== $identity->recorded(entry: $entry)) {
 			return null;
 		}
 
@@ -314,6 +333,17 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 			return 'removed';
 		}
 
+		return $this->deleteShare(share: $share);
+	}//end revert()
+
+	/**
+	 * Delete a share the set made, once revert() has found it is the set's.
+	 *
+	 * @param IShare $share The share.
+	 *
+	 * @return string `removed` or `failed`.
+	 */
+	private function deleteShare(IShare $share): string {
 		try {
 			$this->shares()->deleteShare($share);
 		} catch (Throwable) {
@@ -321,7 +351,7 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 		}
 
 		return 'removed';
-	}//end revert()
+	}//end deleteShare()
 
 	/**
 	 * A checked date as a moment, or null when it is not declared.

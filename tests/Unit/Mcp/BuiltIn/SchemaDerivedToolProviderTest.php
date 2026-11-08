@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 
 /**
  * Unit tests for SchemaDerivedToolProvider.
@@ -123,9 +124,11 @@ class SchemaDerivedToolProviderTest extends TestCase {
 			appId: 'pipelinq',
 			schemaEntries: $schemaEntries,
 			suppressedIds: $suppressedIds,
-			objectService: $this->objectService,
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->logger
+			services: new SchemaDerivedToolServices(
+				objectService: $this->objectService,
+				auditTrailMapper: $this->auditTrailMapper,
+				logger: $this->logger,
+			),
 		);
 
 	}//end provider()

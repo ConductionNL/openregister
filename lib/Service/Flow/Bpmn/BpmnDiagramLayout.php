@@ -58,13 +58,8 @@ class BpmnDiagramLayout {
 				continue;
 			}
 
-			$bounds = $xpath->query('./dc:Bounds', $shape);
-			if ($bounds === false || $bounds->length === 0) {
-				continue;
-			}
-
-			$bound = $bounds->item(0);
-			if (($bound instanceof DOMElement) === false) {
+			$bound = $this->boundsOf(xpath: $xpath, shape: $shape);
+			if ($bound === null) {
 				continue;
 			}
 
@@ -76,6 +71,30 @@ class BpmnDiagramLayout {
 
 		return $positions;
 	}//end positions()
+
+	/**
+	 * A shape's first `dc:Bounds` element, or null when it has none.
+	 *
+	 * @param DOMXPath   $xpath The xpath.
+	 * @param DOMElement $shape The diagram shape.
+	 *
+	 * @return DOMElement|null The bounds.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function boundsOf(DOMXPath $xpath, DOMElement $shape): ?DOMElement {
+		$bounds = $xpath->query('./dc:Bounds', $shape);
+		if ($bounds === false || $bounds->length === 0) {
+			return null;
+		}
+
+		$bound = $bounds->item(0);
+		if (($bound instanceof DOMElement) === false) {
+			return null;
+		}
+
+		return $bound;
+	}//end boundsOf()
 
 	/**
 	 * The nodes with their positions, laid out when the file carried none.

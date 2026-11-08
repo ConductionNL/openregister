@@ -55,22 +55,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  */
-class ArchivalNominationService {
-
-	/**
-	 * The nomination was derived and written.
-	 */
-	public const STATUS_NOMINATED = 'nominated';
-
-	/**
-	 * Nothing could decide this record's archival future. Reported, never silent.
-	 */
-	public const STATUS_UNNOMINATABLE = 'unnominatable';
-
-	/**
-	 * The schema does not ask for archiving at all.
-	 */
-	public const STATUS_NOT_APPLICABLE = 'not_applicable';
+class ArchivalNominationService implements ArchivalNominationServiceInterface, ArchivalNominationTriggerInterface {
 
 	/**
 	 * The selectielijst row the schema's classification points at decided it.
@@ -106,6 +91,32 @@ class ArchivalNominationService {
 	public const NOTHING_DECLARES_ARCHIVING = 'this schema declares neither an `archive` block with '
 		. '`enabled: true` nor an `x-openregister-archival` retention block, so nothing says what '
 		. 'happens to its records when their business use ends';
+
+	/**
+	 * A derivation the selectielijst contributed nothing to.
+	 *
+	 * @var array{appraisal: null, period: null, rule: null, selectionListRow: null, source: null}
+	 */
+	private const NOTHING_FOUND = [
+		'appraisal' => null,
+		'period' => null,
+		'rule' => null,
+		'selectionListRow' => null,
+		'source' => null,
+	];
+
+	/**
+	 * Which derived value is written to which retention key, in write order.
+	 *
+	 * @var array<string, string>
+	 */
+	private const DERIVED_RETENTION_KEYS = [
+		'period' => 'bewaartermijn',
+		'disposalDate' => 'archiefactiedatum',
+		'classification' => 'classification',
+		'source' => 'selectielijstBron',
+		'selectionListRow' => 'selectielijstRow',
+	];
 
 	/**
 	 * Constructor.
@@ -154,14 +165,8 @@ class ArchivalNominationService {
 			return false;
 		}
 
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-lifecycle'] ?? null);
-		if (is_array($annotation) === false) {
-			return false;
-		}
-
-		$final = ($annotation['final'] ?? $this->graphFinal(annotation: $annotation));
-		if (is_array($final) === false) {
+		$final = $this->finalDeclaration(schema: $schema);
+		if ($final === null) {
 			return false;
 		}
 
@@ -171,6 +176,28 @@ class ArchivalNominationService {
 
 		return in_array($state, $final, true);
 	}//end isTerminalState()
+
+	/**
+	 * The schema's `final` declaration: an explicit one, else the graph block's.
+	 *
+	 * @param Schema $schema The object's schema.
+	 *
+	 * @return array<mixed>|null The declaration, or null when the schema declares no end.
+	 */
+	private function finalDeclaration(Schema $schema): ?array {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration['x-openregister-lifecycle'] ?? null);
+		if (is_array($annotation) === false) {
+			return null;
+		}
+
+		$final = ($annotation['final'] ?? $this->graphFinal(annotation: $annotation));
+		if (is_array($final) === false) {
+			return null;
+		}
+
+		return $final;
+	}//end finalDeclaration()
 
 	/**
 	 * Derive this object's archival future and write it down.
@@ -186,65 +213,90 @@ class ArchivalNominationService {
 	 *
 	 * @return array<string, mixed> The nomination block that was written.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per source of a decision,
-	 *              and the reason an object could not be nominated has to name which
-	 *              source was missing.
-	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function nominate(
-		ObjectEntity $object,
-		Schema $schema,
-		string $trigger,
-		?string $actor = null,
-		?string $reason = null,
-	): array {
+	public function nominate(ObjectEntity $object, Schema $schema, string $trigger, ?string $actor = null, ?string $reason = null): array {
 		$archive = $this->declarations->read(object: $object, schema: $schema);
 		if ($archive === []) {
-			return [
-				'status' => self::STATUS_NOT_APPLICABLE,
-				'unnominatableReason' => self::NOTHING_DECLARES_ARCHIVING,
-			];
+			return ['status' => self::STATUS_NOT_APPLICABLE, 'unnominatableReason' => self::NOTHING_DECLARES_ARCHIVING];
 		}
 
 		$derived = $this->derive(object: $object, schema: $schema, archive: $archive);
-
-		$block = [
-			'status' => $derived['status'],
-			'at' => (new DateTimeImmutable())->format('c'),
-			'trigger' => $trigger,
-		];
-
-		if ($actor !== null) {
-			$block['actor'] = $actor;
-		}
-
-		if ($reason !== null) {
-			$block['reason'] = $reason;
-		}
-
+		$block = $this->openBlock(status: $derived['status'], trigger: $trigger, actor: $actor, reason: $reason);
 		if ($derived['status'] === self::STATUS_UNNOMINATABLE) {
-			$block['unnominatableReason'] = $derived['reason'];
-
-			$this->logger->warning(
-				'[ArchivalNominationService] ' . (string)$object->getUuid()
-				. ' reached a terminal state and cannot be nominated: ' . $derived['reason']
-			);
-
-			$this->write(object: $object, derived: [], block: $block);
-
-			return $block;
+			return $this->recordUnnominatable(object: $object, block: $block, reason: $derived['reason']);
 		}
 
+		$block = $this->withRule(block: $block, derived: $derived);
+		$this->write(object: $object, derived: $derived, block: $block);
+
+		return $block;
+	}//end nominate()
+
+	/**
+	 * Name the rule that decided, and the selectielijst row when one did.
+	 *
+	 * @param array<string, mixed> $block   The nomination block so far.
+	 * @param array<string, mixed> $derived The derivation.
+	 *
+	 * @return array<string, mixed> The block.
+	 */
+	private function withRule(array $block, array $derived): array {
 		$block['rule'] = $derived['rule'];
 		if ($derived['selectionListRow'] !== null) {
 			$block['selectionListRow'] = $derived['selectionListRow'];
 		}
 
-		$this->write(object: $object, derived: $derived, block: $block);
+		return $block;
+	}//end withRule()
+
+	/**
+	 * The start of a nomination block: what, when, why and by whom.
+	 *
+	 * @param string      $status  The derived status.
+	 * @param string      $trigger What caused this: `closure` or `recompute`.
+	 * @param string|null $actor   Who asked, for a recomputation.
+	 * @param string|null $reason  Why they asked, for a recomputation.
+	 *
+	 * @return array<string, mixed> The block so far.
+	 */
+	private function openBlock(string $status, string $trigger, ?string $actor, ?string $reason): array {
+		$block = [
+			'status' => $status,
+			'at' => (new DateTimeImmutable())->format('c'),
+			'trigger' => $trigger,
+		];
+
+		foreach (['actor' => $actor, 'reason' => $reason] as $key => $value) {
+			if ($value !== null) {
+				$block[$key] = $value;
+			}
+		}
 
 		return $block;
-	}//end nominate()
+	}//end openBlock()
+
+	/**
+	 * Report and record that a record which reached its end cannot be nominated.
+	 *
+	 * @param ObjectEntity         $object The record.
+	 * @param array<string, mixed> $block  The nomination block so far.
+	 * @param string               $reason Which source was missing.
+	 *
+	 * @return array<string, mixed> The nomination block that was written.
+	 */
+	private function recordUnnominatable(ObjectEntity $object, array $block, string $reason): array {
+		$block['unnominatableReason'] = $reason;
+
+		$this->logger->warning(
+			'[ArchivalNominationService] ' . (string)$object->getUuid()
+			. ' reached a terminal state and cannot be nominated: ' . $reason
+		);
+
+		$this->write(object: $object, derived: [], block: $block);
+
+		return $block;
+	}//end recordUnnominatable()
 
 	/**
 	 * Decide the appraisal, the retention period and where each came from.
@@ -255,7 +307,6 @@ class ArchivalNominationService {
 	 *
 	 * @return array<string, mixed> The derivation, or a status of unnominatable with a reason.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) See nominate().
 	 */
 	private function derive(ObjectEntity $object, Schema $schema, array $archive): array {
 		// The schema's category, unless this record names its own (DECISIONS
@@ -266,79 +317,149 @@ class ArchivalNominationService {
 			data: ($object->getObject() ?? [])
 		);
 
-		$appraisal = null;
-		$period = null;
-		$rule = null;
-		$row = null;
-		$source = null;
-
-		if ($classification !== null) {
-			$entry = $this->retentionService->lookupSelectielijstEntry($classification);
-			if ($entry !== null) {
-				$appraisal = $this->text(value: ($entry['archiefnominatie'] ?? null));
-				$period = $this->text(value: ($entry['bewaartermijn'] ?? null));
-				$source = $this->text(value: ($entry['bron'] ?? null));
-				$row = $this->text(value: ($entry['categorie'] ?? null)) ?? $classification;
-				$rule = self::RULE_SELECTION_LIST;
-			}
+		$found = $this->fromSelectionList(classification: $classification);
+		if ($found['appraisal'] === null) {
+			$found = $this->withSchemaDefault(found: $found, archive: $archive);
 		}
 
-		if ($appraisal === null) {
-			$appraisal = $this->text(value: ($archive['defaultNominatie'] ?? null));
-			$period = $this->text(value: ($archive['defaultBewaartermijn'] ?? null));
-			if ($appraisal !== null) {
-				// A translated `x-openregister-archival` block says so itself,
-				// so the nomination names the declaration it actually came from
-				// rather than crediting an `archive` column nobody filled in.
-				$rule = ($archive['defaultRule'] ?? self::RULE_SCHEMA_DEFAULT);
-			}
+		if ($found['appraisal'] === null) {
+			return $this->unnominatable(reason: $this->missingSourceReason(classification: $classification));
 		}
 
-		if ($appraisal === null) {
-			return [
-				'status' => self::STATUS_UNNOMINATABLE,
-				'reason' => $this->missingSourceReason(classification: $classification),
-			];
-		}
+		$found = $this->withLocalOverride(found: $found, archive: $archive);
 
-		$override = $this->text(value: ($archive['bewaartermijnOverride'] ?? null));
-		if ($override !== null) {
-			$period = $override;
-			$rule = self::RULE_LOCAL_OVERRIDE;
-		}
+		return $this->dated(object: $object, schema: $schema, found: $found, classification: $classification);
+	}//end derive()
 
-		// A record kept forever has no disposal date to count, and demanding
-		// one would make every permanently preserved dossier unnominatable.
-		$disposalDate = null;
-		if ($period !== null) {
-			$disposalDate = $this->retentionService->calculateArchiveActionDate(
-				object: $object,
-				schema: $schema,
-				retentionPeriod: $period
-			);
-
-			if ($disposalDate === null
-				&& in_array($appraisal, Appraisal::RETAIN_PERMANENTLY_ALIASES, true) === false
-			) {
-				return [
-					'status' => self::STATUS_UNNOMINATABLE,
-					'reason' => 'the retention period ' . $period
-						. ' could not be counted from any date on this record',
-				];
-			}
+	/**
+	 * What the selectielijst row for this category decides, if there is one.
+	 *
+	 * @param string|null $classification The effective category.
+	 *
+	 * @return array<string, string|null> The appraisal, period, rule, row and source; all null without a row.
+	 */
+	private function fromSelectionList(?string $classification): array {
+		$entry = $this->entryFor(classification: $classification);
+		if ($entry === null) {
+			return self::NOTHING_FOUND;
 		}
 
 		return [
-			'status' => self::STATUS_NOMINATED,
-			'rule' => $rule,
-			'appraisal' => $appraisal,
-			'period' => $period,
-			'disposalDate' => $disposalDate,
-			'classification' => $classification,
-			'source' => $source,
-			'selectionListRow' => $row,
+			'appraisal' => ArchivalText::fromStringOrInt(value: ($entry['archiefnominatie'] ?? null)),
+			'period' => ArchivalText::fromStringOrInt(value: ($entry['bewaartermijn'] ?? null)),
+			'rule' => self::RULE_SELECTION_LIST,
+			'selectionListRow' => (ArchivalText::fromStringOrInt(value: ($entry['categorie'] ?? null)) ?? $classification),
+			'source' => ArchivalText::fromStringOrInt(value: ($entry['bron'] ?? null)),
 		];
-	}//end derive()
+	}//end fromSelectionList()
+
+	/**
+	 * The selectielijst row for a category, or null when there is no category or no row.
+	 *
+	 * @param string|null $classification The effective category.
+	 *
+	 * @return array<string, mixed>|null The row.
+	 */
+	private function entryFor(?string $classification): ?array {
+		if ($classification === null) {
+			return null;
+		}
+
+		return $this->retentionService->lookupSelectielijstEntry($classification);
+	}//end entryFor()
+
+	/**
+	 * Take the appraisal and period from the schema's default, when the selectielijst gave no appraisal.
+	 *
+	 * The row and source a selectielijst row contributed are kept.
+	 *
+	 * @param array<string, string|null> $found   The derivation so far.
+	 * @param array<string, mixed>       $archive The schema's archive block.
+	 *
+	 * @return array<string, string|null> The derivation.
+	 */
+	private function withSchemaDefault(array $found, array $archive): array {
+		$found['appraisal'] = ArchivalText::fromStringOrInt(value: ($archive['defaultNominatie'] ?? null));
+		$found['period'] = ArchivalText::fromStringOrInt(value: ($archive['defaultBewaartermijn'] ?? null));
+		if ($found['appraisal'] !== null) {
+			// A translated `x-openregister-archival` block says so itself,
+			// so the nomination names the declaration it actually came from
+			// rather than crediting an `archive` column nobody filled in.
+			$found['rule'] = ($archive['defaultRule'] ?? self::RULE_SCHEMA_DEFAULT);
+		}
+
+		return $found;
+	}//end withSchemaDefault()
+
+	/**
+	 * Let a local override take the period, and say so.
+	 *
+	 * @param array<string, string|null> $found   The derivation so far.
+	 * @param array<string, mixed>       $archive The schema's archive block.
+	 *
+	 * @return array<string, string|null> The derivation.
+	 */
+	private function withLocalOverride(array $found, array $archive): array {
+		$override = ArchivalText::fromStringOrInt(value: ($archive['bewaartermijnOverride'] ?? null));
+		if ($override !== null) {
+			$found['period'] = $override;
+			$found['rule'] = self::RULE_LOCAL_OVERRIDE;
+		}
+
+		return $found;
+	}//end withLocalOverride()
+
+	/**
+	 * Count the disposal date, and refuse a period that cannot be counted.
+	 *
+	 * A record kept forever has no disposal date to count, and demanding one
+	 * would make every permanently preserved dossier unnominatable.
+	 *
+	 * @param ObjectEntity               $object         The record.
+	 * @param Schema                     $schema         Its schema.
+	 * @param array<string, string|null> $found          The derivation.
+	 * @param string|null                $classification The effective category.
+	 *
+	 * @return array<string, mixed> The derivation, or a status of unnominatable with a reason.
+	 */
+	private function dated(ObjectEntity $object, Schema $schema, array $found, ?string $classification): array {
+		$period = $found['period'];
+		$disposalDate = null;
+		if ($period !== null) {
+			$disposalDate = $this->retentionService->calculateArchiveActionDate(object: $object, schema: $schema, retentionPeriod: $period);
+		}
+
+		if ($this->cannotBeCounted(found: $found, disposalDate: $disposalDate) === true) {
+			return $this->unnominatable(reason: 'the retention period ' . $period . ' could not be counted from any date on this record');
+		}
+
+		return ['status' => self::STATUS_NOMINATED, 'disposalDate' => $disposalDate, 'classification' => $classification] + $found;
+	}//end dated()
+
+	/**
+	 * Whether a period was declared but no disposal date could be counted for a record that is not kept forever.
+	 *
+	 * @param array<string, string|null> $found        The derivation.
+	 * @param string|null                $disposalDate The counted date, or null.
+	 *
+	 * @return bool True when the record cannot be nominated for it.
+	 */
+	private function cannotBeCounted(array $found, ?string $disposalDate): bool {
+		return $found['period'] !== null
+			&& $disposalDate === null
+			&& in_array($found['appraisal'], Appraisal::RETAIN_PERMANENTLY_ALIASES, true) === false;
+	}//end cannotBeCounted()
+
+	/**
+	 * A derivation that could not nominate, and why.
+	 *
+	 * @param string $reason Which source was missing.
+	 *
+	 * @return array{status: string, reason: string} The derivation.
+	 */
+	private function unnominatable(string $reason): array {
+		return ['status' => self::STATUS_UNNOMINATABLE, 'reason' => $reason];
+	}//end unnominatable()
 
 	/**
 	 * The reference a graph-mode annotation already declares, read as `final`.
@@ -361,8 +482,8 @@ class ArchivalNominationService {
 			return null;
 		}
 
-		$from = $this->text(value: ($graph['schema'] ?? null));
-		$field = $this->text(value: ($graph['finalField'] ?? null));
+		$from = ArchivalText::fromStringOrInt(value: ($graph['schema'] ?? null));
+		$field = ArchivalText::fromStringOrInt(value: ($graph['finalField'] ?? null));
 		if ($from === null || $field === null) {
 			return null;
 		}
@@ -413,32 +534,22 @@ class ArchivalNominationService {
 		}
 
 		if ($derived !== []) {
-			$retention['archiefnominatie'] = $derived['appraisal'];
-			$retention['archiefstatus'] = RecordState::SEMI_STATIC;
-
-			if ($derived['period'] !== null) {
-				$retention['bewaartermijn'] = $derived['period'];
-			}
-
-			if ($derived['disposalDate'] !== null) {
-				$retention['archiefactiedatum'] = $derived['disposalDate'];
-			}
-
-			if ($derived['classification'] !== null) {
-				$retention['classification'] = $derived['classification'];
-			}
-
-			if ($derived['source'] !== null) {
-				$retention['selectielijstBron'] = $derived['source'];
-			}
-
-			if ($derived['selectionListRow'] !== null) {
-				$retention['selectielijstRow'] = $derived['selectionListRow'];
-			}
-		}//end if
+			$retention = $this->withDerivation(retention: $retention, derived: $derived);
+		}
 
 		$retention['nomination'] = $block;
+		$object->setRetention($this->withHistory(retention: $retention, block: $block));
+	}//end write()
 
+	/**
+	 * Append the nomination to the history rather than replacing what it replaced.
+	 *
+	 * @param array<string, mixed> $retention The retention block.
+	 * @param array<string, mixed> $block     The nomination block.
+	 *
+	 * @return array<string, mixed> The retention block.
+	 */
+	private function withHistory(array $retention, array $block): array {
 		$history = ($retention['nominationHistory'] ?? []);
 		if (is_array($history) === false) {
 			$history = [];
@@ -447,26 +558,27 @@ class ArchivalNominationService {
 		$history[] = $block;
 		$retention['nominationHistory'] = $history;
 
-		$object->setRetention($retention);
-	}//end write()
+		return $retention;
+	}//end withHistory()
 
 	/**
-	 * A non-empty trimmed string, or null.
+	 * Write the derived appraisal, state and whichever derived facts are known.
 	 *
-	 * @param mixed $value The candidate.
+	 * @param array<string, mixed> $retention The stored retention block.
+	 * @param array<string, mixed> $derived   The derivation.
 	 *
-	 * @return string|null The string, or null when it says nothing.
+	 * @return array<string, mixed> The retention block.
 	 */
-	private function text(mixed $value): ?string {
-		if (is_string($value) === false && is_int($value) === false) {
-			return null;
+	private function withDerivation(array $retention, array $derived): array {
+		$retention['archiefnominatie'] = $derived['appraisal'];
+		$retention['archiefstatus'] = RecordState::SEMI_STATIC;
+
+		foreach (self::DERIVED_RETENTION_KEYS as $from => $to) {
+			if ($derived[$from] !== null) {
+				$retention[$to] = $derived[$from];
+			}
 		}
 
-		$text = trim((string)$value);
-		if ($text === '') {
-			return null;
-		}
-
-		return $text;
-	}//end text()
+		return $retention;
+	}//end withDerivation()
 }//end class

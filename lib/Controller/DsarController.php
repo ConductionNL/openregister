@@ -36,8 +36,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\AvgComplianceService;
-use OCA\OpenRegister\Service\DsarService;
+use OCA\OpenRegister\Controller\Support\DsarControllerServices;
+use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
+use OCA\OpenRegister\Service\DsarServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -50,24 +51,50 @@ use OCP\IUserSession;
  */
 class DsarController extends Controller {
 	/**
+	 * DSAR composition service.
+	 *
+	 * @var DsarServiceInterface
+	 */
+	private readonly DsarServiceInterface $dsarService;
+
+	/**
+	 * AVG compliance auditor.
+	 *
+	 * @var AvgComplianceServiceInterface
+	 */
+	private readonly AvgComplianceServiceInterface $complianceService;
+
+	/**
+	 * Current user (admin gate).
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager (admin gate).
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App identifier.
 	 * @param IRequest $request Active request.
-	 * @param DsarService $dsarService DSAR composition service.
-	 * @param AvgComplianceService $complianceService AVG compliance auditor.
-	 * @param IUserSession $userSession Current user (admin gate).
-	 * @param IGroupManager $groupManager Group manager (admin gate).
+	 * @param DsarControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly DsarService $dsarService,
-		private readonly AvgComplianceService $complianceService,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		DsarControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->dsarService = $services->dsarService;
+		$this->complianceService = $services->complianceService;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 
 	}//end __construct()
 

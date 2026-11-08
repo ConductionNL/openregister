@@ -91,134 +91,36 @@ class AgentTool extends AbstractTool implements ToolInterface {
 	}//end getDescription()
 
 	/**
-	 * The function definitions, in OpenAI function calling format.
+	 * The function definitions, one row each: [name, subject, action,
+	 * description, [parameter => [type, description]], required], expanded
+	 * by {@see ToolFunctionTable::expand()}.
 	 *
-	 * @var array<int, array<string, mixed>>
+	 * @var array<int, array<int, mixed>>
 	 */
-	private const FUNCTIONS = [
-		[
-			'name' => 'list_agents',
-			'subject' => 'agent',
-			'action' => 'list',
-			'description' => 'List all agents accessible to current user. Returns name, type, status with privacy settings respected.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'limit' => [
-						'type' => 'integer',
-						'description' => 'Maximum number of results to return (default: 50)',
-					],
-					'offset' => [
-						'type' => 'integer',
-						'description' => 'Number of results to skip for pagination (default: 0)',
-					],
-				],
-				'required' => [],
-			],
-		],
-		[
-			'name' => 'get_agent',
-			'subject' => 'agent',
-			'action' => 'get',
-			'description' => 'Get detailed agent information by UUID. Returns configuration, system prompt, model settings, and tools.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'uuid' => [
-						'type' => 'string',
-						'description' => 'UUID of the agent to retrieve',
-					],
-				],
-				'required' => ['uuid'],
-			],
-		],
-		[
-			'name' => 'create_agent',
-			'subject' => 'agent',
-			'action' => 'create',
-			'description' => 'Create a new AI agent. Requires name and system prompt. Configure model, temperature, tools, and privacy.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'name' => [
-						'type' => 'string',
-						'description' => 'Name of the agent (required)',
-					],
-					'description' => [
-						'type' => 'string',
-						'description' => 'Description of what the agent does',
-					],
-					'type' => [
-						'type' => 'string',
-						'description' => 'Type of agent (e.g., "assistant", "support", "analyzer")',
-					],
-					'systemPrompt' => [
-						'type' => 'string',
-						'description' => 'System prompt that defines the agent\'s behavior and personality',
-					],
-				],
-				'required' => ['name'],
-			],
-		],
-		[
-			'name' => 'update_agent',
-			'subject' => 'agent',
-			'action' => 'update',
-			'description' => 'Update an existing agent. Only the owner can modify agents. Provide the UUID and fields to update.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'uuid' => [
-						'type' => 'string',
-						'description' => 'UUID of the agent to update',
-					],
-					'name' => [
-						'type' => 'string',
-						'description' => 'New name for the agent',
-					],
-					'description' => [
-						'type' => 'string',
-						'description' => 'New description',
-					],
-					'systemPrompt' => [
-						'type' => 'string',
-						'description' => 'New system prompt',
-					],
-				],
-				'required' => ['uuid'],
-			],
-		],
-		[
-			'name' => 'delete_agent',
-			'subject' => 'agent',
-			'action' => 'delete',
-			'description' => 'Permanently delete agent (owner only). Deletes all associated conversations. Cannot be undone.',
-			'parameters' => [
-				'type' => 'object',
-				'properties' => [
-					'uuid' => [
-						'type' => 'string',
-						'description' => 'UUID of the agent to delete',
-					],
-				],
-				'required' => ['uuid'],
-			],
-		],
+	protected const FUNCTIONS = [
+		['list_agents', 'agent', 'list', 'List all agents accessible to current user. Returns name, type, status with privacy settings respected.', [
+			'limit' => ['integer', 'Maximum number of results to return (default: 50)'],
+			'offset' => ['integer', 'Number of results to skip for pagination (default: 0)'],
+		], []],
+		['get_agent', 'agent', 'get', 'Get detailed agent information by UUID. Returns configuration, system prompt, model settings, and tools.', [
+			'uuid' => ['string', 'UUID of the agent to retrieve'],
+		], ['uuid']],
+		['create_agent', 'agent', 'create', 'Create a new AI agent. Requires name and system prompt. Configure model, temperature, tools, and privacy.', [
+			'name' => ['string', 'Name of the agent (required)'],
+			'description' => ['string', 'Description of what the agent does'],
+			'type' => ['string', 'Type of agent (e.g., "assistant", "support", "analyzer")'],
+			'systemPrompt' => ['string', 'System prompt that defines the agent\'s behavior and personality'],
+		], ['name']],
+		['update_agent', 'agent', 'update', 'Update an existing agent. Only the owner can modify agents. Provide the UUID and fields to update.', [
+			'uuid' => ['string', 'UUID of the agent to update'],
+			'name' => ['string', 'New name for the agent'],
+			'description' => ['string', 'New description'],
+			'systemPrompt' => ['string', 'New system prompt'],
+		], ['uuid']],
+		['delete_agent', 'agent', 'delete', 'Permanently delete agent (owner only). Deletes all associated conversations. Cannot be undone.', [
+			'uuid' => ['string', 'UUID of the agent to delete'],
+		], ['uuid']],
 	];
-
-	/**
-	 * Get function definitions for LLM function calling
-	 *
-	 * Returns function definitions in OpenAI function calling format.
-	 * These are used by LLMs to understand what capabilities this tool provides.
-	 *
-	 * @return array<int, array<string, mixed>> Array of function definitions
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function getFunctions(): array {
-		return self::FUNCTIONS;
-	}//end getFunctions()
 
 	/**
 	 * List agents
@@ -336,35 +238,31 @@ class AgentTool extends AbstractTool implements ToolInterface {
 		?string $type = null,
 		?string $systemPrompt = null,
 	): array {
+		return $this->insertAgent(
+			name: $name,
+			fields: ['setDescription' => $description, 'setType' => $type, 'setPrompt' => $systemPrompt]
+		);
+	}//end createAgent()
+
+	/**
+	 * Insert a new agent and report the outcome.
+	 *
+	 * @param string                     $name   Agent name
+	 * @param array<string, string|null> $fields The optional fields, keyed by setter; null or empty is skipped.
+	 *
+	 * @return (bool|mixed|string)[] Response with created agent
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 */
+	private function insertAgent(string $name, array $fields): array {
 		try {
 			$this->logger->info(
 				message: '[AgentTool] Creating agent',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'name' => $name]
 			);
 
-			// Create agent entity.
-			$agent = new Agent();
-			$agent->setName($name);
-
-			if ($description !== null && $description !== '') {
-				$agent->setDescription($description);
-			}
-
-			if ($type !== null && $type !== '') {
-				$agent->setType($type);
-			}
-
-			if ($systemPrompt !== null && $systemPrompt !== '') {
-				$agent->setPrompt($systemPrompt);
-			}
-
-			// Set current user as owner if we have agent context.
-			if ($this->agent !== null) {
-				$agent->setOwner($this->agent->getOwner());
-			}
-
 			// Save via mapper (RBAC and organisation are enforced in mapper).
-			$agent = $this->agentMapper->insert($agent);
+			$agent = $this->agentMapper->insert($this->newAgent(name: $name, fields: $fields));
 
 			return $this->formatSuccess(
 				data: $agent->jsonSerialize(),
@@ -382,7 +280,33 @@ class AgentTool extends AbstractTool implements ToolInterface {
 			);
 			return $this->formatError(message: 'Failed to create agent: ' . $e->getMessage());
 		}//end try
-	}//end createAgent()
+	}//end insertAgent()
+
+	/**
+	 * A new agent entity with its name, the non-empty optional fields and the context's owner.
+	 *
+	 * @param string                     $name   Agent name
+	 * @param array<string, string|null> $fields The optional fields, keyed by setter; null or empty is skipped.
+	 *
+	 * @return Agent The unsaved agent.
+	 */
+	private function newAgent(string $name, array $fields): Agent {
+		$agent = new Agent();
+		$agent->setName($name);
+
+		foreach ($fields as $setter => $value) {
+			if ($value !== null && $value !== '') {
+				$agent->$setter($value);
+			}
+		}
+
+		// Set current user as owner if we have agent context.
+		if ($this->agent !== null) {
+			$agent->setOwner($this->agent->getOwner());
+		}
+
+		return $agent;
+	}//end newAgent()
 
 	/**
 	 * Update agent
@@ -406,6 +330,23 @@ class AgentTool extends AbstractTool implements ToolInterface {
 		?string $description = null,
 		?string $systemPrompt = null,
 	): array {
+		return $this->patchAgent(
+			uuid: $uuid,
+			fields: ['setName' => $name, 'setDescription' => $description, 'setPrompt' => $systemPrompt]
+		);
+	}//end updateAgent()
+
+	/**
+	 * Change the non-null fields of an agent and report the outcome.
+	 *
+	 * @param string                     $uuid   Agent UUID
+	 * @param array<string, string|null> $fields The fields, keyed by setter; null keeps one.
+	 *
+	 * @return (bool|mixed|string)[] Response with updated agent
+	 *
+	 * @psalm-return array{success: bool, error?: string, details?: mixed, message?: string, data?: mixed}
+	 */
+	private function patchAgent(string $uuid, array $fields): array {
 		try {
 			$this->logger->info(
 				message: '[AgentTool] Updating agent',
@@ -416,16 +357,10 @@ class AgentTool extends AbstractTool implements ToolInterface {
 			$agent = $this->agentMapper->findByUuid(uuid: $uuid);
 
 			// Update fields.
-			if ($name !== null) {
-				$agent->setName($name);
-			}
-
-			if ($description !== null) {
-				$agent->setDescription($description);
-			}
-
-			if ($systemPrompt !== null) {
-				$agent->setPrompt($systemPrompt);
+			foreach ($fields as $setter => $value) {
+				if ($value !== null) {
+					$agent->$setter($value);
+				}
 			}
 
 			// Save changes (RBAC enforced in mapper).
@@ -449,7 +384,7 @@ class AgentTool extends AbstractTool implements ToolInterface {
 			);
 			return $this->formatError(message: 'Failed to update agent: ' . $e->getMessage());
 		}//end try
-	}//end updateAgent()
+	}//end patchAgent()
 
 	/**
 	 * Delete agent
@@ -508,10 +443,6 @@ class AgentTool extends AbstractTool implements ToolInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array {
-		// Convert snake_case to camelCase for PSR compliance.
-		$methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-
-		// Call the method directly (LLPhant-compatible).
-		return $this->$methodName(...array_values($parameters));
+		return $this->invokeFunction(functionName: $functionName, parameters: $parameters);
 	}//end executeFunction()
 }//end class

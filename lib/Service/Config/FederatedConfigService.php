@@ -86,24 +86,43 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	private const GITHUB_API = 'https://api.github.com';
 
 	/**
+	 * Custodies the GitHub token (Doriath's vault where installed, the NC vault otherwise).
+	 *
+	 * @var CredentialBrokerService
+	 */
+	private readonly CredentialBrokerService $broker;
+
+	/**
+	 * Signs published bundles and verifies installed ones.
+	 *
+	 * @var BundleSigner
+	 */
+	private readonly BundleSigner $signer;
+
+	/**
+	 * NC HTTP client factory (anonymous discovery).
+	 *
+	 * @var IClientService
+	 */
+	private readonly IClientService $clientService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ShareableConfigTypeRegistry $registry The contributed types.
-	 * @param CredentialBrokerService $broker Custodies the GitHub token (Doriath's vault where installed, the NC vault otherwise).
-	 * @param BundleSigner $signer Signs published bundles and verifies installed ones.
-	 * @param IClientService $clientService NC HTTP client factory (anonymous discovery).
-	 * @param IAppConfig $appConfig Reads the org source allowlist.
-	 * @param LoggerInterface $logger The logger.
+	 * @param FederatedConfigTransport    $transport The credential, signing and HTTP collaborators federated config sharing talks through.
+	 * @param ShareableConfigTypeRegistry $registry  The contributed types.
+	 * @param IAppConfig                  $appConfig Reads the org source allowlist.
+	 * @param LoggerInterface             $logger    The logger.
 	 */
 	public function __construct(
+		FederatedConfigTransport $transport,
 		private readonly ShareableConfigTypeRegistry $registry,
-		private readonly CredentialBrokerService $broker,
-		private readonly BundleSigner $signer,
-		private readonly IClientService $clientService,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->broker = $transport->broker;
+		$this->signer = $transport->signer;
+		$this->clientService = $transport->clientService;
 	}//end __construct()
 
 	/**
@@ -165,7 +184,22 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		// a key of their own, so a bundle counts as verified only against a
 		// non-empty trusted-keys allowlist; without one, an administrator has to
 		// allow unverified bundles explicitly.
-		$verdict = $this->signer->verify(bundle: $bundle);
+		$this->assertSignatureAccepted(verdict: $this->signer->verify(bundle: $bundle));
+		$this->assertVerifiableOrAllowed();
+
+		return $this->typeOrFail(typeId: $typeId)->deserialise(bundle: $bundle);
+	}//end install()
+
+	/**
+	 * Refuse a tampered signature, then a publisher key nothing trusts.
+	 *
+	 * @param array<string, mixed> $verdict The signer's verdict on the bundle.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the bundle is tampered or its publisher untrusted.
+	 */
+	private function assertSignatureAccepted(array $verdict): void {
 		if ($verdict['signed'] === true && $verdict['valid'] === false) {
 			throw new RuntimeException('Bundle signature is invalid — refusing to install a tampered bundle.');
 		}
@@ -173,7 +207,17 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		if ($verdict['trusted'] === false) {
 			throw new RuntimeException('Bundle publisher key is not trusted by this organisation.');
 		}
+	}//end assertSignatureAccepted()
 
+	/**
+	 * Refuse when no trusted-keys allowlist can verify the bundle and an
+	 * administrator has not allowed unverified bundles.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the bundle cannot be verified and that is not allowed.
+	 */
+	private function assertVerifiableOrAllowed(): void {
 		if ($this->signer->enforced() === false
 			&& $this->appConfig->getValueString(self::APP_ID, self::ALLOW_UNVERIFIED_KEY, '') !== 'true'
 		) {
@@ -182,9 +226,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 				.'An administrator can add a trusted key or allow unverified bundles.'
 			);
 		}
-
-		return $this->typeOrFail(typeId: $typeId)->deserialise(bundle: $bundle);
-	}//end install()
+	}//end assertVerifiableOrAllowed()
 
 	/**
 	 * Publish a bundle to a GitHub repository, with the token supplied by the
@@ -277,38 +319,10 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 			return;
 		}
 
-		try {
-			$existing = $this->broker->request(
-				credentialId: $credentialId,
-				appId: self::APP_ID,
-				method: 'GET',
-				path: sprintf('/repos/%s/%s', $owner, $name),
-				headers: ['Accept' => 'application/vnd.github+json']
-			);
-			if ((int)($existing['status'] ?? 0) === 200) {
-				return;
-			}
-		} catch (Throwable $e) {
-			// Fall through to creation.
-		}
-
-		// Try an org repo first, then the authenticated user's namespace.
-		foreach ([sprintf('/orgs/%s/repos', $owner), '/user/repos'] as $createPath) {
-			try {
-				$created = $this->broker->request(
-					credentialId: $credentialId,
-					appId: self::APP_ID,
-					method: 'POST',
-					path: $createPath,
-					headers: ['Accept' => 'application/vnd.github+json'],
-					body: (string)json_encode(['name' => $name, 'private' => $private, 'auto_init' => true])
-				);
-				if ((int)($created['status'] ?? 0) >= 200 && (int)($created['status'] ?? 0) < 300) {
-					return;
-				}
-			} catch (Throwable $e) {
-				continue;
-			}
+		if ($this->repoExists(owner: $owner, name: $name, credentialId: $credentialId) === true
+			|| $this->createRepo(owner: $owner, name: $name, credentialId: $credentialId, private: $private) === true
+		) {
+			return;
 		}
 
 		$this->logger->warning(
@@ -317,6 +331,78 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		);
 
 	}//end ensureRepo()
+
+	/**
+	 * Whether the repo answers 200; a failed lookup counts as absent.
+	 *
+	 * @param string $owner        The repo owner.
+	 * @param string $name         The repo name.
+	 * @param string $credentialId The broker credential.
+	 *
+	 * @return bool
+	 */
+	private function repoExists(string $owner, string $name, string $credentialId): bool {
+		try {
+			$existing = $this->broker->request(
+				credentialId: $credentialId,
+				appId: self::APP_ID,
+				method: 'GET',
+				path: sprintf('/repos/%s/%s', $owner, $name),
+				headers: ['Accept' => 'application/vnd.github+json']
+			);
+			return (int)($existing['status'] ?? 0) === 200;
+		} catch (Throwable $e) {
+			// Fall through to creation.
+			return false;
+		}
+	}//end repoExists()
+
+	/**
+	 * Create the repo: as an org repo first, then in the authenticated user's namespace.
+	 *
+	 * @param string $owner        The repo owner.
+	 * @param string $name         The repo name.
+	 * @param string $credentialId The broker credential.
+	 * @param bool   $private      Whether the repo is private.
+	 *
+	 * @return bool Whether one of the create calls answered 2xx.
+	 */
+	private function createRepo(string $owner, string $name, string $credentialId, bool $private): bool {
+		$body = (string)json_encode(['name' => $name, 'private' => $private, 'auto_init' => true]);
+		foreach ([sprintf('/orgs/%s/repos', $owner), '/user/repos'] as $createPath) {
+			if ($this->tryCreateRepo(createPath: $createPath, body: $body, credentialId: $credentialId) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end createRepo()
+
+	/**
+	 * Try one repo-create endpoint; true on a 2xx, false on any other answer or failure.
+	 *
+	 * @param string $createPath   The create endpoint path.
+	 * @param string $body         The JSON create body.
+	 * @param string $credentialId The broker credential.
+	 *
+	 * @return bool
+	 */
+	private function tryCreateRepo(string $createPath, string $body, string $credentialId): bool {
+		try {
+			$created = $this->broker->request(
+				credentialId: $credentialId,
+				appId: self::APP_ID,
+				method: 'POST',
+				path: $createPath,
+				headers: ['Accept' => 'application/vnd.github+json'],
+				body: $body
+			);
+			$status = (int)($created['status'] ?? 0);
+			return $status >= 200 && $status < 300;
+		} catch (Throwable $e) {
+			return false;
+		}
+	}//end tryCreateRepo()
 
 	/**
 	 * Set a repository's discovery topics (best-effort).
@@ -376,55 +462,99 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		$path = '/search/repositories?q=' . rawurlencode('topic:' . $topic) . '&sort=updated&per_page=50';
 
 		try {
-			if ($credentialId !== null && $credentialId !== '') {
-				$result = $this->broker->request(
-					credentialId: $credentialId,
-					appId: self::APP_ID,
-					method: 'GET',
-					path: $path,
-					headers: ['Accept' => 'application/vnd.github+json']
-				);
-				$body = (string)($result['body'] ?? '');
-			} else {
-				$response = $this->clientService->newClient()->get(
-					self::GITHUB_API . $path,
-					['headers' => ['Accept' => 'application/vnd.github+json'], 'http_errors' => false]
-				);
-				$body = (string)$response->getBody();
-			}
+			$body = $this->githubGet(path: $path, credentialId: $credentialId);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FederatedConfigService] discovery failed for topic ' . $topic . ': ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 			return [];
-		}//end try
-
-		$decoded = json_decode($body, true);
-		$items = [];
-		if (is_array($decoded) === true && isset($decoded['items']) === true && is_array($decoded['items']) === true) {
-			$items = $decoded['items'];
 		}
 
+		return $this->repoCards(body: $body);
+	}//end discover()
+
+	/**
+	 * The discovery cards of a repository-search response body; non-array items are skipped.
+	 *
+	 * @param string $body The response body.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function repoCards(string $body): array {
 		$cards = [];
-		foreach ($items as $item) {
+		foreach ($this->searchItems(body: $body) as $item) {
 			if (is_array($item) === false) {
 				continue;
 			}
 
-			$cards[] = [
-				'repo' => (string)($item['full_name'] ?? ''),
-				'name' => (string)($item['name'] ?? ''),
-				'description' => (string)($item['description'] ?? ''),
-				'url' => (string)($item['html_url'] ?? ''),
-				'stars' => (int)($item['stargazers_count'] ?? 0),
-				'updated' => (string)($item['updated_at'] ?? ''),
-				'topics' => array_values(array_filter((array)($item['topics'] ?? []), 'is_string')),
-			];
-		}//end foreach
+			$cards[] = $this->repoCard(item: $item);
+		}
 
 		return $cards;
-	}//end discover()
+	}//end repoCards()
+
+	/**
+	 * GET a GitHub API path: through the broker with a credential, anonymously otherwise.
+	 *
+	 * @param string      $path         The API path (with query string).
+	 * @param string|null $credentialId The broker credential, or null/'' for anonymous.
+	 *
+	 * @return string The response body.
+	 */
+	private function githubGet(string $path, ?string $credentialId): string {
+		if ($credentialId !== null && $credentialId !== '') {
+			$result = $this->broker->request(
+				credentialId: $credentialId,
+				appId: self::APP_ID,
+				method: 'GET',
+				path: $path,
+				headers: ['Accept' => 'application/vnd.github+json']
+			);
+			return (string)($result['body'] ?? '');
+		}
+
+		$response = $this->clientService->newClient()->get(
+			self::GITHUB_API . $path,
+			['headers' => ['Accept' => 'application/vnd.github+json'], 'http_errors' => false]
+		);
+		return (string)$response->getBody();
+	}//end githubGet()
+
+	/**
+	 * The `items` list of a repository-search response body, or [].
+	 *
+	 * @param string $body The response body.
+	 *
+	 * @return array<mixed>
+	 */
+	private function searchItems(string $body): array {
+		$decoded = json_decode($body, true);
+		if (is_array($decoded) === true && isset($decoded['items']) === true && is_array($decoded['items']) === true) {
+			return $decoded['items'];
+		}
+
+		return [];
+	}//end searchItems()
+
+	/**
+	 * One discovery card from a repository-search item.
+	 *
+	 * @param array<string, mixed> $item The search item.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function repoCard(array $item): array {
+		return [
+			'repo' => (string)($item['full_name'] ?? ''),
+			'name' => (string)($item['name'] ?? ''),
+			'description' => (string)($item['description'] ?? ''),
+			'url' => (string)($item['html_url'] ?? ''),
+			'stars' => (int)($item['stargazers_count'] ?? 0),
+			'updated' => (string)($item['updated_at'] ?? ''),
+			'topics' => array_values(array_filter((array)($item['topics'] ?? []), 'is_string')),
+		];
+	}//end repoCard()
 
 	/**
 	 * Fetch a published bundle file from a GitHub repository.
@@ -454,26 +584,26 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		$apiPath = sprintf('/repos/%s/contents/%s', $repo, $path);
 
 		try {
-			if ($credentialId !== null && $credentialId !== '') {
-				$result = $this->broker->request(
-					credentialId: $credentialId,
-					appId: self::APP_ID,
-					method: 'GET',
-					path: $apiPath,
-					headers: ['Accept' => 'application/vnd.github+json']
-				);
-				$body = (string)($result['body'] ?? '');
-			} else {
-				$response = $this->clientService->newClient()->get(
-					self::GITHUB_API . $apiPath,
-					['headers' => ['Accept' => 'application/vnd.github+json'], 'http_errors' => false]
-				);
-				$body = (string)$response->getBody();
-			}
+			$body = $this->githubGet(path: $apiPath, credentialId: $credentialId);
 		} catch (Throwable $e) {
 			throw new RuntimeException(sprintf('Could not fetch %s from %s: %s', $path, $repo, $e->getMessage()));
-		}//end try
+		}
 
+		return $this->decodeBundle(body: $body, repo: $repo, path: $path);
+	}//end fetchBundle()
+
+	/**
+	 * Decode a contents-API response body into the bundle it carries.
+	 *
+	 * @param string $body The response body.
+	 * @param string $repo The repo (for messages).
+	 * @param string $path The file path (for messages).
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws RuntimeException When there is no content, or it is not base64 JSON.
+	 */
+	private function decodeBundle(string $body, string $repo, string $path): array {
 		$meta = json_decode($body, true);
 		if (is_array($meta) === false || isset($meta['content']) === false) {
 			throw new RuntimeException(sprintf('No bundle at %s in %s.', $path, $repo));
@@ -490,7 +620,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		}
 
 		return $bundle;
-	}//end fetchBundle()
+	}//end decodeBundle()
 
 	/**
 	 * This instance's signing public key (base64) for others to trust.

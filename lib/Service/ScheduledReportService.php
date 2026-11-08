@@ -43,6 +43,9 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
@@ -274,35 +277,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 
 		// Merge with existing values so a partial update doesn't blow away
 		// fields the caller didn't send.
-		$schemaId = $report->getSchemaId();
-		if (array_key_exists('schemaId', $data) === true) {
-			$schemaId = $data['schemaId'];
-		}
-
-		$scheduleDayOfWeek = $report->getScheduleDayOfWeek();
-		if (array_key_exists('scheduleDayOfWeek', $data) === true) {
-			$scheduleDayOfWeek = $data['scheduleDayOfWeek'];
-		}
-
-		$scheduleDayOfMonth = $report->getScheduleDayOfMonth();
-		if (array_key_exists('scheduleDayOfMonth', $data) === true) {
-			$scheduleDayOfMonth = $data['scheduleDayOfMonth'];
-		}
-
-		$merged = [
-			'name' => ($data['name'] ?? $report->getName()),
-			'registerId' => ($data['registerId'] ?? $report->getRegisterId()),
-			'schemaId' => $schemaId,
-			'filters' => ($data['filters'] ?? $report->getFiltersArray()),
-			'format' => ($data['format'] ?? $report->getFormat()),
-			'scheduleType' => ($data['scheduleType'] ?? $report->getScheduleType()),
-			'scheduleHour' => ($data['scheduleHour'] ?? $report->getScheduleHour()),
-			'scheduleDayOfWeek' => $scheduleDayOfWeek,
-			'scheduleDayOfMonth' => $scheduleDayOfMonth,
-			'deliveryFolder' => ($data['deliveryFolder'] ?? $report->getDeliveryFolder()),
-			'deliveryMode' => ($data['deliveryMode'] ?? ($report->getDeliveryMode() ?? 'files')),
-			'recipients' => ($data['recipients'] ?? $report->getRecipientsArray()),
-		];
+		$merged = $this->mergedPayload(report: $report, data: $data);
 		$this->validate(data: $merged);
 
 		$report->setName((string)$merged['name']);
@@ -331,6 +306,49 @@ class ScheduledReportService implements ScheduledReportsInterface {
 
 		return $this->mapper->update(entity: $report);
 	}//end update()
+
+	/**
+	 * The stored report's fields overlaid with the ones the update sends.
+	 *
+	 * The schema and the two schedule days take an explicit null from the update;
+	 * every other field keeps its stored value when the update sends null or nothing.
+	 *
+	 * @param ScheduledReport     $report The stored report.
+	 * @param array<string,mixed> $data   The update payload.
+	 *
+	 * @return array<string,mixed> The merged payload, in the shape create() validates.
+	 */
+	private function mergedPayload(ScheduledReport $report, array $data): array {
+		$schemaId = $report->getSchemaId();
+		if (array_key_exists('schemaId', $data) === true) {
+			$schemaId = $data['schemaId'];
+		}
+
+		$scheduleDayOfWeek = $report->getScheduleDayOfWeek();
+		if (array_key_exists('scheduleDayOfWeek', $data) === true) {
+			$scheduleDayOfWeek = $data['scheduleDayOfWeek'];
+		}
+
+		$scheduleDayOfMonth = $report->getScheduleDayOfMonth();
+		if (array_key_exists('scheduleDayOfMonth', $data) === true) {
+			$scheduleDayOfMonth = $data['scheduleDayOfMonth'];
+		}
+
+		return [
+			'name' => ($data['name'] ?? $report->getName()),
+			'registerId' => ($data['registerId'] ?? $report->getRegisterId()),
+			'schemaId' => $schemaId,
+			'filters' => ($data['filters'] ?? $report->getFiltersArray()),
+			'format' => ($data['format'] ?? $report->getFormat()),
+			'scheduleType' => ($data['scheduleType'] ?? $report->getScheduleType()),
+			'scheduleHour' => ($data['scheduleHour'] ?? $report->getScheduleHour()),
+			'scheduleDayOfWeek' => $scheduleDayOfWeek,
+			'scheduleDayOfMonth' => $scheduleDayOfMonth,
+			'deliveryFolder' => ($data['deliveryFolder'] ?? $report->getDeliveryFolder()),
+			'deliveryMode' => ($data['deliveryMode'] ?? ($report->getDeliveryMode() ?? 'files')),
+			'recipients' => ($data['recipients'] ?? $report->getRecipientsArray()),
+		];
+	}//end mergedPayload()
 
 	/**
 	 * Delete a scheduled report. Only the owner or an admin may delete.
@@ -388,11 +406,33 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When any field is invalid.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function validate(array $data): void {
+		$this->assertRequiredFields(data: $data);
+		$this->assertRegisterAccessible(registerId: $data['registerId']);
+		$schemaId = $this->accessibleSchemaId(data: $data);
+		$this->assertFormat(format: ($data['format'] ?? null), schemaId: $schemaId);
+
+		$scheduleType = ($data['scheduleType'] ?? null);
+		$this->assertScheduleType(scheduleType: $scheduleType);
+		$this->assertScheduleHour(data: $data);
+		$this->assertWeeklyDay(scheduleType: $scheduleType, data: $data);
+		$this->assertMonthlyDay(scheduleType: $scheduleType, data: $data);
+
+		$this->assertDeliveryMode(deliveryMode: ($data['deliveryMode'] ?? 'files'));
+		$this->validateRecipients(recipients: ($data['recipients'] ?? []));
+	}//end validate()
+
+	/**
+	 * Refuse a payload without a name or a register.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When either is empty.
+	 */
+	private function assertRequiredFields(array $data): void {
 		if (empty($data['name']) === true) {
 			throw new InvalidArgumentException('A name is required.');
 		}
@@ -400,13 +440,35 @@ class ScheduledReportService implements ScheduledReportsInterface {
 		if (empty($data['registerId']) === true) {
 			throw new InvalidArgumentException('A registerId is required.');
 		}
+	}//end assertRequiredFields()
 
+	/**
+	 * Refuse a register the caller cannot read.
+	 *
+	 * @param mixed $registerId The register id.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the register cannot be found with multi-tenancy on.
+	 */
+	private function assertRegisterAccessible(mixed $registerId): void {
 		try {
-			$this->registerMapper->find($data['registerId'], _multitenancy: true);
+			$this->registerMapper->find($registerId, _multitenancy: true);
 		} catch (\Throwable $e) {
 			throw new InvalidArgumentException('Register not found or not accessible.');
 		}
+	}//end assertRegisterAccessible()
 
+	/**
+	 * The payload's schema id, refused when given and the caller cannot read it.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return int|null The schema id, or null when none is given.
+	 *
+	 * @throws InvalidArgumentException When the schema cannot be found with multi-tenancy on.
+	 */
+	private function accessibleSchemaId(array $data): ?int {
 		$schemaId = $this->coerceNullableInt(value: ($data['schemaId'] ?? null));
 		if ($schemaId !== null) {
 			try {
@@ -416,7 +478,20 @@ class ScheduledReportService implements ScheduledReportsInterface {
 			}
 		}
 
-		$format = ($data['format'] ?? null);
+		return $schemaId;
+	}//end accessibleSchemaId()
+
+	/**
+	 * Refuse an unknown format, and CSV without a schema.
+	 *
+	 * @param mixed    $format   The format.
+	 * @param int|null $schemaId The schema id.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the format is not allowed here.
+	 */
+	private function assertFormat(mixed $format, ?int $schemaId): void {
 		if (in_array($format, self::ALLOWED_FORMATS, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf('format must be one of: %s', implode(', ', self::ALLOWED_FORMATS))
@@ -426,42 +501,99 @@ class ScheduledReportService implements ScheduledReportsInterface {
 		if ($format === 'csv' && $schemaId === null) {
 			throw new InvalidArgumentException('CSV export requires a specific schemaId.');
 		}
+	}//end assertFormat()
 
-		$scheduleType = ($data['scheduleType'] ?? null);
+	/**
+	 * Refuse an unknown schedule type.
+	 *
+	 * @param mixed $scheduleType The schedule type.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not allowed.
+	 */
+	private function assertScheduleType(mixed $scheduleType): void {
 		if (in_array($scheduleType, self::ALLOWED_SCHEDULE_TYPES, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf('scheduleType must be one of: %s', implode(', ', self::ALLOWED_SCHEDULE_TYPES))
 			);
 		}
+	}//end assertScheduleType()
 
+	/**
+	 * Refuse an hour outside 0-23.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the hour is out of range.
+	 */
+	private function assertScheduleHour(array $data): void {
 		$scheduleHour = (int)($data['scheduleHour'] ?? 0);
 		if ($scheduleHour < 0 || $scheduleHour > 23) {
 			throw new InvalidArgumentException('scheduleHour must be between 0 and 23.');
 		}
+	}//end assertScheduleHour()
 
-		if ($scheduleType === 'weekly') {
-			$dayOfWeek = $this->coerceNullableInt(value: ($data['scheduleDayOfWeek'] ?? null));
-			if ($dayOfWeek === null || $dayOfWeek < 0 || $dayOfWeek > 6) {
-				throw new InvalidArgumentException('scheduleDayOfWeek (0-6) is required when scheduleType is weekly.');
-			}
+	/**
+	 * Refuse a weekly schedule without a day of the week in 0-6.
+	 *
+	 * @param mixed               $scheduleType The schedule type.
+	 * @param array<string,mixed> $data         The payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the day is missing or out of range.
+	 */
+	private function assertWeeklyDay(mixed $scheduleType, array $data): void {
+		if ($scheduleType !== 'weekly') {
+			return;
 		}
 
-		if ($scheduleType === 'monthly') {
-			$dayOfMonth = $this->coerceNullableInt(value: ($data['scheduleDayOfMonth'] ?? null));
-			if ($dayOfMonth === null || $dayOfMonth < 1 || $dayOfMonth > 28) {
-				throw new InvalidArgumentException('scheduleDayOfMonth (1-28) is required when scheduleType is monthly.');
-			}
+		$dayOfWeek = $this->coerceNullableInt(value: ($data['scheduleDayOfWeek'] ?? null));
+		if ($dayOfWeek === null || $dayOfWeek < 0 || $dayOfWeek > 6) {
+			throw new InvalidArgumentException('scheduleDayOfWeek (0-6) is required when scheduleType is weekly.');
+		}
+	}//end assertWeeklyDay()
+
+	/**
+	 * Refuse a monthly schedule without a day of the month in 1-28.
+	 *
+	 * @param mixed               $scheduleType The schedule type.
+	 * @param array<string,mixed> $data         The payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the day is missing or out of range.
+	 */
+	private function assertMonthlyDay(mixed $scheduleType, array $data): void {
+		if ($scheduleType !== 'monthly') {
+			return;
 		}
 
-		$deliveryMode = ($data['deliveryMode'] ?? 'files');
+		$dayOfMonth = $this->coerceNullableInt(value: ($data['scheduleDayOfMonth'] ?? null));
+		if ($dayOfMonth === null || $dayOfMonth < 1 || $dayOfMonth > 28) {
+			throw new InvalidArgumentException('scheduleDayOfMonth (1-28) is required when scheduleType is monthly.');
+		}
+	}//end assertMonthlyDay()
+
+	/**
+	 * Refuse an unknown delivery mode.
+	 *
+	 * @param mixed $deliveryMode The delivery mode.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not allowed.
+	 */
+	private function assertDeliveryMode(mixed $deliveryMode): void {
 		if (in_array($deliveryMode, self::ALLOWED_DELIVERY_MODES, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf('deliveryMode must be one of: %s', implode(', ', self::ALLOWED_DELIVERY_MODES))
 			);
 		}
-
-		$this->validateRecipients(recipients: ($data['recipients'] ?? []));
-	}//end validate()
+	}//end assertDeliveryMode()
 
 	/**
 	 * Validate a recipients payload: must be an array of strings, each a
@@ -487,18 +619,31 @@ class ScheduledReportService implements ScheduledReportsInterface {
 		}
 
 		foreach ($recipients as $email) {
-			if (is_string($email) === false) {
-				throw new InvalidArgumentException(sprintf('"%s" is not a valid email address.', gettype($email)));
-			}
-
-			// Trimmed the same way normalizeRecipients() will store it —
-			// incidental whitespace shouldn't fail validation only to have
-			// the trimmed form pass moments later.
-			if (filter_var(trim($email), FILTER_VALIDATE_EMAIL) === false) {
-				throw new InvalidArgumentException(sprintf('"%s" is not a valid email address.', $email));
-			}
+			$this->assertRecipientAddress(email: $email);
 		}
 	}//end validateRecipients()
+
+	/**
+	 * Refuse a recipient that is not a string holding a valid email address.
+	 *
+	 * @param mixed $email One recipient.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not a valid email address.
+	 */
+	private function assertRecipientAddress(mixed $email): void {
+		if (is_string($email) === false) {
+			throw new InvalidArgumentException(sprintf('"%s" is not a valid email address.', gettype($email)));
+		}
+
+		// Trimmed the same way normalizeRecipients() will store it —
+		// incidental whitespace shouldn't fail validation only to have
+		// the trimmed form pass moments later.
+		if (filter_var(trim($email), FILTER_VALIDATE_EMAIL) === false) {
+			throw new InvalidArgumentException(sprintf('"%s" is not a valid email address.', $email));
+		}
+	}//end assertRecipientAddress()
 
 	/**
 	 * Normalize an already-validated recipients payload to a de-duplicated
@@ -513,8 +658,19 @@ class ScheduledReportService implements ScheduledReportsInterface {
 			return [];
 		}
 
+		return $this->uniqueTrimmedStrings(values: $recipients);
+	}//end normalizeRecipients()
+
+	/**
+	 * The string values, trimmed, without empties and duplicates, in order.
+	 *
+	 * @param array $values The values.
+	 *
+	 * @return string[]
+	 */
+	private function uniqueTrimmedStrings(array $values): array {
 		$normalized = [];
-		foreach ($recipients as $email) {
+		foreach ($values as $email) {
 			if (is_string($email) === false) {
 				continue;
 			}
@@ -526,7 +682,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 		}
 
 		return $normalized;
-	}//end normalizeRecipients()
+	}//end uniqueTrimmedStrings()
 
 	/**
 	 * Coerce a value to a nullable int. Empty string and null both become null.
@@ -993,16 +1149,22 @@ class ScheduledReportService implements ScheduledReportsInterface {
 
 		try {
 			$this->exportRuns->record(
-				source: 'scheduled-report',
-				actor: $run->owner->getUID(),
-				format: (string)($report->getFormat() ?? 'csv'),
-				rowCount: (int)($run->export['rowCount'] ?? 0),
-				profile: (string)($report->getName() ?? ('report-' . (string)$report->getId())),
-				filename: $run->filename,
-				registerName: $this->nullableString(value: $report->getRegisterId()),
-				schemaName: $this->nullableString(value: $report->getSchemaId()),
-				fileId: $fileId,
-				filePath: $filePath,
+				origin: new ExportRunOrigin(
+					source: 'scheduled-report',
+					actor: $run->owner->getUID(),
+					profile: (string)($report->getName() ?? ('report-' . (string)$report->getId()))
+				),
+				content: new ExportRunContent(
+					format: (string)($report->getFormat() ?? 'csv'),
+					rowCount: (int)($run->export['rowCount'] ?? 0),
+					registerName: $this->nullableString(value: $report->getRegisterId()),
+					schemaName: $this->nullableString(value: $report->getSchemaId())
+				),
+				file: new ExportRunFile(
+					filename: $run->filename,
+					fileId: $fileId,
+					filePath: $filePath
+				),
 				retentionSeconds: $this->retentionFor(report: $report)
 			);
 		} catch (\Throwable $e) {

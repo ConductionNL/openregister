@@ -37,6 +37,8 @@ use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OperationsConsoleControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OperationsMaintenanceControllerFactory;
 
 final class OperationsConsoleControllerTest extends TestCase {
 
@@ -123,7 +125,7 @@ final class OperationsConsoleControllerTest extends TestCase {
 			$session->method('getUser')->willReturn($user);
 		}
 
-		return new OperationsConsoleController(
+		return OperationsConsoleControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->console,
@@ -147,7 +149,7 @@ final class OperationsConsoleControllerTest extends TestCase {
 			$session->method('getUser')->willReturn($user);
 		}
 
-		return new OperationsMaintenanceController(
+		return OperationsMaintenanceControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->maintenance,

@@ -183,14 +183,9 @@ class RuleRunSummaryMapper extends QBMapper implements RuleRunSummaryMapperInter
 		string $schemaSlug,
 		string $verdict,
 		DateTime $moment,
-		?string $error = null,
+		string|null $error = null,
 	): RuleRunSummary {
-		$summary = $this->findByRule(ruleId: $ruleId);
-		if ($summary === null) {
-			$summary = new RuleRunSummary();
-			$summary->setRuleId($ruleId);
-			$summary->setSchemaSlug($schemaSlug);
-		}
+		$summary = $this->findOrStart(ruleId: $ruleId, schemaSlug: $schemaSlug);
 
 		$isError = ($error !== null && $error !== '');
 		if ($this->worthWriting(summary: $summary, verdict: $verdict, moment: $moment, isError: $isError) === false) {
@@ -206,13 +201,43 @@ class RuleRunSummaryMapper extends QBMapper implements RuleRunSummaryMapperInter
 			$summary->setLastErrorAt($moment);
 		}
 
+		return $this->persist(summary: $summary);
+
+	}//end record()
+
+	/**
+	 * The stored summary of a rule, or a new unsaved one for its first run.
+	 *
+	 * @param string $ruleId     The rule id.
+	 * @param string $schemaSlug The schema slug a new summary starts with.
+	 *
+	 * @return RuleRunSummary
+	 */
+	private function findOrStart(string $ruleId, string $schemaSlug): RuleRunSummary {
+		$summary = $this->findByRule(ruleId: $ruleId);
+		if ($summary === null) {
+			$summary = new RuleRunSummary();
+			$summary->setRuleId($ruleId);
+			$summary->setSchemaSlug($schemaSlug);
+		}
+
+		return $summary;
+	}//end findOrStart()
+
+	/**
+	 * Insert a summary that has no id yet, update one that has.
+	 *
+	 * @param RuleRunSummary $summary The summary.
+	 *
+	 * @return RuleRunSummary The stored summary.
+	 */
+	private function persist(RuleRunSummary $summary): RuleRunSummary {
 		if ($summary->getId() === null) {
 			return $this->insert(entity: $summary);
 		}
 
 		return $this->update(entity: $summary);
-
-	}//end record()
+	}//end persist()
 
 	/**
 	 * Whether this evaluation changes anything an administrator reads.

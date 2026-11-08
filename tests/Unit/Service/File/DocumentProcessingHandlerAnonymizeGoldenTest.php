@@ -34,6 +34,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform;
+use OCA\OpenRegister\Files\Service\File\DocumentRedactionServices;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -202,12 +204,16 @@ class DocumentProcessingHandlerAnonymizeGoldenTest extends TestCase {
 		);
 
 		$handler = new DocumentProcessingHandler(
-			rootFolder: $rootFolder,
-			userSession: $this->createMock(IUserSession::class),
-			logger: $logger,
-			entityRelationMapper: $mapper,
-			sanitizer: $sanitizer,
-			l10n: $l10n
+			platform: new DocumentProcessingPlatform(
+				rootFolder: $rootFolder,
+				userSession: $this->createMock(IUserSession::class),
+				l10n: $l10n
+			),
+			redaction: new DocumentRedactionServices(
+				entityRelationMapper: $mapper,
+				sanitizer: $sanitizer
+			),
+			logger: $logger
 		);
 
 		$written = [];

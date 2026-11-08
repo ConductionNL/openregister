@@ -35,6 +35,7 @@ use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\SearchReferenceResolver;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\View\ViewObjectQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -45,6 +46,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use ReflectionNamedType;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
 
 class ViewAlertCountsTheViewQueryTest extends TestCase {
 
@@ -105,7 +108,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 			}
 		);
 
-		$job = new ViewAlertSweepJob($this->createMock(ITimeFactory::class), $views, $objects, $users, $dispatcher, new NullLogger());
+		$job = new ViewAlertSweepJob($this->createMock(ITimeFactory::class), new ViewAlertSweepSources($views, $objects, new ViewObjectQuery()), new ViewAlertSweepPlatform($users, $dispatcher, new NullLogger()));
 		$run = new \ReflectionMethod(ViewAlertSweepJob::class, 'run');
 		$run->setAccessible(true);
 		$run->invoke($job, null);

@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\TimeTrackerLink;
-use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
+use OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IConfig;
@@ -79,25 +79,45 @@ class TimeProvider extends AbstractIntegrationProvider {
 	private const MARKER_PREFIX = '[or:';
 
 	/**
+	 * NC DB connection (well-known idiom; used for legacy marker fallback queries).
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection (well-known idiom; used for legacy marker fallback queries).
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param TimeTrackerLinkMapper $linkMapper Time-tracker-link mapper (Tier-2 link table).
-	 * @param IConfig $config NC config (reads the time-tracker.backend admin override).
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafProviderPlatform           $platform   The DB connection, app manager and localisation.
+	 * @param TimeTrackerLinkMapperInterface $linkMapper Time-tracker-link mapper (Tier-2 link table).
+	 * @param IConfig                        $config     NC config (reads the time-tracker.backend admin override).
+	 * @param LoggerInterface                $logger     Logger for the degraded marker-scan path.
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $db is a well-known PHP idiom for a database connection parameter.
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private TimeTrackerLinkMapper $linkMapper,
+		LeafProviderPlatform $platform,
+		private TimeTrackerLinkMapperInterface $linkMapper,
 		private IConfig $config,
 		private LoggerInterface $logger,
 	) {
+		$this->db = $platform->db;
+		$this->appManager = $platform->appManager;
+		$this->l10n = $platform->l10n;
 	}//end __construct()
 
 	/**
@@ -147,9 +167,9 @@ class TimeProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return TimeTrackerLinkMapper
+	 * @return TimeTrackerLinkMapperInterface
 	 */
-	protected function linkMapper(): TimeTrackerLinkMapper {
+	protected function linkMapper(): TimeTrackerLinkMapperInterface {
 		return $this->linkMapper;
 	}//end linkMapper()
 

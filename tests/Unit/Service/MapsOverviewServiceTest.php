@@ -40,6 +40,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Search\Service\MapMarkerSource;
 use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
@@ -88,17 +89,18 @@ class MapsOverviewServiceTest extends TestCase {
 		$registry = $this->buildRegistry();
 
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $registry,
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$registry
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
 
 		$result = $service->registerOverview(
 			overviewKey: 'cases-on-map',
-			register: 'zaakregister',
-			schema: 'zaak',
+			source: new MapMarkerSource(register: 'zaakregister', schema: 'zaak'),
 			title: 'Cases on map'
 		);
 
@@ -124,9 +126,11 @@ class MapsOverviewServiceTest extends TestCase {
 	 */
 	public function testRegisterHonoursBaseLayerOverride(): void {
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -134,8 +138,7 @@ class MapsOverviewServiceTest extends TestCase {
 		$custom = ['type' => 'xyz', 'provider' => 'osm', 'url' => 'https://tile.osm.org/{z}/{x}/{y}.png'];
 		$result = $service->registerOverview(
 			overviewKey: 'osm-map',
-			register: '1',
-			schema: '2',
+			source: new MapMarkerSource(register: '1', schema: '2'),
 			baseLayer: $custom
 		);
 
@@ -150,15 +153,17 @@ class MapsOverviewServiceTest extends TestCase {
 	 */
 	public function testRegisterRejectsEmptyKey(): void {
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->registerOverview(overviewKey: '', register: '1', schema: '2');
+		$service->registerOverview(overviewKey: '', source: new MapMarkerSource(register: '1', schema: '2'));
 	}//end testRegisterRejectsEmptyKey()
 
 	/**
@@ -168,15 +173,17 @@ class MapsOverviewServiceTest extends TestCase {
 	 */
 	public function testRegisterRejectsMissingScope(): void {
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->registerOverview(overviewKey: 'k', register: '', schema: '2');
+		$service->registerOverview(overviewKey: 'k', source: new MapMarkerSource(register: '', schema: '2'));
 	}//end testRegisterRejectsMissingScope()
 
 	/**
@@ -186,9 +193,11 @@ class MapsOverviewServiceTest extends TestCase {
 	 */
 	public function testEnsureCanRegisterRejectsAnonymous(): void {
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession(null),
 			groupManager: $this->buildGroupManager(false),
 		);
@@ -231,14 +240,16 @@ class MapsOverviewServiceTest extends TestCase {
 			->willReturn($rows);
 
 		$service = new MapsOverviewService(
-			objectService: $objectService,
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$objectService,
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
 
-		$points = $service->queryPoints(register: 'zaakregister', schema: 'zaak');
+		$points = $service->queryPoints(source: new MapMarkerSource(register: 'zaakregister', schema: 'zaak'));
 
 		$this->assertCount(2, $points, 'geometry-less object must be skipped');
 
@@ -291,14 +302,16 @@ class MapsOverviewServiceTest extends TestCase {
 			->willReturn([$point, $geometryless]);
 
 		$service = new MapsOverviewService(
-			objectService: $objectService,
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$objectService,
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
 
-		$points = $service->queryPoints(register: 'zaakregister', schema: 'zaak');
+		$points = $service->queryPoints(source: new MapMarkerSource(register: 'zaakregister', schema: 'zaak'));
 
 		$this->assertCount(1, $points, 'the ObjectEntity carrying geometry must produce a marker');
 		$this->assertSame('obj-1', $points[0]['id']);
@@ -327,14 +340,16 @@ class MapsOverviewServiceTest extends TestCase {
 
 		// Anonymous caller — must scope with _rbac: true.
 		$service = new MapsOverviewService(
-			objectService: $objectService,
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$objectService,
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession(null),
 			groupManager: $this->buildGroupManager(false),
 		);
 
-		$service->queryPoints(register: 'zaakregister', schema: 'zaak');
+		$service->queryPoints(source: new MapMarkerSource(register: 'zaakregister', schema: 'zaak'));
 
 		$this->assertNotNull($captured);
 		$this->assertTrue($captured['rbac'], 'anonymous read MUST be RBAC-scoped (fail-closed)');
@@ -362,14 +377,16 @@ class MapsOverviewServiceTest extends TestCase {
 		);
 
 		$service = new MapsOverviewService(
-			objectService: $objectService,
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$objectService,
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('root'),
 			groupManager: $this->buildGroupManager(true),
 		);
 
-		$service->queryPoints(register: '1', schema: '2');
+		$service->queryPoints(source: new MapMarkerSource(register: '1', schema: '2'));
 
 		$this->assertNotNull($captured);
 		$this->assertFalse($captured['rbac'], 'admin read bypasses RBAC');
@@ -393,17 +410,21 @@ class MapsOverviewServiceTest extends TestCase {
 		);
 
 		$service = new MapsOverviewService(
-			objectService: $objectService,
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$objectService,
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
 
 		$service->queryPoints(
-			register: 'real-register',
-			schema: 'real-schema',
-			filters: ['register' => 'spoofed', 'schema' => 'spoofed', 'status' => 'open']
+			source: new MapMarkerSource(
+				register: 'real-register',
+				schema: 'real-schema',
+				filters: ['register' => 'spoofed', 'schema' => 'spoofed', 'status' => 'open']
+			)
 		);
 
 		$this->assertSame('real-register', $captured['filters']['register']);
@@ -419,14 +440,16 @@ class MapsOverviewServiceTest extends TestCase {
 	 */
 	public function testQueryPointsRejectsMissingScope(): void {
 		$service = new MapsOverviewService(
-			objectService: $this->createMock(ObjectService::class),
-			geoBuilder: new GeoFeatureCollectionBuilder(),
-			registry: $this->buildRegistry(),
+			sources: new \OCA\OpenRegister\Search\Service\MapsOverviewSources(
+				$this->createMock(ObjectService::class),
+				new GeoFeatureCollectionBuilder(),
+				$this->buildRegistry()
+			),
 			userSession: $this->buildUserSession('alice'),
 			groupManager: $this->buildGroupManager(false),
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->queryPoints(register: '', schema: 'zaak');
+		$service->queryPoints(source: new MapMarkerSource(register: '', schema: 'zaak'));
 	}//end testQueryPointsRejectsMissingScope()
 }//end class

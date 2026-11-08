@@ -35,28 +35,12 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * Drops items that do not match.
  */
-class FilterNode implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
-
+class FilterNode extends LogicNodeBase implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * The step type.
 	 *
@@ -92,17 +76,6 @@ class FilterNode implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys,
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/filter.svg');
 	}//end getIcon()
-
-	/**
-	 * Filtering grants no privilege, so both scopes get it.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a filter step.
@@ -145,24 +118,7 @@ class FilterNode implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys,
 		// guard and then kept all eleven items. The run was green end to end and
 		// the sweep flagged every object instead of the nine it meant to.
 		if (is_array($condition) === false) {
-			if (is_string($condition) === true && str_contains($condition, '{{') === true) {
-				throw new UnexpectedValueException(
-					$this->l10n->t(
-						'A filter condition is an expression, not a template. Write {example} rather than "{given}".',
-						[
-							'example' => '{"==": [{"var": "json.status"}, "synced"]}',
-							'given' => $condition,
-						]
-					)
-				);
-			}
-
-			throw new UnexpectedValueException(
-				$this->l10n->t(
-					'A filter condition must be an expression, not a fixed value: "{given}" answers the same for every item.',
-					['given' => var_export($condition, true)]
-				)
-			);
+			$this->refuseConstant(condition: $condition);
 		}
 
 		if (FlowExpression::isValid(logic: $condition) === false) {
@@ -170,6 +126,37 @@ class FilterNode implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys,
 		}
 
 	}//end validateConfig()
+
+	/**
+	 * Refuse a condition that is not an expression: a template string gets
+	 * the template hint, anything else is named as a fixed value.
+	 *
+	 * @param mixed $condition The configured condition, not an array.
+	 *
+	 * @return never
+	 *
+	 * @throws UnexpectedValueException Always.
+	 */
+	private function refuseConstant(mixed $condition): never {
+		if (is_string($condition) === true && str_contains($condition, '{{') === true) {
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'A filter condition is an expression, not a template. Write {example} rather than "{given}".',
+					[
+						'example' => '{"==": [{"var": "json.status"}, "synced"]}',
+						'given' => $condition,
+					]
+				)
+			);
+		}
+
+		throw new UnexpectedValueException(
+			$this->l10n->t(
+				'A filter condition must be an expression, not a fixed value: "{given}" answers the same for every item.',
+				['given' => var_export($condition, true)]
+			)
+		);
+	}//end refuseConstant()
 
 	/**
 	 * Keep the matching items.
@@ -222,16 +209,4 @@ class FilterNode implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys,
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

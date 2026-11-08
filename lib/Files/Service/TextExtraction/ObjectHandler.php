@@ -23,13 +23,13 @@
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
 use Exception;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -40,21 +40,41 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectHandler implements TextExtractionHandlerInterface {
 	/**
+	 * Object mapper.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objectMapper;
+
+	/**
+	 * Schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $objectMapper Object mapper.
-	 * @param ChunkMapper $chunkMapper Chunk mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
-	 * @param RegisterMapperInterface $registerMapper Register mapper.
-	 * @param LoggerInterface $logger Logger.
+	 * @param TextExtractionObjects $objects     The object, schema and register mappers.
+	 * @param ChunkMapper           $chunkMapper Chunk mapper.
+	 * @param LoggerInterface       $logger      Logger.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
+		TextExtractionObjects $objects,
 		private readonly ChunkMapper $chunkMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectMapper   = $objects->objectEntityMapper;
+		$this->schemaMapper   = $objects->schemaMapper;
+		$this->registerMapper = $objects->registerMapper;
 	}//end __construct()
 
 	/**

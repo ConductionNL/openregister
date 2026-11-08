@@ -55,7 +55,7 @@ use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 
 /**
  * Reads notification annotations and dispatches matching ones.
@@ -158,7 +158,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @param IURLGenerator|null $urlGenerator URL generator for action-target deeplinks.
 	 * @param RegisterMapperInterface|null $registerMapper Register mapper used for the default originApp.
 	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface|null $objectService Object resolver for relation-target deeplinks (RBAC).
-	 * @param \OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface|null $deepLinkRegistry Canonical per-app deeplink resolver.
+	 * @param \OCA\OpenRegister\Service\DeepLinkResolverInterface|null $deepLinkRegistry Canonical per-app deeplink resolver.
 	 * @param IAppManager|null $appManager Resolves originApp display name (auto body).
 	 * @param NotificationDeliveryWindowService|null $deliveryWindowService Override-only quiet-hours resolver + evaluator.
 	 * @param QueuedNotificationMapper|null $queuedNotificationMapper Durable queue mapper (quiet-hours + digest schedule).
@@ -194,7 +194,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		private readonly ?IURLGenerator $urlGenerator = null,
 		private readonly ?RegisterMapperInterface $registerMapper = null,
 		private readonly ?\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService = null,
-		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface $deepLinkRegistry = null,
+		private readonly ?\OCA\OpenRegister\Service\DeepLinkResolverInterface $deepLinkRegistry = null,
 		private readonly ?IAppManager $appManager = null,
 		private readonly ?NotificationDeliveryWindowService $deliveryWindowService = null,
 		private readonly ?QueuedNotificationMapper $queuedNotificationMapper = null,
@@ -2093,7 +2093,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return false;
 		}
 
-		return \OCA\OpenRegister\Service\Task\TaskState::isRejectingOutcome(outcome: $outcome);
+		return \OCA\OpenRegister\Service\Task\TaskStateRules::isRejectingOutcome(outcome: $outcome);
 	}//end taskVerbNeedsForm()
 
 	/**
@@ -2566,7 +2566,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		$hasEntry = false;
 		foreach ($firing->recipientsSpec() as $recipient) {
-			if (is_array($recipient) === true && (string)($recipient['kind'] ?? '') === ReferencedAddressNotifier::KIND) {
+			if (is_array($recipient) === true && (string)($recipient['kind'] ?? '') === ReferencedAddressNotifierInterface::KIND) {
 				$hasEntry = true;
 				break;
 			}
@@ -2576,7 +2576,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return 0;
 		}
 
-		$outcomes = $this->serverContainer->get(ReferencedAddressNotifier::class)->notify(
+		$outcomes = $this->serverContainer->get(ReferencedAddressNotifierInterface::class)->notify(
 			object: $firing->object,
 			data: $firing->data,
 			recipientsSpec: $firing->recipientsSpec(),

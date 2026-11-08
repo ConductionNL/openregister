@@ -209,7 +209,7 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($versions, $pin): object {
-				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 
@@ -385,4 +385,33 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 
 		$this->assertSame([], $this->downstream->lastConfig);
 	}//end testANodeThatDeclaresNoKeysTakesNothingFromTheCaller()
+	/**
+	 * Golden: the log entry each direct-invoke outcome appends, key for key.
+	 *
+	 * Pinned before the hop's node id, type and start moved into FlowNodeHop.
+	 *
+	 * @return void
+	 */
+	public function testEachOutcomeAppendsItsLogEntryKeyForKey(): void {
+		$entries = [];
+		foreach (['target', 'boom', 'wait'] as $nodeId) {
+			$run    = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+			$result = $this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject(), nodeId: $nodeId);
+			$log    = (array)$result->getLog();
+			$entry  = end($log);
+			$this->assertIsInt($entry['durationMs']);
+			$this->assertGreaterThanOrEqual(0, $entry['durationMs']);
+			$entry['durationMs'] = 'ms';
+			$entries[$nodeId]    = $entry;
+		}
+
+		$this->assertSame(
+			[
+				'target' => ['transition' => 'target', 'type' => 'test.target', 'status' => 'completed', 'itemsIn' => 1, 'itemsOut' => 1, 'durationMs' => 'ms'],
+				'boom' => ['transition' => 'boom', 'type' => 'test.explode', 'status' => 'failed', 'error' => 'the node refused', 'durationMs' => 'ms'],
+				'wait' => ['transition' => 'wait', 'type' => 'test.suspend', 'status' => 'failed', 'reason' => 'suspended-unsupported', 'durationMs' => 'ms'],
+			],
+			$entries
+		);
+	}//end testEachOutcomeAppendsItsLogEntryKeyForKey()
 }//end class

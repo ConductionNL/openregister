@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\DeckLink;
-use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -66,23 +66,43 @@ use Throwable;
  */
 class DeckLinkService implements DeckLinkServiceInterface {
 	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Active session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param DeckLinkMapper $deckLinkMapper Persistence for link rows.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param IUserManager $userManager User lookup for assignee displayName.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ContainerInterface $container App container Deck's services are resolved from.
+	 * @param DeckLinkMapperInterface $deckLinkMapper Persistence for link rows.
+	 * @param LinkServiceRuntime      $runtime        App manager, active session and logger.
+	 * @param IUserManager            $userManager    User lookup for assignee displayName.
+	 * @param ContainerInterface      $container      App container Deck's services are resolved from.
 	 */
 	public function __construct(
-		private readonly DeckLinkMapper $deckLinkMapper,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
+		private readonly DeckLinkMapperInterface $deckLinkMapper,
+		LinkServiceRuntime $runtime,
 		private readonly IUserManager $userManager,
-		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 	) {
+		$this->appManager = $runtime->appManager();
+		$this->userSession = $runtime->userSession();
+		$this->logger = $runtime->logger();
 	}//end __construct()
 
 	/**
@@ -109,14 +129,6 @@ class DeckLinkService implements DeckLinkServiceInterface {
 	 *
 	 * @throws Exception On missing user, missing card (404), duplicate (409).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential guard
-	 *     clauses (no user, duplicate, Deck unavailable, find failure,
-	 *     null card) followed by best-effort entity extraction.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Defensive try/catch
-	 *     blocks around every getter on Deck's Card entity (which uses
-	 *     OCP\AppFramework\Db\Entity::__call magic) — required to
-	 *     tolerate missing fields without burying the call site.
-	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function linkCard(LinkTarget $target, int $cardId): DeckLink {
@@ -135,6 +147,38 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			throw new Exception('Deck is not available', 503);
 		}
 
+		$card = $this->findCard(cardService: $cardService, cardId: $cardId);
+
+		$boardId = $this->resolveBoardId(cardId: $cardId);
+		$stackId = $this->cardStackId(card: $card);
+		$title = $this->cardTitle(card: $card);
+
+		$widened = $this->extractCardFields(card: $card);
+
+		$link = new DeckLink();
+		$link->setBoardId($boardId);
+		$link->setStackId($stackId);
+		$link->setCardId($cardId);
+		$link->setCardTitle($title);
+		$link->setDueDate($widened['dueDateRaw']);
+		$link->setLabels($this->jsonListOrNull(list: $widened['labels']));
+		$link->setAssignees($this->jsonListOrNull(list: $widened['assignees']));
+		$target->stamp(link: $link, linkedBy: $user->getUID());
+
+		return $this->deckLinkMapper->insert($link);
+	}//end linkCard()
+
+	/**
+	 * Find a Deck card by id.
+	 *
+	 * @param object $cardService Deck CardService.
+	 * @param int    $cardId      Deck card id.
+	 *
+	 * @return object The card.
+	 *
+	 * @throws Exception When the card cannot be found (404).
+	 */
+	private function findCard(object $cardService, int $cardId): object {
 		try {
 			$card = $cardService->find($cardId);
 		} catch (Throwable $e) {
@@ -145,45 +189,55 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			throw new Exception('Deck card not found', 404);
 		}
 
-		$boardId = $this->resolveBoardId(cardId: $cardId);
-		$stackId = 0;
-		$title = '';
+		return $card;
+	}//end findCard()
+
+	/**
+	 * The stack id of a card, or 0 when it cannot be read.
+	 *
+	 * @param object $card Deck Card entity.
+	 *
+	 * @return int
+	 */
+	private function cardStackId(object $card): int {
 		try {
-			$stackId = (int)$card->getStackId();
+			return (int)$card->getStackId();
 		} catch (Throwable $e) {
 			// Leave default zero.
+			return 0;
 		}
+	}//end cardStackId()
 
+	/**
+	 * The title of a card, or '' when it cannot be read.
+	 *
+	 * @param object $card Deck Card entity.
+	 *
+	 * @return string
+	 */
+	private function cardTitle(object $card): string {
 		try {
-			$title = (string)$card->getTitle();
+			return (string)$card->getTitle();
 		} catch (Throwable $e) {
 			// Leave default empty.
+			return '';
+		}
+	}//end cardTitle()
+
+	/**
+	 * A non-empty list as JSON, else null.
+	 *
+	 * @param array<int,mixed> $list The list.
+	 *
+	 * @return string|null
+	 */
+	private function jsonListOrNull(array $list): ?string {
+		if ($list === []) {
+			return null;
 		}
 
-		$widened = $this->extractCardFields(card: $card);
-
-		$link = new DeckLink();
-		$link->setBoardId($boardId);
-		$link->setStackId($stackId);
-		$link->setCardId($cardId);
-		$link->setCardTitle($title);
-		$link->setDueDate($widened['dueDateRaw']);
-		$labels = null;
-		if ($widened['labels'] !== []) {
-			$labels = json_encode($widened['labels']);
-		}
-
-		$assignees = null;
-		if ($widened['assignees'] !== []) {
-			$assignees = json_encode($widened['assignees']);
-		}
-
-		$link->setLabels($labels);
-		$link->setAssignees($assignees);
-		$target->stamp(link: $link, linkedBy: $user->getUID());
-
-		return $this->deckLinkMapper->insert($link);
-	}//end linkCard()
+		return json_encode($list);
+	}//end jsonListOrNull()
 
 	/**
 	 * Unlink a Deck card from an object.
@@ -354,30 +408,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			return [];
 		}
 
-		$result = [];
-		foreach ($boards as $board) {
-			$id = 0;
-			$title = '';
-			try {
-				$id = (int)$board->getId();
-			} catch (Throwable $e) {
-				continue;
-			}
-
-			try {
-				$title = (string)$board->getTitle();
-			} catch (Throwable $e) {
-				$title = '';
-			}
-
-			if ($id === 0) {
-				continue;
-			}
-
-			$result[] = ['id' => $id, 'title' => $title];
-		}//end foreach
-
-		return $result;
+		return $this->idTitleRows(items: $boards);
 	}//end getAvailableBoards()
 
 	/**
@@ -406,18 +437,30 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			return [];
 		}
 
+		return array_map(
+			static fn (array $row): array => $row + ['boardId' => $boardId],
+			$this->idTitleRows(items: $stacks)
+		);
+	}//end getStacksForBoard()
+
+	/**
+	 * The id/title rows of Deck boards or stacks, skipping those whose id cannot be read or is 0.
+	 *
+	 * @param array<int,object> $items Deck Board or Stack entities.
+	 *
+	 * @return list<array{id:int,title:string}>
+	 */
+	private function idTitleRows(array $items): array {
 		$result = [];
-		foreach ($stacks as $stack) {
-			$id = 0;
-			$title = '';
+		foreach ($items as $item) {
 			try {
-				$id = (int)$stack->getId();
+				$id = (int)$item->getId();
 			} catch (Throwable $e) {
 				continue;
 			}
 
 			try {
-				$title = (string)$stack->getTitle();
+				$title = (string)$item->getTitle();
 			} catch (Throwable $e) {
 				$title = '';
 			}
@@ -426,11 +469,11 @@ class DeckLinkService implements DeckLinkServiceInterface {
 				continue;
 			}
 
-			$result[] = ['id' => $id, 'title' => $title, 'boardId' => $boardId];
+			$result[] = ['id' => $id, 'title' => $title];
 		}//end foreach
 
 		return $result;
-	}//end getStacksForBoard()
+	}//end idTitleRows()
 
 	/**
 	 * Resolve Deck's CardService from the server container.
@@ -528,22 +571,49 @@ class DeckLinkService implements DeckLinkServiceInterface {
 	 * @param object $card Deck Card entity.
 	 *
 	 * @return array{dueDate:?string,dueDateRaw:?DateTime,labels:array,assignees:array,boardTitle:string,stackTitle:string}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private function extractCardFields(object $card): array {
-		$dueDate = null;
-		$dueDateRaw = null;
+		[$dueDate, $dueDateRaw] = $this->cardDueDates(card: $card);
+
+		return [
+			'dueDate' => $dueDate,
+			'dueDateRaw' => $dueDateRaw,
+			'labels' => $this->cardLabels(card: $card),
+			'assignees' => $this->cardAssignees(card: $card),
+			'boardTitle' => $this->relatedTitle(card: $card, getter: 'getRelatedBoard'),
+			'stackTitle' => $this->relatedTitle(card: $card, getter: 'getRelatedStack'),
+		];
+	}//end extractCardFields()
+
+	/**
+	 * The due date of a card as an ATOM string and as a DateTime; nulls when it has none.
+	 *
+	 * @param object $card Deck Card entity.
+	 *
+	 * @return array{0:?string,1:?DateTime}
+	 */
+	private function cardDueDates(object $card): array {
 		try {
 			$due = $card->getDuedate();
 			if ($due instanceof \DateTimeInterface) {
 				$dueDate = $due->format(DateTime::ATOM);
-				$dueDateRaw = new DateTime($dueDate);
+				return [$dueDate, new DateTime($dueDate)];
 			}
 		} catch (Throwable $e) {
 			// Leave default null.
 		}
 
+		return [null, null];
+	}//end cardDueDates()
+
+	/**
+	 * The mapped labels of a card; none when they cannot be read.
+	 *
+	 * @param object $card Deck Card entity.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function cardLabels(object $card): array {
 		$labels = [];
 		try {
 			$rawLabels = $card->getLabels();
@@ -556,6 +626,17 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			// Leave default empty.
 		}
 
+		return $labels;
+	}//end cardLabels()
+
+	/**
+	 * The mapped assignees of a card; none when they cannot be read.
+	 *
+	 * @param object $card Deck Card entity.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function cardAssignees(object $card): array {
 		$assignees = [];
 		try {
 			$rawAssignees = $card->getAssignedUsers();
@@ -568,15 +649,8 @@ class DeckLinkService implements DeckLinkServiceInterface {
 			// Leave default empty.
 		}
 
-		return [
-			'dueDate' => $dueDate,
-			'dueDateRaw' => $dueDateRaw,
-			'labels' => $labels,
-			'assignees' => $assignees,
-			'boardTitle' => $this->relatedTitle(card: $card, getter: 'getRelatedBoard'),
-			'stackTitle' => $this->relatedTitle(card: $card, getter: 'getRelatedStack'),
-		];
-	}//end extractCardFields()
+		return $assignees;
+	}//end cardAssignees()
 
 	/**
 	 * The title of the board or list Deck's card lookup put on the card, or ''.

@@ -29,7 +29,9 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
+use OCA\OpenRegister\Service\Case\CaseRealisationRuns;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
+use OCA\OpenRegister\Service\Case\CaseRealisationTasks;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -94,7 +96,7 @@ class CaseRealisationServiceTest extends TestCase {
 	 * @return CaseRealisationService The service.
 	 */
 	private function service(): CaseRealisationService {
-		return new CaseRealisationService(tasks: $this->tasks, taskRows: $this->taskRows, runs: $this->runs, runRows: $this->runRows, logger: new NullLogger());
+		return new CaseRealisationService(tasks: new CaseRealisationTasks(tasks: $this->tasks, taskRows: $this->taskRows), runs: new CaseRealisationRuns(runs: $this->runs, runRows: $this->runRows), logger: new NullLogger());
 	}//end service()
 
 	/**

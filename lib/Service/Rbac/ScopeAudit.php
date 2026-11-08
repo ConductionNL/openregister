@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\Schema;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class ScopeAudit {
+class ScopeAudit implements ScopeAuditInterface {
 
 	/**
 	 * Constructor.

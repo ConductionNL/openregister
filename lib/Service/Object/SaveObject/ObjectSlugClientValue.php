@@ -57,7 +57,7 @@ class ObjectSlugClientValue {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
-	public function normalise(?string $clientSlug): ?string {
+	public function normalise(string|null $clientSlug): string|null {
 		if ($clientSlug === null || trim($clientSlug) === '') {
 			return null;
 		}
@@ -84,7 +84,7 @@ class ObjectSlugClientValue {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
-	public function differsFromStored(?string $clientSlug, string $stored): bool {
+	public function differsFromStored(string|null $clientSlug, string $stored): bool {
 		if ($clientSlug === null || $clientSlug === '' || $clientSlug === $stored) {
 			return false;
 		}

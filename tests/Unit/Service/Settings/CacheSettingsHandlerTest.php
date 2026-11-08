@@ -474,6 +474,40 @@ class CacheSettingsHandlerTest extends TestCase {
 	}
 
 	/**
+	 * Characterisation: each clear type empties its services in a fixed
+	 * order, the result envelope keeps its key order, and an unknown type is
+	 * wrapped as a RuntimeException naming it.
+	 *
+	 * @return void
+	 */
+	public function testClearCacheTypesClearTheirServicesInOrder(): void {
+		$expected = [
+			'all' => ['object', 'schema', 'facet', 'distributed', 'names'],
+			'object' => ['object'],
+			'schema' => ['schema'],
+			'facet' => ['facet'],
+			'distributed' => ['distributed'],
+			'names' => ['names'],
+		];
+		foreach ($expected as $type => $services) {
+			$result = $this->handler->clearCache($type, 'user123');
+
+			$this->assertSame(['type', 'userId', 'timestamp', 'results', 'errors', 'totalCleared'], array_keys($result));
+			$this->assertSame($type, $result['type']);
+			$this->assertSame($services, array_keys($result['results']), $type);
+			$this->assertSame([], $result['errors']);
+			$this->assertIsInt($result['totalCleared']);
+		}
+
+		try {
+			$this->handler->clearCache('');
+			$this->fail('An empty type should be refused');
+		} catch (RuntimeException $e) {
+			$this->assertSame('Failed to clear cache: Invalid cache type: ', $e->getMessage());
+		}
+	}
+
+	/**
 	 * Test clearCache with invalid type throws
 	 *
 	 * @return void

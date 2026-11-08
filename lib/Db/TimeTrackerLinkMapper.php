@@ -32,7 +32,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<TimeTrackerLink>
  * @method list<TimeTrackerLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class TimeTrackerLinkMapper extends QBMapper {
+class TimeTrackerLinkMapper extends QBMapper implements TimeTrackerLinkMapperInterface {
 	use FindLinksByObjectUuidTrait;
 	use DeleteLinksByObjectUuidTrait;
 	/**
@@ -65,27 +65,51 @@ class TimeTrackerLinkMapper extends QBMapper {
 	public function findByObjectAndEntry(
 		string $objectUuid,
 		string $entryType,
-		?string $clientId,
-		?string $taskId,
-		?string $timeId,
-	): ?TimeTrackerLink {
+		string|null $clientId,
+		string|null $taskId,
+		string|null $timeId,
+	): TimeTrackerLink|null {
+		$qb = $this->objectEntryQuery(objectUuid: $objectUuid, entryType: $entryType);
+		$this->applyIdComponents(
+			qb: $qb,
+			components: ['client_id' => $clientId, 'task_id' => $taskId, 'time_id' => $timeId]
+		);
+
+		return $this->findOneOrNull(qb: $qb);
+	}//end findByObjectAndEntry()
+
+	/**
+	 * The links of one object to one kind of time-tracker entry, before the id predicates.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $entryType  The entry type.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function objectEntryQuery(string $objectUuid, string $entryType): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->eq('entry_type', $qb->createNamedParameter($entryType)));
 
-		$this->applyIdComponents(
-			qb: $qb,
-			components: ['client_id' => $clientId, 'task_id' => $taskId, 'time_id' => $timeId]
-		);
+		return $qb;
+	}//end objectEntryQuery()
 
+	/**
+	 * The one link a query matches, or null when it matches none.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return TimeTrackerLink|null The link.
+	 */
+	private function findOneOrNull(IQueryBuilder $qb): TimeTrackerLink|null {
 		try {
 			return $this->findEntity(query: $qb);
 		} catch (DoesNotExistException $e) {
 			return null;
 		}
-	}//end findByObjectAndEntry()
+	}//end findOneOrNull()
 
 	/**
 	 * Delete a time-tracker link by object UUID + upstream entry id

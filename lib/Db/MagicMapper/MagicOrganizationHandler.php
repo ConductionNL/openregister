@@ -40,7 +40,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Service\OrganisationContext;
-use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
+use OCA\OpenRegister\Service\TenancyCollaborators;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -57,37 +58,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class MagicOrganizationHandler {
-
-	/**
-	 * Every row is visible — a trusted system context, or an admin with the
-	 * bypass enabled outside SaaS mode.
-	 */
-	public const SCOPE_ALL = 'all';
-
-	/**
-	 * No row is visible — a non-admin with no active organisation.
-	 */
-	public const SCOPE_NONE = 'none';
-
-	/**
-	 * Only rows with NO organisation — an admin with no active organisation.
-	 */
-	public const SCOPE_NULL_ONLY = 'null-only';
-
-	/**
-	 * Rows in the caller's active organisation(s).
-	 */
-	public const SCOPE_IN = 'in';
-
-	/**
-	 * Rows in the caller's active organisation(s), PLUS rows with no
-	 * organisation at all. Admins, or a caller whose register-cascade grant
-	 * admits org-less rows (see admitOrganisationless()). This is the mode the aggregation API
-	 * used to get wrong: it rendered only the `IN` half, and SQL `=` / `IN`
-	 * never match NULL, so org-less rows vanished from every KPI.
-	 */
-	public const SCOPE_IN_OR_NULL = 'in-or-null';
+class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 
 	/**
 	 * Constructor for MagicOrganizationHandler.
@@ -137,11 +108,7 @@ class MagicOrganizationHandler {
 		?int $schemaId = null,
 		bool $withOrgless = false,
 	): void {
-		$scope = $this->resolveOrganizationScope(
-			adminBypassEnabled: $adminBypassEnabled,
-			registerId: $registerId,
-			schemaId: $schemaId
-		);
+		$scope = $this->resolveOrganizationScope(adminBypassEnabled: $adminBypassEnabled, registerId: $registerId, schemaId: $schemaId);
 		if ($withOrgless === true) {
 			$scope = self::admitOrganisationless(scope: $scope);
 		}
@@ -165,20 +132,11 @@ class MagicOrganizationHandler {
 	 * @return array{mode: string, uuids: array<int, string>} The widened scope.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationlessAdmission holds the rule so callers outside lib/Db reach it without naming this class.
 	 */
 	public static function admitOrganisationless(array $scope): array {
-		$mode = ($scope['mode'] ?? null);
-
-		if ($mode === self::SCOPE_IN) {
-			$scope['mode'] = self::SCOPE_IN_OR_NULL;
-		}
-
-		if ($mode === self::SCOPE_NONE) {
-			$scope['mode'] = self::SCOPE_NULL_ONLY;
-			$scope['uuids'] = [];
-		}
-
-		return $scope;
+		return OrganisationlessAdmission::admit(scope: $scope);
 	}//end admitOrganisationless()
 
 	/**
@@ -224,10 +182,24 @@ class MagicOrganizationHandler {
 		// Code acting for an organisation reads that organisation (and its
 		// parents and shared master data holders), never more: the session
 		// user, the admin bypass and the system context do not widen it.
+		$table = new OrganisationScopeTable(registerId: $registerId, schemaId: $schemaId);
 		if (OrganisationContext::isActive() === true) {
-			return $this->contextOrganizationScope(registerId: $registerId, schemaId: $schemaId);
+			return $this->contextOrganizationScope(table: $table);
 		}
 
+		return $this->callerOrganizationScope(adminBypassEnabled: $adminBypassEnabled, table: $table);
+
+	}//end resolveOrganizationScope()
+
+	/**
+	 * The organisation scope of the session caller, outside an organisation context.
+	 *
+	 * @param bool                   $adminBypassEnabled Whether the caller honours the admin bypass.
+	 * @param OrganisationScopeTable $table              The table being read, for shared master data.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} The scope.
+	 */
+	private function callerOrganizationScope(bool $adminBypassEnabled, OrganisationScopeTable $table): array {
 		$user = $this->userSession->getUser();
 
 		// CLI / no-session system context (occ commands, repair steps, cron
@@ -238,84 +210,141 @@ class MagicOrganizationHandler {
 		}
 
 		// Admins can see all objects, including those with no organisation.
-		$isAdmin = false;
-		if ($user !== null) {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
-			$isAdmin = in_array('admin', $userGroups, true);
-		}
-
-		if ($adminBypassEnabled === true && $isAdmin === true && $this->adminBypassAllowed() === true) {
+		$isAdmin = $this->isAdmin(user: $user);
+		if ($this->bypassesBoundary(adminBypassEnabled: $adminBypassEnabled, isAdmin: $isAdmin) === true) {
 			return ['mode' => self::SCOPE_ALL, 'uuids' => []];
 		}
 
+		return $this->activeOrganizationScope(isAdmin: $isAdmin, table: $table);
+	}//end callerOrganizationScope()
+
+	/**
+	 * Whether the caller is in the admin group. No user is no admin.
+	 *
+	 * @param \OCP\IUser|null $user The session user.
+	 *
+	 * @return bool True for a member of the admin group.
+	 */
+	private function isAdmin(?\OCP\IUser $user): bool {
+		if ($user === null) {
+			return false;
+		}
+
+		return in_array('admin', $this->groupManager->getUserGroupIds($user), true);
+	}//end isAdmin()
+
+	/**
+	 * Whether an admin asked for, and may use, the bypass of the organisation boundary.
+	 *
+	 * @param bool $adminBypassEnabled Whether the caller honours the admin bypass.
+	 * @param bool $isAdmin            Whether the caller is an admin.
+	 *
+	 * @return bool True when every row is visible.
+	 */
+	private function bypassesBoundary(bool $adminBypassEnabled, bool $isAdmin): bool {
+		return $adminBypassEnabled === true && $isAdmin === true && $this->adminBypassAllowed() === true;
+	}//end bypassesBoundary()
+
+	/**
+	 * The scope of a caller outside an organisation context, from their active organisation(s).
+	 *
+	 * No active organisation: admins still see org-less rows, others see nothing.
+	 * Otherwise the active organisation(s) and the shared master data holders,
+	 * plus the org-less rows for an admin.
+	 *
+	 * Shared master data (REQ-SLE-001). The holder UUIDs go into `uuids`
+	 * rather than into a new key, and that is the whole point: every
+	 * renderer of this decision — applyOrganizationFilter() here, and
+	 * AggregationRunner's native SQL — honours the share with no change of
+	 * its own. A second key would be a second definition of the boundary,
+	 * and resolveOrganizationScope() exists BECAUSE a second definition once
+	 * drifted and made every KPI tile under-report.
+	 *
+	 * The widening is safe to fold in this way only because it is resolved
+	 * from the register+schema pair the caller named, and a magic table
+	 * holds exactly one such pair. A caller that names neither gets no
+	 * widening, which is the honest answer for a query whose table nobody
+	 * identified.
+	 *
+	 * @param bool                   $isAdmin Whether the caller is an admin.
+	 * @param OrganisationScopeTable $table   The table being read, for shared master data.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} The scope.
+	 */
+	private function activeOrganizationScope(bool $isAdmin, OrganisationScopeTable $table): array {
 		$activeOrgUuids = $this->getActiveOrganizationUuids();
-
 		if (empty($activeOrgUuids) === true) {
-			// No active organisation: admins still see org-less rows, others see nothing.
-			$emptyMode = self::SCOPE_NONE;
-			if ($isAdmin === true) {
-				$emptyMode = self::SCOPE_NULL_ONLY;
-			}
-
-			return ['mode' => $emptyMode, 'uuids' => []];
+			return ['mode' => $this->unscopedMode(isAdmin: $isAdmin), 'uuids' => []];
 		}
-
-		$scopedMode = self::SCOPE_IN;
-		if ($isAdmin === true) {
-			$scopedMode = self::SCOPE_IN_OR_NULL;
-		}
-
-		// Shared master data (REQ-SLE-001). The holder UUIDs go into `uuids`
-		// rather than into a new key, and that is the whole point: every
-		// renderer of this decision — applyOrganizationFilter() here, and
-		// AggregationRunner's native SQL — honours the share with no change of
-		// its own. A second key would be a second definition of the boundary,
-		// and this method exists BECAUSE a second definition once drifted and
-		// made every KPI tile under-report.
-		//
-		// The widening is safe to fold in this way only because it is resolved
-		// from the register+schema pair the caller named, and a magic table
-		// holds exactly one such pair. A caller that names neither gets no
-		// widening, which is the honest answer for a query whose table nobody
-		// identified.
-		$sharedHolders = $this->sharedHolders(
-			registerId: $registerId,
-			schemaId: $schemaId,
-			consumerOrgUuids: $activeOrgUuids
-		);
 
 		return [
-			'mode' => $scopedMode,
-			'uuids' => array_values(array_unique(array_merge($activeOrgUuids, $sharedHolders))),
+			'mode' => $this->scopedMode(isAdmin: $isAdmin),
+			'uuids' => $this->withSharedHolders(orgUuids: $activeOrgUuids, table: $table),
 		];
+	}//end activeOrganizationScope()
 
-	}//end resolveOrganizationScope()
+	/**
+	 * The mode for a caller with no active organisation.
+	 *
+	 * @param bool $isAdmin Whether the caller is an admin.
+	 *
+	 * @return string SCOPE_NULL_ONLY for an admin, SCOPE_NONE for anybody else.
+	 */
+	private function unscopedMode(bool $isAdmin): string {
+		if ($isAdmin === true) {
+			return self::SCOPE_NULL_ONLY;
+		}
+
+		return self::SCOPE_NONE;
+	}//end unscopedMode()
+
+	/**
+	 * The mode for a caller with an active organisation.
+	 *
+	 * @param bool $isAdmin Whether the caller is an admin.
+	 *
+	 * @return string SCOPE_IN_OR_NULL for an admin, SCOPE_IN for anybody else.
+	 */
+	private function scopedMode(bool $isAdmin): string {
+		if ($isAdmin === true) {
+			return self::SCOPE_IN_OR_NULL;
+		}
+
+		return self::SCOPE_IN;
+	}//end scopedMode()
+
+	/**
+	 * The caller's organisations widened by the shared master data holders of the table.
+	 *
+	 * @param array<int, string>     $orgUuids The caller's organisation and its parents.
+	 * @param OrganisationScopeTable $table    The table being read.
+	 *
+	 * @return array<int, string> The organisation UUIDs, without duplicates.
+	 */
+	private function withSharedHolders(array $orgUuids, OrganisationScopeTable $table): array {
+		$sharedHolders = $this->sharedHolders(table: $table, consumerOrgUuids: $orgUuids);
+
+		return array_values(array_unique(array_merge($orgUuids, $sharedHolders)));
+	}//end withSharedHolders()
 
 	/**
 	 * The organisation scope inside an organisation context.
 	 *
-	 * @param int|null $registerId The register of the table being read, for shared master data.
-	 * @param int|null $schemaId The schema of the table being read, for shared master data.
+	 * @param OrganisationScopeTable $table The table being read, for shared master data.
 	 *
 	 * @return array{mode: string, uuids: array<int, string>} SCOPE_IN, or SCOPE_NONE when the organisation is unknown.
 	 *
 	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
 	 */
-	private function contextOrganizationScope(?int $registerId, ?int $schemaId): array {
+	private function contextOrganizationScope(OrganisationScopeTable $table): array {
 		$orgUuids = $this->getActiveOrganizationUuids();
 		if ($orgUuids === []) {
 			return ['mode' => self::SCOPE_NONE, 'uuids' => []];
 		}
 
-		$sharedHolders = $this->sharedHolders(
-			registerId: $registerId,
-			schemaId: $schemaId,
-			consumerOrgUuids: $orgUuids
-		);
-
 		return [
 			'mode' => self::SCOPE_IN,
-			'uuids' => array_values(array_unique(array_merge($orgUuids, $sharedHolders))),
+			'uuids' => $this->withSharedHolders(orgUuids: $orgUuids, table: $table),
 		];
 	}//end contextOrganizationScope()
 
@@ -346,40 +375,53 @@ class MagicOrganizationHandler {
 	 * that cannot answer must cost a consumer its shared rows, never hand
 	 * anybody a row nobody declared them a consumer of.
 	 *
-	 * @param int|null $registerId The register being read.
-	 * @param int|null $schemaId The schema being read.
-	 * @param array<int, string> $consumerOrgUuids The caller's organisation and its parents.
+	 * @param OrganisationScopeTable $table            The register+schema pair being read.
+	 * @param array<int, string>     $consumerOrgUuids The caller's organisation and its parents.
 	 *
 	 * @return array<int, string> The holder UUIDs to widen by.
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
-	private function sharedHolders(?int $registerId, ?int $schemaId, array $consumerOrgUuids): array {
-		if ($registerId === null && $schemaId === null) {
+	private function sharedHolders(OrganisationScopeTable $table, array $consumerOrgUuids): array {
+		if ($table->isNamed() === false) {
 			return [];
 		}
 
+		$resolver = $this->sharedMasterDataResolver();
+		if ($resolver === null) {
+			return [];
+		}
+
+		return $resolver->holdersForResource(
+			registerId: $table->registerId,
+			schemaId: $table->schemaId,
+			consumerOrgUuids: $consumerOrgUuids
+		);
+
+	}//end sharedHolders()
+
+	/**
+	 * The shared master data resolver, or null when the container cannot hand one out.
+	 *
+	 * @return SharedMasterDataServiceInterface|null The resolver.
+	 */
+	private function sharedMasterDataResolver(): ?SharedMasterDataServiceInterface {
 		try {
-			$resolver = $this->container->get(SharedMasterDataService::class);
+			$resolver = TenancyCollaborators::sharedMasterDataFrom(container: $this->container);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[MagicOrganizationHandler] Shared master data resolver unavailable',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return [];
+			return null;
 		}
 
-		if (($resolver instanceof SharedMasterDataService) === false) {
-			return [];
+		if (($resolver instanceof SharedMasterDataServiceInterface) === false) {
+			return null;
 		}
 
-		return $resolver->holdersForResource(
-			registerId: $registerId,
-			schemaId: $schemaId,
-			consumerOrgUuids: $consumerOrgUuids
-		);
-
-	}//end sharedHolders()
+		return $resolver;
+	}//end sharedMasterDataResolver()
 
 	/**
 	 * Determine whether the current call is a trusted system (CLI/no-session)
@@ -405,24 +447,39 @@ class MagicOrganizationHandler {
 			return false;
 		}
 
+		return $this->isSystemCaller();
+	}//end isSystemContext()
+
+	/**
+	 * Whether a call without a user, outside SaaS mode, is the system.
+	 *
+	 * @return bool True for the system, false for a caller.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function isSystemCaller(): bool {
 		// The command line, or code inside ObjectService::runAsSystem() in any
 		// SAPI: a system write in a web request (dossiq's portal Woo intake)
 		// resolves its calculation references here too. Same rule as
 		// MagicRbacHandler::isTrustedSystemCaller().
-		if ($this->isCommandLine() === false
-			&& \OCA\OpenRegister\Service\SystemOperationContext::isActive() === false
-		) {
+		if ($this->runsAsSystem() === false) {
 			return false;
 		}
 
 		// A forced-anonymous evaluation (WOO-578) has no user on purpose; it is
 		// the one CLI case that is a caller, not the system.
-		if (\OCA\OpenRegister\Service\AnonymousEvaluationContext::isActive() === true) {
-			return false;
-		}
+		return \OCA\OpenRegister\Service\AnonymousEvaluationContext::isActive() === false;
+	}//end isSystemCaller()
 
-		return true;
-	}//end isSystemContext()
+	/**
+	 * Whether the call runs on the command line or inside ObjectService::runAsSystem().
+	 *
+	 * @return bool True for the command line or a system operation.
+	 */
+	private function runsAsSystem(): bool {
+		return $this->isCommandLine() === true
+			|| \OCA\OpenRegister\Service\SystemOperationContext::isActive() === true;
+	}//end runsAsSystem()
 
 	/**
 	 * Whether PHP runs on the command line. A seam, so a test can read as a web request.
@@ -448,32 +505,38 @@ class MagicOrganizationHandler {
 			// Get OrganisationService from container (lazy loading to avoid circular dependencies).
 			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
 
-			// Get active organisations including parent chain.
-			$orgUuids = $organisationService->getUserActiveOrganisations();
-
-			if (empty($orgUuids) === false) {
-				return $orgUuids;
-			}
-
-			// Fallback: try to get just the active organisation.
-			$activeOrg = $organisationService->getActiveOrganisation();
-			if ($activeOrg !== null) {
-				return [$activeOrg->getUuid()];
-			}
-
-			return [];
+			return $this->activeOrganisationUuidsOf(organisationService: $organisationService);
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[MagicOrganizationHandler] Failed to get active organisation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
 			return [];
 		}//end try
 	}//end getActiveOrganizationUuids()
+
+	/**
+	 * The active organisations including the parent chain, or else the single active organisation.
+	 *
+	 * @param mixed $organisationService The organisation service, as the container hands it out (not type-checked, as before).
+	 *
+	 * @return string[] Array of organization UUIDs
+	 */
+	private function activeOrganisationUuidsOf(mixed $organisationService): array {
+		// Get active organisations including parent chain.
+		$orgUuids = $organisationService->getUserActiveOrganisations();
+		if (empty($orgUuids) === false) {
+			return $orgUuids;
+		}
+
+		// Fallback: try to get just the active organisation.
+		$activeOrg = $organisationService->getActiveOrganisation();
+		if ($activeOrg !== null) {
+			return [$activeOrg->getUuid()];
+		}
+
+		return [];
+	}//end activeOrganisationUuidsOf()
 
 	/**
 	 * Check if admin users should bypass multi-tenancy filtering

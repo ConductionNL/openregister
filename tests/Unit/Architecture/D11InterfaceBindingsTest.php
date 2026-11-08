@@ -78,16 +78,12 @@ final class D11InterfaceBindingsTest extends TestCase {
 	 * Outside files still allowed to name the class, and why.
 	 *
 	 * Application::boot() resolves the deep-link registry inside a 43-line
-	 * method this refactor does not reshape. ObjectsController resolves
-	 * FileService in downloadFiles(), a 50-line method, and in the bulk-download
-	 * audit helper; audit code is out of scope. FileReadScope decides which
-	 * file-search hits the caller may read: it is access code, also out of scope.
+	 * method this refactor does not reshape.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
 		DeepLinkRegistryService::class => ['AppInfo/Application.php'],
-		FileService::class => ['Controller/ObjectsController.php', 'Files/Service/File/FileReadScope.php'],
 	];
 
 	/**

@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use DateTime;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -108,6 +108,7 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
+use OCA\OpenRegister\Service\Query\RelatedRowLookups;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Support\OrderParameter;
@@ -126,7 +127,7 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
-use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -682,7 +683,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			relatedRows: $relatedRowApplier,
 			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageServiceInterface::class),
 			metadataColumns: $this->metadataColumnHealer,
-			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class)
+			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class)
 		);
 	}//end initializeSearchHandler()
 
@@ -718,8 +719,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			guard: new PropertyReadGuard(container: $this->container, logger: $this->logger)
 		);
 		return new RelatedRowQueryApplier(
-			schemaMapper: $this->schemaMapper,
-			tableHandler: $this->tableHandler,
+			lookups: new RelatedRowLookups(schemaMapper: $this->schemaMapper, tableHandler: $this->tableHandler),
 			db: $this->db,
 			logger: $this->logger,
 			access: $relatedRowAccess
@@ -2632,7 +2632,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function probeTableExistsInDatabase(string $tableName): bool {
 		try {
-			\OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'tableExists.probe');
+			\OCA\OpenRegister\Service\WritePhase::count(event: 'tableExists.probe');
 
 			// Check if table exists in information_schema.
 			// NOTE: We use raw SQL here because information_schema is a system table.
@@ -4320,7 +4320,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string {
-		return $this->container->get(ObjectSlugHandler::class)->slugForMove(entity: $entity, register: $register, schema: $schema);
+		return $this->container->get(ObjectSlugTargetInterface::class)->slugForMove(entity: $entity, register: $register, schema: $schema);
 	}//end slugForMove()
 
 	/**
@@ -4910,7 +4910,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array<string, array<string, mixed>> Live tables keyed by unprefixed name.
 	 */
 	private function loadLiveMagicTables(): array {
-		\OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'magicTables.enumerate');
+		\OCA\OpenRegister\Service\WritePhase::count(event: 'magicTables.enumerate');
 
 		// Get all magic tables from information_schema.
 		// NOTE: We use raw SQL here because the query builder adds the table prefix.
@@ -8375,12 +8375,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			throw new Exception('Cannot insert object without register and schema context');
 		}
 
-		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:pre');
+		\OCA\OpenRegister\Service\WritePhase::mark('mm:pre');
 		$insertedEntity = $this->insertObjectEntity(entity: $entity, register: $register, schema: $schema, failIfExists: $failIfExists);
-		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:DB-INSERT');
+		\OCA\OpenRegister\Service\WritePhase::mark('mm:DB-INSERT');
 
 		$this->announceInsert(inserted: $insertedEntity, target: ['register' => $register, 'schema' => $schema]);
-		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:EVENT-DISPATCH');
+		\OCA\OpenRegister\Service\WritePhase::mark('mm:EVENT-DISPATCH');
 
 		return $insertedEntity;
 	}//end insert()
@@ -8465,7 +8465,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		try {
 			$jobList = $this->container->get(\OCP\BackgroundJob\IJobList::class);
 			$jobList->add(
-				\OCA\OpenRegister\BackgroundJob\DeferredObjectEventJob::class,
+				\OCA\OpenRegister\BackgroundJob\JobHandles::DEFERRED_OBJECT_EVENT,
 				[
 					'uuid' => $uuid,
 					'registerId' => (int)($register?->getId() ?? 0),
@@ -8739,7 +8739,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// The slug it held may have been given to another object since the delete
 		// (#4037). Resolved lazily: the handler needs this mapper.
-		$restoredSlug = $this->container->get(ObjectSlugHandler::class)->slugForRestore(
+		$restoredSlug = $this->container->get(ObjectSlugTargetInterface::class)->slugForRestore(
 			entity: $entity,
 			register: $register,
 			schema: $schema
@@ -10341,7 +10341,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function purposeBoundTables(): PurposeBoundTables {
-		return new PurposeBoundTables(guard: $this->container->get(PurposeGuard::class));
+		return new PurposeBoundTables(guard: $this->container->get(PurposeGuardInterface::class));
 	}//end purposeBoundTables()
 
 	/**

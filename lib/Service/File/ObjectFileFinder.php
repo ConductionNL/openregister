@@ -50,11 +50,11 @@ final class ObjectFileFinder
 	 * Constructor.
 	 *
 	 * @param LoggerInterface                        $logger      The logger.
-	 * @param \OCA\OpenRegister\Service\FileService $fileService The file service.
+	 * @param \OCA\OpenRegister\Service\FileHandlerSupportInterface $fileService The file service.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly \OCA\OpenRegister\Service\FileService $fileService,
+		private readonly \OCA\OpenRegister\Service\FileHandlerSupportInterface $fileService,
 	) {
 	}//end __construct()
 
@@ -189,18 +189,11 @@ final class ObjectFileFinder
 	private function objectFolder(ObjectFileLookup $lookup): \OCP\Files\Folder {
 		$objectFolder = $this->fileService->getObjectFolder($lookup->object);
 		if ($objectFolder === null) {
-			$objectId = $lookup->object->getId();
-			$this->logger->error(
-				message: "{$lookup->prefix} Could not get object folder for object: $objectId",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->error(message: "{$lookup->prefix} Could not get object folder for object: " . $lookup->object->getId());
 			throw new Exception('Object folder not found.');
 		}
 
-		$this->logger->debug(
-			message: "{$lookup->prefix} Object folder path: " . $objectFolder->getPath(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->debug(message: "{$lookup->prefix} Object folder path: " . $objectFolder->getPath());
 		return $objectFolder;
 	}//end objectFolder()
 
@@ -215,21 +208,10 @@ final class ObjectFileFinder
 	 */
 	private function logFolderListing(ObjectFileLookup $lookup): void {
 		try {
-			$objectFileNames = array_map(
-				function ($file) {
-					return $file->getName();
-				},
-				$lookup->folder->getDirectoryListing()
-			);
-			$this->logger->debug(
-				message: "{$lookup->prefix} Files in object folder: " . json_encode($objectFileNames),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$objectFileNames = array_map(static fn ($file) => $file->getName(), $lookup->folder->getDirectoryListing());
+			$this->debug(message: "{$lookup->prefix} Files in object folder: " . json_encode($objectFileNames));
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: "{$lookup->prefix} Error listing object folder contents: " . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->error(message: "{$lookup->prefix} Error listing object folder contents: " . $e->getMessage());
 		}
 	}//end logFolderListing()
 
@@ -246,19 +228,14 @@ final class ObjectFileFinder
 	 */
 	private function nodeInObjectFolder(ObjectFileLookup $lookup): Node {
 		try {
-			$this->logger->debug(
-				message: "{$lookup->prefix} Attempting to get file '{$lookup->fileName}' from object folder",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->debug(message: "{$lookup->prefix} Attempting to get file '{$lookup->fileName}' from object folder");
 			$fileNode = $lookup->folder->get($lookup->fileName);
-			$foundFileMsg = "{$lookup->prefix} Successfully found file: " . $fileNode->getName() . ' at ' . $fileNode->getPath();
-			$this->logger->debug(message: $foundFileMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
+			$this->debug(message: "{$lookup->prefix} Successfully found file: " . $fileNode->getName() . ' at ' . $fileNode->getPath());
 			return $fileNode;
 		} catch (NotFoundException $e) {
 			return $this->nodeAtFullPath(lookup: $lookup);
 		} catch (\Exception $e) {
-			$errMsg = "{$lookup->prefix} Unexpected error getting file from object folder: " . $e->getMessage();
-			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
+			$this->error(message: "{$lookup->prefix} Unexpected error getting file from object folder: " . $e->getMessage());
 			throw new Exception('File not found.');
 		}
 	}//end nodeInObjectFolder()
@@ -276,18 +253,37 @@ final class ObjectFileFinder
 	 */
 	private function nodeAtFullPath(ObjectFileLookup $lookup): Node {
 		try {
-			$attemptMsg = "{$lookup->prefix} Attempting to get file '{$lookup->filePath}' (full path) from object folder";
-			$this->logger->debug(message: $attemptMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
+			$this->debug(message: "{$lookup->prefix} Attempting to get file '{$lookup->filePath}' (full path) from object folder");
 			$fileNode = $lookup->folder->get($lookup->filePath);
-			$successMsg = "{$lookup->prefix} Successfully found file using full path: ";
-			$successMsg .= $fileNode->getName() . ' at ' . $fileNode->getPath();
-			$this->logger->debug(message: $successMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
+			$found = $fileNode->getName() . ' at ' . $fileNode->getPath();
+			$this->debug(message: "{$lookup->prefix} Successfully found file using full path: " . $found);
 			return $fileNode;
 		} catch (NotFoundException $e2) {
-			$errMsg = "{$lookup->prefix} File '{$lookup->fileName}' and '{$lookup->filePath}' not found";
-			$errMsg .= ' in object folder. NotFoundException: ' . $e2->getMessage();
-			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
+			$missing = "'{$lookup->fileName}' and '{$lookup->filePath}' not found in object folder";
+			$this->error(message: "{$lookup->prefix} File $missing. NotFoundException: " . $e2->getMessage());
 			throw new Exception('File not found.');
 		}
 	}//end nodeAtFullPath()
+
+	/**
+	 * Log a debug line.
+	 *
+	 * @param string $message The message.
+	 *
+	 * @return void
+	 */
+	private function debug(string $message): void {
+		$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+	}//end debug()
+
+	/**
+	 * Log an error line.
+	 *
+	 * @param string $message The message.
+	 *
+	 * @return void
+	 */
+	private function error(string $message): void {
+		$this->logger->error(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+	}//end error()
 }//end class

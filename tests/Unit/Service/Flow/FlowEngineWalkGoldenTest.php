@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowEngineServices;
 use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowFiringResult;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -352,8 +353,10 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			new FlowDefinitionBuilder(),
 			new GoldenWalkLogger(trace: $trace),
 			$this->oversight(refuseFrom: ($case['oversight'] ?? null), trace: $trace),
-			runContext: $this->runContext(trace: $trace),
-			mootness: $this->mootness(trace: $trace)
+			services: new FlowEngineServices(
+				runContext: $this->runContext(trace: $trace),
+				mootness: $this->mootness(trace: $trace)
+			)
 		);
 
 		$streams = null;

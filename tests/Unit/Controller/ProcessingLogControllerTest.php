@@ -46,6 +46,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ProcessingLogController
@@ -103,11 +104,9 @@ class ProcessingLogControllerTest extends TestCase {
 		$this->appConfig->method('getValueInt')->willReturn(366);
 
 		$this->controller = new ProcessingLogController(
-			appName: 'openregister',
 			request: $this->request,
-			logMapper: $this->logMapper,
+			services: new ProcessingLogControllerServices(logMapper: $this->logMapper, appConfig: $this->appConfig),
 			session: new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(\Psr\Log\LoggerInterface::class)),
-			appConfig: $this->appConfig,
 			organisationService: $this->organisationService
 		);
 

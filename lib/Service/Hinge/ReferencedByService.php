@@ -47,7 +47,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Mappers for register, schema and objects.
  */
-class ReferencedByService {
+class ReferencedByService implements ReferencedByServiceInterface {
 
 	/**
 	 * Default number of referencing records returned per schema group.
@@ -105,15 +105,15 @@ class ReferencedByService {
 		$groups = [];
 		$total = 0;
 
+		$page = new ReferencedByPage(
+			targetUuid: $targetUuid,
+			limit: $limit,
+			offset: $offset,
+			rbac: $_rbac
+		);
+
 		foreach ($this->magicMapper->getExistingRegisterSchemaTables() as $tableInfo) {
-			$group = $this->readGroup(
-				tableInfo: $tableInfo,
-				targetUuid: $targetUuid,
-				limit: $limit,
-				offset: $offset,
-				onlySchema: $onlySchema,
-				_rbac: $_rbac
-			);
+			$group = $this->readGroup(tableInfo: $tableInfo, page: $page, onlySchema: $onlySchema);
 
 			if ($group === null) {
 				continue;
@@ -139,25 +139,85 @@ class ReferencedByService {
 	/**
 	 * Read one schema group: its total and one page of summarised records.
 	 *
-	 * @param array       $tableInfo  The register+schema table descriptor.
-	 * @param string      $targetUuid The uuid every returned record references.
-	 * @param int         $limit      Page size for this group.
-	 * @param int         $offset     Page offset for this group.
-	 * @param string|null $onlySchema Restrict to one schema (id or slug) when given.
-	 * @param bool        $_rbac      Apply the caller's access inside the query.
+	 * @param array            $tableInfo  The register+schema table descriptor.
+	 * @param ReferencedByPage $page       The reference, page and access flag every group is read with.
+	 * @param string|null      $onlySchema Restrict to one schema (id or slug) when given.
 	 *
 	 * @return array|null The group, or null when it holds nothing or cannot be read.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One page of one group needs all six.
 	 */
-	private function readGroup(
-		array $tableInfo,
-		string $targetUuid,
-		int $limit,
-		int $offset,
-		?string $onlySchema,
-		bool $_rbac,
-	): ?array {
+	private function readGroup(array $tableInfo, ReferencedByPage $page, ?string $onlySchema): ?array {
+		$resolved = $this->resolveWantedTable(tableInfo: $tableInfo, onlySchema: $onlySchema);
+		if ($resolved === null) {
+			return null;
+		}
+
+		$register = $resolved['register'];
+		$schema = $resolved['schema'];
+
+		$found = $this->queryGroup(tableInfo: $tableInfo, register: $register, schema: $schema, page: $page);
+		if ($found === null) {
+			return null;
+		}
+
+		return [
+			'register' => $this->describe(entity: $register),
+			'schema' => $this->describe(entity: $schema),
+			'total' => $found['total'],
+			'limit' => $page->limit,
+			'offset' => $page->offset,
+			'results' => $this->summariseRows(
+				rows: $found['rows'],
+				targetUuid: $page->targetUuid,
+				statusField: $this->resolveStatusField(schema: $schema)
+			),
+		];
+	}//end readGroup()
+
+	/**
+	 * Resolve a table's register and schema, keeping it only when it is the schema asked for.
+	 *
+	 * @param array       $tableInfo  The register+schema table descriptor.
+	 * @param string|null $onlySchema Restrict to one schema (id or slug) when given.
+	 *
+	 * @return array{register: Register, schema: Schema}|null The pair, or null when unresolvable or not wanted.
+	 */
+	private function resolveWantedTable(array $tableInfo, ?string $onlySchema): ?array {
+		$resolved = $this->resolveTable(tableInfo: $tableInfo);
+		if ($resolved === null) {
+			return null;
+		}
+
+		if ($this->isWanted(schema: $resolved['schema'], onlySchema: $onlySchema) === false) {
+			return null;
+		}
+
+		return $resolved;
+	}//end resolveWantedTable()
+
+	/**
+	 * Whether a schema is in scope: every schema when none is asked for, else only the one asked for.
+	 *
+	 * @param Schema      $schema     The candidate schema.
+	 * @param string|null $onlySchema The requested schema id, uuid or slug, when given.
+	 *
+	 * @return bool True when the schema's group is read.
+	 */
+	private function isWanted(Schema $schema, ?string $onlySchema): bool {
+		if ($onlySchema === null) {
+			return true;
+		}
+
+		return $this->matchesSchema(schema: $schema, wanted: $onlySchema);
+	}//end isWanted()
+
+	/**
+	 * Resolve the register and schema a table belongs to.
+	 *
+	 * @param array $tableInfo The register+schema table descriptor.
+	 *
+	 * @return array{register: Register, schema: Schema}|null The pair, or null when either cannot be found.
+	 */
+	private function resolveTable(array $tableInfo): ?array {
 		try {
 			$register = $this->registerMapper->find($tableInfo['registerId']);
 			$schema = $this->schemaMapper->find($tableInfo['schemaId']);
@@ -174,14 +234,21 @@ class ReferencedByService {
 			return null;
 		}
 
-		if ($onlySchema !== null && $this->matchesSchema(schema: $schema, wanted: $onlySchema) === false) {
-			return null;
-		}
+		return ['register' => $register, 'schema' => $schema];
+	}//end resolveTable()
 
-		$filters = [
-			'_relations_contains' => $targetUuid,
-			'_rbac' => $_rbac,
-		];
+	/**
+	 * Count one group under the caller's access and, when it holds anything, load its page.
+	 *
+	 * @param array            $tableInfo The register+schema table descriptor.
+	 * @param Register         $register  The table's register.
+	 * @param Schema           $schema    The table's schema.
+	 * @param ReferencedByPage $page      The reference, page and access flag to query with.
+	 *
+	 * @return array{total: int, rows: array}|null The total and rows, or null when empty or unreadable.
+	 */
+	private function queryGroup(array $tableInfo, Register $register, Schema $schema, ReferencedByPage $page): ?array {
+		$filters = $page->filters();
 
 		try {
 			$groupTotal = $this->magicMapper->countObjectsInRegisterSchemaTable(
@@ -197,8 +264,8 @@ class ReferencedByService {
 			$rows = $this->magicMapper->findAllInRegisterSchemaTable(
 				register: $register,
 				schema: $schema,
-				limit: $limit,
-				offset: $offset,
+				limit: $page->limit,
+				offset: $page->offset,
 				filters: $filters,
 				sort: ['_updated' => 'DESC']
 			);
@@ -215,7 +282,19 @@ class ReferencedByService {
 			return null;
 		}//end try
 
-		$statusField = $this->resolveStatusField(schema: $schema);
+		return ['total' => $groupTotal, 'rows' => $rows];
+	}//end queryGroup()
+
+	/**
+	 * Summarise the loaded rows, leaving out anything that is not a record and the hinge itself.
+	 *
+	 * @param array       $rows        The rows one group's page returned.
+	 * @param string      $targetUuid  The uuid of the object being read as the hinge.
+	 * @param string|null $statusField The schema's declared lifecycle field, when it has one.
+	 *
+	 * @return array<int, array> The summaries.
+	 */
+	private function summariseRows(array $rows, string $targetUuid, ?string $statusField): array {
 		$records = [];
 		foreach ($rows as $row) {
 			if (($row instanceof ObjectEntity) === false) {
@@ -229,15 +308,8 @@ class ReferencedByService {
 			$records[] = $this->summarise(record: $row, statusField: $statusField);
 		}
 
-		return [
-			'register' => $this->describe(entity: $register),
-			'schema' => $this->describe(entity: $schema),
-			'total' => $groupTotal,
-			'limit' => $limit,
-			'offset' => $offset,
-			'results' => $records,
-		];
-	}//end readGroup()
+		return $records;
+	}//end summariseRows()
 
 	/**
 	 * Summarise one referencing record: what it is, where it stands, when it moved.
@@ -257,10 +329,7 @@ class ReferencedByService {
 
 		$status = null;
 		if ($statusField !== null) {
-			$data = $record->getObject();
-			if (is_array($data) === true && is_scalar(($data[$statusField] ?? null)) === true) {
-				$status = (string)$data[$statusField];
-			}
+			$status = $this->statusOf(record: $record, statusField: $statusField);
 		}
 
 		return [
@@ -270,6 +339,23 @@ class ReferencedByService {
 			'updated' => $updatedFormatted,
 		];
 	}//end summarise()
+
+	/**
+	 * The lifecycle status a record holds in its schema's status field.
+	 *
+	 * @param ObjectEntity $record      The referencing record.
+	 * @param string       $statusField The schema's declared lifecycle field.
+	 *
+	 * @return string|null The status, or null when the record holds no scalar there.
+	 */
+	private function statusOf(ObjectEntity $record, string $statusField): ?string {
+		$data = $record->getObject();
+		if (is_array($data) === true && is_scalar(($data[$statusField] ?? null)) === true) {
+			return (string)$data[$statusField];
+		}
+
+		return null;
+	}//end statusOf()
 
 	/**
 	 * The property a schema keeps its status in, from its lifecycle annotation.

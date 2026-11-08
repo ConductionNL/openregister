@@ -33,14 +33,14 @@ final class SchemaMigrationControllerServices {
 	 *
 	 * @param SchemaMigrationMappers  $mappers  The mappers bundle.
 	 * @param SchemaMigrationDomain   $domain   The domain bundle.
-	 * @param SchemaMigrationPlatform $platform The platform bundle.
+	 * @param RetentionPlatform       $platform The platform bundle.
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function __construct(
 		public readonly SchemaMigrationMappers $mappers,
 		public readonly SchemaMigrationDomain $domain,
-		public readonly SchemaMigrationPlatform $platform,
+		public readonly RetentionPlatform $platform,
 	) {
 	}//end __construct()
 }//end class

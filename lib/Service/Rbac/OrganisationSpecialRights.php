@@ -72,14 +72,7 @@ use Throwable;
  *
  * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
  */
-class OrganisationSpecialRights {
-
-	/**
-	 * The special right to manage the grants and the owning group of a record.
-	 *
-	 * @var string
-	 */
-	public const GRANT_MANAGE = 'grant_manage';
+class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 
 	/**
 	 * Organisations read per page when giving a right in all of them.

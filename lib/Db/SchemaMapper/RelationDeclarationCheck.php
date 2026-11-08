@@ -22,10 +22,9 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use Closure;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Relation\LinkExposure;
-use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
+use OCA\OpenRegister\Service\Relation\RelationAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
-use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
+use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 
 /**
  * Refuses relation declarations that cannot be honoured, and exposures of properties the far schema lacks.
@@ -71,7 +70,7 @@ final class RelationDeclarationCheck {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function check(Schema $schema): void {
-		$errors = (new RelationAnnotationValidator())->validate($this->shape(schema: $schema));
+		$errors = SchemaDeclarationValidators::relation()->validate($this->shape(schema: $schema));
 		if ($errors === []) {
 			$errors = $this->exposureRefusals(schema: $schema);
 		}
@@ -104,9 +103,9 @@ final class RelationDeclarationCheck {
 	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
 	 */
 	public function exposureRefusals(Schema $schema): array {
-		$exposure = new LinkExposure();
+		$exposure = SchemaDeclarationValidators::linkExposure();
 		$reasons = [];
-		foreach ((new RelationTypeResolver())->descriptors(schema: $schema) as $property => $descriptor) {
+		foreach (SchemaDeclarationValidators::relationTypes()->descriptors(schema: $schema) as $property => $descriptor) {
 			$far = $this->exposedSchema(descriptor: $descriptor, property: ($schema->getProperties()[$property] ?? null));
 			if ($far !== null) {
 				$reasons[] = $exposure->refusalFor(
@@ -142,7 +141,7 @@ final class RelationDeclarationCheck {
 	 * @return array<string, mixed>
 	 */
 	private function shape(Schema $schema): array {
-		$key = RelationAnnotationValidator::VOCABULARY_ANNOTATION;
+		$key = RelationAnnotationValidatorInterface::VOCABULARY_ANNOTATION;
 		$annotation = new SchemaAnnotation(schema: $schema, key: $key);
 		$shape = ['properties' => $schema->getProperties()];
 		if ($annotation->hasValue() === true) {
@@ -163,7 +162,7 @@ final class RelationDeclarationCheck {
 	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
 	 */
 	private function exposedSchema(array $descriptor, mixed $property): ?Schema {
-		if ((new LinkExposure())->declaresExposure(relationType: $descriptor) === false) {
+		if (SchemaDeclarationValidators::linkExposure()->declaresExposure(relationType: $descriptor) === false) {
 			return null;
 		}
 

@@ -52,11 +52,8 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AnalyticsLink;
-use OCA\OpenRegister\Db\AnalyticsLinkMapper;
-use OCP\App\IAppManager;
-use OCP\IUserSession;
+use OCA\OpenRegister\Db\AnalyticsLinkMapperInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -112,17 +109,13 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param AnalyticsLinkMapper $analyticsLinkMapper Persistence for link rows.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param AnalyticsLinkMapperInterface $analyticsLinkMapper Persistence for link rows.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 * @param ContainerInterface $container App container NC Analytics' ReportService is resolved from.
 	 */
 	public function __construct(
-		private readonly AnalyticsLinkMapper $analyticsLinkMapper,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly AnalyticsLinkMapperInterface $analyticsLinkMapper,
+		private readonly LinkServiceRuntime $runtime,
 		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
@@ -133,7 +126,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isAnalyticsAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
 	}//end isAnalyticsAvailable()
 
 	/**
@@ -144,7 +137,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
 		}
@@ -173,7 +166,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		try {
 			return $this->container->get(self::REPORT_SERVICE);
 		} catch (Throwable $e) {
-			$this->logger->debug('AnalyticsLinkService: ReportService unavailable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('AnalyticsLinkService: ReportService unavailable: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveReportService()
@@ -304,7 +297,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		try {
 			return (int)$service->create(...$args);
 		} catch (Throwable $e) {
-			$this->logger->warning('AnalyticsLinkService::createAndLinkReport failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('AnalyticsLinkService::createAndLinkReport failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Analytics report', 500);
 		}
 	}//end invokeCreate()
@@ -401,7 +394,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 
 		$out = [];
 		foreach ($reports as $report) {
-			$row = $this->pickerRowFromReport(report: (array)$report, needle: $needle);
+			$row = $this->pickerRowFromReport(report: (array)$report, needle: $needle ?? '');
 			if ($row !== null) {
 				$out[] = $row;
 			}
@@ -425,7 +418,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		try {
 			return $service->index();
 		} catch (Throwable $e) {
-			$this->logger->warning('AnalyticsLinkService::getAvailableReports failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('AnalyticsLinkService::getAvailableReports failed: ' . $e->getMessage());
 			return [];
 		}
 	}//end indexReports()
@@ -473,19 +466,19 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * the optional name filter.
 	 *
 	 * @param array<string,mixed> $report A normalised report row.
-	 * @param string|null $needle Lower-cased name-substring filter, or null.
+	 * @param string $needle Lower-cased name-substring filter, or '' for none.
 	 *
 	 * @return array<string,mixed>|null The picker row, or null when the
 	 *                                  report is unreadable or filtered out.
 	 */
-	private function pickerRowFromReport(array $report, ?string $needle): ?array {
+	private function pickerRowFromReport(array $report, string $needle): ?array {
 		$reportId = (int)($report['id'] ?? 0);
 		if ($reportId === 0) {
 			return null;
 		}
 
 		$row = $this->pickerRow(report: $report, reportId: $reportId);
-		if ($needle !== null && str_contains(mb_strtolower($row['name']), $needle) === false) {
+		if ($needle !== '' && str_contains(mb_strtolower($row['name']), $needle) === false) {
 			return null;
 		}
 
@@ -582,7 +575,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		try {
 			return $this->analyticsLinkMapper->update($link);
 		} catch (Throwable $e) {
-			$this->logger->debug('AnalyticsLinkService::refreshLink update failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('AnalyticsLinkService::refreshLink update failed: ' . $e->getMessage());
 			return $link;
 		}
 	}//end saveRefreshed()
@@ -625,7 +618,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		try {
 			return $service->read($reportId);
 		} catch (Throwable $e) {
-			$this->logger->debug('AnalyticsLinkService::fetchReportInfo read failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('AnalyticsLinkService::fetchReportInfo read failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end readReport()
@@ -639,7 +632,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * @return DateTime|null
 	 */
 	private function parseTimestamp(mixed $value): ?DateTime {
-		if ($value === null || $value === '' || $value === 0) {
+		if ($this->isUnsetTimestamp(value: $value) === true) {
 			return null;
 		}
 
@@ -649,6 +642,17 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 			return null;
 		}
 	}//end parseTimestamp()
+
+	/**
+	 * Whether a timestamp value means "no timestamp": null, '' or 0.
+	 *
+	 * @param mixed $value Raw timestamp value.
+	 *
+	 * @return bool
+	 */
+	private function isUnsetTimestamp(mixed $value): bool {
+		return $value === null || $value === '' || $value === 0;
+	}//end isUnsetTimestamp()
 
 	/**
 	 * An epoch number or a datetime string as a DateTime.

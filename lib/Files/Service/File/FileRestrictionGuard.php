@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
-class FileRestrictionGuard {
+class FileRestrictionGuard implements FileRestrictionGuardInterface {
 
 	/**
 	 * Verdicts already given in this request, keyed by "uid:fileId".
@@ -51,21 +51,59 @@ class FileRestrictionGuard {
 	private array $memo = [];
 
 	/**
+	 * The rows.
+	 *
+	 * @var FileRestrictionStore
+	 */
+	private readonly FileRestrictionStore $store;
+
+	/**
+	 * The caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * The caller's groups.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Asks apps to admit a caller who is not listed.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $dispatcher;
+
+	/**
+	 * Where a failed lookup is noted.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FileRestrictionStore $store        The rows.
-	 * @param IUserSession         $userSession  The caller.
-	 * @param IGroupManager        $groupManager The caller's groups.
-	 * @param IEventDispatcher     $dispatcher   Asks apps to admit a caller who is not listed.
-	 * @param LoggerInterface      $logger       Where a failed lookup is noted.
+	 * @param FileRestrictionStore  $store      The rows.
+	 * @param FileRestrictionCaller $caller     The session and group manager of the caller.
+	 * @param IEventDispatcher      $dispatcher Asks apps to admit a caller who is not listed.
+	 * @param LoggerInterface       $logger     Where a failed lookup is noted.
 	 */
 	public function __construct(
-		private readonly FileRestrictionStore $store,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly IEventDispatcher $dispatcher,
-		private readonly LoggerInterface $logger,
+		FileRestrictionStore $store,
+		FileRestrictionCaller $caller,
+		IEventDispatcher $dispatcher,
+		LoggerInterface $logger,
 	) {
+		$this->store = $store;
+		$this->userSession = $caller->userSession;
+		$this->groupManager = $caller->groupManager;
+		$this->dispatcher = $dispatcher;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**

@@ -46,12 +46,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success === null ? 'Cancel' : 'Close' }}
-			</NcButton>
+			<CloseCancelButton :label="success === null ? 'Cancel' : 'Close'" @click="closeDialog" />
 			<NcButton
 				v-if="success === null"
 				:disabled="loading || !copyName.trim()"
@@ -75,8 +70,8 @@ import {
 	NcNoteCard,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { renameCopy, withoutOriginalMetadata } from '../../services/objectCopy.js'
 
 export default {
@@ -89,7 +84,7 @@ export default {
 		NcTextField,
 		// Icons
 		ContentCopy,
-		Cancel,
+		CloseCancelButton,
 	},
 
 	data() {

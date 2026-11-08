@@ -57,7 +57,9 @@ use OCA\OpenRegister\Service\Flow\FlowRunCommit;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Task\TaskForm;
@@ -188,11 +190,8 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$forms->method('fromConfig')->willReturn(new TaskForm(kind: null));
 
 		$node = new UserTaskNode(
-			$bridge,
-			$l10n,
-			$this->createMock(IURLGenerator::class),
-			$forms,
-			$this->createMock(FlowTimerService::class)
+			new UserTaskServices($bridge, $forms, $this->createMock(FlowTimerService::class)),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 
 		$pass = new HeartbeatPassNode();
@@ -214,7 +213,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$pin = $this->pinReturning();
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($versions, $pin): object {
-				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 

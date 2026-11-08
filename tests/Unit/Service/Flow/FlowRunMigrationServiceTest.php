@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationTimers;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -146,8 +147,7 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		return new FlowRunMigrationService(
 			$this->runs,
 			new FlowRunMigrationValidator(versions: $this->versions),
-			$this->timers,
-			($timerService ?? $this->createMock(FlowTimerService::class)),
+			new FlowRunMigrationTimers(timers: $this->timers, timerService: ($timerService ?? $this->createMock(FlowTimerService::class))),
 			new NullLogger()
 		);
 	}
