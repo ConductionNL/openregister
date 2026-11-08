@@ -34,6 +34,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\RevertHandlerInterface;
+use OCA\OpenRegister\Service\Object\RevertPoint;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -125,8 +126,7 @@ class RevertController extends Controller {
 			register: $route->register,
 			schema: $route->schema,
 			id: $route->id,
-			until: $until,
-			overwriteVersion: ($data['overwriteVersion'] ?? false)
+			point: new RevertPoint(until: $until, overwriteVersion: ($data['overwriteVersion'] ?? false))
 		);
 
 		return $this->answer(revertedObject: $revertedObject);

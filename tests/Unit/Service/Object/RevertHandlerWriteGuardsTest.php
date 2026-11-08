@@ -141,12 +141,14 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		);
 
 		return new RevertHandler(
-			auditTrailMapper: $this->audit,
+			stores: new \OCA\OpenRegister\Service\Object\RevertStores(
+				auditTrailMapper: $this->audit,
+				objectEntityMapper: $this->magic,
+				validateHandler: $this->validator,
+			),
 			container: $container,
 			eventDispatcher: $this->events,
-			objectEntityMapper: $this->magic,
 			permissionHandler: $permissions,
-			validateHandler: $this->validator,
 		);
 	}//end handler()
 
@@ -173,7 +175,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 			->with($this->current, $this->reverted, 'revert')
 			->willReturn(new AuditTrail());
 
-		$saved = $this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+		$saved = $this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 
 		$this->assertSame($this->reverted, $saved);
 	}//end testRevertWritesARevertAuditRow()
@@ -188,7 +190,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->magic->method('update')->willReturnArgument(0);
 		$this->audit->expects($this->once())->method('revertObject')->with($this->identicalTo($this->current), '1.0.1', false);
 
-		$this->handler()->revert(register: '5', schema: '7', id: '11', until: '1.0.1');
+		$this->handler()->revert(register: '5', schema: '7', id: '11', point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testTheTrailIsHandedTheCheckedObject()
 
 	/**
@@ -204,7 +206,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 		$this->audit->expects($this->never())->method('createAuditTrail');
 
-		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testRevertHonoursAuditTrailsDisabled()
 
 	/**
@@ -221,7 +223,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 		$this->expectException(ObjectStateWriteException::class);
 
-		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testFrozenObjectRefusesRevert()
 
 	/**
@@ -239,7 +241,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->audit->expects($this->never())->method('createAuditTrail');
 
 		try {
-			$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+			$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 			$this->fail('The revert went through');
 		} catch (ObjectStateWriteException $e) {
 			$this->assertSame('archived', $e->getState());
@@ -261,7 +263,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->expectException(\OCA\OpenRegister\Exception\NotAuthorizedException::class);
 		$this->expectExceptionMessage('You do not have permission to revert this object');
 
-		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testNoUpdatePermissionRefusesRevertBeforeTheLock()
 
 	/**
@@ -279,7 +281,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->expectException(\OCA\OpenRegister\Exception\LockedException::class);
 		$this->expectExceptionMessage('Object is locked by bob');
 
-		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testALockHeldBySomeoneElseRefusesRevertBeforeTheFreeze()
 
 	/**
@@ -293,7 +295,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->magic->expects($this->once())->method('update')
 			->with($this->reverted, $this->register, $this->schema)->willReturnArgument(0);
 
-		$this->assertSame($this->reverted, $this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1'));
+		$this->assertSame($this->reverted, $this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1')));
 	}//end testTheCallersOwnLockAllowsRevert()
 
 	/**
@@ -315,7 +317,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 		$this->expectException(ValidationException::class);
 
-		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testRevertedDataIsValidatedAgainstTheCurrentSchema()
 
 	/**
@@ -329,7 +331,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->magic->expects($this->once())->method('update')->willReturnArgument(0);
 		$this->audit->method('createAuditTrail')->willReturn(new AuditTrail());
 
-		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testSoftValidationSchemaSkipsValidation()
 
 	/**
@@ -342,7 +344,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 		$this->magic->expects($this->once())->method('update')->willReturn($this->reverted);
 		$this->audit->method('createAuditTrail')->willReturn(new AuditTrail());
 
-		$saved = $this->handler()->revert(register: 'lp-register', schema: 'lp-item', id: self::OBJ, until: '1.0.1');
+		$saved = $this->handler()->revert(register: 'lp-register', schema: 'lp-item', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 
 		$this->assertSame($this->reverted, $saved);
 	}//end testRevertAcceptsRegisterAndSchemaSlugs()
@@ -357,6 +359,6 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
 
-		$this->handler()->revert(register: 'other-register', schema: 'lp-item', id: self::OBJ, until: '1.0.1');
+		$this->handler()->revert(register: 'other-register', schema: 'lp-item', id: self::OBJ, point: new \OCA\OpenRegister\Service\Object\RevertPoint(until: '1.0.1'));
 	}//end testRevertRefusesAnotherRegistersSlug()
 }//end class
