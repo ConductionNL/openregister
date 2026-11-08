@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Calendar;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use Psr\Log\LoggerInterface;
@@ -75,12 +75,12 @@ class DeadlineDateResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerMapper $timers The flow-timer store.
+	 * @param FlowTimerMapperInterface $timers The flow-timer store.
 	 * @param WorkingCalendarService $calendars The working-calendar resolver.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly FlowTimerMapper $timers,
+		private readonly FlowTimerMapperInterface $timers,
 		private readonly WorkingCalendarService $calendars,
 		private readonly LoggerInterface $logger,
 	) {
