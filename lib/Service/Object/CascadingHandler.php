@@ -85,7 +85,23 @@ class CascadingHandler {
 
 		$uuid   = $uuid ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
 		$parent = new CascadeTarget(parentUuid: $uuid, register: $currentRegister);
-		foreach ($inversedByProperties as $propertyName => $definition) {
+
+		return [$this->cascadeProperties(object: $object, properties: $inversedByProperties, parent: $parent), $uuid];
+	}//end handlePreValidationCascading()
+
+	/**
+	 * Cascade every filled inversedBy property of an object.
+	 *
+	 * @param array         $object     The object data.
+	 * @param array         $properties The inversedBy property definitions by name.
+	 * @param CascadeTarget $parent     The parent the created objects point back to.
+	 *
+	 * @return array The object data with its cascaded values
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function cascadeProperties(array $object, array $properties, CascadeTarget $parent): array {
+		foreach ($properties as $propertyName => $definition) {
 			if (isset($object[$propertyName]) === false || empty($object[$propertyName]) === true) {
 				continue;
 			}
@@ -93,8 +109,8 @@ class CascadingHandler {
 			$object[$propertyName] = $this->cascadeValue(value: $object[$propertyName], target: $parent->with(definition: $definition));
 		}
 
-		return [$object, $uuid];
-	}//end handlePreValidationCascading()
+		return $object;
+	}//end cascadeProperties()
 
 	/**
 	 * The schema's properties that carry an inversedBy, on the property or on its items.
@@ -165,16 +181,34 @@ class CascadingHandler {
 	private function cascadeItems(mixed $items, CascadeTarget $target): array {
 		$cascaded = [];
 		foreach ($items as $item) {
-			if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
-				// A failed create keeps the item, so the list does not come out empty.
-				$cascaded[] = $this->createFor(objectData: $item, target: $target) ?? $item;
-			} elseif (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
-				$cascaded[] = $item;
-			}
+			array_push($cascaded, ...$this->cascadeItem(item: $item, target: $target));
 		}
 
 		return $cascaded;
 	}//end cascadeItems()
+
+	/**
+	 * One list item cascaded: a nested object created, a uuid kept, anything else dropped.
+	 *
+	 * @param mixed         $item   The item.
+	 * @param CascadeTarget $target The target the created object points back to.
+	 *
+	 * @return array Zero or one item
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function cascadeItem(mixed $item, CascadeTarget $target): array {
+		if (is_array($item) === true && $this->utilityHandler->isUuid($item) === false) {
+			// A failed create keeps the item, so the list does not come out empty.
+			return [$this->createFor(objectData: $item, target: $target) ?? $item];
+		}
+
+		if (is_string($item) === true && $this->utilityHandler->isUuid($item) === true) {
+			return [$item];
+		}
+
+		return [];
+	}//end cascadeItem()
 
 	/**
 	 * A single nested object created and replaced by its uuid; any other value as it is.
@@ -283,7 +317,7 @@ class CascadingHandler {
 	 */
 	private function cascadeSchema(array $definition): ?Schema {
 		$schemaRef = $definition['$ref'] ?? null;
-		if ($schemaRef === null || $schemaRef === '' || str_contains($schemaRef, '#/components/schemas/') === false) {
+		if (in_array($schemaRef, [null, ''], true) === true || str_contains($schemaRef, '#/components/schemas/') === false) {
 			return null;
 		}
 

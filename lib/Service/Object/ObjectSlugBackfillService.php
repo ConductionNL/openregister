@@ -237,15 +237,7 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 			$uuid = $row['uuid'];
 			$slug = $this->slugHandler->decide(
 				want: new ObjectSlugWant(slug: $candidate, scope: $scope, objectUuid: $uuid, path: 'backfill'),
-				holderOf: function (string $wanted) use (&$taken, $uuid): ?string {
-					foreach ($taken[$this->slugHandler->foldKey(slug: $wanted)] ?? [] as $holder) {
-						if ($holder !== $uuid) {
-							return $holder;
-						}
-					}
-
-					return null;
-				},
+				holderOf: $this->holderOf(taken: $taken, uuid: $uuid),
 				log: $log
 			);
 			if ($slug === null) {
@@ -260,4 +252,28 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 
 		return $plan;
 	}//end planFill()
+
+	/**
+	 * The holder lookup for one object: the first other object holding a folded slug.
+	 *
+	 * Reads the run's taken map by reference, so slugs planned earlier in the run count.
+	 *
+	 * @param array  $taken Holder uuids per folded slug (by reference).
+	 * @param mixed  $uuid  The object the slug is decided for.
+	 *
+	 * @return \Closure(string): ?string The lookup
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	private function holderOf(array &$taken, mixed $uuid): \Closure {
+		return function (string $wanted) use (&$taken, $uuid): ?string {
+			foreach ($taken[$this->slugHandler->foldKey(slug: $wanted)] ?? [] as $holder) {
+				if ($holder !== $uuid) {
+					return $holder;
+				}
+			}
+
+			return null;
+		};
+	}//end holderOf()
 }//end class
