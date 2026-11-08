@@ -25,8 +25,6 @@ namespace OCA\OpenRegister\Service\Rbac;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectService;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 
 /**
  * The object resolution and the access-review checks of the per-object access reads.
@@ -38,7 +36,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
  */
-class AccessReviewGate {
+class AccessReviewGate implements AccessReviewGateInterface {
 
 	/**
 	 * The verb a schema writes to admit callers to an object's grants list.
@@ -52,15 +50,13 @@ class AccessReviewGate {
 	 *
 	 * @param ObjectService      $objectService Resolves the object through the RBAC boundary.
 	 * @param ObjectAccessReport $report        Resolves the schema the request named.
-	 * @param IUserSession       $userSession   The calling principal.
-	 * @param IGroupManager      $groupManager  Administrator detection and the caller's groups.
+	 * @param CallerContext      $caller        The calling principal and its groups.
 	 * @param GrantManageGuard   $grantManage   The owner, owning group, administrator and `grant_manage` rule.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
 		private readonly ObjectAccessReport $report,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly CallerContext $caller,
 		private readonly GrantManageGuard $grantManage,
 	) {
 	}//end __construct()
@@ -115,7 +111,7 @@ class AccessReviewGate {
 			return true;
 		}
 
-		if ($userId !== null && $this->groupManager->isAdmin($userId) === true) {
+		if ($userId !== null && $this->caller->groupManager->isAdmin($userId) === true) {
 			return true;
 		}
 
@@ -258,12 +254,12 @@ class AccessReviewGate {
 	 * @return string[] The groups, empty when anonymous.
 	 */
 	private function callerGroups(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
 
-		return $this->groupManager->getUserGroupIds($user);
+		return $this->caller->groupManager->getUserGroupIds($user);
 	}//end callerGroups()
 
 	/**
@@ -291,6 +287,6 @@ class AccessReviewGate {
 	 * @return string|null The uid, or null when anonymous.
 	 */
 	private function callerUid(): ?string {
-		return $this->userSession->getUser()?->getUID();
+		return $this->caller->userSession->getUser()?->getUID();
 	}//end callerUid()
 }//end class

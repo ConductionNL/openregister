@@ -102,16 +102,26 @@ class PersonLookupController extends Controller {
 
 		$result = $this->brpProvider->lookupByBsn($bsn);
 
-		if (($result['unavailable'] ?? false) === true) {
-			return new JSONResponse(
-				[
-					'error' => 'brp-haalcentraal source is not available',
-					'details' => ['cause' => $result['cause']],
-				],
-				503
-			);
+		return $this->unavailable(result: $result) ?? new JSONResponse($result);
+	}//end brpPerson()
+
+	/**
+	 * The 503 for a degraded provider, or null when the lookup answered.
+	 *
+	 * @param array<string, mixed> $result The provider lookup result.
+	 *
+	 * @return JSONResponse|null HTTP 503 with the cause, or null.
+	 *
+	 * @spec openspec/specs/integration-person-lookup/spec.md
+	 */
+	private function unavailable(array $result): ?JSONResponse {
+		if (($result['unavailable'] ?? false) !== true) {
+			return null;
 		}
 
-		return new JSONResponse($result);
-	}//end brpPerson()
+		return new JSONResponse(
+			['error' => 'brp-haalcentraal source is not available', 'details' => ['cause' => $result['cause']]],
+			503
+		);
+	}//end unavailable()
 }//end class

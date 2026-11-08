@@ -36,6 +36,7 @@ use OCA\OpenRegister\Controller\FormLinksController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FormLinkService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FormLinksControllerFactory;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -90,7 +91,7 @@ class FormLinksControllerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$this->controller = new FormLinksController(
+		$this->controller = FormLinksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,

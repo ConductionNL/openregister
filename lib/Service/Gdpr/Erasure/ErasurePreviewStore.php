@@ -50,7 +50,7 @@ use Throwable;
  *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class ErasurePreviewStore {
+class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 	/**
 	 * Wire the store.
 	 *
@@ -109,23 +109,14 @@ class ErasurePreviewStore {
 		try {
 			$preview = $this->mapper->findByUuid(uuid: $uuid);
 		} catch (Throwable $e) {
-			throw new ErasureRefusedException(
-				rule: 'erasure-preview-unknown',
-				reason: 'No erasure preview with that identifier exists.',
-				statusCode: 404,
-				previous: $e
-			);
+			throw $this->unknown(previous: $e);
 		}
 
 		if ($this->mayReach(preview: $preview) === false) {
 			// SAME ANSWER AS "UNKNOWN", DELIBERATELY. Telling a stranger that the
 			// preview exists but is not theirs confirms that somebody asked about
 			// this data subject, which is itself the disclosure.
-			throw new ErasureRefusedException(
-				rule: 'erasure-preview-unknown',
-				reason: 'No erasure preview with that identifier exists.',
-				statusCode: 404
-			);
+			throw $this->unknown(previous: null);
 		}
 
 		return $preview;
@@ -145,14 +136,7 @@ class ErasurePreviewStore {
 	public function approve(string $uuid): ErasurePreview {
 		$preview = $this->load(uuid: $uuid);
 
-		if ($preview->getStatus() === ErasurePreview::STATUS_CONSUMED) {
-			throw new ErasureRefusedException(
-				rule: 'erasure-already-run',
-				reason: 'This preview has already been run. Take a new preview before erasing again.',
-				statusCode: 409,
-				context: ['consumedAt' => $preview->getConsumedAt()?->format(DateTime::ATOM)]
-			);
-		}
+		$this->refuseIfSpent(preview: $preview);
 
 		$preview->setStatus(ErasurePreview::STATUS_APPROVED);
 		$preview->setApprovedBy($this->actor());
@@ -175,14 +159,7 @@ class ErasurePreviewStore {
 	public function requireRunnable(string $uuid): ErasurePreview {
 		$preview = $this->load(uuid: $uuid);
 
-		if ($preview->getStatus() === ErasurePreview::STATUS_CONSUMED) {
-			throw new ErasureRefusedException(
-				rule: 'erasure-already-run',
-				reason: 'This preview has already been run. Take a new preview before erasing again.',
-				statusCode: 409,
-				context: ['consumedAt' => $preview->getConsumedAt()?->format(DateTime::ATOM)]
-			);
-		}
+		$this->refuseIfSpent(preview: $preview);
 
 		if ($preview->isRunnable() === false) {
 			throw new ErasureRefusedException(
@@ -234,17 +211,51 @@ class ErasurePreviewStore {
 	 * @return bool True for its author and for an administrator.
 	 */
 	private function mayReach(ErasurePreview $preview): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
+		$uid = $this->userSession->getUser()?->getUID();
+		if ($uid === null) {
 			return false;
 		}
 
-		if ($this->groupManager->isAdmin($user->getUID()) === true) {
-			return true;
+		return ($this->groupManager->isAdmin($uid) === true || $preview->getCreatedBy() === $uid);
+	}//end mayReach()
+
+	/**
+	 * The refusal for a preview that does not exist, or that the caller may not reach.
+	 *
+	 * @param Throwable|null $previous Why the lookup failed, when it did.
+	 *
+	 * @return ErasureRefusedException The refusal.
+	 */
+	private function unknown(?Throwable $previous): ErasureRefusedException {
+		return new ErasureRefusedException(
+			rule: 'erasure-preview-unknown',
+			reason: 'No erasure preview with that identifier exists.',
+			statusCode: 404,
+			previous: $previous
+		);
+	}//end unknown()
+
+	/**
+	 * Refuse a preview that was already run.
+	 *
+	 * @param ErasurePreview $preview The preview.
+	 *
+	 * @return void
+	 *
+	 * @throws ErasureRefusedException When it is consumed.
+	 */
+	private function refuseIfSpent(ErasurePreview $preview): void {
+		if ($preview->getStatus() !== ErasurePreview::STATUS_CONSUMED) {
+			return;
 		}
 
-		return ($preview->getCreatedBy() === $user->getUID());
-	}//end mayReach()
+		throw new ErasureRefusedException(
+			rule: 'erasure-already-run',
+			reason: 'This preview has already been run. Take a new preview before erasing again.',
+			statusCode: 409,
+			context: ['consumedAt' => $preview->getConsumedAt()?->format(DateTime::ATOM)]
+		);
+	}//end refuseIfSpent()
 
 	/**
 	 * The acting principal's uid, or `system`.

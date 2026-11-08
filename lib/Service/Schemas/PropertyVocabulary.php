@@ -53,20 +53,32 @@ final class PropertyVocabulary implements PropertyVocabularyInterface {
 	public function types(): array {
 		$rows = [];
 		foreach (PropertyValidatorHandler::TYPES as $type => $descriptor) {
-			$name = (string)$type;
-			$rows[] = [
-				'type' => $name,
-				'category' => $descriptor['category'],
-				'constraints' => $this->constraintsFor(type: $name),
-				'formats' => $this->formatsFor(type: $name),
-				'conversion' => $descriptor['conversion'],
-				'conversionNote' => $descriptor['conversionNote'],
-				'description' => $descriptor['description'],
-			];
+			$rows[] = $this->typeRow(name: (string)$type, descriptor: $descriptor);
 		}
 
 		return $rows;
 	}//end types()
+
+	/**
+	 * One type, in the shape a property editor renders.
+	 *
+	 * @param string               $name       The type name.
+	 * @param array<string, mixed> $descriptor The type's descriptor.
+	 *
+	 * @return array{type: string, category: string, constraints: array<int, string>,
+	 *   formats: array<int, string>, conversion: string, conversionNote: string, description: string} The row.
+	 */
+	private function typeRow(string $name, array $descriptor): array {
+		return [
+			'type'           => $name,
+			'category'       => $descriptor['category'],
+			'constraints'    => $this->constraintsFor(type: $name),
+			'formats'        => $this->formatsFor(type: $name),
+			'conversion'     => $descriptor['conversion'],
+			'conversionNote' => $descriptor['conversionNote'],
+			'description'    => $descriptor['description'],
+		];
+	}//end typeRow()
 
 	/**
 	 * The type names alone.
@@ -173,23 +185,35 @@ final class PropertyVocabulary implements PropertyVocabularyInterface {
 	 */
 	public function modifiers(): array {
 		$rows = [];
-		$closed = PropertyValidatorHandler::CLOSED_MODIFIER_VALUES;
 		foreach (PropertyValidatorHandler::MODIFIERS as $key => $descriptor) {
-			$row = [
-				'key' => (string)$key,
-				'value' => $descriptor['value'],
-				'enforced' => true,
-				'description' => $descriptor['description'],
-			];
-			if (array_key_exists((string)$key, $closed) === true) {
-				$row['allowedValues'] = $closed[(string)$key];
-			}
-
-			$rows[] = $row;
+			$rows[] = self::modifierRow(key: (string)$key, descriptor: $descriptor);
 		}
 
 		return $rows;
 	}//end modifiers()
+
+	/**
+	 * One modifier key, with its closed list of values when the save path checks one.
+	 *
+	 * @param string               $key        The modifier key.
+	 * @param array<string, mixed> $descriptor The modifier's descriptor.
+	 *
+	 * @return array{key: string, value: string, enforced: bool, description: string,
+	 *   allowedValues?: array<int, string>} The row.
+	 */
+	private static function modifierRow(string $key, array $descriptor): array {
+		$row = [
+			'key'         => $key,
+			'value'       => $descriptor['value'],
+			'enforced'    => true,
+			'description' => $descriptor['description'],
+		];
+		if (array_key_exists($key, PropertyValidatorHandler::CLOSED_MODIFIER_VALUES) === true) {
+			$row['allowedValues'] = PropertyValidatorHandler::CLOSED_MODIFIER_VALUES[$key];
+		}
+
+		return $row;
+	}//end modifierRow()
 
 	/**
 	 * The keys the layer stores and hands on without checking them.
@@ -284,14 +308,7 @@ final class PropertyVocabulary implements PropertyVocabularyInterface {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function categories(): array {
-		$categories = [];
-		foreach (PropertyValidatorHandler::TYPES as $descriptor) {
-			if (in_array($descriptor['category'], $categories, true) === false) {
-				$categories[] = $descriptor['category'];
-			}
-		}
-
-		return $categories;
+		return array_values(array_unique(array_column(PropertyValidatorHandler::TYPES, 'category')));
 	}//end categories()
 
 	/**
@@ -302,28 +319,47 @@ final class PropertyVocabulary implements PropertyVocabularyInterface {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function all(): array {
-		$types = $this->types();
-		$constraints = $this->constraints();
-		$modifiers = $this->modifiers();
-		$passthrough = $this->passthrough();
+		$sections = $this->sections();
 
 		return [
-			'types' => $types,
-			'categories' => $this->categories(),
-			'constraints' => $constraints,
-			'modifiers' => $modifiers,
-			'passthrough' => $passthrough,
-			'keys' => $this->keys(),
-			'localisation' => $this->localisation(),
+			'types'                 => $sections['types'],
+			'categories'            => $this->categories(),
+			'constraints'           => $sections['constraints'],
+			'modifiers'             => $sections['modifiers'],
+			'passthrough'           => $sections['passthrough'],
+			'keys'                  => $this->keys(),
+			'localisation'          => $this->localisation(),
 			'vendorExtensionPrefix' => 'x-',
-			'counts' => [
-				'types' => count($types),
-				'constraints' => count($constraints),
-				'modifiers' => count($modifiers),
-				'passthrough' => count($passthrough),
-				'formats' => count($this->formatsFor(type: 'string')),
-				'keys' => count($this->keys()),
-			],
+			'counts'                => $this->counts(sections: $sections),
 		];
 	}//end all()
+
+	/**
+	 * The counts the endpoint reports: one per section, then the string formats and the keys.
+	 *
+	 * @param array<string, array<int, mixed>> $sections The types, constraints, modifiers and pass-through rows.
+	 *
+	 * @return array<string, int> The counts.
+	 */
+	private function counts(array $sections): array {
+		$counts            = array_map('count', $sections);
+		$counts['formats'] = count($this->formatsFor(type: 'string'));
+		$counts['keys']    = count($this->keys());
+
+		return $counts;
+	}//end counts()
+
+	/**
+	 * The four row sections of the vocabulary, keyed as the endpoint names them.
+	 *
+	 * @return array<string, array<int, mixed>> The types, constraints, modifiers and pass-through rows.
+	 */
+	private function sections(): array {
+		return [
+			'types'       => $this->types(),
+			'constraints' => $this->constraints(),
+			'modifiers'   => $this->modifiers(),
+			'passthrough' => $this->passthrough(),
+		];
+	}//end sections()
 }//end class

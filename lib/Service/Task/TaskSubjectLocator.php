@@ -89,6 +89,19 @@ class TaskSubjectLocator implements TaskSubjectLocatorInterface {
 			return [];
 		}
 
+		return self::locations(found: $this->searchInChunks(uuids: $uuids));
+	}//end locateMany()
+
+	/**
+	 * Search every magic table for the uuids, a chunk at a time.
+	 *
+	 * A chunk that cannot be searched is logged and skipped.
+	 *
+	 * @param array<int, string> $uuids The distinct, non-empty uuids.
+	 *
+	 * @return array<int|string, mixed> The objects found.
+	 */
+	private function searchInChunks(array $uuids): array {
 		$found = [];
 		foreach (array_chunk($uuids, self::CHUNK) as $chunk) {
 			try {
@@ -101,6 +114,17 @@ class TaskSubjectLocator implements TaskSubjectLocatorInterface {
 			}
 		}
 
+		return $found;
+	}//end searchInChunks()
+
+	/**
+	 * The register and schema ids of the objects found, by uuid.
+	 *
+	 * @param array<int|string, mixed> $found The objects found.
+	 *
+	 * @return array<string, array{registerId: int, schemaId: int}> Locations by uuid.
+	 */
+	private static function locations(array $found): array {
 		$locations = [];
 		foreach ($found as $object) {
 			$register = $object->getRegister();
@@ -116,7 +140,7 @@ class TaskSubjectLocator implements TaskSubjectLocatorInterface {
 		}
 
 		return $locations;
-	}//end locateMany()
+	}//end locations()
 
 	/**
 	 * Fill in `registerId` and `schemaId` for a task's anchor when they are missing.
@@ -164,26 +188,54 @@ class TaskSubjectLocator implements TaskSubjectLocatorInterface {
 	public function readLocated(array $tasks): array {
 		$found = [];
 		foreach ($this->locatedGroups(tasks: $tasks) as $pair => $uuids) {
-			[$registerId, $schemaId] = array_map('intval', explode(':', (string)$pair));
-			try {
-				$found = array_merge(
-					$found,
-					$this->objects->findObjectsByUuidsInRegisterSchema(
-						register: $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false),
-						schema: $this->schemas->find(id: $schemaId, _rbac: false, _multitenancy: false),
-						uuids: $uuids
-					)
-				);
-			} catch (Throwable $failure) {
-				$this->logger->debug(
-					'[TaskSubjectLocator] Could not read located subjects: ' . $failure->getMessage(),
-					['pair' => $pair]
-				);
-			}
+			$found = $this->mergePair(found: $found, pair: (string)$pair, uuids: $uuids);
 		}
 
 		return $found;
 	}//end readLocated()
+
+	/**
+	 * Add one register and schema pair's subjects to those found so far.
+	 *
+	 * A pair that cannot be read is logged and leaves its subjects to the
+	 * caller's fallback.
+	 *
+	 * @param array<string, mixed> $found The subjects found so far.
+	 * @param string $pair The `registerId:schemaId` pair.
+	 * @param array<int, string> $uuids The pair's subject uuids.
+	 *
+	 * @return array<string, mixed> The subjects found, this pair's included.
+	 */
+	private function mergePair(array $found, string $pair, array $uuids): array {
+		try {
+			return array_merge($found, $this->readPair(pair: $pair, uuids: $uuids));
+		} catch (Throwable $failure) {
+			$this->logger->debug(
+				'[TaskSubjectLocator] Could not read located subjects: ' . $failure->getMessage(),
+				['pair' => $pair]
+			);
+
+			return $found;
+		}
+	}//end mergePair()
+
+	/**
+	 * One register and schema pair's subjects, read from their own table.
+	 *
+	 * @param string $pair The `registerId:schemaId` pair.
+	 * @param array<int, string> $uuids The pair's subject uuids.
+	 *
+	 * @return array<string, mixed> The subjects.
+	 */
+	private function readPair(string $pair, array $uuids): array {
+		[$registerId, $schemaId] = array_map('intval', explode(':', $pair));
+
+		return $this->objects->findObjectsByUuidsInRegisterSchema(
+			register: $this->registers->find(id: $registerId, _rbac: false, _multitenancy: false),
+			schema: $this->schemas->find(id: $schemaId, _rbac: false, _multitenancy: false),
+			uuids: $uuids
+		);
+	}//end readPair()
 
 	/**
 	 * Located subject uuids grouped by `registerId:schemaId`.

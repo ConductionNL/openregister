@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class ObjectAccessReport {
+class ObjectAccessReport implements ObjectAccessReportInterface {
 
 	/**
 	 * How many trail entries the history reads at most.

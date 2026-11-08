@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\CorrectionService;
+use OCA\OpenRegister\Service\Object\CorrectionTarget;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -110,9 +111,7 @@ class CorrectionsController extends Controller {
 
 		try {
 			$result = $this->corrections->correct(
-				register: $register,
-				schema: $schema,
-				id: $id,
+				target: new CorrectionTarget(register: $register, schema: $schema, id: $id),
 				values: $values,
 				reason: $this->request->getParam('reason')
 			);

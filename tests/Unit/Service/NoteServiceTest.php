@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
 use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteAccounts;
 use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
@@ -52,11 +53,13 @@ class NoteServiceTest extends TestCase {
 		$this->versions = $this->createMock(NoteVersionService::class);
 
 		$this->service = new NoteService(
-			$this->commentsManager,
-			$this->userSession,
-			$this->userManager,
-			$this->visibility,
-			$this->versions
+			commentsManager: $this->commentsManager,
+			accounts: new NoteAccounts(
+				userSession: $this->userSession,
+				userManager: $this->userManager
+			),
+			visibility: $this->visibility,
+			versions: $this->versions
 		);
 	}
 

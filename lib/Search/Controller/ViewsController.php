@@ -27,6 +27,7 @@ use OCA\OpenRegister\Search\Service\ViewPresentationService;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCA\OpenRegister\Exception\InvalidViewAlertException;
+use OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -83,28 +84,19 @@ class ViewsController extends Controller {
 	private ViewerReachResolver $viewers;
 
 	/**
-	 * Constructor for ViewsController
+	 * Constructor.
 	 *
-	 * @param string $appName The app name
-	 * @param IRequest $request The request object
-	 * @param ViewService $viewService The view service
-	 * @param ViewPresentationService $viewPresentationService The view presentation (kanban/calendar) service
-	 * @param LoggerInterface $logger The logger
-	 * @param ViewerReachResolver $viewers Who is asking, and how far they reach
+	 * @param string                  $appName  The application name.
+	 * @param IRequest                $request  The current request.
+	 * @param ViewsControllerServices $services The saved-views API services.
 	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		ViewService $viewService,
-		ViewPresentationService $viewPresentationService,
-		LoggerInterface $logger,
-		ViewerReachResolver $viewers,
-	) {
+	public function __construct(string $appName, IRequest $request, ViewsControllerServices $services) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->viewService = $viewService;
-		$this->viewPresentationService = $viewPresentationService;
-		$this->logger = $logger;
-		$this->viewers = $viewers;
+
+		$this->viewService             = $services->viewService;
+		$this->viewPresentationService = $services->viewPresentationService;
+		$this->logger                  = $services->logger;
+		$this->viewers                 = $services->viewers;
 	}//end __construct()
 
 	/**

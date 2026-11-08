@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Search\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 use OCA\OpenRegister\Search\Db\View;
 use OCP\AppFramework\Db\Entity;
@@ -75,7 +75,7 @@ class ViewPresentationService {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for enum/property discovery
 	 * @param ObjectOperationsInterface $objectService Object service for the paginated object query
 	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param PropertyRbacHandler|null $propertyRbac Judges whether the caller may group on a governed property.
+	 * @param PropertyRbacHandlerInterface|null $propertyRbac Judges whether the caller may group on a governed property.
 	 *                                               Nullable and last so no construction site shifts; absent, a
 	 *                                               governed grouping property is refused, which is safe
 	 *
@@ -89,7 +89,7 @@ class ViewPresentationService {
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED grouping property is refused, which is the safe
 		// direction.
-		private readonly ?PropertyRbacHandler $propertyRbac = null,
+		private readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
 	) {
 		$this->schemaMapper = $schemaMapper;
 		$this->objectService = $objectService;

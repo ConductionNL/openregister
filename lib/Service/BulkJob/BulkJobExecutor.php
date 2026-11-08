@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -111,9 +111,9 @@ class BulkJobExecutor {
 	/**
 	 * Per-object access checks.
 	 *
-	 * @var PermissionHandlerInterface
+	 * @var PermissionCheckInterface
 	 */
-	private readonly PermissionHandlerInterface $permissionHandler;
+	private readonly PermissionCheckInterface $permissionHandler;
 
 	/**
 	 * Actor lookup.

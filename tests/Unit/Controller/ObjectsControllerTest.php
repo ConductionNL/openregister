@@ -5556,10 +5556,10 @@ class ObjectsControllerTest extends TestCase {
 			$this->callback(static fn (...$a): bool => true)
 		)->willReturnCallback(
 			function (...$args) {
-				$this->assertSame('api', $args['source'] ?? $args[0]);
-				$this->assertSame('csv', $args['format'] ?? $args[2]);
-				$this->assertSame(1, $args['downloadCount'] ?? null);
-				$this->assertNull($args['retentionSeconds'] ?? 'missing');
+				$this->assertSame('api', $args[0]->source);
+				$this->assertSame('csv', $args[1]->format);
+				$this->assertSame(1, $args[2]->downloadCount);
+				$this->assertNull($args[3]);
 				return new \OCA\OpenRegister\Db\ExportRun();
 			}
 		);
@@ -6375,7 +6375,7 @@ class ObjectsControllerTest extends TestCase {
 		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
 		$runs->expects($this->once())->method('record')->willReturnCallback(
 			function (...$args) {
-				$this->assertSame('pdf', $args['format'] ?? $args[2]);
+				$this->assertSame('pdf', $args[1]->format);
 				return new \OCA\OpenRegister\Db\ExportRun();
 			}
 		);
@@ -6713,7 +6713,7 @@ class ObjectsControllerTest extends TestCase {
 		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
 		$runs->expects($this->once())->method('record')->willReturnCallback(
 			function (...$args) use ($format) {
-				$this->assertSame($format, $args['format'] ?? $args[2]);
+				$this->assertSame($format, $args[1]->format);
 				return new \OCA\OpenRegister\Db\ExportRun();
 			}
 		);

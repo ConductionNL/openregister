@@ -48,7 +48,6 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -110,19 +109,12 @@ class SurvivorshipController extends Controller {
 		try {
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, _rbac: true, _multitenancy: true));
 			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found.'], Http::STATUS_NOT_FOUND);
+				return $this->objectNotFound();
 			}
 
-			$sources = $this->sourceRecordResolver->resolveSources(
-				masterData: ($object->getObject() ?? []),
-				masterUuid: (string)$object->getUuid(),
-				config: $this->survivorshipConfigFor(object: $object),
-				masterRegister: (string)$object->getRegister()
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+			$sources = $this->resolveSourcesOf(object: $object);
 		} catch (Throwable $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+			return $this->failure(exception: $e);
 		}
 
 		return new JSONResponse(['sources' => $sources]);
@@ -161,45 +153,105 @@ class SurvivorshipController extends Controller {
 			// write path below.
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, _rbac: true, _multitenancy: true));
 			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found.'], Http::STATUS_NOT_FOUND);
+				return $this->objectNotFound();
 			}
 
-			$this->applyOverride(object: $object, attribute: $attribute);
-
-			// Warm the reverse-FK source resolution in this (clean) request
-			// context before saving: resolving the source schema by slug here
-			// populates the request-scoped schema cache, so the nested
-			// recompute-on-save can resolve the sources by their numeric schema
-			// id rather than a slug lookup that would run inside the save
-			// transaction. Result discarded — this is a cache warm-up only.
-			$this->sourceRecordResolver->resolveSources(
-				masterData: ($object->getObject() ?? []),
-				masterUuid: (string)$object->getUuid(),
-				config: $this->survivorshipConfigFor(object: $object),
-				masterRegister: (string)$object->getRegister()
-			);
-
-			// The RBAC/tenant-scoped write path: a caller who cannot write
-			// this object throws NotAuthorizedException here, caught below.
-			$saved = $this->objectService->saveObject(
-				object: $object,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				uuid: $object->getUuid()
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+			return $this->savedResponse(saved: $this->overrideAndSave(object: $object, attribute: $attribute));
 		} catch (Throwable $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-		}//end try
+			// The RBAC/tenant-scoped write path throws NotAuthorizedException
+			// for a caller who cannot write this object.
+			return $this->failure(exception: $e);
+		}
+	}//end override()
 
+	/**
+	 * Apply the override, warm the source resolution and save through the
+	 * RBAC/tenant-scoped write path.
+	 *
+	 * Warm the reverse-FK source resolution in this (clean) request context
+	 * before saving: resolving the source schema by slug here populates the
+	 * request-scoped schema cache, so the nested recompute-on-save can resolve
+	 * the sources by their numeric schema id rather than a slug lookup that
+	 * would run inside the save transaction. Result discarded — this is a
+	 * cache warm-up only.
+	 *
+	 * @param ObjectEntity $object    The readable master object.
+	 * @param string       $attribute Attribute name to set/clear an override for.
+	 *
+	 * @return ObjectEntity The saved (recomputed) object.
+	 *
+	 * @throws NotAuthorizedException When the caller cannot write this object.
+	 *
+	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.4
+	 */
+	private function overrideAndSave(ObjectEntity $object, string $attribute): ObjectEntity {
+		$this->applyOverride(object: $object, attribute: $attribute);
+		$this->resolveSourcesOf(object: $object);
+
+		return $this->objectService->saveObject(
+			object: $object,
+			register: $object->getRegister(),
+			schema: $object->getSchema(),
+			uuid: $object->getUuid()
+		);
+	}//end overrideAndSave()
+
+	/**
+	 * Resolve a master object's competing source records per its schema's
+	 * `sourceLink` mode.
+	 *
+	 * @param ObjectEntity $object The master object.
+	 *
+	 * @return array The resolved source records.
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 */
+	private function resolveSourcesOf(ObjectEntity $object): array {
+		return $this->sourceRecordResolver->resolveSources(
+			masterData: ($object->getObject() ?? []),
+			masterUuid: (string)$object->getUuid(),
+			config: $this->survivorshipConfigFor(object: $object),
+			masterRegister: (string)$object->getRegister()
+		);
+	}//end resolveSourcesOf()
+
+	/**
+	 * The recomputed object as the response body, carrying its id.
+	 *
+	 * @param ObjectEntity $saved The saved object.
+	 *
+	 * @return JSONResponse The 200 response.
+	 */
+	private function savedResponse(ObjectEntity $saved): JSONResponse {
 		$result = ($saved->getObject() ?? []);
 		$result['id'] = $saved->getUuid();
 
 		return new JSONResponse($result);
-	}//end override()
+	}//end savedResponse()
+
+	/**
+	 * Map a failure to its response: 403 for a refused right, 404 otherwise.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return JSONResponse The 403 or 404 response.
+	 */
+	private function failure(Throwable $exception): JSONResponse {
+		if ($exception instanceof NotAuthorizedException) {
+			return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_FORBIDDEN);
+		}
+
+		return new JSONResponse(['error' => $exception->getMessage()], Http::STATUS_NOT_FOUND);
+	}//end failure()
+
+	/**
+	 * The 404 for a master object that is absent or unreadable.
+	 *
+	 * @return JSONResponse The 404 response.
+	 */
+	private function objectNotFound(): JSONResponse {
+		return new JSONResponse(['error' => 'Object not found.'], Http::STATUS_NOT_FOUND);
+	}//end objectNotFound()
 
 	/**
 	 * Set or clear one attribute override directly on the object's in-memory
@@ -220,11 +272,7 @@ class SurvivorshipController extends Controller {
 		$data = ($object->getObject() ?? []);
 		$overridesField = $this->overridesFieldFor(object: $object);
 
-		$overrides = ($data[$overridesField] ?? []);
-		if (is_array($overrides) === false) {
-			$overrides = [];
-		}
-
+		$overrides = $this->overridesIn(value: ($data[$overridesField] ?? []));
 		unset($overrides[$attribute]);
 		if ($hasValue === true) {
 			$overrides[$attribute] = $this->buildOverrideEntry();
@@ -233,6 +281,23 @@ class SurvivorshipController extends Controller {
 		$data[$overridesField] = $overrides;
 		$object->setObject($data);
 	}//end applyOverride()
+
+	/**
+	 * The stored override map, or an empty one when it is not a map.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return array The override map.
+	 *
+	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.4
+	 */
+	private function overridesIn(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end overridesIn()
 
 	/**
 	 * Build a single override entry from the current request's `value` and
@@ -270,18 +335,7 @@ class SurvivorshipController extends Controller {
 	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.4
 	 */
 	private function overridesFieldFor(ObjectEntity $object): string {
-		$schema = $this->loadSchema(object: $object);
-		if ($schema === null) {
-			return self::DEFAULT_OVERRIDES_FIELD;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$value = ($config['x-openregister-survivorship'] ?? null);
-		if (is_array($value) === false) {
-			return self::DEFAULT_OVERRIDES_FIELD;
-		}
-
-		$field = (string)($value['overridesField'] ?? '');
+		$field = (string)($this->survivorshipConfigFor(object: $object)['overridesField'] ?? '');
 		if ($field === '') {
 			return self::DEFAULT_OVERRIDES_FIELD;
 		}

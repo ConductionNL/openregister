@@ -56,7 +56,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-final class ObjectPreviewFormatter {
+final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 
 	/**
 	 * Internal fields to exclude from preview properties.
@@ -177,10 +177,7 @@ final class ObjectPreviewFormatter {
 	 *
 	 * @param IURLGenerator $urlGenerator The URL generator
 	 * @param IL10N $l10n The localization service
-	 * @param ObjectOperationsInterface $objectService The object service
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper
-	 * @param RegisterMapperInterface $registerMapper Register mapper
+	 * @param ObjectPreviewSources $sources The object service, deep link registry and schema/register mappers
 	 * @param LoggerInterface $logger Logger
 	 *
 	 * @return void
@@ -190,18 +187,15 @@ final class ObjectPreviewFormatter {
 	public function __construct(
 		IURLGenerator $urlGenerator,
 		IL10N $l10n,
-		ObjectOperationsInterface $objectService,
-		DeepLinkRegistryService $deepLinkRegistry,
-		SchemaMapperInterface $schemaMapper,
-		RegisterMapperInterface $registerMapper,
+		ObjectPreviewSources $sources,
 		LoggerInterface $logger,
 	) {
 		$this->urlGenerator = $urlGenerator;
 		$this->l10n = $l10n;
-		$this->objectService = $objectService;
-		$this->deepLinkRegistry = $deepLinkRegistry;
-		$this->schemaMapper = $schemaMapper;
-		$this->registerMapper = $registerMapper;
+		$this->objectService = $sources->objectService;
+		$this->deepLinkRegistry = $sources->deepLinkRegistry;
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->registerMapper = $sources->registerMapper;
 		$this->logger = $logger;
 	}//end __construct()
 

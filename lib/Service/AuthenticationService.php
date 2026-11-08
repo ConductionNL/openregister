@@ -47,7 +47,7 @@ use Twig\Sandbox\SecurityPolicy;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class AuthenticationService {
+class AuthenticationService implements AuthenticationTokenFetcherInterface {
 
 	/**
 	 * Required parameters for OAuth2 client credentials flow.

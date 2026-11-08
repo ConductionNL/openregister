@@ -43,20 +43,28 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
+use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
+use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
+use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixPersonValues;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\McpScope;
 use OCA\OpenRegister\Service\Rbac\MatrixRowsFromApps;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use OCA\OpenRegister\Service\Rbac\RoleBlockExpander;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
@@ -246,7 +254,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @var string
 	 */
-	public const SCOPE_MCP = 'mcp';
+	public const SCOPE_MCP = McpScope::SCOPE;
 
 	/**
 	 * Write actions that fail closed for anonymous callers.
@@ -311,57 +319,185 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public const CONFIG_ENFORCE_DEFAULT_CLOSED = 'enforce_default_closed';
 
 	/**
+	 * User session for getting current user.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * User manager for getting user objects.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Group manager for checking user groups.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Mapper for schema operations.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Mapper for object entity operations.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectEntityMapper;
+
+	/**
+	 * Shared PHP-side match evaluator (ADR-011).
+	 *
+	 * @var ConditionMatcher
+	 */
+	private readonly ConditionMatcher $conditionMatcher;
+
+	/**
+	 * App config for the inheritFromPublic tenant default and the `enforce_default_closed` opt-in flag (Wave-12 Fix 2).
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger for permission auditing.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Container for lazy loading services.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Optional dispatcher for custom-scope events.
+	 *
+	 * @var \OCP\EventDispatcher\IEventDispatcher|null
+	 */
+	private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Shared object-scope resolver; null means a fresh one.
+	 *
+	 * @var ObjectScopeResolverInterface|null
+	 */
+	private readonly ?ObjectScopeResolverInterface $objectScopeResolver;
+
+	/**
+	 * Shared per-object grant resolver; null means a fresh one.
+	 *
+	 * @var ObjectGrantResolver|null
+	 */
+	private readonly ?ObjectGrantResolver $objectGrantResolver;
+
+	/**
+	 * Shared deny-grammar reader; null means a fresh one.
+	 *
+	 * @var DenyResolverInterface|null
+	 */
+	private readonly ?DenyResolverInterface $denyResolver;
+
+	/**
+	 * The staging switch; null means one over the app config.
+	 *
+	 * @var DenyEnforcementMode|null
+	 */
+	private readonly ?DenyEnforcementMode $denyEnforcementMode;
+
+	/**
+	 * The grantable set.
+	 *
+	 * @var PermissionCatalogueInterface|null
+	 */
+	private readonly ?PermissionCatalogueInterface $permissionCatalogue;
+
+	/**
+	 * Reads an entry's end and the area it is confined to.
+	 *
+	 * @var GrantConstraints|null
+	 */
+	private readonly ?GrantConstraints $grantConstraints;
+
+	/**
+	 * Access derived from identity claims; null means none.
+	 *
+	 * @var DerivedGrantStore|null
+	 */
+	private readonly ?DerivedGrantStore $derivedGrantStore;
+
+	/**
+	 * Reads a derived grant in one area.
+	 *
+	 * @var DerivedGrantResolver|null
+	 */
+	private readonly ?DerivedGrantResolver $derivedGrantResolver;
+
+	/**
+	 * Reads the grant the request's API token carries.
+	 *
+	 * @var TokenGrantSource|null
+	 */
+	private readonly ?TokenGrantSource $tokenGrantSource;
+
+	/**
+	 * Narrows the block to that token's grant.
+	 *
+	 * @var TokenGrantNarrower|null
+	 */
+	private readonly ?TokenGrantNarrower $tokenGrantNarrower;
+
+	/**
 	 * PermissionHandler constructor.
 	 *
-	 * @param IUserSession $userSession User session for getting current user.
-	 * @param IUserManager $userManager User manager for getting user objects.
-	 * @param IGroupManager $groupManager Group manager for checking user groups.
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations.
-	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entity operations.
-	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011).
-	 * @param IAppConfig $appConfig App config for the inheritFromPublic tenant default and
-	 *                              the `enforce_default_closed` opt-in flag (Wave-12 Fix
-	 *                              2).
-	 * @param LoggerInterface $logger Logger for permission auditing.
-	 * @param ContainerInterface $container Container for lazy loading services.
-	 * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher Optional dispatcher for custom-scope events.
-	 * @param ObjectScopeResolver|null $objectScopeResolver Shared object-scope resolver; nullable so adding it is
-	 *                                                      not a fatal at existing construction sites.
-	 * @param ObjectGrantResolver|null $objectGrantResolver Shared per-object grant resolver; nullable for the
-	 *                                                      same reason.
-	 * @param DenyResolver|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
-	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
-	 * @param PermissionCatalogue|null $permissionCatalogue The grantable set; nullable for the same reason.
-	 * @param GrantConstraints|null $grantConstraints Reads an entry's end and the area it is confined to; nullable for the same reason.
-	 * @param DerivedGrantStore|null $derivedGrantStore Access derived from identity claims; nullable, and absent means none.
-	 * @param DerivedGrantResolver|null $derivedGrantResolver Reads a derived grant in one area; nullable for the same reason.
-	 * @param TokenGrantSource|null $tokenGrantSource Reads the grant the request's API token carries; nullable for the same reason.
-	 * @param TokenGrantNarrower|null $tokenGrantNarrower Narrows the block to that token's grant; nullable for the same reason.
+	 * The collaborators arrive in four bundles, autowired by the DI container.
+	 * Every one that was nullable before still is, inside its bundle, so an
+	 * unresolvable optional collaborator still lands as null here.
+	 *
+	 * @param PermissionCallerServices $caller Session, users, groups and app config.
+	 * @param PermissionDataServices   $data   Mappers, container and logger.
+	 * @param PermissionRuleServices   $rules  Match evaluator, dispatcher and scope resolvers.
+	 * @param PermissionGrantServices  $grants Deny and derived-grant collaborators.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IUserManager $userManager,
-		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly ConditionMatcher $conditionMatcher,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
-		private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher = null,
-		private readonly ?ObjectScopeResolver $objectScopeResolver = null,
-		private readonly ?ObjectGrantResolver $objectGrantResolver = null,
-		private readonly ?DenyResolver $denyResolver = null,
-		private readonly ?DenyEnforcementMode $denyEnforcementMode = null,
-		private readonly ?PermissionCatalogue $permissionCatalogue = null,
-		private readonly ?GrantConstraints $grantConstraints = null,
-		private readonly ?DerivedGrantStore $derivedGrantStore = null,
-		private readonly ?DerivedGrantResolver $derivedGrantResolver = null,
-		private readonly ?TokenGrantSource $tokenGrantSource = null,
-		private readonly ?TokenGrantNarrower $tokenGrantNarrower = null,
+		PermissionCallerServices $caller,
+		PermissionDataServices $data,
+		PermissionRuleServices $rules,
+		PermissionGrantServices $grants,
 	) {
+		$this->userSession = $caller->userSession;
+		$this->userManager = $caller->userManager;
+		$this->groupManager = $caller->groupManager;
+		$this->schemaMapper = $data->schemaMapper;
+		$this->objectEntityMapper = $data->objectEntityMapper;
+		$this->conditionMatcher = $rules->conditionMatcher;
+		$this->appConfig = $caller->appConfig;
+		$this->logger = $data->logger;
+		$this->container = $data->container;
+		$this->eventDispatcher = $rules->eventDispatcher;
+		$this->objectScopeResolver = $rules->objectScopeResolver;
+		$this->objectGrantResolver = $rules->objectGrantResolver;
+		$this->denyResolver = $grants->deny->denyResolver;
+		$this->denyEnforcementMode = $grants->deny->denyEnforcementMode;
+		$this->permissionCatalogue = $grants->deny->permissionCatalogue;
+		$this->grantConstraints = $grants->deny->grantConstraints;
+		$this->derivedGrantStore = $grants->derived->derivedGrantStore;
+		$this->derivedGrantResolver = $grants->derived->derivedGrantResolver;
+		$this->tokenGrantSource = $grants->derived->tokenGrantSource;
+		$this->tokenGrantNarrower = $grants->derived->tokenGrantNarrower;
 	}//end __construct()
 
 	/**
@@ -373,11 +509,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * resolver is a stateless value object, so a fresh instance is equivalent to
 	 * the injected one.
 	 *
-	 * @return DenyResolver The one reader of the deny grammar.
+	 * @return DenyResolverInterface The one reader of the deny grammar.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function denyResolver(): DenyResolver {
+	private function denyResolver(): DenyResolverInterface {
 		return ($this->denyResolver ?? new DenyResolver());
 	}//end denyResolver()
 
@@ -389,9 +525,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * value object, so falling back to a fresh instance is equivalent to the
 	 * injected one.
 	 *
-	 * @return ObjectScopeResolver The one definition of the scope vocabulary.
+	 * @return ObjectScopeResolverInterface The one definition of the scope vocabulary.
 	 */
-	private function objectScope(): ObjectScopeResolver {
+	private function objectScope(): ObjectScopeResolverInterface {
 		return ($this->objectScopeResolver ?? new ObjectScopeResolver());
 	}//end objectScope()
 
@@ -1109,14 +1245,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		// The refusal names the rule that produced it (task 3.3).
-		$this->logRefusal(
-			authorization: $check->authorization,
-			action: $check->action,
-			userId: $check->userId,
-			userGroups: $check->userGroups,
-			schema: $check->schema,
-			object: $check->object
-		);
+		$this->logRefusal(check: $check);
 
 		return false;
 	}//end grantedByRules()
@@ -1153,25 +1282,20 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * traffic; it is only worth a warning when it surprises somebody, and this
 	 * log exists so that it does not.
 	 *
-	 * @param array|null        $authorization The cascaded block.
-	 * @param string            $action        The verb that was refused.
-	 * @param string|null       $userId        The caller.
-	 * @param array<int,string> $userGroups    The caller's groups.
-	 * @param Schema            $schema        The schema being decided.
-	 * @param ObjectEntity|null $object        The row, when there was one.
+	 * @param PermissionCheck $check The refused check: its cascaded block, verb, caller,
+	 *                               caller's groups, schema and the row, when there was one.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function logRefusal(
-		?array $authorization,
-		string $action,
-		?string $userId,
-		array $userGroups,
-		Schema $schema,
-		?ObjectEntity $object,
-	): void {
+	private function logRefusal(PermissionCheck $check): void {
+		$authorization = $check->authorization;
+		$action = $check->action;
+		$userId = $check->userId;
+		$userGroups = $check->userGroups;
+		$schema = $check->schema;
+		$object = $check->object;
 		$rule = null;
 		$reason = 'no authorization block names this verb';
 		if (is_array($authorization) === true && isset($authorization[$action]) === true) {
@@ -1452,11 +1576,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * WITHOUT a dispatcher answers the canonical verbs alone, which is the
 	 * fail-closed direction: it can only make a verb unknown, never grantable.
 	 *
-	 * @return PermissionCatalogue The set that can be granted here.
+	 * @return PermissionCatalogueInterface The set that can be granted here.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function permissionCatalogue(): PermissionCatalogue {
+	private function permissionCatalogue(): PermissionCatalogueInterface {
 		return ($this->permissionCatalogue ?? new PermissionCatalogue(eventDispatcher: $this->eventDispatcher));
 	}//end permissionCatalogue()
 
@@ -3050,38 +3174,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * Remove the `mcp` scope from a block, leaving enforcement exactly as it
 	 * was before the annotation was added.
 	 *
-	 * The scope is removed so it can never satisfy a caller. What it does NOT
-	 * do is make the block disappear: an action key emptied by the strip stays
-	 * as `[]`, which the grammar reads as "grant this action to nobody", and a
-	 * block that held nothing but offers remains a non-empty block.
-	 *
-	 * 🔴 That shape is deliberate, and an earlier cut of this method got it
-	 * backwards. Collapsing an offers-only block to `null` made it "no
-	 * authorization configured" — which is default-OPEN — so a schema annotated
-	 * `{"read": ["mcp"]}` became readable by every authenticated user AND by
-	 * anonymous callers. An author documenting an agent surface would have
-	 * published the schema instead of restricting it.
-	 *
-	 * The reasoning that produced it was: a descriptive annotation should not
-	 * change enforcement, so an mcp-only block should evaluate as though absent.
-	 * The flaw is the direction of the failure. Treating the annotation as
-	 * enforcement-bearing can only ever DENY — loud, visible, quickly fixed.
-	 * Treating it as absent can GRANT — silent, and to anonymous callers. Between
-	 * a fail-safe and a fail-open reading of an ambiguous block, the block gets
-	 * the fail-safe one.
-	 *
-	 * So: writing an `mcp` entry into `authorization` opts the schema into
-	 * authorization, exactly as writing any other rule does. To record an agent
-	 * surface WITHOUT touching enforcement, use the `x-openregister-mcp` dialect,
-	 * which is where the surface belongs and where every live declaration on the
-	 * instance already is.
-	 *
-	 * Control keys that are not rule lists (notably the `public: true` opt-in,
-	 * read back off the RESOLVED block) are carried through untouched.
-	 *
-	 * Static and pure so both rule interpreters — this one and the SQL-layer
-	 * {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler} — can apply the
-	 * identical transform and cannot drift apart on it.
+	 * Kept as an entry point; the transform lives in {@see McpScope::strip()} so
+	 * the SQL-layer interpreter applies the identical one without naming this class.
 	 *
 	 * @param array|null $authorization The block to strip, or null.
 	 *
@@ -3091,93 +3185,13 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
 	 */
 	public static function stripMcpScope(?array $authorization): ?array {
-		if ($authorization === null || $authorization === []) {
-			return $authorization;
-		}
-
-		$stripped = [];
-
-		foreach ($authorization as $key => $rules) {
-			// Not a rule list (inheritFromPublic, public, objectScope, ...):
-			// carry it through untouched. These are behaviour toggles read at
-			// runtime, and the mcp scope has no business editing them.
-			if (is_array($rules) === false) {
-				$stripped[$key] = $rules;
-				continue;
-			}
-
-			// The deny block is a block of rule lists, not one rule list.
-			// Handing it to the list stripper would ask "is this entry the mcp
-			// scope" of an entire action's list, which is always no, and would
-			// reindex the block's action keys on the way through.
-			if ($key === DenyResolver::DENY_KEY) {
-				$stripped[$key] = self::stripMcpScope(authorization: $rules);
-				continue;
-			}
-
-			// 🔴 A CONTROL KEY THAT HAPPENS TO BE AN ARRAY IS NOT A RULE LIST,
-			// and reading it as one does not fail — it REINDEXES. The reindex
-			// is what made the whole department matrix inert: `matrix` is the
-			// map `{field, userSource, rows}`, `stripMcpFromRuleList()` walks
-			// its VALUES and appends them to a fresh list, and what reached
-			// `compileDepartmentMatrix()` was `['department', {...}, [...]]`
-			// with every key gone. `$matrix['field']` was then absent,
-			// `compile()` returned nothing, `merge()` left the block alone, and
-			// the schema ended up granting `read` to nobody at all. Measured on
-			// a live instance 2026-09-19: an identical rule written by hand as
-			// a conditional scope narrowed the list correctly, and the same
-			// rule expressed as a matrix admitted no one.
-			//
-			// `roles` has exactly the same shape and was losing its role names
-			// the same way.
-			//
-			// The comment above about carrying control keys through untouched
-			// was already the intent; it only covered the ones that are not
-			// arrays.
-			if (in_array($key, PermissionCatalogue::CONTROL_KEYS, true) === true) {
-				$stripped[$key] = $rules;
-				continue;
-			}
-
-			$stripped[$key] = self::stripMcpFromRuleList(rules: $rules);
-		}//end foreach
-
-		return $stripped;
+		return McpScope::strip(authorization: $authorization);
 	}//end stripMcpScope()
-
-	/**
-	 * Strip the mcp scope from one action's rule list.
-	 *
-	 * An emptied list stays `[]` rather than being dropped. The grammar reads
-	 * `[]` as "grant this action to nobody", which is the fail-safe reading of
-	 * an action whose only rule was an offer to agents.
-	 *
-	 * @param array $rules One action's rule list.
-	 *
-	 * @return array The surviving rules, possibly empty.
-	 *
-	 * @spec openspec/specs/declared-actions/spec.md
-	 */
-	private static function stripMcpFromRuleList(array $rules): array {
-		$kept = [];
-		foreach ($rules as $entry) {
-			if (self::isMcpScopeEntry(entry: $entry) === true) {
-				continue;
-			}
-
-			$kept[] = $entry;
-		}
-
-		return $kept;
-	}//end stripMcpFromRuleList()
 
 	/**
 	 * Read back the actions a block offers to agents.
 	 *
-	 * This is the half of the annotation that survives as DATA: the
-	 * grantable-rights index serves it to Hermiq as the menu of rights that
-	 * could be granted. It answers "what may be offered here", and never
-	 * "who holds it".
+	 * Kept as an entry point; the read lives in {@see McpScope::offeredActions()}.
 	 *
 	 * @param array|null $authorization The block to read.
 	 *
@@ -3186,33 +3200,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/changes/declared-actions-and-mcp-scope/specs/declared-actions/spec.md
 	 */
 	public static function mcpOfferedActions(?array $authorization): array {
-		if ($authorization === null || $authorization === []) {
-			return [];
-		}
-
-		$offered = [];
-		foreach ($authorization as $action => $rules) {
-			if (is_array($rules) === false || is_string($action) === false) {
-				continue;
-			}
-
-			foreach ($rules as $entry) {
-				if (self::isMcpScopeEntry(entry: $entry) === true) {
-					$offered[] = $action;
-					break;
-				}
-			}
-		}
-
-		return $offered;
+		return McpScope::offeredActions(authorization: $authorization);
 	}//end mcpOfferedActions()
 
 	/**
 	 * Whether a single authorization entry names the `mcp` scope.
-	 *
-	 * Covers both spellings the rule grammar accepts — the bare string and the
-	 * `{"group": "mcp"}` object — because they are independent match branches
-	 * and a guard that knows only one of them is a guard with a hole.
 	 *
 	 * @param mixed $entry One entry from an action's rule list.
 	 *
@@ -3221,7 +3213,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/declared-actions/spec.md
 	 */
 	private static function isMcpScopeEntry(mixed $entry): bool {
-		return self::entryNamesGroup(entry: $entry, group: self::SCOPE_MCP);
+		return McpScope::isScopeEntry(entry: $entry);
 	}//end isMcpScopeEntry()
 
 	/**

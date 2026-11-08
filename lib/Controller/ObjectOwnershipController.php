@@ -40,12 +40,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectOwnershipControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -65,32 +63,19 @@ use Psr\Log\LoggerInterface;
 class ObjectOwnershipController extends Controller {
 
 	/**
-	 * Resolves a record through the RBAC boundary.
+	 * The controller's injected services.
 	 *
-	 * @var ObjectOperationsInterface
+	 * @var ObjectOwnershipControllerServices
 	 */
-	private readonly ObjectOperationsInterface $objectService;
+	private readonly ObjectOwnershipControllerServices $services;
 
 	/**
-	 * Resolves the register entity.
+	 * Resolves the target record through the RBAC boundary, runs the checked
+	 * writes and maps their refusals.
 	 *
-	 * @var RegisterMapperInterface
+	 * @var ObjectSharingEndpoint
 	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Resolves the schema entity.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Performs the checked writes.
-	 *
-	 * @var ObjectOwnershipService
-	 */
-	private readonly ObjectOwnershipService $ownership;
+	private readonly ObjectSharingEndpoint $endpoint;
 
 	/**
 	 * Constructor.
@@ -104,13 +89,13 @@ class ObjectOwnershipController extends Controller {
 		string $appName,
 		IRequest $request,
 		ObjectOwnershipControllerServices $services,
-		private readonly LoggerInterface $logger,
+		LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->objectService = $services->objectService;
-		$this->registerMapper = $services->registerMapper;
-		$this->schemaMapper = $services->schemaMapper;
-		$this->ownership = $services->ownership;
+		$this->services = $services;
+		// The message is never echoed to the client: it can carry storage details.
+		$failure = 'Could not complete the ownership request';
+		$this->endpoint = new ObjectSharingEndpoint(objectService: $services->objectService, logger: $logger, file: __FILE__, failure: $failure);
 	}//end __construct()
 
 	/**
@@ -128,7 +113,7 @@ class ObjectOwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
@@ -161,25 +146,18 @@ class ObjectOwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function claim(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
-			$outcome = $this->ownership->claim(
-				register: $this->registerMapper->find($this->objectService->getRegister()),
-				schema: $this->schemaMapper->find($this->objectService->getSchema()),
-				object: $object,
-				cascade: $this->cascadeRequested()
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'claim');
-		}
-
-		return new JSONResponse($outcome);
+		$claim = fn (): array => $this->services->ownership->claim(
+			register: $this->register(),
+			schema: $this->schema(),
+			object: $object,
+			cascade: $this->cascadeRequested()
+		);
+		return $this->endpoint->answer(operation: $claim, context: 'claim');
 	}//end claim()
 
 	/**
@@ -197,33 +175,18 @@ class ObjectOwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function assign(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		$owner = $this->request->getParam('owner');
-		if (is_string($owner) === false || $owner === '') {
-			return new JSONResponse(['message' => 'An owner is required'], Http::STATUS_BAD_REQUEST);
+		$owner = $this->requestedOwner();
+		if ($owner === null) {
+			return $this->badRequest(message: 'An owner is required');
 		}
 
-		try {
-			$outcome = $this->ownership->assign(
-				register: $this->registerMapper->find($this->objectService->getRegister()),
-				schema: $this->schemaMapper->find($this->objectService->getSchema()),
-				object: $object,
-				newOwner: $owner,
-				cascade: $this->cascadeRequested()
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'assign');
-		}
-
-		return new JSONResponse($outcome);
+		$assign = fn (): array => $this->assigned(object: $object, owner: $owner);
+		return $this->endpoint->answer(operation: $assign, context: 'assign', validates: true);
 	}//end assign()
 
 	/**
@@ -241,34 +204,18 @@ class ObjectOwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function setOwnerGroup(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
 		$group = $this->request->getParam('ownerGroup');
 		if ($group !== null && is_string($group) === false) {
-			return new JSONResponse(['message' => 'An owner group must be a group id'], Http::STATUS_BAD_REQUEST);
+			return $this->badRequest(message: 'An owner group must be a group id');
 		}
 
-		try {
-			$block = $this->ownership->setOwnerGroup(
-				register: $this->registerMapper->find($this->objectService->getRegister()),
-				schema: $this->schemaMapper->find($this->objectService->getSchema()),
-				object: $object,
-				group: $group
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'setOwnerGroup');
-		}
-
-		return new JSONResponse(
-			['ownerGroup' => ($block[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null)]
-		);
+		$store = fn (): array => ['ownerGroup' => ($this->storeOwnerGroup(object: $object, group: $group)[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null)];
+		return $this->endpoint->answer(operation: $store, context: 'setOwnerGroup', validates: true);
 	}//end setOwnerGroup()
 
 	/**
@@ -285,32 +232,113 @@ class ObjectOwnershipController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function reassign(): JSONResponse {
-		$owner = $this->request->getParam('owner');
-		if (is_string($owner) === false || $owner === '') {
-			return new JSONResponse(['message' => 'An owner is required'], Http::STATUS_BAD_REQUEST);
+		$owner = $this->requestedOwner();
+		if ($owner === null) {
+			return $this->badRequest(message: 'An owner is required');
 		}
 
 		$objects = $this->request->getParam('objects');
 		if (is_array($objects) === false || $objects === []) {
-			return new JSONResponse(['message' => 'Name at least one record to reassign'], Http::STATUS_BAD_REQUEST);
+			return $this->badRequest(message: 'Name at least one record to reassign');
 		}
 
-		try {
-			$outcome = $this->ownership->reassignMany(
-				identifiers: array_values($objects),
-				newOwner: $owner,
-				cascade: $this->cascadeRequested()
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\InvalidArgumentException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'reassign');
-		}
-
-		return new JSONResponse($outcome);
+		$reassign = fn (): array => $this->reassigned(objects: $objects, owner: $owner);
+		return $this->endpoint->answer(operation: $reassign, context: 'reassign', validates: true);
 	}//end reassign()
+
+	/**
+	 * The owner the request names, or null when it names none.
+	 *
+	 * @return string|null The owner.
+	 */
+	private function requestedOwner(): ?string {
+		$owner = $this->request->getParam('owner');
+		if (is_string($owner) === false || $owner === '') {
+			return null;
+		}
+
+		return $owner;
+	}//end requestedOwner()
+
+	/**
+	 * A 400 carrying the given message.
+	 *
+	 * @param string $message What the request lacks.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function badRequest(string $message): JSONResponse {
+		return new JSONResponse(['message' => $message], Http::STATUS_BAD_REQUEST);
+	}//end badRequest()
+
+	/**
+	 * Store the owning group on the record.
+	 *
+	 * @param ObjectEntity $object The record.
+	 * @param string|null  $group  The group id, or null to take the owning group away.
+	 *
+	 * @return array The stored authorization block.
+	 */
+	private function storeOwnerGroup(ObjectEntity $object, ?string $group): array {
+		return $this->services->ownership->setOwnerGroup(
+			register: $this->register(),
+			schema: $this->schema(),
+			object: $object,
+			group: $group
+		);
+	}//end storeOwnerGroup()
+
+	/**
+	 * Assign the record to the named owner.
+	 *
+	 * @param ObjectEntity $object The record.
+	 * @param string       $owner  The new owner.
+	 *
+	 * @return array The outcome.
+	 */
+	private function assigned(ObjectEntity $object, string $owner): array {
+		return $this->services->ownership->assign(
+			register: $this->register(),
+			schema: $this->schema(),
+			object: $object,
+			newOwner: $owner,
+			cascade: $this->cascadeRequested()
+		);
+	}//end assigned()
+
+	/**
+	 * Reassign the named records to the named owner.
+	 *
+	 * @param array  $objects The records' identifiers.
+	 * @param string $owner   The new owner.
+	 *
+	 * @return array What moved, what did not, and why.
+	 */
+	private function reassigned(array $objects, string $owner): array {
+		return $this->services->ownership->reassignMany(
+			identifiers: array_values($objects),
+			newOwner: $owner,
+			cascade: $this->cascadeRequested()
+		);
+	}//end reassigned()
+
+	/**
+	 * The register the request resolved.
+	 *
+	 * @return Register The register.
+	 */
+	private function register(): Register {
+		return $this->services->registerMapper->find($this->services->objectService->getRegister());
+	}//end register()
+
+	/**
+	 * The schema the request resolved.
+	 *
+	 * @return Schema The schema.
+	 */
+	private function schema(): Schema {
+		return $this->services->schemaMapper->find($this->services->objectService->getSchema());
+	}//end schema()
 
 	/**
 	 * Whether the caller asked for the change to carry to child records.
@@ -325,57 +353,4 @@ class ObjectOwnershipController extends Controller {
 
 		return ($cascade === true || $cascade === 'true' || $cascade === '1' || $cascade === 1);
 	}//end cascadeRequested()
-
-	/**
-	 * Resolve the target record through the RBAC boundary.
-	 *
-	 * A record the caller cannot READ is refused with 404 rather than 403, so
-	 * this endpoint cannot be used to probe which record ids exist.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Record uuid.
-	 *
-	 * @return ObjectEntity|JSONResponse The record, or the response to return.
-	 */
-	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		try {
-			$object = $this->objectService->getObject();
-		} catch (\Throwable $e) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		if (($object instanceof ObjectEntity) === false) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		return $object;
-	}//end resolveObject()
-
-	/**
-	 * Log an unexpected failure and return a generic error.
-	 *
-	 * The message is never echoed to the client: it can carry storage details.
-	 *
-	 * @param \Throwable $exception The failure.
-	 * @param string $context Short label for the log line.
-	 *
-	 * @return JSONResponse A generic 500.
-	 */
-	private function unexpected(\Throwable $exception, string $context): JSONResponse {
-		$this->logger->error(
-			message: '[ObjectOwnershipController] ' . $context . ': ' . $exception->getMessage(),
-			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
-		);
-
-		return new JSONResponse(
-			['message' => 'Could not complete the ownership request'],
-			Http::STATUS_INTERNAL_SERVER_ERROR
-		);
-	}//end unexpected()
-
 }//end class

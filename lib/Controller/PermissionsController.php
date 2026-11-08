@@ -50,7 +50,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -69,13 +69,13 @@ class PermissionsController extends Controller {
 	 *
 	 * @param string              $appName        Application identifier.
 	 * @param IRequest            $request        Active HTTP request.
-	 * @param PermissionCatalogue $catalogue      The grantable set.
+	 * @param PermissionCatalogueInterface $catalogue      The grantable set.
 	 * @param DenyEnforcementMode $enforcement    The staging switch.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PermissionCatalogue $catalogue,
+		private readonly PermissionCatalogueInterface $catalogue,
 		private readonly DenyEnforcementMode $enforcement,
 	) {
 		parent::__construct(appName: $appName, request: $request);

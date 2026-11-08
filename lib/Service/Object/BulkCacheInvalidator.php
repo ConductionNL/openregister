@@ -39,11 +39,11 @@ final class BulkCacheInvalidator {
 	/**
 	 * Hold the collaborators.
 	 *
-	 * @param CacheHandlerInterface $cacheHandler The collection cache owner.
+	 * @param ObjectCacheInvalidationInterface $cacheHandler The collection cache owner.
 	 * @param LoggerInterface       $logger       Receives the failures.
 	 */
 	public function __construct(
-		private readonly CacheHandlerInterface $cacheHandler,
+		private readonly ObjectCacheInvalidationInterface $cacheHandler,
 		private readonly LoggerInterface $logger
 	) {
 	}//end __construct()

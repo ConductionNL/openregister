@@ -87,6 +87,9 @@ use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
@@ -5870,15 +5873,21 @@ class ObjectsController extends Controller {
 			}
 
 			$runs->record(
-				source: 'api',
-				actor: (string)($this->userSession->getUser()?->getUID() ?? ''),
-				format: $format,
-				rowCount: $rowCount,
-				profile: 'ad-hoc',
-				registerName: (string)($register->getSlug() ?? $register->getId()),
-				schemaName: (string)($schema->getSlug() ?? $schema->getId()),
-				retentionSeconds: null,
-				downloadCount: 1
+				origin: new ExportRunOrigin(
+					source: 'api',
+					actor: (string)($this->userSession->getUser()?->getUID() ?? ''),
+					profile: 'ad-hoc'
+				),
+				content: new ExportRunContent(
+					format: $format,
+					rowCount: $rowCount,
+					registerName: (string)($register->getSlug() ?? $register->getId()),
+					schemaName: (string)($schema->getSlug() ?? $schema->getId())
+				),
+				file: new ExportRunFile(
+					downloadCount: 1
+				),
+				retentionSeconds: null
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(

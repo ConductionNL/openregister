@@ -113,31 +113,12 @@ class DependentValueListener implements IEventListener {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function validate(
-		ObjectCreatingEvent|ObjectUpdatingEvent $event,
-		ObjectEntity $object,
-		?ObjectEntity $stored,
-	): void {
+	private function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object, ?ObjectEntity $stored): void {
 		try {
-			$data = $object->getObject();
-			$properties = $this->tablesFor(object: $object);
-			if (is_array($data) === false || $properties === null) {
-				// The whole cost for a schema that declares no table: one array
-				// scan, no lookup of the stored object, no refusal path. That
-				// is the "behaves exactly as before" of task 5.3.
-				return;
+			$violations = $this->violationsOf(object: $object, stored: $stored);
+			if ($violations !== []) {
+				$this->refuse(event: $event, violations: $violations);
 			}
-
-			$violations = $this->tables->violations(
-				properties: $properties,
-				data: $data,
-				stored: $this->storedData(stored: $stored)
-			);
-			if ($violations === []) {
-				return;
-			}
-
-			$this->refuse(event: $event, violations: $violations);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				message: '[DependentValueListener] The guard itself failed, allowing the save: ' . $failure->getMessage(),
@@ -145,6 +126,30 @@ class DependentValueListener implements IEventListener {
 			);
 		}//end try
 	}//end validate()
+
+	/**
+	 * What the schema's tables refuse in this write.
+	 *
+	 * The whole cost for a schema that declares no table: one array scan, no
+	 * lookup of the stored object, no refusal path. That is the "behaves
+	 * exactly as before" of task 5.3.
+	 *
+	 * @param ObjectEntity $object The object the write carries.
+	 * @param ObjectEntity|null $stored The object as it stands, on an update.
+	 *
+	 * @return array<int, array<string, string>> The refusals, empty when the write may go ahead.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function violationsOf(ObjectEntity $object, ?ObjectEntity $stored): array {
+		$data = $object->getObject();
+		$properties = $this->tablesFor(object: $object);
+		if (is_array($data) === false || $properties === null) {
+			return [];
+		}
+
+		return $this->tables->violations(properties: $properties, data: $data, stored: $this->storedData(stored: $stored));
+	}//end violationsOf()
 
 	/**
 	 * The schema's properties, when it declares at least one table.
@@ -162,7 +167,7 @@ class DependentValueListener implements IEventListener {
 	 */
 	private function tablesFor(ObjectEntity $object): ?array {
 		$reference = $object->getSchema();
-		if ($reference === null || $reference === '') {
+		if ((string)$reference === '') {
 			return null;
 		}
 
@@ -213,15 +218,8 @@ class DependentValueListener implements IEventListener {
 			$byProperty[$violation['property']] = $violation['message'];
 		}
 
-		$event->setErrors(
-			array_merge(
-				[
-					'code' => self::ERROR_CODE,
-					'message' => implode(' ', array_values($byProperty)),
-				],
-				$byProperty
-			)
-		);
+		$message = implode(' ', array_values($byProperty));
+		$event->setErrors(array_merge(['code' => self::ERROR_CODE, 'message' => $message], $byProperty));
 		$event->stopPropagation();
 	}//end refuse()
 }//end class

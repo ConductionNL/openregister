@@ -29,11 +29,14 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Case;
 
 use DateTime;
 use OCA\OpenRegister\Db\CaseItem;
+use OCA\OpenRegister\Db\CaseItemAuditMapper;
 use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
@@ -162,7 +165,11 @@ class CasePlanCascadeGoldenTest extends TestCase {
 		$catalog = $this->createMock(EventCatalogService::class);
 		$catalog->method('aliasesFor')->willReturnCallback(static fn (string $dispatched): array => [$dispatched]);
 
-		return new CasePlanCascade($items, $machine, new CaseSentryEvaluator($catalog), $realiser, $anchor, $this->db(), $this->logger());
+		return new CasePlanCascade(
+			store: new CasePlanStore(items: $items, audits: $this->createMock(CaseItemAuditMapper::class), db: $this->db(), logger: $this->logger()),
+			machine: $machine,
+			readers: new CaseCascadeReaders(sentries: new CaseSentryEvaluator(catalog: $catalog), realiser: $realiser, anchor: $anchor)
+		);
 	}//end cascade()
 
 	/**

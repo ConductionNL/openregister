@@ -53,12 +53,12 @@ use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 
 /**
  * Resolves and renders the subject behind an access link.
@@ -105,26 +105,73 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	private const MAX_VIEW_OBJECTS = 200;
 
 	/**
+	 * The object read path.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * Resolves the schema whose rules apply.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * Strips write-only and unreadable properties.
+	 *
+	 * @var PropertyRbacHandlerInterface
+	 */
+	private readonly PropertyRbacHandlerInterface $properties;
+
+	/**
+	 * Reads and projects the public half of the timeline.
+	 *
+	 * @var PublicTimelineInterface
+	 */
+	private readonly PublicTimelineInterface $timeline;
+
+	/**
+	 * Reads which object a subject names.
+	 *
+	 * @var AccessLinkSubjectInterface
+	 */
+	private readonly AccessLinkSubjectInterface $subjects;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Refuses a restricted file to a link. Null only in legacy fixtures.
+	 *
+	 * @var FileRestrictionStore|null
+	 */
+	private readonly ?FileRestrictionStore $restrictions;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objects The object read path.
-	 * @param SchemaMapperInterface $schemas Resolves the schema whose rules apply.
-	 * @param PropertyRbacHandler $properties Strips write-only and unreadable properties.
-	 * @param PublicTimelineInterface $timeline Reads and projects the public half of the timeline.
-	 * @param AccessLinkSubject $subjects Reads which object a subject names.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param FileRestrictionStore|null $restrictions Refuses a restricted file to a link. Null only in legacy fixtures.
+	 * @param AccessLinkReaderSources $sources The object read path, the subject parser and the optional file restriction store.
+	 * @param AccessLinkReaderFilters $filters Schema mapper, property RBAC handler and public timeline.
+	 * @param LoggerInterface         $logger  PSR logger.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly PropertyRbacHandler $properties,
-		private readonly PublicTimelineInterface $timeline,
-		private readonly AccessLinkSubject $subjects,
-		private readonly LoggerInterface $logger,
-		private readonly ?FileRestrictionStore $restrictions = null,
+		AccessLinkReaderSources $sources,
+		AccessLinkReaderFilters $filters,
+		LoggerInterface $logger,
 	) {
-
+		$this->objects = $sources->objects;
+		$this->subjects = $sources->subjects;
+		$this->restrictions = $sources->restrictions;
+		$this->schemas = $filters->schemas;
+		$this->properties = $filters->properties;
+		$this->timeline = $filters->timeline;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**

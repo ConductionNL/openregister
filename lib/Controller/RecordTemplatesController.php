@@ -202,18 +202,29 @@ class RecordTemplatesController extends Controller {
 		try {
 			return new JSONResponse(data: $action($this->viewers->reachOf(userId: $userId)), statusCode: $success);
 		} catch (RecordTemplateRefused $e) {
-			$body = ['error' => $e->getMessage()];
-			if ($e->getFindings() !== []) {
-				$body['findings'] = $e->getFindings();
-			}
-
-			return new JSONResponse(data: $body, statusCode: $e->getCode());
+			return $this->refused(refusal: $e);
 		} catch (Throwable $e) {
 			$this->logger->error('[RecordTemplatesController] Record template request failed', ['exception' => $e->getMessage()]);
 
 			return new JSONResponse(data: ['error' => 'The record template request failed.'], statusCode: 500);
 		}
 	}//end answer()
+
+	/**
+	 * A refusal answers its own status, with its findings when it has any.
+	 *
+	 * @param RecordTemplateRefused $refusal The refusal.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function refused(RecordTemplateRefused $refusal): JSONResponse {
+		$body = ['error' => $refusal->getMessage()];
+		if ($refusal->getFindings() !== []) {
+			$body['findings'] = $refusal->getFindings();
+		}
+
+		return new JSONResponse(data: $body, statusCode: $refusal->getCode());
+	}//end refused()
 
 	/**
 	 * The templates as the index answers them.

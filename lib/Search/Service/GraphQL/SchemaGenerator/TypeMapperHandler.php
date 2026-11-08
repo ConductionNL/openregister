@@ -25,7 +25,7 @@ use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
 
 /**
@@ -45,6 +45,33 @@ use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class TypeMapperHandler {
+
+	/**
+	 * String formats with a custom output scalar.
+	 *
+	 * @var array<string, string>
+	 */
+	private const OUTPUT_FORMATS = [
+		'date-time' => 'DateTime',
+		'date' => 'DateTime',
+		'uuid' => 'UUID',
+		'email' => 'Email',
+		'uri' => 'URI',
+		'url' => 'URI',
+	];
+
+	/**
+	 * String formats with a custom input scalar; `url` stays a String on input.
+	 *
+	 * @var array<string, string>
+	 */
+	private const INPUT_FORMATS = [
+		'date-time' => 'DateTime',
+		'date' => 'DateTime',
+		'uuid' => 'UUID',
+		'email' => 'Email',
+		'uri' => 'URI',
+	];
 
 	/**
 	 * Cached input types by schema ID and purpose.
@@ -138,7 +165,7 @@ class TypeMapperHandler {
 	 * @param callable $objectTypeFactory Gets/creates an ObjectType for a schema
 	 * @param callable $fieldNameConverter Converts a slug to a GraphQL field name
 	 * @param callable $typeNameConverter Converts a slug to a PascalCase type name
-	 * @param PropertyRbacHandler $propertyRbac Withholds a property the caller may not read
+	 * @param PropertyRbacHandlerInterface $propertyRbac Withholds a property the caller may not read
 	 */
 	public function __construct(
 		array $scalars,
@@ -146,7 +173,7 @@ class TypeMapperHandler {
 		callable $objectTypeFactory,
 		callable $fieldNameConverter,
 		callable $typeNameConverter,
-		private readonly PropertyRbacHandler $propertyRbac,
+		private readonly PropertyRbacHandlerInterface $propertyRbac,
 	) {
 		$this->scalars = $scalars;
 		$this->refResolver = $refResolver;
@@ -205,21 +232,15 @@ class TypeMapperHandler {
 		}
 
 		// Map by type and format.
-		return match (true) {
-			$type === 'string' && $format === 'date-time' => $this->scalars['DateTime'],
-			$type === 'string' && $format === 'date' => $this->scalars['DateTime'],
-			$type === 'string' && $format === 'uuid' => $this->scalars['UUID'],
-			$type === 'string' && $format === 'email' => $this->scalars['Email'],
-			$type === 'string' && $format === 'uri' => $this->scalars['URI'],
-			$type === 'string' && $format === 'url' => $this->scalars['URI'],
-			$type === 'string' => Type::string(),
-			$type === 'integer' => Type::int(),
-			$type === 'number' => Type::float(),
-			$type === 'boolean' => Type::boolean(),
-			$type === 'object' => $this->scalars['JSON'],
-			$type === 'array' => Type::listOf(Type::string()),
-			default => Type::string(),
-		};
+		if ($type === 'object') {
+			return $this->scalars['JSON'];
+		}
+
+		if ($type === 'array') {
+			return Type::listOf(Type::string());
+		}
+
+		return $this->primitiveType(type: $type, format: $format, formats: self::OUTPUT_FORMATS);
 
 	}//end mapPropertyToGraphQLType()
 
@@ -258,20 +279,33 @@ class TypeMapperHandler {
 			return $this->scalars['JSON'];
 		}
 
-		return match (true) {
-			$type === 'string' && $format === 'date-time' => $this->scalars['DateTime'],
-			$type === 'string' && $format === 'date' => $this->scalars['DateTime'],
-			$type === 'string' && $format === 'uuid' => $this->scalars['UUID'],
-			$type === 'string' && $format === 'email' => $this->scalars['Email'],
-			$type === 'string' && $format === 'uri' => $this->scalars['URI'],
-			$type === 'string' => Type::string(),
-			$type === 'integer' => Type::int(),
-			$type === 'number' => Type::float(),
-			$type === 'boolean' => Type::boolean(),
-			default => Type::string(),
-		};
+		return $this->primitiveType(type: $type, format: $format, formats: self::INPUT_FORMATS);
 
 	}//end mapPropertyToInputType()
+
+	/**
+	 * The GraphQL type of a scalar JSON Schema type: a string whose format
+	 * is listed maps to that custom scalar, the other primitives to their
+	 * built-in type, anything else to String.
+	 *
+	 * @param mixed                 $type    The JSON Schema type.
+	 * @param mixed                 $format  The JSON Schema format.
+	 * @param array<string, string> $formats Format => custom scalar name.
+	 *
+	 * @return Type The GraphQL type
+	 */
+	private function primitiveType(mixed $type, mixed $format, array $formats): Type {
+		if ($type === 'string' && is_string($format) === true && isset($formats[$format]) === true) {
+			return $this->scalars[$formats[$format]];
+		}
+
+		return match ($type) {
+			'integer' => Type::int(),
+			'number' => Type::float(),
+			'boolean' => Type::boolean(),
+			default => Type::string(),
+		};
+	}//end primitiveType()
 
 	/**
 	 * Get a filter input type for a schema.
@@ -332,19 +366,7 @@ class TypeMapperHandler {
 	 */
 	private function filterFieldsFor(RegisterSchema $schema): array {
 		$fields = [];
-
-		$properties = $schema->getProperties() ?? [];
-		foreach ($properties as $name => $property) {
-			if (is_array(value: $property) === false) {
-				continue;
-			}
-
-			if ($this->mayDescribe(schema: $schema, property: (string)$name) === false) {
-				continue;
-			}
-
-			$fieldName = ($this->fieldNameConverter)($name);
-
+		foreach ($this->describedProperties(schema: $schema) as $fieldName => $property) {
 			// Each filter field accepts the base type or a comparison object.
 			// Simple types use the base type; complex types use JSON.
 			$baseType = $this->mapPropertyToGraphQLType(property: $property);
@@ -463,29 +485,44 @@ class TypeMapperHandler {
 	 */
 	private function buildInputFields(RegisterSchema $schema): array {
 		$fields = [];
-		$properties = $schema->getProperties() ?? [];
+		foreach ($this->describedProperties(schema: $schema) as $fieldName => $property) {
+			$fields[$fieldName] = $this->mapPropertyToInputType(property: $property);
+		}
 
+		return $fields;
+	}//end buildInputFields()
+
+	/**
+	 * The schema's array-shaped properties this caller may see described,
+	 * keyed by GraphQL field name.
+	 *
+	 * A GraphQL type IS a description of the shape, and a field name is
+	 * information. A governed property named here can be introspected by
+	 * anyone who can reach the endpoint, and the governed names are the
+	 * ones worth protecting: a property carries an authorization block
+	 * or a scope precisely because it is sensitive.
+	 *
+	 * @param RegisterSchema $schema The register schema
+	 *
+	 * @return array<string, array<string, mixed>> Field name => property definition.
+	 */
+	private function describedProperties(RegisterSchema $schema): array {
+		$described  = [];
+		$properties = $schema->getProperties() ?? [];
 		foreach ($properties as $name => $property) {
 			if (is_array(value: $property) === false) {
 				continue;
 			}
 
-			// A GraphQL type IS a description of the shape, and a field name is
-			// information. A governed property named here can be introspected by
-			// anyone who can reach the endpoint, and the governed names are the
-			// ones worth protecting: a property carries an authorization block
-			// or a scope precisely because it is sensitive.
 			if ($this->mayDescribe(schema: $schema, property: (string)$name) === false) {
 				continue;
 			}
 
-			$fieldName = ($this->fieldNameConverter)($name);
-			$type = $this->mapPropertyToInputType(property: $property);
-			$fields[$fieldName] = $type;
+			$described[($this->fieldNameConverter)($name)] = $property;
 		}
 
-		return $fields;
-	}//end buildInputFields()
+		return $described;
+	}//end describedProperties()
 
 	/**
 	 * Get the Relay connection type for a schema.

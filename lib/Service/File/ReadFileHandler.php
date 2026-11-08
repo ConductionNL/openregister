@@ -23,13 +23,16 @@ namespace OCA\OpenRegister\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
+use OCP\Files\Node;
 use OCP\Files\NotFoundException;
+use OCP\Files\NotPermittedException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -55,22 +58,21 @@ class ReadFileHandler {
 	/**
 	 * Reference to FileService for cross-handler coordination (circular dependency break).
 	 *
-	 * @var FileService|null
+	 * @var FileHandlerSupportInterface|null
 	 */
-	private ?FileService $fileService = null;
+	private ?FileHandlerSupportInterface $fileService = null;
 
 	/**
 	 * Constructor for ReadFileHandler.
 	 *
-	 * @param IRootFolder $rootFolder Root folder for file operations.
-	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler.
-	 * @param FileValidationHandler $fileValidHandler File validation handler.
-	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
-	 * @param MagicObjectFinderInterface $objectMapper Object mapper for magic table operations.
-	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Files\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
-	 *                                                         category-based filtering. Null-safe so legacy
-	 *                                                         fixtures keep working.
+	 * @param IRootFolder                $rootFolder           Root folder for file operations.
+	 * @param FolderManagementHandler    $folderMgmtHandler    Folder management handler.
+	 * @param FileValidationHandler      $fileValidHandler     File validation handler.
+	 * @param FileOwnershipHandler       $fileOwnershipHandler File ownership handler.
+	 * @param MagicObjectFinderInterface $objectMapper         Object mapper for magic table operations.
+	 * @param LoggerInterface            $logger               Logger for logging operations.
+	 * @param FileMapperInterface|null   $fileMapper           Optional OR-side metadata mapper for category-based
+	 *                                                         filtering. Null-safe so legacy fixtures keep working.
 	 */
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
@@ -79,18 +81,18 @@ class ReadFileHandler {
 		private readonly FileOwnershipHandler $fileOwnershipHandler,
 		private readonly MagicObjectFinderInterface $objectMapper,
 		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Files\Db\FileMapperInterface $fileMapper = null,
+		private readonly ?FileMapperInterface $fileMapper = null,
 	) {
 	}//end __construct()
 
 	/**
 	 * Set the FileService instance for cross-handler coordination.
 	 *
-	 * @param FileService $fileService The file service instance.
+	 * @param FileHandlerSupportInterface $fileService The file service instance.
 	 *
 	 * @return void
 	 */
-	public function setFileService(FileService $fileService): void {
+	public function setFileService(FileHandlerSupportInterface $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
 
@@ -123,77 +125,120 @@ class ReadFileHandler {
 	 * @throws NotFoundException If the folder is not found.
 	 * @throws DoesNotExistException If the object ID is not found.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) File lookup requires handling ID vs path scenarios
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple file resolution paths with fallback logic
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function getFile(ObjectEntity|string|null $object = null, string|int $file = ''): ?File {
-
-		// If string ID provided for object, try to find the object entity.
-		if (is_string($object) === true && empty($object) === false) {
-			$object = $this->objectMapper->find($object);
-		}
-
-		// Use the new ID-based folder approach.
-		$folder = $this->folderMgmtHandler->getObjectFolder($object);
+		$folder = $this->folderMgmtHandler->getObjectFolder($this->resolveObject(object: $object));
 
 		// If $file is an integer or a string that is an integer, treat as file ID.
 		if (is_int($file) === true || ctype_digit($file) === true) {
-			// Try to get the file by ID.
-			try {
-				$nodes = $folder->getById((int)$file);
-				if (empty($nodes) === false && $nodes[0] instanceof File) {
-					$fileNode = $nodes[0];
-					// Check ownership for NextCloud rights issues.
-					$this->fileValidHandler->checkOwnership($fileNode);
-					return $fileNode;
-				}
-			} catch (Exception $e) {
-				$this->logger->error(
-					message: '[ReadFileHandler] getFile: Error finding file by ID ' . $file . ': ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				return null;
+			return $this->fileInFolderById(folder: $folder, fileId: (int)$file);
+		}
+
+		return $this->fileInFolderByPath(folder: $folder, file: (string)$file);
+	}//end getFile()
+
+	/**
+	 * The object a file lookup runs in: a non-empty string id is looked up first.
+	 *
+	 * @param ObjectEntity|string|null $object The object or its id.
+	 *
+	 * @return ObjectEntity|string|null The object entity, or the value as given.
+	 *
+	 * @throws DoesNotExistException If the object ID is not found.
+	 */
+	private function resolveObject(ObjectEntity|string|null $object): ObjectEntity|string|null {
+		if (is_string($object) === true && empty($object) === false) {
+			return $this->objectMapper->find($object);
+		}
+
+		return $object;
+	}//end resolveObject()
+
+	/**
+	 * A readable file by id inside an object folder; any failure, refusal included, is null.
+	 *
+	 * @param Folder|null $folder The object folder.
+	 * @param int         $fileId The file id.
+	 *
+	 * @return File|null The file, or null.
+	 */
+	private function fileInFolderById(?Folder $folder, int $fileId): ?File {
+		try {
+			$node = ($folder->getById($fileId)[0] ?? null);
+			if ($node instanceof File) {
+				return $this->readable(node: $node);
 			}
-
-			// If not found by ID, return null.
-			return null;
-		}//end if
-
-		// Clean file path and extract filename using utility method.
-		$pathInfo = $this->fileService->extractFileNameFromPath((string)$file);
-		$filePath = $pathInfo['cleanPath'];
-		$fileName = $pathInfo['fileName'];
-
-		// Check if folder exists and get the file.
-		if ($folder instanceof Folder === true) {
-			try {
-				// First try with just the filename.
-				$fileNode = $folder->get($fileName);
-
-				// Check ownership for NextCloud rights issues.
-				$this->fileValidHandler->checkOwnership($fileNode);
-
-				return $fileNode;
-			} catch (NotFoundException) {
-				try {
-					// If that fails, try with the full path.
-					$fileNode = $folder->get($filePath);
-
-					// Check ownership for NextCloud rights issues.
-					$this->fileValidHandler->checkOwnership($fileNode);
-
-					return $fileNode;
-				} catch (NotFoundException) {
-					// File not found.
-					return null;
-				}
-			}//end try
-		}//end if
+		} catch (Exception $e) {
+			$this->logger->error(
+				message: '[ReadFileHandler] getFile: Error finding file by ID ' . $fileId . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
 
 		return null;
-	}//end getFile()
+	}//end fileInFolderById()
+
+	/**
+	 * A readable node by name, else by full path, inside an object folder.
+	 *
+	 * @param Folder|null $folder The object folder.
+	 * @param string      $file   The file name or path.
+	 *
+	 * @return Node|null The node, or null without a folder or when neither path exists.
+	 *
+	 * @throws NotPermittedException If the session cannot read the node.
+	 */
+	private function fileInFolderByPath(?Folder $folder, string $file): ?Node {
+		$pathInfo = $this->fileService->extractFileNameFromPath($file);
+		if ($folder instanceof Folder === false) {
+			return null;
+		}
+
+		// First try with just the filename, then with the full path.
+		$node = ($this->nodeAt(folder: $folder, path: $pathInfo['fileName']) ?? $this->nodeAt(folder: $folder, path: $pathInfo['cleanPath']));
+		if ($node === null) {
+			return null;
+		}
+
+		return $this->readable(node: $node);
+	}//end fileInFolderByPath()
+
+	/**
+	 * The node at a path inside a folder, or null when there is none.
+	 *
+	 * @param Folder $folder The folder.
+	 * @param string $path   The path.
+	 *
+	 * @return Node|null The node.
+	 */
+	private function nodeAt(Folder $folder, string $path): ?Node {
+		try {
+			return $folder->get($path);
+		} catch (NotFoundException) {
+			return null;
+		}
+	}//end nodeAt()
+
+	/**
+	 * The node, once the session is known to be able to read it.
+	 *
+	 * @param Node $node The node.
+	 *
+	 * @return Node The same node.
+	 *
+	 * @template T of Node
+	 * @phpstan-param  T $node
+	 * @phpstan-return T
+	 *
+	 * @throws NotPermittedException If the session cannot read it.
+	 */
+	private function readable(Node $node): Node {
+		// Check ownership for NextCloud rights issues.
+		$this->fileValidHandler->checkOwnership($node);
+		return $node;
+	}//end readable()
+
 
 	/**
 	 * Get a file by its Nextcloud file ID without needing object context.
@@ -214,25 +259,13 @@ class ReadFileHandler {
 	 */
 	public function getFileById(int $fileId): ?File {
 		try {
-			// Use root folder to search for file by ID.
-			$nodes = $this->rootFolder->getById($fileId);
-
-			if (empty($nodes) === true) {
-				return null;
-			}
-
-			// Get the first node (file IDs are unique).
-			$node = $nodes[0];
-
-			// Ensure it's a file, not a folder.
+			// Use root folder to search for file by ID; file IDs are unique, so the first node is it.
+			$node = ($this->rootFolder->getById($fileId)[0] ?? null);
 			if (($node instanceof File) === false) {
 				return null;
 			}
 
-			// Check ownership for NextCloud rights issues.
-			$this->fileValidHandler->checkOwnership($node);
-
-			return $node;
+			return $this->readable(node: $node);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[ReadFileHandler] getFileById: Error finding file by ID ' . $fileId . ': ' . $e->getMessage(),
@@ -265,18 +298,7 @@ class ReadFileHandler {
 		?bool $sharedFilesOnly = false,
 		?string $category = null,
 	): array {
-		// If string ID provided, try to find the object entity.
-		// Use findAcrossAllSources to search across all magic tables.
-		if (is_string($object) === true) {
-			$result = $this->objectMapper->findAcrossAllSources(
-				identifier: $object,
-				_multitenancy: false,
-				_rbac: false
-			);
-			$object = $result['object'];
-		}
-
-		$files = $this->fileService->getFilesForEntity(entity: $object, sharedFilesOnly: $sharedFilesOnly);
+		$files = $this->fileService->getFilesForEntity(entity: $this->entityOf(object: $object), sharedFilesOnly: $sharedFilesOnly);
 
 		if ($category === null || $this->fileMapper === null) {
 			return $files;
@@ -284,6 +306,23 @@ class ReadFileHandler {
 
 		return $this->filterByCategory(files: $files, category: $category);
 	}//end getFiles()
+
+	/**
+	 * The entity a file listing runs for: a string id is found across all magic tables.
+	 *
+	 * @param ObjectEntity|string $object The object or its id.
+	 *
+	 * @return ObjectEntity The entity.
+	 *
+	 * @throws DoesNotExistException If the object ID is not found.
+	 */
+	private function entityOf(ObjectEntity|string $object): ObjectEntity {
+		if (is_string($object) === false) {
+			return $object;
+		}
+
+		return $this->objectMapper->findAcrossAllSources(identifier: $object, _multitenancy: false, _rbac: false)['object'];
+	}//end entityOf()
 
 	/**
 	 * Filter a node list by OR-side category metadata.
@@ -302,25 +341,7 @@ class ReadFileHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private function filterByCategory(array $files, string $category): array {
-		if (empty($files) === true) {
-			return [];
-		}
-
-		$fileIds = [];
-		foreach ($files as $node) {
-			try {
-				if (is_object($node) === true && method_exists($node, 'getId') === true) {
-					$fid = (int)$node->getId();
-					if ($fid > 0) {
-						$fileIds[] = $fid;
-					}
-				}
-			} catch (\Throwable $e) {
-				// Node without a usable id — skip; it can't match.
-				continue;
-			}
-		}
-
+		$fileIds = array_values(array_filter(array_map(fn (mixed $node): int => $this->nodeId(node: $node), $files)));
 		if (empty($fileIds) === true) {
 			return [];
 		}
@@ -328,19 +349,52 @@ class ReadFileHandler {
 		$orMap = $this->fileMapper->findByFileIds(fileIds: $fileIds);
 		$matched = [];
 		foreach ($files as $node) {
-			try {
-				if (is_object($node) === true && method_exists($node, 'getId') === true) {
-					$fid = (int)$node->getId();
-					$row = ($orMap[$fid] ?? null);
-					if ($row !== null && $row->getCategory() === $category) {
-						$matched[] = $node;
-					}
-				}
-			} catch (\Throwable $e) {
-				continue;
+			if ($this->hasCategory(row: ($orMap[$this->nodeId(node: $node)] ?? null), category: $category) === true) {
+				$matched[] = $node;
 			}
 		}
 
 		return $matched;
 	}//end filterByCategory()
+
+	/**
+	 * The positive id of a node, or 0 when it has none that can be used.
+	 *
+	 * @param mixed $node The candidate node.
+	 *
+	 * @return int The id, or 0.
+	 */
+	private function nodeId(mixed $node): int {
+		if (is_object($node) === false || method_exists($node, 'getId') === false) {
+			return 0;
+		}
+
+		try {
+			return max(0, (int)$node->getId());
+		} catch (\Throwable) {
+			// Node without a usable id — skip; it can't match.
+			return 0;
+		}
+	}//end nodeId()
+
+	/**
+	 * Whether an OR-side row carries the category.
+	 *
+	 * @param mixed  $row      The row, or null when the file has none.
+	 * @param string $category The category to match exactly.
+	 *
+	 * @return bool True on an exact match.
+	 */
+	private function hasCategory(mixed $row, string $category): bool {
+		if ($row === null) {
+			return false;
+		}
+
+		try {
+			return $row->getCategory() === $category;
+		} catch (\Throwable) {
+			return false;
+		}
+	}//end hasCategory()
+
 }//end class

@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\BulkJob;
 
 use OCA\OpenRegister\Service\BulkActionRegistry;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IUserManager;
 
 /**
@@ -41,13 +41,13 @@ final class BulkJobExecutorServices {
 	 *
 	 * @param BulkSelectionResolver      $resolver          Selection resolution.
 	 * @param BulkActionRegistry         $registry          The catalogue of registered actions.
-	 * @param PermissionHandlerInterface $permissionHandler Per-object access checks.
+	 * @param PermissionCheckInterface $permissionHandler Per-object access checks.
 	 * @param IUserManager               $userManager       Actor lookup.
 	 */
 	public function __construct(
 		public readonly BulkSelectionResolver $resolver,
 		public readonly BulkActionRegistry $registry,
-		public readonly PermissionHandlerInterface $permissionHandler,
+		public readonly PermissionCheckInterface $permissionHandler,
 		public readonly IUserManager $userManager,
 	) {
 	}//end __construct()

@@ -38,12 +38,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\HardeningControllerServices;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
-use OCA\OpenRegister\Service\Hardening\ElevationService;
+use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
-use OCA\OpenRegister\Service\Hardening\HardeningReportService;
-use OCA\OpenRegister\Service\Hardening\HardeningSettingsService;
+use OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -68,26 +69,52 @@ use OCP\IRequest;
 class HardeningController extends Controller {
 
 	/**
+	 * Builds the report.
+	 *
+	 * @var HardeningReportServiceInterface
+	 */
+	private readonly HardeningReportServiceInterface $reportService;
+
+	/**
+	 * Applies a change, or refuses it.
+	 *
+	 * @var HardeningSettingsServiceInterface
+	 */
+	private readonly HardeningSettingsServiceInterface $settingsService;
+
+	/**
+	 * Reads the floors in force.
+	 *
+	 * @var HardeningPolicy
+	 */
+	private readonly HardeningPolicy $policy;
+
+	/**
+	 * Guards the administration writes with a fresh sign-in.
+	 *
+	 * @var ElevationServiceInterface
+	 */
+	private readonly ElevationServiceInterface $elevation;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The incoming request.
-	 * @param HardeningReportService $reportService Builds the report.
-	 * @param HardeningSettingsService $settingsService Applies a change, or refuses it.
-	 * @param HardeningPolicy $policy Reads the floors in force.
-	 * @param ElevationService $elevation Guards the administration writes with a fresh sign-in.
+	 * @param HardeningControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly HardeningReportService $reportService,
-		private readonly HardeningSettingsService $settingsService,
-		private readonly HardeningPolicy $policy,
-		private readonly ElevationService $elevation,
+		HardeningControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->reportService = $services->reportService;
+		$this->settingsService = $services->settingsService;
+		$this->policy = $services->policy;
+		$this->elevation = $services->elevation;
 
 	}//end __construct()
 

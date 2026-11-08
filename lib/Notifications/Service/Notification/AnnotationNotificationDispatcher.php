@@ -158,7 +158,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @param IURLGenerator|null $urlGenerator URL generator for action-target deeplinks.
 	 * @param RegisterMapperInterface|null $registerMapper Register mapper used for the default originApp.
 	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface|null $objectService Object resolver for relation-target deeplinks (RBAC).
-	 * @param \OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface|null $deepLinkRegistry Canonical per-app deeplink resolver.
+	 * @param \OCA\OpenRegister\Service\DeepLinkResolverInterface|null $deepLinkRegistry Canonical per-app deeplink resolver.
 	 * @param IAppManager|null $appManager Resolves originApp display name (auto body).
 	 * @param NotificationDeliveryWindowService|null $deliveryWindowService Override-only quiet-hours resolver + evaluator.
 	 * @param QueuedNotificationMapper|null $queuedNotificationMapper Durable queue mapper (quiet-hours + digest schedule).
@@ -194,7 +194,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		private readonly ?IURLGenerator $urlGenerator = null,
 		private readonly ?RegisterMapperInterface $registerMapper = null,
 		private readonly ?\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService = null,
-		private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface $deepLinkRegistry = null,
+		private readonly ?\OCA\OpenRegister\Service\DeepLinkResolverInterface $deepLinkRegistry = null,
 		private readonly ?IAppManager $appManager = null,
 		private readonly ?NotificationDeliveryWindowService $deliveryWindowService = null,
 		private readonly ?QueuedNotificationMapper $queuedNotificationMapper = null,

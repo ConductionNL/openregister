@@ -86,14 +86,14 @@ class MoveObject {
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface      $objects  The object store.
-	 * @param ValidateObjectInterface   $validator Validation against a schema.
+	 * @param ObjectValidatorInterface   $validator Validation against a schema.
 	 * @param AuditTrailMapperInterface $audit    The audit trail.
 	 * @param LoggerInterface  $logger   The logger.
 	 * @param IEventDispatcher $events   Asks the guards of values other records hold.
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objects,
-		private readonly ValidateObjectInterface $validator,
+		private readonly ObjectValidatorInterface $validator,
 		private readonly AuditTrailMapperInterface $audit,
 		private readonly LoggerInterface $logger,
 		private readonly IEventDispatcher $events,

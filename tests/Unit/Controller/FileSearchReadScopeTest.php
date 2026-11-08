@@ -20,8 +20,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Files\Controller\FileSearchController;
+use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Files\Service\File\FileReadScopeRules;
+use OCA\OpenRegister\Files\Service\File\FileReadScopeTree;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -74,12 +77,21 @@ class FileSearchReadScopeTest extends TestCase {
 		$rootFolder->method('getUserFolder')->with('user-b')->willReturn($userFolder);
 
 		$this->controller = new FileSearchController(
-			'openregister',
-			$this->request,
-			$this->vectorService,
-			$this->chunkMapper,
-			new NullLogger(),
-			new FileReadScope($rootFolder, $session, new NullLogger())
+			appName: 'openregister',
+			request: $this->request,
+			services: new FileSearchControllerServices(
+				vectorService: $this->vectorService,
+				chunkMapper: $this->chunkMapper,
+				readScope: new FileReadScope(
+					tree: new FileReadScopeTree(
+						rootFolder: $rootFolder,
+						userSession: $session
+					),
+					rules: new FileReadScopeRules(),
+					logger: new NullLogger()
+				)
+			),
+			logger: new NullLogger()
 		);
 	}//end setUp()
 

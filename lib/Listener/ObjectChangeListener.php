@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
@@ -47,8 +48,21 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent>
+ *
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class ObjectChangeListener implements IEventListener {
+
+	/**
+	 * Log messages of the extraction modes that leave the object to another trigger.
+	 *
+	 * @var array<string, string>
+	 */
+	private const SKIP_MESSAGES = [
+		'cron'   => '[ObjectChangeListener] Cron mode - skipping, will be processed by scheduled job',
+		'manual' => '[ObjectChangeListener] Manual mode - skipping, requires manual trigger',
+	];
+
 	/**
 	 * Constructor
 	 *
@@ -68,6 +82,26 @@ class ObjectChangeListener implements IEventListener {
 	}//end __construct()
 
 	/**
+	 * Log that an object event reached the listener.
+	 *
+	 * @param Event        $event  The object event.
+	 * @param ObjectEntity $object The created or updated object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function logDetected(Event $event, ObjectEntity $object): void {
+		$this->logger->debug(
+			message: '[ObjectChangeListener] Object event detected',
+			context: self::context(
+				line: __LINE__,
+				fields: ['event_type' => get_class($event), 'object_id' => $object->getId(), 'object_uuid' => $object->getUuid()]
+			)
+		);
+	}//end logDetected()
+
+	/**
 	 * Handle object events
 	 *
 	 * @param Event $event Object event
@@ -78,57 +112,70 @@ class ObjectChangeListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		// Only handle ObjectCreatedEvent and ObjectUpdatedEvent.
-		if (($event instanceof ObjectCreatedEvent) === false
-			&& ($event instanceof ObjectUpdatedEvent) === false
-		) {
+		if (($event instanceof ObjectCreatedEvent) === false && ($event instanceof ObjectUpdatedEvent) === false) {
 			return;
 		}
 
 		$object = $event->getObject();
-		$objectId = $object->getId();
+		$this->logDetected(event: $event, object: $object);
 
-		$this->logger->debug(
-			message: '[ObjectChangeListener] Object event detected',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'event_type' => get_class($event),
-				'object_id' => $objectId,
-				'object_uuid' => $object->getUuid(),
-			]
-		);
-
-		// Get extraction mode and process accordingly.
 		try {
-			$fileSettings = $this->settingsService->getFileSettingsOnly();
-			$extractionMode = $fileSettings['extractionMode'] ?? 'background';
-
-			// Skip extraction if no object ID (e.g., magic mapper objects use UUID only).
-			if ($objectId === null) {
-				$this->logger->debug(
-					message: '[ObjectChangeListener] Skipping extraction for object without ID (magic mapper?)',
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				return;
-			}
-
-			$this->processExtractionMode(mode: $extractionMode, objectId: $objectId, objectUuid: $object->getUuid());
+			$this->extract(object: $object);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ObjectChangeListener] Error determining extraction mode',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'object_id' => $objectId,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-		}//end try
+			$this->logModeError(object: $object, error: $e);
+		}
 	}//end handle()
 
 	/**
+	 * Log that the extraction mode could not be determined or applied for an object.
+	 *
+	 * @param ObjectEntity $object The created or updated object.
+	 * @param \Exception   $error  What went wrong.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function logModeError(ObjectEntity $object, \Exception $error): void {
+		$this->logger->error(
+			message: '[ObjectChangeListener] Error determining extraction mode',
+			context: self::context(
+				line: __LINE__,
+				fields: ['object_id' => $object->getId(), 'error' => $error->getMessage(), 'trace' => $error->getTraceAsString()]
+			)
+		);
+	}//end logModeError()
+
+	/**
+	 * Read the extraction mode and process the object accordingly.
+	 *
+	 * The settings are read first, so an object without an id (magic mapper
+	 * objects use the UUID only) still costs one read before it is skipped.
+	 *
+	 * @param ObjectEntity $object The created or updated object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function extract(ObjectEntity $object): void {
+		$extractionMode = ($this->settingsService->getFileSettingsOnly()['extractionMode'] ?? 'background');
+		$objectId = $object->getId();
+		if ($objectId === null) {
+			$this->logger->debug(
+				message: '[ObjectChangeListener] Skipping extraction for object without ID (magic mapper?)',
+				context: self::context(line: __LINE__, fields: [])
+			);
+			return;
+		}
+
+		$this->processExtractionMode(mode: $extractionMode, objectId: $objectId, objectUuid: $object->getUuid());
+	}//end extract()
+
+	/**
 	 * Process extraction based on configured mode
+	 *
+	 * Cron and manual mode skip the object; an unknown mode falls back to background.
 	 *
 	 * @param string $mode Extraction mode (immediate, background, cron, manual).
 	 * @param int $objectId Object ID to process.
@@ -139,27 +186,22 @@ class ObjectChangeListener implements IEventListener {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	private function processExtractionMode(string $mode, int $objectId, string $objectUuid): void {
-		switch ($mode) {
-			case 'immediate':
-				$this->processImmediateExtraction(objectId: $objectId, objectUuid: $objectUuid);
-				break;
+		if (isset(self::SKIP_MESSAGES[$mode]) === true) {
+			$this->logger->debug(message: self::SKIP_MESSAGES[$mode], context: self::context(line: __LINE__, fields: ['object_id' => $objectId]));
+			return;
+		}
 
-			case 'background':
-				$this->processBackgroundExtraction(objectId: $objectId, objectUuid: $objectUuid);
-				break;
+		if ($mode === 'immediate') {
+			$this->processImmediateExtraction(objectId: $objectId, objectUuid: $objectUuid);
+			return;
+		}
 
-			case 'cron':
-				$this->processCronMode(objectId: $objectId);
-				break;
+		if ($mode === 'background') {
+			$this->processBackgroundExtraction(objectId: $objectId, objectUuid: $objectUuid);
+			return;
+		}
 
-			case 'manual':
-				$this->processManualMode(objectId: $objectId);
-				break;
-
-			default:
-				$this->processUnknownMode(mode: $mode, objectId: $objectId);
-				break;
-		}//end switch
+		$this->processUnknownMode(mode: $mode, objectId: $objectId);
 	}//end processExtractionMode()
 
 	/**
@@ -175,30 +217,17 @@ class ObjectChangeListener implements IEventListener {
 	private function processImmediateExtraction(int $objectId, string $objectUuid): void {
 		$this->logger->info(
 			message: '[ObjectChangeListener] Immediate mode - processing synchronously',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'object_id' => $objectId,
-				'object_uuid' => $objectUuid,
-			]
+			context: self::context(line: __LINE__, fields: ['object_id' => $objectId, 'object_uuid' => $objectUuid])
 		);
 
 		try {
 			$this->textExtractSvc->extractObject(objectId: $objectId, forceReExtract: false);
 			$this->logger->info(
 				message: '[ObjectChangeListener] Immediate extraction completed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
+				context: self::context(line: __LINE__, fields: ['object_id' => $objectId])
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ObjectChangeListener] Immediate extraction failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'object_id' => $objectId,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logFailure(message: '[ObjectChangeListener] Immediate extraction failed', objectId: $objectId, error: $e);
 		}
 	}//end processImmediateExtraction()
 
@@ -215,64 +244,37 @@ class ObjectChangeListener implements IEventListener {
 	private function processBackgroundExtraction(int $objectId, string $objectUuid): void {
 		$this->logger->info(
 			message: '[ObjectChangeListener] Background mode - queueing extraction job',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'object_id' => $objectId,
-				'object_uuid' => $objectUuid,
-			]
+			context: self::context(line: __LINE__, fields: ['object_id' => $objectId, 'object_uuid' => $objectUuid])
 		);
 
 		try {
 			$this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
 			$this->logger->debug(
 				message: '[ObjectChangeListener] Background extraction job queued',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
+				context: self::context(line: __LINE__, fields: ['object_id' => $objectId])
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ObjectChangeListener] Failed to queue background job',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'object_id' => $objectId,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logFailure(message: '[ObjectChangeListener] Failed to queue background job', objectId: $objectId, error: $e);
 		}
 	}//end processBackgroundExtraction()
 
 	/**
-	 * Handle cron mode (skip processing)
+	 * Log a failed extraction or queueing of one object.
 	 *
-	 * @param int $objectId Object ID.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	private function processCronMode(int $objectId): void {
-		$this->logger->debug(
-			message: '[ObjectChangeListener] Cron mode - skipping, will be processed by scheduled job',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
-		);
-	}//end processCronMode()
-
-	/**
-	 * Handle manual mode (skip processing)
-	 *
-	 * @param int $objectId Object ID.
+	 * @param string     $message  The log message.
+	 * @param int        $objectId The object.
+	 * @param \Exception $error    What went wrong.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	private function processManualMode(int $objectId): void {
-		$this->logger->debug(
-			message: '[ObjectChangeListener] Manual mode - skipping, requires manual trigger',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $objectId]
+	private function logFailure(string $message, int $objectId, \Exception $error): void {
+		$this->logger->error(
+			message: $message,
+			context: self::context(line: __LINE__, fields: ['object_id' => $objectId, 'error' => $error->getMessage()])
 		);
-	}//end processManualMode()
+	}//end logFailure()
 
 	/**
 	 * Handle unknown extraction mode (fallback to background)
@@ -287,14 +289,23 @@ class ObjectChangeListener implements IEventListener {
 	private function processUnknownMode(string $mode, int $objectId): void {
 		$this->logger->warning(
 			message: '[ObjectChangeListener] Unknown extraction mode, defaulting to background',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'object_id' => $objectId,
-				'extraction_mode' => $mode,
-			]
+			context: self::context(line: __LINE__, fields: ['object_id' => $objectId, 'extraction_mode' => $mode])
 		);
 
 		$this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
 	}//end processUnknownMode()
+
+	/**
+	 * A log context: this file, the logging line, then the given fields.
+	 *
+	 * @param int                  $line   The line that logs.
+	 * @param array<string, mixed> $fields The fields that follow.
+	 *
+	 * @return array<string, mixed> The context.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private static function context(int $line, array $fields): array {
+		return ['file' => __FILE__, 'line' => $line] + $fields;
+	}//end context()
 }//end class

@@ -41,7 +41,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Listener\ListenerRegistrar;
-use OCA\OpenRegister\Mcp\McpProviderDiscovery;
 use OCA\OpenRegister\Middleware\MiddlewareRegistrar;
 use OCA\OpenRegister\Notification\NotifierRegistrar;
 use OCA\OpenRegister\Search\SearchProviderRegistrar;
@@ -206,7 +205,6 @@ class Application extends App implements IBootstrap {
 		CapabilityRegistrar::register(context: $context);
 		ObjectSourceRegistrar::register(context: $context);
 		ListenerRegistrar::register(context: $context);
-		(new McpProviderDiscovery())->register(context: $context);
 		ObservabilityRegistrar::register(context: $context, appId: self::APP_ID);
 
 		NotifierRegistrar::register(context: $context);

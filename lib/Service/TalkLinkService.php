@@ -435,7 +435,7 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	}//end getLinkedRooms()
 
 	/**
-	 * A link row as returned, refreshed first when it is stale and Talk can be asked.
+	 * A link row as returned, refreshed first when Talk can be asked and the row is stale.
 	 *
 	 * @param TalkLink    $link    The stored link.
 	 * @param object|null $manager Talk Manager, when available.
@@ -445,38 +445,57 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 */
 	private function linkedRoomRow(TalkLink $link, ?object $manager, ?string $userUid): array {
 		$row = $link->jsonSerialize();
-		if ($manager === null || $userUid === null || $this->isStale(link: $link) === false) {
+		if ($manager === null || $userUid === null) {
 			return $row;
 		}
 
-		return ($this->refreshedRow(link: $link, manager: $manager, userUid: $userUid) ?? $row);
+		return $this->refreshedRow(link: $link, manager: $manager, userUid: $userUid, cachedRow: $row);
 	}//end linkedRoomRow()
 
 	/**
-	 * Refresh a stale link's cached fields from Talk and persist them.
+	 * Refresh a link's cached fields from Talk and persist them, when the link is stale.
 	 *
 	 * @param TalkLink $link    The stored link.
 	 * @param object   $manager Talk Manager.
 	 * @param string   $userUid The session user.
+	 * @param array<string,mixed> $cachedRow The row as stored, returned when the refresh cannot happen.
 	 *
-	 * @return array<string,mixed>|null The refreshed row, or null when the room is gone or the refresh failed.
+	 * @return array<string,mixed> The refreshed row, or the cached row when the room is gone or the refresh failed.
 	 */
-	private function refreshedRow(TalkLink $link, object $manager, string $userUid): ?array {
+	private function refreshedRow(TalkLink $link, object $manager, string $userUid, array $cachedRow): array {
+		if ($this->isStale(link: $link) === false) {
+			return $cachedRow;
+		}
+
 		try {
 			$room = $this->talk->findRoom(manager: $manager, roomToken: $link->getRoomToken(), userUid: $userUid);
 			if ($room === null) {
-				return null;
+				return $cachedRow;
 			}
 
-			$this->linkFactory->applyCache(link: $link, cache: $this->extractRoomFields(room: $room, userUid: $userUid));
-			$this->talkLinkMapper->update($link);
-			return $link->jsonSerialize();
+			return $this->cacheRoom(link: $link, room: $room, userUid: $userUid);
 		} catch (Throwable $e) {
 			// Stale link — keep cached row as-is.
 			$this->logger->debug('Stale talk link for room ' . $link->getRoomToken() . ': ' . $e->getMessage());
-			return null;
+			return $cachedRow;
 		}
 	}//end refreshedRow()
+
+	/**
+	 * Copy a room's fields onto its link, persist it and return the new row.
+	 *
+	 * @param TalkLink $link    The stored link.
+	 * @param object   $room    Talk Room entity.
+	 * @param string   $userUid The session user.
+	 *
+	 * @return array<string,mixed> The refreshed row.
+	 */
+	private function cacheRoom(TalkLink $link, object $room, string $userUid): array {
+		$this->linkFactory->applyCache(link: $link, cache: $this->extractRoomFields(room: $room, userUid: $userUid));
+		$this->talkLinkMapper->update($link);
+
+		return $link->jsonSerialize();
+	}//end cacheRoom()
 
 	/**
 	 * Create a new Talk room and link it to an object in one

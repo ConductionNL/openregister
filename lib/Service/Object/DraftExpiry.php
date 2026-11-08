@@ -172,11 +172,9 @@ class DraftExpiry implements DraftExpiryInterface {
 				}
 
 				$row = $this->removeWithin(
-					register: $register,
-					schema: $schema,
+					pair: new DraftExpiryPair(register: $register, schema: $schema, cutoff: $cutoff),
 					expired: $expired,
 					budget: ($budget - $counts['removed'] - $counts['refused']),
-					cutoff: $cutoff,
 					unread: $unread
 				);
 				$row['lifetimeDays'] = $days;
@@ -223,17 +221,18 @@ class DraftExpiry implements DraftExpiryInterface {
 	/**
 	 * Remove the expired drafts of one pair while the run's budget lasts.
 	 *
-	 * @param Register           $register The register.
-	 * @param Schema             $schema   The schema.
-	 * @param array<int, string> $expired  The uuids of its expired drafts.
-	 * @param int                $budget   How many delete attempts are left in this run.
-	 * @param DateTimeImmutable  $cutoff   The cutoff the list was made with, asked again just before each delete.
-	 * @param int                $unread   How many expired drafts lie beyond what one run reads; they wait for the next run.
+	 * @param DraftExpiryPair    $pair    The register and schema, and the cutoff the list was made with, asked again just before each delete.
+	 * @param array<int, string> $expired The uuids of its expired drafts.
+	 * @param int                $budget  How many delete attempts are left in this run.
+	 * @param int                $unread  How many expired drafts lie beyond what one run reads; they wait for the next run.
 	 *
 	 * @return array{register: string, schema: string, lifetimeDays: int, expired: int, removed: int, refused: int, deferred: int}
 	 *         The counts of this pair; the caller fills in the lifetime.
 	 */
-	private function removeWithin(Register $register, Schema $schema, array $expired, int $budget, DateTimeImmutable $cutoff, int $unread=0): array {
+	private function removeWithin(DraftExpiryPair $pair, array $expired, int $budget, int $unread=0): array {
+		$register = $pair->register;
+		$schema = $pair->schema;
+		$cutoff = $pair->cutoff;
 		$row = [
 			'register' => (string)($register->getSlug() ?? $register->getId()),
 			'schema' => (string)($schema->getSlug() ?? $schema->getId()),
@@ -324,7 +323,7 @@ class DraftExpiry implements DraftExpiryInterface {
 				continue;
 			}
 
-			$scan = $this->scan(register: $register, schema: $schema, query: $query, cutoff: $cutoff, pages: $pages);
+			$scan = $this->scan(pair: new DraftExpiryPair(register: $register, schema: $schema, cutoff: $cutoff), query: $query, pages: $pages);
 			array_push($expired, ...$scan['uuids']);
 			if ($scan['failed'] === true) {
 				// A list that cannot be read is logged once; the schema's drafts wait for the next run.
@@ -343,17 +342,18 @@ class DraftExpiry implements DraftExpiryInterface {
 	/**
 	 * Read the pages of one list, up to a page budget.
 	 *
-	 * @param Register             $register The register.
-	 * @param Schema               $schema   The schema.
-	 * @param array<string, mixed> $query    The list query, without paging.
-	 * @param DateTimeImmutable    $cutoff   Drafts last changed before this moment are expired.
-	 * @param int                  $pages    How many pages may be read.
+	 * @param DraftExpiryPair      $pair  The register and schema, and the cutoff: drafts last changed before it are expired.
+	 * @param array<string, mixed> $query The list query, without paging.
+	 * @param int                  $pages How many pages may be read.
 	 *
 	 * @return array{uuids: array<int, string>, pages: int, rows: int, full: bool, failed: bool}
 	 *         The expired uuids, the pages and rows read, whether the last page was full when the pages ran out,
 	 *         and whether a read failed.
 	 */
-	private function scan(Register $register, Schema $schema, array $query, DateTimeImmutable $cutoff, int $pages): array {
+	private function scan(DraftExpiryPair $pair, array $query, int $pages): array {
+		$register = $pair->register;
+		$schema = $pair->schema;
+		$cutoff = $pair->cutoff;
 		$scan = ['uuids' => [], 'pages' => 0, 'rows' => 0, 'full' => false, 'failed' => false];
 		for ($page = 0; $page < $pages; $page++) {
 			try {

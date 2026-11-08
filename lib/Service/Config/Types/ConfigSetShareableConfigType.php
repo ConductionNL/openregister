@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Config\Types;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\Config\BundleCrossingGuard;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
+use OCA\OpenRegister\Service\ConfigurationTransferInterface;
 use Throwable;
 use UnexpectedValueException;
 
@@ -52,12 +52,12 @@ class ConfigSetShareableConfigType implements IShareableConfigType {
 	 * Constructor.
 	 *
 	 * @param ConfigurationMapper $configurationMapper Loads the configuration set to share.
-	 * @param ConfigurationServiceInterface $configService Exports and imports the set.
+	 * @param ConfigurationTransferInterface $configService Exports and imports the set.
 	 * @param BundleCrossingGuard $crossingGuard Judges the bundle's schemas for the caller.
 	 */
 	public function __construct(
 		private readonly ConfigurationMapper $configurationMapper,
-		private readonly ConfigurationServiceInterface $configService,
+		private readonly ConfigurationTransferInterface $configService,
 		private readonly BundleCrossingGuard $crossingGuard,
 	) {
 

@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -87,12 +88,14 @@ final class LockHandlerRunLockTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		return new LockHandler(
-			$this->magic,
-			$this->audit,
+			new LockStores(
+				magicMapper: $this->magic,
+				auditTrailMapper: $this->audit,
+				advisory: $this->createMock(AdvisoryLockStore::class),
+				runLocks: $this->registry
+			),
 			$this->createMock(LoggerInterface::class),
-			$this->createMock(AdvisoryLockStore::class),
-			new LockAuthorization($this->session, $this->groups, $this->createMock(SchemaMapper::class)),
-			$this->registry
+			new LockAuthorization($this->session, $this->groups, $this->createMock(SchemaMapper::class))
 		);
 	}//end handler()
 

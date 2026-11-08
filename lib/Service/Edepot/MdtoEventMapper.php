@@ -145,14 +145,10 @@ class MdtoEventMapper {
 			return [];
 		}
 
-		$rows = $this->applyBound(rows: $rows, uuid: $uuid);
-
-		$events = [];
-		foreach ($rows as $row) {
-			$events[] = $this->toEvent(row: $row);
-		}
-
-		return $events;
+		return array_map(
+			fn (AuditTrail $row): array => $this->toEvent(row: $row),
+			$this->applyBound(rows: $rows, uuid: $uuid)
+		);
 	}//end forObject()
 
 	/**
@@ -167,41 +163,17 @@ class MdtoEventMapper {
 	 * @return array<int, AuditTrail> Rows keyed by audit-trail id, oldest first.
 	 */
 	private function fetchQualifyingRows(string $uuid): array {
-		$actions = implode(',', array_keys(self::EVENT_TYPE_BY_ACTION));
+		$read = $this->readRows(uuid: $uuid);
+		if ($read === null) {
+			return [];
+		}
 
 		$rows = [];
-		try {
-			$recent = $this->auditTrailMapper->findAll(
-				limit: self::MAX_EVENTS,
-				offset: null,
-				filters: ['object_uuid' => $uuid, 'action' => $actions],
-				sort: ['created' => 'DESC'],
-			);
-
-			$creation = $this->auditTrailMapper->findAll(
-				limit: 1,
-				offset: null,
-				filters: ['object_uuid' => $uuid, 'action' => 'create'],
-				sort: ['created' => 'ASC'],
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[MdtoEventMapper] Could not read the audit trail; MDTO event elements will be absent',
-				context: ['objectUuid' => $uuid, 'exception' => $e]
-			);
-			return [];
-		}//end try
-
-		foreach (array_merge($recent, $creation) as $row) {
+		foreach ($read as $row) {
 			$rows[$row->getId()] = $row;
 		}
 
-		uasort(
-			$rows,
-			static function (AuditTrail $left, AuditTrail $right): int {
-				return self::sortKey(row: $left) <=> self::sortKey(row: $right);
-			}
-		);
+		uasort($rows, static fn (AuditTrail $left, AuditTrail $right): int => self::sortKey(row: $left) <=> self::sortKey(row: $right));
 
 		return $rows;
 	}//end fetchQualifyingRows()
@@ -220,33 +192,14 @@ class MdtoEventMapper {
 			return $ordered;
 		}
 
-		$creation = null;
-		foreach ($ordered as $row) {
-			if ($row->getAction() === 'create') {
-				$creation = $row;
-				break;
-			}
+		$creation = self::creationRow(rows: $ordered);
+		if ($creation === null) {
+			$kept = array_slice($ordered, -self::MAX_EVENTS);
+		} else {
+			$kept = array_merge([$creation], array_slice($ordered, -(self::MAX_EVENTS - 1)));
 		}
 
-		$tailSize = self::MAX_EVENTS;
-		if ($creation !== null) {
-			$tailSize = (self::MAX_EVENTS - 1);
-		}
-
-		$kept = array_slice($ordered, -$tailSize);
-		if ($creation !== null) {
-			array_unshift($kept, $creation);
-		}
-
-		$this->logger->info(
-			message: '[MdtoEventMapper] Audit trail exceeded the MDTO event bound; older events were omitted',
-			context: [
-				'objectUuid' => $uuid,
-				'qualifying' => count($ordered),
-				'emitted' => count($kept),
-				'bound' => self::MAX_EVENTS,
-			]
-		);
+		$this->logTruncation(uuid: $uuid, qualifying: count($ordered), emitted: count($kept));
 
 		return $kept;
 	}//end applyBound()
@@ -265,29 +218,120 @@ class MdtoEventMapper {
 	 * @return array{type: string, time: string|null, actorName: string|null, actorId: string|null}
 	 */
 	private function toEvent(AuditTrail $row): array {
-		$time = null;
+		$time    = null;
 		$created = $row->getCreated();
 		if ($created !== null) {
 			$time = $created->format('c');
 		}
 
-		$actorName = $row->getUserName();
-		if (empty($actorName) === true) {
-			$actorName = null;
-		}
-
-		$actorId = $row->getUser();
-		if (empty($actorId) === true) {
-			$actorId = null;
-		}
-
 		return [
 			'type' => self::EVENT_TYPE_BY_ACTION[(string)$row->getAction()],
 			'time' => $time,
-			'actorName' => $actorName,
-			'actorId' => $actorId,
+			'actorName' => self::nonEmpty(value: $row->getUserName()),
+			'actorId' => self::nonEmpty(value: $row->getUser()),
 		];
 	}//end toEvent()
+
+	/**
+	 * Both bounded reads: the newest MAX_EVENTS qualifying rows, then the
+	 * single oldest `create` row. An unreadable audit trail is logged.
+	 *
+	 * @param string $uuid The object uuid.
+	 *
+	 * @return array<int, AuditTrail>|null The rows, or null when the trail cannot be read.
+	 */
+	private function readRows(string $uuid): ?array {
+		try {
+			return array_merge($this->recentRows(uuid: $uuid), $this->creationRows(uuid: $uuid));
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[MdtoEventMapper] Could not read the audit trail; MDTO event elements will be absent',
+				context: ['objectUuid' => $uuid, 'exception' => $e]
+			);
+			return null;
+		}
+	}//end readRows()
+
+	/**
+	 * The newest MAX_EVENTS rows whose action is on the allow-list.
+	 *
+	 * @param string $uuid The object uuid.
+	 *
+	 * @return array<int, AuditTrail> The rows.
+	 */
+	private function recentRows(string $uuid): array {
+		return $this->auditTrailMapper->findAll(
+			limit: self::MAX_EVENTS,
+			offset: null,
+			filters: ['object_uuid' => $uuid, 'action' => implode(',', array_keys(self::EVENT_TYPE_BY_ACTION))],
+			sort: ['created' => 'DESC'],
+		);
+	}//end recentRows()
+
+	/**
+	 * The single oldest `create` row, which the recent read misses on any
+	 * object with a long update stream.
+	 *
+	 * @param string $uuid The object uuid.
+	 *
+	 * @return array<int, AuditTrail> The rows.
+	 */
+	private function creationRows(string $uuid): array {
+		return $this->auditTrailMapper->findAll(
+			limit: 1,
+			offset: null,
+			filters: ['object_uuid' => $uuid, 'action' => 'create'],
+			sort: ['created' => 'ASC'],
+		);
+	}//end creationRows()
+
+	/**
+	 * Log that older events were left out.
+	 *
+	 * @param string $uuid       The object uuid.
+	 * @param int    $qualifying How many rows qualified.
+	 * @param int    $emitted    How many are emitted.
+	 *
+	 * @return void
+	 */
+	private function logTruncation(string $uuid, int $qualifying, int $emitted): void {
+		$this->logger->info(
+			message: '[MdtoEventMapper] Audit trail exceeded the MDTO event bound; older events were omitted',
+			context: ['objectUuid' => $uuid, 'qualifying' => $qualifying, 'emitted' => $emitted, 'bound' => self::MAX_EVENTS]
+		);
+	}//end logTruncation()
+
+	/**
+	 * The first `create` row, or null.
+	 *
+	 * @param list<AuditTrail> $rows Rows, oldest first.
+	 *
+	 * @return AuditTrail|null The creation row.
+	 */
+	private static function creationRow(array $rows): ?AuditTrail {
+		foreach ($rows as $row) {
+			if ($row->getAction() === 'create') {
+				return $row;
+			}
+		}
+
+		return null;
+	}//end creationRow()
+
+	/**
+	 * A value, or null when empty.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed The value or null.
+	 */
+	private static function nonEmpty(mixed $value): mixed {
+		if (empty($value) === true) {
+			return null;
+		}
+
+		return $value;
+	}//end nonEmpty()
 
 	/**
 	 * Sort key for one audit row: its creation timestamp, then its id.

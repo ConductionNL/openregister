@@ -65,7 +65,7 @@ use OCA\OpenRegister\Service\Flow\FlowUnattributed;
 use OCA\OpenRegister\Service\Flow\IFlowDirectlyInvokable;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -156,9 +156,9 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * The SAME object-RBAC evaluator the
 	 *
-	 * @var PermissionHandlerInterface
+	 * @var PermissionCheckInterface
 	 */
-	private readonly PermissionHandlerInterface $permissions;
+	private readonly PermissionCheckInterface $permissions;
 
 	/**
 	 * Constructor.

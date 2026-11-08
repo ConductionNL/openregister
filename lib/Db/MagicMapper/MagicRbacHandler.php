@@ -48,18 +48,16 @@ use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\McpScope;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RuleColumns;
-use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
-use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -93,7 +91,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- * @SuppressWarnings(PHPMD.StaticAccess) PermissionHandler::stripMcpScope() is deliberately static and pure so BOTH rule
+ * @SuppressWarnings(PHPMD.StaticAccess) McpScope::strip() is deliberately static and pure so BOTH rule
  *      interpreters apply the byte-identical transform. Injecting it would let this one be constructed without it and
  *      silently diverge from the PHP-layer evaluator on which entries are inert — the exact drift ADR-011 warns about.
  */
@@ -104,7 +102,7 @@ class MagicRbacHandler {
 	 *
 	 * Emitted when a `match` rule's dynamic variable resolves to null so the
 	 * predicate is NOT silently dropped from the AND (#1953). Mirrors the
-	 * QueryBuilder path's {@see impossibleCondition()} and ConditionMatcher's
+	 * QueryBuilder path's {@see RbacQueryMatch::impossible()} and ConditionMatcher's
 	 * fail-closed semantics.
 	 *
 	 * @var string
@@ -120,22 +118,11 @@ class MagicRbacHandler {
 	private const RULE_STAYS_IN_ORGANISATION = 'stays-in-organisation';
 
 	/**
-	 * Memoised database-platform verdict for `$contains` SQL emission.
+	 * The compiler of `match` blocks into raw SQL, with its dialect; built on first use.
 	 *
-	 * Null until first resolved; the platform cannot change within a request.
-	 *
-	 * @var boolean|null
+	 * @var RbacMatchSql|null
 	 */
-	private ?bool $isPostgresCache = null;
-
-	/**
-	 * Memoised database-provider verdict for how a string value is quoted.
-	 *
-	 * Null until first resolved; the provider cannot change within a request.
-	 *
-	 * @var boolean|null
-	 */
-	private ?bool $isMysqlCache = null;
+	private ?RbacMatchSql $matchSql = null;
 
 	/**
 	 * Constructor for MagicRbacHandler
@@ -220,6 +207,107 @@ class MagicRbacHandler {
 	}//end objectScope()
 
 	/**
+	 * The compiler of `match` blocks into raw SQL.
+	 *
+	 * Built lazily: the platform it quotes for is read from the container on
+	 * first use, and this class is constructed on paths that never need it.
+	 *
+	 * @return RbacMatchSql The compiler.
+	 */
+	private function matchSql(): RbacMatchSql {
+		if ($this->matchSql === null) {
+			$this->matchSql = new RbacMatchSql(
+				matcher: $this->conditionMatcher,
+				dialect: new RbacSqlDialect(container: $this->container, logger: $this->logger)
+			);
+		}
+
+		return $this->matchSql;
+	}//end matchSql()
+
+	/**
+	 * The compiler of `match` blocks into expressions of one query.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return RbacQueryMatch The compiler.
+	 */
+	private function queryMatch(IQueryBuilder $qb): RbacQueryMatch {
+		return new RbacQueryMatch(qb: $qb, sql: $this->matchSql());
+	}//end queryMatch()
+
+	/**
+	 * Fill a call with the session caller: user id and groups.
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return IUser|null The session user.
+	 */
+	private function identifyCaller(RbacAccessCall $call): ?IUser {
+		$user = $this->userSession->getUser();
+		$call->userId = $user?->getUID();
+
+		$call->userGroups = [];
+		if ($user !== null) {
+			$call->userGroups = $this->groupManager->getUserGroupIds($user);
+		}
+
+		return $user;
+	}//end identifyCaller()
+
+	/**
+	 * Resolve a call's effective authorization (schema-level, or the register cascade).
+	 *
+	 * @param RbacAccessCall $call The call; its authorization is set when it resolves.
+	 *
+	 * @return AuthorizationUnresolvableException|null Why it did not resolve, or null when it did.
+	 */
+	private function unresolvableAuthorization(RbacAccessCall $call): ?AuthorizationUnresolvableException {
+		try {
+			$call->authorization = $this->resolveSchemaAuthorization(schema: $call->schema);
+			return null;
+		} catch (AuthorizationUnresolvableException $e) {
+			return $e;
+		}
+	}//end unresolvableAuthorization()
+
+	/**
+	 * Log that a call's authorization could not be resolved, and what the emitter does about it.
+	 *
+	 * @param RbacAccessCall                    $call  The call.
+	 * @param AuthorizationUnresolvableException $error Why it did not resolve.
+	 *
+	 * @return void
+	 */
+	private function logUnresolvable(RbacAccessCall $call, AuthorizationUnresolvableException $error): void {
+		$message = '[MagicRbacHandler] Authorization unresolvable; returning deny-all conditions (fail-closed)';
+		if ($call instanceof RbacFilterCall) {
+			$message = '[MagicRbacHandler] Authorization unresolvable; clamping query to deny-all (fail-closed)';
+		}
+
+		$this->logger->error(
+			message: $message,
+			context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $call->schema->getId(), 'action' => $call->action, 'error' => $error->getMessage()]
+		);
+	}//end logUnresolvable()
+
+	/**
+	 * The caller as the rule interpreters read it.
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return array{groups: array<int, string>, userId: string|null, inheritFromPublic: bool, columns: RuleColumns}
+	 */
+	private function ruleCaller(RbacAccessCall $call): array {
+		return [
+			'groups'            => $call->userGroups,
+			'userId'            => $call->userId,
+			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $call->schema),
+			'columns'           => $call->columns(),
+		];
+	}//end ruleCaller()
+
+	/**
 	 * The shared per-object grant resolver.
 	 *
 	 * Unlike the scope resolver this one is NOT stateless — it memoises per
@@ -293,49 +381,71 @@ class MagicRbacHandler {
 	 * themselves out. Admins never get here (they return earlier);
 	 * openregister#1617 covers the system-owner carve-out.
 	 *
-	 * Note the UNQUALIFIED column: this emitter feeds UNION members that carry
-	 * no table alias, which is why it reads `_owner` and not `t._owner`.
+	 * Note the column prefix: this emitter feeds UNION members that carry no
+	 * table alias (prefix ''), and subqueries over a second table, where an
+	 * unqualified column would bind to the innermost FROM.
 	 *
-	 * @param array $userGroups The caller's group IDs.
-	 * @param string|null $userId The caller.
-	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
-	 *                             UNION member. Unqualified, a column name still parses inside a
-	 *                             subquery and binds to the innermost FROM, which is silently wrong
-	 *                             the moment the related table does not carry it.
+	 * @param RbacAccessCall $call The call.
 	 *
-	 * @return string[] SQL conditions to OR together.
+	 * @return array<int, string> Raw SQL conditions, to be ORed with the rule conditions.
 	 */
-	private function ownerAdmitConditionsSql(array $userGroups, ?string $userId, string $columnPrefix = ''): array {
-		$conditions = [];
-		$ownerColumn = $columnPrefix . '_owner';
-
-		if ($userId !== null) {
-			$quotedUserId = $this->quoteValue(value: $userId);
-			$conditions[] = "{$ownerColumn} = {$quotedUserId}";
-		}
-
-		if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
-			$quotedSystemId = $this->quoteValue(value: $this->getSystemUserId());
-			$conditions[] = "{$ownerColumn} = {$quotedSystemId}";
-		}
-
-		// THE OWNING GROUP IS AN OWNER, so it sits here with the other owner
-		// admits rather than inside the not-private predicate: here the term is
-		// ORed over the whole query, there it would have been ANDed with the
-		// schema's rules. One of those two placements matches what
-		// ObjectScopeResolver::admitsUnconditionally() answers on a single read
-		// and the other does not.
-		$ownedByMyGroup = $this->objectScope()->ownedByMyGroupSql(
-			authColumn: $columnPrefix . '_authorization',
-			isPostgres: $this->isPostgres(),
-			quotedUserGroups: $this->quotedCallerGroups()
+	private function ownerAdmitConditionsSql(RbacAccessCall $call): array {
+		$ownerColumn = $call->columnPrefix . '_owner';
+		$conditions = $this->ownerAdmitTerms(
+			call: $call,
+			ownerTerm: fn (string $ownerId): string => "{$ownerColumn} = " . $this->quoteValue(value: $ownerId)
 		);
+
+		$ownedByMyGroup = $this->ownedByMyGroupSql(call: $call);
 		if ($ownedByMyGroup !== null) {
 			$conditions[] = $ownedByMyGroup;
 		}
 
 		return $conditions;
 	}//end ownerAdmitConditionsSql()
+
+	/**
+	 * The owner terms of both emitters: the caller's own rows, and system-owned
+	 * rows when the caller is one of the system reader groups.
+	 *
+	 * @param RbacAccessCall $call      The call.
+	 * @param callable       $ownerTerm Builds the term for one owner id.
+	 *
+	 * @return array<int, mixed> The terms, in that order.
+	 */
+	private function ownerAdmitTerms(RbacAccessCall $call, callable $ownerTerm): array {
+		$terms = [];
+		if ($call->userId !== null) {
+			$terms[] = $ownerTerm($call->userId);
+		}
+
+		if ($this->shouldGrantSystemRowVisibility(userGroups: $call->userGroups) === true) {
+			$terms[] = $ownerTerm($this->getSystemUserId());
+		}
+
+		return $terms;
+	}//end ownerAdmitTerms()
+
+	/**
+	 * Whether the row is owned by one of the caller's groups, as raw SQL.
+	 *
+	 * THE OWNING GROUP IS AN OWNER, so it sits with the other owner admits
+	 * rather than inside the not-private predicate: here the term is ORed over
+	 * the whole query, there it would have been ANDed with the schema's rules.
+	 * Only this placement matches what ObjectScopeResolver::admitsUnconditionally()
+	 * answers on a single read.
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return string|null The predicate, or null when the caller is in no group.
+	 */
+	private function ownedByMyGroupSql(RbacAccessCall $call): ?string {
+		return $this->objectScope()->ownedByMyGroupSql(
+			authColumn: $call->authorizationColumn(),
+			isPostgres: $this->isPostgres(),
+			quotedUserGroups: $this->quotedCallerGroups()
+		);
+	}//end ownedByMyGroupSql()
 
 	/**
 	 * The "this caller may reach this row at all" predicate, as raw SQL.
@@ -347,51 +457,48 @@ class MagicRbacHandler {
 	 * implementation would be a second definition of the vocabulary, which is
 	 * how the two divergences in the predecessor change happened.
 	 *
-	 * @param array|null $authorization The schema/register authorization block (no object).
-	 * @param string $columnName The `_authorization` column as this emitter references it.
-	 * @param string $uuidColumn The `_uuid` column as this emitter references it.
-	 * @param string|null $userId The caller, for grant resolution.
-	 * @param string $action The action being filtered; a grant only counts when it carries that permission.
-	 * @param Schema|null $schema The schema, so its drafts can be kept to their owners (decision 180).
-	 * @param string $columnPrefix Table alias with its dot for the `_status` column, empty when unaliased.
-	 * @param string|null $tableName The bare magic table; a `_status` column it lacks is left out of the draft predicate.
+	 * Decision 180: a draft answers to its owner only, like a private object,
+	 * unless the schema lets others see drafts. Added HERE, the one predicate
+	 * both list emitters use, so the owner admits beside it keep the owner's
+	 * own drafts in view on every path.
 	 *
-	 * @return string A SQL predicate true for rows this caller may reach.
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return string The predicate.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
 	 */
-	private function reachableRowSqlFor(
-		?array $authorization,
-		string $columnName,
-		string $uuidColumn,
-		?string $userId,
-		string $action,
-		?Schema $schema = null,
-		string $columnPrefix = '',
-		?string $tableName = null,
-	): string {
+	private function reachableRowSqlFor(RbacAccessCall $call): string {
 		$reachable = $this->objectScope()->notPrivateOrGrantedSql(
-			authColumn: $columnName,
-			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $authorization),
+			authColumn: $call->authorizationColumn(),
+			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $call->authorization),
 			isPostgres: $this->isPostgres(),
-			uuidColumn: $uuidColumn,
-			quotedUuids: $this->quotedGrantedUuids(userId: $userId, action: $action)
+			uuidColumn: $call->columnPrefix . '_uuid',
+			quotedUuids: $this->quotedGrantedUuids(userId: $call->userId, action: $call->action)
 		);
 
-		// Decision 180: a draft answers to its owner only, like a private
-		// object, unless the schema lets others see drafts. Added HERE, the one
-		// predicate both list emitters use, so the owner admits beside it keep
-		// the owner's own drafts in view on every path.
-		// A table that could not be given its `_status` column cannot hold a
-		// draft, and naming the column would fail the query for everyone but an
-		// administrator (REQ-MTH-002: such a table degrades quietly).
-		$drafts = new DraftStatusPolicy();
-		if ($schema !== null && $drafts->draftsVisibleToOthers(schema: $schema) === false && $this->statusColumnMissing(tableName: $tableName) === false) {
-			$reachable = '(' . $reachable . ' AND ' . $drafts->notADraftSql(columnPrefix: $columnPrefix) . ')';
+		if ($this->hidesDrafts(call: $call) === true) {
+			$reachable = '(' . $reachable . ' AND ' . (new DraftStatusPolicy())->notADraftSql(columnPrefix: $call->columnPrefix) . ')';
 		}
 
 		return $reachable;
 	}//end reachableRowSqlFor()
+
+	/**
+	 * Whether the call keeps drafts to their owner.
+	 *
+	 * A table that could not be given its `_status` column cannot hold a draft,
+	 * and naming the column would fail the query for everyone but an
+	 * administrator (REQ-MTH-002: such a table degrades quietly).
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return bool True when the not-a-draft predicate applies.
+	 */
+	private function hidesDrafts(RbacAccessCall $call): bool {
+		return (new DraftStatusPolicy())->draftsVisibleToOthers(schema: $call->schema) === false
+			&& $this->statusColumnMissing(tableName: $call->tableName) === false;
+	}//end hidesDrafts()
 
 	/**
 	 * Whether a table is known to lack its `_status` column after an attempt to heal it.
@@ -449,91 +556,110 @@ class MagicRbacHandler {
 	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface}, where there is
 	 * a row to name; a list has none yet at the point the SQL is built.
 	 *
-	 * @param array|null  $authorization The schema/register block (no object).
-	 * @param string      $action        The verb being filtered.
-	 * @param string|null $userId        The caller.
-	 * @param string[]    $userGroups    The caller's group IDs.
-	 * @param string      $columnName    The `_authorization` column as this emitter references it.
-	 * @param RuleColumns $columns       The columns a `match` key may name, with their table alias.
+	 * @param RbacAccessCall $call The call: caller, action, authorization and column prefix.
 	 *
 	 * @return string|false|null The predicate, false when the caller is denied
 	 *                           outright, or null when nothing is enforced yet.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function denyFilterSqlFor(
-		?array $authorization,
-		string $action,
-		?string $userId,
-		array $userGroups,
-		string $columnName,
-		RuleColumns $columns,
-	): string|false|null {
+	private function denyFilterSqlFor(RbacAccessCall $call): string|false|null {
 		if ($this->denyEnforcementMode()->enforces() === false) {
 			return null;
 		}
 
-		$resolver = $this->denyResolver();
-		$principals = $resolver->principalsFor(userId: $userId, userGroups: $userGroups);
-
-		$unconditional = $resolver->unconditionalDenial(
-			authorization: $authorization,
-			action: $action,
-			principals: $principals
-		);
-		if ($unconditional !== null) {
-			$this->logger->info(
-				message: '[MagicRbacHandler] A deny rule removes this action from the caller; the list returns nothing',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'action' => $action,
-					'userId' => $userId,
-					'principal' => $unconditional['principal'],
-				]
-			);
+		$principals = $this->denyResolver()->principalsFor(userId: $call->userId, userGroups: $call->userGroups);
+		if ($this->unconditionallyDenied(call: $call, principals: $principals) === true) {
 			return false;
 		}
 
-		$terms = [
-			$resolver->notDeniedRowSql(
-				columnName: $columnName,
-				action: $action,
-				isPostgres: $this->isPostgres(),
-				principals: $principals
-			),
-		];
+		return $this->conditionalDenyTerm(call: $call, principals: $principals);
+	}//end denyFilterSqlFor()
 
-		foreach ($resolver->conditionalDenials(
-			authorization: $authorization,
-			action: $action,
+	/**
+	 * Whether a denial reaches the caller for the action whatever the row says.
+	 *
+	 * @param RbacAccessCall     $call       The call.
+	 * @param array<int, string> $principals The caller's deny principals.
+	 *
+	 * @return bool True when the list returns nothing.
+	 */
+	private function unconditionallyDenied(RbacAccessCall $call, array $principals): bool {
+		$unconditional = $this->denyResolver()->unconditionalDenial(authorization: $call->authorization, action: $call->action, principals: $principals);
+		if ($unconditional === null) {
+			return false;
+		}
+
+		$this->logger->info(
+			message: '[MagicRbacHandler] A deny rule removes this action from the caller; the list returns nothing',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'action' => $call->action, 'userId' => $call->userId, 'principal' => $unconditional['principal']]
+		);
+		return true;
+	}//end unconditionallyDenied()
+
+	/**
+	 * The row-level deny test ANDed with the negation of every conditional denial.
+	 *
+	 * @param RbacAccessCall     $call       The call.
+	 * @param array<int, string> $principals The caller's deny principals.
+	 *
+	 * @return string|false The term, or false when a conditional denial will not compile.
+	 */
+	private function conditionalDenyTerm(RbacAccessCall $call, array $principals): string|false {
+		$rowTest = $this->denyResolver()->notDeniedRowSql(
+			columnName: $call->authorizationColumn(),
+			action: $call->action,
+			isPostgres: $this->isPostgres(),
 			principals: $principals
-		) as $denial) {
-			$match = $this->denialPredicateSql(rule: $denial['rule'], columns: $columns);
+		);
 
-			if ($match === null) {
-				$this->logger->warning(
-					message: '[MagicRbacHandler] A conditional deny could not be compiled into SQL; denying the whole list (fail-closed)',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'action' => $action,
-						'userId' => $userId,
-						'principal' => $denial['principal'],
-					]
-				);
+		$negated = $this->negatedConditionalDenials(call: $call, principals: $principals);
+		if ($negated === false) {
+			return false;
+		}
+
+		return (string)RbacMatchSql::joined(terms: [$rowTest, ...$negated], glue: ' AND ');
+	}//end conditionalDenyTerm()
+
+	/**
+	 * The negation of every conditional denial that reaches the caller.
+	 *
+	 * @param RbacAccessCall     $call       The call.
+	 * @param array<int, string> $principals The caller's deny principals.
+	 *
+	 * @return array<int, string>|false The negated predicates, or false when one will not compile.
+	 */
+	private function negatedConditionalDenials(RbacAccessCall $call, array $principals): array|false {
+		$columns = $call->columns();
+		$denials = $this->denyResolver()->conditionalDenials(authorization: $call->authorization, action: $call->action, principals: $principals);
+		$negated = [];
+		foreach ($denials as $denial) {
+			$compiled = $this->denialPredicateSql(rule: $denial['rule'], columns: $columns);
+			if ($compiled === null) {
+				$this->logUncompilableDenial(call: $call, principal: $denial['principal']);
 				return false;
 			}
 
-			$terms[] = "(NOT ({$match}))";
+			$negated[] = "(NOT ({$compiled}))";
 		}
 
-		if (count($terms) === 1) {
-			return $terms[0];
-		}
+		return $negated;
+	}//end negatedConditionalDenials()
 
-		return '(' . implode(' AND ', $terms) . ')';
-	}//end denyFilterSqlFor()
+	/**
+	 * Log a conditional denial that could not be compiled into SQL.
+	 *
+	 * @param RbacAccessCall $call      The call.
+	 * @param mixed          $principal The principal the denial names.
+	 *
+	 * @return void
+	 */
+	private function logUncompilableDenial(RbacAccessCall $call, mixed $principal): void {
+		$this->logger->warning(
+			message: '[MagicRbacHandler] A conditional deny could not be compiled into SQL; denying the whole list (fail-closed)',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'action' => $call->action, 'userId' => $call->userId, 'principal' => $principal]
+		);
+	}//end logUncompilableDenial()
 
 	/**
 	 * The SQL of a conditional denial's clause, or null when it cannot select rows by column.
@@ -548,15 +674,38 @@ class MagicRbacHandler {
 	 * @return string|null The predicate, or null.
 	 */
 	private function denialPredicateSql(mixed $rule, RuleColumns $columns): ?string {
-		if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false
-			|| $this->conditionMatcher->namesUnknownMetadata(match: $rule['match']) === true
-			|| $columns->admits(match: $rule['match']) === false
-		) {
+		if ($this->denialCompiles(rule: $rule, columns: $columns) === false) {
 			return null;
 		}
 
-		return $this->buildMatchConditionsSql(match: $rule['match'], columnPrefix: $columns->prefix);
+		return $this->matchSql()->matchConditions(block: $rule['match'], columnPrefix: $columns->prefix);
 	}//end denialPredicateSql()
+
+	/**
+	 * Whether a conditional denial can be compiled: a rule with a match block
+	 * on metadata records carry and on columns the table has.
+	 *
+	 * @param mixed       $rule    The denial rule.
+	 * @param RuleColumns $columns The columns of the table.
+	 *
+	 * @return bool True when it compiles.
+	 */
+	private function denialCompiles(mixed $rule, RuleColumns $columns): bool {
+		return $this->isMatchRule(rule: $rule) === true
+			&& $this->conditionMatcher->namesUnknownMetadata(match: $rule['match']) === false
+			&& $columns->admits(match: $rule['match']) === true;
+	}//end denialCompiles()
+
+	/**
+	 * Whether a rule carries a match block.
+	 *
+	 * @param mixed $rule The rule as written.
+	 *
+	 * @return bool True for an array rule whose `match` is an array.
+	 */
+	private function isMatchRule(mixed $rule): bool {
+		return is_array($rule) === true && is_array(($rule['match'] ?? null)) === true;
+	}//end isMatchRule()
 
 	/**
 	 * Apply RBAC filters to a query builder based on schema authorization
@@ -605,27 +754,15 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function applyRbacFilterCall(RbacFilterCall $call): void {
-		$user = $this->userSession->getUser();
-		$call->userId = $user?->getUID();
+		$user = $this->identifyCaller(call: $call);
 
-		$call->userGroups = [];
-		if ($user !== null) {
-			$call->userGroups = $this->groupManager->getUserGroupIds($user);
-		}
-
-		if (in_array('admin', $call->userGroups, true) === true) {
+		// Admin users bypass all RBAC checks, and so does the userless system.
+		if ($call->callerIsAdmin() === true || $this->isTrustedSystemCaller(user: $user) === true) {
 			return;
 		}
 
-		if ($this->isTrustedSystemCaller(user: $user) === true) {
-			return;
-		}
-
-		if ($this->resolveCallAuthorization(call: $call) === false) {
-			return;
-		}
-
-		if ($this->applyDenyRules(call: $call) === false) {
+		// The checks run in order, and each one that clamps the query ends it.
+		if ($this->resolveCallAuthorization(call: $call) === false || $this->applyDenyRules(call: $call) === false) {
 			return;
 		}
 
@@ -645,24 +782,14 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function resolveCallAuthorization(RbacFilterCall $call): bool {
-		try {
-			$call->authorization = $this->resolveSchemaAuthorization(schema: $call->schema);
-		} catch (AuthorizationUnresolvableException $e) {
-			$this->logger->error(
-				message: '[MagicRbacHandler] Authorization unresolvable; clamping query to deny-all (fail-closed)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $call->schema->getId(),
-					'action' => $call->action,
-					'error' => $e->getMessage(),
-				]
-			);
-			$call->denyAll();
-			return false;
+		$unresolvable = $this->unresolvableAuthorization(call: $call);
+		if ($unresolvable === null) {
+			return true;
 		}
 
-		return true;
+		$this->logUnresolvable(call: $call, error: $unresolvable);
+		$call->denyAll();
+		return false;
 	}//end resolveCallAuthorization()
 
 	/**
@@ -680,19 +807,7 @@ class MagicRbacHandler {
 	 */
 	private function applyAccessConditions(RbacFilterCall $call): void {
 		$qb = $call->qb;
-		$notPrivate = $qb->createFunction(
-			$this->reachableRowSqlFor(
-				authorization: $call->authorization,
-				columnName: 't._authorization',
-				uuidColumn: 't._uuid',
-				userId: $call->userId,
-				action: $call->action,
-				schema: $call->schema,
-				columnPrefix: 't.',
-				tableName: $call->tableName
-			)
-		);
-
+		$notPrivate = $qb->createFunction($this->reachableRowSqlFor(call: $call));
 		$ownerAdmits = $this->ownerAdmits(call: $call);
 
 		if (empty($call->authorization) === true) {
@@ -704,25 +819,29 @@ class MagicRbacHandler {
 			return;
 		}
 
-		$conditions = array_merge($ownerAdmits, $this->ruleConditions(call: $call, notPrivate: $notPrivate));
+		$this->applyAnyOf(call: $call, conditions: array_merge($ownerAdmits, $this->ruleConditions(call: $call, notPrivate: $notPrivate)));
+	}//end applyAccessConditions()
 
-		if (empty($conditions) === true) {
+	/**
+	 * Grant access when ANY condition matches; deny outright when there is none.
+	 *
+	 * @param RbacFilterCall    $call       The call.
+	 * @param array<int, mixed> $conditions The owner admits and the rule conditions.
+	 *
+	 * @return void
+	 */
+	private function applyAnyOf(RbacFilterCall $call, array $conditions): void {
+		if ($conditions === []) {
 			$this->logger->debug(
 				message: '[MagicRbacHandler] No access conditions met, denying all',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'userId' => $call->userId,
-					'action' => $call->action,
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'userId' => $call->userId, 'action' => $call->action]
 			);
 			$call->denyAll();
 			return;
 		}
 
-		// Access is granted if ANY condition matches.
-		$qb->andWhere($qb->expr()->orX(...$conditions));
-	}//end applyAccessConditions()
+		$call->qb->andWhere($call->qb->expr()->orX(...$conditions));
+	}//end applyAnyOf()
 
 	/**
 	 * Apply the schema's deny rules to the query.
@@ -734,14 +853,7 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function applyDenyRules(RbacFilterCall $call): bool {
-		$denyTerm = $this->denyFilterSqlFor(
-			authorization: $call->authorization,
-			action: $call->action,
-			userId: $call->userId,
-			userGroups: $call->userGroups,
-			columnName: 't._authorization',
-			columns: new RuleColumns(schema: $call->schema, prefix: 't.')
-		);
+		$denyTerm = $this->denyFilterSqlFor(call: $call);
 		if ($denyTerm === false) {
 			$call->denyAll();
 			return false;
@@ -767,23 +879,12 @@ class MagicRbacHandler {
 	 */
 	private function ownerAdmits(RbacFilterCall $call): array {
 		$qb = $call->qb;
-		$ownerAdmits = [];
-		if ($call->userId !== null) {
-			$ownerAdmits[] = $qb->expr()->eq('t._owner', $qb->createNamedParameter($call->userId));
-		}
-
-		if ($this->shouldGrantSystemRowVisibility(userGroups: $call->userGroups) === true) {
-			$ownerAdmits[] = $qb->expr()->eq(
-				't._owner',
-				$qb->createNamedParameter($this->getSystemUserId())
-			);
-		}
-
-		$ownedByMyGroup = $this->objectScope()->ownedByMyGroupSql(
-			authColumn: 't._authorization',
-			isPostgres: $this->isPostgres(),
-			quotedUserGroups: $this->quotedCallerGroups()
+		$ownerAdmits = $this->ownerAdmitTerms(
+			call: $call,
+			ownerTerm: fn (string $ownerId): mixed => $qb->expr()->eq('t._owner', $qb->createNamedParameter($ownerId))
 		);
+
+		$ownedByMyGroup = $this->ownedByMyGroupSql(call: $call);
 		if ($ownedByMyGroup !== null) {
 			$ownerAdmits[] = $qb->createFunction($ownedByMyGroup);
 		}
@@ -808,27 +909,14 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function ruleConditions(RbacFilterCall $call, mixed $notPrivate): array {
-		$rules = $call->authorization[$call->action] ?? [];
-		if (empty($rules) === true) {
-			$this->logger->debug(
-				message: '[MagicRbacHandler] Action not configured on a non-empty authorization block — failing closed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'action' => $call->action]
-			);
-		}
-
-		$caller = [
-			'groups'            => $call->userGroups,
-			'userId'            => $call->userId,
-			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $call->schema),
-			'columns'           => new RuleColumns(schema: $call->schema, prefix: 't.'),
-		];
+		$rules = $this->actionRules(call: $call);
+		$caller = ($this->ruleCaller(call: $call) + ['qb' => $call->qb]);
 
 		$conditions = [];
 		foreach ($rules as $rule) {
-			$ruleCondition = $this->processAuthorizationRule(qb: $call->qb, rule: $rule, caller: $caller);
+			$ruleCondition = $this->processAuthorizationRule(rule: $rule, caller: $caller);
 			if ($ruleCondition === true) {
-				$conditions[] = $notPrivate;
-				break;
+				return [...$conditions, $notPrivate];
 			}
 
 			if ($ruleCondition !== null && $ruleCondition !== false) {
@@ -838,6 +926,25 @@ class MagicRbacHandler {
 
 		return $conditions;
 	}//end ruleConditions()
+
+	/**
+	 * The rules the authorization block lists for the call's action.
+	 *
+	 * @param RbacFilterCall $call The call.
+	 *
+	 * @return mixed The rules as written; an empty list when the action is not configured.
+	 */
+	private function actionRules(RbacFilterCall $call): mixed {
+		$rules = ($call->authorization[$call->action] ?? []);
+		if (empty($rules) === true) {
+			$this->logger->debug(
+				message: '[MagicRbacHandler] Action not configured on a non-empty authorization block — failing closed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'action' => $call->action]
+			);
+		}
+
+		return $rules;
+	}//end actionRules()
 
 	/**
 	 * Resolve whether authenticated users inherit `public` group rights for a schema.
@@ -857,28 +964,32 @@ class MagicRbacHandler {
 		try {
 			return $this->container->get(PermissionHandlerInterface::class)->resolveInheritFromPublic(schema: $schema);
 		} catch (\Throwable $e) {
-			// Fail to the configured tenant posture rather than a hard-coded
-			// grant, so a cluster-wide lock-down (rbac.inherit_from_public_default
-			// = false) is not silently softened on this code path. Symmetric with
-			// PermissionHandlerInterface::resolveInheritFromPublic()'s own fail-safe.
-			$fallback = true;
-			try {
-				$fallback = $this->container->get(PermissionHandlerInterface::class)->inheritFromPublicTenantDefault();
-			} catch (\Throwable $inner) {
-				$fallback = $this->appConfig->getValueBool(
-					app: 'openregister',
-					key: 'rbac.inherit_from_public_default',
-					default: true
-				);
-			}
-
+			$fallback = $this->inheritFromPublicFallback();
 			$this->logger->error(
 				message: '[MagicRbacHandler] inheritFromPublic resolution failed; falling back to tenant default',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'default' => $fallback, 'error' => $e->getMessage()]
 			);
 			return $fallback;
-		}//end try
+		}
 	}//end authenticatedInheritsPublic()
+
+	/**
+	 * The tenant posture for public inheritance, when the schema's own answer failed.
+	 *
+	 * Fails to the configured tenant posture rather than a hard-coded grant, so
+	 * a cluster-wide lock-down (rbac.inherit_from_public_default = false) is not
+	 * silently softened on this code path. Symmetric with
+	 * PermissionHandlerInterface::resolveInheritFromPublic()'s own fail-safe.
+	 *
+	 * @return bool Whether authenticated users inherit `public` rights.
+	 */
+	private function inheritFromPublicFallback(): bool {
+		try {
+			return $this->container->get(PermissionHandlerInterface::class)->inheritFromPublicTenantDefault();
+		} catch (\Throwable $inner) {
+			return $this->appConfig->getValueBool(app: 'openregister', key: 'rbac.inherit_from_public_default', default: true);
+		}
+	}//end inheritFromPublicFallback()
 
 	/**
 	 * Decide whether the current principal qualifies for a `public` rule.
@@ -949,18 +1060,14 @@ class MagicRbacHandler {
 	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function getCrossOrganisationBranch(IQueryBuilder $qb, Schema $schema): mixed {
+		$compiler = $this->queryMatch(qb: $qb);
+		$columns = new RuleColumns(schema: $schema);
 		$branches = [];
-		foreach (($this->crossOrganisationMatches(schema: $schema) ?? []) as $match) {
-			$condition = $this->impossibleCondition(qb: $qb);
-			if ((new RuleColumns(schema: $schema))->admits(match: $match) === true) {
-				$condition = $this->buildMatchConditions(qb: $qb, match: $match);
-			}
-
-			if ($condition !== null) {
-				$branches[] = $condition;
-			}
+		foreach (($this->crossOrganisationMatches(schema: $schema) ?? []) as $block) {
+			$branches[] = $compiler->crossOrganisationBranch(columns: $columns, block: $block);
 		}
 
+		$branches = array_values(array_filter($branches, static fn (mixed $branch): bool => $branch !== null));
 		if ($branches === []) {
 			return null;
 		}
@@ -978,24 +1085,35 @@ class MagicRbacHandler {
 	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
 	 */
 	public function getCrossOrganisationBranchSql(Schema $schema): ?string {
+		$columns = new RuleColumns(schema: $schema);
 		$branches = [];
-		foreach (($this->crossOrganisationMatches(schema: $schema) ?? []) as $match) {
-			$condition = self::IMPOSSIBLE_SQL_CONDITION;
-			if ((new RuleColumns(schema: $schema))->admits(match: $match) === true) {
-				$condition = $this->buildMatchConditionsSql(match: $match);
-			}
-
-			if ($condition !== null) {
-				$branches[] = $condition;
-			}
+		foreach (($this->crossOrganisationMatches(schema: $schema) ?? []) as $block) {
+			$branches[] = $this->crossOrganisationBranchSql(columns: $columns, block: $block);
 		}
 
+		$branches = array_filter($branches, static fn (?string $branch): bool => $branch !== null);
 		if ($branches === []) {
 			return null;
 		}
 
 		return '(' . implode(' OR ', $branches) . ')';
 	}//end getCrossOrganisationBranchSql()
+
+	/**
+	 * One cross-organisation branch as raw SQL.
+	 *
+	 * @param RuleColumns          $columns The columns of the schema's table.
+	 * @param array<string, mixed> $block   The rule's match block.
+	 *
+	 * @return string|null The predicate; impossible for a key that names no column, null when nothing compiles.
+	 */
+	private function crossOrganisationBranchSql(RuleColumns $columns, array $block): ?string {
+		if ($columns->admits(match: $block) === false) {
+			return self::IMPOSSIBLE_SQL_CONDITION;
+		}
+
+		return $this->matchSql()->matchConditions(block: $block);
+	}//end crossOrganisationBranchSql()
 
 	/**
 	 * The match clauses of the `crossOrganisation: true` read rules of the
@@ -1013,26 +1131,34 @@ class MagicRbacHandler {
 	 */
 	private function crossOrganisationMatches(Schema $schema): ?array {
 		$caller = $this->currentCaller(schema: $schema);
-		$matches = [];
+		$held = [];
 		foreach ($this->ownReadRules(schema: $schema) as $rule) {
-			if ((new ReadRuleTenancy())->isMarked(rule: $rule) === false
-				|| $this->callerHoldsConditionalRule(rule: $rule, caller: $caller) === false
-			) {
-				continue;
-			}
-
-			$match = ($rule['match'] ?? []);
-			if ($match === []) {
-				return null;
-			}
-
-			if (is_array($match) === true) {
-				$matches[] = $match;
+			if ($this->holdsCrossOrganisationRule(rule: $rule, caller: $caller) === true) {
+				$held[] = ($rule['match'] ?? []);
 			}
 		}
 
-		return $matches;
+		// A held marked rule without a match reads every organisation.
+		if (in_array([], $held, true) === true) {
+			return null;
+		}
+
+		return array_values(array_filter($held, static fn (mixed $block): bool => is_array($block)));
 	}//end crossOrganisationMatches()
+
+	/**
+	 * Whether a read rule is marked cross-organisation and the caller holds it.
+	 *
+	 * @param mixed                $rule   The rule as written.
+	 * @param array<string, mixed> $caller The caller.
+	 *
+	 * @return bool True when it lifts the organisation filter for its match.
+	 */
+	private function holdsCrossOrganisationRule(mixed $rule, array $caller): bool {
+		return is_array($rule) === true
+			&& (new ReadRuleTenancy())->isMarked(rule: $rule) === true
+			&& $this->callerHoldsConditionalRule(rule: $rule, caller: $caller) === true;
+	}//end holdsCrossOrganisationRule()
 
 	/**
 	 * The resolved read rules of a schema that has an authorization block of its own.
@@ -1042,7 +1168,7 @@ class MagicRbacHandler {
 	 * @return array<int, mixed> The rules; none for a schema without its own block or an unresolvable one.
 	 */
 	private function ownReadRules(Schema $schema): array {
-		if (empty(PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization())) === true) {
+		if (empty(McpScope::strip(authorization: $schema->getAuthorization())) === true) {
 			return [];
 		}
 
@@ -1073,40 +1199,24 @@ class MagicRbacHandler {
 	/**
 	 * Process a single authorization rule
 	 *
-	 * @param IQueryBuilder $qb Query builder
-	 * @param mixed $rule Authorization rule (string or array)
-	 * @param array $caller The caller: groups, userId, inheritFromPublic, and the columns a `match` key may name.
+	 * @param mixed $rule   Authorization rule (string or array)
+	 * @param array $caller The caller: groups, userId, inheritFromPublic, the columns a `match` key may name, and the query.
 	 *
 	 * @return mixed True if unconditional access, SQL expression for conditional, null/false if no access
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	private function processAuthorizationRule(
-		IQueryBuilder $qb,
-		mixed $rule,
-		array $caller,
-	): mixed {
+	private function processAuthorizationRule(mixed $rule, array $caller): mixed {
 		// Simple rule: just a group name string.
 		if (is_string($rule) === true) {
-			return $this->processSimpleRule(
-				rule: $rule,
-				userGroups: $caller['groups'],
-				userId: $caller['userId'],
-				inheritFromPublic: $caller['inheritFromPublic']
-			);
+			return $this->processSimpleRule(rule: $rule, caller: $caller);
 		}
 
-		// Conditional rule: object with 'group' (or a 'user' override) and
-		// optional 'match'.
-		if (is_array($rule) === true && (isset($rule['group']) === true || isset($rule['user']) === true)) {
-			return $this->processConditionalRule(
-				qb: $qb,
-				rule: $rule,
-				caller: $caller
-			);
+		// Conditional rule: object with 'group' (or a 'user' override) and optional 'match'.
+		if ($this->isConditionalRule(rule: $rule) === true) {
+			return $this->processConditionalRule(rule: $rule, caller: $caller);
 		}
 
-		// Invalid rule format.
 		$this->logger->warning(
 			message: '[MagicRbacHandler] Invalid authorization rule format',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'rule' => $rule]
@@ -1115,43 +1225,42 @@ class MagicRbacHandler {
 	}//end processAuthorizationRule()
 
 	/**
+	 * Whether a rule is a conditional one: an object naming a group or a user.
+	 *
+	 * @param mixed $rule The rule as written.
+	 *
+	 * @return bool True for a conditional rule.
+	 */
+	private function isConditionalRule(mixed $rule): bool {
+		return is_array($rule) === true && (isset($rule['group']) === true || isset($rule['user']) === true);
+	}//end isConditionalRule()
+
+	/**
 	 * Process a simple (unconditional) authorization rule
 	 *
-	 * @param string $rule Group name
-	 * @param array $userGroups User's group IDs
-	 * @param string|null $userId Current user ID
-	 * @param bool $inheritFromPublic Whether auth users inherit public rights
+	 * `public` grants anonymous users always, authenticated users only when
+	 * public inheritance is on; `authenticated` grants any signed-in user. A
+	 * bare `user:<uid>` rule grants that one user (delegation, rbac-zaaktype):
+	 * additive, never widening group access, and anonymous never qualifies.
+	 *
+	 * @param string $rule   Group name
+	 * @param array  $caller The caller: groups, userId, inheritFromPublic.
 	 *
 	 * @return bool True if user has access, false otherwise
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	private function processSimpleRule(string $rule, array $userGroups, ?string $userId, bool $inheritFromPublic): bool {
-		// 'public' grants access to anonymous users always; authenticated users
-		// only when public inheritance is enabled (inheritFromPublic).
+	private function processSimpleRule(string $rule, array $caller): bool {
 		if ($rule === 'public') {
-			return $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic);
+			return $this->qualifiesForPublic(userId: $caller['userId'], inheritFromPublic: $caller['inheritFromPublic']);
 		}
 
-		// 'authenticated' grants access to any logged-in user.
 		if ($rule === 'authenticated') {
-			return $userId !== null;
+			return $caller['userId'] !== null;
 		}
 
-		// User-level override (delegation): a bare `user:<uid>` rule grants the
-		// action to that one user on the LIST path, mirroring PermissionHandlerInterface's
-		// single-object verdict (rbac-zaaktype). Fail closed: anonymous users and
-		// non-matching uids never qualify. Additive — never widens group access.
-		if ($this->matchesUserOverride(rule: $rule, userId: $userId) === true) {
-			return true;
-		}
-
-		// Check if user is in the specified group.
-		if (in_array($rule, $userGroups, true) === true) {
-			return true;
-		}
-
-		return false;
+		return $this->matchesUserOverride(rule: $rule, userId: $caller['userId']) === true
+			|| in_array($rule, $caller['groups'], true) === true;
 	}//end processSimpleRule()
 
 	/**
@@ -1171,54 +1280,60 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
 	private function matchesUserOverride(string $rule, ?string $userId): bool {
-		if ($userId === null || $userId === '') {
-			return false;
-		}
-
-		if (str_starts_with($rule, 'user:') === false) {
-			return false;
-		}
-
-		$targetUid = substr($rule, strlen('user:'));
-		return $targetUid !== '' && $targetUid === $userId;
+		return $userId !== null && $userId !== '' && $rule === 'user:' . $userId;
 	}//end matchesUserOverride()
 
 	/**
 	 * Process a conditional authorization rule
 	 *
-	 * @param IQueryBuilder $qb Query builder
-	 * @param array $rule Rule with 'group' and optional 'match'
-	 * @param array $caller The caller: groups, userId, inheritFromPublic, and the columns a `match` key may name.
+	 * @param array $rule   Rule with 'group' and optional 'match'
+	 * @param array $caller The caller: groups, userId, inheritFromPublic, the columns a `match` key may name, and the query.
 	 *
 	 * @return mixed True if unconditional access, SQL expression for conditional, false if no access
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	private function processConditionalRule(
-		IQueryBuilder $qb,
-		array $rule,
-		array $caller,
-	): mixed {
-		$match = $rule['match'] ?? null;
+	private function processConditionalRule(array $rule, array $caller): mixed {
+		$held = $this->heldRuleVerdict(rule: $rule, caller: $caller);
+		if ($held !== null) {
+			return $held;
+		}
 
+		$block = $rule['match'];
+
+		// A key that names no column of this table admits no row.
+		$compiler = $this->queryMatch(qb: $caller['qb']);
+		if ($caller['columns']->admits(match: $block) === false) {
+			return $compiler->impossible();
+		}
+
+		return $compiler->matchConditions(block: $block);
+	}//end processConditionalRule()
+
+	/**
+	 * The verdict a conditional rule gives before its match is compiled.
+	 *
+	 * @param array $rule   Rule with 'group' (or 'user') and optional 'match'.
+	 * @param array $caller The caller.
+	 *
+	 * @return bool|null False when the caller does not hold the rule, true when
+	 *                   it holds without conditions, null when the rule's
+	 *                   `match` (of any type) is left to compile.
+	 */
+	private function heldRuleVerdict(array $rule, array $caller): ?bool {
 		// A caller outside the rule's group or named user is not given it.
 		if ($this->callerQualifiesForRule(rule: $rule, caller: $caller) === false) {
 			return false;
 		}
 
-		// If no match conditions, user has unconditional access via this rule.
+		// No match conditions: unconditional access via this rule.
+		$match = ($rule['match'] ?? null);
 		if ($match === null || empty($match) === true) {
 			return true;
 		}
 
-		// A key that names no column of this table admits no row.
-		if ($caller['columns']->admits(match: $match) === false) {
-			return $this->impossibleCondition(qb: $qb);
-		}
-
-		// Build SQL conditions for the match criteria.
-		return $this->buildMatchConditions(qb: $qb, match: $match);
-	}//end processConditionalRule()
+		return null;
+	}//end heldRuleVerdict()
 
 	/**
 	 * Whether a conditional rule applies to the caller: as its named user, or through its group.
@@ -1233,419 +1348,33 @@ class MagicRbacHandler {
 	 * @return bool True when the rule applies to the caller.
 	 */
 	private function callerQualifiesForRule(array $rule, array $caller): bool {
-		$group = ($rule['group'] ?? null);
-		$userId = $caller['userId'];
-
 		if (isset($rule['user']) === true && is_string($rule['user']) === true) {
 			// User-level override (delegation): { "user": "<uid>", "match": {...} }.
-			return $this->matchesUserOverride(rule: 'user:' . $rule['user'], userId: $userId);
+			return $this->matchesUserOverride(rule: 'user:' . $rule['user'], userId: $caller['userId']);
 		}
 
+		return $this->groupQualifies(group: ($rule['group'] ?? null), caller: $caller);
+	}//end callerQualifiesForRule()
+
+	/**
+	 * Whether a conditional rule's group admits the caller.
+	 *
+	 * @param mixed $group  The rule's group, or null.
+	 * @param array $caller The caller.
+	 *
+	 * @return bool True when it does.
+	 */
+	private function groupQualifies(mixed $group, array $caller): bool {
 		if ($group === 'public') {
-			return $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $caller['inheritFromPublic']);
+			return $this->qualifiesForPublic(userId: $caller['userId'], inheritFromPublic: $caller['inheritFromPublic']);
 		}
 
-		if ($group === 'authenticated' && $userId !== null) {
+		if ($group === 'authenticated' && $caller['userId'] !== null) {
 			return true;
 		}
 
 		return $group !== null && in_array($group, $caller['groups'], true) === true;
-	}//end callerQualifiesForRule()
-
-	/**
-	 * Build SQL conditions for match criteria
-	 *
-	 * A clause on metadata no record carries admits no row.
-	 *
-	 * @param IQueryBuilder $qb Query builder
-	 * @param array $match Match conditions
-	 *
-	 * @return mixed SQL expression or null if invalid
-	 */
-	private function buildMatchConditions(IQueryBuilder $qb, array $match): mixed {
-		if ($this->conditionMatcher->namesUnknownMetadata(match: $match) === true) {
-			return $this->impossibleCondition(qb: $qb);
-		}
-
-		$conditions = [];
-
-		foreach ($match as $property => $value) {
-			$condition = $this->buildPropertyCondition(qb: $qb, property: $property, value: $value);
-			if ($condition !== null) {
-				$conditions[] = $condition;
-			}
-		}
-
-		// If no valid conditions, return null.
-		if (empty($conditions) === true) {
-			$this->logger->debug(
-				message: '[MagicRbacHandler] No valid match conditions built',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}
-
-		// All conditions must match (AND logic).
-		if (count($conditions) === 1) {
-			return $conditions[0];
-		}
-
-		return $qb->expr()->andX(...$conditions);
-	}//end buildMatchConditions()
-
-	/**
-	 * Build an IMPOSSIBLE SQL predicate (`1 = 0`) for the QueryBuilder path.
-	 *
-	 * Used to fail closed when a `match` rule's dynamic variable resolves to null
-	 * (#1953): the predicate is included in the AND but can never be satisfied, so
-	 * the rule grants no rows — matching the PHP/find path verdict rather than
-	 * silently dropping the condition. Mirrors the existing impossible predicate in
-	 * applyRbacFilters().
-	 *
-	 * @param IQueryBuilder $qb Query builder.
-	 *
-	 * @return mixed An always-false SQL expression.
-	 */
-	private function impossibleCondition(IQueryBuilder $qb): mixed {
-		return $qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0));
-	}//end impossibleCondition()
-
-	/**
-	 * Resolve dynamic variable values in match conditions.
-	 *
-	 * DELEGATES to the shared {@see ConditionMatcher::resolveToken()} — the same
-	 * resolver the single-object verdict path uses — so the SQL emitter and the
-	 * PHP verdict cannot disagree about what a token means.
-	 *
-	 * This method previously held its OWN copy that recognised only the bare
-	 * tokens (`$organisation`, `$activeOrganisation`, `$userId`, `$user`, `$now`)
-	 * and passed every DOTTED form through as a literal string. So a rule using
-	 * `$user.groups` resolved to the user's groups on `find` and compared against
-	 * the literal `'$user.groups'` on `list` — granting on one path and denying on
-	 * the other. That is the divergence class ADR-011 exists to prevent and which
-	 * already forced two fixes in this file (`$now`'s format,
-	 * `unwrapResolvedRelation()`).
-	 *
-	 * Supports, via the shared resolver: `$organisation`, `$activeOrganisation`,
-	 * `$organisation.<prop>`, `$userId`, `$user`, `$user.<prop>` (including
-	 * `$user.groups`, which resolves to an ARRAY — see the array guard in the
-	 * comparison emitter), and `$now`.
-	 *
-	 * @param mixed $value The value to resolve.
-	 *
-	 * @return mixed The resolved value, or null if the variable cannot be resolved.
-	 */
-	private function resolveDynamicValue(mixed $value): mixed {
-		return $this->conditionMatcher->resolveDynamicValue(value: $value);
-	}//end resolveDynamicValue()
-
-	/**
-	 * Build SQL condition for a single property match
-	 *
-	 * @param IQueryBuilder $qb Query builder
-	 * @param string $property Property name
-	 * @param mixed $value Value or operator object
-	 *
-	 * @return mixed SQL expression or null
-	 */
-	private function buildPropertyCondition(IQueryBuilder $qb, string $property, mixed $value): mixed {
-		// Convert camelCase property to snake_case column name.
-		$columnName = $this->propertyToColumnName(property: $property);
-
-		// Resolve dynamic variables in the value.
-		$resolvedValue = $this->resolveDynamicValue(value: $value);
-
-		// Fail closed when a dynamic variable resolves to null (#1953): emit an
-		// IMPOSSIBLE predicate (1 = 0) for this property rather than returning null.
-		// Returning null would let buildMatchConditions() silently DROP the predicate
-		// from the AND, degrading a multi-condition match rule to its surviving
-		// static predicates and leaking objects on the LIST path that the PHP/find
-		// path (ConditionMatcher) denies. The impossible predicate makes the LIST and
-		// FIND verdicts identical (both deny) for unresolved variables.
-		if ($value !== $resolvedValue && $resolvedValue === null) {
-			return $this->impossibleCondition(qb: $qb);
-		}
-
-		// Simple value: equals comparison.
-		if (is_string($resolvedValue) === true || is_numeric($resolvedValue) === true || is_bool($resolvedValue) === true) {
-			return $qb->expr()->eq("t.{$columnName}", $this->bindScalar(qb: $qb, value: $resolvedValue));
-		}
-
-		// Operator object.
-		if (is_array($resolvedValue) === true) {
-			return $this->buildOperatorCondition(qb: $qb, columnName: $columnName, operators: $resolvedValue);
-		}
-
-		// Null value: is null check.
-		if ($resolvedValue === null) {
-			return $qb->expr()->isNull("t.{$columnName}");
-		}
-
-		return null;
-	}//end buildPropertyCondition()
-
-	/**
-	 * Build SQL condition for operator-based match
-	 *
-	 * Every operator of the property is applied (AND), as OperatorEvaluator
-	 * does on find: `{"$gte": 18, "$lt": 65}` used to list on its first
-	 * operator alone. An operator that cannot be built emits the impossible
-	 * predicate instead of being dropped, so a malformed rule denies on the
-	 * list as it does on find (openregister#4089).
-	 *
-	 * @param IQueryBuilder $qb Query builder
-	 * @param string $columnName Column name
-	 * @param array $operators Operator conditions
-	 *
-	 * @return mixed SQL expression or null when there are no operators
-	 */
-	private function buildOperatorCondition(IQueryBuilder $qb, string $columnName, array $operators): mixed {
-		$conditions = [];
-		foreach ($operators as $operator => $operand) {
-			$result = null;
-			if (is_string($operator) === true) {
-				$result = $this->buildSingleOperatorCondition(
-					qb: $qb,
-					columnName: $columnName,
-					operator: $operator,
-					operand: $operand
-				);
-			}
-
-			$conditions[] = ($result ?? $this->impossibleCondition(qb: $qb));
-		}//end foreach
-
-		if (empty($conditions) === true) {
-			return null;
-		}
-
-		if (count($conditions) === 1) {
-			return $conditions[0];
-		}
-
-		return $qb->expr()->andX(...$conditions);
-	}//end buildOperatorCondition()
-
-	/**
-	 * Build a single operator condition for QueryBuilder
-	 *
-	 * @param IQueryBuilder $qb Query builder
-	 * @param string $columnName Column name
-	 * @param string $operator Operator (e.g. '$eq', '$gt')
-	 * @param mixed $operand Operand value
-	 *
-	 * @return mixed SQL expression or null if operator not handled
-	 */
-	private function buildSingleOperatorCondition(
-		IQueryBuilder $qb,
-		string $columnName,
-		string $operator,
-		mixed $operand,
-	): mixed {
-		// Comparison operators.
-		$comparisonResult = $this->buildComparisonOperatorCondition(
-			qb: $qb,
-			columnName: $columnName,
-			operator: $operator,
-			operand: $operand
-		);
-		if ($comparisonResult !== null) {
-			return $comparisonResult;
-		}
-
-		// Array operators ($in, $nin).
-		$arrayResult = $this->buildArrayOperatorCondition(
-			qb: $qb,
-			columnName: $columnName,
-			operator: $operator,
-			operand: $operand
-		);
-		if ($arrayResult !== null) {
-			return $arrayResult;
-		}
-
-		// Array-membership operator ($contains). The QueryBuilder cannot express
-		// JSON-array containment on either platform, so this is emitted as a raw
-		// fragment through createFunction() — built by the SAME method the
-		// raw-SQL emitter uses, so the two list paths cannot drift apart.
-		if ($operator === '$contains') {
-			$fragment = $this->buildContainsOperatorConditionSql(
-				columnName: 't.'.$this->quotedColumn(columnName: $columnName),
-				operator: $operator,
-				operand: $operand
-			);
-			if ($fragment === null) {
-				return null;
-			}
-
-			return $qb->createFunction($fragment);
-		}
-
-		// Existence operator ($exists).
-		if ($operator === '$exists') {
-			if ($operand === true) {
-				return $qb->expr()->isNotNull("t.{$columnName}");
-			}
-
-			return $qb->expr()->isNull("t.{$columnName}");
-		}
-
-		$this->logger->warning(
-			message: '[MagicRbacHandler] Unknown operator',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
-		);
-
-		return null;
-	}//end buildSingleOperatorCondition()
-
-	/**
-	 * Build comparison operator condition ($eq, $ne, $gt, $gte, $lt, $lte) for QueryBuilder
-	 *
-	 * @param IQueryBuilder $qb Query builder
-	 * @param string $columnName Column name
-	 * @param string $operator Operator string
-	 * @param mixed $operand Operand value
-	 *
-	 * @return mixed SQL expression or null if not a comparison operator
-	 */
-	private function buildComparisonOperatorCondition(
-		IQueryBuilder $qb,
-		string $columnName,
-		string $operator,
-		mixed $operand,
-	): mixed {
-		$comparisonMap = [
-			'$eq' => 'eq',
-			'$ne' => 'neq',
-			'$gt' => 'gt',
-			'$gte' => 'gte',
-			'$lt' => 'lt',
-			'$lte' => 'lte',
-		];
-
-		if (isset($comparisonMap[$operator]) === false) {
-			return null;
-		}
-
-		// Resolve dynamic variables in the operand (e.g. "$now" → current datetime).
-		$resolvedOperand = $this->resolveDynamicValue(value: $operand);
-
-		// Fail closed on an ARRAY operand. Now that resolution is delegated to the
-		// shared matcher, a token like `$user.groups` resolves to an array — and a
-		// scalar comparison cannot express that. Emitting it anyway would stringify
-		// the array to "Array" and compare against that literal, which is a
-		// silent, wrong verdict rather than a refusal.
-		if (is_array($resolvedOperand) === true) {
-			$this->logger->warning(
-				message: '[MagicRbacHandler] Array operand for a scalar comparison operator — emitting an impossible predicate',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
-			);
-			return $this->impossibleCondition(qb: $qb);
-		}
-
-		$method = $comparisonMap[$operator];
-		return $qb->expr()->{$method}("t.{$columnName}", $this->bindScalar(qb: $qb, value: $resolvedOperand));
-	}//end buildComparisonOperatorCondition()
-
-	/**
-	 * Bind a scalar match value with the parameter type its PHP type needs.
-	 *
-	 * A bool bound with the default PARAM_STR is cast to string by PDO, so
-	 * `false` reaches the database as '' and PostgreSQL refuses it for a boolean
-	 * column: `invalid input syntax for type boolean: ""`. That 500ed every
-	 * non-admin read of a schema whose read rule matches on `false` (hermiq's
-	 * agent, `{"isPrivate": false}`), while the raw-SQL list path already wrote
-	 * a FALSE literal. PARAM_BOOL sends a real boolean on PostgreSQL and 0/1 on
-	 * MySQL/MariaDB, where boolean columns are integers.
-	 *
-	 * @param IQueryBuilder $qb    The query builder.
-	 * @param mixed         $value The resolved scalar value.
-	 *
-	 * @return IParameter The named parameter placeholder.
-	 *
-	 * @spec exclude bug fix: a boolean RBAC match value was bound as the empty string on PostgreSQL
-	 */
-	private function bindScalar(IQueryBuilder $qb, mixed $value): IParameter {
-		if (is_bool($value) === true) {
-			return $qb->createNamedParameter($value, IQueryBuilder::PARAM_BOOL);
-		}
-
-		return $qb->createNamedParameter($value);
-	}//end bindScalar()
-
-	/**
-	 * Build array operator condition ($in, $nin) for QueryBuilder
-	 *
-	 * @param IQueryBuilder $qb Query builder
-	 * @param string $columnName Column name
-	 * @param string $operator Operator string
-	 * @param mixed $operand Operand value (expected array)
-	 *
-	 * @return mixed SQL expression or null if not an array operator or invalid operand
-	 */
-	private function buildArrayOperatorCondition(
-		IQueryBuilder $qb,
-		string $columnName,
-		string $operator,
-		mixed $operand,
-	): mixed {
-		$arrayMap = [
-			'$in' => 'in',
-			'$nin' => 'notIn',
-		];
-
-		if (isset($arrayMap[$operator]) === false) {
-			return null;
-		}
-
-		// A map or a scalar is not a list of values: `in('Array')` matched
-		// nothing by accident and `$nin` over it matched everything
-		// (openregister#4089). Deny, as OperatorEvaluator does on find.
-		if (is_array($operand) === false || array_is_list($operand) === false) {
-			return $this->impossibleCondition(qb: $qb);
-		}
-
-		// An empty list: nothing is in it, and every present value is not.
-		if (empty($operand) === true) {
-			if ($operator === '$in') {
-				return $this->impossibleCondition(qb: $qb);
-			}
-
-			return $qb->expr()->isNotNull("t.{$columnName}");
-		}
-
-		$method = $arrayMap[$operator];
-		return $qb->expr()->{$method}(
-			"t.{$columnName}",
-			$qb->createNamedParameter($operand, IQueryBuilder::PARAM_STR_ARRAY)
-		);
-	}//end buildArrayOperatorCondition()
-
-	/**
-	 * The column name a `match` key renders to
-	 *
-	 * @param string $property The `match` key
-	 *
-	 * @return string The column name, safe whatever the key holds
-	 */
-	private function propertyToColumnName(string $property): string {
-		return (new RuleColumns())->columnOf(key: $property);
-	}//end propertyToColumnName()
-
-	/**
-	 * Quote a column name as this platform's identifier
-	 *
-	 * @param string $columnName The column name, from {@see propertyToColumnName()}
-	 *
-	 * @return string The quoted identifier
-	 */
-	private function quotedColumn(string $columnName): string {
-		if ($this->isPostgres() === true) {
-			return '"'.$columnName.'"';
-		}
-
-		return '`'.$columnName.'`';
-	}//end quotedColumn()
+	}//end groupQualifies()
 
 	/**
 	 * Check if a user has permission to perform an action on a schema
@@ -1686,19 +1415,47 @@ class MagicRbacHandler {
 
 		// The cascaded block, resolved ONCE for the deny pass, the scope and the
 		// rule chain, with one fail-closed path.
-		try {
-			$check->cascaded = $this->resolveSchemaAuthorization(schema: $schema);
-		} catch (AuthorizationUnresolvableException $e) {
+		if ($this->cascadeResolves(check: $check) === false) {
 			return false;
 		}
 
-		// The DENY pass, BEFORE the owner bypass. A deny removes the verb inside
-		// its scope and nothing puts it back — and the object-level deny an
-		// author is most likely to write is precisely one about a row somebody
-		// owns. Administrators returned above and stay exempt, for the reason
-		// {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::denialFor()}
-		// gives: an access model that can deny its own administration away is
-		// recoverable only from the database.
+		return $this->objectVerdict(check: $check, objectOwner: $objectOwner);
+	}//end hasPermission()
+
+	/**
+	 * Resolve the cascaded authorization block of a permission check.
+	 *
+	 * @param RbacPermissionCheck $check The check; its cascaded block is set when it resolves.
+	 *
+	 * @return bool False when the block is unresolvable, which refuses (fail-closed).
+	 */
+	private function cascadeResolves(RbacPermissionCheck $check): bool {
+		try {
+			$check->cascaded = $this->resolveSchemaAuthorization(schema: $check->schema);
+			return true;
+		} catch (AuthorizationUnresolvableException $e) {
+			return false;
+		}
+	}//end cascadeResolves()
+
+	/**
+	 * The verdict for a non-admin caller once the cascaded block is known.
+	 *
+	 * The DENY pass runs BEFORE the owner bypass. A deny removes the verb inside
+	 * its scope and nothing puts it back — and the object-level deny an author
+	 * is most likely to write is precisely one about a row somebody owns.
+	 * Administrators returned before and stay exempt, for the reason
+	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::denialFor()}
+	 * gives: an access model that can deny its own administration away is
+	 * recoverable only from the database. Then the owner, then the private
+	 * scope, then the schema's rules.
+	 *
+	 * @param RbacPermissionCheck $check       The check.
+	 * @param string|null         $objectOwner The object's owner, if any.
+	 *
+	 * @return bool True when the caller may perform the action.
+	 */
+	private function objectVerdict(RbacPermissionCheck $check, ?string $objectOwner): bool {
 		if ($this->deniesHere(check: $check) === true) {
 			return false;
 		}
@@ -1707,12 +1464,8 @@ class MagicRbacHandler {
 			return true;
 		}
 
-		if ($this->privateObjectRefuses(check: $check) === true) {
-			return false;
-		}
-
-		return $this->rulesGrant(check: $check);
-	}//end hasPermission()
+		return $this->privateObjectRefuses(check: $check) === false && $this->rulesGrant(check: $check) === true;
+	}//end objectVerdict()
 
 	/**
 	 * Start a permission check for the current caller.
@@ -1749,23 +1502,13 @@ class MagicRbacHandler {
 	 * @return bool True when the object is private and the caller holds no grant.
 	 */
 	private function privateObjectRefuses(RbacPermissionCheck $check): bool {
-		if ($check->objectData === null) {
-			return false;
-		}
-
-		if ($this->objectScope()->isPrivate(
-			objectAuthorization: $check->objectAuthorization,
-			schemaAuthorization: $check->cascaded
-		) === false
+		if ($check->objectData === null
+			|| $this->objectScope()->isPrivate(objectAuthorization: $check->objectAuthorization, schemaAuthorization: $check->cascaded) === false
 		) {
 			return false;
 		}
 
-		return $this->objectGrants()?->isGranted(
-			userId: $check->userId,
-			objectUuid: $check->objectUuid,
-			action: $check->action
-		) !== true;
+		return $this->objectGrants()?->isGranted(userId: $check->userId, objectUuid: $check->objectUuid, action: $check->action) !== true;
 	}//end privateObjectRefuses()
 
 	/**
@@ -1799,6 +1542,18 @@ class MagicRbacHandler {
 		// anonymous users always qualify for `public`.
 		$check->inheritFromPublic = $this->authenticatedInheritsPublic(schema: $check->schema);
 
+		return $this->anyRuleGrants(check: $check, rules: $rules);
+	}//end rulesGrant()
+
+	/**
+	 * Whether any of the rules grants the action.
+	 *
+	 * @param RbacPermissionCheck $check The check.
+	 * @param mixed               $rules The rules for the action.
+	 *
+	 * @return bool True when one does.
+	 */
+	private function anyRuleGrants(RbacPermissionCheck $check, mixed $rules): bool {
 		foreach ($rules as $rule) {
 			if ($this->ruleGrants(check: $check, rule: $rule) === true) {
 				return true;
@@ -1806,7 +1561,7 @@ class MagicRbacHandler {
 		}
 
 		return false;
-	}//end rulesGrant()
+	}//end anyRuleGrants()
 
 	/**
 	 * Whether one rule of the chain grants the action.
@@ -1826,21 +1581,31 @@ class MagicRbacHandler {
 			return $this->stringRuleGrants(check: $check, rule: $rule);
 		}
 
-		if (is_array($rule) === false || (isset($rule['group']) === false && isset($rule['user']) === false)) {
+		if ($this->isConditionalRule(rule: $rule) === false || $this->qualifiesForConditionalRule(check: $check, rule: $rule) === false) {
 			return false;
 		}
 
-		if ($this->qualifiesForConditionalRule(check: $check, rule: $rule) === false) {
-			return false;
-		}
+		return $this->conditionalRuleMatches(check: $check, rule: $rule);
+	}//end ruleGrants()
 
-		$match = ($rule['match'] ?? null);
-		if ($match === null || empty($match) === true || $check->objectData === null) {
+	/**
+	 * Whether a conditional rule the caller holds matches the object.
+	 *
+	 * Without match conditions, or without an object to test, the rule grants.
+	 *
+	 * @param RbacPermissionCheck $check The check.
+	 * @param array               $rule  The rule.
+	 *
+	 * @return bool True when it grants.
+	 */
+	private function conditionalRuleMatches(RbacPermissionCheck $check, array $rule): bool {
+		$block = ($rule['match'] ?? null);
+		if ($block === null || empty($block) === true || $check->objectData === null) {
 			return true;
 		}
 
-		return $this->conditionMatcher->objectMatchesConditions(object: $check->objectData, match: $match) === true;
-	}//end ruleGrants()
+		return $this->conditionMatcher->objectMatchesConditions(object: $check->objectData, match: $block) === true;
+	}//end conditionalRuleMatches()
 
 	/**
 	 * Whether a string rule names the caller.
@@ -1851,11 +1616,23 @@ class MagicRbacHandler {
 	 * @return bool True when the caller qualifies.
 	 */
 	private function stringRuleGrants(RbacPermissionCheck $check, string $rule): bool {
-		return ($rule === 'public' && $this->qualifiesForPublic(userId: $check->userId, inheritFromPublic: $check->inheritFromPublic) === true)
-			|| ($rule === 'authenticated' && $check->userId !== null)
+		return $this->pseudoGroupGrants(check: $check, principal: $rule) === true
 			|| $this->matchesUserOverride(rule: $rule, userId: $check->userId) === true
 			|| in_array($rule, $check->userGroups, true) === true;
 	}//end stringRuleGrants()
+
+	/**
+	 * Whether a rule's `public` or `authenticated` principal admits the caller.
+	 *
+	 * @param RbacPermissionCheck $check     The check.
+	 * @param mixed               $principal The rule's principal.
+	 *
+	 * @return bool True when it does.
+	 */
+	private function pseudoGroupGrants(RbacPermissionCheck $check, mixed $principal): bool {
+		return ($principal === 'public' && $this->qualifiesForPublic(userId: $check->userId, inheritFromPublic: $check->inheritFromPublic) === true)
+			|| ($principal === 'authenticated' && $check->userId !== null);
+	}//end pseudoGroupGrants()
 
 	/**
 	 * Whether the caller is the subject of a conditional rule.
@@ -1874,8 +1651,7 @@ class MagicRbacHandler {
 		}
 
 		$group = ($rule['group'] ?? null);
-		return ($group === 'public' && $this->qualifiesForPublic(userId: $check->userId, inheritFromPublic: $check->inheritFromPublic) === true)
-			|| ($group === 'authenticated' && $check->userId !== null)
+		return $this->pseudoGroupGrants(check: $check, principal: $group) === true
 			|| ($group !== null && in_array($group, $check->userGroups, true) === true);
 	}//end qualifiesForConditionalRule()
 
@@ -1905,19 +1681,45 @@ class MagicRbacHandler {
 			return false;
 		}
 
-		$resolver = $this->denyResolver();
+		$block = $this->mergedDenyBlock(check: $check);
+		if ($block === null) {
+			return false;
+		}
 
+		return $this->denyBlockSelects(check: $check, block: $block);
+	}//end deniesHere()
+
+	/**
+	 * The deny block of the schema cascade merged with the object's own.
+	 *
+	 * @param RbacPermissionCheck $check The check.
+	 *
+	 * @return array|null The authorization-shaped block, or null when nothing is denied.
+	 */
+	private function mergedDenyBlock(RbacPermissionCheck $check): ?array {
+		$resolver = $this->denyResolver();
 		$merged = $resolver->mergeDeny(
 			baseline: $resolver->denyBlock(authorization: $check->cascaded),
 			override: $resolver->denyBlock(authorization: $check->objectAuthorization)
 		);
 		if ($merged === []) {
-			return false;
+			return null;
 		}
 
-		$block = [DenyResolver::DENY_KEY => $merged];
-		$principals = $resolver->principalsFor(userId: $check->userId, userGroups: $check->userGroups);
+		return [DenyResolver::DENY_KEY => $merged];
+	}//end mergedDenyBlock()
 
+	/**
+	 * Whether a deny block removes the action from the caller on this object.
+	 *
+	 * @param RbacPermissionCheck $check The check.
+	 * @param array               $block The merged deny block.
+	 *
+	 * @return bool True when a denial applies, unconditionally or by matching the object.
+	 */
+	private function denyBlockSelects(RbacPermissionCheck $check, array $block): bool {
+		$resolver = $this->denyResolver();
+		$principals = $resolver->principalsFor(userId: $check->userId, userGroups: $check->userGroups);
 		if ($resolver->unconditionalDenial(authorization: $block, action: $check->action, principals: $principals) !== null) {
 			return true;
 		}
@@ -1926,35 +1728,54 @@ class MagicRbacHandler {
 			return false;
 		}
 
-		foreach ($resolver->conditionalDenials(
-			authorization: $block,
-			action: $check->action,
-			principals: $principals
-		) as $denial) {
-			$rule = $denial['rule'];
-			if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false) {
-				continue;
-			}
+		return $this->anyDenialSelects(
+			check: $check,
+			denials: $resolver->conditionalDenials(authorization: $block, action: $check->action, principals: $principals)
+		);
+	}//end denyBlockSelects()
 
-			if ($this->denialSelects(match: $rule['match'], objectData: $check->objectData) === true) {
+	/**
+	 * Whether any conditional denial selects the object.
+	 *
+	 * @param RbacPermissionCheck $check   The check, with object data.
+	 * @param iterable            $denials The conditional denials that reach the caller.
+	 *
+	 * @return bool True when one does.
+	 */
+	private function anyDenialSelects(RbacPermissionCheck $check, iterable $denials): bool {
+		foreach ($denials as $denial) {
+			if ($this->denialSelectsObject(check: $check, rule: $denial['rule']) === true) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end deniesHere()
+	}//end anyDenialSelects()
+
+	/**
+	 * Whether one conditional denial selects the object.
+	 *
+	 * @param RbacPermissionCheck $check The check, with object data.
+	 * @param mixed               $rule  The denial rule.
+	 *
+	 * @return bool True when it selects; a rule without a match block selects nothing.
+	 */
+	private function denialSelectsObject(RbacPermissionCheck $check, mixed $rule): bool {
+		return $this->isMatchRule(rule: $rule) === true
+			&& $this->denialSelects(block: $rule['match'], objectData: (array)$check->objectData) === true;
+	}//end denialSelectsObject()
 
 	/**
 	 * Whether a denial's clause selects the row: it matches, or it names metadata no record carries.
 	 *
-	 * @param array<string, mixed> $match      The clause.
+	 * @param array<string, mixed> $block      The clause.
 	 * @param array<mixed>         $objectData The row as a rule reads it.
 	 *
 	 * @return bool True when the denial applies.
 	 */
-	private function denialSelects(array $match, array $objectData): bool {
-		return $this->conditionMatcher->namesUnknownMetadata(match: $match, object: $objectData) === true
-			|| $this->conditionMatcher->objectMatchesConditions(object: $objectData, match: $match) === true;
+	private function denialSelects(array $block, array $objectData): bool {
+		return $this->conditionMatcher->namesUnknownMetadata(match: $block, object: $objectData) === true
+			|| $this->conditionMatcher->objectMatchesConditions(object: $objectData, match: $block) === true;
 	}//end denialSelects()
 
 	/**
@@ -1996,32 +1817,49 @@ class MagicRbacHandler {
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read', ?string $tableName = null): string {
+		$this->assertPredicateAlias(alias: $alias);
+		$result = $this->buildRbacConditionsSql(schema: $schema, action: $action, columnPrefix: $alias . '.', tableName: $tableName);
+		if (($result['bypass'] ?? false) === true) {
+			return 'TRUE';
+		}
+
+		// Deny all is said out loud, because an omitted predicate reads as no
+		// restriction and this is the opposite of that.
+		return $this->anyCondition(conditions: ($result['conditions'] ?? []), none: 'FALSE');
+	}//end buildRbacPredicateForAlias()
+
+	/**
+	 * Refuse an alias that is not a plain SQL identifier.
+	 *
+	 * @param string $alias The alias.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the alias is not a plain identifier.
+	 */
+	private function assertPredicateAlias(string $alias): void {
 		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*\z/', $alias) !== 1) {
 			throw new InvalidArgumentException(
 				sprintf('\'%s\' is not a table alias an access predicate may be built for.', $alias)
 			);
 		}
+	}//end assertPredicateAlias()
 
-		$result = $this->buildRbacConditionsSql(
-			schema: $schema,
-			action: $action,
-			columnPrefix: $alias . '.',
-			tableName: $tableName
-		);
-
-		if (($result['bypass'] ?? false) === true) {
-			return 'TRUE';
-		}
-
-		$conditions = ($result['conditions'] ?? []);
+	/**
+	 * Raw SQL conditions ORed in parentheses, or a stand-in when there are none.
+	 *
+	 * @param array<int, string> $conditions The conditions.
+	 * @param string             $none       What denies all in the caller's dialect.
+	 *
+	 * @return string The predicate.
+	 */
+	private function anyCondition(array $conditions, string $none): string {
 		if ($conditions === []) {
-			// Deny all. Said out loud, because an omitted predicate reads as no
-			// restriction and this is the opposite of that.
-			return 'FALSE';
+			return $none;
 		}
 
 		return '(' . implode(' OR ', $conditions) . ')';
-	}//end buildRbacPredicateForAlias()
+	}//end anyCondition()
 
 	/**
 	 * The access predicate for a raw query over one magic table, unaliased.
@@ -2049,12 +1887,7 @@ class MagicRbacHandler {
 			return null;
 		}
 
-		$conditions = ($result['conditions'] ?? []);
-		if ($conditions === []) {
-			return '1 = 0';
-		}
-
-		return '(' . implode(' OR ', $conditions) . ')';
+		return $this->anyCondition(conditions: ($result['conditions'] ?? []), none: '1 = 0');
 	}//end buildRbacRowPredicateSql()
 
 	/**
@@ -2078,178 +1911,70 @@ class MagicRbacHandler {
 	 * @SuppressWarnings(PHPMD.NPathComplexity) Mirrors applyRbacFilters dispatch; carries the system-owner carve-out (openregister#1617).
 	 */
 	public function buildRbacConditionsSql(Schema $schema, string $action = 'read', string $columnPrefix = '', ?string $tableName = null): array {
-		$user = $this->userSession->getUser();
-		$userId = $user?->getUID();
-
-		// Get user groups.
-		$userGroups = [];
-		if ($user !== null) {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
-		}
-
-		// Admin users bypass all RBAC checks, and so does a userless caller inside
-		// ObjectService::runAsSystem(). (This raw-SQL path has never carried the
-		// command-line arm of isTrustedSystemCaller(); that stays as it was.)
-		if (in_array('admin', $userGroups, true) === true
-			|| ($this->isTrustedSystemCaller(user: $user) === true && SystemOperationContext::isActive() === true)
-		) {
+		$call = new RbacAccessCall(schema: $schema, columnPrefix: $columnPrefix);
+		$call->action = $action;
+		$call->tableName = $tableName;
+		if ($this->sqlFilterBypassed(call: $call) === true) {
 			return ['bypass' => true, 'conditions' => []];
 		}
 
-		// Get effective authorization (schema-level, or register cascade).
 		// Fail-closed: an unresolvable authorization yields the deny-all result
 		// (`bypass => false` with no conditions) rather than the open bypass.
-		try {
-			$authorization = $this->resolveSchemaAuthorization(schema: $schema);
-		} catch (AuthorizationUnresolvableException $e) {
-			$this->logger->error(
-				message: '[MagicRbacHandler] Authorization unresolvable; returning deny-all conditions (fail-closed)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $schema->getId(),
-					'action' => $action,
-					'error' => $e->getMessage(),
-				]
-			);
+		$unresolvable = $this->unresolvableAuthorization(call: $call);
+		if ($unresolvable !== null) {
+			$this->logUnresolvable(call: $call, error: $unresolvable);
 			return ['bypass' => false, 'conditions' => []];
 		}
 
-		// Assemble the three shared SQL term pieces (deny term, "not private"
-		// row predicate, owner-admit conditions). A null result signals that the
-		// deny term excludes everything, i.e. the deny-all empty-conditions case.
-		$terms = $this->buildRbacSqlTerms(
-			authorization: $authorization,
-			action: $action,
-			userId: $userId,
-			userGroups: $userGroups,
-			columnPrefix: $columnPrefix,
-			schema: $schema,
-			tableName: $tableName
-		);
-		if ($terms === null) {
-			return ['bypass' => false, 'conditions' => []];
-		}
-
-		$denyTerm    = $terms['denyTerm'];
-		$notPrivate  = $terms['notPrivate'];
-		$ownerAdmits = $terms['ownerAdmits'];
-
-		// If no authorization is configured, the schema is open to all — but an
-		// individual OBJECT may still declare itself private, so this is no
-		// longer an unconditional bypass. Mirrors applyRbacFilters exactly.
-		if (empty($authorization) === true) {
-			return [
-				'bypass' => false,
-				'conditions' => $this->withDenyTerm(
-					conditions: array_merge($ownerAdmits, [$notPrivate]),
-					denyTerm: $denyTerm
-				),
-			];
-		}
-
-		// Get authorization rules for this action.
-		$rules = $authorization[$action] ?? [];
-
-		// Fail-closed: a non-empty authorization block that does not list this
-		// action no longer bypasses filtering (no early `bypass => true`). Flow
-		// falls through to the owner conditions; unmatched callers (e.g.
-		// anonymous) get the deny-all empty-conditions result — consistent with
-		// applyRbacFilters and PermissionHandlerInterface. Admins already returned; the
-		// empty-block open-default above is unchanged.
-		$conditions = array_merge(
-			$ownerAdmits,
-			$this->collectRuleConditionsSql(
-				rules: $rules,
-				schema: $schema,
-				userGroups: $userGroups,
-				userId: $userId,
-				notPrivate: $notPrivate,
-				columnPrefix: $columnPrefix
-			)
-		);
-
-		// Return conditions (empty array means deny all).
-		return [
-			'bypass' => false,
-			'conditions' => $this->withDenyTerm(conditions: $conditions, denyTerm: $denyTerm),
-		];
+		return ['bypass' => false, 'conditions' => $this->conditionsSql(call: $call)];
 	}//end buildRbacConditionsSql()
 
 	/**
-	 * Assemble the shared raw-SQL term pieces for {@see buildRbacConditionsSql()}.
+	 * Identify the caller, and say whether the raw-SQL filter lets it through unfiltered.
 	 *
-	 * Builds the DENY term, the "not private" row predicate and the owner-admit
-	 * conditions from the same emitters the QueryBuilder path uses. All three
-	 * feed UNION members that carry no table alias, hence the UNQUALIFIED column
-	 * names (`_owner`, not `t._owner`).
+	 * Admin users bypass all RBAC checks, and so does a userless caller inside
+	 * ObjectService::runAsSystem(). (This raw-SQL path has never carried the
+	 * command-line arm of isTrustedSystemCaller(); that stays as it was.)
 	 *
-	 * The DENY term is folded into EVERY OR-ed condition by the caller rather
-	 * than appended, which is the same AND the QueryBuilder emitter applies once
-	 * to the whole query; appending it as one more alternative would let a denied
-	 * row back in. When the deny term excludes everything the emitter returns
-	 * `false`, which this helper surfaces as a null return so the caller can emit
-	 * the deny-all empty-conditions result.
+	 * @param RbacAccessCall $call The call; its caller is filled in.
 	 *
-	 * @param array<string, mixed>|null $authorization The effective authorization block, or null when unconfigured.
-	 * @param string $action The CRUD action being filtered.
-	 * @param string|null $userId The current user identifier, or null when unauthenticated.
-	 * @param string[] $userGroups The current user's group IDs.
-	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
-	 *                             UNION member. Unqualified, a column name still parses inside a
-	 *                             subquery and binds to the innermost FROM, which is silently wrong
-	 *                             the moment the related table does not carry it.
-	 * @param Schema|null $schema The schema, so its drafts can be kept to their owners (decision 180).
-	 * @param string|null $tableName The bare magic table; a `_status` column it lacks is left out of the draft predicate.
-	 *
-	 * @return array{denyTerm: string|null, notPrivate: string, ownerAdmits: string[]}|null The term pieces, or null
-	 *                                                                                       when the deny term
-	 *                                                                                       excludes everything.
+	 * @return bool True when no filtering applies.
 	 */
-	private function buildRbacSqlTerms(
-		?array $authorization,
-		string $action,
-		?string $userId,
-		array $userGroups,
-		string $columnPrefix = '',
-		?Schema $schema = null,
-		?string $tableName = null
-	): ?array {
-		$denyTerm = $this->denyFilterSqlFor(
-			authorization: $authorization,
-			action: $action,
-			userId: $userId,
-			userGroups: $userGroups,
-			columnName: $columnPrefix . '_authorization',
-			columns: new RuleColumns(schema: $schema, prefix: $columnPrefix)
-		);
+	private function sqlFilterBypassed(RbacAccessCall $call): bool {
+		$user = $this->identifyCaller(call: $call);
+		return $call->callerIsAdmin() === true
+			|| ($this->isTrustedSystemCaller(user: $user) === true && SystemOperationContext::isActive() === true);
+	}//end sqlFilterBypassed()
+
+	/**
+	 * The raw-SQL conditions for a non-admin caller whose authorization resolved.
+	 *
+	 * The deny term, the "not private" row predicate and the owner admits are
+	 * the same pieces the QueryBuilder emitter uses. Without authorization the
+	 * schema is open to all — but an individual OBJECT may still declare itself
+	 * private, so this is no unconditional bypass. A non-empty block that does
+	 * not list the action grants nothing past the owner conditions (fail-closed,
+	 * consistent with applyRbacFilters and PermissionHandlerInterface).
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return array<int, string> Conditions to OR together; empty means deny all.
+	 */
+	private function conditionsSql(RbacAccessCall $call): array {
+		$denyTerm = $this->denyFilterSqlFor(call: $call);
 		if ($denyTerm === false) {
-			return null;
+			return [];
 		}
 
-		$notPrivate = $this->reachableRowSqlFor(
-			authorization: $authorization,
-			columnName: $columnPrefix . '_authorization',
-			uuidColumn: $columnPrefix . '_uuid',
-			userId: $userId,
-			action: $action,
-			schema: $schema,
-			columnPrefix: $columnPrefix,
-			tableName: $tableName
-		);
+		$notPrivate = $this->reachableRowSqlFor(call: $call);
+		$ownerAdmits = $this->ownerAdmitConditionsSql(call: $call);
+		if (empty($call->authorization) === true) {
+			return $this->withDenyTerm(conditions: array_merge($ownerAdmits, [$notPrivate]), denyTerm: $denyTerm);
+		}
 
-		$ownerAdmits = $this->ownerAdmitConditionsSql(
-			userGroups: $userGroups,
-			userId: $userId,
-			columnPrefix: $columnPrefix
-		);
-
-		return [
-			'denyTerm'    => $denyTerm,
-			'notPrivate'  => $notPrivate,
-			'ownerAdmits' => $ownerAdmits,
-		];
-	}//end buildRbacSqlTerms()
+		$conditions = array_merge($ownerAdmits, $this->ruleConditionsSql(call: $call, notPrivate: $notPrivate));
+		return $this->withDenyTerm(conditions: $conditions, denyTerm: $denyTerm);
+	}//end conditionsSql()
 
 	/**
 	 * Fold the deny term into every OR-ed condition.
@@ -2283,61 +2008,48 @@ class MagicRbacHandler {
 	}//end withDenyTerm()
 
 	/**
-	 * Turn one action's rules into raw-SQL conditions.
+	 * Turn the action's rules into raw-SQL conditions.
 	 *
-	 * Extracted from {@see buildRbacConditionsSql()} so that method stays under
-	 * the length budget; the dispatch is unchanged.
+	 * Unconditional access via a rule reaches every NON-private row; a private
+	 * one still answers only to its owner, and no later rule can widen past
+	 * that. A conditional rule only ever decides a NON-private row: AND-ing it
+	 * with the not-private predicate is what suppresses the schema's rules for
+	 * a private one.
 	 *
-	 * @param array $rules The rules for the action being filtered.
-	 * @param Schema $schema The schema, for the inheritFromPublic resolve.
-	 * @param array $userGroups The caller's group IDs.
-	 * @param string|null $userId The caller.
-	 * @param string $notPrivate The reachable-row predicate to AND each rule with.
-	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
-	 *                             UNION member. Unqualified, a column name still parses inside a
-	 *                             subquery and binds to the innermost FROM, which is silently wrong
-	 *                             the moment the related table does not carry it.
+	 * @param RbacAccessCall $call       The call.
+	 * @param string         $notPrivate The reachable-row predicate to AND each rule with.
 	 *
 	 * @return string[] SQL conditions to OR together.
 	 */
-	private function collectRuleConditionsSql(
-		array $rules,
-		Schema $schema,
-		array $userGroups,
-		?string $userId,
-		string $notPrivate,
-		string $columnPrefix = '',
-	): array {
-		// Resolve whether authenticated users inherit `public` rights once.
-		$caller = [
-			'groups'            => $userGroups,
-			'userId'            => $userId,
-			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $schema),
-			'columns'           => new RuleColumns(schema: $schema, prefix: $columnPrefix),
-		];
+	private function ruleConditionsSql(RbacAccessCall $call, string $notPrivate): array {
+		$rules = $this->actionRulesSql(call: $call);
+		$caller = $this->ruleCaller(call: $call);
 
 		$conditions = [];
 		foreach ($rules as $rule) {
 			$ruleResult = $this->processAuthorizationRuleSql(rule: $rule, caller: $caller);
-
 			if ($ruleResult === true) {
-				// Unconditional access via this rule reaches every NON-private
-				// row; a private one still answers only to its owner. No later
-				// rule can widen past that, hence the break — and this is no
-				// longer a `bypass => true` early return.
-				$conditions[] = $notPrivate;
-				break;
+				return [...$conditions, $notPrivate];
 			}
 
 			if (is_string($ruleResult) === true) {
-				// A schema rule only ever decides a NON-private row; AND-ing
-				// here is what suppresses the schema's rules for a private one.
 				$conditions[] = "({$notPrivate} AND {$ruleResult})";
 			}
-		}//end foreach
+		}
 
 		return $conditions;
-	}//end collectRuleConditionsSql()
+	}//end ruleConditionsSql()
+
+	/**
+	 * The rules the authorization block lists for the call's action.
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return array The rules; an empty list when the action is not configured.
+	 */
+	private function actionRulesSql(RbacAccessCall $call): array {
+		return ($call->authorization[$call->action] ?? []);
+	}//end actionRulesSql()
 
 	/**
 	 * Process a single authorization rule for raw SQL output.
@@ -2349,23 +2061,14 @@ class MagicRbacHandler {
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	private function processAuthorizationRuleSql(
-		mixed $rule,
-		array $caller,
-	): mixed {
+	private function processAuthorizationRuleSql(mixed $rule, array $caller): mixed {
 		// Simple rule: just a group name string.
 		if (is_string($rule) === true) {
-			return $this->processSimpleRule(
-				rule: $rule,
-				userGroups: $caller['groups'],
-				userId: $caller['userId'],
-				inheritFromPublic: $caller['inheritFromPublic']
-			);
+			return $this->processSimpleRule(rule: $rule, caller: $caller);
 		}
 
-		// Conditional rule: object with 'group' (or a 'user' override) and
-		// optional 'match'.
-		if (is_array($rule) === true && (isset($rule['group']) === true || isset($rule['user']) === true)) {
+		// Conditional rule: object with 'group' (or a 'user' override) and optional 'match'.
+		if ($this->isConditionalRule(rule: $rule) === true) {
 			return $this->processConditionalRuleSql(rule: $rule, caller: $caller);
 		}
 
@@ -2382,455 +2085,29 @@ class MagicRbacHandler {
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	private function processConditionalRuleSql(
-		array $rule,
-		array $caller,
-	): mixed {
-		$match = $rule['match'] ?? null;
-
-		// A caller outside the rule's group or named user is not given it.
-		if ($this->callerQualifiesForRule(rule: $rule, caller: $caller) === false) {
-			return false;
+	private function processConditionalRuleSql(array $rule, array $caller): mixed {
+		$held = $this->heldRuleVerdict(rule: $rule, caller: $caller);
+		if ($held !== null) {
+			return $held;
 		}
 
-		// If no match conditions, user has unconditional access via this rule.
-		if ($match === null || empty($match) === true) {
-			return true;
-		}
+		$block = $rule['match'];
 
 		// A key that names no column of this table admits no row.
-		if ($caller['columns']->admits(match: $match) === false) {
+		if ($caller['columns']->admits(match: $block) === false) {
 			return self::IMPOSSIBLE_SQL_CONDITION;
 		}
 
-		// Build SQL conditions for the match criteria.
-		return $this->buildMatchConditionsSql(match: $match, columnPrefix: $caller['columns']->prefix);
+		return $this->matchSql()->matchConditions(block: $block, columnPrefix: $caller['columns']->prefix);
 	}//end processConditionalRuleSql()
-
-	/**
-	 * Build SQL conditions for match criteria.
-	 *
-	 * A clause on metadata no record carries admits no row.
-	 *
-	 * @param array $match Match conditions.
-	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
-	 *                             UNION member. Unqualified, a column name still parses inside a
-	 *                             subquery and binds to the innermost FROM, which is silently wrong
-	 *                             the moment the related table does not carry it.
-	 *
-	 * @return string|null SQL expression or null if invalid.
-	 */
-	private function buildMatchConditionsSql(array $match, string $columnPrefix = ''): ?string {
-		if ($this->conditionMatcher->namesUnknownMetadata(match: $match) === true) {
-			return self::IMPOSSIBLE_SQL_CONDITION;
-		}
-
-		$conditions = [];
-
-		foreach ($match as $property => $value) {
-			$condition = $this->buildPropertyConditionSql(property: $property, value: $value, columnPrefix: $columnPrefix);
-			if ($condition !== null) {
-				$conditions[] = $condition;
-			}
-		}
-
-		// If no valid conditions, return null.
-		if (empty($conditions) === true) {
-			return null;
-		}
-
-		// All conditions must match (AND logic).
-		if (count($conditions) === 1) {
-			return $conditions[0];
-		}
-
-		return '(' . implode(' AND ', $conditions) . ')';
-	}//end buildMatchConditionsSql()
-
-	/**
-	 * Build SQL condition for a single property match.
-	 *
-	 * @param string $property Property name.
-	 * @param mixed $value Value or operator object.
-	 * @param string $columnPrefix Table alias to qualify each column with, empty for an unaliased
-	 *                             UNION member. Unqualified, a column name still parses inside a
-	 *                             subquery and binds to the innermost FROM, which is silently wrong
-	 *                             the moment the related table does not carry it.
-	 *
-	 * @return string|null SQL expression or null.
-	 */
-	private function buildPropertyConditionSql(string $property, mixed $value, string $columnPrefix = ''): ?string {
-		// Convert camelCase property to snake_case column name.
-		// The prefix qualifies it with a table alias when this predicate is
-		// going inside a subquery over a SECOND table. Unqualified, the name
-		// would still parse there and bind to the innermost FROM, which is
-		// right by accident and silently wrong the moment the related table
-		// does not carry the column: SQL then resolves it against the OUTER
-		// row, so the access check would pass by testing the wrong record.
-		$columnName = $columnPrefix . $this->quotedColumn(columnName: $this->propertyToColumnName(property: $property));
-
-		// Resolve dynamic variables in the value.
-		$resolvedValue = $this->resolveDynamicValue(value: $value);
-
-		// Fail closed when a dynamic variable resolves to null (#1953): emit an
-		// IMPOSSIBLE predicate (1 = 0) rather than returning null, which would let
-		// buildMatchConditionsSql() drop the predicate from the AND and leak objects
-		// on this LIST path. Mirrors the QueryBuilder path and ConditionMatcher.
-		if ($value !== $resolvedValue && $resolvedValue === null) {
-			return self::IMPOSSIBLE_SQL_CONDITION;
-		}
-
-		// Simple value: equals comparison.
-		if (is_string($resolvedValue) === true || is_numeric($resolvedValue) === true) {
-			$quotedValue = $this->quoteValue(value: $resolvedValue);
-			return "{$columnName} = {$quotedValue}";
-		}
-
-		// Boolean value.
-		if (is_bool($resolvedValue) === true) {
-			$boolValue = 'FALSE';
-			if ($resolvedValue === true) {
-				$boolValue = 'TRUE';
-			}
-
-			return "{$columnName} = {$boolValue}";
-		}
-
-		// Operator object.
-		if (is_array($resolvedValue) === true) {
-			return $this->buildOperatorConditionSql(columnName: $columnName, operators: $resolvedValue);
-		}
-
-		// Null value: is null check.
-		if ($resolvedValue === null) {
-			return "{$columnName} IS NULL";
-		}
-
-		return null;
-	}//end buildPropertyConditionSql()
-
-	/**
-	 * Build SQL condition for operator-based match.
-	 *
-	 * @param string $columnName Column name.
-	 * @param array $operators Operator conditions.
-	 *
-	 * @return string|null SQL expression or null.
-	 */
-	private function buildOperatorConditionSql(string $columnName, array $operators): ?string {
-		// Every operator applies (AND) and an unbuildable one denies; see
-		// buildOperatorCondition() (openregister#4089).
-		$conditions = [];
-		foreach ($operators as $operator => $operand) {
-			$result = null;
-			if (is_string($operator) === true) {
-				$result = $this->buildSingleOperatorConditionSql(
-					columnName: $columnName,
-					operator: $operator,
-					operand: $operand
-				);
-			}
-
-			if ($result === null) {
-				$this->logger->warning(
-					message: '[MagicRbacHandler] Unknown operator or operand — emitting an impossible predicate',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
-				);
-			}
-
-			$conditions[] = ($result ?? self::IMPOSSIBLE_SQL_CONDITION);
-		}//end foreach
-
-		if (empty($conditions) === true) {
-			return null;
-		}
-
-		if (count($conditions) === 1) {
-			return $conditions[0];
-		}
-
-		return '(' . implode(' AND ', $conditions) . ')';
-	}//end buildOperatorConditionSql()
-
-	/**
-	 * Build a single operator condition as raw SQL
-	 *
-	 * @param string $columnName Column name
-	 * @param string $operator Operator (e.g. '$eq', '$gt')
-	 * @param mixed $operand Operand value
-	 *
-	 * @return string|null SQL expression or null if operator not handled
-	 */
-	private function buildSingleOperatorConditionSql(string $columnName, string $operator, mixed $operand): ?string {
-		// Comparison operators.
-		$comparisonResult = $this->buildComparisonOperatorConditionSql(
-			columnName: $columnName,
-			operator: $operator,
-			operand: $operand
-		);
-		if ($comparisonResult !== null) {
-			return $comparisonResult;
-		}
-
-		// Array operators ($in, $nin).
-		$arrayResult = $this->buildArrayOperatorConditionSql(
-			columnName: $columnName,
-			operator: $operator,
-			operand: $operand
-		);
-		if ($arrayResult !== null) {
-			return $arrayResult;
-		}
-
-		// Array-membership operator ($contains) — the object's array must contain
-		// the resolved value. Mirrors OperatorEvaluator::operatorContains().
-		$containsResult = $this->buildContainsOperatorConditionSql(
-			columnName: $columnName,
-			operator: $operator,
-			operand: $operand
-		);
-		if ($containsResult !== null) {
-			return $containsResult;
-		}
-
-		// Existence operator ($exists).
-		if ($operator === '$exists') {
-			if ($operand === true) {
-				return "{$columnName} IS NOT NULL";
-			}
-
-			return "{$columnName} IS NULL";
-		}
-
-		return null;
-	}//end buildSingleOperatorConditionSql()
-
-	/**
-	 * Build comparison operator condition ($eq, $ne, $gt, $gte, $lt, $lte) as raw SQL
-	 *
-	 * @param string $columnName Column name
-	 * @param string $operator Operator string
-	 * @param mixed $operand Operand value
-	 *
-	 * @return string|null SQL expression or null if not a comparison operator
-	 */
-	private function buildComparisonOperatorConditionSql(
-		string $columnName,
-		string $operator,
-		mixed $operand,
-	): ?string {
-		$comparisonMap = [
-			'$eq' => '=',
-			'$ne' => '!=',
-			'$gt' => '>',
-			'$gte' => '>=',
-			'$lt' => '<',
-			'$lte' => '<=',
-		];
-
-		if (isset($comparisonMap[$operator]) === false) {
-			return null;
-		}
-
-		$sqlOperator = $comparisonMap[$operator];
-		$resolvedOperand = $this->resolveDynamicValue(value: $operand);
-
-		// Fail closed when a dynamic variable resolves to null (#1953): emit an
-		// IMPOSSIBLE predicate (1 = 0) rather than dropping the condition.
-		if ($operand !== $resolvedOperand && $resolvedOperand === null) {
-			return self::IMPOSSIBLE_SQL_CONDITION;
-		}
-
-		// Fail closed on an ARRAY operand — see the QueryBuilder emitter's note:
-		// a resolved `$user.groups` cannot be expressed as a scalar comparison,
-		// and quoting it would compare against the literal string "Array".
-		if (is_array($resolvedOperand) === true) {
-			$this->logger->warning(
-				message: '[MagicRbacHandler] Array operand for a scalar comparison operator — emitting an impossible predicate',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
-			);
-			return self::IMPOSSIBLE_SQL_CONDITION;
-		}
-
-		$quotedValue = $this->quoteValue(value: $resolvedOperand);
-		return "{$columnName} {$sqlOperator} {$quotedValue}";
-	}//end buildComparisonOperatorConditionSql()
-
-	/**
-	 * Build array operator condition ($in, $nin) as raw SQL
-	 *
-	 * @param string $columnName Column name
-	 * @param string $operator Operator string
-	 * @param mixed $operand Operand value (expected array)
-	 *
-	 * @return string|null SQL expression or null if not an array operator or invalid operand
-	 */
-	private function buildArrayOperatorConditionSql(string $columnName, string $operator, mixed $operand): ?string {
-		$arrayMap = [
-			'$in' => 'IN',
-			'$nin' => 'NOT IN',
-		];
-
-		if (isset($arrayMap[$operator]) === false) {
-			return null;
-		}
-
-		// Not a list: deny, as the QueryBuilder path and find do (openregister#4089).
-		if (is_array($operand) === false || array_is_list($operand) === false) {
-			return self::IMPOSSIBLE_SQL_CONDITION;
-		}
-
-		if (empty($operand) === true) {
-			if ($operator === '$in') {
-				return self::IMPOSSIBLE_SQL_CONDITION;
-			}
-
-			return "{$columnName} IS NOT NULL";
-		}
-
-		$sqlKeyword = $arrayMap[$operator];
-		$quotedValues = array_map(fn ($val) => $this->quoteValue(value: $val), $operand);
-		return "{$columnName} {$sqlKeyword} (" . implode(', ', $quotedValues) . ')';
-	}//end buildArrayOperatorConditionSql()
-
-	/**
-	 * Build a `$contains` condition as raw SQL: the column's JSON array must contain the operand.
-	 *
-	 * The row-level counterpart of {@see \OCA\OpenRegister\Service\OperatorEvaluator}'s
-	 * `$contains`. Both MUST agree — a share honoured on `find` but dropped on
-	 * `list` reads as an empty page, and the reverse leaks an object.
-	 *
-	 * Platform-branched, following ReferentialIntegrityService's precedent
-	 * (`::jsonb @> to_jsonb(?::text)` on PostgreSQL, `JSON_CONTAINS(col,
-	 * JSON_QUOTE(?))` on MariaDB) — the QueryBuilder cannot express either.
-	 * `COALESCE(col, '[]')` makes a NULL column contain nothing, matching the PHP
-	 * side's "a null or non-array property contains nothing".
-	 *
-	 * An array-valued operand becomes an OR of containments (ANY-intersection),
-	 * so `$user.groups` matches when the column lists any one of them. An empty
-	 * or null operand emits the IMPOSSIBLE predicate rather than being dropped:
-	 * a dropped condition would leave the rule satisfied by everything else and
-	 * fail OPEN.
-	 *
-	 * @param string $columnName Column name (already qualified/quoted by the caller).
-	 * @param string $operator Operator string.
-	 * @param mixed $operand Value(s) that must appear in the column's array.
-	 *
-	 * @return string|null SQL expression, or null when this is not a `$contains`.
-	 *
-	 * @spec openspec/changes/shared-credentials-and-flows/specs/flow-sharing/spec.md#requirement-the-single-object-and-list-access-decisions-agree
-	 */
-	private function buildContainsOperatorConditionSql(string $columnName, string $operator, mixed $operand): ?string {
-		if ($operator !== '$contains') {
-			return null;
-		}
-
-		$resolved = $this->resolveDynamicValue(value: $operand);
-
-		// Fail closed when a dynamic variable resolves to null, exactly as the
-		// comparison emitter does — never drop the condition.
-		if ($resolved === null) {
-			return self::IMPOSSIBLE_SQL_CONDITION;
-		}
-
-		$candidates = [$resolved];
-		if (is_array($resolved) === true) {
-			$candidates = array_values(array_filter($resolved, static fn ($val) => $val !== null));
-		}
-
-		if (empty($candidates) === true) {
-			return self::IMPOSSIBLE_SQL_CONDITION;
-		}
-
-		$orParts = [];
-		foreach ($candidates as $candidate) {
-			$orParts[] = $this->containsPredicateSql(columnName: $columnName, candidate: $candidate);
-		}
-
-		if (count($orParts) === 1) {
-			return $orParts[0];
-		}
-
-		return '(' . implode(' OR ', $orParts) . ')';
-	}//end buildContainsOperatorConditionSql()
-
-	/**
-	 * One platform-appropriate JSON-array containment predicate.
-	 *
-	 * @param string $columnName Column reference.
-	 * @param mixed $candidate Single value that must appear in the array.
-	 *
-	 * @return string SQL predicate.
-	 */
-	private function containsPredicateSql(string $columnName, mixed $candidate): string {
-		$quoted = $this->quoteValue(value: (string)$candidate);
-
-		if ($this->isPostgres() === true) {
-			return "COALESCE({$columnName}, '[]')::jsonb @> to_jsonb({$quoted}::text)";
-		}
-
-		return "JSON_CONTAINS(COALESCE({$columnName}, '[]'), JSON_QUOTE({$quoted}))";
-	}//end containsPredicateSql()
-
-	/**
-	 * Whether the connected database is MySQL or MariaDB.
-	 *
-	 * @return bool True for those two; a provider that cannot be read counts as true,
-	 *              because doubling a backslash is safe everywhere.
-	 */
-	private function isMysql(): bool {
-		if ($this->isMysqlCache !== null) {
-			return $this->isMysqlCache;
-		}
-
-		try {
-			$provider = $this->container->get(IDBConnection::class)->getDatabaseProvider();
-			$this->isMysqlCache = ($provider === IDBConnection::PLATFORM_MYSQL);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[MagicRbacHandler] Could not determine the database provider for quoting',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
-			);
-			$this->isMysqlCache = true;
-		}
-
-		return $this->isMysqlCache;
-	}//end isMysql()
 
 	/**
 	 * Whether the connected database is PostgreSQL.
 	 *
-	 * Resolved lazily through the container: this class is constructed on paths
-	 * that do not need a connection, and adding one to the constructor would
-	 * change its DI signature for every caller. Mirrors
-	 * ReferentialIntegrityService's null-safe `get_debug_type()` detection, which
-	 * also tolerates a mocked connection returning null in unit tests.
-	 *
-	 * Defaults to MariaDB syntax when the platform cannot be determined. That is
-	 * the conservative direction for a security filter: an unparseable predicate
-	 * errors the query rather than silently matching every row.
-	 *
-	 * @return bool True when the platform is PostgreSQL.
+	 * @return bool True when the platform is PostgreSQL; MariaDB syntax is the fallback.
 	 */
 	private function isPostgres(): bool {
-		if ($this->isPostgresCache !== null) {
-			return $this->isPostgresCache;
-		}
-
-		try {
-			$connection = $this->container->get(IDBConnection::class);
-			$platform = $connection->getDatabasePlatform();
-
-			$this->isPostgresCache = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[MagicRbacHandler] Could not determine the database platform for $contains — defaulting to MariaDB syntax',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
-			);
-			$this->isPostgresCache = false;
-		}
-
-		return $this->isPostgresCache;
+		return $this->matchSql()->dialect->isPostgres();
 	}//end isPostgres()
 
 	/**
@@ -2841,31 +2118,7 @@ class MagicRbacHandler {
 	 * @return string Quoted value safe for SQL.
 	 */
 	private function quoteValue(mixed $value): string {
-		if ($value === null) {
-			return 'NULL';
-		}
-
-		if (is_bool($value) === true) {
-			if ($value === true) {
-				return 'TRUE';
-			}
-
-			return 'FALSE';
-		}
-
-		if (is_int($value) === true || is_float($value) === true) {
-			return (string)$value;
-		}
-
-		// MySQL and MariaDB read a backslash as an escape inside a string, so a
-		// value ending its quote through `\'` needs the backslash doubled as well.
-		$escaped = (string)$value;
-		if ($this->isMysql() === true) {
-			$escaped = str_replace('\\', '\\\\', $escaped);
-		}
-
-		$escaped = str_replace("'", "''", $escaped);
-		return "'{$escaped}'";
+		return $this->matchSql()->dialect->quote(value: $value);
 	}//end quoteValue()
 
 	/**
@@ -2992,48 +2245,57 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function callerQualifiesForAction(Schema $schema, string $action = 'read'): bool {
-		$user = $this->userSession->getUser();
-		$userId = $user?->getUID();
-
-		$userGroups = [];
-		if ($user !== null) {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
-		}
-
-		if (in_array('admin', $userGroups, true) === true) {
+		$call = new RbacAccessCall(schema: $schema);
+		$call->action = $action;
+		$this->identifyCaller(call: $call);
+		if ($call->callerIsAdmin() === true) {
 			return true;
 		}
 
-		try {
-			$authorization = $this->resolveSchemaAuthorization(schema: $schema);
-		} catch (AuthorizationUnresolvableException $e) {
+		if ($this->unresolvableAuthorization(call: $call) !== null) {
 			return false;
 		}
 
-		if (empty($authorization) === true) {
+		return $this->authorizationAdmitsCaller(call: $call);
+	}//end callerQualifiesForAction()
+
+	/**
+	 * Whether the call's resolved authorization admits the caller through some rule.
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return bool True for an open schema, or when a rule for the action admits the caller.
+	 */
+	private function authorizationAdmitsCaller(RbacAccessCall $call): bool {
+		if (empty($call->authorization) === true) {
 			return true;
 		}
 
-		$rules = ($authorization[$action] ?? []);
+		$rules = ($call->authorization[$call->action] ?? []);
 		if (is_array($rules) === false) {
 			return false;
 		}
 
-		$caller = [
-			'groups'            => $userGroups,
-			'userId'            => $userId,
-			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $schema),
-			'columns'           => new RuleColumns(schema: $schema),
-		];
+		return $this->anyRuleAdmits(caller: $this->ruleCaller(call: $call), rules: $rules);
+	}//end authorizationAdmitsCaller()
+
+	/**
+	 * Whether any rule admits the caller on some row.
+	 *
+	 * @param array $caller The caller.
+	 * @param array $rules  The rules for the action.
+	 *
+	 * @return bool True when a rule does.
+	 */
+	private function anyRuleAdmits(array $caller, array $rules): bool {
 		foreach ($rules as $rule) {
-			$verdict = $this->processAuthorizationRuleSql(rule: $rule, caller: $caller);
-			if ($verdict !== false) {
+			if ($this->processAuthorizationRuleSql(rule: $rule, caller: $caller) !== false) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end callerQualifiesForAction()
+	}//end anyRuleAdmits()
 
 	/**
 	 * Whether the caller's read lifts the organisation filter entirely.
@@ -3064,7 +2326,7 @@ class MagicRbacHandler {
 
 		if ($this->getCurrentUserId() === null) {
 			return (new ReadRuleTenancy())->readsPublicUnconditionally(
-				readRules: ((PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization()) ?? [])[$action] ?? [])
+				readRules: ((McpScope::strip(authorization: $schema->getAuthorization()) ?? [])[$action] ?? [])
 			);
 		}
 
@@ -3092,19 +2354,19 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
 	public function admitsOrganisationlessRowsThroughCascade(Schema $schema, string $action = 'read'): bool {
-		$ownAuthorization = PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
+		$ownAuthorization = McpScope::strip(authorization: $schema->getAuthorization());
 		if (empty($ownAuthorization) === false) {
 			return false;
 		}
 
 		// Fail-closed: an unresolvable block admits nothing extra.
-		try {
-			$resolved = $this->resolveSchemaAuthorization(schema: $schema);
-		} catch (AuthorizationUnresolvableException $e) {
+		$call = new RbacAccessCall(schema: $schema);
+		$call->action = $action;
+		if ($this->unresolvableAuthorization(call: $call) !== null) {
 			return false;
 		}
 
-		return $this->callerQualifiesForBypassRule(schema: $schema, authorization: $resolved, action: $action);
+		return $this->callerQualifiesForBypassRule(call: $call);
 	}//end admitsOrganisationlessRowsThroughCascade()
 
 	/**
@@ -3116,52 +2378,46 @@ class MagicRbacHandler {
 	 * organisations are decided by the explicit marker alone
 	 * ({@see crossOrganisationMatches()}).
 	 *
-	 * @param Schema     $schema        The schema, for the public-inheritance gate.
-	 * @param array|null $authorization The authorization block to read.
-	 * @param string     $action        The action.
+	 * @param RbacAccessCall $call The call, with its resolved authorization.
 	 *
-	 * @return bool True when the caller is an admin or qualifies for such a rule.
+	 * @return bool True when the organisation filter must also admit org-less rows.
 	 */
-	private function callerQualifiesForBypassRule(Schema $schema, ?array $authorization, string $action): bool {
-		$user = $this->userSession->getUser();
-
-		// Get user groups.
-		$userGroups = [];
-		if ($user !== null) {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
-		}
+	private function callerQualifiesForBypassRule(RbacAccessCall $call): bool {
+		$this->identifyCaller(call: $call);
 
 		// Admin users bypass all RBAC checks anyway.
-		if (in_array('admin', $userGroups, true) === true) {
+		if ($call->callerIsAdmin() === true) {
 			return true;
 		}
 
-		if (empty($authorization) === true) {
+		if (empty($call->authorization) === true || empty($call->authorization[$call->action] ?? []) === true) {
 			return false;
 		}
 
-		// Get authorization rules for this action.
-		$rules = $authorization[$action] ?? [];
-		if (empty($rules) === true) {
-			return false;
-		}
+		return $this->rulesLiftOrganisationFilter(call: $call);
+	}//end callerQualifiesForBypassRule()
 
-		// Resolve the public-inheritance gate for this schema. A `public` rule
-		// only grants an authenticated user a cross-tenant bypass when public
-		// inheritance is enabled; anonymous users always qualify. Threading this
-		// through keeps the bypass decision consistent with applyRbacFilters /
-		// buildRbacConditionsSql / hasPermission, which already gate `public`.
-		$userId = $user?->getUID();
-		$inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
-
-		$caller = ['groups' => $userGroups, 'userId' => $userId, 'inheritFromPublic' => $inheritFromPublic];
+	/**
+	 * Whether the action's rules, as the caller holds them, lift the organisation filter.
+	 *
+	 * A `public` rule only grants an authenticated user a cross-tenant bypass
+	 * when public inheritance is enabled; anonymous users always qualify. That
+	 * keeps the bypass decision consistent with applyRbacFilters /
+	 * buildRbacConditionsSql / hasPermission, which already gate `public`.
+	 *
+	 * @param RbacAccessCall $call The call, with rules for its action.
+	 *
+	 * @return bool True when they do.
+	 */
+	private function rulesLiftOrganisationFilter(RbacAccessCall $call): bool {
+		$caller = $this->ruleCaller(call: $call);
 		$verdicts = [];
-		foreach ($rules as $rule) {
+		foreach ($call->authorization[$call->action] as $rule) {
 			$verdicts[] = $this->ruleBypassVerdict(rule: $rule, caller: $caller);
 		}
 
 		return $this->verdictsLiftOrganisationFilter(verdicts: $verdicts);
-	}//end callerQualifiesForBypassRule()
+	}//end rulesLiftOrganisationFilter()
 
 	/**
 	 * Whether the verdicts of every rule the caller holds let RBAC govern the rows.
@@ -3221,29 +2477,34 @@ class MagicRbacHandler {
 	 */
 	private function simpleRuleVerdict(string $rule, array $caller): string {
 		if ($rule === 'public') {
-			if ($this->qualifiesForPublic(userId: $caller['userId'], inheritFromPublic: $caller['inheritFromPublic']) === true) {
-				return self::RULE_READS_ALL;
-			}
-
-			return self::RULE_NOT_HELD;
+			return $this->publicRuleVerdict(caller: $caller);
 		}
 
 		if (in_array($rule, $caller['groups'], true) === true) {
 			return self::RULE_READS_ALL;
 		}
 
-		if ($this->processSimpleRule(
-			rule: $rule,
-			userGroups: $caller['groups'],
-			userId: $caller['userId'],
-			inheritFromPublic: $caller['inheritFromPublic']
-		) === true
-		) {
+		if ($this->processSimpleRule(rule: $rule, caller: $caller) === true) {
 			return self::RULE_STAYS_IN_ORGANISATION;
 		}
 
 		return self::RULE_NOT_HELD;
 	}//end simpleRuleVerdict()
+
+	/**
+	 * The verdict of a bare `public` rule: it reads everything, for whoever qualifies.
+	 *
+	 * @param array $caller The caller.
+	 *
+	 * @return string One of the RULE_* verdicts.
+	 */
+	private function publicRuleVerdict(array $caller): string {
+		if ($this->qualifiesForPublic(userId: $caller['userId'], inheritFromPublic: $caller['inheritFromPublic']) === true) {
+			return self::RULE_READS_ALL;
+		}
+
+		return self::RULE_NOT_HELD;
+	}//end publicRuleVerdict()
 
 	/**
 	 * The verdict of a conditional rule.
@@ -3277,13 +2538,25 @@ class MagicRbacHandler {
 			return self::RULE_STAYS_IN_ORGANISATION;
 		}
 
+		return $this->crossingRuleVerdict(rule: $rule);
+	}//end conditionalRuleVerdict()
+
+	/**
+	 * The verdict of a held rule that crosses organisations: it does so only
+	 * for a real group, not a named user or every signed-in user.
+	 *
+	 * @param array $rule The rule.
+	 *
+	 * @return string One of the RULE_* verdicts.
+	 */
+	private function crossingRuleVerdict(array $rule): string {
 		$group = ($rule['group'] ?? null);
 		if (isset($rule['user']) === false && is_string($group) === true && $group !== 'authenticated') {
 			return self::RULE_CROSSES_ORGANISATIONS;
 		}
 
 		return self::RULE_NOT_HELD;
-	}//end conditionalRuleVerdict()
+	}//end crossingRuleVerdict()
 
 	/**
 	 * Whether the caller holds a conditional rule, by the qualification the
@@ -3368,7 +2641,7 @@ class MagicRbacHandler {
 				message: '[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
+			return McpScope::strip(authorization: $schema->getAuthorization());
 		}
 	}//end resolveSchemaAuthorization()
 

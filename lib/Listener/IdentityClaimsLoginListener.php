@@ -83,49 +83,67 @@ class IdentityClaimsLoginListener implements IEventListener {
 		$userId = $event->getUser()->getUID();
 
 		try {
-			// The cheap exit. An instance that declares no rule does no work and
-			// dispatches nothing.
-			if ($this->store->rules() === []) {
-				return;
-			}
-
-			$collecting = new IdentityClaimsCollectingEvent(userId: $userId);
-			$this->dispatcher->dispatchTyped($collecting);
-			$claims = $collecting->getClaims();
-
-			// A sign-in that asserts nothing leaves the account with no derived
-			// access, rather than with the access it had yesterday. Carrying the
-			// old set forward would keep somebody in a department they left,
-			// which is the failure this exists to end rather than to automate.
-			if ($claims === []) {
-				$this->store->forget(userId: $userId);
-				return;
-			}
-
-			$granted = $this->store->apply(userId: $userId, claims: $claims);
-
-			$this->logger->info(
-				message: '[IdentityClaimsLoginListener] Derived access from the claims of this sign-in',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'userId' => $userId,
-					'claims' => array_keys($claims),
-					'grants' => count($granted),
-				]
-			);
+			$this->deriveAccess(userId: $userId);
 		} catch (\Throwable $e) {
 			// See the class docblock: derived access is an addition, and losing
 			// it must never be the reason somebody cannot sign in.
 			$this->logger->error(
 				message: '[IdentityClaimsLoginListener] Could not derive access for this sign-in',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'userId' => $userId,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'userId' => $userId, 'error' => $e->getMessage()]
 			);
 		}//end try
 	}//end handle()
+
+	/**
+	 * Collect this sign-in's claims and replace the account's derived access with what they grant.
+	 *
+	 * @param string $userId The account signing in.
+	 *
+	 * @return void
+	 */
+	private function deriveAccess(string $userId): void {
+		// The cheap exit. An instance that declares no rule does no work and
+		// dispatches nothing.
+		if ($this->store->rules() === []) {
+			return;
+		}
+
+		$collecting = new IdentityClaimsCollectingEvent(userId: $userId);
+		$this->dispatcher->dispatchTyped($collecting);
+		$claims = $collecting->getClaims();
+
+		// A sign-in that asserts nothing leaves the account with no derived
+		// access, rather than with the access it had yesterday. Carrying the
+		// old set forward would keep somebody in a department they left,
+		// which is the failure this exists to end rather than to automate.
+		if ($claims === []) {
+			$this->store->forget(userId: $userId);
+			return;
+		}
+
+		$this->applyClaims(userId: $userId, claims: $claims);
+	}//end deriveAccess()
+
+	/**
+	 * Grant what the claims earn, and say so in the log.
+	 *
+	 * @param string               $userId The account signing in.
+	 * @param array<string, mixed> $claims The claims this sign-in asserted.
+	 *
+	 * @return void
+	 */
+	private function applyClaims(string $userId, array $claims): void {
+		$granted = $this->store->apply(userId: $userId, claims: $claims);
+
+		$this->logger->info(
+			message: '[IdentityClaimsLoginListener] Derived access from the claims of this sign-in',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'userId' => $userId,
+				'claims' => array_keys($claims),
+				'grants' => count($granted),
+			]
+		);
+	}//end applyClaims()
 }//end class
