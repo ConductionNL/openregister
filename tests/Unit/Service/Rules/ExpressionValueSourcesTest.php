@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ExpressionValueSources;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
@@ -135,8 +136,7 @@ class ExpressionValueSourcesTest extends TestCase {
 		return new LifecycleConditionEvaluator(
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
-			$this->createMock(IL10N::class),
-			$this->createMock(LoggerInterface::class),
+			new LifecycleConditionReporting($this->createMock(IL10N::class), $this->createMock(LoggerInterface::class)),
 			$dialect
 		);
 	}//end lifecycle()
