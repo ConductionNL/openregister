@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Quality;
  *
  * @spec openspec/changes/mdm-foundation/tasks.md#task-3
  */
-class QualityAnnotationValidator {
+class QualityAnnotationValidator implements QualityAnnotationValidatorInterface {
 	/**
 	 * Recognised rule types.
 	 *
