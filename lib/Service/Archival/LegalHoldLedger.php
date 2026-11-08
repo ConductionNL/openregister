@@ -78,7 +78,9 @@ class LegalHoldLedger {
 			return $this->write(retention: $retention, holds: $holds);
 		}
 
-		$holds[] = ['id' => Uuid::v4()->toRfc4122(), 'ownerKey' => $ownerKey, 'reason' => $reason, 'placedBy' => $stamp->userId, 'placedDate' => $stamp->now];
+		$holds[] = [
+			'id' => Uuid::v4()->toRfc4122(), 'ownerKey' => $ownerKey, 'reason' => $reason, 'placedBy' => $stamp->userId, 'placedDate' => $stamp->now,
+		];
 
 		return $this->write(retention: $retention, holds: $holds);
 	}//end place()
