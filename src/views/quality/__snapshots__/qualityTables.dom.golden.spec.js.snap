@@ -57,48 +57,46 @@ exports[`quality tables golden golden record: renders provenance 1`] = `
     </div>
   </div>
   <div class="goldenRecordMeta"><span><strong>t:Id:</strong> g2</span><span><strong>t:Quality score:</strong> 91</span><span><strong>t:Quality status:</strong> good</span></div>
-  <table class="provenanceTable" data-testid="provenance-table">
-    <thead>
-      <tr>
-        <th scope="col">t:Attribute</th>
-        <th scope="col">t:Winning source</th>
-        <th scope="col">t:Confidence</th>
-        <th scope="col">t:Timestamp</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>name</td>
-        <td>crm</td>
-        <td>0.9</td>
-        <td>2026-01-01</td>
-      </tr>
-      <tr>
-        <td>email</td>
-        <td>erp</td>
-        <td>—</td>
-        <td>2026-02-02</td>
-      </tr>
-      <tr>
-        <td>phone</td>
-        <td>t:Manual override ({actor}){"actor":"admin"}</td>
-        <td>checked</td>
-        <td>—</td>
-      </tr>
-      <tr>
-        <td>city</td>
-        <td>registry</td>
-        <td>—</td>
-        <td>—</td>
-      </tr>
-      <tr>
-        <td>street</td>
-        <td>—</td>
-        <td>—</td>
-        <td>—</td>
-      </tr>
-    </tbody>
-  </table>
+  <x-cndatatable class="provenanceTable" data-testid="provenance-table" rowkey="attribute">
+    <x-thead>
+      <x-th>t:Attribute</x-th>
+      <x-th>t:Winning source</x-th>
+      <x-th>t:Confidence</x-th>
+      <x-th>t:Timestamp</x-th>
+    </x-thead>
+    <x-tbody>
+      <x-tr>
+        <x-td>name</x-td>
+        <x-td>crm</x-td>
+        <x-td>0.9</x-td>
+        <x-td>2026-01-01</x-td>
+      </x-tr>
+      <x-tr>
+        <x-td>email</x-td>
+        <x-td>erp</x-td>
+        <x-td>—</x-td>
+        <x-td>2026-02-02</x-td>
+      </x-tr>
+      <x-tr>
+        <x-td>phone</x-td>
+        <x-td>t:Manual override ({actor}){"actor":"admin"}</x-td>
+        <x-td>checked</x-td>
+        <x-td>—</x-td>
+      </x-tr>
+      <x-tr>
+        <x-td>city</x-td>
+        <x-td>registry</x-td>
+        <x-td>—</x-td>
+        <x-td>—</x-td>
+      </x-tr>
+      <x-tr>
+        <x-td>street</x-td>
+        <x-td>—</x-td>
+        <x-td>—</x-td>
+        <x-td>—</x-td>
+      </x-tr>
+    </x-tbody>
+  </x-cndatatable>
   
 </div>"
 `;
@@ -106,55 +104,51 @@ exports[`quality tables golden golden record: renders provenance 1`] = `
 exports[`quality tables golden quality: renders the histogram fallback and lowest-quality tables 1`] = `
 "<section class="histogramSection">
   <h2>t:Score histogram</h2>
-  <table class="histogramTable" data-testid="histogram-fallback-table">
-    <thead>
-      <tr>
-        <th scope="col">t:Bucket</th>
-        <th scope="col">t:Count</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>0-10</td>
-        <td>1</td>
-      </tr>
-      <tr>
-        <td>10-20</td>
-        <td>0</td>
-      </tr>
-      <tr>
-        <td>20-30</td>
-        <td>2</td>
-      </tr>
-    </tbody>
-  </table>
+  <x-cndatatable data-testid="histogram-fallback-table" rowkey="id">
+    <x-thead>
+      <x-th>t:Bucket</x-th>
+      <x-th>t:Count</x-th>
+    </x-thead>
+    <x-tbody>
+      <x-tr>
+        <x-td>0-10</x-td>
+        <x-td>1</x-td>
+      </x-tr>
+      <x-tr>
+        <x-td>10-20</x-td>
+        <x-td>0</x-td>
+      </x-tr>
+      <x-tr>
+        <x-td>20-30</x-td>
+        <x-td>2</x-td>
+      </x-tr>
+    </x-tbody>
+  </x-cndatatable>
 </section>"
 `;
 
 exports[`quality tables golden quality: renders the histogram fallback and lowest-quality tables 2`] = `
 "<section class="lowestQualitySection">
   <h2>t:Lowest-quality objects</h2>
-  <table class="lowestQualityTable">
-    <thead>
-      <tr>
-        <th scope="col">t:Id</th>
-        <th scope="col">t:Quality score</th>
-        <th scope="col">t:Quality status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>q1</td>
-        <td>12</td>
-        <td><span class="badge badge-status-poor">poor</span></td>
-      </tr>
-      <tr>
-        <td>q2</td>
-        <td>0</td>
-        <td><span class="badge badge-status-undefined"></span></td>
-      </tr>
-    </tbody>
-  </table>
+  <x-cndatatable rowkey="id">
+    <x-thead>
+      <x-th>t:Id</x-th>
+      <x-th>t:Quality score</x-th>
+      <x-th>t:Quality status</x-th>
+    </x-thead>
+    <x-tbody>
+      <x-tr>
+        <x-td>q1</x-td>
+        <x-td>12</x-td>
+        <x-td><span class="badge badge-status-poor">poor</span></x-td>
+      </x-tr>
+      <x-tr>
+        <x-td>q2</x-td>
+        <x-td>0</x-td>
+        <x-td><span class="badge badge-status-undefined"></span></x-td>
+      </x-tr>
+    </x-tbody>
+  </x-cndatatable>
   
 </section>"
 `;
@@ -195,54 +189,50 @@ exports[`quality tables golden queue health: renders failures 1`] = `
       </div>
       <section class="webhookHealthSection">
         <h2>t:Per-webhook health</h2>
-        <table class="webhookHealthTable">
-          <thead>
-            <tr>
-              <th scope="col">t:Webhook</th>
-              <th scope="col">t:Delivered</th>
-              <th scope="col">t:Failed</th>
-              <th scope="col">t:Pending retries</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Hook one</td>
-              <td>1</td>
-              <td>3</td>
-              <td>0</td>
-            </tr>
-          </tbody>
-        </table>
+        <x-cndatatable rowkey="id">
+          <x-thead>
+            <x-th>t:Webhook</x-th>
+            <x-th>t:Delivered</x-th>
+            <x-th>t:Failed</x-th>
+            <x-th>t:Pending retries</x-th>
+          </x-thead>
+          <x-tbody>
+            <x-tr>
+              <x-td>Hook one</x-td>
+              <x-td>1</x-td>
+              <x-td>3</x-td>
+              <x-td>0</x-td>
+            </x-tr>
+          </x-tbody>
+        </x-cndatatable>
       </section>
       <section class="recentFailuresSection">
         <h2>t:Recent failures</h2>
-        <table class="recentFailuresTable">
-          <thead>
-            <tr>
-              <th scope="col">t:Webhook</th>
-              <th scope="col">t:Event</th>
-              <th scope="col">t:Status code</th>
-              <th scope="col">t:Error</th>
-              <th scope="col">t:Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>ObjectCreatedEvent</td>
-              <td>500</td>
-              <td>Server error</td>
-              <td>2026-01-02T03:04:05+00:00</td>
-            </tr>
-            <tr>
-              <td>1</td>
-              <td>ObjectUpdatedEvent</td>
-              <td>—</td>
-              <td>—</td>
-              <td>—</td>
-            </tr>
-          </tbody>
-        </table>
+        <x-cndatatable rowkey="rowKey">
+          <x-thead>
+            <x-th>t:Webhook</x-th>
+            <x-th>t:Event</x-th>
+            <x-th>t:Status code</x-th>
+            <x-th>t:Error</x-th>
+            <x-th>t:Created</x-th>
+          </x-thead>
+          <x-tbody>
+            <x-tr>
+              <x-td>1</x-td>
+              <x-td>ObjectCreatedEvent</x-td>
+              <x-td>500</x-td>
+              <x-td>Server error</x-td>
+              <x-td>2026-01-02T03:04:05+00:00</x-td>
+            </x-tr>
+            <x-tr>
+              <x-td>1</x-td>
+              <x-td>ObjectUpdatedEvent</x-td>
+              <x-td>—</x-td>
+              <x-td>—</x-td>
+              <x-td>—</x-td>
+            </x-tr>
+          </x-tbody>
+        </x-cndatatable>
       </section>
     </div>
   </slot-default>
@@ -287,30 +277,28 @@ exports[`quality tables golden queue health: renders noFailures 1`] = `
       </div>
       <section class="webhookHealthSection">
         <h2>t:Per-webhook health</h2>
-        <table class="webhookHealthTable">
-          <thead>
-            <tr>
-              <th scope="col">t:Webhook</th>
-              <th scope="col">t:Delivered</th>
-              <th scope="col">t:Failed</th>
-              <th scope="col">t:Pending retries</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Hook one</td>
-              <td>4</td>
-              <td>0</td>
-              <td>2</td>
-            </tr>
-            <tr>
-              <td>https://two.test</td>
-              <td>0</td>
-              <td>0</td>
-              <td>0</td>
-            </tr>
-          </tbody>
-        </table>
+        <x-cndatatable rowkey="id">
+          <x-thead>
+            <x-th>t:Webhook</x-th>
+            <x-th>t:Delivered</x-th>
+            <x-th>t:Failed</x-th>
+            <x-th>t:Pending retries</x-th>
+          </x-thead>
+          <x-tbody>
+            <x-tr>
+              <x-td>Hook one</x-td>
+              <x-td>4</x-td>
+              <x-td>0</x-td>
+              <x-td>2</x-td>
+            </x-tr>
+            <x-tr>
+              <x-td>https://two.test</x-td>
+              <x-td>0</x-td>
+              <x-td>0</x-td>
+              <x-td>0</x-td>
+            </x-tr>
+          </x-tbody>
+        </x-cndatatable>
       </section>
       <section class="recentFailuresSection">
         <h2>t:Recent failures</h2>
