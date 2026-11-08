@@ -88,12 +88,12 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 		$this->assertSame(
 			[
 				$ns . 'SetFieldsNodeInterface',
-				$ns . 'ActionInputsNode',
+				$ns . 'ActionInputsNodeInterface',
 				$ns . 'ExplodeNodeInterface',
 				$ns . 'FilterNodeInterface',
 				$ns . 'WaitNodeInterface',
 				$ns . 'AwaitSignalNodeInterface',
-				$ns . 'SwitchNode',
+				$ns . 'SwitchNodeInterface',
 				$ns . 'EndNodeInterface',
 				$ns . 'MergeNodeInterface',
 				$ns . 'LoopNodeInterface',
@@ -113,7 +113,7 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 				$ns . 'UserTaskNodeInterface',
 				$ns . 'PortalTaskNodeInterface',
 				$ns . 'LockObjectNode',
-				$ns . 'UnlockObjectNode',
+				$ns . 'UnlockObjectNodeInterface',
 				'OCA\\OpenRegister\\Service\\Case\\Nodes\\CaseOpenNodeInterface',
 				'OCA\\OpenRegister\\Service\\Case\\Nodes\\CaseAdvanceNodeInterface',
 				$ns . 'TriggerObjectNodeInterface',

@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
-use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
+use OCA\OpenRegister\Service\Flow\FlowRunAdvancerInterface;
 use OCA\OpenRegister\Service\Flow\FlowTokenRouter;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -158,7 +158,7 @@ class FlowRunWorker extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Job scheduling clock.
 	 * @param FlowRunMapperInterface $mapper Reads and prunes runs.
-	 * @param FlowRunAdvancer $advancer Advances one run (shared with sync runs).
+	 * @param FlowRunAdvancerInterface $advancer Advances one run (shared with sync runs).
 	 * @param IAppConfig $appConfig Reads the retention setting.
 	 * @param LoggerInterface $logger The logger.
 	 * @param DelegationService|null $delegation Re-resolves the grant a parked
@@ -189,7 +189,7 @@ class FlowRunWorker extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		private readonly FlowRunMapperInterface $mapper,
-		private readonly FlowRunAdvancer $advancer,
+		private readonly FlowRunAdvancerInterface $advancer,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly ?DelegationService $delegation = null,
@@ -669,7 +669,7 @@ class FlowRunWorker extends TimedJob {
 	/**
 	 * Advance one run, never letting its failure stop the batch.
 	 *
-	 * The body lives in {@see FlowRunAdvancer} so a synchronous run executes
+	 * The body lives in {@see FlowRunAdvancerInterface} so a synchronous run executes
 	 * through exactly this path rather than a parallel implementation that
 	 * could drift from it.
 	 *
