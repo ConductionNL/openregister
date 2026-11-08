@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import RuleConditionEditor from './RuleConditionEditor.vue'
 import RuleInventoryTable from './RuleInventoryTable.vue'
 import RuleRunsPanel from './RuleRunsPanel.vue'
 import RuleTrialPanel from './RuleTrialPanel.vue'
@@ -139,5 +140,21 @@ describe('RuleTrialPanel', () => {
 		await wrapper.setData({ result: { trace: [], writes: {} } })
 		expect(wrapper.findAll('table')).toHaveLength(0)
 		expect(wrapper.text()).toContain('t:Nothing. This rule writes no value.')
+	})
+})
+
+describe('RuleConditionEditor', () => {
+	it('lists the operators per category', () => {
+		const wrapper = mount(RuleConditionEditor, {
+			props: {
+				rule: { id: 'r1', kind: 'calculation', condition: { '>': [{ var: 'a' }, 1] } },
+				operators: [
+					{ op: '>', arity: '2', category: 'Comparison', description: 'Greater than' },
+					{ op: 'var', arity: '1', category: 'Data', description: 'Reads a field' },
+					{ op: '==', arity: '2', category: 'Comparison', description: 'Equals' },
+				],
+			},
+		})
+		expect(tableText(wrapper)).toMatchSnapshot()
 	})
 })

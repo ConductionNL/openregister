@@ -1,5 +1,43 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`RuleConditionEditor lists the operators per category 1`] = `
+[
+  {
+    "headers": [
+      "t:Operator",
+      "t:Takes",
+      "t:What it does",
+    ],
+    "rows": [
+      [
+        ">",
+        "2",
+        "Greater than",
+      ],
+      [
+        "==",
+        "2",
+        "Equals",
+      ],
+    ],
+  },
+  {
+    "headers": [
+      "t:Operator",
+      "t:Takes",
+      "t:What it does",
+    ],
+    "rows": [
+      [
+        "var",
+        "1",
+        "Reads a field",
+      ],
+    ],
+  },
+]
+`;
+
 exports[`RuleInventoryTable shows every rule in pipeline order 1`] = `
 [
   {
