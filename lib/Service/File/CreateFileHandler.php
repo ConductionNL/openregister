@@ -25,7 +25,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -67,9 +67,9 @@ class CreateFileHandler {
 	/**
 	 * Reference to FileService for cross-handler coordination (circular dependency break).
 	 *
-	 * @var FileService|null
+	 * @var FileHandlerSupportInterface|null
 	 */
-	private ?FileService $fileService = null;
+	private ?FileHandlerSupportInterface $fileService = null;
 
 	/**
 	 * Present participle of each upsert action, for the log line of a failure.
@@ -99,11 +99,11 @@ class CreateFileHandler {
 	/**
 	 * Set the FileService instance for cross-handler coordination.
 	 *
-	 * @param FileService $fileService The file service instance.
+	 * @param FileHandlerSupportInterface $fileService The file service instance.
 	 *
 	 * @return void
 	 */
-	public function setFileService(FileService $fileService): void {
+	public function setFileService(FileHandlerSupportInterface $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
 

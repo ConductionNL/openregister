@@ -109,7 +109,7 @@ class RegisterService implements RegisterServiceInterface {
 	 * Initializes service with required dependencies for register operations.
 	 *
 	 * @param RegisterServiceStorage       $storage             Register and schema mappers and the raw connection.
-	 * @param FileService                  $fileService         File service for file operations.
+	 * @param FileFolderServiceInterface   $fileService         File service for file operations.
 	 * @param OrganisationServiceInterface $organisationService Organisation service for permissions.
 	 * @param LoggerInterface              $logger              Logger for error tracking.
 	 * @param RegisterSerializer           $registerSerializer  Applies `_extend` post-processing (`schemas`,
@@ -120,7 +120,7 @@ class RegisterService implements RegisterServiceInterface {
 	 */
 	public function __construct(
 		RegisterServiceStorage $storage,
-		private readonly FileService $fileService,
+		private readonly FileFolderServiceInterface $fileService,
 		private readonly OrganisationServiceInterface $organisationService,
 		private readonly LoggerInterface $logger,
 		private readonly RegisterSerializer $registerSerializer,
