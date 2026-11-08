@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
@@ -560,7 +561,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			new ChunkSource('file', 42, 'admin', 'test-org', 1000000), $chunkData,
+			new ChunkSource('file', 42, new ChunkOwnership('admin', 'test-org'), 1000000), $chunkData,
 		]);
 
 		$this->assertInstanceOf(Chunk::class, $result);
@@ -590,7 +591,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			new ChunkSource('object', 1, null, null, time()), $chunkData,
+			new ChunkSource('object', 1, new ChunkOwnership(null, null), time()), $chunkData,
 		]);
 
 		$this->assertInstanceOf(Chunk::class, $result);
@@ -2131,7 +2132,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->chunkMapper->expects($this->exactly(2))->method('insert');
 
 		$this->invokePrivate('persistChunksForSource', [
-			new ChunkSource('file', 1, 'admin', 'org1', 1000000), $chunks, $payload,
+			new ChunkSource('file', 1, new ChunkOwnership('admin', 'org1'), 1000000), $chunks, $payload,
 		]);
 	}
 
@@ -2161,7 +2162,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->chunkMapper->expects($this->exactly(6))->method('insert');
 
 		$this->invokePrivate('persistChunksForSource', [
-			new ChunkSource('file', 1, null, null, time()), $chunks, $payload,
+			new ChunkSource('file', 1, new ChunkOwnership(null, null), time()), $chunks, $payload,
 		]);
 	}
 
@@ -2192,7 +2193,7 @@ class TextExtractionServiceTest extends TestCase {
 		);
 
 		$this->invokePrivate('persistChunksForSource', [
-			new ChunkSource('file', 1, null, null, 1000000), $chunks, $payload,
+			new ChunkSource('file', 1, new ChunkOwnership(null, null), 1000000), $chunks, $payload,
 		]);
 
 		foreach ($insertedChunks as $chunk) {
@@ -2226,7 +2227,7 @@ class TextExtractionServiceTest extends TestCase {
 			}
 		);
 
-		$this->invokePrivate('persistMetadataChunk', [new ChunkSource('file', 42, $payload['owner'] ?? null, $payload['organisation'] ?? null, 1000000), $payload]);
+		$this->invokePrivate('persistMetadataChunk', [new ChunkSource('file', 42, new ChunkOwnership($payload['owner'] ?? null, $payload['organisation'] ?? null), 1000000), $payload]);
 
 		$this->assertNotNull($insertedChunk);
 		$this->assertSame(-1, $insertedChunk->getChunkIndex());
@@ -2252,7 +2253,7 @@ class TextExtractionServiceTest extends TestCase {
 			}
 		);
 
-		$this->invokePrivate('persistMetadataChunk', [new ChunkSource('object', 1, ([])['owner'] ?? null, ([])['organisation'] ?? null, time()), []]);
+		$this->invokePrivate('persistMetadataChunk', [new ChunkSource('object', 1, new ChunkOwnership(([])['owner'] ?? null, ([])['organisation'] ?? null), time()), []]);
 
 		$this->assertNotNull($insertedChunk);
 		$this->assertSame(-1, $insertedChunk->getChunkIndex());
@@ -2271,7 +2272,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			new ChunkSource('file', 1, null, null, time()), $chunkData,
+			new ChunkSource('file', 1, new ChunkOwnership(null, null), time()), $chunkData,
 		]);
 
 		$this->assertSame(strlen('Hello World Chunk'), $result->getEndOffset());
@@ -2283,7 +2284,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			new ChunkSource('file', 1, null, null, time()), $chunkData,
+			new ChunkSource('file', 1, new ChunkOwnership(null, null), time()), $chunkData,
 		]);
 
 		$this->assertNull($result->getLanguage());
@@ -2303,7 +2304,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			new ChunkSource('file', 1, null, null, $timestamp), $chunkData,
+			new ChunkSource('file', 1, new ChunkOwnership(null, null), $timestamp), $chunkData,
 		]);
 
 		$this->assertSame($timestamp, $result->getCreatedAt()->getTimestamp());
@@ -2988,7 +2989,7 @@ class TextExtractionServiceTest extends TestCase {
 			}
 		);
 
-		$this->invokePrivate('persistMetadataChunk', [new ChunkSource('file', 1, $payload['owner'] ?? null, $payload['organisation'] ?? null, time()), $payload]);
+		$this->invokePrivate('persistMetadataChunk', [new ChunkSource('file', 1, new ChunkOwnership($payload['owner'] ?? null, $payload['organisation'] ?? null), time()), $payload]);
 
 		$this->assertNotNull($insertedChunk);
 		// When JSON encoding fails, text_content should be 'metadata_encoding_failed'.
@@ -3267,7 +3268,7 @@ class TextExtractionServiceTest extends TestCase {
 		];
 
 		$result = $this->invokePrivate('hydrateChunkEntity', [
-			new ChunkSource('file', 1, null, null, time()), $chunkData,
+			new ChunkSource('file', 1, new ChunkOwnership(null, null), time()), $chunkData,
 		]);
 
 		$this->assertSame($posRef, $result->getPositionReference());
@@ -3651,7 +3652,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->expectExceptionMessage('Insert failed');
 
 		$this->invokePrivate('persistChunksForSource', [
-			new ChunkSource('object', 1, 'owner1', 'org1', time()), // source
+			new ChunkSource('object', 1, new ChunkOwnership('owner1', 'org1'), time()), // source
 			[['text_content' => 'test', 'chunk_index' => 0, 'start_offset' => 0, 'end_offset' => 4]], // chunks
 			['source_type' => 'object'], // payload
 		]);
@@ -3670,7 +3671,7 @@ class TextExtractionServiceTest extends TestCase {
 		$this->chunkMapper->method('insert')->willReturnArgument(0);
 
 		$this->invokePrivate('persistChunksForSource', [
-			new ChunkSource('file', 42, 'owner1', 'org1', time()),
+			new ChunkSource('file', 42, new ChunkOwnership('owner1', 'org1'), time()),
 			[['text_content' => 'hello world', 'chunk_index' => 0, 'start_offset' => 0, 'end_offset' => 11]],
 			['source_type' => 'file', 'text' => 'hello world', 'checksum' => 'abc123'],
 		]);
