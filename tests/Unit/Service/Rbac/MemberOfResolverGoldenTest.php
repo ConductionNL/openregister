@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\SchemaRegisterLookup;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -78,8 +79,7 @@ class MemberOfResolverGoldenTest extends TestCase {
 		ContainerInterface $container
 	): MemberOfResolver {
 		return new MemberOfResolver(
-			schemas: $schemas,
-			registers: $registers,
+			lookup: new SchemaRegisterLookup(schemas: $schemas, registers: $registers),
 			container: $container,
 			operators: new OperatorEvaluator(new NullLogger()),
 			logger: new NullLogger()
