@@ -307,10 +307,6 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 *
 	 * @return IReference|null The reference object or null on failure
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d1
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
@@ -321,97 +317,19 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			return null;
 		}
 
-		$registerId = $parsed['registerId'];
-		$schemaId = $parsed['schemaId'];
-		$uuid = $parsed['uuid'];
-
 		try {
 			// Fetch the object using ObjectService.
 			$object = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $uuid,
-				register: $registerId,
-				schema: $schemaId
+				id: $parsed['uuid'],
+				register: $parsed['registerId'],
+				schema: $parsed['schemaId']
 			));
 
 			if ($object === null) {
 				return null;
 			}
 
-			$objectData = $object->jsonSerialize();
-
-			// No `?? []`: `jsonSerialize()` always emits `@self`, so the
-			// fallback was unreachable and phpstan says so.
-			$selfData = $objectData['@self'];
-
-			// Extract title.
-			$title = $this->extractTitle(objectData: $objectData, selfData: $selfData);
-
-			// Extract description.
-			$description = $this->extractDescription(objectData: $objectData);
-
-			// Resolve schema and register names.
-			$schemaTitle = $this->resolveSchemaName(schemaId: $schemaId);
-			$registerTitle = $this->resolveRegisterName(registerId: $registerId);
-
-			// Resolve deep link URL.
-			$selfArray = [];
-			if (is_array($selfData) === true) {
-				$selfArray = $selfData;
-			}
-
-			$flatData = array_merge(
-				$selfArray,
-				['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
-			);
-
-			$objectUrl = $this->deepLinkRegistry->resolveUrl(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				objectData: $flatData
-			);
-
-			if ($objectUrl === null) {
-				$objectUrl = $this->urlGenerator->linkToRoute(
-					'openregister.objects.show',
-					['register' => $registerId, 'schema' => $schemaId, 'id' => $uuid]
-				);
-			}
-
-			$objectUrl = $this->urlGenerator->getAbsoluteURL($objectUrl);
-
-			// Resolve icon.
-			$iconUrl = $this->resolveDeepLinkOrDefaultIconUrl(registerId: $registerId, schemaId: $schemaId);
-
-			// Extract preview properties.
-			$properties = $this->extractPreviewProperties(objectData: $objectData);
-
-			// Get updated timestamp. The metadata lives in `@self` and nowhere
-			// else — the old top-level fallback read a key the serialised shape
-			// does not have, so it could only ever yield ''.
-			$updated = $selfData['updated'] ?? '';
-
-			// Build rich data.
-			$richData = [
-				'id' => $uuid,
-				'title' => $title,
-				'description' => $description,
-				'schema' => ['id' => $schemaId, 'title' => $schemaTitle],
-				'register' => ['id' => $registerId, 'title' => $registerTitle],
-				'url' => $objectUrl,
-				'icon_url' => $iconUrl,
-				'updated' => $updated,
-				'properties' => $properties,
-			];
-
-			// Build the reference.
-			$reference = new Reference($referenceText);
-			$reference->setTitle($title);
-			$reference->setDescription($description);
-			$reference->setImageUrl($iconUrl);
-			$reference->setUrl($objectUrl);
-			$reference->setRichObject('openregister-object', $richData);
-
-			return $reference;
+			return $this->composeReference(referenceText: $referenceText, parsed: $parsed, objectData: $object->jsonSerialize());
 		} catch (\Exception $exception) {
 			// Catch all exceptions including authorization errors.
 			// Return null to prevent metadata leakage on RBAC failures.
@@ -425,6 +343,98 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			return null;
 		}//end try
 	}//end buildReference()
+
+	/**
+	 * Build the reference for a found object from its serialised data.
+	 *
+	 * @param string                                              $referenceText The original URL.
+	 * @param array{registerId: int, schemaId: int, uuid: string} $parsed        The parsed reference.
+	 * @param array<string, mixed>                                $objectData    The serialised object.
+	 *
+	 * @return IReference
+	 */
+	private function composeReference(string $referenceText, array $parsed, array $objectData): IReference {
+		$registerId = $parsed['registerId'];
+		$schemaId = $parsed['schemaId'];
+		$uuid = $parsed['uuid'];
+
+		// No `?? []`: `jsonSerialize()` always emits `@self`, so the
+		// fallback was unreachable and phpstan says so.
+		$selfData = $objectData['@self'];
+
+		$title = $this->extractTitle(objectData: $objectData, selfData: $selfData);
+		$description = $this->extractDescription(objectData: $objectData);
+		$schemaTitle = $this->resolveSchemaName(schemaId: $schemaId);
+		$registerTitle = $this->resolveRegisterName(registerId: $registerId);
+		$objectUrl = $this->resolveObjectUrl(parsed: $parsed, selfData: $selfData);
+		$iconUrl = $this->resolveDeepLinkOrDefaultIconUrl(registerId: $registerId, schemaId: $schemaId);
+		$properties = $this->extractPreviewProperties(objectData: $objectData);
+
+		// Get updated timestamp. The metadata lives in `@self` and nowhere
+		// else — the old top-level fallback read a key the serialised shape
+		// does not have, so it could only ever yield ''.
+		$updated = $selfData['updated'] ?? '';
+
+		$richData = [
+			'id' => $uuid,
+			'title' => $title,
+			'description' => $description,
+			'schema' => ['id' => $schemaId, 'title' => $schemaTitle],
+			'register' => ['id' => $registerId, 'title' => $registerTitle],
+			'url' => $objectUrl,
+			'icon_url' => $iconUrl,
+			'updated' => $updated,
+			'properties' => $properties,
+		];
+
+		$reference = new Reference($referenceText);
+		$reference->setTitle($title);
+		$reference->setDescription($description);
+		$reference->setImageUrl($iconUrl);
+		$reference->setUrl($objectUrl);
+		$reference->setRichObject('openregister-object', $richData);
+
+		return $reference;
+	}//end composeReference()
+
+	/**
+	 * The absolute object URL: the registered deep link, else the show route.
+	 *
+	 * @param array{registerId: int, schemaId: int, uuid: string} $parsed   The parsed reference.
+	 * @param mixed                                               $selfData The object's `@self` metadata.
+	 *
+	 * @return string
+	 */
+	private function resolveObjectUrl(array $parsed, mixed $selfData): string {
+		$registerId = $parsed['registerId'];
+		$schemaId = $parsed['schemaId'];
+		$uuid = $parsed['uuid'];
+
+		$selfArray = [];
+		if (is_array($selfData) === true) {
+			$selfArray = $selfData;
+		}
+
+		$flatData = array_merge(
+			$selfArray,
+			['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
+		);
+
+		$objectUrl = $this->deepLinkRegistry->resolveUrl(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			objectData: $flatData
+		);
+
+		if ($objectUrl === null) {
+			$objectUrl = $this->urlGenerator->linkToRoute(
+				'openregister.objects.show',
+				['register' => $registerId, 'schema' => $schemaId, 'id' => $uuid]
+			);
+		}
+
+		return $this->urlGenerator->getAbsoluteURL($objectUrl);
+	}//end resolveObjectUrl()
 
 	/**
 	 * Resolve a schema ID to its display title.
@@ -576,19 +586,11 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d1
 	 */
 	private function extractTitle(array $objectData, array $selfData): string {
-		// Try @self.name first.
-		if (empty($selfData['name']) === false && is_string($selfData['name']) === true) {
-			return $selfData['name'];
-		}
-
-		// Try title property.
-		if (empty($objectData['title']) === false && is_string($objectData['title']) === true) {
-			return $objectData['title'];
-		}
-
-		// Try name property.
-		if (empty($objectData['name']) === false && is_string($objectData['name']) === true) {
-			return $objectData['name'];
+		// Try @self.name first, then the title property, then the name property.
+		foreach ([($selfData['name'] ?? null), ($objectData['title'] ?? null), ($objectData['name'] ?? null)] as $candidate) {
+			if ($this->isFilledString(value: $candidate) === true) {
+				return $candidate;
+			}
 		}
 
 		// Fall back to UUID.
@@ -611,22 +613,37 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 */
 	private function extractDescription(array $objectData): string {
 		// Try summary first.
-		if (empty($objectData['summary']) === false && is_string($objectData['summary']) === true) {
-			return mb_substr($objectData['summary'], 0, self::MAX_DESCRIPTION_LENGTH);
+		$summary = ($objectData['summary'] ?? null);
+		if ($this->isFilledString(value: $summary) === true) {
+			return mb_substr($summary, 0, self::MAX_DESCRIPTION_LENGTH);
 		}
 
 		// Try description.
-		if (empty($objectData['description']) === false && is_string($objectData['description']) === true) {
-			$desc = mb_substr($objectData['description'], 0, self::MAX_DESCRIPTION_LENGTH);
-			if (mb_strlen($objectData['description']) > self::MAX_DESCRIPTION_LENGTH) {
-				$desc .= '...';
-			}
-
-			return $desc;
+		$description = ($objectData['description'] ?? null);
+		if ($this->isFilledString(value: $description) === false) {
+			return '';
 		}
 
-		return '';
+		$desc = mb_substr($description, 0, self::MAX_DESCRIPTION_LENGTH);
+		if (mb_strlen($description) > self::MAX_DESCRIPTION_LENGTH) {
+			$desc .= '...';
+		}
+
+		return $desc;
 	}//end extractDescription()
+
+	/**
+	 * Whether a value is a string that `empty()` does not treat as empty.
+	 *
+	 * @param mixed $value The candidate.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-true non-empty-string $value
+	 */
+	private function isFilledString(mixed $value): bool {
+		return empty($value) === false && is_string($value) === true;
+	}//end isFilledString()
 
 	/**
 	 * Extract up to 4 preview properties from object data.
@@ -650,34 +667,74 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 				break;
 			}
 
-			// Skip internal fields.
-			if (in_array($key, self::INTERNAL_FIELDS, true) === true) {
-				continue;
-			}
-
-			// Skip fields starting with underscore or @.
-			if (strpos($key, '_') === 0 || strpos($key, '@') === 0) {
-				continue;
-			}
-
-			// Only include scalar string/number values.
-			if (is_string($value) === true && $value !== '') {
-				$properties[] = [
-					'label' => ucfirst($key),
-					'value' => mb_substr($value, 0, 100),
-				];
-				$count++;
-			} elseif (is_int($value) === true || is_float($value) === true) {
-				$properties[] = [
-					'label' => ucfirst($key),
-					'value' => (string)$value,
-				];
+			$property = $this->previewProperty(key: $key, value: $value);
+			if ($property !== null) {
+				$properties[] = $property;
 				$count++;
 			}
-		}//end foreach
+		}
 
 		return $properties;
 	}//end extractPreviewProperties()
+
+	/**
+	 * The preview row for one top-level field, or null when it is not shown.
+	 *
+	 * Internal fields and fields starting with `_` or `@` are skipped; only
+	 * non-empty strings (cut at 100 characters) and numbers are shown.
+	 *
+	 * @param int|string $key   The field name.
+	 * @param mixed      $value The field value.
+	 *
+	 * @return array{label: string, value: string}|null
+	 */
+	private function previewProperty(int|string $key, mixed $value): ?array {
+		if ($this->isPreviewKey(key: $key) === false) {
+			return null;
+		}
+
+		$shown = $this->previewValue(value: $value);
+		if ($shown === '') {
+			return null;
+		}
+
+		return ['label' => ucfirst($key), 'value' => $shown];
+	}//end previewProperty()
+
+	/**
+	 * Whether a field may appear in the preview: not internal, not `_` / `@` prefixed.
+	 *
+	 * @param int|string $key The field name.
+	 *
+	 * @return bool
+	 */
+	private function isPreviewKey(int|string $key): bool {
+		if (in_array($key, self::INTERNAL_FIELDS, true) === true) {
+			return false;
+		}
+
+		return strpos($key, '_') !== 0 && strpos($key, '@') !== 0;
+	}//end isPreviewKey()
+
+	/**
+	 * The shown text of a field value: a string cut at 100 characters, a
+	 * number as text, otherwise '' (not shown; an empty string is not shown either).
+	 *
+	 * @param mixed $value The field value.
+	 *
+	 * @return string
+	 */
+	private function previewValue(mixed $value): string {
+		if (is_string($value) === true) {
+			return mb_substr($value, 0, 100);
+		}
+
+		if (is_int($value) === true || is_float($value) === true) {
+			return (string)$value;
+		}
+
+		return '';
+	}//end previewValue()
 
 	/**
 	 * The absolute base URL of this Nextcloud instance, right-trimmed.
