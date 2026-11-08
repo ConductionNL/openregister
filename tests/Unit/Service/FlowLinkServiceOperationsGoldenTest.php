@@ -26,7 +26,6 @@ use Exception;
 use OCA\OpenRegister\Db\FlowLink;
 use OCA\OpenRegister\Db\FlowLinkMapper;
 use OCA\OpenRegister\Service\FlowLinkService;
-use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -103,8 +102,10 @@ class FlowLinkServiceOperationsGoldenTest extends TestCase {
 		$this->service = new FlowLinkService(
 			$this->mapper,
 			$this->db,
-			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
-			$this->groupManager
+			$this->appManager,
+			$this->userSession,
+			$this->groupManager,
+			$this->logger
 		);
 	}//end setUp()
 

@@ -33,7 +33,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
-use OCA\OpenRegister\Service\TalkLinkPlatform;
 use OCA\OpenRegister\Service\TalkLinkService;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -136,7 +135,8 @@ class TalkLinkServiceTest extends TestCase {
 
 		$this->service = new TalkLinkService(
 			$this->mapper,
-			new TalkLinkPlatform($this->container, $this->l10n),
+			$this->container,
+			$this->l10n,
 			$this->schemaMapper,
 			new LinkServiceRuntime(
 				$this->appManager,
