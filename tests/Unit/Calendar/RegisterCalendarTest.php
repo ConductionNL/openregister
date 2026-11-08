@@ -17,6 +17,7 @@ namespace Unit\Calendar;
 
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
 use OCA\OpenRegister\Calendar\RegisterCalendar;
+use OCA\OpenRegister\Calendar\RegisterCalendarSources;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -55,11 +56,8 @@ class RegisterCalendarTest extends TestCase {
 		$this->calendar = new RegisterCalendar(
 			$this->schema,
 			$config,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->transformer,
 			'principals/users/admin',
-			$this->logger
+			new RegisterCalendarSources($this->magicMapper, $this->registerMapper, $this->transformer, $this->logger)
 		);
 	}
 
@@ -79,11 +77,8 @@ class RegisterCalendarTest extends TestCase {
 		$calendar = new RegisterCalendar(
 			$this->schema,
 			['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->transformer,
 			'principals/users/admin',
-			$this->logger
+			new RegisterCalendarSources($this->magicMapper, $this->registerMapper, $this->transformer, $this->logger)
 		);
 
 		$this->assertSame('Test Schema', $calendar->getDisplayName());
@@ -97,11 +92,8 @@ class RegisterCalendarTest extends TestCase {
 		$calendar = new RegisterCalendar(
 			$this->schema,
 			['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->transformer,
 			'principals/users/admin',
-			$this->logger
+			new RegisterCalendarSources($this->magicMapper, $this->registerMapper, $this->transformer, $this->logger)
 		);
 
 		$this->assertSame('#0082C9', $calendar->getDisplayColor());
@@ -119,11 +111,8 @@ class RegisterCalendarTest extends TestCase {
 		$calendar = new RegisterCalendar(
 			$this->schema,
 			['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->transformer,
 			'principals/groups/everyone',
-			$this->logger
+			new RegisterCalendarSources($this->magicMapper, $this->registerMapper, $this->transformer, $this->logger)
 		);
 
 		$result = $calendar->search('');
