@@ -35,7 +35,10 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerArithmetic;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerStorage;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSubjects;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
@@ -202,16 +205,13 @@ class FlowTimerServiceTest extends TestCase {
 		});
 
 		return new FlowTimerService(
-			timers: $this->store->timerMapper(),
-			fires: $this->store->fireMapper(),
-			events: $this->store->eventMapper(),
-			tasks: $this->store->taskMapper(),
-			taskService: $this->taskService,
-			calendars: $this->calendars,
-			calculator: $this->calculator,
-			ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator),
-			db: $this->createMock(IDBConnection::class),
-			dispatcher: $dispatcher,
+			storage: new FlowTimerStorage(timers: $this->store->timerMapper(), fires: $this->store->fireMapper(), events: $this->store->eventMapper(), db: $this->createMock(IDBConnection::class)),
+			subjects: new FlowTimerSubjects(tasks: $this->store->taskMapper(), taskService: $this->taskService, dispatcher: $dispatcher),
+			arithmetic: new FlowTimerArithmetic(
+				calendars: $this->calendars,
+				calculator: $this->calculator,
+				ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator)
+			),
 			logger: new NullLogger()
 		);
 	}//end buildService()
@@ -1068,16 +1068,13 @@ class FlowTimerServiceTest extends TestCase {
 		$definitions->method('ladders')->willReturn([]);
 		$calendars = new WorkingCalendarService(definitions: $definitions);
 		$service = new FlowTimerService(
-			timers: $this->store->timerMapper(),
-			fires: $this->store->fireMapper(),
-			events: $events,
-			tasks: $this->store->taskMapper(),
-			taskService: $this->taskService,
-			calendars: $calendars,
-			calculator: $this->calculator,
-			ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator),
-			db: $db,
-			dispatcher: $this->createMock(IEventDispatcher::class),
+			storage: new FlowTimerStorage(timers: $this->store->timerMapper(), fires: $this->store->fireMapper(), events: $events, db: $db),
+			subjects: new FlowTimerSubjects(tasks: $this->store->taskMapper(), taskService: $this->taskService, dispatcher: $this->createMock(IEventDispatcher::class)),
+			arithmetic: new FlowTimerArithmetic(
+				calendars: $calendars,
+				calculator: $this->calculator,
+				ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator)
+			),
 			logger: new NullLogger()
 		);
 		$this->expectException(\RuntimeException::class);
@@ -1095,16 +1092,13 @@ class FlowTimerServiceTest extends TestCase {
 		$definitions->method('calendars')->willReturn(self::calendars());
 		$definitions->method('ladders')->willReturn([]);
 		$service = new FlowTimerService(
-			timers: $timers,
-			fires: $this->store->fireMapper(),
-			events: $this->store->eventMapper(),
-			tasks: $this->store->taskMapper(),
-			taskService: $this->taskService,
-			calendars: new WorkingCalendarService(definitions: $definitions),
-			calculator: $this->calculator,
-			ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator),
-			db: $this->createMock(IDBConnection::class),
-			dispatcher: $this->createMock(IEventDispatcher::class),
+			storage: new FlowTimerStorage(timers: $timers, fires: $this->store->fireMapper(), events: $this->store->eventMapper(), db: $this->createMock(IDBConnection::class)),
+			subjects: new FlowTimerSubjects(tasks: $this->store->taskMapper(), taskService: $this->taskService, dispatcher: $this->createMock(IEventDispatcher::class)),
+			arithmetic: new FlowTimerArithmetic(
+				calendars: new WorkingCalendarService(definitions: $definitions),
+				calculator: $this->calculator,
+				ladder: new EscalationLadderService(definitions: $definitions, calculator: $this->calculator)
+			),
 			logger: new NullLogger()
 		);
 		self::assertSame(0, $service->cancelForSubject(subjectType: 'task', subjectUuid: 't', reason: 'r', actor: null));
