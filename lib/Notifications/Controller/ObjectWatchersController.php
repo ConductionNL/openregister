@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -58,24 +59,51 @@ use Psr\Log\LoggerInterface;
 class ObjectWatchersController extends Controller {
 
 	/**
+	 * Resolves an object through the RBAC boundary.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * The subscription primitive.
+	 *
+	 * @var WatcherServiceInterface
+	 */
+	private readonly WatcherServiceInterface $watchers;
+
+	/**
+	 * Verifies a named uid before it is subscribed.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                    $appName       App name.
-	 * @param IRequest                  $request       Request.
-	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
-	 * @param WatcherServiceInterface   $watchers      The subscription primitive.
-	 * @param IUserManager              $userManager   Verifies a named uid before it is subscribed.
-	 * @param LoggerInterface           $logger        Logger.
+	 * @param string $appName App name.
+	 * @param IRequest $request Request.
+	 * @param ObjectWatchersControllerServices $services The controller's services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly WatcherServiceInterface $watchers,
-		private readonly IUserManager $userManager,
-		private readonly LoggerInterface $logger,
+		ObjectWatchersControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+
+		$this->objectService = $services->objectService;
+		$this->watchers = $services->watchers;
+		$this->userManager = $services->userManager;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

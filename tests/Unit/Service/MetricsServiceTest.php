@@ -2,7 +2,10 @@
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Search\Service\MetricOutcome;
+use OCA\OpenRegister\Search\Service\MetricRecord;
 use OCA\OpenRegister\Search\Service\MetricsService;
+use OCA\OpenRegister\Search\Service\MetricSubject;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
@@ -68,14 +71,12 @@ class MetricsServiceTest extends TestCase {
 		$qb->expects($this->once())->method('executeStatement');
 
 		$this->service->recordMetric(
-			MetricsService::METRIC_FILE_PROCESSED,
-			'file',
-			'file-123',
-			'success',
-			150,
-			['key' => 'value'],
-			null,
-			'admin'
+			new MetricRecord(
+				MetricsService::METRIC_FILE_PROCESSED,
+				new MetricSubject('file', 'file-123', 'admin'),
+				new MetricOutcome('success', 150, null),
+				['key' => 'value']
+			)
 		);
 	}
 
@@ -87,7 +88,7 @@ class MetricsServiceTest extends TestCase {
 		$this->logger->expects($this->once())->method('error');
 
 		// Should not throw
-		$this->service->recordMetric(MetricsService::METRIC_FILE_PROCESSED);
+		$this->service->recordMetric(new MetricRecord(MetricsService::METRIC_FILE_PROCESSED));
 	}
 
 	public function testRecordMetricWithNullMetadata(): void {
@@ -97,12 +98,12 @@ class MetricsServiceTest extends TestCase {
 
 		// null metadata should result in '{}' being stored
 		$this->service->recordMetric(
-			MetricsService::METRIC_SEARCH_KEYWORD,
-			null,
-			null,
-			'success',
-			null,
-			null
+			new MetricRecord(
+				MetricsService::METRIC_SEARCH_KEYWORD,
+				new MetricSubject(null, null, null),
+				new MetricOutcome('success', null, null),
+				null
+			)
 		);
 	}
 
@@ -280,14 +281,12 @@ class MetricsServiceTest extends TestCase {
 		$qb->expects($this->once())->method('executeStatement');
 
 		$this->service->recordMetric(
-			MetricsService::METRIC_EMBEDDING_GENERATED,
-			'object',
-			'obj-456',
-			'failure',
-			250,
-			['model' => 'test'],
-			'Connection timeout',
-			'user1'
+			new MetricRecord(
+				MetricsService::METRIC_EMBEDDING_GENERATED,
+				new MetricSubject('object', 'obj-456', 'user1'),
+				new MetricOutcome('failure', 250, 'Connection timeout'),
+				['model' => 'test']
+			)
 		);
 	}
 
@@ -376,14 +375,12 @@ class MetricsServiceTest extends TestCase {
 		// Invalid UTF-8 sequences can cause json_encode to fail,
 		// but PHP 8 handles most cases. Test with valid metadata to ensure path coverage.
 		$this->service->recordMetric(
-			MetricsService::METRIC_CHAT_MESSAGE,
-			'chat',
-			'chat-789',
-			'success',
-			100,
-			['nested' => ['key' => 'value', 'list' => [1, 2, 3]]],
-			null,
-			'user2'
+			new MetricRecord(
+				MetricsService::METRIC_CHAT_MESSAGE,
+				new MetricSubject('chat', 'chat-789', 'user2'),
+				new MetricOutcome('success', 100, null),
+				['nested' => ['key' => 'value', 'list' => [1, 2, 3]]]
+			)
 		);
 	}
 
@@ -492,6 +489,6 @@ class MetricsServiceTest extends TestCase {
 		$qb->expects($this->once())->method('executeStatement');
 
 		// Only required param - all optional params use defaults
-		$this->service->recordMetric(MetricsService::METRIC_OBJECT_VECTORIZED);
+		$this->service->recordMetric(new MetricRecord(MetricsService::METRIC_OBJECT_VECTORIZED));
 	}
 }

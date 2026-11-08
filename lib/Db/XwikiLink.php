@@ -62,6 +62,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class XwikiLink extends Entity implements JsonSerializable {
+	use ObjectLinkTypesTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The object uuid.
@@ -137,9 +139,7 @@ class XwikiLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addObjectLinkTypes();
 		$this->addType(fieldName: 'pageReference', type: 'string');
 		$this->addType(fieldName: 'space', type: 'string');
 		$this->addType(fieldName: 'title', type: 'string');
@@ -148,25 +148,4 @@ class XwikiLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'linkedBy', type: 'string');
 		$this->addType(fieldName: 'linkedAt', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * JSON serialization.
-	 *
-	 * @return array<string,mixed>
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'pageReference' => $this->pageReference,
-			'space' => $this->space,
-			'title' => $this->title,
-			'url' => $this->url,
-			'cachedAt' => $this->cachedAt?->format(DateTime::ATOM),
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
-		];
-	}//end jsonSerialize()
 }//end class

@@ -87,30 +87,56 @@ class ObjectActionList implements ObjectActionListInterface {
 			$available[(string)$move['action']] = $move;
 		}
 
+		[$entries, $named] = $this->declaredEntries(schema: $schema, object: $object, available: $available);
+		foreach (array_diff_key($available, $named) as $move) {
+			$entries[] = $this->transitionEntry(move: $move);
+		}
+
+		return $entries;
+	}//end forObject()
+
+	/**
+	 * The entries of the declared actions the caller may run, and the transitions they name.
+	 *
+	 * @param Schema                              $schema    The schema.
+	 * @param ObjectEntity                        $object    The object.
+	 * @param array<string, array<string, mixed>> $available The lifecycle's available moves, by action.
+	 *
+	 * @return array{0: list<array<string, mixed>>, 1: array<string, true>} The entries, and the transitions named.
+	 */
+	private function declaredEntries(Schema $schema, ObjectEntity $object, array $available): array {
 		$entries = [];
-		$named = [];
+		$named   = [];
 		foreach ($this->definitions->forSchema(schema: $schema, register: $object->getRegister()) as $definition) {
 			if ($this->mayRun(schema: $schema, definition: $definition, object: $object) === false) {
 				continue;
 			}
 
-			$move = null;
 			if ($definition->kind === ObjectActionDefinition::KIND_TRANSITION) {
 				$named[(string)$definition->body] = true;
-				$move = ($available[(string)$definition->body] ?? false);
 			}
 
-			$entries[] = $this->declaredEntry(definition: $definition, object: $object, move: $move);
+			$entries[] = $this->declaredEntry(definition: $definition, object: $object, move: $this->moveOf(definition: $definition, available: $available));
 		}
 
-		foreach ($available as $key => $move) {
-			if (isset($named[$key]) === false) {
-				$entries[] = $this->transitionEntry(move: $move);
-			}
+		return [$entries, $named];
+	}//end declaredEntries()
+
+	/**
+	 * The lifecycle move a declared action names: null for any other kind, false when not available now.
+	 *
+	 * @param ObjectActionDefinition              $definition The action.
+	 * @param array<string, array<string, mixed>> $available  The lifecycle's available moves, by action.
+	 *
+	 * @return array<string, mixed>|false|null The move.
+	 */
+	private function moveOf(ObjectActionDefinition $definition, array $available): array|false|null {
+		if ($definition->kind !== ObjectActionDefinition::KIND_TRANSITION) {
+			return null;
 		}
 
-		return $entries;
-	}//end forObject()
+		return ($available[(string)$definition->body] ?? false);
+	}//end moveOf()
 
 	/**
 	 * Which declared actions the caller may run on this object now, by key.
@@ -209,24 +235,11 @@ class ObjectActionList implements ObjectActionListInterface {
 	 * @return array<string, mixed> The entry.
 	 */
 	private function declaredEntry(ObjectActionDefinition $definition, ObjectEntity $object, array|false|null $move): array {
-		$entry = $this->shape(definition: $definition);
-		$entry['available'] = true;
-
-		if ($move === false) {
-			$entry['available'] = false;
-			$entry['reason'] = $this->l10n->t('This step is not available from the current status.');
-			return $entry;
-		}
-
-		if ($this->gate->selfAssignOpen(definition: $definition, object: $object) === false) {
-			$entry['available'] = false;
-			$entry['reason'] = $this->l10n->t('This object is already assigned.');
-			return $entry;
-		}
-
-		if ($this->preconditionHolds(definition: $definition, object: $object) === false) {
-			$entry['available'] = false;
-			$entry['reason'] = $this->gate->reason(definition: $definition);
+		$entry  = $this->shape(definition: $definition);
+		$reason = $this->unavailableReason(definition: $definition, object: $object, move: $move);
+		$entry['available'] = ($reason === null);
+		if ($reason !== null) {
+			$entry['reason'] = $reason;
 		}
 
 		if ($definition->inputs === null && is_array($move) === true) {
@@ -237,6 +250,35 @@ class ObjectActionList implements ObjectActionListInterface {
 	}//end declaredEntry()
 
 	/**
+	 * Why a declared action the caller may run is not available now, or null when it is.
+	 *
+	 * Asked in order, and the first answer stands: the transition it names is
+	 * not reachable from the current status, its self-assign property is
+	 * already set, its `when` does not hold.
+	 *
+	 * @param ObjectActionDefinition          $definition The action.
+	 * @param ObjectEntity                    $object     The object.
+	 * @param array<string, mixed>|false|null $move       The transition it names, false when not available now, null when none.
+	 *
+	 * @return string|null The reason.
+	 */
+	private function unavailableReason(ObjectActionDefinition $definition, ObjectEntity $object, array|false|null $move): ?string {
+		if ($move === false) {
+			return $this->l10n->t('This step is not available from the current status.');
+		}
+
+		if ($this->gate->selfAssignOpen(definition: $definition, object: $object) === false) {
+			return $this->l10n->t('This object is already assigned.');
+		}
+
+		if ($this->preconditionHolds(definition: $definition, object: $object) === false) {
+			return $this->gate->reason(definition: $definition);
+		}
+
+		return null;
+	}//end unavailableReason()
+
+	/**
 	 * The entry of a lifecycle transition no declared action names.
 	 *
 	 * @param array<string, mixed> $move The transition from availableActions().
@@ -244,7 +286,23 @@ class ObjectActionList implements ObjectActionListInterface {
 	 * @return array<string, mixed> The entry.
 	 */
 	private function transitionEntry(array $move): array {
-		$entry = [
+		$entry = $this->moveFields(move: $move) + ['confirm' => null, 'mode' => 'sync', 'next' => FlowNextHint::STAY];
+		if ($entry['available'] === false) {
+			$entry['reason'] = $this->l10n->t('This step is blocked by a condition on the object.');
+		}
+
+		return $entry;
+	}//end transitionEntry()
+
+	/**
+	 * What a lifecycle move says of itself, in entry order up to its inputs.
+	 *
+	 * @param array<string, mixed> $move The transition from availableActions().
+	 *
+	 * @return array<string, mixed> The fields.
+	 */
+	private function moveFields(array $move): array {
+		return [
 			'key' => (string)$move['action'],
 			'kind' => ObjectActionDefinition::KIND_TRANSITION,
 			'label' => (string)($move['label'] ?? $move['action']),
@@ -253,16 +311,8 @@ class ObjectActionList implements ObjectActionListInterface {
 			'surfaces' => ObjectActionDefinition::DEFAULT_SURFACES,
 			'available' => (($move['blocked'] ?? false) !== true),
 			'inputs' => $this->inputs->fromTransitionInputs(inputs: (array)($move['inputs'] ?? [])),
-			'confirm' => null,
-			'mode' => 'sync',
-			'next' => FlowNextHint::STAY,
 		];
-		if ($entry['available'] === false) {
-			$entry['reason'] = $this->l10n->t('This step is blocked by a condition on the object.');
-		}
-
-		return $entry;
-	}//end transitionEntry()
+	}//end moveFields()
 
 	/**
 	 * The fields every declared-action entry carries.

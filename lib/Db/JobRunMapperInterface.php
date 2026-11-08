@@ -78,22 +78,16 @@ interface JobRunMapperInterface {
 	/**
 	 * The most recent runs, narrowed by job, outcome and period.
 	 *
-	 * @param string|null   $jobClass Narrow to one job class.
-	 * @param string|null   $outcome  Narrow to one JobRun OUTCOME_ constant.
-	 * @param DateTime|null $since    Only runs started at or after this moment.
-	 * @param DateTime|null $until    Only runs started at or before this moment.
-	 * @param int           $limit    How many rows to return, capped at MAX_LIMIT.
-	 * @param int           $offset   Where to start.
+	 * @param JobRunFilter|null $filter The job, outcome and period to narrow to; none narrows nothing.
+	 * @param int               $limit  How many rows to return, capped at MAX_LIMIT.
+	 * @param int               $offset Where to start.
 	 *
 	 * @return array<int, JobRun> The rows, newest first.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function findRecent(
-		?string $jobClass = null,
-		?string $outcome = null,
-		?DateTime $since = null,
-		?DateTime $until = null,
+		?JobRunFilter $filter = null,
 		int $limit = self::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array;

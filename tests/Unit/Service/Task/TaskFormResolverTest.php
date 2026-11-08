@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
+use OCA\OpenRegister\Service\Task\TaskFormResolverServices;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
@@ -90,10 +91,12 @@ class TaskFormResolverTest extends TestCase {
 			l10n: $l10n
 		);
 		$this->resolver = new TaskFormResolver(
-			runs: $this->runs,
-			flows: $this->flows,
-			published: $this->published,
-			formLinks: $this->formLinks,
+			services: new TaskFormResolverServices(
+				runs: $this->runs,
+				flows: $this->flows,
+				published: $this->published,
+				formLinks: $this->formLinks
+			),
 			reader: $reader,
 			l10n: $l10n
 		);

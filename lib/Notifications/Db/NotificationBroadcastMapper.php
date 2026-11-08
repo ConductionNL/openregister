@@ -63,32 +63,28 @@ class NotificationBroadcastMapper extends QBMapper {
 	/**
 	 * Record one broadcast.
 	 *
-	 * @param string $uuid Stable identifier.
-	 * @param string $subject The one-line message.
-	 * @param string|null $body The longer text, when there is one.
-	 * @param string $sender The uid of whoever sent it.
-	 * @param DateTime $startsAt When it starts showing.
-	 * @param DateTime $endsAt When it stops showing.
+	 * @param string           $uuid    Stable identifier.
+	 * @param string           $sender  The uid of whoever sent it.
+	 * @param BroadcastMessage $message The subject and the longer text.
+	 * @param BroadcastWindow  $window  When it starts and stops showing.
 	 *
 	 * @return NotificationBroadcast The persisted row.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One row's columns, passed as they are stored.
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-broadcast-reaches-every-user-once-recorded-req-nrg-005
 	 */
 	public function record(
 		string $uuid,
-		string $subject,
-		?string $body,
 		string $sender,
-		DateTime $startsAt,
-		DateTime $endsAt,
+		BroadcastMessage $message,
+		BroadcastWindow $window,
 	): NotificationBroadcast {
 		$entity = new NotificationBroadcast();
 		$entity->setUuid($uuid);
-		$entity->setSubject($subject);
-		$entity->setBody($body);
+		$entity->setSubject($message->subject);
+		$entity->setBody($message->body);
 		$entity->setSender($sender);
-		$entity->setStartsAt($startsAt);
-		$entity->setEndsAt($endsAt);
+		$entity->setStartsAt($window->startsAt);
+		$entity->setEndsAt($window->endsAt);
 		$entity->setCreated(new DateTime());
 
 		return $this->insert(entity: $entity);

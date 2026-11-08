@@ -57,6 +57,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\PermissionsAuditControllerServices;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
@@ -73,6 +74,13 @@ use OCP\IRequest;
  * Admin-only reports over the authorization model.
  */
 class PermissionsAuditController extends Controller {
+
+	/**
+	 * The keys an object deny entry may name its principal under, by precedence.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PRINCIPAL_KEYS = ['principal', 'group', 'role', 'user'];
 
 	/**
 	 * The grantable set, for the declared/undeclared split.
@@ -165,29 +173,7 @@ class PermissionsAuditController extends Controller {
 			return $this->adminGate->refusal(doing: 'read the authorization model');
 		}
 
-		$rules = [];
-
-		foreach ($this->scope->registers(filter: $register) as $reg) {
-			$rules = array_merge(
-				$rules,
-				$this->rulesIn(
-					authorization: $reg->getAuthorization(),
-					level: 'register',
-					subject: (string)($reg->getSlug() ?? $reg->getTitle() ?? '')
-				)
-			);
-		}
-
-		foreach ($this->scope->schemas(filter: $schema) as $sch) {
-			$rules = array_merge(
-				$rules,
-				$this->rulesIn(
-					authorization: $sch->getAuthorization(),
-					level: 'schema',
-					subject: (string)($sch->getSlug() ?? $sch->getTitle() ?? '')
-				)
-			);
-		}
+		$rules = $this->previewRules(register: $register, schema: $schema);
 
 		return new JSONResponse(
 			[
@@ -230,17 +216,10 @@ class PermissionsAuditController extends Controller {
 			return $this->adminGate->refusal(doing: 'read the authorization model');
 		}
 
-		$rows = $this->audit->rows(
-			registers: $this->scope->registers(filter: $register),
-			schemas: $this->scope->schemas(filter: $schema)
-		);
+		$rows = $this->audit->rows(registers: $this->scope->registers(filter: $register), schemas: $this->scope->schemas(filter: $schema));
 
 		return new JSONResponse(
-			[
-				'denyEnforcement' => $this->enforcement->current(),
-				'schemaCount' => count($rows),
-				'scopes' => $rows,
-			]
+			['denyEnforcement' => $this->enforcement->current(), 'schemaCount' => count($rows), 'scopes' => $rows]
 		);
 	}//end scopeAudit()
 
@@ -277,13 +256,47 @@ class PermissionsAuditController extends Controller {
 		}
 
 		$definitions = $this->roleActionsOf(register: $found[0]);
-
 		$wanted = $this->requestedRoles(roles: $roles, available: array_keys($definitions));
-		$missing = array_values(array_diff($wanted, array_keys($definitions)));
-		$compared = array_values(array_intersect($wanted, array_keys($definitions)));
 
+		return new JSONResponse($this->comparison(register: $register, wanted: $wanted, definitions: $definitions));
+	}//end compareRoles()
+
+	/**
+	 * The comparison of the wanted roles against what the register declares.
+	 *
+	 * @param string                            $register    The register as asked for.
+	 * @param array<int, string>                $wanted      The role names asked about.
+	 * @param array<string, array<int, string>> $definitions Role name to its declared actions.
+	 *
+	 * @return array<string, mixed> The comparison body.
+	 */
+	private function comparison(string $register, array $wanted, array $definitions): array {
+		$missing = array_values(array_diff($wanted, array_keys($definitions)));
+		$rows = $this->compared(
+			roles: array_values(array_intersect($wanted, array_keys($definitions))),
+			definitions: $definitions
+		);
+
+		return [
+			'register' => $register,
+			'roles' => $rows,
+			'unknownRoles' => $missing,
+			'shared' => $this->sharedActions(rows: $rows),
+			'onlyIn' => $this->exclusiveActions(rows: $rows),
+		];
+	}//end comparison()
+
+	/**
+	 * Each compared role's actions, and those of them the catalogue does not declare.
+	 *
+	 * @param array<int, string>                $roles       The roles both asked about and declared.
+	 * @param array<string, array<int, string>> $definitions Role name to its declared actions.
+	 *
+	 * @return array<string, array{actions: array<int, string>, undeclared: array<int, string>}> The rows.
+	 */
+	private function compared(array $roles, array $definitions): array {
 		$rows = [];
-		foreach ($compared as $role) {
+		foreach ($roles as $role) {
 			$rows[$role] = [
 				'actions' => $definitions[$role],
 				'undeclared' => array_values(
@@ -295,16 +308,8 @@ class PermissionsAuditController extends Controller {
 			];
 		}
 
-		return new JSONResponse(
-			[
-				'register' => $register,
-				'roles' => $rows,
-				'unknownRoles' => $missing,
-				'shared' => $this->sharedActions(rows: $rows),
-				'onlyIn' => $this->exclusiveActions(rows: $rows),
-			]
-		);
-	}//end compareRoles()
+		return $rows;
+	}//end compared()
 
 	/**
 	 * The role name to actions map a register declares.
@@ -319,6 +324,26 @@ class PermissionsAuditController extends Controller {
 	 * @return array<string, array<int, string>> Role name to its declared actions.
 	 */
 	private function roleActionsOf(Register $register): array {
+		$map = [];
+		foreach ($this->roleDefinitions(register: $register) as $definition) {
+			if (is_array($definition) === false || isset($definition['name']) === false) {
+				continue;
+			}
+
+			$map[(string)$definition['name']] = $this->declaredActions(definition: $definition);
+		}
+
+		return $map;
+	}//end roleActionsOf()
+
+	/**
+	 * The role definitions a register's configuration carries, as written.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<mixed> The `roles` list, or none when it is not a list.
+	 */
+	private function roleDefinitions(Register $register): array {
 		$configuration = $register->getConfiguration();
 		$definitions = [];
 		if (is_array($configuration) === true) {
@@ -329,22 +354,24 @@ class PermissionsAuditController extends Controller {
 			return [];
 		}
 
-		$map = [];
-		foreach ($definitions as $definition) {
-			if (is_array($definition) === false || isset($definition['name']) === false) {
-				continue;
-			}
+		return $definitions;
+	}//end roleDefinitions()
 
-			$actions = ($definition['actions'] ?? []);
-			if (is_array($actions) === false) {
-				$actions = [];
-			}
-
-			$map[(string)$definition['name']] = array_values(array_filter($actions, 'is_string'));
+	/**
+	 * The string actions one role definition declares.
+	 *
+	 * @param array<string, mixed> $definition The role definition.
+	 *
+	 * @return array<int, string> Its actions.
+	 */
+	private function declaredActions(array $definition): array {
+		$actions = ($definition['actions'] ?? []);
+		if (is_array($actions) === false) {
+			$actions = [];
 		}
 
-		return $map;
-	}//end roleActionsOf()
+		return array_values(array_filter($actions, 'is_string'));
+	}//end declaredActions()
 
 	/**
 	 * The roles the caller asked about, or all of them.
@@ -411,6 +438,45 @@ class PermissionsAuditController extends Controller {
 	}//end exclusiveActions()
 
 	/**
+	 * The deny rules of the registers, then of the schemas, a preview covers.
+	 *
+	 * @param string|null $register Optional register filter (id|uuid|slug).
+	 * @param string|null $schema   Optional schema filter (id|uuid|slug).
+	 *
+	 * @return array<int, array<string, mixed>> The report entries.
+	 */
+	private function previewRules(?string $register, ?string $schema): array {
+		return array_merge(
+			$this->rulesOf(entities: $this->scope->registers(filter: $register), level: 'register'),
+			$this->rulesOf(entities: $this->scope->schemas(filter: $schema), level: 'schema')
+		);
+	}//end previewRules()
+
+	/**
+	 * Flatten the deny rules of registers or schemas into report entries.
+	 *
+	 * @param array<int, Register|Schema> $entities The registers or schemas.
+	 * @param string                                             $level    Where their blocks live.
+	 *
+	 * @return array<int, array<string, mixed>> One entry per verb and principal, in entity order.
+	 */
+	private function rulesOf(array $entities, string $level): array {
+		$rules = [];
+		foreach ($entities as $entity) {
+			$rules = array_merge(
+				$rules,
+				$this->rulesIn(
+					authorization: $entity->getAuthorization(),
+					level: $level,
+					subject: (string)($entity->getSlug() ?? $entity->getTitle() ?? '')
+				)
+			);
+		}
+
+		return $rules;
+	}//end rulesOf()
+
+	/**
 	 * Flatten one block's deny rules into report entries.
 	 *
 	 * @param array|null $authorization The block as written.
@@ -421,27 +487,54 @@ class PermissionsAuditController extends Controller {
 	 */
 	private function rulesIn(?array $authorization, string $level, string $subject): array {
 		$entries = [];
-
-		foreach ($this->denyResolver->denyBlock(authorization: $authorization) as $action => $rules) {
-			if (is_string($action) === false || is_array($rules) === false) {
-				continue;
-			}
-
+		foreach ($this->actionRules(authorization: $authorization) as $action => $rules) {
 			foreach ($rules as $rule) {
-				$entries[] = [
-					'level' => $level,
-					'subject' => $subject,
-					'action' => $action,
-					'principal' => $this->principalOf(rule: $rule),
-					'conditional' => (is_array($rule) === true && isset($rule['match']) === true),
-					'match' => $this->matchOf(rule: $rule),
-					'declared' => $this->catalogue->isGrantable($action),
-				];
+				$entries[] = $this->entry(rule: $rule, action: $action, level: $level, subject: $subject);
 			}
 		}
 
 		return $entries;
 	}//end rulesIn()
+
+	/**
+	 * The deny lists of one block, keyed by verb, skipping malformed entries.
+	 *
+	 * @param array|null $authorization The block as written.
+	 *
+	 * @return array<string, array<mixed>> Verb to its deny list.
+	 */
+	private function actionRules(?array $authorization): array {
+		$valid = [];
+		foreach ($this->denyResolver->denyBlock(authorization: $authorization) as $action => $rules) {
+			if (is_string($action) === true && is_array($rules) === true) {
+				$valid[$action] = $rules;
+			}
+		}
+
+		return $valid;
+	}//end actionRules()
+
+	/**
+	 * One report entry for one deny rule.
+	 *
+	 * @param mixed  $rule    The rule as written.
+	 * @param string $action  The verb it removes.
+	 * @param string $level   Where the block lives.
+	 * @param string $subject Which register or schema it belongs to.
+	 *
+	 * @return array<string, mixed> The entry.
+	 */
+	private function entry(mixed $rule, string $action, string $level, string $subject): array {
+		return [
+			'level' => $level,
+			'subject' => $subject,
+			'action' => $action,
+			'principal' => $this->principalOf(rule: $rule),
+			'conditional' => (is_array($rule) === true && isset($rule['match']) === true),
+			'match' => $this->matchOf(rule: $rule),
+			'declared' => $this->catalogue->isGrantable($action),
+		];
+	}//end entry()
 
 	/**
 	 * The `match` clause of one deny entry, or null when it has none.
@@ -477,15 +570,36 @@ class PermissionsAuditController extends Controller {
 			return null;
 		}
 
-		foreach (['principal', 'group', 'role', 'user'] as $key) {
-			$value = ($rule[$key] ?? null);
-			if (is_string($value) === true && $value !== '') {
-				return $value;
+		return $this->namedPrincipal(rule: $rule);
+	}//end principalOf()
+
+	/**
+	 * The first non-empty name an object entry gives, by key precedence.
+	 *
+	 * @param array<string, mixed> $rule The entry.
+	 *
+	 * @return string|null The principal, or null when it names none.
+	 */
+	private function namedPrincipal(array $rule): ?string {
+		foreach (self::PRINCIPAL_KEYS as $key) {
+			if ($this->isName(value: ($rule[$key] ?? null)) === true) {
+				return $rule[$key];
 			}
 		}
 
 		return null;
-	}//end principalOf()
+	}//end namedPrincipal()
+
+	/**
+	 * Whether a value is a usable principal name.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a non-empty string.
+	 */
+	private function isName(mixed $value): bool {
+		return is_string($value) === true && $value !== '';
+	}//end isName()
 
 
 }//end class

@@ -5327,7 +5327,7 @@ parameters:
 		-
 			message: "#^Access to an undefined property Sabre\\\\VObject\\\\Document\\:\\:\\$VTODO\\.$#"
 			count: 2
-			path: lib/Service/TaskService.php
+			path: lib/Service/TaskVtodoDocument.php
 
 		-
 			message: "#^Parameter \\$calDavBackend of method OCA\\\\OpenRegister\\\\Service\\\\TaskService\\:\\:__construct\\(\\) has invalid type OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"

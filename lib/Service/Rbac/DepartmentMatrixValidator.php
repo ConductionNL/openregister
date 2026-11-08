@@ -331,7 +331,10 @@ class DepartmentMatrixValidator {
 		}
 
 		foreach ($where as $key => $value) {
-			$finding = $this->whereKeyFinding(name: $name, key: (string)$key, value: $value, properties: $properties, field: $field);
+			$finding = (
+				$this->whereKeyNameFinding(name: $name, key: (string)$key, properties: $properties, field: $field)
+				?? $this->whereValueFinding(name: $name, key: (string)$key, value: $value)
+			);
 			if ($finding !== null) {
 				$findings[] = $finding;
 			}
@@ -341,17 +344,16 @@ class DepartmentMatrixValidator {
 	}//end whereFindings()
 
 	/**
-	 * The finding for one `where` condition, or null when it reads.
+	 * The finding for the field one `where` condition names, or null when it reads.
 	 *
 	 * @param string               $name       The row, as messages name it.
 	 * @param string               $key        The property the condition is on.
-	 * @param mixed                $value      The condition.
 	 * @param array<string, mixed> $properties The schema's properties.
 	 * @param string               $field      The matrix field.
 	 *
 	 * @return array{code: string, message: string}|null The finding.
 	 */
-	private function whereKeyFinding(string $name, string $key, mixed $value, array $properties, string $field): ?array {
+	private function whereKeyNameFinding(string $name, string $key, array $properties, string $field): ?array {
 		if ($key === $field) {
 			return [
 				'code' => 'matrix.where-repeats-field',
@@ -367,6 +369,19 @@ class DepartmentMatrixValidator {
 			];
 		}
 
+		return null;
+	}//end whereKeyNameFinding()
+
+	/**
+	 * The finding for the value of one `where` condition, or null when it reads.
+	 *
+	 * @param string $name  The row, as messages name it.
+	 * @param string $key   The property the condition is on.
+	 * @param mixed  $value The condition.
+	 *
+	 * @return array{code: string, message: string}|null The finding.
+	 */
+	private function whereValueFinding(string $name, string $key, mixed $value): ?array {
 		if ((new MatrixRowWhere())->condition(value: $value) === null) {
 			return [
 				'code' => 'matrix.bad-where-value',
@@ -376,6 +391,6 @@ class DepartmentMatrixValidator {
 		}
 
 		return null;
-	}//end whereKeyFinding()
+	}//end whereValueFinding()
 
 }//end class

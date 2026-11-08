@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
+use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCP\IGroupManager;
@@ -91,10 +92,8 @@ final class LockHandlerReleaseReportTest extends TestCase {
 			$this->magic,
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(LoggerInterface::class),
-			$this->session,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(SchemaMapper::class),
 			$this->createMock(AdvisoryLockStore::class),
+			new LockAuthorization($this->session, $this->createMock(IGroupManager::class), $this->createMock(SchemaMapper::class)),
 			$this->createMock(RunLockRegistry::class)
 		);
 	}

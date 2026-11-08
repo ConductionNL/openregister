@@ -529,9 +529,11 @@ class FlowRunService implements FlowRunServiceInterface {
 		return new FlowRunGuard(
 			mapper: $this->mapper,
 			logger: $this->logger,
-			runUuid: (string)$run->getUuid(),
-			startedAt: microtime(true),
-			budget: $this->runtimeBudgetSeconds(flow: $flow)
+			clock: new FlowRunGuardClock(
+				runUuid: (string)$run->getUuid(),
+				startedAt: microtime(true),
+				budget: $this->runtimeBudgetSeconds(flow: $flow)
+			)
 		);
 
 	}//end guardFor()

@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\BrokenReference;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use Psr\Log\LoggerInterface;
 
@@ -248,10 +249,12 @@ final class ReferenceValidator {
 	 */
 	private static function malformedUrl(ReferenceCheck $check): ReferenceValidationException {
 		return new ReferenceValidationException(
-			propertyName: $check->propertyName,
-			referencedUuid: $check->uuid,
-			targetSchemaSlug: $check->targetSchemaSlug,
-			targetRegister: $check->register,
+			reference: new BrokenReference(
+				propertyName: $check->propertyName,
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->targetSchemaSlug,
+				targetRegister: $check->register
+			),
 			message: sprintf(
 				'External URL reference "%s" is malformed: scheme MUST be http or https and host MUST parse.',
 				$check->uuid
