@@ -55,7 +55,7 @@ use Throwable;
 /**
  * Records and releases the object locks a flow run holds.
  */
-class RunLockRegistry {
+class RunLockRegistry implements RunLockReleaseInterface {
 
 	/**
 	 * Constructor.

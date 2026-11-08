@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
-use OCA\OpenRegister\Service\Object\RunLockRegistry;
+use OCA\OpenRegister\Service\Object\RunLockReleaseInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowTokenRouter;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -176,7 +176,7 @@ class FlowRunWorker extends TimedJob {
 	 * @param FlowClaimMapper|null $claims Place claims, for the abandoned-claim reaper.
 	 * @param FlowStreamMapper|null $streams Run streams, for failing an abandoned branch.
 	 * @param FlowLocatorInterface|null $flows Resolves the run's flow, for the abandoned step's `onError` policy.
-	 * @param RunLockRegistry|null $locks Run-held object locks, for the orphaned-lock sweep.
+	 * @param RunLockReleaseInterface|null $locks Run-held object locks, for the orphaned-lock sweep.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This worker is the one
 	 * cron entry point for run lifecycle work, and each pass it makes needs a
@@ -196,7 +196,7 @@ class FlowRunWorker extends TimedJob {
 		private readonly ?FlowClaimMapper $claims = null,
 		private readonly ?FlowStreamMapper $streams = null,
 		private readonly ?FlowLocatorInterface $flows = null,
-		private readonly ?RunLockRegistry $locks = null,
+		private readonly ?RunLockReleaseInterface $locks = null,
 	) {
 		parent::__construct(time: $time);
 		// A FLOOR, not a schedule. `setInterval` says "not more often than
