@@ -881,13 +881,28 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return '_';
 		}
 
+		return $this->cacheableObjectUuid(object: $object);
+	}//end objectCacheScope()
+
+	/**
+	 * The UUID of an object whose verdict may be cached, or null when it may not.
+	 *
+	 * An object without a UUID, or with its own authorization block, is never cached.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return string|null The UUID
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function cacheableObjectUuid(ObjectEntity $object): ?string {
 		$uuid = $object->getUuid();
 		if ($uuid === null || $uuid === '' || empty($object->getAuthorization()) === false) {
 			return null;
 		}
 
 		return $uuid;
-	}//end objectCacheScope()
+	}//end cacheableObjectUuid()
 
 	/**
 	 * Detect whether a schema's authorization block contains any
@@ -911,22 +926,49 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		foreach ($authorization as $entries) {
-			if (is_array($entries) === false) {
-				continue;
-			}
-
-			foreach ($entries as $entry) {
-				if (is_array($entry) === true
-					&& isset($entry['match']) === true
-					&& empty($entry['match']) === false
-				) {
-					return true;
-				}
+			if ($this->entriesHaveMatchRule(entries: $entries) === true) {
+				return true;
 			}
 		}
 
 		return false;
 	}//end schemaHasMatchRule()
+
+	/**
+	 * Whether one action's rule list carries a non-empty `match` rule.
+	 *
+	 * @param mixed $entries The rule list (anything else carries none).
+	 *
+	 * @return bool True when a rule has a non-empty match
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function entriesHaveMatchRule(mixed $entries): bool {
+		if (is_array($entries) === false) {
+			return false;
+		}
+
+		foreach ($entries as $entry) {
+			if ($this->isMatchRuleEntry(entry: $entry) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end entriesHaveMatchRule()
+
+	/**
+	 * Whether one rule entry carries a non-empty `match`.
+	 *
+	 * @param mixed $entry The rule entry.
+	 *
+	 * @return bool True for a rule with a non-empty match
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function isMatchRuleEntry(mixed $entry): bool {
+		return is_array($entry) === true && isset($entry['match']) === true && empty($entry['match']) === false;
+	}//end isMatchRuleEntry()
 
 	/**
 	 * Evaluate the full RBAC rule chain for a permission check.
@@ -2664,28 +2706,50 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return array<string>|null Unique group IDs, or null when broadcast.
 	 */
 	private function resolveReadGroupIds(?array $authorization): ?array {
-		if (empty($authorization) === true) {
-			return null;
-		}
-
-		if (isset($authorization['read']) === false) {
-			return null;
-		}
-
-		$readEntries = $authorization['read'];
-		if (is_array($readEntries) === false || $readEntries === []) {
+		$readEntries = $this->nonEmptyReadEntries(authorization: $authorization);
+		if ($readEntries === null) {
 			return null;
 		}
 
 		$groupIds = array_unique($this->extractGroupIdsFromReadEntries(readEntries: $readEntries));
 
-		$isBroadcast = in_array('public', $groupIds, true) || in_array('admin', $groupIds, true);
-		if ($isBroadcast === true) {
+		if ($this->isBroadcastReadGroupSet(groupIds: $groupIds) === true) {
 			return null;
 		}
 
 		return $groupIds;
 	}//end resolveReadGroupIds()
+
+	/**
+	 * The `read` rule list of an authorization block, or null when absent, empty or not a list.
+	 *
+	 * @param array|null $authorization The authorization block.
+	 *
+	 * @return array|null The read entries
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function nonEmptyReadEntries(?array $authorization): ?array {
+		$readEntries = ($authorization['read'] ?? null);
+		if (is_array($readEntries) === false || $readEntries === []) {
+			return null;
+		}
+
+		return $readEntries;
+	}//end nonEmptyReadEntries()
+
+	/**
+	 * Whether a read group set admits everybody (`public`) or is admin-only (`admin`).
+	 *
+	 * @param array<int, string> $groupIds The read group ids.
+	 *
+	 * @return bool True when the set is a broadcast
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function isBroadcastReadGroupSet(array $groupIds): bool {
+		return in_array('public', $groupIds, true) || in_array('admin', $groupIds, true);
+	}//end isBroadcastReadGroupSet()
 
 	/**
 	 * Extract group identifier strings from a read-rule entry list.
@@ -2699,18 +2763,35 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private function extractGroupIdsFromReadEntries(array $readEntries): array {
 		$groupIds = [];
 		foreach ($readEntries as $entry) {
-			if (is_string($entry) === true) {
-				$groupIds[] = $entry;
-				continue;
-			}
-
-			if (is_array($entry) === true && isset($entry['group']) === true && is_string($entry['group']) === true) {
-				$groupIds[] = $entry['group'];
+			$groupId = $this->readEntryGroupId(entry: $entry);
+			if ($groupId !== null) {
+				$groupIds[] = $groupId;
 			}
 		}
 
 		return $groupIds;
 	}//end extractGroupIdsFromReadEntries()
+
+	/**
+	 * The group id of one read entry: a bare string, or the string `group` of a rule.
+	 *
+	 * @param mixed $entry The read entry.
+	 *
+	 * @return string|null The group id, or null when the entry names none
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function readEntryGroupId(mixed $entry): ?string {
+		if (is_string($entry) === true) {
+			return $entry;
+		}
+
+		if (is_array($entry) === true && is_string($entry['group'] ?? null) === true) {
+			return $entry['group'];
+		}
+
+		return null;
+	}//end readEntryGroupId()
 
 	/**
 	 * Collect the user IDs of all members of the given Nextcloud groups.
@@ -3113,62 +3194,110 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
 	 */
 	private function resolveAuthorizationRaw(Schema $schema, ?ObjectEntity $object = null): ?array {
-		$schemaAuthorization = $schema->getAuthorization();
-
 		// Compute the schema-or-register baseline first.
-		if (empty($schemaAuthorization) === false) {
-			$baseline = $this->expandRoles(authorization: $schemaAuthorization, schema: $schema);
-		} else {
-			$baseline = null;
-			$register = $this->getRegisterForSchema(schema: $schema);
-			if ($register !== null) {
-				$registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
-				if (empty($registerAuth) === false) {
-					$baseline = $this->expandRoles(authorization: $registerAuth, schema: $schema);
-				}
-			}
-		}
+		$baseline = $this->baselineAuthorization(schema: $schema);
 
 		// Wave-12 Fix 5: layer per-object overrides on top.
 		if ($object === null) {
 			return $baseline;
 		}
 
-		$objectAuth = $object->getAuthorization();
-		if (empty($objectAuth) === false && is_array($objectAuth) === true) {
-			$expandedObjectAuth = $this->expandRoles(authorization: $objectAuth, schema: $schema);
-			if ($baseline === null) {
-				return $expandedObjectAuth;
-			}
+		return $this->layerObjectAuthorization(baseline: $baseline, object: $object, schema: $schema);
+	}//end resolveAuthorizationRaw()
 
-			// Action-by-action override: keys present on the object replace the
-			// schema/register values for the same key. Keys NOT on the object
-			// inherit from the baseline. This lets a schema author publish a
-			// base policy and let individual objects narrow or widen specific
-			// actions (e.g. seal an audited record by overriding `update` /
-			// `delete` to `["admin"]` only).
-			$merged = array_replace($baseline, $expandedObjectAuth);
-
-			// 🔴 The `deny` key is the ONE key that unions rather than
-			// replaces. Under `array_replace`, an object declaring its own deny
-			// would DROP the deny written on its schema — so writing a deny on
-			// the object would REMOVE one, and "a deny is not overridden by a
-			// narrower rule" would hold at every level except the one an author
-			// edits most. Unioning is what makes the precedence rule true of
-			// the whole cascade rather than of part of it.
-			$mergedDeny = $this->denyResolver()->mergeDeny(
-				baseline: $this->denyResolver()->denyBlock(authorization: $baseline),
-				override: $this->denyResolver()->denyBlock(authorization: $expandedObjectAuth)
-			);
-			if ($mergedDeny !== []) {
-				$merged[DenyResolver::DENY_KEY] = $mergedDeny;
-			}
-
-			return $merged;
+	/**
+	 * The schema's expanded authorization, or its first register's when the schema has none.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array|null The baseline, or null when neither declares one
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function baselineAuthorization(Schema $schema): ?array {
+		$schemaAuthorization = $schema->getAuthorization();
+		if (empty($schemaAuthorization) === false) {
+			return $this->expandRoles(authorization: $schemaAuthorization, schema: $schema);
 		}
 
-		return $baseline;
-	}//end resolveAuthorizationRaw()
+		$register = $this->getRegisterForSchema(schema: $schema);
+		if ($register === null) {
+			return null;
+		}
+
+		$registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
+		if (empty($registerAuth) === true) {
+			return null;
+		}
+
+		return $this->expandRoles(authorization: $registerAuth, schema: $schema);
+	}//end baselineAuthorization()
+
+	/**
+	 * Layer an object's own authorization over the baseline.
+	 *
+	 * @param array|null   $baseline The schema-or-register baseline.
+	 * @param ObjectEntity $object   The object.
+	 * @param Schema       $schema   The schema (for role expansion).
+	 *
+	 * @return array|null The effective authorization
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function layerObjectAuthorization(?array $baseline, ObjectEntity $object, Schema $schema): ?array {
+		$objectAuth = $object->getAuthorization();
+		if (empty($objectAuth) === true || is_array($objectAuth) === false) {
+			return $baseline;
+		}
+
+		return $this->mergeObjectAuthorization(
+			baseline: $baseline,
+			override: $this->expandRoles(authorization: $objectAuth, schema: $schema)
+		);
+	}//end layerObjectAuthorization()
+
+	/**
+	 * Merge an object's expanded authorization over a baseline: replace per action, union deny.
+	 *
+	 * Without a baseline the object's authorization is the whole answer.
+	 *
+	 * @param array|null $baseline The schema-or-register baseline.
+	 * @param array $override The object's expanded authorization.
+	 *
+	 * @return array The merged authorization
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function mergeObjectAuthorization(?array $baseline, array $override): array {
+		if ($baseline === null) {
+			return $override;
+		}
+
+		// Action-by-action override: keys present on the object replace the
+		// schema/register values for the same key. Keys NOT on the object
+		// inherit from the baseline. This lets a schema author publish a
+		// base policy and let individual objects narrow or widen specific
+		// actions (e.g. seal an audited record by overriding `update` /
+		// `delete` to `["admin"]` only).
+		$merged = array_replace($baseline, $override);
+
+		// 🔴 The `deny` key is the ONE key that unions rather than
+		// replaces. Under `array_replace`, an object declaring its own deny
+		// would DROP the deny written on its schema — so writing a deny on
+		// the object would REMOVE one, and "a deny is not overridden by a
+		// narrower rule" would hold at every level except the one an author
+		// edits most. Unioning is what makes the precedence rule true of
+		// the whole cascade rather than of part of it.
+		$mergedDeny = $this->denyResolver()->mergeDeny(
+			baseline: $this->denyResolver()->denyBlock(authorization: $baseline),
+			override: $this->denyResolver()->denyBlock(authorization: $override)
+		);
+		if ($mergedDeny !== []) {
+			$merged[DenyResolver::DENY_KEY] = $mergedDeny;
+		}
+
+		return $merged;
+	}//end mergeObjectAuthorization()
 
 	/**
 	 * Remove the `mcp` scope from a block, leaving enforcement exactly as it
@@ -3262,24 +3391,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		// grant), so a cluster-wide lock-down is not silently softened by an
 		// exception on one of the two RBAC code paths.
 		try {
-			$resolved = null;
-
-			// Step 1: schema-level authorization (strict boolean; non-bool = unset).
-			$auth = $schema->getAuthorization();
-			if (is_array($auth) === true && array_key_exists('inheritFromPublic', $auth) === true) {
-				$resolved = $this->coerceStrictBoolOrLog(value: $auth['inheritFromPublic'], level: 'schema', schemaId: $schemaId);
-			}
-
-			// Step 2: register-level authorization. Conservative across multiple
-			// registers — see resolveRegisterInheritFromPublic().
-			if ($resolved === null) {
-				$resolved = $this->resolveRegisterInheritFromPublic(schemaId: $schemaId);
-			}
-
-			// Step 3: tenant-wide IAppConfig default.
-			if ($resolved === null) {
-				$resolved = $this->inheritFromPublicTenantDefault();
-			}
+			$resolved = $this->cascadeInheritFromPublic(schema: $schema, schemaId: $schemaId);
 		} catch (\Throwable $e) {
 			$resolved = $this->inheritFromPublicTenantDefault();
 			$this->logger->error(
@@ -3300,6 +3412,45 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $resolved;
 	}//end resolveInheritFromPublic()
+
+	/**
+	 * The inheritFromPublic cascade: schema, then registers, then the tenant default.
+	 *
+	 * @param Schema   $schema   The schema.
+	 * @param int|null $schemaId The schema id.
+	 *
+	 * @return bool The resolved flag
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function cascadeInheritFromPublic(Schema $schema, ?int $schemaId): bool {
+		// Step 1: schema-level authorization (strict boolean; non-bool = unset).
+		// Step 2: register-level authorization. Conservative across multiple
+		// registers — see resolveRegisterInheritFromPublic().
+		// Step 3: tenant-wide IAppConfig default.
+		return $this->schemaInheritFromPublic(schema: $schema, schemaId: $schemaId)
+			?? $this->resolveRegisterInheritFromPublic(schemaId: $schemaId)
+			?? $this->inheritFromPublicTenantDefault();
+	}//end cascadeInheritFromPublic()
+
+	/**
+	 * The schema's own inheritFromPublic flag, or null when unset or not a boolean.
+	 *
+	 * @param Schema   $schema   The schema.
+	 * @param int|null $schemaId The schema id.
+	 *
+	 * @return bool|null The flag
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function schemaInheritFromPublic(Schema $schema, ?int $schemaId): ?bool {
+		$auth = $schema->getAuthorization();
+		if (is_array($auth) === true && array_key_exists('inheritFromPublic', $auth) === true) {
+			return $this->coerceStrictBoolOrLog(value: $auth['inheritFromPublic'], level: 'schema', schemaId: $schemaId);
+		}
+
+		return null;
+	}//end schemaInheritFromPublic()
 
 	/**
 	 * Read the tenant-wide inheritFromPublic default from IAppConfig.
@@ -3346,10 +3497,53 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 
-		$registerIds = [];
+		$registerIds = $this->registerIdsWithSchema(schemaId: $schemaId);
+		if ($registerIds === null) {
+			return null;
+		}
+
+		return $this->foldRegisterInheritFromPublic(registerIds: $registerIds, schemaId: $schemaId);
+	}//end resolveRegisterInheritFromPublic()
+
+	/**
+	 * Fold the registers' flags: one false wins at once, else true when any is true, else null.
+	 *
+	 * @param array<int, int> $registerIds The register ids.
+	 * @param int             $schemaId    The schema id (for logging).
+	 *
+	 * @return bool|null The folded flag
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function foldRegisterInheritFromPublic(array $registerIds, int $schemaId): ?bool {
+		$verdict = null;
+		foreach ($registerIds as $registerId) {
+			$value = $this->registerInheritFromPublic(registerId: $registerId, schemaId: $schemaId);
+			if ($value === false) {
+				// Most-restrictive wins: one explicit false (or an unresolvable
+				// register) disables inheritance.
+				return false;
+			}
+
+			$verdict = ($value ?? $verdict);
+		}
+
+		return $verdict;
+	}//end foldRegisterInheritFromPublic()
+
+	/**
+	 * The ids of every register holding a schema, or null when they cannot be listed.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return array<int, int>|null The register ids
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function registerIdsWithSchema(int $schemaId): ?array {
 		try {
 			$registerMapper = $this->container->get(RegisterMapperInterface::class);
-			$registerIds = $registerMapper->getAllRegisterIdsWithSchema(schemaId: $schemaId);
+			return $registerMapper->getAllRegisterIdsWithSchema(schemaId: $schemaId);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[PermissionHandler] Failed to list registers for schema; skipping register cascade',
@@ -3357,38 +3551,33 @@ class PermissionHandler implements PermissionHandlerInterface {
 			);
 			return null;
 		}
+	}//end registerIdsWithSchema()
 
-		$sawTrue = false;
-		foreach ($registerIds as $registerId) {
-			try {
-				$registerAuth = $this->getRegisterAuthorization(registerId: $registerId);
-			} catch (AuthorizationUnresolvableException $e) {
-				// Fail-closed: most-restrictive-wins, so an unresolvable register
-				// disables `public` inheritance rather than silently skipping it.
-				return false;
-			}
-
-			if (is_array($registerAuth) === false || array_key_exists('inheritFromPublic', $registerAuth) === false) {
-				continue;
-			}
-
-			$value = $this->coerceStrictBoolOrLog(value: $registerAuth['inheritFromPublic'], level: 'register', schemaId: $schemaId);
-			if ($value === false) {
-				// Most-restrictive wins: one explicit false disables inheritance.
-				return false;
-			}
-
-			if ($value === true) {
-				$sawTrue = true;
-			}
-		}//end foreach
-
-		if ($sawTrue === true) {
-			return true;
+	/**
+	 * One register's inheritFromPublic flag: false when unresolvable, null when unset.
+	 *
+	 * @param int $registerId The register id.
+	 * @param int $schemaId   The schema id (for logging).
+	 *
+	 * @return bool|null The flag
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function registerInheritFromPublic(int $registerId, int $schemaId): ?bool {
+		try {
+			$registerAuth = $this->getRegisterAuthorization(registerId: $registerId);
+		} catch (AuthorizationUnresolvableException $e) {
+			// Fail-closed: most-restrictive-wins, so an unresolvable register
+			// disables `public` inheritance rather than silently skipping it.
+			return false;
 		}
 
-		return null;
-	}//end resolveRegisterInheritFromPublic()
+		if (is_array($registerAuth) === false || array_key_exists('inheritFromPublic', $registerAuth) === false) {
+			return null;
+		}
+
+		return $this->coerceStrictBoolOrLog(value: $registerAuth['inheritFromPublic'], level: 'register', schemaId: $schemaId);
+	}//end registerInheritFromPublic()
 
 	/**
 	 * Strictly coerce an inheritFromPublic cascade value to bool, or null when unset.
@@ -3405,7 +3594,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool|null The boolean value, or null when the value is not a real boolean.
 	 */
 	private function coerceStrictBoolOrLog(mixed $value, string $level, ?int $schemaId): ?bool {
-		if ($value === true || $value === false) {
+		if (is_bool($value) === true) {
 			return $value;
 		}
 
@@ -3676,8 +3865,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @return bool True when the caller is authorised; false (fail-closed) otherwise.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Anonymous guard + admin bypass + literal-vs-role entry handling are each one irreducible branch.
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
 	 */
 	public function isTransitionAuthorized(array $authorizationList, ?string $userId, Schema $schema): bool {
@@ -3686,53 +3873,128 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		// Anonymous callers can never satisfy a group-based transition gate.
-		if ($userId === null || $userId === '') {
+		// Anonymous or unknown callers can never satisfy a group-based transition gate.
+		$userGroups = $this->transitionCallerGroups(userId: $userId);
+		if ($userGroups === null) {
 			return false;
 		}
-
-		$userObj = $this->userManager->get($userId);
-		if ($userObj === null) {
-			return false;
-		}
-
-		$userGroups = $this->groupManager->getUserGroupIds($userObj);
 
 		// Admin bypass — consistent with every other verdict in this handler.
 		if (in_array(needle: 'admin', haystack: $userGroups, strict: true) === true) {
 			return true;
 		}
 
-		$userGroupSet = array_flip($userGroups);
+		return $this->transitionListAdmits(authorizationList: $authorizationList, userGroupSet: array_flip($userGroups), schema: $schema);
+	}//end isTransitionAuthorized()
+
+	/**
+	 * Whether any entry of a transition authorization list admits the caller.
+	 *
+	 * @param array<int, mixed>  $authorizationList Group ids / `{role}` entries.
+	 * @param array<string, int> $userGroupSet      The caller's group ids as keys.
+	 * @param Schema             $schema            Schema the transition belongs to.
+	 *
+	 * @return bool True when an entry admits the caller
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
+	 */
+	private function transitionListAdmits(array $authorizationList, array $userGroupSet, Schema $schema): bool {
 		$roleGroupMap = null;
-
 		foreach ($authorizationList as $entry) {
-			// Literal NC group id.
-			if (is_string($entry) === true) {
-				if ($entry !== '' && isset($userGroupSet[$entry]) === true) {
-					return true;
-				}
-
-				continue;
+			if ($this->transitionEntryAdmits(entry: $entry, userGroupSet: $userGroupSet, schema: $schema, roleGroupMap: $roleGroupMap) === true) {
+				return true;
 			}
-
-			// Named-role indirection: { "role": "<name>" } → assigned groups.
-			if (is_array($entry) === true && isset($entry['role']) === true && is_string($entry['role']) === true) {
-				if ($roleGroupMap === null) {
-					$roleGroupMap = $this->resolveTransitionRoleGroups(schema: $schema);
-				}
-
-				$groupsForRole = ($roleGroupMap[$entry['role']] ?? []);
-				foreach ($groupsForRole as $groupId) {
-					if (is_string($groupId) === true && isset($userGroupSet[$groupId]) === true) {
-						return true;
-					}
-				}
-			}
-		}//end foreach
+		}
 
 		return false;
-	}//end isTransitionAuthorized()
+	}//end transitionListAdmits()
+
+	/**
+	 * The group ids of a transition caller, or null for an anonymous or unknown caller.
+	 *
+	 * @param string|null $userId Caller uid, or null for an anonymous principal.
+	 *
+	 * @return array<int, string>|null The caller's group ids
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
+	 */
+	private function transitionCallerGroups(?string $userId): ?array {
+		if ((string)$userId === '') {
+			return null;
+		}
+
+		$userObj = $this->userManager->get($userId);
+		if ($userObj === null) {
+			return null;
+		}
+
+		return $this->groupManager->getUserGroupIds($userObj);
+	}//end transitionCallerGroups()
+
+	/**
+	 * Whether one transition authorization entry admits the caller.
+	 *
+	 * A bare string is a literal NC group id; `{ "role": "<name>" }` expands to the
+	 * groups assigned to that role (resolved once, on first use, into $roleGroupMap).
+	 * Anything else admits nobody.
+	 *
+	 * @param mixed                                   $entry        The entry.
+	 * @param array<string, int>                      $userGroupSet The caller's group ids as keys.
+	 * @param Schema                                  $schema       Schema the transition belongs to.
+	 * @param array<string, array<int, string>>|null $roleGroupMap The role map, or null when not resolved yet.
+	 *
+	 * @return bool True when the entry admits the caller
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
+	 */
+	private function transitionEntryAdmits(mixed $entry, array $userGroupSet, Schema $schema, ?array &$roleGroupMap): bool {
+		// Literal NC group id.
+		if (is_string($entry) === true) {
+			return $entry !== '' && isset($userGroupSet[$entry]) === true;
+		}
+
+		// Named-role indirection: { "role": "<name>" } → assigned groups.
+		if ($this->isTransitionRoleEntry(entry: $entry) === false) {
+			return false;
+		}
+
+		$roleGroupMap ??= $this->resolveTransitionRoleGroups(schema: $schema);
+
+		return $this->anyGroupInSet(groups: ($roleGroupMap[$entry['role']] ?? []), userGroupSet: $userGroupSet);
+	}//end transitionEntryAdmits()
+
+	/**
+	 * Whether an entry is shaped `{ "role": "<name>" }` with a string name.
+	 *
+	 * @param mixed $entry The entry.
+	 *
+	 * @return bool True for a named-role entry
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
+	 */
+	private function isTransitionRoleEntry(mixed $entry): bool {
+		return is_array($entry) === true && isset($entry['role']) === true && is_string($entry['role']) === true;
+	}//end isTransitionRoleEntry()
+
+	/**
+	 * Whether any string group id in a list is one of the caller's groups.
+	 *
+	 * @param array<int, mixed>  $groups       The group ids.
+	 * @param array<string, int> $userGroupSet The caller's group ids as keys.
+	 *
+	 * @return bool True when one matches
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-declarative-per-transition-authorization-gate
+	 */
+	private function anyGroupInSet(array $groups, array $userGroupSet): bool {
+		foreach ($groups as $groupId) {
+			if (is_string($groupId) === true && isset($userGroupSet[$groupId]) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyGroupInSet()
 
 	/**
 	 * Build a `roleName => [groupId, ...]` map from a schema's
@@ -3750,15 +4012,13 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return array<string, array<int, string>> Map of role name to assigned NC group ids.
 	 */
 	private function resolveTransitionRoleGroups(Schema $schema): array {
-		$authorization = $schema->getAuthorization();
-		if (is_array($authorization) === false || isset($authorization['roles']) === false
-			|| is_array($authorization['roles']) === false
-		) {
+		$roles = ($schema->getAuthorization()['roles'] ?? null);
+		if (is_array($roles) === false) {
 			return [];
 		}
 
 		$map = [];
-		foreach ($authorization['roles'] as $roleName => $groups) {
+		foreach ($roles as $roleName => $groups) {
 			if (is_string($roleName) === false) {
 				continue;
 			}
