@@ -145,6 +145,7 @@ final class DbRegistrar {
 		TaskSequenceMapperInterface::class => TaskSequenceMapper::class,
 		TimeTrackerLinkMapperInterface::class => TimeTrackerLinkMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,
+		TranslationSourceLanguageBackfillInterface::class => TranslationMapper::class,
 		\OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface::class => \OCA\OpenRegister\Db\VerwerkingsactiviteitMapper::class,
 		WebhookLogMapperInterface::class => WebhookLogMapper::class,
 		WebhookMapperInterface::class => WebhookMapper::class,
