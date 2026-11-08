@@ -52,7 +52,7 @@ use OCP\IRequest;
 /**
  * Reads the decisions an update request carries.
  */
-class CredentialUpdateRequest {
+class CredentialUpdateRequest implements CredentialUpdateRequestInterface {
 	/**
 	 * The `brokeredcredential` schema's maxLength for `name`.
 	 */
