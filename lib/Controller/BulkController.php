@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
 use OCA\OpenRegister\Controller\Support\BulkControllerServices;
+use OCA\OpenRegister\Controller\Support\BulkSaveSummary;
 use OCA\OpenRegister\Controller\Support\BulkStore;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -42,6 +43,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
 use OCP\AppFramework\Controller;
@@ -402,7 +404,7 @@ class BulkController extends Controller {
 		$cascadeCount = $result['cascade_count'];
 
 		// `success` REPORTS THE SHORTFALL, as the bulk save path already does
-		// (see writeBatch()). A row this endpoint refused is a row the caller
+		// (see bulkSaveResponse()). A row this endpoint refused is a row the caller
 		// still believes it deleted, and a constant `true` said exactly that:
 		// the live symptom of the filter bug was a 200 reading `success: true,
 		// requested_count: 1, deleted_count: 0` over an untouched object.
@@ -461,7 +463,7 @@ class BulkController extends Controller {
 
 		$this->db->beginTransaction();
 		try {
-			$response = $this->writeBatch(objects: $objects, register: $register, schema: $schema, stream: false, partial: false);
+			$response = $this->writeCheckedBatch(objects: $objects, register: $register, schema: $schema, partial: false);
 		} catch (\Throwable $e) {
 			$this->db->rollBack();
 			throw $e;
@@ -554,86 +556,75 @@ class BulkController extends Controller {
 	}//end atomicRollbackResponse()
 
 	/**
-	 * Write a resolved batch through whichever path the caller asked for.
+	 * Write a batch row at a time, for administrators only.
 	 *
-	 * `stream` is opt-in and defaults to the existing behaviour, because neither
-	 * path is universally better and the caller is the one who knows the payload.
+	 * Streaming puts each row through saveObject(), which engages the
+	 * reference-validation cache — repeated targets resolve from memory — and
+	 * consumes the payload lazily. It also isolates failures per row rather than
+	 * failing the whole call, which is why its `success` reflects the failed
+	 * count instead of being a constant: a caller reading only the HTTP status
+	 * would otherwise take a partial import for a complete one.
+	 *
+	 * @param array    $objects  Rows to write.
+	 * @param int      $register Resolved register id.
+	 * @param int|null $schema   Resolved schema id, or null for a mixed-schema batch.
+	 * @param bool     $partial  Whether the caller opted into best-effort semantics.
+	 *
+	 * @return JSONResponse The batch outcome, or 403 for a caller who is no administrator.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function writeStreamedBatch(array $objects, int $register, int|null $schema, bool $partial): JSONResponse {
+		$requestedCount = count($objects);
+
+		// Each streamed row goes straight to the save handler, past the per-row
+		// create, update, draft and organisation checks of the default path.
+		if ($this->manageGate()->callerIsAdministrator() === false) {
+			return new JSONResponse(
+				data: ['error' => 'Streaming bulk saves are for administrators. Send the batch without "stream".'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$status = $this->store->objectService->saveObjectsStreaming(
+			objects: $objects,
+			register: $register,
+			schema: $schema
+		);
+
+		$savedCount = ($status->getCreatedCount() + $status->getUpdatedCount());
+		$accounted = ($savedCount + $status->getUnchangedCount());
+
+		return $this->bulkSaveResponse(
+			summary: new BulkSaveSummary(
+				successMessage: 'Bulk save operation completed (streaming)',
+				savedCount: $savedCount,
+				requestedCount: $requestedCount,
+				extra: ['saved_objects' => $status->toArray()]
+			),
+			outcome: $this->saveOutcome(result: $status, requestedCount: $requestedCount, accountedCount: $accounted),
+			partial: $partial
+		);
+	}//end writeStreamedBatch()
+
+	/**
+	 * Write a batch through the checked default path.
 	 *
 	 * The default uses MagicMapper's ultraFastBulkSave: fastest writes, but it
 	 * never consults the reference-validation cache, so rows that reference each
 	 * other cost N×M database round-trips resolving them.
 	 *
-	 * Streaming puts each row through saveObject(), which engages that cache —
-	 * repeated targets resolve from memory — and consumes the payload lazily. It
-	 * also isolates failures per row rather than failing the whole call, which is
-	 * why its `success` reflects the failed count instead of being a constant: a
-	 * caller reading only the HTTP status would otherwise take a partial import
-	 * for a complete one.
-	 *
-	 * Defaulting streaming on would silently slow down flat payloads, and
-	 * choosing automatically would need a threshold nobody has measured — so it
-	 * is a decision the caller makes rather than one inferred here.
-	 *
-	 * Both paths report a shortfall the same way — see {@see bulkSaveResponse()}.
-	 * A row this endpoint refused is a row the caller still believes it stored,
-	 * so neither path may answer `success: true` unless every submitted row is
-	 * accounted for.
-	 *
-	 * @param array $objects Rows to write.
-	 * @param int $register Resolved register id.
-	 * @param int|null $schema Resolved schema id, or null for a mixed-schema batch.
-	 * @param bool $stream Whether to use the row-at-a-time path.
-	 * @param bool $partial Whether the caller opted into best-effort semantics.
+	 * @param array    $objects  Rows to write.
+	 * @param int      $register Resolved register id.
+	 * @param int|null $schema   Resolved schema id, or null for a mixed-schema batch.
+	 * @param bool     $partial  Whether the caller opted into best-effort semantics.
 	 *
 	 * @return JSONResponse The batch outcome.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) BulkSaveOutcome::from*() are named
-	 *   constructors on a value object, not calls into a collaborator — there is
-	 *   nothing here a test would want to substitute.
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function writeBatch(
-		array $objects,
-		int $register,
-		?int $schema,
-		bool $stream,
-		bool $partial,
-	): JSONResponse {
+	private function writeCheckedBatch(array $objects, int $register, int|null $schema, bool $partial): JSONResponse {
 		$requestedCount = count($objects);
-
-		if ($stream === true) {
-			// Each streamed row goes straight to the save handler, past the per-row
-			// create, update, draft and organisation checks of the default path.
-			if ($this->manageGate()->callerIsAdministrator() === false) {
-				return new JSONResponse(
-					data: ['error' => 'Streaming bulk saves are for administrators. Send the batch without "stream".'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
-			}
-
-			$status = $this->store->objectService->saveObjectsStreaming(
-				objects: $objects,
-				register: $register,
-				schema: $schema
-			);
-
-			$savedCount = ($status->getCreatedCount() + $status->getUpdatedCount());
-			$accounted = ($savedCount + $status->getUnchangedCount());
-
-			return $this->bulkSaveResponse(
-				successMessage: 'Bulk save operation completed (streaming)',
-				savedCount: $savedCount,
-				requestedCount: $requestedCount,
-				outcome: BulkSaveOutcome::fromBatchStatus(
-					status: $status,
-					requestedCount: $requestedCount,
-					accountedCount: $accounted
-				),
-				extra: ['saved_objects' => $status->toArray()],
-				partial: $partial
-			);
-		}
 
 		$savedObjects = $this->objectService->saveObjects(
 			objects: $objects,
@@ -650,19 +641,47 @@ class BulkController extends Controller {
 		$accounted = ($savedCount + (int)($statistics['unchanged'] ?? 0));
 
 		return $this->bulkSaveResponse(
-			successMessage: 'Bulk save operation completed successfully',
-			savedCount: $savedCount,
-			requestedCount: $requestedCount,
-			outcome: BulkSaveOutcome::fromBulkResult(
-				bulkResult: $savedObjects,
+			summary: new BulkSaveSummary(
+				successMessage: 'Bulk save operation completed successfully',
+				savedCount: $savedCount,
 				requestedCount: $requestedCount,
-				accountedCount: $accounted
+				extra: ['saved_objects' => $savedObjects]
 			),
-			extra: ['saved_objects' => $savedObjects],
+			outcome: $this->saveOutcome(result: $savedObjects, requestedCount: $requestedCount, accountedCount: $accounted),
 			partial: $partial
 		);
+	}//end writeCheckedBatch()
 
-	}//end writeBatch()
+	/**
+	 * What a save path lost, and why.
+	 *
+	 * @param BatchOperationStatusInterface|array $result         The streaming status, or the bulk result.
+	 * @param int                                 $requestedCount Rows the caller submitted.
+	 * @param int                                 $accountedCount Rows written or left unchanged.
+	 *
+	 * @return BulkSaveOutcome
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) BulkSaveOutcome::from*() are named
+	 *   constructors on a value object, not calls into a collaborator — there is
+	 *   nothing here a test would want to substitute.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function saveOutcome(BatchOperationStatusInterface|array $result, int $requestedCount, int $accountedCount): BulkSaveOutcome {
+		if ($result instanceof BatchOperationStatusInterface) {
+			return BulkSaveOutcome::fromBatchStatus(
+				status: $result,
+				requestedCount: $requestedCount,
+				accountedCount: $accountedCount
+			);
+		}
+
+		return BulkSaveOutcome::fromBulkResult(
+			bulkResult: $result,
+			requestedCount: $requestedCount,
+			accountedCount: $accountedCount
+		);
+	}//end saveOutcome()
 
 	/**
 	 * Build the bulk-save response so a shortfall can never read as a success.
@@ -688,34 +707,24 @@ class BulkController extends Controller {
 	 * has never been transactional — which is why `saved_count` stays in the
 	 * body of the failure response: it is what the caller must reconcile against.
 	 *
-	 * @param string $successMessage Message used when nothing failed.
-	 * @param int $savedCount Rows created or updated.
-	 * @param int $requestedCount Rows the caller submitted.
+	 * @param BulkSaveSummary $summary What the path wrote, and its success message and payload.
 	 * @param BulkSaveOutcome $outcome What the save path lost, and why.
-	 * @param array $extra Path-specific payload merged into the response body.
-	 * @param bool $partial Whether the caller opted into best-effort semantics.
+	 * @param bool            $partial Whether the caller opted into best-effort semantics.
 	 *
 	 * @return JSONResponse The batch outcome.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function bulkSaveResponse(
-		string $successMessage,
-		int $savedCount,
-		int $requestedCount,
-		BulkSaveOutcome $outcome,
-		array $extra,
-		bool $partial,
-	): JSONResponse {
+	private function bulkSaveResponse(BulkSaveSummary $summary, BulkSaveOutcome $outcome, bool $partial): JSONResponse {
 		$failedCount = $outcome->failedCount;
 		$complete = $outcome->isComplete();
 
-		$message = $successMessage;
+		$message = $summary->successMessage;
 		if ($complete === false) {
 			$message = sprintf(
 				'Bulk save incomplete: %d of %d objects were rejected and NOT written. See "failures" for the reason per object.',
 				$failedCount,
-				$requestedCount
+				$summary->requestedCount
 			);
 		}
 
@@ -729,13 +738,13 @@ class BulkController extends Controller {
 				[
 					'success' => $complete,
 					'message' => $message,
-					'saved_count' => $savedCount,
+					'saved_count' => $summary->savedCount,
 					'failed_count' => $failedCount,
-					'requested_count' => $requestedCount,
+					'requested_count' => $summary->requestedCount,
 					'failures' => $outcome->failures,
 					'partial' => $partial,
 				],
-				$extra
+				$summary->extra
 			),
 			statusCode: $status
 		);
@@ -747,7 +756,7 @@ class BulkController extends Controller {
 	 *
 	 * Request body:
 	 *  - `objects`  (required) the rows to write.
-	 *  - `stream`   (optional) row-at-a-time write path, for administrators only — see writeBatch().
+	 *  - `stream`   (optional) row-at-a-time write path, for administrators only — see writeStreamedBatch().
 	 *  - `partial`  (optional) opt into best-effort semantics: a batch with
 	 *               rejected rows still answers 200 instead of 422. It does NOT
 	 *               make `success` true — see bulkSaveResponse() for why.
@@ -857,14 +866,27 @@ class BulkController extends Controller {
 			return $this->writeAtomicBatch(objects: $objects, register: $resolved['register'], schema: $schemaToUse);
 		}
 
-		// See writeBatch() for why `stream` is opt-in, and bulkSaveResponse()
-		// for what `partial` does and does not change.
-		return $this->writeBatch(
+		// `stream` is opt-in and defaults to the existing behaviour, because
+		// neither path is universally better and the caller is the one who knows
+		// the payload. Defaulting streaming on would silently slow down flat
+		// payloads, and choosing automatically would need a threshold nobody has
+		// measured. Both paths report a shortfall the same way — see
+		// bulkSaveResponse() for what `partial` does and does not change.
+		$partial = filter_var(($data['partial'] ?? false), FILTER_VALIDATE_BOOLEAN);
+		if (filter_var(($data['stream'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
+			return $this->writeStreamedBatch(
+				objects: $objects,
+				register: $resolved['register'],
+				schema: $schemaToUse,
+				partial: $partial
+			);
+		}
+
+		return $this->writeCheckedBatch(
 			objects: $objects,
 			register: $resolved['register'],
 			schema: $schemaToUse,
-			stream: filter_var(($data['stream'] ?? false), FILTER_VALIDATE_BOOLEAN),
-			partial: filter_var(($data['partial'] ?? false), FILTER_VALIDATE_BOOLEAN)
+			partial: $partial
 		);
 	}//end writeRequestedBatch()
 
