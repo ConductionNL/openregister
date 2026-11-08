@@ -46,8 +46,8 @@ use OCA\OpenRegister\Controller\Support\ProcessingLogPolicy;
 use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IRequest;
 
