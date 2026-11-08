@@ -126,21 +126,8 @@ class DepartmentMatrixValidator {
 			return [['code' => 'matrix.not-object', 'message' => 'authorization.matrix must be an object.']];
 		}
 
-		$findings = [];
-
 		$field = trim((string)($matrix['field'] ?? ''));
-		if ($field === '') {
-			$findings[] = ['code' => 'matrix.no-field', 'message' => 'A matrix must name the object field it keys on.'];
-		} elseif (array_key_exists($field, $properties) === false) {
-			// Named rather than described: a matrix on `afdeling` where the
-			// schema declares `department` compiles to a condition on a column
-			// that does not exist, which the SQL path answers by dropping the
-			// predicate.
-			$findings[] = [
-				'code' => 'matrix.unknown-field',
-				'message' => 'The matrix field "' . $field . '" is not a property of this schema.',
-			];
-		}
+		$findings = $this->fieldFindings(field: $field, properties: $properties);
 
 		$findings = array_merge($findings, $this->validateUserSource(source: ($matrix['userSource'] ?? null)));
 
@@ -149,6 +136,35 @@ class DepartmentMatrixValidator {
 			$this->rowsFindings(matrix: $matrix, properties: $properties, field: $field)
 		);
 	}//end validate()
+
+	/**
+	 * The findings on the field a matrix keys on.
+	 *
+	 * @param string $field      The trimmed field name.
+	 * @param array  $properties The schema's properties.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function fieldFindings(string $field, array $properties): array {
+		if ($field === '') {
+			return [['code' => 'matrix.no-field', 'message' => 'A matrix must name the object field it keys on.']];
+		}
+
+		if (array_key_exists($field, $properties) === false) {
+			// Named rather than described: a matrix on `afdeling` where the
+			// schema declares `department` compiles to a condition on a column
+			// that does not exist, which the SQL path answers by dropping the
+			// predicate.
+			return [
+				[
+					'code' => 'matrix.unknown-field',
+					'message' => 'The matrix field "' . $field . '" is not a property of this schema.',
+				],
+			];
+		}
+
+		return [];
+	}//end fieldFindings()
 
 	/**
 	 * Findings for `rowsFrom` and the declared rows.
@@ -163,18 +179,11 @@ class DepartmentMatrixValidator {
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 */
 	private function rowsFindings(array $matrix, array $properties, string $field): array {
-		$findings = [];
 		$rowsFrom = ($matrix[self::ROWS_FROM_KEY] ?? null);
-		if ($rowsFrom !== null && (is_string($rowsFrom) === false || trim($rowsFrom) === '')) {
-			$findings[] = ['code' => 'matrix.bad-rows-from', 'message' => 'rowsFrom must name a provider.'];
-		}
-
-		if (array_key_exists('fileVerbs', $matrix) === true && is_bool($matrix['fileVerbs']) === false) {
-			$findings[] = ['code' => 'matrix.bad-file-verbs', 'message' => 'fileVerbs must be true or false.'];
-		}
+		$findings = array_merge($this->rowsFromFindings(rowsFrom: $rowsFrom), $this->fileVerbsFindings(matrix: $matrix));
 
 		$rows = ($matrix['rows'] ?? null);
-		if ($rowsFrom !== null && ($rows === null || $rows === [])) {
+		if ($this->providerSuppliesRows(rowsFrom: $rowsFrom, rows: $rows) === true) {
 			return $findings;
 		}
 
@@ -183,6 +192,48 @@ class DepartmentMatrixValidator {
 			$this->validateRows(rows: $rows, properties: $properties, field: $field)
 		);
 	}//end rowsFindings()
+
+	/**
+	 * The finding on a `rowsFrom` that names no provider.
+	 *
+	 * @param mixed $rowsFrom The declared provider, or null.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function rowsFromFindings(mixed $rowsFrom): array {
+		if ($rowsFrom !== null && (is_string($rowsFrom) === false || trim($rowsFrom) === '')) {
+			return [['code' => 'matrix.bad-rows-from', 'message' => 'rowsFrom must name a provider.']];
+		}
+
+		return [];
+	}//end rowsFromFindings()
+
+	/**
+	 * The finding on a `fileVerbs` that is not a boolean.
+	 *
+	 * @param array $matrix The matrix declaration.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function fileVerbsFindings(array $matrix): array {
+		if (array_key_exists('fileVerbs', $matrix) === true && is_bool($matrix['fileVerbs']) === false) {
+			return [['code' => 'matrix.bad-file-verbs', 'message' => 'fileVerbs must be true or false.']];
+		}
+
+		return [];
+	}//end fileVerbsFindings()
+
+	/**
+	 * Whether a provider stands in for rows the declaration leaves out.
+	 *
+	 * @param mixed $rowsFrom The declared provider, or null.
+	 * @param mixed $rows     The declared rows.
+	 *
+	 * @return bool True when the rows are not the declaration's to check.
+	 */
+	private function providerSuppliesRows(mixed $rowsFrom, mixed $rows): bool {
+		return $rowsFrom !== null && ($rows === null || $rows === []);
+	}//end providerSuppliesRows()
 
 	/**
 	 * Findings for the user source.
@@ -201,12 +252,7 @@ class DepartmentMatrixValidator {
 			];
 		}
 
-		$hasGroups = (($source['groups'] ?? false) === true);
-		$hasPrefix = (trim((string)($source['groupPrefix'] ?? '')) !== '');
-		$hasSchema = (trim((string)($source['schema'] ?? '')) !== ''
-			&& trim((string)($source['property'] ?? '')) !== '');
-
-		if ($hasGroups === false && $hasPrefix === false && $hasSchema === false) {
+		if ($this->declaresAUserSource(source: $source) === false) {
 			return [
 				[
 					'code' => 'matrix.bad-user-source',
@@ -217,6 +263,32 @@ class DepartmentMatrixValidator {
 
 		return [];
 	}//end validateUserSource()
+
+	/**
+	 * Whether a userSource declares groups: true, a groupPrefix, or a schema and property pair.
+	 *
+	 * @param array $source The userSource declaration.
+	 *
+	 * @return bool True when at least one form is declared.
+	 */
+	private function declaresAUserSource(array $source): bool {
+		$hasGroups = (($source['groups'] ?? false) === true);
+		$hasPrefix = (trim((string)($source['groupPrefix'] ?? '')) !== '');
+
+		return $hasGroups === true || $hasPrefix === true || $this->declaresASchemaSource(source: $source);
+	}//end declaresAUserSource()
+
+	/**
+	 * Whether a userSource names both a schema and a property.
+	 *
+	 * @param array $source The userSource declaration.
+	 *
+	 * @return bool True when both are non-blank.
+	 */
+	private function declaresASchemaSource(array $source): bool {
+		return (trim((string)($source['schema'] ?? '')) !== ''
+			&& trim((string)($source['property'] ?? '')) !== '');
+	}//end declaresASchemaSource()
 
 	/**
 	 * Findings for the rows.
@@ -287,6 +359,19 @@ class DepartmentMatrixValidator {
 			return $findings;
 		}
 
+		return array_merge($findings, $this->actionFindings(actions: $actions, index: $index));
+	}//end rowFindings()
+
+	/**
+	 * A finding for every action of a row this engine does not resolve.
+	 *
+	 * @param array      $actions The row's actions.
+	 * @param string|int $index   The row's index.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function actionFindings(array $actions, string|int $index): array {
+		$findings = [];
 		foreach ($actions as $action) {
 			if (in_array(trim((string)$action), [...DepartmentMatrixCompiler::ACTIONS, ...$this->declaredActions], true) === false) {
 				$findings[] = [
@@ -298,7 +383,7 @@ class DepartmentMatrixValidator {
 		}
 
 		return $findings;
-	}//end rowFindings()
+	}//end actionFindings()
 
 	/**
 	 * Findings for one row's `where` and `until`.
@@ -317,19 +402,62 @@ class DepartmentMatrixValidator {
 	 */
 	private function whereFindings(array $row, string|int $index, array $properties, string $field): array {
 		$name = 'Row ' . (string)$index;
-		$findings = [];
-
-		$until = ($row[GrantConstraints::UNTIL_KEY] ?? null);
-		if ($until !== null && (is_string($until) === false || strtotime($until) === false)) {
-			$findings[] = ['code' => 'matrix.bad-until', 'message' => $name . ' has an end that is not a date.'];
-		}
+		$findings = $this->untilFindings(row: $row, name: $name);
 
 		$where = ($row['where'] ?? []);
-		if (is_array($where) === false || ($where !== [] && array_is_list($where) === true)) {
+		if ($this->isMalformedWhere(where: $where) === true) {
 			$findings[] = ['code' => 'matrix.bad-where', 'message' => $name . ': where must be an object.'];
 			return $findings;
 		}
 
+		$findings = array_merge(
+			$findings,
+			$this->whereEntryFindings(where: $where, name: $name, properties: $properties, field: $field)
+		);
+
+		return array_merge($findings, (new MatrixRowWhere())->crossingFindings(row: $row, name: $name));
+	}//end whereFindings()
+
+	/**
+	 * The finding on an `until` that is not a date.
+	 *
+	 * @param array  $row  The row.
+	 * @param string $name The row's name in messages.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function untilFindings(array $row, string $name): array {
+		$until = ($row[GrantConstraints::UNTIL_KEY] ?? null);
+		if ($until !== null && (is_string($until) === false || strtotime($until) === false)) {
+			return [['code' => 'matrix.bad-until', 'message' => $name . ' has an end that is not a date.']];
+		}
+
+		return [];
+	}//end untilFindings()
+
+	/**
+	 * Whether a `where` is not an object: not an array, or a non-empty list.
+	 *
+	 * @param mixed $where The declared `where`.
+	 *
+	 * @return bool True when it cannot be read as conditions.
+	 */
+	private function isMalformedWhere(mixed $where): bool {
+		return is_array($where) === false || ($where !== [] && array_is_list($where) === true);
+	}//end isMalformedWhere()
+
+	/**
+	 * One finding per `where` entry whose key or value is refused (key first).
+	 *
+	 * @param array  $where      The conditions.
+	 * @param string $name       The row's name in messages.
+	 * @param array  $properties The schema's properties.
+	 * @param string $field      The matrix field.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function whereEntryFindings(array $where, string $name, array $properties, string $field): array {
+		$findings = [];
 		foreach ($where as $key => $value) {
 			$finding = (
 				$this->whereKeyNameFinding(name: $name, key: (string)$key, properties: $properties, field: $field)
@@ -340,8 +468,8 @@ class DepartmentMatrixValidator {
 			}
 		}
 
-		return array_merge($findings, (new MatrixRowWhere())->crossingFindings(row: $row, name: $name));
-	}//end whereFindings()
+		return $findings;
+	}//end whereEntryFindings()
 
 	/**
 	 * The finding for the field one `where` condition names, or null when it reads.
