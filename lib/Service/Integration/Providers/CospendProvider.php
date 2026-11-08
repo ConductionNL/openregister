@@ -90,23 +90,43 @@ class CospendProvider extends AbstractIntegrationProvider {
 	private ?ContainerInterface $container;
 
 	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
+	 * @param LeafProviderPlatform       $platform          The DB connection, app manager and localisation.
 	 * @param CospendLinkMapperInterface $cospendLinkMapper Tier-2 link table mapper.
-	 * @param ContainerInterface|null $container Optional server-container override (tests).
+	 * @param ContainerInterface|null    $container         Optional server-container override (tests).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		LeafProviderPlatform $platform,
 		private CospendLinkMapperInterface $cospendLinkMapper,
 		?ContainerInterface $container = null,
 	) {
+		$this->db = $platform->db;
+		$this->appManager = $platform->appManager;
+		$this->l10n = $platform->l10n;
 		$this->container = $container;
 	}//end __construct()
 

@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Notifications\Db\NotificationSubscriptionMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -44,6 +45,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationSubscriptionsControllerServices;
 
 /**
  * DEPRECATED per-user (register, schema) notification subscription surface.
@@ -61,25 +63,43 @@ class NotificationSubscriptionsController extends Controller {
 	use NotificationRequestTrait;
 
 	/**
+	 * Subscription mapper.
+	 *
+	 * @var NotificationSubscriptionMapper
+	 */
+	private readonly NotificationSubscriptionMapper $mapper;
+
+	/**
+	 * Register mapper for permission check.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper for permission check.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
-	 * @param NotificationSubscriptionMapper $mapper Subscription mapper.
-	 * @param IUserSession $userSession Current-user session.
-	 * @param RegisterMapperInterface $registerMapper Register mapper for permission check.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for permission check.
+	 * @param IRequest                                    $request     Request.
+	 * @param NotificationSubscriptionsControllerServices $services    The subscription stores.
+	 * @param IUserSession                                $userSession Current-user session.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly NotificationSubscriptionMapper $mapper,
+		NotificationSubscriptionsControllerServices $services,
 		private readonly IUserSession $userSession,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
+		$this->mapper         = $services->mapper;
+		$this->registerMapper = $services->registerMapper;
+		$this->schemaMapper   = $services->schemaMapper;
 	}//end __construct()
 
 	/**

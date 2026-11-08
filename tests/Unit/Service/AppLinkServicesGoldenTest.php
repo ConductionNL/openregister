@@ -268,10 +268,8 @@ class AppLinkServicesGoldenTest extends TestCase {
 		$mapper->method('countByObjectUuid')->willReturn($rows);
 		return new EmailLinkService(
 			$mapper,
-			$this->createMock(IAppManager::class),
 			$this->createMock(IDBConnection::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(LoggerInterface::class)
+			new LinkServiceRuntime($this->createMock(IAppManager::class), $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class))
 		);
 	}//end emailService()
 

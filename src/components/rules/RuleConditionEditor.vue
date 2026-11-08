@@ -96,6 +96,9 @@
 					<template #column-op="{ value }">
 						<code>{{ value }}</code>
 					</template>
+					<template #column-description="{ value }">
+						{{ value }}
+					</template>
 				</CnDataTable>
 			</div>
 		</details>
@@ -157,7 +160,7 @@ export default {
 			return [
 				{ key: 'op', label: t('openregister', 'Operator') },
 				{ key: 'arity', label: t('openregister', 'Takes') },
-				{ key: 'description', label: t('openregister', 'What it does') },
+				{ key: 'description', label: t('openregister', 'What it does'), cellClass: 'cn-cell--wrap' },
 			]
 		},
 

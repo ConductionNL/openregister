@@ -3,7 +3,7 @@
 /**
  * Every built-in integration provider factory builds its service from the right container entries.
  *
- * `IntegrationRegistrar::registerBuiltinIntegrationProviders()` builds these services by
+ * `IntegrationWiring::registerBuiltinIntegrationProviders()` builds these services by
  * hand, so autowiring does not cover them. This runs each registered factory
  * against a container double and pins which container entries it reads, in
  * which order, and which class it returns.
@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;
 
-use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
+use OCA\OpenRegister\Service\Integration\IntegrationWiring;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -189,11 +189,11 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Service\LinkServiceRuntime',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\PollsProvider' => [
-			'OCA\OpenRegister\Db\PollLinkMapperInterface',
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
-			'OCP\IUserSession',
 			'OCP\IL10N',
+			'OCA\OpenRegister\Db\PollLinkMapperInterface',
+			'OCP\IUserSession',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\FlowProvider' => [
 			'OCA\OpenRegister\Db\FlowLinkMapperInterface',
@@ -329,7 +329,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			}
 		);
 
-		(new ReflectionMethod(IntegrationRegistrar::class, 'registerBuiltinIntegrationProviders'))->invoke(null, $context);
+		(new ReflectionMethod(IntegrationWiring::class, 'registerBuiltinIntegrationProviders'))->invoke(null, $context);
 
 		return $factories;
 	}//end registeredFactories()

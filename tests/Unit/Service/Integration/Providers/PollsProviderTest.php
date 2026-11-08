@@ -48,6 +48,7 @@ use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
 
 /**
  * Unit tests for PollsProvider.
@@ -127,11 +128,13 @@ class PollsProviderTest extends TestCase {
 
 	public function testMetadata(): void {
 		$provider = new PollsProvider(
+			platform: new LeafProviderPlatform(
+				db: $this->createMock(IDBConnection::class),
+				appManager: $this->buildAppManager(true),
+				l10n: $this->buildL10n(),
+			),
 			pollLinkMapper: $this->buildMapper([]),
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(true),
 			userSession: $this->buildUserSession('admin'),
-			l10n: $this->buildL10n()
 		);
 
 		self::assertSame('polls', $provider->getId());
@@ -144,11 +147,13 @@ class PollsProviderTest extends TestCase {
 
 	public function testIsEnabledFalseWhenPollsMissing(): void {
 		$provider = new PollsProvider(
+			platform: new LeafProviderPlatform(
+				db: $this->createMock(IDBConnection::class),
+				appManager: $this->buildAppManager(false),
+				l10n: $this->buildL10n(),
+			),
 			pollLinkMapper: $this->buildMapper([]),
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(false),
 			userSession: $this->buildUserSession('admin'),
-			l10n: $this->buildL10n()
 		);
 		self::assertFalse($provider->isEnabled());
 		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
@@ -156,11 +161,13 @@ class PollsProviderTest extends TestCase {
 
 	public function testListEmptyWhenNoLinks(): void {
 		$provider = new PollsProvider(
+			platform: new LeafProviderPlatform(
+				db: $this->createMock(IDBConnection::class),
+				appManager: $this->buildAppManager(true),
+				l10n: $this->buildL10n(),
+			),
 			pollLinkMapper: $this->buildMapper([]),
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(true),
 			userSession: $this->buildUserSession('admin'),
-			l10n: $this->buildL10n()
 		);
 
 		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
@@ -212,11 +219,13 @@ class PollsProviderTest extends TestCase {
 		);
 
 		$provider = new PollsProvider(
+			platform: new LeafProviderPlatform(
+				db: $db,
+				appManager: $this->buildAppManager(true),
+				l10n: $this->buildL10n(),
+			),
 			pollLinkMapper: $this->buildMapper([$link]),
-			db: $db,
-			appManager: $this->buildAppManager(true),
 			userSession: $this->buildUserSession('admin'),
-			l10n: $this->buildL10n()
 		);
 
 		$rows = $provider->list(register: 'r', schema: 's', objectId: $uuid);
@@ -240,11 +249,13 @@ class PollsProviderTest extends TestCase {
 
 	public function testHealthOk(): void {
 		$provider = new PollsProvider(
+			platform: new LeafProviderPlatform(
+				db: $this->createMock(IDBConnection::class),
+				appManager: $this->buildAppManager(true),
+				l10n: $this->buildL10n(),
+			),
 			pollLinkMapper: $this->buildMapper([]),
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(true),
 			userSession: $this->buildUserSession('admin'),
-			l10n: $this->buildL10n()
 		);
 		$h = $provider->health();
 		self::assertSame('ok', $h['status']);
@@ -254,11 +265,13 @@ class PollsProviderTest extends TestCase {
 
 	public function testHealthUnavailable(): void {
 		$provider = new PollsProvider(
+			platform: new LeafProviderPlatform(
+				db: $this->createMock(IDBConnection::class),
+				appManager: $this->buildAppManager(false),
+				l10n: $this->buildL10n(),
+			),
 			pollLinkMapper: $this->buildMapper([]),
-			db: $this->createMock(IDBConnection::class),
-			appManager: $this->buildAppManager(false),
 			userSession: $this->buildUserSession('admin'),
-			l10n: $this->buildL10n()
 		);
 		$h = $provider->health();
 		self::assertSame('unavailable', $h['status']);

@@ -117,6 +117,21 @@ function mockStub(name) {
 }
 
 /**
+ * A cell without a slot as the library's formatValue draws it: text cut at
+ * 100 characters plus an ellipsis, an empty value as a dash.
+ *
+ * @param {*} value The cell value
+ * @return {string} What the library shows
+ */
+function mockCell(value) {
+	if (value === null || value === undefined || value === '') {
+		return '—'
+	}
+	const text = String(value)
+	return text.length > 100 ? `${text.substring(0, 100)}...` : text
+}
+
+/**
  * A stand-in for CnDataTable that draws its column labels and cell values
  * (or the `column-<key>` slot), so a golden compares what each cell reads.
  *
@@ -138,7 +153,7 @@ function mockTable() {
 						const slot = this.$slots[`column-${col.key}`]
 						return render(
 							'x-td',
-							slot ? slot({ row, value: row[col.key] }) : String(row[col.key] ?? '—'),
+							slot ? slot({ row, value: row[col.key] }) : mockCell(row[col.key]),
 						)
 					}),
 				),
@@ -198,6 +213,8 @@ const GOLDEN_OBJECTS = {
 	},
 }
 
+const LONG_TEXT = 'A long sentence that runs on. '.repeat(6)
+
 const mounted = []
 
 /**
@@ -209,6 +226,19 @@ const mounted = []
  */
 function markup(wrapper) {
 	return wrapper.html().replace(/<!--[\s\S]*?-->/g, '')
+}
+
+/**
+ * The columns of one table that opt in to wrapping.
+ *
+ * @param {object} wrapper The page
+ * @param {number} index Which table on the page
+ * @return {Array<string>} Their keys
+ */
+function wrappingColumns(wrapper, index = 0) {
+	return wrapper.findAllComponents({ name: 'CnDataTable' })[index].props('columns')
+		.filter((column) => column.cellClass === 'cn-cell--wrap')
+		.map((column) => column.key)
 }
 
 /**
@@ -274,6 +304,41 @@ describe('quality tables golden', () => {
 		await flushPromises()
 		expect(markup(wrapper.find('.histogramSection'))).toMatchSnapshot()
 		expect(markup(wrapper.find('.lowestQualitySection'))).toMatchSnapshot()
+	})
+
+	it('queue health: keeps long text whole and lets it wrap', async () => {
+		const wrapper = await mountWith(QueueHealthIndex, {
+			isLoading: false,
+			webhooks: [{ id: 1, name: LONG_TEXT }],
+			webhookStats: {},
+			webhookFailures: [{ id: 7, webhook: LONG_TEXT, eventClass: LONG_TEXT, errorMessage: LONG_TEXT }],
+		})
+		const cells = wrapper.findAll('x-td').map((cell) => cell.text())
+		expect(cells.filter((text) => text === LONG_TEXT.trim())).toHaveLength(4)
+		expect(wrappingColumns(wrapper, 0)).toEqual(['name'])
+		expect(wrappingColumns(wrapper, 1)).toEqual(['webhook', 'eventClass', 'errorMessage'])
+	})
+
+	it('quality: leaves a missing score blank', async () => {
+		const wrapper = await mountWith(QualityIndex, {
+			hasSelection: true,
+			isLoading: false,
+			qualityStats: { total: 1, average: 40, histogram: [] },
+			lowQualityObjects: [{ id: 'q1', qualityScore: null, qualityStatus: 'poor' }],
+			lowQualityTotal: 1,
+			lowQualityLimit: 20,
+			lowQualityOffset: 0,
+		})
+		const cells = wrapper.find('.lowestQualitySection').findAll('x-td').map((cell) => cell.text())
+		expect(cells).toEqual(['q1', '', 'poor'])
+	})
+
+	it('golden record: keeps a long override rationale whole and lets it wrap', async () => {
+		const wrapper = await mountWith(GoldenRecordDetail, {}, {
+			object: { id: 'g3', attributeProvenance: { phone: { override: true, overriddenBy: 'admin', rationale: LONG_TEXT } } },
+		})
+		expect(wrapper.findAll('x-td').map((cell) => cell.text())).toContain(LONG_TEXT.trim())
+		expect(wrappingColumns(wrapper)).toEqual(['attribute', 'source', 'confidence'])
 	})
 
 	for (const [name, object] of Object.entries(GOLDEN_OBJECTS)) {

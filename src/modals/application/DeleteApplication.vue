@@ -4,35 +4,24 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		:name="t('openregister', 'Delete Application')"
+		size="small"
+		closable
 		:message="deleteMessage"
-		@update:open="handleDialogClose">
-		<template #actions>
-			<CloseCancelButton :label="t('openregister', 'Cancel')" @click="navigationStore.setDialog(false)" />
-			<NcButton variant="error" @click="deleteApplication">
-				<template #icon>
-					<TrashCanOutline :size="20" />
-				</template>
-				{{ t('openregister', 'Delete') }}
-			</NcButton>
-		</template>
-	</NcDialog>
+		:closeLabel="t('openregister', 'Cancel')"
+		:confirmLabel="t('openregister', 'Delete')"
+		showConfirm
+		@cancel="navigationStore.setDialog(false)"
+		@confirm="deleteApplication" />
 </template>
 
 <script>
-import { NcButton, NcDialog } from '@nextcloud/vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 
 export default {
 	name: 'DeleteApplication',
-	components: {
-		NcDialog,
-		NcButton,
-		CloseCancelButton,
-		TrashCanOutline,
-	},
+	components: { ConfirmDialogFrame },
 
 	computed: {
 		/**
@@ -63,16 +52,6 @@ export default {
 				navigationStore.setDialog(false)
 			} catch (error) {
 				console.error('Error deleting application:', error)
-			}
-		},
-
-		/**
-		 * @param {boolean} open
-		 * @spec exclude modal open/close UI handler
-		 */
-		handleDialogClose(open) {
-			if (!open) {
-				navigationStore.setDialog(false)
 			}
 		},
 	},

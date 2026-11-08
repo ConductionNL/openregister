@@ -125,13 +125,31 @@ class FlowEngine {
 	private readonly FlowHopRouting $routing;
 
 	/**
+	 * Decides which exit a token takes.
+	 *
+	 * @var FlowTokenRouter
+	 */
+	private readonly FlowTokenRouter $router;
+
+	/**
+	 * Decides which items sit on which place.
+	 *
+	 * @var FlowItemPlacement
+	 */
+	private readonly FlowItemPlacement $placement;
+
+	/**
+	 * The ambient attribution stack, when there is one.
+	 *
+	 * @var FlowRunContext|null
+	 */
+	private readonly ?FlowRunContext $runContext;
+
+	/**
 	 * Constructor.
 	 *
-	 * $router and $placement come after $oversight, and are defaulted: unit tests
-	 * construct the engine positionally and one passes the oversight registry
-	 * third, so slotting a parameter in ahead of it would silently rebind that
-	 * argument — a test that still passes while checking nothing. Neither holds
-	 * state, so a locally-made one is indistinguishable from an injected one.
+	 * $services comes after $oversight, and is defaulted: unit tests construct
+	 * the engine positionally and one passes the oversight registry third.
 	 *
 	 * @param FlowDefinitionBuilder $builder The document -> Petri-net translator.
 	 * @param LoggerInterface $logger The logger.
@@ -139,29 +157,24 @@ class FlowEngine {
 	 *                                              engine stays unit-testable without a
 	 *                                              container; absent, nothing objects,
 	 *                                              exactly as an empty registry does.
-	 * @param FlowTokenRouter $router Decides which exit a token takes.
-	 * @param FlowItemPlacement $placement Decides which items sit on which place.
-	 * @param FlowRunContext|null $runContext The ambient attribution stack. Nullable
-	 *                                       so the engine stays unit-testable without
-	 *                                       a container; absent, writes are simply
-	 *                                       unattributed rather than mis-attributed.
-	 * @param FlowTaskMootness|null $mootness Told which places a routing decision
-	 *                                        cleared, so a user task waiting on one
-	 *                                        of them is terminated rather than
-	 *                                        orphaned. Nullable on the same terms;
-	 *                                        absent, run-terminality propagation is
-	 *                                        the only backstop.
+	 * @param FlowEngineServices $services The router, the item placement, the
+	 *                                     optional attribution stack and the
+	 *                                     optional mootness hook.
 	 */
 	public function __construct(
 		private readonly FlowDefinitionBuilder $builder,
 		private readonly LoggerInterface $logger,
 		private readonly ?FlowOversightRegistry $oversight = null,
-		private readonly FlowTokenRouter $router = new FlowTokenRouter(),
-		private readonly FlowItemPlacement $placement = new FlowItemPlacement(),
-		private readonly ?FlowRunContext $runContext = null,
-		?FlowTaskMootness $mootness = null,
+		FlowEngineServices $services=new FlowEngineServices(),
 	) {
-		$this->routing = new FlowHopRouting(router: $router, placement: $placement, mootness: $mootness);
+		$this->router     = $services->router;
+		$this->placement  = $services->placement;
+		$this->runContext = $services->runContext;
+		$this->routing    = new FlowHopRouting(
+			router: $services->router,
+			placement: $services->placement,
+			mootness: $services->mootness
+		);
 	}//end __construct()
 
 	/**

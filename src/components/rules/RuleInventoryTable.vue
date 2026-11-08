@@ -105,10 +105,10 @@ export default {
 		columns() {
 			return [
 				{ key: 'order', label: t('openregister', 'Order') },
-				{ key: 'label', label: t('openregister', 'Rule') },
+				{ key: 'label', label: t('openregister', 'Rule'), cellClass: 'cn-cell--wrap' },
 				{ key: 'kind', label: t('openregister', 'Kind') },
-				{ key: 'source', label: t('openregister', 'Declared in') },
-				{ key: 'lastRun', label: t('openregister', 'Last run') },
+				{ key: 'source', label: t('openregister', 'Declared in'), cellClass: 'cn-cell--wrap' },
+				{ key: 'lastRun', label: t('openregister', 'Last run'), cellClass: 'cn-cell--wrap' },
 				{ key: 'enabled', label: t('openregister', 'On') },
 			]
 		},
