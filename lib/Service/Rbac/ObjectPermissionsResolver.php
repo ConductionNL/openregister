@@ -198,36 +198,61 @@ class ObjectPermissionsResolver {
 	 * @return array<int, array<string, mixed>> The rules.
 	 */
 	private function roleGrantsIn(array $assignments, string $level, mixed $roleDefinitions): array {
-		$actionsByRole = $this->actionsByRole(roleDefinitions: $roleDefinitions);
+		$actionsByRole = (new RoleActionMap())->of(roleDefinitions: $roleDefinitions);
 
 		$rules = [];
 		foreach ($assignments as $roleName => $holders) {
-			if (is_string($roleName) === false || is_array($holders) === false) {
-				continue;
+			if (is_string($roleName) === true && is_array($holders) === true) {
+				$role = ['level' => $level, 'role' => $roleName, 'rule' => $holders];
+				$rules = [...$rules, ...$this->roleRules(role: $role, actions: ($actionsByRole[$roleName] ?? []))];
 			}
-
-			foreach (($actionsByRole[$roleName] ?? []) as $action) {
-				foreach ($holders as $holder) {
-					$principal = $this->principalOf(rule: $holder);
-					if ($principal === null) {
-						continue;
-					}
-
-					$rules[] = [
-						'principal' => $principal,
-						'action' => $action,
-						'level' => $level,
-						'role' => $roleName,
-						'rule' => $holders,
-						'conditional' => false,
-						'declared' => $this->catalogue->isGrantable($action),
-					];
-				}
-			}
-		}//end foreach
+		}
 
 		return $rules;
 	}//end roleGrantsIn()
+
+	/**
+	 * One rule per action of a role and principal its holders name.
+	 *
+	 * @param array{level: string, role: string, rule: array} $role    The level, role name and holder list.
+	 * @param array<int, string>                              $actions The role's actions.
+	 *
+	 * @return array<int, array<string, mixed>> The rules, action by action.
+	 */
+	private function roleRules(array $role, array $actions): array {
+		$rules = [];
+		foreach ($actions as $action) {
+			foreach ($role['rule'] as $holder) {
+				$principal = $this->principalOf(rule: $holder);
+				if ($principal !== null) {
+					$rules[] = $this->roleRule(principal: $principal, action: $action, role: $role);
+				}
+			}
+		}
+
+		return $rules;
+	}//end roleRules()
+
+	/**
+	 * The rule one role gives one principal for one action.
+	 *
+	 * @param string                                          $principal The principal.
+	 * @param string                                          $action    The action.
+	 * @param array{level: string, role: string, rule: array} $role      The level, role name and holder list.
+	 *
+	 * @return array<string, mixed> The rule.
+	 */
+	private function roleRule(string $principal, string $action, array $role): array {
+		return [
+			'principal' => $principal,
+			'action' => $action,
+			'level' => $role['level'],
+			'role' => $role['role'],
+			'rule' => $role['rule'],
+			'conditional' => false,
+			'declared' => $this->catalogue->isGrantable($action),
+		];
+	}//end roleRule()
 
 	/**
 	 * Fold one rule into the principal it names.
@@ -255,42 +280,6 @@ class ObjectPermissionsResolver {
 
 		return $into;
 	}//end fold()
-
-	/**
-	 * Flatten role definitions into a name to actions map.
-	 *
-	 * `extends` is NOT followed here, for the same reason it is not followed in
-	 * {@see ProvenanceResolver}: the hierarchy is resolved in PermissionHandlerInterface,
-	 * and a second walk of it could disagree with the one that decides. A caller
-	 * holding the resolved map passes that instead.
-	 *
-	 * @param mixed $roleDefinitions The register's role definitions.
-	 *
-	 * @return array<string, array<int, string>> Role name to its actions.
-	 */
-	private function actionsByRole(mixed $roleDefinitions): array {
-		if (is_array($roleDefinitions) === false) {
-			return [];
-		}
-
-		$map = [];
-		foreach ($roleDefinitions as $key => $definition) {
-			if (is_array($definition) === false) {
-				continue;
-			}
-
-			if (isset($definition['name']) === true && is_array(($definition['actions'] ?? null)) === true) {
-				$map[(string)$definition['name']] = array_values(array_filter($definition['actions'], 'is_string'));
-				continue;
-			}
-
-			if (is_string($key) === true) {
-				$map[$key] = array_values(array_filter($definition, 'is_string'));
-			}
-		}
-
-		return $map;
-	}//end actionsByRole()
 
 	/**
 	 * The principal one entry names.

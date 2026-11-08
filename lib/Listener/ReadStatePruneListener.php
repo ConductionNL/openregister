@@ -31,10 +31,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Listener\Support\HandlesObjectDeletion;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
-use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 
@@ -44,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * @template-implements IEventListener<ObjectDeletedEvent>
  */
 final class ReadStatePruneListener implements IEventListener {
+	use HandlesObjectDeletion;
 
 	/**
 	 * Constructor.
@@ -60,36 +62,36 @@ final class ReadStatePruneListener implements IEventListener {
 	}//end __construct()
 
 	/**
-	 * Handle the event by removing every read state tied to the object uuid.
+	 * Remove every read state tied to the object uuid and archive its orphaned notices.
 	 *
-	 * @param Event $event Dispatched event.
+	 * @param ObjectEntity $object The deleted object.
+	 * @param string       $uuid   Its uuid.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
-	public function handle(Event $event): void {
-		if (($event instanceof ObjectDeletedEvent) === false) {
-			return;
-		}
+	private function onObjectDeleted(ObjectEntity $object, string $uuid): void {
+		$this->readState->cleanupForObject(objectUuid: $uuid);
 
-		try {
-			$uuid = (string)$event->getObject()->getUuid();
-			if ($uuid === '') {
-				return;
-			}
+		// An unread notice about an object nobody can open any more can
+		// never be cleared by doing the work, so it is archived rather than
+		// left sitting unread for ever.
+		$this->clearing->archiveOrphaned(objectUuid: $uuid);
+	}//end onObjectDeleted()
 
-			$this->readState->cleanupForObject(objectUuid: $uuid);
-
-			// An unread notice about an object nobody can open any more can
-			// never be cleared by doing the work, so it is archived rather than
-			// left sitting unread for ever.
-			$this->clearing->archiveOrphaned(objectUuid: $uuid);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf('[ReadStatePruneListener] prune skipped: %s', $e->getMessage())
-			);
-		}//end try
-
-	}//end handle()
+	/**
+	 * Log the skipped prune; the deletion itself stands.
+	 *
+	 * @param \Throwable $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 */
+	private function onDeletionFailure(\Throwable $error): void {
+		$this->logger->debug(
+			sprintf('[ReadStatePruneListener] prune skipped: %s', $error->getMessage())
+		);
+	}//end onDeletionFailure()
 }//end class

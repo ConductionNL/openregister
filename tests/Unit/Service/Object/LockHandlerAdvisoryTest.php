@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
+use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -71,14 +72,12 @@ class LockHandlerAdvisoryTest extends TestCase {
 			$this->magicMapper,
 			$this->auditTrailMapper,
 			$this->logger,
-			$this->userSession,
-			$this->groupManager,
-			$this->schemaMapper,
 			// A REAL AdvisoryLockStore over the mocked app-config, so these
 			// tests keep exercising the advisory behaviour end to end through
 			// LockHandler rather than asserting against a mock of the very
 			// thing they exist to check.
-			new AdvisoryLockStore($this->appConfig, $this->userSession, $this->logger)
+			new AdvisoryLockStore($this->appConfig, $this->userSession, $this->logger),
+			new LockAuthorization($this->userSession, $this->groupManager, $this->schemaMapper)
 		);
 	}//end setUp()
 

@@ -29,6 +29,7 @@ namespace Unit\Service\Lifecycle;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecision;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSubject;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -101,10 +102,7 @@ class AutoTransitionPassTest extends TestCase {
 				}
 
 				return new AutoTransitionDecision(
-					uuid: $uuid,
-					register: $register,
-					schema: $schema,
-					schemaSlug: 'bezwaar',
+					subject: new AutoTransitionSubject(uuid: $uuid, register: $register, schema: $schema, schemaSlug: 'bezwaar'),
 					candidate: new AutoTransitionCandidate(
 						action: 'naar-' . $this->moves[$current],
 						from: $current,
@@ -348,10 +346,7 @@ class AutoTransitionPassTest extends TestCase {
 
 		$this->runner->method('decide')->willReturn(
 			new AutoTransitionDecision(
-				uuid: 'obj-1',
-				register: '1',
-				schema: '2',
-				schemaSlug: 'bezwaar',
+				subject: new AutoTransitionSubject(uuid: 'obj-1', register: '1', schema: '2', schemaSlug: 'bezwaar'),
 				candidate: new AutoTransitionCandidate('beslissen', 'open', 'besloten', 'sync'),
 				version: '1',
 				updated: null

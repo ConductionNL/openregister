@@ -62,6 +62,7 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
  */
 class RegistrySubscription extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * No subscription has ever been requested.
@@ -201,26 +202,4 @@ class RegistrySubscription extends Entity implements JsonSerializable {
 			'refusalReason' => $this->refusalReason,
 		];
 	}//end toSelfMirror()
-
-	/**
-	 * Serialise for diagnostics.
-	 *
-	 * @return array<string, mixed> The row as plain data.
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'registry' => $this->registry,
-			'identityValue' => $this->identityValue,
-			'state' => $this->state,
-			'lastUpdateAt' => $this->lastUpdateAt?->format('c'),
-			'lastUpdateSource' => $this->lastUpdateSource,
-			'refusalReason' => $this->refusalReason,
-			'createdAt' => $this->createdAt?->format('c'),
-			'updatedAt' => $this->updatedAt?->format('c'),
-		];
-	}//end jsonSerialize()
 }//end class

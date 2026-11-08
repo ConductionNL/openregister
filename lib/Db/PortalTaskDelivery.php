@@ -63,6 +63,7 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
  */
 class PortalTaskDelivery extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The two channels an ask travels by. Nothing Nextcloud-facing is a
@@ -310,28 +311,4 @@ class PortalTaskDelivery extends Entity implements JsonSerializable {
 
 		return $latest;
 	}//end latestRequestAt()
-
-	/**
-	 * Serialise for the API.
-	 *
-	 * @return array<string, mixed> The delivery as plain data.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'taskUuid' => $this->taskUuid,
-			'partyReference' => $this->partyReference,
-			'channel' => $this->channel,
-			'kind' => $this->kind,
-			'state' => $this->state,
-			'message' => $this->message,
-			'error' => $this->error,
-			'requestedAt' => $this->requestedAt?->format('c'),
-			'deliveredAt' => $this->deliveredAt?->format('c'),
-			'created' => $this->created?->format('c'),
-		];
-	}//end jsonSerialize()
 }//end class

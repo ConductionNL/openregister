@@ -28,6 +28,7 @@ use GuzzleHttp\Exception\RequestException;
 use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCP\Http\Client\IClient;
+use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -1098,54 +1099,72 @@ class GitHubHandler implements GitHubClientInterface {
 		string $commitMessage,
 		?string $fileSha = null,
 	): array {
-		$location = new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch);
+		$payload = self::publishPayload(content: $content, commitMessage: $commitMessage, branch: $branch, fileSha: $fileSha);
+		return $this->publish(location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch), payload: $payload);
+	}//end publishConfiguration()
+
+	/**
+	 * The Contents API body: base64 content, and the file SHA when it updates a file.
+	 *
+	 * @param string      $content       File content.
+	 * @param string      $commitMessage Commit message.
+	 * @param string      $branch        Branch name.
+	 * @param string|null $fileSha       SHA of the existing file, or null for a new file.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function publishPayload(string $content, string $commitMessage, string $branch, ?string $fileSha): array {
+		$payload = ['message' => $commitMessage, 'content' => base64_encode($content), 'branch' => $branch];
+		if ($fileSha !== null) {
+			$payload['sha'] = $fileSha;
+		}
+
+		return $payload;
+	}//end publishPayload()
+
+	/**
+	 * Publish a file and describe the commit, or turn the failure into a readable exception.
+	 *
+	 * @param GitHubFileLocation    $location The file.
+	 * @param array<string, string> $payload  The Contents API body.
+	 *
+	 * @return array{success: true, commit_sha: mixed, file_sha: mixed, commit_url: mixed, file_url: mixed}
+	 *
+	 * @throws Exception If the publish fails.
+	 */
+	private function publish(GitHubFileLocation $location, array $payload): array {
 		try {
-			$this->logger->info(
-				message: '[GitHubHandler] Publishing configuration to GitHub',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'owner' => $owner,
-					'repo' => $repo,
-					'path' => $path,
-					'branch' => $branch,
-					'is_update' => $fileSha !== null,
-				]
-			);
+			$context = ['owner' => $location->owner, 'repo' => $location->repo, 'path' => $location->path, 'branch' => $location->branch];
+			$context['is_update'] = isset($payload['sha']);
+			$this->logger->info(message: '[GitHubHandler] Publishing configuration to GitHub', context: ['file' => __FILE__, 'line' => __LINE__] + $context);
 
-			// The Contents API takes base64 content, and the file SHA when it updates a file.
-			$payload = [
-				'message' => $commitMessage,
-				'content' => base64_encode($content),
-				'branch' => $branch,
-			];
-			if ($fileSha !== null) {
-				$payload['sha'] = $fileSha;
-			}
-
-			$result = $this->putContents(location: $location, payload: $payload);
-
-			$this->logger->info(
-				message: '[GitHubHandler] Configuration published successfully',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'commit_sha' => $result['commit']['sha'] ?? null,
-					'file_sha' => $result['content']['sha'] ?? null,
-				]
-			);
-
-			return [
-				'success' => true,
-				'commit_sha' => $result['commit']['sha'] ?? null,
-				'file_sha' => $result['content']['sha'] ?? null,
-				'commit_url' => $result['commit']['html_url'] ?? null,
-				'file_url' => $result['content']['html_url'] ?? null,
-			];
+			return $this->published(result: $this->putContents(location: $location, payload: $payload));
 		} catch (GuzzleException $e) {
 			throw $this->publishFailure(exception: $e, location: $location);
-		}//end try
-	}//end publishConfiguration()
+		}
+	}//end publish()
+
+	/**
+	 * Log a successful publish and describe the commit and the file.
+	 *
+	 * @param mixed $result The decoded Contents API response.
+	 *
+	 * @return array{success: true, commit_sha: mixed, file_sha: mixed, commit_url: mixed, file_url: mixed}
+	 */
+	private function published(mixed $result): array {
+		$commitSha = $result['commit']['sha'] ?? null;
+		$fileSha = $result['content']['sha'] ?? null;
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'commit_sha' => $commitSha, 'file_sha' => $fileSha];
+		$this->logger->info(message: '[GitHubHandler] Configuration published successfully', context: $context);
+
+		return [
+			'success' => true,
+			'commit_sha' => $commitSha,
+			'file_sha' => $fileSha,
+			'commit_url' => $result['commit']['html_url'] ?? null,
+			'file_url' => $result['content']['html_url'] ?? null,
+		];
+	}//end published()
 
 	/**
 	 * Create or update a file through the GitHub Contents API.
@@ -1163,27 +1182,10 @@ class GitHubHandler implements GitHubClientInterface {
 		$encodedPath = $location->encodedPath();
 		$apiUrl = self::API_BASE."/repos/{$location->owner}/{$location->repo}/contents/{$encodedPath}";
 
-		$this->logger->debug(
-			message: '[GitHubHandler] GitHub API publish request',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'url' => $apiUrl,
-				'path' => $location->path,
-				'encoded_path' => $encodedPath,
-				'branch' => $location->branch,
-			]
-		);
+		$context = ['url' => $apiUrl, 'path' => $location->path, 'encoded_path' => $encodedPath, 'branch' => $location->branch];
+		$this->logger->debug(message: '[GitHubHandler] GitHub API publish request', context: ['file' => __FILE__, 'line' => __LINE__] + $context);
 
-		$response = $this->client->request(
-			'PUT',
-			$apiUrl,
-			[
-				'headers' => $this->getHeaders(),
-				'json' => $payload,
-			]
-		);
-
+		$response = $this->client->request('PUT', $apiUrl, ['headers' => $this->getHeaders(), 'json' => $payload]);
 		return json_decode($response->getBody(), true);
 	}//end putContents()
 
@@ -1205,19 +1207,9 @@ class GitHubHandler implements GitHubClientInterface {
 			$errorMessage = $this->publishErrorMessage(exception: $exception, location: $location) ?? $errorMessage;
 		}
 
-		$this->logger->error(
-			message: '[GitHubHandler] GitHub API publish failed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'error' => $errorMessage,
-				'status_code' => $statusCode,
-				'owner' => $location->owner,
-				'repo' => $location->repo,
-				'path' => $location->path,
-				'branch' => $location->branch,
-			]
-		);
+		$context = ['error' => $errorMessage, 'status_code' => $statusCode, 'owner' => $location->owner, 'repo' => $location->repo];
+		$context += ['path' => $location->path, 'branch' => $location->branch];
+		$this->logger->error(message: '[GitHubHandler] GitHub API publish failed', context: ['file' => __FILE__, 'line' => __LINE__] + $context);
 
 		return new Exception('Failed to publish configuration: '.$errorMessage);
 	}//end publishFailure()
@@ -1240,8 +1232,21 @@ class GitHubHandler implements GitHubClientInterface {
 			return null;
 		}
 
+		return self::publishStatusMessage(statusCode: $response->getStatusCode(), message: $message, location: $location);
+	}//end publishErrorMessage()
+
+	/**
+	 * GitHub's message for a failed publish, with context for a 404, 403 or 422.
+	 *
+	 * @param int                $statusCode The HTTP status.
+	 * @param mixed              $message    GitHub's own message.
+	 * @param GitHubFileLocation $location   The file that was being published.
+	 *
+	 * @return mixed
+	 */
+	private static function publishStatusMessage(int $statusCode, mixed $message, GitHubFileLocation $location): mixed {
 		$repoPath = $location->repoPath();
-		return match ($response->getStatusCode()) {
+		return match ($statusCode) {
 			404 => "Not Found - Repository '{$repoPath}', branch '{$location->branch}', "
 				."or path '{$location->path}' may not exist or you may not have access",
 			403 => 'Forbidden - You may not have write access to repository '
@@ -1250,7 +1255,7 @@ class GitHubHandler implements GitHubClientInterface {
 				."'{$location->branch}' exists and the path '{$location->path}' is valid",
 			default => $message,
 		};
-	}//end publishErrorMessage()
+	}//end publishStatusMessage()
 
 	/**
 	 * Get file SHA for a specific file (needed for updates)
@@ -1266,46 +1271,40 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
 	public function getFileSha(string $owner, string $repo, string $path, string $branch = 'main'): ?string {
+		// The path is URL-encoded per segment (it may contain slashes, spaces, etc.).
+		$location = new GitHubFileLocation(owner: $owner, repo: $repo, path: $path, branch: $branch);
 		try {
-			// URL encode the path for the GitHub API (path may contain slashes, spaces, etc.).
-			$pathSegments = explode('/', $path);
-			$encodedPathSegments = array_map('rawurlencode', $pathSegments);
-			$encodedPath = implode('/', $encodedPathSegments);
-
-			$response = $this->client->request(
-				'GET',
-				self::API_BASE . "/repos/{$owner}/{$repo}/contents/{$encodedPath}",
-				[
-					'query' => [
-						'ref' => $branch,
-					],
-					'headers' => $this->getHeaders(),
-				]
-			);
+			$url = self::API_BASE."/repos/{$owner}/{$repo}/contents/{$location->encodedPath()}";
+			$response = $this->client->request('GET', $url, ['query' => ['ref' => $branch], 'headers' => $this->getHeaders()]);
 
 			$fileInfo = json_decode($response->getBody(), true);
 			return $fileInfo['sha'] ?? null;
 		} catch (GuzzleException $e) {
-			// File doesn't exist or other error.
-			if ($e instanceof RequestException && $e->hasResponse() === true && $e->getResponse()->getStatusCode() === 404) {
-				return null;
-				// File doesn't exist, which is fine for new files.
-			}
-
-			$this->logger->error(
-				message: '[GitHubHandler] GitHub API get file SHA failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'owner' => $owner,
-					'repo' => $repo,
-					'path' => $path,
-				]
-			);
-			throw new Exception('Failed to get file SHA: ' . $e->getMessage());
-		}//end try
+			// A file that does not exist yet is fine: it is a new file.
+			$this->requireMissingFile(exception: $e, location: $location);
+			return null;
+		}
 	}//end getFileSha()
+
+	/**
+	 * Accept a 404 (the file does not exist yet); log and throw every other failure.
+	 *
+	 * @param GuzzleException    $exception The request failure.
+	 * @param GitHubFileLocation $location  The file.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception For every failure but a 404.
+	 */
+	private function requireMissingFile(GuzzleException $exception, GitHubFileLocation $location): void {
+		if ($exception instanceof RequestException && $exception->hasResponse() === true && $exception->getResponse()->getStatusCode() === 404) {
+			return;
+		}
+
+		$context = ['error' => $exception->getMessage(), 'owner' => $location->owner, 'repo' => $location->repo, 'path' => $location->path];
+		$this->logger->error(message: '[GitHubHandler] GitHub API get file SHA failed', context: ['file' => __FILE__, 'line' => __LINE__] + $context);
+		throw new Exception('Failed to get file SHA: '.$exception->getMessage());
+	}//end requireMissingFile()
 
 	/**
 	 * Get user-specific GitHub token
@@ -1355,42 +1354,51 @@ class GitHubHandler implements GitHubClientInterface {
 	 */
 	public function validateToken(?string $userId = null): bool {
 		try {
-			// Get user token if userId provided, otherwise use app-level token.
-			$token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
-			if ($userId !== null) {
-				$token = $this->getUserToken(userId: $userId);
-			}
-
+			$token = $this->validationToken(userId: $userId);
 			if ($token === null || $token === '') {
 				return false;
 			}
 
-			// Make a simple API request to validate the token.
-			$headers = [
-				'Accept' => 'application/vnd.github+json',
-				'X-GitHub-Api-Version' => '2022-11-28',
-				'Authorization' => 'Bearer ' . $token,
-			];
-
-			$response = $this->client->request(
-				'GET',
-				self::API_BASE . '/user',
-				['headers' => $headers]
-			);
-
+			// A simple API request tells whether the token is accepted.
+			$response = $this->client->request('GET', self::API_BASE.'/user', ['headers' => self::bearerHeaders(token: $token)]);
 			return $response->getStatusCode() === 200;
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[GitHubHandler] GitHub token validation failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
+			$context = ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()];
+			$this->logger->error(message: '[GitHubHandler] GitHub token validation failed', context: $context);
 			return false;
-		}//end try
+		}
 	}//end validateToken()
+
+	/**
+	 * The token to validate: the user's token when a user is named, else the app-level token.
+	 *
+	 * @param string|null $userId The user ID, or null for the app-level token.
+	 *
+	 * @return string|null
+	 */
+	private function validationToken(?string $userId): ?string {
+		$token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
+		if ($userId !== null) {
+			$token = $this->getUserToken(userId: $userId);
+		}
+
+		return $token;
+	}//end validationToken()
+
+	/**
+	 * The API headers with a bearer token.
+	 *
+	 * @param string $token The token.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function bearerHeaders(string $token): array {
+		return [
+			'Accept' => 'application/vnd.github+json',
+			'X-GitHub-Api-Version' => '2022-11-28',
+			'Authorization' => 'Bearer '.$token,
+		];
+	}//end bearerHeaders()
 
 	/**
 	 * List GitHub Issues for a repository, with sensitive fields stripped and pull requests excluded.
@@ -1431,25 +1439,33 @@ class GitHubHandler implements GitHubClientInterface {
 		// requests at a lower rate limit (60/hr unauth vs 5000/hr authenticated).
 		// Supersedes the original D23 (add-features-roadmap-menu) decision to gate
 		// reads on a configured PAT.
-		$query = (new GitHubIssueQuery(owner: $owner, repo: $repo))
-			->filteredBy(state: $state, sort: $sort)
-			->pagedBy(perPage: $perPage)
-			->withLabels(labels: $labels)
-			->withToken(token: $this->appConfig->getValueString('openregister', 'github_api_token', ''));
+		$token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
+		$query = (new GitHubIssueQuery(owner: $owner, repo: $repo))->filteredBy(state: $state, sort: $sort)->pagedBy(perPage: $perPage);
+		return $this->issuesFor(query: $query->withLabels(labels: $labels)->withToken(token: $token));
+	}//end listIssues()
+
+	/**
+	 * The issues of a listing: one request, or one per label merged (OR semantics) for two or more labels.
+	 *
+	 * @param GitHubIssueQuery $query The listing.
+	 *
+	 * @return array{items: array}
+	 *
+	 * @throws GuzzleException
+	 */
+	private function issuesFor(GitHubIssueQuery $query): array {
 		$labels = $query->labels();
-
-		if (count($labels) >= 2) {
-			// OR semantics: one request per label, merged by the query.
-			$pages = [];
-			foreach ($labels as $label) {
-				$pages[] = $this->fetchIssuesPage(query: $query, label: $label);
-			}
-
-			return ['items' => $query->merge(pages: $pages)];
+		if (count($labels) < 2) {
+			return ['items' => $this->fetchIssuesPage(query: $query, label: ($labels[0] ?? null))];
 		}
 
-		return ['items' => $this->fetchIssuesPage(query: $query, label: ($labels[0] ?? null))];
-	}//end listIssues()
+		$pages = [];
+		foreach ($labels as $label) {
+			$pages[] = $this->fetchIssuesPage(query: $query, label: $label);
+		}
+
+		return ['items' => $query->merge(pages: $pages)];
+	}//end issuesFor()
 
 	/**
 	 * Create a GitHub Issue on the named repository.
@@ -1492,16 +1508,20 @@ class GitHubHandler implements GitHubClientInterface {
 		$effectiveBody = $this->buildIssueBody(userId: $userId, body: $body, specRef: $specRef, useServerPat: $useServerPat);
 		$payload = $this->buildIssuePayload(title: $title, effectiveBody: $effectiveBody, specRef: $specRef);
 
-		$data = $this->dispatchCreateIssue(
-			owner: $owner,
-			repo: $repo,
-			payload: $payload,
-			token: $token,
-			userId: $userId,
-			specRef: $specRef,
-			useServerPat: $useServerPat
-		);
+		$submission = new GitHubIssueSubmission(owner: $owner, repo: $repo, userId: $userId, specRef: $specRef);
+		return $this->dispatchCreateIssue(submission: $submission, payload: $payload, token: $token, useServerPat: $useServerPat);
+	}//end createIssue()
 
+	/**
+	 * The response of createIssue: the issue's number, URL and state, which PAT was used, and its capability.
+	 *
+	 * @param array<string, mixed> $data         The decoded GitHub response.
+	 * @param string|null          $specRef      Validated capability slug, or null.
+	 * @param bool                 $useServerPat Whether the server PAT was used.
+	 *
+	 * @return array{number: int, html_url: string, state: string, specRef?: string, used_server_pat: bool}
+	 */
+	private static function createdIssue(array $data, ?string $specRef, bool $useServerPat): array {
 		$result = [
 			'number' => (int)($data['number'] ?? 0),
 			'html_url' => (string)($data['html_url'] ?? ''),
@@ -1513,7 +1533,7 @@ class GitHubHandler implements GitHubClientInterface {
 		}
 
 		return $result;
-	}//end createIssue()
+	}//end createdIssue()
 
 	/**
 	 * Resolve the PAT to use for a `createIssue` call: prefer the user's per-user token, fall
@@ -1593,135 +1613,85 @@ class GitHubHandler implements GitHubClientInterface {
 	/**
 	 * Dispatch the POST to GitHub's `/repos/{owner}/{repo}/issues` endpoint, then audit + decode.
 	 * On error, emit the server-PAT failure audit entry (task 1.17) before rethrowing. On success
-	 * audit + decode the body and return the decoded array.
+	 * audit + decode the body and return createIssue's response.
 	 *
-	 * @param string $owner Repo owner.
-	 * @param string $repo Repo name.
-	 * @param array $payload Request payload.
-	 * @param string $token Bearer token.
-	 * @param string $userId Submitting UID (for audit).
-	 * @param string|null $specRef Validated specRef (for audit).
-	 * @param bool $useServerPat Whether the server-PAT path is in effect (gates audit).
+	 * @param GitHubIssueSubmission $submission   Where the issue goes and who submits it.
+	 * @param array                 $payload      Request payload.
+	 * @param string                $token        Bearer token.
+	 * @param bool                  $useServerPat Whether the server-PAT path is in effect (gates audit).
 	 *
-	 * @return array<string, mixed> Decoded GitHub Issues API response body.
+	 * @return array{number: int, html_url: string, state: string, specRef?: string, used_server_pat: bool}
 	 *
 	 * @throws \Exception When the underlying HTTP call fails for any reason.
 	 *
-	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-2
-	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-17
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function dispatchCreateIssue(
-		string $owner,
-		string $repo,
-		array $payload,
-		string $token,
-		string $userId,
-		?string $specRef,
-		bool $useServerPat,
-	): array {
-		$url = self::API_BASE . '/repos/' . rawurlencode($owner) . '/' . rawurlencode($repo) . '/issues';
+	private function dispatchCreateIssue(GitHubIssueSubmission $submission, array $payload, string $token, bool $useServerPat): array {
 		try {
-			$response = $this->client->request(
-				'POST',
-				$url,
-				[
-					'headers' => [
-						'Accept' => 'application/vnd.github+json',
-						'X-GitHub-Api-Version' => '2022-11-28',
-						'Authorization' => 'Bearer ' . $token,
-						'Content-Type' => 'application/json',
-					],
-					'body' => json_encode($payload, JSON_THROW_ON_ERROR),
-				]
-			);
+			$headers = self::bearerHeaders(token: $token) + ['Content-Type' => 'application/json'];
+			$options = ['headers' => $headers, 'body' => json_encode($payload, JSON_THROW_ON_ERROR)];
+			$response = $this->client->request('POST', $submission->issuesUrl(apiBase: self::API_BASE), $options);
 		} catch (Exception $exception) {
-			if ($useServerPat === true) {
-				$this->auditServerPatSubmission(
-					userId: $userId,
-					repoSlug: $owner . '/' . $repo,
-					issueNumber: 0,
-					specRef: $specRef ?? '',
-					isSuccess: false,
-					errorCode: $exception::class,
-					githubStatus: $this->extractGitHubStatus(exception: $exception)
-				);
-			}
-
+			$failure = ['error_code' => $exception::class, 'github_status' => $this->extractGitHubStatus(exception: $exception)];
+			$this->auditServerPatSubmission(submission: $submission, useServerPat: $useServerPat, issueNumber: 0, failure: $failure);
 			throw $exception;
-		}//end try
-
-		$data = json_decode((string)$response->getBody(), true);
-		if (is_array($data) === false) {
-			$data = [];
 		}
 
-		// Task 1.17: audit successful server-PAT submissions. User-PAT submissions are auditable
-		// on GitHub directly under the user's identity and SHALL NOT emit an openregister entry.
-		if ($useServerPat === true) {
-			$this->auditServerPatSubmission(
-				userId: $userId,
-				repoSlug: $owner . '/' . $repo,
-				issueNumber: (int)($data['number'] ?? 0),
-				specRef: $specRef ?? '',
-				isSuccess: true,
-				errorCode: '',
-				githubStatus: $response->getStatusCode()
-			);
-		}
-
-		return $data;
+		$data = self::decodedIssue(response: $response);
+		$this->auditServerPatSubmission(submission: $submission, useServerPat: $useServerPat, issueNumber: (int)($data['number'] ?? 0), failure: null);
+		return self::createdIssue(data: $data, specRef: $submission->specRef, useServerPat: $useServerPat);
 	}//end dispatchCreateIssue()
 
 	/**
+	 * The decoded Issues API response, or an empty array when it is not a JSON object.
+	 *
+	 * @param IResponse $response The response.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function decodedIssue(IResponse $response): array {
+		$data = json_decode((string)$response->getBody(), true);
+		if (is_array($data) === false) {
+			return [];
+		}
+
+		return $data;
+	}//end decodedIssue()
+
+	/**
 	 * Emit a single audit-log entry for a server-PAT-fallback submission (task 1.17).
+	 *
+	 * Only server-PAT submissions are audited: user-PAT submissions are auditable on GitHub
+	 * directly under the user's identity and SHALL NOT emit an openregister entry.
 	 *
 	 * Fields written: `user_id`, `repo`, `issue_number`, `specref`, `timestamp`. On failure the
 	 * entry additionally carries `error_code` + `github_status`. NEVER logs the PAT, the issue
 	 * body, the issue title, or the attribution prefix — only the structured metadata fields
 	 * the spec lists.
 	 *
-	 * @param string $userId Submitting Nextcloud UID.
-	 * @param string $repoSlug `<owner>/<repo>` of the target repository.
-	 * @param int $issueNumber GitHub issue number on success, 0 on failure.
-	 * @param string $specRef Validated capability slug, or empty string when absent.
-	 * @param bool $isSuccess Whether GitHub responded 201.
-	 * @param string $errorCode Internal error class / code on failure (empty on success).
-	 * @param int $githubStatus GitHub HTTP status (0 when not available).
+	 * @param GitHubIssueSubmission $submission   Where the issue went and who submitted it.
+	 * @param bool                  $useServerPat Whether the server PAT was used; nothing is audited otherwise.
+	 * @param int                   $issueNumber  GitHub issue number on success, 0 on failure.
+	 * @param array{error_code: string, github_status: int}|null $failure The error class and GitHub
+	 *                                                                    status on failure, null on success.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-17
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function auditServerPatSubmission(
-		string $userId,
-		string $repoSlug,
-		int $issueNumber,
-		string $specRef,
-		bool $isSuccess,
-		string $errorCode,
-		int $githubStatus,
-	): void {
-		$context = [
-			'user_id' => $userId,
-			'repo' => $repoSlug,
-			'issue_number' => $issueNumber,
-			'specref' => $specRef,
-			'timestamp' => gmdate('c'),
-		];
-		if ($isSuccess === true) {
-			$this->logger->info(
-				message: '[GitHubHandler] Server-PAT submission succeeded',
-				context: $context
-			);
+	private function auditServerPatSubmission(GitHubIssueSubmission $submission, bool $useServerPat, int $issueNumber, ?array $failure): void {
+		if ($useServerPat === false) {
 			return;
 		}
 
-		$context['error_code'] = $errorCode;
-		$context['github_status'] = $githubStatus;
-		$this->logger->warning(
-			message: '[GitHubHandler] Server-PAT submission failed',
-			context: $context
-		);
+		$context = ['user_id' => $submission->userId, 'repo' => $submission->repoSlug(), 'issue_number' => $issueNumber];
+		$context += ['specref' => $submission->specRef ?? '', 'timestamp' => gmdate('c')];
+		if ($failure === null) {
+			$this->logger->info(message: '[GitHubHandler] Server-PAT submission succeeded', context: $context);
+			return;
+		}
+
+		$this->logger->warning(message: '[GitHubHandler] Server-PAT submission failed', context: $context + $failure);
 	}//end auditServerPatSubmission()
 
 	/**
@@ -1771,19 +1741,13 @@ class GitHubHandler implements GitHubClientInterface {
 		$response = $this->client->request('GET', $query->url(apiBase: self::API_BASE), $query->requestOptions(label: $label));
 
 		$raw = json_decode((string)$response->getBody(), true);
-		$items = [];
-		if (is_array($raw) === true) {
-			foreach ($raw as $issue) {
-				if (is_array($issue) === false || isset($issue['pull_request']) === true) {
-					// Skip pull requests (GitHub returns them on the issues endpoint).
-					continue;
-				}
-
-				$items[] = $this->stripIssueFields(issue: $issue);
-			}
+		if (is_array($raw) === false) {
+			return [];
 		}
 
-		return $items;
+		// Pull requests come back on the issues endpoint too; they are skipped.
+		$issues = array_filter($raw, static fn (mixed $issue): bool => is_array($issue) === true && isset($issue['pull_request']) === false);
+		return array_values(array_map(fn (array $issue): array => $this->stripIssueFields(issue: $issue), $issues));
 	}//end fetchIssuesPage()
 
 	/**
@@ -1796,32 +1760,34 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-10
 	 */
 	private function stripIssueFields(array $issue): array {
-		$labels = [];
-		foreach (($issue['labels'] ?? []) as $label) {
-			if (is_array($label) === true) {
-				$labels[] = [
-					'name' => (string)($label['name'] ?? ''),
-					'color' => (string)($label['color'] ?? ''),
-				];
-			}
-		}
-
 		return [
 			'number' => (int)($issue['number'] ?? 0),
 			'title' => (string)($issue['title'] ?? ''),
 			'body' => (string)($issue['body'] ?? ''),
 			'html_url' => (string)($issue['html_url'] ?? ''),
-			'user' => [
-				'login' => (string)($issue['user']['login'] ?? ''),
-				'avatar_url' => (string)($issue['user']['avatar_url'] ?? ''),
-			],
-			'reactions' => [
-				'total_count' => (int)($issue['reactions']['total_count'] ?? 0),
-				'+1' => (int)($issue['reactions']['+1'] ?? 0),
-			],
+			'user' => ['login' => (string)($issue['user']['login'] ?? ''), 'avatar_url' => (string)($issue['user']['avatar_url'] ?? '')],
+			'reactions' => ['total_count' => (int)($issue['reactions']['total_count'] ?? 0), '+1' => (int)($issue['reactions']['+1'] ?? 0)],
 			'created_at' => (string)($issue['created_at'] ?? ''),
 			'updated_at' => (string)($issue['updated_at'] ?? ''),
-			'labels' => $labels,
+			'labels' => self::issueLabels(labels: ($issue['labels'] ?? [])),
 		];
 	}//end stripIssueFields()
+
+	/**
+	 * An issue's labels, reduced to their name and color; anything that is not a label is dropped.
+	 *
+	 * @param iterable $labels The raw labels.
+	 *
+	 * @return array<int, array{name: string, color: string}>
+	 */
+	private static function issueLabels(iterable $labels): array {
+		$stripped = [];
+		foreach ($labels as $label) {
+			if (is_array($label) === true) {
+				$stripped[] = ['name' => (string)($label['name'] ?? ''), 'color' => (string)($label['color'] ?? '')];
+			}
+		}
+
+		return $stripped;
+	}//end issueLabels()
 }//end class

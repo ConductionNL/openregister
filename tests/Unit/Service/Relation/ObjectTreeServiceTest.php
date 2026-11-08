@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
+use OCA\OpenRegister\Service\Relation\ObjectTreeMappers;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
@@ -216,9 +217,7 @@ class ObjectTreeServiceTest extends TestCase {
 		return new ObjectTreeService(
 			descender: $descender,
 			hierarchies: new HierarchyGrantExpander(descender: $descender, logger: $logger),
-			objectMapper: $objectMapper,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
+			mappers: new ObjectTreeMappers(objectMapper: $objectMapper, registerMapper: $registerMapper, schemaMapper: $schemaMapper),
 			graphs: $graphs,
 			renderer: ($this->renderer ?? $this->createMock(RenderObject::class)),
 			logger: $logger

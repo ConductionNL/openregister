@@ -193,9 +193,10 @@ class ArchivalRetentionGuard {
 		// question first would let every held record on an ordinary schema
 		// through, which is exactly the gap this guard closed for the AVG
 		// pass.
+		$uuid = (string)($object->getUuid() ?? '');
 		if ($object->hasActiveLegalHold() === true) {
 			return $this->report(
-				uuid: (string)($object->getUuid() ?? ''),
+				uuid: $uuid,
 				schemaLabel: (string)($object->getSchema() ?? 'unknown'),
 				registerIdentifier: $object->getRegister(),
 				ground: self::GROUND_LEGAL_HOLD,
@@ -204,10 +205,7 @@ class ArchivalRetentionGuard {
 		}
 
 		return $this->refusalFor(
-			uuid: (string)($object->getUuid() ?? ''),
-			schemaIdentifier: $object->getSchema(),
-			registerIdentifier: $object->getRegister(),
-			context: self::CONTEXT_ERASURE
+			uuid: $uuid, schemaIdentifier: $object->getSchema(), registerIdentifier: $object->getRegister(), context: self::CONTEXT_ERASURE
 		);
 	}//end erasureRefusal()
 
@@ -226,12 +224,7 @@ class ArchivalRetentionGuard {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
 	public function cascadeRefusal(string $uuid, string|int|null $schemaIdentifier): ?array {
-		return $this->refusalFor(
-			uuid: $uuid,
-			schemaIdentifier: $schemaIdentifier,
-			registerIdentifier: null,
-			context: self::CONTEXT_CASCADE
-		);
+		return $this->refusalFor(uuid: $uuid, schemaIdentifier: $schemaIdentifier, registerIdentifier: null, context: self::CONTEXT_CASCADE);
 	}//end cascadeRefusal()
 
 	/**
@@ -244,33 +237,10 @@ class ArchivalRetentionGuard {
 	 *
 	 * @return array<string, mixed>|null
 	 */
-	private function refusalFor(
-		string $uuid,
-		string|int|null $schemaIdentifier,
-		string|int|null $registerIdentifier,
-		string $context,
-	): ?array {
+	private function refusalFor(string $uuid, string|int|null $schemaIdentifier, string|int|null $registerIdentifier, string $context): ?array {
 		$schema = $this->resolveSchema(schemaIdentifier: $schemaIdentifier);
-
 		if ($schema === null) {
-			$this->logger->warning(
-				message: '[ArchivalRetentionGuard] Left a record alone because its schema could not be resolved',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'schema' => $schemaIdentifier,
-					'operation' => $context,
-				]
-			);
-
-			return $this->report(
-				uuid: $uuid,
-				schemaLabel: (string)($schemaIdentifier ?? 'unknown'),
-				registerIdentifier: $registerIdentifier,
-				ground: self::GROUND_UNRESOLVED,
-				context: $context
-			);
+			return $this->unresolvedReport(uuid: $uuid, schemaIdentifier: $schemaIdentifier, registerIdentifier: $registerIdentifier, context: $context);
 		}
 
 		// THE SINGLE DEFINITION OF "IS ARCHIVAL", asked here and nowhere else in
@@ -280,14 +250,35 @@ class ArchivalRetentionGuard {
 			return null;
 		}
 
+		$label = ($schema->getSlug() ?? (string)$schema->getId());
+
+		return $this->report(uuid: $uuid, schemaLabel: $label, registerIdentifier: $registerIdentifier, ground: self::GROUND_ARCHIVAL, context: $context);
+	}//end refusalFor()
+
+	/**
+	 * The refusal for a record whose schema could not be resolved: it is left alone.
+	 *
+	 * @param string          $uuid               Record UUID.
+	 * @param string|int|null $schemaIdentifier   Schema identifier of the record.
+	 * @param string|int|null $registerIdentifier Register identifier of the record, when known.
+	 * @param string          $context            One of the CONTEXT_* constants.
+	 *
+	 * @return array<string, mixed> The report.
+	 */
+	private function unresolvedReport(string $uuid, string|int|null $schemaIdentifier, string|int|null $registerIdentifier, string $context): array {
+		$this->logger->warning(
+			message: '[ArchivalRetentionGuard] Left a record alone because its schema could not be resolved',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'schema' => $schemaIdentifier, 'operation' => $context]
+		);
+
 		return $this->report(
 			uuid: $uuid,
-			schemaLabel: ($schema->getSlug() ?? (string)$schema->getId()),
+			schemaLabel: (string)($schemaIdentifier ?? 'unknown'),
 			registerIdentifier: $registerIdentifier,
-			ground: self::GROUND_ARCHIVAL,
+			ground: self::GROUND_UNRESOLVED,
 			context: $context
 		);
-	}//end refusalFor()
+	}//end unresolvedReport()
 
 	/**
 	 * Resolve a schema identifier to its entity, unscoped and memoised.
@@ -303,35 +294,37 @@ class ArchivalRetentionGuard {
 	 * @return Schema|null The schema, or null when it cannot be resolved.
 	 */
 	private function resolveSchema(string|int|null $schemaIdentifier): ?Schema {
-		if ($schemaIdentifier === null || $schemaIdentifier === '' || $schemaIdentifier === 0) {
+		if (in_array($schemaIdentifier, [null, '', 0], true) === true) {
 			return null;
 		}
 
 		$key = (string)$schemaIdentifier;
-		if (array_key_exists($key, $this->schemaMemo) === true) {
-			$memo = $this->schemaMemo[$key];
-			if ($memo === false) {
-				return null;
-			}
-
-			return $memo;
+		if (array_key_exists($key, $this->schemaMemo) === false) {
+			$this->schemaMemo[$key] = $this->lookUpSchema(schemaIdentifier: $schemaIdentifier);
 		}
 
-		try {
-			$schema = $this->schemaMapper->find(
-				$schemaIdentifier,
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\Throwable $e) {
-			$this->schemaMemo[$key] = false;
+		$memo = $this->schemaMemo[$key];
+		if ($memo === false) {
 			return null;
 		}
 
-		$this->schemaMemo[$key] = $schema;
-
-		return $schema;
+		return $memo;
 	}//end resolveSchema()
+
+	/**
+	 * Read one schema unscoped, or false when it cannot be read.
+	 *
+	 * @param string|int $schemaIdentifier The raw identifier from the record.
+	 *
+	 * @return Schema|false The schema, or false when it cannot be resolved.
+	 */
+	private function lookUpSchema(string|int $schemaIdentifier): Schema|false {
+		try {
+			return $this->schemaMapper->find($schemaIdentifier, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return false;
+		}
+	}//end lookUpSchema()
 
 	/**
 	 * Put the refusal into words a handler can pass on to the requester.
@@ -348,24 +341,11 @@ class ArchivalRetentionGuard {
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function report(
-		string $uuid,
-		string $schemaLabel,
-		string|int|null $registerIdentifier,
-		string $ground,
-		string $context,
-	): array {
-		$wording = self::WORDING[$context][$ground];
-
-		$report = [
-			'uuid' => $uuid,
-			'schema' => $schemaLabel,
-			'ground' => $ground,
-			'operation' => $context,
-			'message' => $wording['message'],
-			'basis' => $wording['basis'],
-			'action' => $wording['action'],
-		];
+	private function report(string $uuid, string $schemaLabel, string|int|null $registerIdentifier, string $ground, string $context): array {
+		$report = array_merge(
+			['uuid' => $uuid, 'schema' => $schemaLabel, 'ground' => $ground, 'operation' => $context],
+			self::WORDING[$context][$ground]
+		);
 
 		if ($registerIdentifier !== null && $registerIdentifier !== '') {
 			$report['register'] = (string)$registerIdentifier;

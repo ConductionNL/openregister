@@ -37,15 +37,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use DateTime;
-use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FormLink;
-use OCA\OpenRegister\Db\FormLinkMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
-use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCP\IL10N;
 use Throwable;
 use UnexpectedValueException;
@@ -88,18 +84,12 @@ class TaskFormResolver implements TaskFormResolverInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapperInterface $runs Reads the run for its flow and version pin.
-	 * @param FlowMapperInterface $flows Reads the live flow, for an unpinned draft test run only.
-	 * @param FlowPublishedGraph $published Resolves the pinned graph of a run.
-	 * @param FormLinkMapper $formLinks Reads the subject's bound Forms form.
+	 * @param TaskFormResolverServices $services The run, flow, published-graph and form-link readers.
 	 * @param TaskFormReader $reader Normalises and inspects declarations.
 	 * @param IL10N $l10n Translations, for reasons a performer reads.
 	 */
 	public function __construct(
-		private readonly FlowRunMapperInterface $runs,
-		private readonly FlowMapperInterface $flows,
-		private readonly FlowPublishedGraph $published,
-		private readonly FormLinkMapper $formLinks,
+		private readonly TaskFormResolverServices $services,
 		private readonly TaskFormReader $reader,
 		private readonly IL10N $l10n,
 	) {
@@ -224,7 +214,7 @@ class TaskFormResolver implements TaskFormResolverInterface {
 	 */
 	private function runOf(TaskInterface $task, string $runUuid): FlowRun {
 		try {
-			return $this->runs->findByUuid(uuid: $runUuid);
+			return $this->services->runs->findByUuid(uuid: $runUuid);
 		} catch (Throwable) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Task %1$s belongs to run %2$s, which no longer exists.', [(string)$task->getUuid(), $runUuid])
@@ -322,7 +312,7 @@ class TaskFormResolver implements TaskFormResolverInterface {
 	 * @throws UnexpectedValueException When the pinned version cannot be resolved.
 	 */
 	private function pinnedNodesOf(FlowRun $run): array {
-		$graph = $this->published->ofRun(run: $run);
+		$graph = $this->services->published->ofRun(run: $run);
 		if ($graph === null) {
 			throw new UnexpectedValueException(
 				$this->l10n->t(
@@ -346,7 +336,7 @@ class TaskFormResolver implements TaskFormResolverInterface {
 	 */
 	private function liveNodesOf(FlowRun $run): array {
 		try {
-			return ($this->flows->findByUuid(uuid: (string)$run->getFlowId())->getNodes() ?? []);
+			return ($this->services->flows->findByUuid(uuid: (string)$run->getFlowId())->getNodes() ?? []);
 		} catch (Throwable) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('Flow %1$s no longer exists.', [(string)$run->getFlowId()])
@@ -514,7 +504,7 @@ class TaskFormResolver implements TaskFormResolverInterface {
 			return null;
 		}
 
-		return $this->formLinks->findFormLink(objectUuid: $objectUuid, formId: $declaration->formId);
+		return $this->services->formLinks->findFormLink(objectUuid: $objectUuid, formId: $declaration->formId);
 	}//end linkOf()
 
 	/**
@@ -530,12 +520,23 @@ class TaskFormResolver implements TaskFormResolverInterface {
 			return $this->l10n->t('The form is %1$s and cannot be filled in.', [$status]);
 		}
 
+		return $this->expiryReason(expiresAt: $expiresAt);
+	}//end unusableReason()
+
+	/**
+	 * Why an expired linked form cannot be filled in.
+	 *
+	 * @param DateTime|null $expiresAt The link's expiry.
+	 *
+	 * @return string|null The reason, or null when it has not expired.
+	 */
+	private function expiryReason(?DateTime $expiresAt): ?string {
 		if ($expiresAt !== null && $expiresAt < new DateTime()) {
 			return $this->l10n->t('The form expired on %1$s and cannot be filled in.', [$expiresAt->format('Y-m-d')]);
 		}
 
 		return null;
-	}//end unusableReason()
+	}//end expiryReason()
 
 	/**
 	 * An external description: unavailable and unlinked unless the values say otherwise.

@@ -124,30 +124,8 @@ class ApiCallerMiddleware extends Middleware {
 			return;
 		}
 
-		$principal = $this->recorder->principal();
-
-		// The binding first: a call from the wrong address must not spend the
-		// budget of the caller it is impersonating.
-		if ($this->policy->allowsAddress(principal: $principal, address: $this->request->getRemoteAddress()) === false) {
-			throw CallerRefusedException::wrongAddress();
-		}
-
-		$now = time();
-		$outcome = $this->limiter->consume(principal: $principal, now: $now);
-		if ($outcome !== null && $outcome['allowed'] === false) {
-			$ceiling = $this->policy->limitFor(principal: $principal);
-			throw CallerRefusedException::overLimit(
-				limit: $outcome['limit'],
-				windowSeconds: (int)($ceiling['windowSeconds'] ?? 60),
-				resetAt: $outcome['resetAt'],
-				now: $now,
-			);
-		}
-
-		$version = $this->negotiator->negotiate(request: $this->request)->version;
-		if ($version !== null) {
-			$this->servedVersion = $version->id;
-		}
+		$this->refuseOutOfBounds(principal: $this->recorder->principal());
+		$this->servedVersion = $this->negotiator->negotiate(request: $this->request)->version?->id;
 
 	}//end beforeController()
 
@@ -206,6 +184,55 @@ class ApiCallerMiddleware extends Middleware {
 		throw $exception;
 
 	}//end afterException()
+
+	/**
+	 * Refuse a caller calling from off its address list, or over its ceiling.
+	 *
+	 * @param string $principal The caller.
+	 *
+	 * @return void
+	 *
+	 * @throws CallerRefusedException When the caller is bounded out.
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 */
+	private function refuseOutOfBounds(string $principal): void {
+		// The binding first: a call from the wrong address must not spend the
+		// budget of the caller it is impersonating.
+		if ($this->policy->allowsAddress(principal: $principal, address: $this->request->getRemoteAddress()) === false) {
+			throw CallerRefusedException::wrongAddress();
+		}
+
+		$now = time();
+		$outcome = $this->limiter->consume(principal: $principal, now: $now);
+		if ($outcome !== null && $outcome['allowed'] === false) {
+			throw $this->overLimit(principal: $principal, outcome: $outcome, now: $now);
+		}
+
+	}//end refuseOutOfBounds()
+
+	/**
+	 * The refusal for a caller over its administered ceiling.
+	 *
+	 * @param string $principal The caller.
+	 * @param array<string, mixed> $outcome The limiter's verdict.
+	 * @param int $now The current unix time.
+	 *
+	 * @return CallerRefusedException The refusal.
+	 *
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 */
+	private function overLimit(string $principal, array $outcome, int $now): CallerRefusedException {
+		$ceiling = $this->policy->limitFor(principal: $principal);
+
+		return CallerRefusedException::overLimit(
+			limit: $outcome['limit'],
+			windowSeconds: (int)($ceiling['windowSeconds'] ?? 60),
+			resetAt: $outcome['resetAt'],
+			now: $now,
+		);
+
+	}//end overLimit()
 
 	/**
 	 * Whether the current request is part of the API surface.

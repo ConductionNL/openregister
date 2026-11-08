@@ -253,31 +253,13 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 			return $this->contextCache[$cacheKey];
 		}
 
-		$jsonld = $this->jsonLdConfig(schema: $schema);
-		$vocab = ($jsonld['@vocab'] ?? null);
+		$jsonld     = $this->jsonLdConfig(schema: $schema);
+		$contextUrl = $this->getSchemaContextUrl(register: $register, schema: $schema);
+		$context    = $this->schemaContextHead(schema: $schema, jsonld: $jsonld, contextUrl: $contextUrl);
+
 		$propMap = ($jsonld['properties'] ?? []);
 		if (is_array($propMap) === false) {
 			$propMap = [];
-		}
-
-		$contextUrl = $this->getSchemaContextUrl(register: $register, schema: $schema);
-
-		// Base prefixes always present.
-		$context = [
-			'or' => self::OR_NAMESPACE,
-			'xsd' => self::XSD_NAMESPACE,
-		];
-
-		// Vocabulary base, when declared.
-		if (is_string($vocab) === true && $vocab !== '') {
-			$context['@vocab'] = $vocab;
-		}
-
-		// The schema class term itself (used as @type when no jsonld.type IRI).
-		if (isset($jsonld['type']) === true && is_string($jsonld['type']) === true && $jsonld['type'] !== '') {
-			$context[$this->slugOf(entity: $schema)] = $jsonld['type'];
-		} else {
-			$context[$this->slugOf(entity: $schema)] = $contextUrl . '#' . $this->slugOf(entity: $schema);
 		}
 
 		// One term per schema property.
@@ -286,15 +268,13 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 				continue;
 			}
 
-			if (is_array($definition) === true) {
-				$propertyDefinition = $definition;
-			} else {
-				$propertyDefinition = [];
+			if (is_array($definition) === false) {
+				$definition = [];
 			}
 
 			$context[$name] = $this->buildPropertyTerm(
 				name: $name,
-				definition: $propertyDefinition,
+				definition: $definition,
 				mappedIri: ($propMap[$name] ?? null),
 				contextUrl: $contextUrl
 			);
@@ -303,6 +283,40 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 		$this->contextCache[$cacheKey] = $context;
 		return $context;
 	}//end buildSchemaContext()
+
+	/**
+	 * The base prefixes, the vocabulary and the schema's class term of a schema context.
+	 *
+	 * @param Schema               $schema     The schema.
+	 * @param array<string, mixed> $jsonld     The schema's JSON-LD configuration.
+	 * @param string               $contextUrl The schema's context URL.
+	 *
+	 * @return array<string, mixed> The context so far.
+	 *
+	 * @spec openspec/specs/json-ld-output/spec.md
+	 */
+	private function schemaContextHead(Schema $schema, array $jsonld, string $contextUrl): array {
+		// Base prefixes always present.
+		$context = [
+			'or' => self::OR_NAMESPACE,
+			'xsd' => self::XSD_NAMESPACE,
+		];
+
+		// Vocabulary base, when declared.
+		$vocab = ($jsonld['@vocab'] ?? null);
+		if (is_string($vocab) === true && $vocab !== '') {
+			$context['@vocab'] = $vocab;
+		}
+
+		// The schema class term itself (used as @type when no jsonld.type IRI).
+		$slug           = $this->slugOf(entity: $schema);
+		$context[$slug] = $contextUrl . '#' . $slug;
+		if (isset($jsonld['type']) === true && is_string($jsonld['type']) === true && $jsonld['type'] !== '') {
+			$context[$slug] = $jsonld['type'];
+		}
+
+		return $context;
+	}//end schemaContextHead()
 
 	/**
 	 * Build the register-wide context document: a merged term block covering

@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Webhook\WebhookFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -261,29 +262,9 @@ class Webhook extends Entity implements JsonSerializable {
 	 * Constructor
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'url', type: 'string');
-		$this->addType(fieldName: 'method', type: 'string');
-		$this->addType(fieldName: 'events', type: 'string');
-		$this->addType(fieldName: 'headers', type: 'string');
-		$this->addType(fieldName: 'secret', type: 'string');
-		$this->addType(fieldName: 'enabled', type: 'boolean');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'filters', type: 'string');
-		$this->addType(fieldName: 'retryPolicy', type: 'string');
-		$this->addType(fieldName: 'maxRetries', type: 'integer');
-		$this->addType(fieldName: 'timeout', type: 'integer');
-		$this->addType(fieldName: 'lastTriggeredAt', type: 'datetime');
-		$this->addType(fieldName: 'lastSuccessAt', type: 'datetime');
-		$this->addType(fieldName: 'lastFailureAt', type: 'datetime');
-		$this->addType(fieldName: 'totalDeliveries', type: 'integer');
-		$this->addType(fieldName: 'successfulDeliveries', type: 'integer');
-		$this->addType(fieldName: 'failedDeliveries', type: 'integer');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'configuration', type: 'string');
-		$this->addType(fieldName: 'mapping', type: 'integer');
+		foreach (WebhookFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -292,7 +273,7 @@ class Webhook extends Entity implements JsonSerializable {
 	 * @return array
 	 */
 	public function getEventsArray(): array {
-		return json_decode($this->events, true) ?? [];
+		return $this->decodedColumn(text: $this->events);
 	}//end getEventsArray()
 
 	/**
@@ -314,11 +295,7 @@ class Webhook extends Entity implements JsonSerializable {
 	 * @return array
 	 */
 	public function getHeadersArray(): array {
-		if ($this->headers === null) {
-			return [];
-		}
-
-		return json_decode($this->headers, true) ?? [];
+		return $this->decodedColumn(text: $this->headers);
 	}//end getHeadersArray()
 
 	/**
@@ -330,12 +307,7 @@ class Webhook extends Entity implements JsonSerializable {
 	 */
 	public function setHeadersArray(?array $headers): void {
 		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
-		if ($headers === null) {
-			$this->setHeaders(null);
-			return;
-		}
-
-		$this->setHeaders(json_encode(value: $headers));
+		$this->setHeaders($this->encodedColumn(value: $headers));
 		// phpcs:enable CustomSniffs.Functions.NamedParameters
 	}//end setHeadersArray()
 
@@ -345,11 +317,7 @@ class Webhook extends Entity implements JsonSerializable {
 	 * @return array
 	 */
 	public function getFiltersArray(): array {
-		if ($this->filters === null) {
-			return [];
-		}
-
-		return json_decode($this->filters, true) ?? [];
+		return $this->decodedColumn(text: $this->filters);
 	}//end getFiltersArray()
 
 	/**
@@ -361,12 +329,7 @@ class Webhook extends Entity implements JsonSerializable {
 	 */
 	public function setFiltersArray(?array $filters): void {
 		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
-		if ($filters === null) {
-			$this->setFilters(null);
-			return;
-		}
-
-		$this->setFilters(json_encode(value: $filters));
+		$this->setFilters($this->encodedColumn(value: $filters));
 		// phpcs:enable CustomSniffs.Functions.NamedParameters
 	}//end setFiltersArray()
 
@@ -376,11 +339,7 @@ class Webhook extends Entity implements JsonSerializable {
 	 * @return array
 	 */
 	public function getConfigurationArray(): array {
-		if ($this->configuration === null) {
-			return [];
-		}
-
-		return json_decode($this->configuration, true) ?? [];
+		return $this->decodedColumn(text: $this->configuration);
 	}//end getConfigurationArray()
 
 	/**
@@ -392,14 +351,39 @@ class Webhook extends Entity implements JsonSerializable {
 	 */
 	public function setConfigurationArray(?array $configuration): void {
 		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
-		if ($configuration === null) {
-			$this->setConfiguration(null);
-			return;
-		}
-
-		$this->setConfiguration(json_encode(value: $configuration));
+		$this->setConfiguration($this->encodedColumn(value: $configuration));
 		// phpcs:enable CustomSniffs.Functions.NamedParameters
 	}//end setConfigurationArray()
+
+	/**
+	 * A JSON text column as an array: empty when it is null or not JSON.
+	 *
+	 * @param string|null $text The stored JSON text.
+	 *
+	 * @return array
+	 */
+	private function decodedColumn(string|null $text): array {
+		if ($text === null) {
+			return [];
+		}
+
+		return json_decode($text, true) ?? [];
+	}//end decodedColumn()
+
+	/**
+	 * An array as JSON text for a column; null stays null.
+	 *
+	 * @param array|null $value The value.
+	 *
+	 * @return string|false|null
+	 */
+	private function encodedColumn(array|null $value): string|false|null {
+		if ($value === null) {
+			return null;
+		}
+
+		return json_encode(value: $value);
+	}//end encodedColumn()
 
 	/**
 	 * Check if event matches webhook
@@ -421,9 +405,10 @@ class Webhook extends Entity implements JsonSerializable {
 			return true;
 		}
 
-		// Check for wildcard patterns.
+		// Check for wildcard patterns. A backslash in a namespaced event class is
+		// literal, so it must not act as fnmatch's escape character.
 		foreach ($events as $pattern) {
-			if (fnmatch($pattern, $eventClass) === true) {
+			if (fnmatch($pattern, $eventClass, FNM_NOESCAPE) === true) {
 				return true;
 			}
 		}
@@ -447,23 +432,60 @@ class Webhook extends Entity implements JsonSerializable {
 	 *     mapping: int|null}
 	 */
 	public function jsonSerialize(): array {
-		$secretValue = null;
-		if ($this->secret !== null) {
-			$secretValue = '***';
-		}
+		return array_merge($this->targetJson(), $this->subscriptionJson(), $this->deliveryJson(), $this->recordJson());
+	}//end jsonSerialize()
 
+	/**
+	 * Identity and target.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function targetJson(): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
 			'name' => $this->name,
 			'url' => $this->url,
 			'method' => $this->method,
+		];
+	}//end targetJson()
+
+	/**
+	 * Subscription, headers, filters and tenancy; a stored secret only as `***`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function subscriptionJson(): array {
+		return [
 			'events' => $this->getEventsArray(),
 			'headers' => $this->getHeadersArray(),
-			'secret' => $secretValue,
+			'secret' => $this->maskedSecret(),
 			'enabled' => $this->enabled,
 			'organisation' => $this->organisation,
 			'filters' => $this->getFiltersArray(),
+		];
+	}//end subscriptionJson()
+
+	/**
+	 * `***` when a secret is stored, else null: the secret itself is never serialised.
+	 *
+	 * @return string|null
+	 */
+	private function maskedSecret(): string|null {
+		if ($this->secret !== null) {
+			return '***';
+		}
+
+		return null;
+	}//end maskedSecret()
+
+	/**
+	 * Retry policy and delivery history.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function deliveryJson(): array {
+		return [
 			'retryPolicy' => $this->retryPolicy,
 			'maxRetries' => $this->maxRetries,
 			'timeout' => $this->timeout,
@@ -473,12 +495,22 @@ class Webhook extends Entity implements JsonSerializable {
 			'totalDeliveries' => $this->totalDeliveries,
 			'successfulDeliveries' => $this->successfulDeliveries,
 			'failedDeliveries' => $this->failedDeliveries,
+		];
+	}//end deliveryJson()
+
+	/**
+	 * Timestamps, configuration and mapping.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function recordJson(): array {
+		return [
 			'created' => $this->created?->format('c'),
 			'updated' => $this->updated?->format('c'),
 			'configuration' => $this->getConfigurationArray(),
 			'mapping' => $this->mapping,
 		];
-	}//end jsonSerialize()
+	}//end recordJson()
 
 	/**
 	 * Hydrate entity from array
@@ -495,29 +527,58 @@ class Webhook extends Entity implements JsonSerializable {
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function hydrate(array $object): static {
-		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
-		foreach (self::HYDRATED_FIELDS as $field => [$setter, $arraySetter, $kind]) {
-			$value = ($object[$field] ?? null);
-			if ($value === null) {
-				continue;
-			}
-
-			if ($arraySetter !== null && is_array($value) === true) {
-				$setter = $arraySetter;
-			}
-
-			$this->$setter($this->castHydrated(value: $value, kind: $kind));
+		foreach (self::HYDRATED_FIELDS as $field => $spec) {
+			$this->hydrateField(value: ($object[$field] ?? null), spec: $spec);
 		}
 
+		$this->hydrateMapping(object: $object);
+
+		return $this;
+	}//end hydrate()
+
+	/**
+	 * Set one listed field from a given, non-null value, through its array setter for an array.
+	 *
+	 * @param mixed                            $value The given value.
+	 * @param array{string, string|null, string} $spec  The setter, the array setter and the cast.
+	 *
+	 * @return void
+	 */
+	private function hydrateField(mixed $value, array $spec): void {
+		if ($value === null) {
+			return;
+		}
+
+		$setter = $spec[0];
+		if ($spec[1] !== null && is_array($value) === true) {
+			$setter = $spec[1];
+		}
+
+		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
+		$this->$setter($this->castHydrated(value: $value, kind: $spec[2]));
+		// phpcs:enable CustomSniffs.Functions.NamedParameters
+	}//end hydrateField()
+
+	/**
+	 * Set the mapping id: a given value as an int, an empty or null one clears it, an absent one leaves it.
+	 *
+	 * @param array<string, mixed> $object The data to hydrate from.
+	 *
+	 * @return void
+	 */
+	private function hydrateMapping(array $object): void {
+		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
 		if (($object['mapping'] ?? null) !== null && $object['mapping'] !== '') {
 			$this->setMapping((int)$object['mapping']);
-		} elseif (array_key_exists('mapping', $object) === true) {
+			return;
+		}
+
+		if (array_key_exists('mapping', $object) === true) {
 			$this->setMapping(null);
 		}
 
-		return $this;
-		// phpcs:enable
-	}//end hydrate()
+		// phpcs:enable CustomSniffs.Functions.NamedParameters
+	}//end hydrateMapping()
 
 	/**
 	 * A hydrated value cast to its field's kind.

@@ -1,0 +1,713 @@
+{
+    "lock": {
+        "surface": {
+            "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\LockObjectNode",
+            "interfaces": [
+                "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+                "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
+                "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+                "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy"
+            ],
+            "id": "openregister.lock-object",
+            "name": "Lock an object",
+            "description": "Hold an object for this run so nobody else can change it. If another run holds it, this step waits and tries again.",
+            "icon": "openregister:lock.svg",
+            "scopes": [
+                true,
+                true,
+                false,
+                false
+            ],
+            "getKind": {
+                "returned": "serviceTask"
+            },
+            "getCategory": {
+                "returned": "objects"
+            },
+            "configKeys": {
+                "returned": [
+                    "uuid",
+                    "duration",
+                    "waitSeconds",
+                    "process",
+                    "subjectRole"
+                ]
+            },
+            "configForm": {
+                "returned": [
+                    {
+                        "key": "uuid",
+                        "label": "Object",
+                        "type": "text",
+                        "help": "Which object to lock. Leave empty to lock the object the step receives."
+                    },
+                    {
+                        "key": "duration",
+                        "label": "Hold for (seconds)",
+                        "type": "number",
+                        "help": "How long the lock survives if this run never releases it. Defaults to one hour."
+                    },
+                    {
+                        "key": "waitSeconds",
+                        "label": "Wait at most (seconds)",
+                        "type": "number",
+                        "help": "How long to keep retrying while another run holds the object. Defaults to one hour."
+                    },
+                    {
+                        "key": "process",
+                        "label": "Reason",
+                        "type": "text",
+                        "help": "What the lock is for. Shown to anyone whose write is refused."
+                    },
+                    {
+                        "key": "subjectRole",
+                        "label": "Record the locked object as",
+                        "type": "text",
+                        "help": "Your own word for what this object is to this flow, such as \"case\" or \"besluit\". A later step can then attach its task to it by that name. Leave it empty and the step records nothing."
+                    }
+                ]
+            },
+            "validate": {
+                "empty": {
+                    "returned": null
+                },
+                "uuid": {
+                    "returned": null
+                },
+                "bad-uuid": {
+                    "threw": "UnexpectedValueException",
+                    "message": "A lock step's object must be text."
+                },
+                "null-uuid": {
+                    "returned": null
+                },
+                "bad-wait": {
+                    "threw": "UnexpectedValueException",
+                    "message": "A lock step's \"%s\" must be a whole number of seconds, at least 1. [\"waitSeconds\"]"
+                }
+            }
+        },
+        "execute": {
+            "no-items": {
+                "returned": [],
+                "calls": []
+            },
+            "allowed": {
+                "returned": [
+                    {
+                        "json": {
+                            "uuid": "o-1",
+                            "ref": "r-9"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": "o-1"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": " o-2 "
+                        }
+                    }
+                ],
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "lockObject",
+                        [
+                            "o-1",
+                            "flow run run-1",
+                            3600,
+                            false,
+                            "run-1",
+                            "lock"
+                        ]
+                    ],
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "lockObject",
+                        [
+                            "o-2",
+                            "flow run run-1",
+                            3600,
+                            false,
+                            "run-1",
+                            "lock"
+                        ]
+                    ]
+                ]
+            },
+            "allowed-configured": {
+                "returned": [
+                    {
+                        "json": {
+                            "ref": "r-9"
+                        }
+                    }
+                ],
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "lockObject",
+                        [
+                            "r-9",
+                            "review",
+                            60,
+                            false,
+                            "run-1",
+                            "lock"
+                        ]
+                    ]
+                ]
+            },
+            "allowed-legacy-run-key": {
+                "returned": [
+                    {
+                        "json": {
+                            "uuid": "o-1",
+                            "ref": "r-9"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": "o-1"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": " o-2 "
+                        }
+                    }
+                ],
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "lockObject",
+                        [
+                            "o-1",
+                            "flow run run-legacy",
+                            3600,
+                            false,
+                            "run-legacy",
+                            "lock"
+                        ]
+                    ],
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "lockObject",
+                        [
+                            "o-2",
+                            "flow run run-legacy",
+                            3600,
+                            false,
+                            "run-legacy",
+                            "lock"
+                        ]
+                    ]
+                ]
+            },
+            "refused-bad-uuid-config": {
+                "threw": "UnexpectedValueException",
+                "message": "A lock step's object must be text.",
+                "calls": []
+            },
+            "refused-bad-duration": {
+                "threw": "UnexpectedValueException",
+                "message": "A lock step's \"%s\" must be a whole number of seconds, at least 1. [\"duration\"]",
+                "calls": []
+            },
+            "refused-no-resume": {
+                "threw": "RuntimeException",
+                "message": "A lock step needs a resume slot; this run did not provide one.",
+                "calls": []
+            },
+            "refused-no-run": {
+                "threw": "RuntimeException",
+                "message": "A lock step needs the run it belongs to; this run did not identify itself.",
+                "calls": []
+            },
+            "refused-no-identity": {
+                "threw": "RuntimeException",
+                "message": "This flow run has no acting identity (runAs); a lock must be attributable.",
+                "calls": []
+            },
+            "refused-unknown-identity": {
+                "threw": "RuntimeException",
+                "message": "This flow run acts as \"%s\", which is not a user account. [\"mallory\"]",
+                "calls": []
+            },
+            "refused-disabled-identity": {
+                "threw": "RuntimeException",
+                "message": "This flow run acts as \"%s\", whose account is disabled. [\"dora\"]",
+                "calls": []
+            },
+            "refused-no-target": {
+                "threw": "RuntimeException",
+                "message": "A lock step could not work out which object to lock from the item it received.",
+                "calls": []
+            },
+            "refused-non-array-json": {
+                "threw": "RuntimeException",
+                "message": "A lock step could not work out which object to lock from the item it received.",
+                "calls": []
+            },
+            "held-waits": {
+                "suspended": "waiting for a lock on o-1",
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "lockObject",
+                        [
+                            "o-1",
+                            "flow run run-1",
+                            3600,
+                            false,
+                            "run-1",
+                            "lock"
+                        ]
+                    ]
+                ]
+            },
+            "held-gives-up": {
+                "threw": "RuntimeException",
+                "message": "Waited as long as allowed for object %s, and it is still locked: %s [\"o-1\",\"held by another run\"]",
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "lockObject",
+                        [
+                            "o-1",
+                            "flow run run-1",
+                            3600,
+                            false,
+                            "run-1",
+                            "lock"
+                        ]
+                    ]
+                ]
+            }
+        }
+    },
+    "unlock": {
+        "surface": {
+            "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\UnlockObjectNode",
+            "interfaces": [
+                "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+                "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
+                "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+                "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy"
+            ],
+            "id": "openregister.unlock-object",
+            "name": "Unlock an object",
+            "description": "Release an object this run is holding, so others can change it again. The run releases its locks when it ends anyway; this frees them sooner.",
+            "icon": "openregister:unlock.svg",
+            "scopes": [
+                true,
+                true,
+                false,
+                false
+            ],
+            "getKind": {
+                "returned": "serviceTask"
+            },
+            "getCategory": {
+                "returned": "objects"
+            },
+            "configKeys": {
+                "returned": [
+                    "uuid"
+                ]
+            },
+            "configForm": {
+                "returned": [
+                    {
+                        "key": "uuid",
+                        "label": "Object",
+                        "type": "text",
+                        "help": "Which object to release. Leave empty to release the object the step receives."
+                    }
+                ]
+            },
+            "validate": {
+                "empty": {
+                    "returned": null
+                },
+                "uuid": {
+                    "returned": null
+                },
+                "bad-uuid": {
+                    "threw": "UnexpectedValueException",
+                    "message": "An unlock step's object must be text."
+                },
+                "null-uuid": {
+                    "returned": null
+                },
+                "bad-wait": {
+                    "returned": null
+                }
+            }
+        },
+        "execute": {
+            "no-items": {
+                "returned": [],
+                "calls": []
+            },
+            "allowed": {
+                "returned": [
+                    {
+                        "json": {
+                            "uuid": "o-1",
+                            "ref": "r-9"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": "o-1"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": " o-2 "
+                        }
+                    }
+                ],
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-1",
+                            false,
+                            "run-1"
+                        ]
+                    ],
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-2",
+                            false,
+                            "run-1"
+                        ]
+                    ]
+                ]
+            },
+            "allowed-configured": {
+                "returned": [
+                    {
+                        "json": {
+                            "ref": "r-9"
+                        }
+                    }
+                ],
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "r-9",
+                            false,
+                            "run-1"
+                        ]
+                    ]
+                ]
+            },
+            "allowed-legacy-run-key": {
+                "returned": [
+                    {
+                        "json": {
+                            "uuid": "o-1",
+                            "ref": "r-9"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": "o-1"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": " o-2 "
+                        }
+                    }
+                ],
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-1",
+                            false,
+                            "run-legacy"
+                        ]
+                    ],
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-2",
+                            false,
+                            "run-legacy"
+                        ]
+                    ]
+                ]
+            },
+            "refused-bad-uuid-config": {
+                "threw": "UnexpectedValueException",
+                "message": "An unlock step's object must be text.",
+                "calls": []
+            },
+            "refused-bad-duration": {
+                "returned": [
+                    {
+                        "json": {
+                            "uuid": "o-1",
+                            "ref": "r-9"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": "o-1"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": " o-2 "
+                        }
+                    }
+                ],
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-1",
+                            false,
+                            "run-1"
+                        ]
+                    ],
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-2",
+                            false,
+                            "run-1"
+                        ]
+                    ]
+                ]
+            },
+            "refused-no-resume": {
+                "returned": [
+                    {
+                        "json": {
+                            "uuid": "o-1",
+                            "ref": "r-9"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": "o-1"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": " o-2 "
+                        }
+                    }
+                ],
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-1",
+                            false,
+                            "run-1"
+                        ]
+                    ],
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-2",
+                            false,
+                            "run-1"
+                        ]
+                    ]
+                ]
+            },
+            "refused-no-run": {
+                "threw": "RuntimeException",
+                "message": "An unlock step needs the run it belongs to; this run did not identify itself.",
+                "calls": []
+            },
+            "refused-no-identity": {
+                "threw": "RuntimeException",
+                "message": "This flow run has no acting identity (runAs); an unlock must be attributable.",
+                "calls": []
+            },
+            "refused-unknown-identity": {
+                "threw": "RuntimeException",
+                "message": "This flow run acts as \"%s\", which is not a user account. [\"mallory\"]",
+                "calls": []
+            },
+            "refused-disabled-identity": {
+                "threw": "RuntimeException",
+                "message": "This flow run acts as \"%s\", whose account is disabled. [\"dora\"]",
+                "calls": []
+            },
+            "refused-no-target": {
+                "threw": "RuntimeException",
+                "message": "An unlock step could not work out which object to release from the item it received.",
+                "calls": []
+            },
+            "refused-non-array-json": {
+                "threw": "RuntimeException",
+                "message": "An unlock step could not work out which object to release from the item it received.",
+                "calls": []
+            },
+            "held-waits": {
+                "returned": [
+                    {
+                        "json": {
+                            "uuid": "o-1",
+                            "ref": "r-9"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": "o-1"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": " o-2 "
+                        }
+                    }
+                ],
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-1",
+                            false,
+                            "run-1"
+                        ]
+                    ],
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-2",
+                            false,
+                            "run-1"
+                        ]
+                    ]
+                ]
+            },
+            "held-gives-up": {
+                "returned": [
+                    {
+                        "json": {
+                            "uuid": "o-1",
+                            "ref": "r-9"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": "o-1"
+                        }
+                    },
+                    {
+                        "json": {
+                            "uuid": " o-2 "
+                        }
+                    }
+                ],
+                "calls": [
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-1",
+                            false,
+                            "run-1"
+                        ]
+                    ],
+                    [
+                        "runAs",
+                        "alice"
+                    ],
+                    [
+                        "unlockObject",
+                        [
+                            "o-2",
+                            false,
+                            "run-1"
+                        ]
+                    ]
+                ]
+            }
+        }
+    }
+}

@@ -86,7 +86,7 @@ final class LifecycleTransitionsValidator {
 	 * @return void
 	 */
 	private function checkInitial(?string $initial, LifecycleGraphCheck $check): void {
-		if ($initial === null || $initial === '') {
+		if (in_array($initial, [null, ''], true) === true) {
 			$check->addError(code: 'lifecycle-initial-missing', message: 'A lifecycle must declare its initial state.');
 			return;
 		}
@@ -200,12 +200,25 @@ final class LifecycleTransitionsValidator {
 			$list = [$from];
 		}
 
-		if (is_array($list) === false || $list === [] || self::allNonEmptyStrings(values: $list) === false) {
+		if (self::isStateList(list: $list) === false) {
 			return null;
 		}
 
 		return array_values($list);
 	}//end fromStates()
+
+	/**
+	 * Whether a value is a non-empty list of non-empty state names.
+	 *
+	 * @param mixed $list The value.
+	 *
+	 * @return bool True when it is.
+	 *
+	 * @phpstan-assert-if-true array<mixed> $list
+	 */
+	private static function isStateList(mixed $list): bool {
+		return is_array($list) === true && $list !== [] && self::allNonEmptyStrings(values: $list) === true;
+	}//end isStateList()
 
 	/**
 	 * Whether every value is a non-empty string.
