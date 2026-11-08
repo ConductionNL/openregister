@@ -339,14 +339,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @return array<string, mixed>
 	 */
 	private function runNamedCrossSchema(NamedAggregationRun $run, array $parentRow): array {
-		return $this->runCrossSchema(
-			parentRegister: $run->register,
-			parentSchema: $run->schema,
-			name: $run->name,
-			spec: $run->spec,
-			parentRow: $parentRow,
-			bypassRbac: $run->bypassRbac
-		);
+		return $this->runCrossSchema(run: $run, parentRow: $parentRow);
 	}//end runNamedCrossSchema()
 
 	/**
@@ -4396,53 +4389,45 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * - The active-organisation predicate is carried into `tryNativeAggregation()`
 	 *   unchanged; the target table belongs to the same tenant.
 	 *
-	 * @param Register $parentRegister The register that owns the *parent* schema.
-	 * @param Schema $parentSchema The schema whose annotation we read.
-	 * @param string $name Aggregation name.
-	 * @param array<string, mixed> $spec The raw aggregation spec from the annotation.
+	 * @param NamedAggregationRun  $run       The named run on the parent schema.
 	 * @param array<string, mixed> $parentRow Parent object fields for `@self.*` resolution.
-	 * @param bool $bypassRbac Whether to skip the RBAC gate on the target schema.
 	 *
 	 * @return array<string, mixed> Aggregation result envelope.
 	 *
 	 * @throws RuntimeException When the target schema/register cannot be resolved or RBAC fails.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
-	private function runCrossSchema(
-		Register $parentRegister,
-		Schema $parentSchema,
-		string $name,
-		array $spec,
-		array $parentRow,
-		bool $bypassRbac,
-	): array {
-		$fromRef = (string)($spec['from'] ?? '');
+	private function runCrossSchema(NamedAggregationRun $run, array $parentRow): array {
+		$cross = $this->resolveCrossTarget(run: $run, parentRow: $parentRow);
+		$this->resolveCrossWhere(cross: $cross);
+
+		$cached = $this->cachedCrossResult(cross: $cross);
+		if ($cached !== null) {
+			return $cached;
+		}
+
+		$result = $this->nativeCrossResult(cross: $cross);
+		if ($result === null) {
+			$result = $this->fallbackCrossResult(cross: $cross);
+		}
+
+		return $this->storeCrossResult(cross: $cross, result: $result);
+	}//end runCrossSchema()
+
+	/**
+	 * Load the `from` schema, gate on it, and find the register that carries it.
+	 *
+	 * @param NamedAggregationRun  $run       The named run on the parent schema.
+	 * @param array<string, mixed> $parentRow Parent object fields for `@self.*` resolution.
+	 *
+	 * @return CrossSchemaAggregationRun
+	 *
+	 * @throws RuntimeException When `from` is empty, the target is missing or forbidden, or no register carries it.
+	 */
+	private function resolveCrossTarget(NamedAggregationRun $run, array $parentRow): CrossSchemaAggregationRun {
+		$fromRef = (string)($run->spec['from'] ?? '');
 		if ($fromRef === '') {
 			throw new RuntimeException('Cross-schema aggregation spec is missing a non-empty `from` key.');
 		}
-
-		// Resolve `select` / `metric` alias.
-		$metric = (string)($spec['metric'] ?? $spec['select'] ?? 'count');
-
-		// `metrics` — several figures over ONE grouping. This path read only
-		// the SINGULAR key, so a cross-schema spec asking for a debit/credit
-		// split silently degraded to the default `count`. The intra-schema
-		// path has honoured `metrics` since #2917; two paths reading different
-		// halves of the same declaration is drift that answers wrongly rather
-		// than erroring, so both now read the same keys.
-		$crossSpecMetrics = ($spec['metrics'] ?? null);
-		$metrics = null;
-		if (is_array($crossSpecMetrics) === true && $crossSpecMetrics !== []) {
-			$metrics = $crossSpecMetrics;
-		}
-
-		$field = ($spec['field'] ?? null);
-		// Resolve `where` / `filter` alias.
-		$rawWhere = (array)($spec['where'] ?? $spec['filter'] ?? []);
-		$groupBy = ($spec['groupBy'] ?? null);
 
 		// Load the target schema.
 		$targetSchema = $this->loadSchema(schemaRef: $fromRef);
@@ -4460,7 +4445,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		// `object: null` reinforces this: PermissionHandlerInterface treats the
 		// (null, null) pair as the list-level form.
 		$userId = $this->userSession->getUser()?->getUID();
-		if ($bypassRbac === false && $this->mayAggregate(schema: $targetSchema, userId: $userId) === false) {
+		if ($run->bypassRbac === false && $this->mayAggregate(schema: $targetSchema, userId: $userId) === false) {
 			throw new RuntimeException(
 				sprintf(
 					'Forbidden: caller lacks read permission on cross-schema target "%s".',
@@ -4477,102 +4462,154 @@ class AggregationRunner implements AggregationRunnerInterface {
 			);
 		}
 
+		$cross = new CrossSchemaAggregationRun(
+			parent: $run,
+			parentRow: $parentRow,
+			targetSchema: $targetSchema,
+			targetRegister: $targetRegister
+		);
+		$cross->userId = $userId;
+		return $cross;
+	}//end resolveCrossTarget()
+
+	/**
+	 * Resolve the `where` clause and derive the cache key from it.
+	 *
+	 * @param CrossSchemaAggregationRun $cross The cross-schema run; where and cacheKey are set here.
+	 *
+	 * @return void
+	 */
+	private function resolveCrossWhere(CrossSchemaAggregationRun $cross): void {
 		// Resolve `@self.<field>` references against the parent row, then
 		// apply placeholder resolution ($now, $currentUser, etc.).
 		$resolvedWhere = $this->resolveAtSelfReferences(
-			where: $rawWhere,
-			parentRow: $parentRow
+			where: $cross->getRawWhere(),
+			parentRow: $cross->parentRow
 		);
-		$resolvedWhere = $this->placeholders->resolveArray($resolvedWhere);
+		$cross->where = $this->placeholders->resolveArray($resolvedWhere);
 
 		// Build the cache key, including the parent row values that were
 		// substituted so two parent objects with different field values
 		// cache independently.
 		$activeOrg = $this->organisationService->getActiveOrganisation();
-		$cacheKey = [
+		$cross->cacheKey = [
 			'cross' => true,
-			'from' => $fromRef,
-			'metric' => $metric,
-			'metrics' => $metrics,
-			'field' => $field,
-			'where' => $resolvedWhere,
-			'groupBy' => $groupBy,
-			'userId' => $userId,
+			'from' => $cross->getFromRef(),
+			'metric' => $cross->getMetric(),
+			'metrics' => $cross->getMetrics(),
+			'field' => $cross->getField(),
+			'where' => $cross->where,
+			'groupBy' => $cross->getGroupBy(),
+			'userId' => $cross->userId,
 			'org' => $activeOrg?->getUuid(),
 		];
+	}//end resolveCrossWhere()
 
+	/**
+	 * The cached result for this run, flagged as cached, or null on a miss.
+	 *
+	 * @param CrossSchemaAggregationRun $cross The cross-schema run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function cachedCrossResult(CrossSchemaAggregationRun $cross): ?array {
 		$cached = $this->cache->get(
-			registerSlug: (string)$parentRegister->getSlug(),
-			schemaSlug: (string)$parentSchema->getSlug(),
-			name: $name,
-			filter: $cacheKey
+			registerSlug: (string)$cross->parent->register->getSlug(),
+			schemaSlug: (string)$cross->parent->schema->getSlug(),
+			name: $cross->parent->name,
+			filter: $cross->cacheKey
 		);
 		if ($cached !== null) {
 			$cached['cached'] = true;
-			return $cached;
 		}
 
-		// Attempt Postgres-native aggregation on the target schema table.
-		$crossFieldArg = null;
-		if (is_string($field) === true) {
-			$crossFieldArg = $field;
-		}
+		return $cached;
+	}//end cachedCrossResult()
 
-		$crossGroupByArg = null;
-		if (is_array($groupBy) === true) {
-			$crossGroupByArg = $groupBy;
-		}
+	/**
+	 * Store the result under this run's cache key and return it.
+	 *
+	 * @param CrossSchemaAggregationRun $cross  The cross-schema run.
+	 * @param array<string, mixed>      $result The result envelope.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function storeCrossResult(CrossSchemaAggregationRun $cross, array $result): array {
+		$this->cache->set(
+			registerSlug: (string)$cross->parent->register->getSlug(),
+			schemaSlug: (string)$cross->parent->schema->getSlug(),
+			name: $cross->parent->name,
+			filter: $cross->cacheKey,
+			result: $result
+		);
+		return $result;
+	}//end storeCrossResult()
 
+	/**
+	 * The Postgres-native result on the target schema table, or null to fall back to PHP.
+	 *
+	 * @param CrossSchemaAggregationRun $cross The cross-schema run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function nativeCrossResult(CrossSchemaAggregationRun $cross): ?array {
 		// A `metrics` spec is computed in PHP so that per-entry `condition`
 		// and `as` are honoured — tryNativeAggregation() takes a single
 		// metric/field pair and has nowhere to put them. Letting it run would
 		// return one unconditioned figure for a spec that asked for several.
 		// The row cap still applies and is reported through `truncated`.
-		$native = null;
-		if ($metrics === null) {
-			$native = $this->tryNativeAggregation(
-				register: $targetRegister,
-				schema: $targetSchema,
-				metric: $metric,
-				field: $crossFieldArg,
-				filter: $resolvedWhere,
-				groupBy: $crossGroupByArg,
-				rowRbac: $bypassRbac === false
-			);
+		if ($cross->getMetrics() !== null) {
+			return null;
 		}
 
-		if ($native !== null) {
-			$crossNativeField = null;
-			if (is_string($field) === true) {
-				$crossNativeField = $field;
-			}
+		$native = $this->tryNativeAggregation(
+			register: $cross->targetRegister,
+			schema: $cross->targetSchema,
+			metric: $cross->getMetric(),
+			field: $cross->getStringField(),
+			filter: $cross->where,
+			groupBy: $cross->getGroupByArg(),
+			rowRbac: $cross->parent->bypassRbac === false
+		);
+		if ($native === null) {
+			return null;
+		}
 
-			$result = [
-				'name' => $name,
-				'metric' => $metric,
-				'field' => $crossNativeField,
-				'from' => $fromRef,
-				'backend' => 'postgres',
-				'truncated' => false,
-			] + $native;
+		return $cross->envelope(backend: 'postgres') + $native;
+	}//end nativeCrossResult()
 
-			$this->cache->set(
-				registerSlug: (string)$parentRegister->getSlug(),
-				schemaSlug: (string)$parentSchema->getSlug(),
-				name: $name,
-				filter: $cacheKey,
-				result: $result
-			);
-			return $result;
-		}//end if
+	/**
+	 * The PHP fallback result over the target schema's rows.
+	 *
+	 * @param CrossSchemaAggregationRun $cross The cross-schema run.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function fallbackCrossResult(CrossSchemaAggregationRun $cross): array {
+		$rows = $this->fallbackCrossRows(cross: $cross);
 
-		// PHP fallback path for the target schema.
+		$result = $cross->envelope(backend: 'php-fallback');
+		if ($cross->getMetrics() !== null) {
+			$result['metrics'] = $cross->getMetrics();
+		}
+
+		return $result + $this->crossFigures(cross: $cross, rows: $rows);
+	}//end fallbackCrossResult()
+
+	/**
+	 * The target schema's rows, capped and filtered by the resolved `where`.
+	 *
+	 * @param CrossSchemaAggregationRun $cross The cross-schema run; truncated is set here.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function fallbackCrossRows(CrossSchemaAggregationRun $cross): array {
 		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $targetRegister,
-			schema: $targetSchema,
+			register: $cross->targetRegister,
+			schema: $cross->targetSchema,
 			limit: self::PHP_FALLBACK_ROW_CAP
 		);
-		$truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
+		$cross->truncated = count($objects) >= self::PHP_FALLBACK_ROW_CAP;
 
 		$rows = [];
 		foreach ($objects as $entity) {
@@ -4581,59 +4618,42 @@ class AggregationRunner implements AggregationRunnerInterface {
 			$rows[] = $entity->getObject();
 		}
 
-		$rows = $this->applyFilter(rows: $rows, filter: $resolvedWhere);
+		return $this->applyFilter(rows: $rows, filter: $cross->where);
+	}//end fallbackCrossRows()
 
-		$crossPhpField = null;
-		if (is_string($field) === true) {
-			$crossPhpField = $field;
-		}
-
-		$result = [
-			'name' => $name,
-			'metric' => $metric,
-			'field' => $crossPhpField,
-			'from' => $fromRef,
-			'backend' => 'php-fallback',
-			'truncated' => $truncated,
-		];
-
-		if ($metrics !== null) {
-			$result['metrics'] = $metrics;
-		}
-
-		$crossGroupFields = $this->resolveGroupFields(groupBy: $groupBy);
+	/**
+	 * The figures over the rows: `groups`, `values` (a `metrics` spec) or `value`.
+	 *
+	 * @param CrossSchemaAggregationRun        $cross The cross-schema run.
+	 * @param array<int, array<string, mixed>> $rows  The filtered rows.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function crossFigures(CrossSchemaAggregationRun $cross, array $rows): array {
+		$crossGroupFields = $this->resolveGroupFields(groupBy: $cross->getGroupBy());
 		if (count($crossGroupFields) > 0) {
-			$result['groups'] = $this->computeGrouped(
-				rows: $rows,
-				metric: $metric,
-				field: $field,
-				groupFields: $crossGroupFields,
-				metrics: $metrics
-			);
+			return [
+				'groups' => $this->computeGrouped(
+					rows: $rows,
+					metric: $cross->getMetric(),
+					field: $cross->getField(),
+					groupFields: $crossGroupFields,
+					metrics: $cross->getMetrics()
+				),
+			];
 		}
 
-		if (isset($result['groups']) === false) {
-			// Ungrouped: a `metrics` spec yields `values` (a map keyed by alias).
-			// Falling through to computeMetric() here would hand back a single
-			// figure derived from $metric — which is the DEFAULT 'count' when
-			// the spec declared only `metrics` — for a request that named
-			// several conditioned sums.
-			if ($metrics !== null) {
-				$result['values'] = $this->computeMetrics(rows: $rows, metrics: $metrics);
-			} else {
-				$result['value'] = $this->computeMetric(rows: $rows, metric: $metric, field: $field);
-			}
+		// Ungrouped: a `metrics` spec yields `values` (a map keyed by alias).
+		// Falling through to computeMetric() here would hand back a single
+		// figure derived from the metric — which is the DEFAULT 'count' when
+		// the spec declared only `metrics` — for a request that named
+		// several conditioned sums.
+		if ($cross->getMetrics() !== null) {
+			return ['values' => $this->computeMetrics(rows: $rows, metrics: $cross->getMetrics())];
 		}
 
-		$this->cache->set(
-			registerSlug: (string)$parentRegister->getSlug(),
-			schemaSlug: (string)$parentSchema->getSlug(),
-			name: $name,
-			filter: $cacheKey,
-			result: $result
-		);
-		return $result;
-	}//end runCrossSchema()
+		return ['value' => $this->computeMetric(rows: $rows, metric: $cross->getMetric(), field: $cross->getField())];
+	}//end crossFigures()
 
 	/**
 	 * Resolve `@self.<field>` references in a `where` clause against the parent row.
