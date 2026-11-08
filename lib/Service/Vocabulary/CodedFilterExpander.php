@@ -88,45 +88,63 @@ class CodedFilterExpander {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function expand(array $filters, int|string|array|null $schemaRef): array {
-		if ($this->carriesBranchFilter(filters: $filters) === false) {
-			return $filters;
-		}
-
-		$schema = $this->resolveSchema(schemaRef: $schemaRef);
-		if ($schema === null) {
-			return $filters;
-		}
-
-		$declarations = $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
+		$declarations = $this->declarationsFor(filters: $filters, schemaRef: $schemaRef);
 		if ($declarations === []) {
 			return $filters;
 		}
 
 		foreach ($filters as $property => $value) {
-			$branch = $this->branchOf(value: $value);
-			if ($branch === null) {
-				continue;
+			$expanded = $this->expandValue(value: $value, declaration: ($declarations[(string)$property] ?? null));
+			if ($expanded !== []) {
+				$filters[$property] = ['in' => $expanded];
 			}
-
-			$declaration = ($declarations[(string)$property] ?? null);
-			if ($declaration === null) {
-				continue;
-			}
-
-			$expanded = $this->valuesForBranch(
-				branch: $branch,
-				declaration: $declaration,
-				depth: $this->depthOf(value: $value)
-			);
-			if ($expanded === []) {
-				continue;
-			}
-
-			$filters[$property] = ['in' => $expanded];
-		}//end foreach
+		}
 
 		return $filters;
 	}//end expand()
+
+	/**
+	 * The coded-property declarations of the filtered schema, or [] when no
+	 * filter carries a branch, the schema does not resolve, or it declares none.
+	 *
+	 * @param array<string, mixed>        $filters   The filters.
+	 * @param int|string|array<mixed>|null $schemaRef The schema reference.
+	 *
+	 * @return array<string, CodedPropertyDeclaration>
+	 */
+	private function declarationsFor(array $filters, int|string|array|null $schemaRef): array {
+		if ($this->carriesBranchFilter(filters: $filters) === false) {
+			return [];
+		}
+
+		$schema = $this->resolveSchema(schemaRef: $schemaRef);
+		if ($schema === null) {
+			return [];
+		}
+
+		return $this->declarationFactory->fromProperties(properties: ($schema->getProperties() ?? []));
+	}//end declarationsFor()
+
+	/**
+	 * The expanded values of one filter value, or [] to leave it as it is.
+	 *
+	 * @param mixed                         $value       The filter value.
+	 * @param CodedPropertyDeclaration|null $declaration The property's declaration, if coded.
+	 *
+	 * @return string[]
+	 */
+	private function expandValue(mixed $value, ?CodedPropertyDeclaration $declaration): array {
+		$branch = $this->branchOf(value: $value);
+		if ($branch === null || $declaration === null) {
+			return [];
+		}
+
+		return $this->valuesForBranch(
+			branch: $branch,
+			declaration: $declaration,
+			depth: $this->depthOf(value: $value)
+		);
+	}//end expandValue()
 
 	/**
 	 * The stored values a branch stands for, in the declaration's storage form.
@@ -149,21 +167,28 @@ class CodedFilterExpander {
 			return [];
 		}
 
-		$bound = $depth;
-		if ($bound === null) {
-			$bound = $declaration->maxDepth;
-		}
-
 		$uris = $this->hierarchy->branchUris(
 			rootUri: $branch,
 			conceptsByUri: $conceptsByUri,
-			maxDepth: $bound
+			maxDepth: ($depth ?? $declaration->maxDepth)
 		);
 
 		if ($declaration->store === 'uri') {
 			return $uris;
 		}
 
+		return $this->notationsOf(uris: $uris, conceptsByUri: $conceptsByUri);
+	}//end valuesForBranch()
+
+	/**
+	 * The non-blank notations of the given concepts, in order.
+	 *
+	 * @param string[]                            $uris          The concept URIs.
+	 * @param array<string, array<string, mixed>> $conceptsByUri The scheme's concepts by URI.
+	 *
+	 * @return string[]
+	 */
+	private function notationsOf(array $uris, array $conceptsByUri): array {
 		$notations = [];
 		foreach ($uris as $uri) {
 			$notation = trim((string)(($conceptsByUri[$uri]['notation'] ?? '')));
@@ -173,7 +198,7 @@ class CodedFilterExpander {
 		}
 
 		return $notations;
-	}//end valuesForBranch()
+	}//end notationsOf()
 
 	/**
 	 * Whether any filter asks for a branch.
@@ -254,14 +279,7 @@ class CodedFilterExpander {
 	 * @return Schema|null The resolved schema.
 	 */
 	private function resolveSchema(int|string|array|null $schemaRef): ?Schema {
-		if (is_array($schemaRef) === true) {
-			if (count($schemaRef) !== 1) {
-				return null;
-			}
-
-			$schemaRef = reset($schemaRef);
-		}
-
+		$schemaRef = $this->singleReference(schemaRef: $schemaRef);
 		if ($schemaRef === null || $schemaRef === '') {
 			return null;
 		}
@@ -272,4 +290,23 @@ class CodedFilterExpander {
 			return null;
 		}
 	}//end resolveSchema()
+
+	/**
+	 * The one reference a list holds (null when it holds none or several), or the reference itself.
+	 *
+	 * @param int|string|array<mixed>|null $schemaRef The schema reference.
+	 *
+	 * @return mixed
+	 */
+	private function singleReference(int|string|array|null $schemaRef): mixed {
+		if (is_array($schemaRef) === false) {
+			return $schemaRef;
+		}
+
+		if (count($schemaRef) !== 1) {
+			return null;
+		}
+
+		return reset($schemaRef);
+	}//end singleReference()
 }//end class
