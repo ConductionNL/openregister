@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjects;
 
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkChunkRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -28,7 +29,7 @@ class BulkChunkRunTest extends TestCase {
 	 * @return void
 	 */
 	public function testANewChunkHoldsItsResult(): void {
-		$chunk = new BulkChunkRun(result: ['saved' => []]);
+		$chunk = new BulkChunkRun(result: ['saved' => []], run: new BulkSaveRun());
 
 		$this->assertSame(['saved' => []], $chunk->result);
 		$this->assertSame([], $chunk->phaseMs);
@@ -42,7 +43,7 @@ class BulkChunkRunTest extends TestCase {
 	 * @return void
 	 */
 	public function testPhasesAreRecordedInOrder(): void {
-		$chunk = new BulkChunkRun(result: []);
+		$chunk = new BulkChunkRun(result: [], run: new BulkSaveRun());
 		$chunk->finishPhase(phase: 'transform', start: microtime(true));
 		$chunk->finishPhase(phase: 'guards', start: microtime(true));
 
