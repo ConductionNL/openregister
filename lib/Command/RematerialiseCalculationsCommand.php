@@ -33,6 +33,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
+use OCA\OpenRegister\Command\Support\RematerialiseStorage;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -57,16 +59,67 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class RematerialiseCalculationsCommand extends Command {
 	/**
+	 * Register lookup mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Magic table mapper for objects.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Object persistence service.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Expression evaluator.
+	 *
+	 * @var CalculationEvaluatorInterface
+	 */
+	private readonly CalculationEvaluatorInterface $evaluator;
+
+	/**
+	 * Cross-object reference pre-resolver.
+	 *
+	 * @var ReferenceResolverInterface
+	 */
+	private readonly ReferenceResolverInterface $references;
+
+	/**
+	 * Aggregate-reference pre-resolver.
+	 *
+	 * @var AggregateReferenceResolverInterface
+	 */
+	private readonly AggregateReferenceResolverInterface $aggregates;
+
+	/**
+	 * Restores the stored form of `type: string` values the read decoded.
+	 *
+	 * @var SchemaTypeConverter
+	 */
+	private readonly SchemaTypeConverter $types;
+
+	/**
 	 * Wire the mappers, evaluator, and object service used by the command.
 	 *
-	 * @param RegisterMapperInterface             $registerMapper Register lookup mapper.
-	 * @param SchemaMapperInterface               $schemaMapper   Schema lookup mapper.
-	 * @param MagicMapperInterface                $magicMapper    Magic table mapper for objects.
-	 * @param ObjectOperationsInterface           $objectService  Object persistence service.
-	 * @param CalculationEvaluatorInterface       $evaluator      Expression evaluator.
-	 * @param ReferenceResolverInterface          $references     Cross-object reference pre-resolver.
-	 * @param AggregateReferenceResolverInterface $aggregates     Aggregate-reference pre-resolver.
-	 * @param SchemaTypeConverter                 $types          Restores the stored form of `type: string` values the read decoded.
+	 * @param RematerialiseStorage    $storage    Register, schema and object stores.
+	 * @param RematerialiseEvaluation $evaluation Evaluator and reference pre-resolvers.
+	 * @param SchemaTypeConverter     $types      Restores the stored form of `type: string` values the read decoded.
 	 *
 	 * @return void
 	 *
@@ -75,15 +128,18 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly CalculationEvaluatorInterface $evaluator,
-		private readonly ReferenceResolverInterface $references,
-		private readonly AggregateReferenceResolverInterface $aggregates,
-		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),
+		RematerialiseStorage $storage,
+		RematerialiseEvaluation $evaluation,
+		SchemaTypeConverter $types=new SchemaTypeConverter(),
 	) {
+		$this->registerMapper = $storage->registerMapper;
+		$this->schemaMapper = $storage->schemaMapper;
+		$this->magicMapper = $storage->magicMapper;
+		$this->objectService = $storage->objectService;
+		$this->evaluator = $evaluation->evaluator;
+		$this->references = $evaluation->references;
+		$this->aggregates = $evaluation->aggregates;
+		$this->types = $types;
 		parent::__construct();
 	}//end __construct()
 
