@@ -34,20 +34,16 @@ interface OperationsJobsServiceInterface {
 	/**
 	 * The run history, filtered by job, outcome and period.
 	 *
-	 * @param string|null $jobClass    Narrow to one job class.
-	 * @param string|null $outcome     Narrow to one outcome.
-	 * @param int|null    $windowHours How far back to look, null for all of it.
-	 * @param int         $limit       How many rows to return.
-	 * @param int         $offset      Where to start.
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 * @param int          $limit  How many rows to return.
+	 * @param int          $offset Where to start.
 	 *
 	 * @return array<string, mixed> The rows, and how many there are.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function runs(
-		?string $jobClass = null,
-		?string $outcome = null,
-		?int $windowHours = null,
+		JobRunFilter $filter = new JobRunFilter(),
 		int $limit = JobRunMapperInterface::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array;
@@ -80,23 +76,14 @@ interface OperationsJobsServiceInterface {
 	/**
 	 * Administer one job's schedule.
 	 *
-	 * @param string    $jobClass        The job class.
-	 * @param bool|null $enabled         Whether it may run at all.
-	 * @param int|null  $intervalSeconds How often it is due.
-	 * @param int|null  $windowStartHour The first hour it may run in.
-	 * @param int|null  $windowEndHour   The last hour it may run in.
+	 * @param string            $jobClass The job class.
+	 * @param JobScheduleChange $change   What to change; a null part is left as it is.
 	 *
 	 * @return array<string, mixed> The schedule now in force.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
-	public function administerSchedule(
-		string $jobClass,
-		?bool $enabled = null,
-		?int $intervalSeconds = null,
-		?int $windowStartHour = null,
-		?int $windowEndHour = null,
-	): array;
+	public function administerSchedule(string $jobClass, JobScheduleChange $change): array;
 
 	/**
 	 * Every job currently over the failure threshold.
