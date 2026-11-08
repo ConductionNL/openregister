@@ -52,7 +52,7 @@ namespace OCA\OpenRegister\Service;
 use DateTimeInterface;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IL10N;
@@ -500,7 +500,7 @@ class ShareLinkService implements ShareLinkServiceInterface {
 	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
 	 */
 	private function readableChildren(Folder $folder): array {
-		$guard = $this->lookup(serviceName: FileRestrictionGuard::class);
+		$guard = $this->lookup(serviceName: FileRestrictionGuardInterface::class);
 		if ($guard === null) {
 			return [];
 		}

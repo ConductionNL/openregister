@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\IL10N;
@@ -150,7 +150,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 			}
 
 			$nodes = $this->fileService->getFilesForEntity($object);
-			$nodes = $this->container->get(FileRestrictionGuard::class)->readableNodes(nodes: $nodes);
+			$nodes = $this->container->get(FileRestrictionGuardInterface::class)->readableNodes(nodes: $nodes);
 
 			return $this->normalize(nodes: $nodes);
 		} catch (\Throwable $e) {

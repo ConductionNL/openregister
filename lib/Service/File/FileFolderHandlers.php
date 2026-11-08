@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
-use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
 
 /**
  * The validation, folder, ownership and sharing handlers of the file service.
@@ -37,7 +37,7 @@ final class FileFolderHandlers {
 	 * @param FileValidationHandler   $fileValidHandler     File validation handler
 	 * @param FolderManagementHandler $folderMgmtHandler    Folder management handler
 	 * @param FileOwnershipHandlerInterface    $fileOwnershipHandler File ownership handler
-	 * @param FileSharingHandler      $fileSharingHandler   File sharing handler
+	 * @param FileSharingHandlerInterface      $fileSharingHandler   File sharing handler
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -45,7 +45,7 @@ final class FileFolderHandlers {
 		public readonly FileValidationHandler $fileValidHandler,
 		public readonly FolderManagementHandler $folderMgmtHandler,
 		public readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
-		public readonly FileSharingHandler $fileSharingHandler,
+		public readonly FileSharingHandlerInterface $fileSharingHandler,
 	) {
 	}//end __construct()
 }//end class

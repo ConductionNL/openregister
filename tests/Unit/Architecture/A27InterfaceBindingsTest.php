@@ -59,12 +59,10 @@ final class A27InterfaceBindingsTest extends TestCase {
 	/**
 	 * Lib files, other than the class itself, still allowed to name the class, and why.
 	 *
-	 * FilesRegistrar binds the interfaces to the class. ObjectHandler and
-	 * ReadFileHandler are changed by an open PR and are left for after it lands;
-	 * TextExtractionService passes its mapper on to ObjectHandler, so it keeps the
-	 * class type until ObjectHandler moves. DeleteFileHandler, UpdateFileGuards and
-	 * FrozenNodeWriteListener are delete, update and lock guards, left for an
-	 * access-reviewed pass.
+	 * FilesRegistrar binds the interfaces to the class. ObjectHandler is changed
+	 * by an open PR and is left for after it lands; TextExtractionService passes its
+	 * mapper on to ObjectHandler, so it keeps the class type until ObjectHandler
+	 * moves.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
@@ -74,13 +72,7 @@ final class A27InterfaceBindingsTest extends TestCase {
 			'Files/Service/TextExtraction/ObjectHandler.php',
 			'Files/Service/TextExtractionService.php',
 		],
-		FileOwnershipHandler::class => [
-			'Files/FilesRegistrar.php',
-			'Listener/FrozenNodeWriteListener.php',
-			'Service/File/DeleteFileHandler.php',
-			'Service/File/ReadFileHandler.php',
-			'Service/File/UpdateFileGuards.php',
-		],
+		FileOwnershipHandler::class => ['Files/FilesRegistrar.php'],
 	];
 
 	/**

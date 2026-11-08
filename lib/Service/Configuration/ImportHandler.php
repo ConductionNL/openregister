@@ -48,7 +48,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
@@ -247,9 +247,9 @@ class ImportHandler {
 	/**
 	 * Optional provisioner that gives every register an app import returns its Files folder.
 	 *
-	 * @var RegisterFolderProvisioner|null
+	 * @var RegisterFolderProvisionerInterface|null
 	 */
-	private ?RegisterFolderProvisioner $folderProvisioner = null;
+	private ?RegisterFolderProvisionerInterface $folderProvisioner = null;
 
 	/**
 	 * Optional user session for tasks/notes that require a logged-in actor.
@@ -476,14 +476,14 @@ class ImportHandler {
 	/**
 	 * Inject the provisioner importFromApp() uses to give imported registers their folder.
 	 *
-	 * @param RegisterFolderProvisioner|null $provisioner Optional provisioner; without it the
+	 * @param RegisterFolderProvisionerInterface|null $provisioner Optional provisioner; without it the
 	 *                                                    first upload makes the folder instead.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
 	 */
-	public function setRegisterFolderProvisioner(?RegisterFolderProvisioner $provisioner): void {
+	public function setRegisterFolderProvisioner(?RegisterFolderProvisionerInterface $provisioner): void {
 		$this->folderProvisioner = $provisioner;
 	}//end setRegisterFolderProvisioner()
 
