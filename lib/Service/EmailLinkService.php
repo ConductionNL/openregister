@@ -68,6 +68,7 @@ use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -172,20 +173,7 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function linkEmail(LinkTarget $target, EmailMessageRef $message): EmailLink {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in', 401);
-		}
-
-		if ($this->isMailAvailable() === false) {
-			throw new Exception('NC Mail app is not installed', 503);
-		}
-
-		if ($message->messageNumber() <= 0) {
-			throw new Exception('Invalid mail message id', 400);
-		}
-
-		$this->assertAccountOwnership(accountId: $message->mailAccountId);
+		$user = $this->requireLinkableMessage(message: $message);
 
 		// Idempotent path: return the existing row if the composite key
 		// already exists.
@@ -216,6 +204,35 @@ class EmailLinkService implements EmailLinkServiceInterface {
 
 		return $this->mapper->insert($link);
 	}//end linkEmail()
+
+	/**
+	 * The logged-in user, once Mail is available, the message id is valid and the account is theirs.
+	 *
+	 * @param EmailMessageRef $message The Mail message to link.
+	 *
+	 * @return IUser The logged-in user.
+	 *
+	 * @throws Exception On missing user (401), Mail unavailable (503), invalid
+	 *                   message id (400) or an account of somebody else.
+	 */
+	private function requireLinkableMessage(EmailMessageRef $message): IUser {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			throw new Exception('No user logged in', 401);
+		}
+
+		if ($this->isMailAvailable() === false) {
+			throw new Exception('NC Mail app is not installed', 503);
+		}
+
+		if ($message->messageNumber() <= 0) {
+			throw new Exception('Invalid mail message id', 400);
+		}
+
+		$this->assertAccountOwnership(accountId: $message->mailAccountId);
+
+		return $user;
+	}//end requireLinkableMessage()
 
 	/**
 	 * Build a new EmailLink entity for the target and message.
@@ -312,14 +329,26 @@ class EmailLinkService implements EmailLinkServiceInterface {
 		// mapper unchanged we paginate via offset derived from the
 		// numeric cursor's row index — which falls back gracefully to
 		// first-page when cursor is null.
-		$offset = $this->cursorOffset(cursor: $cursor ?? '');
+		$window = new LinkPageWindow(offset: $this->cursorOffset(cursor: $cursor ?? ''), limit: $limit);
 
-		$links = $this->mapper->findByObjectUuid($objectUuid, $limit + 1, $offset);
+		return $this->linkedEmailPage(objectUuid: $objectUuid, window: $window);
+	}//end getLinkedEmails()
+
+	/**
+	 * One page of the linked emails of an object, with the total and the next cursor.
+	 *
+	 * @param string         $objectUuid Parent OR object uuid.
+	 * @param LinkPageWindow $window     The page offset and size.
+	 *
+	 * @return array{items: array<int,array<string,mixed>>, total: int, nextCursor: ?int}
+	 */
+	private function linkedEmailPage(string $objectUuid, LinkPageWindow $window): array {
+		$links = $this->mapper->findByObjectUuid($objectUuid, $window->limit + 1, $window->offset);
 		$total = $this->mapper->countByObjectUuid($objectUuid);
 
-		$hasMore = count($links) > $limit;
+		$hasMore = count($links) > $window->limit;
 		if ($hasMore === true) {
-			$links = array_slice($links, 0, $limit);
+			$links = array_slice($links, 0, $window->limit);
 		}
 
 		$items = array_map(
@@ -327,17 +356,12 @@ class EmailLinkService implements EmailLinkServiceInterface {
 			$links
 		);
 
-		$nextCursor = null;
-		if ($hasMore === true) {
-			$nextCursor = ($offset + $limit);
-		}
-
 		return [
 			'items' => $items,
 			'total' => $total,
-			'nextCursor' => $nextCursor,
+			'nextCursor' => $window->nextCursor(hasMore: $hasMore),
 		];
-	}//end getLinkedEmails()
+	}//end linkedEmailPage()
 
 	/**
 	 * The row offset a paging cursor stands for: 0 for none, never negative.
@@ -423,11 +447,6 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	 *
 	 * @return array{items: array<int,array{id:int,uid:string,subject:?string,sender:?string,date:?string}>, nextCursor: ?int}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Step-3 fetch
-	 *     composes several guard clauses (Mail availability, mailbox
-	 *     resolution, cursor parse, ownership) then a defensive
-	 *     try/catch around the join query.
-	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getMessagesForMailbox(
@@ -436,16 +455,30 @@ class EmailLinkService implements EmailLinkServiceInterface {
 		?string $afterCursor,
 		int $limit = self::DEFAULT_LIMIT,
 	): array {
-		if ($this->isMailAvailable() === false || $accountId <= 0 || $mailbox === '') {
-			return ['items' => [], 'nextCursor' => null];
-		}
-
-		$this->assertAccountOwnership(accountId: $accountId);
 		$page = (new MailboxPage(accountId: $accountId, mailbox: $mailbox))
 			->startingAfter(afterCursor: $afterCursor, limit: max(1, min($limit, self::MAX_LIMIT)));
 
-		return $this->messagePage(page: $page, rows: $this->fetchMailboxRows(page: $page));
+		return $this->messagesOn(page: $page);
 	}//end getMessagesForMailbox()
+
+	/**
+	 * The picker page of a mailbox, once Mail is available and the account is the caller's.
+	 *
+	 * @param MailboxPage $page The requested account, mailbox, cursor and size.
+	 *
+	 * @return array{items: array<int,array<string,mixed>>, nextCursor: ?int}
+	 *
+	 * @throws Exception When the account is not the caller's.
+	 */
+	private function messagesOn(MailboxPage $page): array {
+		if ($this->isMailAvailable() === false || $page->accountId <= 0 || $page->mailbox === '') {
+			return ['items' => [], 'nextCursor' => null];
+		}
+
+		$this->assertAccountOwnership(accountId: $page->accountId);
+
+		return $this->messagePage(page: $page, rows: $this->fetchMailboxRows(page: $page));
+	}//end messagesOn()
 
 	/**
 	 * Shape fetched message rows as a picker page.
