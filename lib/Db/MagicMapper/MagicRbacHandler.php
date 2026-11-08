@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\SystemOperationContext;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -1398,12 +1399,14 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * qualifies for the group AND (when object data is supplied) ConditionMatcher
 	 * confirms the object satisfies the match clause.
 	 *
+	 * The row's own `_authorization` and uuid are not in play here; a check on
+	 * a stored row goes through {@see hasRowPermission()}, which reads them off
+	 * the row.
+	 *
 	 * @param Schema $schema Schema to check
 	 * @param string $action CRUD action to check
 	 * @param string|null $objectOwner Optional object owner for ownership check
 	 * @param array|null $objectData Optional object data for conditional checks
-	 * @param array|null $objectAuthorization Optional per-object `_authorization`, carrying its scope
-	 * @param string|null $objectUuid Optional object UUID, for per-object grant resolution
 	 *
 	 * @return bool True if user has permission
 	 *
@@ -1414,13 +1417,46 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		string $action,
 		?string $objectOwner = null,
 		?array $objectData = null,
-		?array $objectAuthorization = null,
-		?string $objectUuid = null,
 	): bool {
 		$check = $this->permissionCheckFor(schema: $schema, action: $action)
-			->onObject(objectData: $objectData, objectAuthorization: $objectAuthorization)
-			->identifiedBy(objectUuid: $objectUuid);
+			->onObject(objectData: $objectData, objectAuthorization: null)
+			->identifiedBy(objectUuid: null);
 
+		return $this->verdictOf(check: $check, objectOwner: $objectOwner);
+	}//end hasPermission()
+
+	/**
+	 * Check if a user has permission to perform an action on one stored row.
+	 *
+	 * The row supplies every object fact of the check: its owner, its match
+	 * envelope, its own `_authorization` (carrying scope and deny) and its uuid
+	 * (for per-object grants).
+	 *
+	 * @param Schema       $schema Schema to check
+	 * @param string       $action CRUD action to check
+	 * @param ObjectEntity $row    The stored row
+	 *
+	 * @return bool True if user has permission
+	 *
+	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 */
+	public function hasRowPermission(Schema $schema, string $action, ObjectEntity $row): bool {
+		$check = $this->permissionCheckFor(schema: $schema, action: $action)
+			->onObject(objectData: $row->getMatchEnvelope(), objectAuthorization: $row->getAuthorization())
+			->identifiedBy(objectUuid: $row->getUuid());
+
+		return $this->verdictOf(check: $check, objectOwner: $row->getOwner());
+	}//end hasRowPermission()
+
+	/**
+	 * The verdict of one prepared permission check.
+	 *
+	 * @param RbacPermissionCheck $check       The check, with its caller and object set.
+	 * @param string|null         $objectOwner The object owner, for the ownership check.
+	 *
+	 * @return bool True if user has permission
+	 */
+	private function verdictOf(RbacPermissionCheck $check, ?string $objectOwner): bool {
 		// Admin users have all permissions.
 		if ($check->callerIsAdmin() === true) {
 			return true;
@@ -1433,7 +1469,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		}
 
 		return $this->objectVerdict(check: $check, objectOwner: $objectOwner);
-	}//end hasPermission()
+	}//end verdictOf()
 
 	/**
 	 * Resolve the cascaded authorization block of a permission check.

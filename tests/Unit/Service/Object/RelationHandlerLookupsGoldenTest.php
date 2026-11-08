@@ -319,11 +319,13 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->method('isAdmin')->willReturnCallback(fn (): bool => in_array($this->uid, $this->admins, true));
 		$rbac->method('getCurrentUserId')->willReturnCallback(fn (): ?string => $this->uid);
-		$rbac->method('hasPermission')->willReturnCallback(
-			function (...$args): bool {
-				$this->record(name: 'hasPermission', args: $args);
-				$uuid = $args[5] ?? null;
-				return $this->uid !== null && in_array($uuid, ($this->readableByUser[$this->uid] ?? []), true) === true;
+		$rbac->method('hasRowPermission')->willReturnCallback(
+			function (Schema $schema, string $action, ObjectEntity $row): bool {
+				// The row's facts are recorded as the old six-argument call passed
+				// them, so the golden shows the same facts reach the verdict.
+				$facts = [$schema, $action, $row->getOwner(), $row->getMatchEnvelope(), $row->getAuthorization(), $row->getUuid()];
+				$this->record(name: 'hasRowPermission', args: $facts);
+				return $this->uid !== null && in_array($row->getUuid(), ($this->readableByUser[$this->uid] ?? []), true) === true;
 			}
 		);
 

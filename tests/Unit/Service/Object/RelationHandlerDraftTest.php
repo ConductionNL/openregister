@@ -98,7 +98,7 @@ class RelationHandlerDraftTest extends TestCase {
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->method('isAdmin')->willReturn($isAdmin);
 		$rbac->method('getCurrentUserId')->willReturn($caller);
-		$rbac->method('hasPermission')->willReturn(true);
+		$rbac->method('hasRowPermission')->willReturn(true);
 
 		$handler = new RelationHandler(
 			objectEntityMapper: $magic,

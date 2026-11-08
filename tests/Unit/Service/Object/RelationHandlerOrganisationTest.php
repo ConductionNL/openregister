@@ -95,8 +95,8 @@ class RelationHandlerOrganisationTest extends TestCase {
 		$rbac = $this->createMock(originalClassName: MagicRbacHandler::class);
 		$rbac->method('isAdmin')->willReturn(false);
 		$rbac->method('getCurrentUserId')->willReturn('bob');
-		// A schema without authorization rules: hasPermission() admits every caller.
-		$rbac->method('hasPermission')->willReturn(true);
+		// A schema without authorization rules: hasRowPermission() admits every caller.
+		$rbac->method('hasRowPermission')->willReturn(true);
 
 		$handler = new RelationHandler(
 			objectEntityMapper: $magic,

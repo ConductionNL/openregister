@@ -28,6 +28,7 @@ namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -131,15 +132,32 @@ class MagicRbacHandlerRowVerdictGoldenTest extends TestCase {
 	 * @return bool The verdict.
 	 */
 	private function rowVerdict(MagicRbacHandler $handler, Schema $schema, string $action, string $owner, ?array $rowAuth): bool {
-		return $handler->hasPermission(
+		return $handler->hasRowPermission(
 			schema: $schema,
 			action: $action,
-			objectOwner: $owner,
-			objectData: ['title' => 'rij'],
-			objectAuthorization: $rowAuth,
-			objectUuid: 'cccccccc-0000-0000-0000-000000000001'
+			row: $this->row($owner, ['title' => 'rij'], $rowAuth, 'cccccccc-0000-0000-0000-000000000001')
 		);
 	}//end rowVerdict()
+
+	/**
+	 * A stored row carrying the facts of one check.
+	 *
+	 * @param string     $owner         The row owner.
+	 * @param array      $data          The row's object data.
+	 * @param array|null $authorization The row's own `_authorization`.
+	 * @param string     $uuid          The row's uuid.
+	 *
+	 * @return ObjectEntity The row.
+	 */
+	private function row(string $owner, array $data, ?array $authorization, string $uuid): ObjectEntity {
+		$row = new ObjectEntity();
+		$row->setUuid($uuid);
+		$row->setOwner($owner);
+		$row->setObject($data);
+		$row->setAuthorization($authorization);
+
+		return $row;
+	}//end row()
 
 	/**
 	 * Build an enforcing handler for one caller and their groups.
