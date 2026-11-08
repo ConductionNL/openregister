@@ -53,10 +53,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AnalyticsLink;
 use OCA\OpenRegister\Db\AnalyticsLinkMapperInterface;
-use OCP\App\IAppManager;
-use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -113,16 +110,12 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * Constructor.
 	 *
 	 * @param AnalyticsLinkMapperInterface $analyticsLinkMapper Persistence for link rows.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 * @param ContainerInterface $container App container NC Analytics' ReportService is resolved from.
 	 */
 	public function __construct(
 		private readonly AnalyticsLinkMapperInterface $analyticsLinkMapper,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
@@ -133,7 +126,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isAnalyticsAvailable(): bool {
-		return $this->appManager->isEnabledForUser(self::REQUIRED_APP);
+		return $this->runtime->appManager()->isEnabledForUser(self::REQUIRED_APP);
 	}//end isAnalyticsAvailable()
 
 	/**
@@ -144,7 +137,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
 		}
@@ -173,7 +166,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		try {
 			return $this->container->get(self::REPORT_SERVICE);
 		} catch (Throwable $e) {
-			$this->logger->debug('AnalyticsLinkService: ReportService unavailable: ' . $e->getMessage());
+			$this->runtime->logger()->debug('AnalyticsLinkService: ReportService unavailable: ' . $e->getMessage());
 			return null;
 		}
 	}//end resolveReportService()
@@ -304,7 +297,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		try {
 			return (int)$service->create(...$args);
 		} catch (Throwable $e) {
-			$this->logger->warning('AnalyticsLinkService::createAndLinkReport failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('AnalyticsLinkService::createAndLinkReport failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Analytics report', 500);
 		}
 	}//end invokeCreate()
@@ -425,7 +418,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		try {
 			return $service->index();
 		} catch (Throwable $e) {
-			$this->logger->warning('AnalyticsLinkService::getAvailableReports failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('AnalyticsLinkService::getAvailableReports failed: ' . $e->getMessage());
 			return [];
 		}
 	}//end indexReports()
@@ -582,7 +575,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		try {
 			return $this->analyticsLinkMapper->update($link);
 		} catch (Throwable $e) {
-			$this->logger->debug('AnalyticsLinkService::refreshLink update failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('AnalyticsLinkService::refreshLink update failed: ' . $e->getMessage());
 			return $link;
 		}
 	}//end saveRefreshed()
@@ -625,7 +618,7 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 		try {
 			return $service->read($reportId);
 		} catch (Throwable $e) {
-			$this->logger->debug('AnalyticsLinkService::fetchReportInfo read failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('AnalyticsLinkService::fetchReportInfo read failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end readReport()
