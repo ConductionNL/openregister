@@ -203,6 +203,7 @@ import {
 } from '@nextcloud/vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
@@ -273,6 +274,7 @@ export default {
 		FilterOutline,
 		ChartLine,
 		CogOutline,
+		Delete,
 		Plus,
 		Pencil,
 		Eye,
