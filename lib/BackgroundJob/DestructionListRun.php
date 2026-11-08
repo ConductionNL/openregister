@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
-use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\IGroupManager;
@@ -102,9 +102,9 @@ final class DestructionListRun {
 	/**
 	 * Saves the destruction certificate.
 	 *
-	 * @var SaveObject
+	 * @var SaveObjectWriterInterface
 	 */
-	private readonly SaveObject $saveObject;
+	private readonly SaveObjectWriterInterface $saveObject;
 
 	/**
 	 * Archival settings.
@@ -151,7 +151,7 @@ final class DestructionListRun {
 		$this->objectMapper     = $container->get(MagicMapperInterface::class);
 		$this->auditMapper      = $container->get(AuditTrailMapperInterface::class);
 		$this->deleteObject     = $container->get(DeleteObject::class);
-		$this->saveObject       = $container->get(SaveObject::class);
+		$this->saveObject       = $container->get(SaveObjectWriterInterface::class);
 		$this->settings         = $settingsHandler->getArchivalSettingsOnly();
 	}//end __construct()
 

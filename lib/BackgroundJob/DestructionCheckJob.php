@@ -34,6 +34,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\AppraisalInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -143,7 +144,7 @@ class DestructionCheckJob extends TimedJob {
 				return;
 			}
 
-			$saveObject = $this->container->get(\OCA\OpenRegister\Service\Object\SaveObject::class);
+			$saveObject = $this->container->get(SaveObjectWriterInterface::class);
 			$savedList = $saveObject->saveObject(
 				$settings['destructionListRegister'],
 				$settings['destructionListSchema'],
