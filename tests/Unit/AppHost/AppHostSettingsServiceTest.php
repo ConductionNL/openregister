@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -167,7 +167,7 @@ class AppHostSettingsServiceTest extends TestCase {
 		$appManager->method('getAppPath')->with('myapp')->willReturn($appPath);
 		$appManager->method('getAppVersion')->with('myapp')->willReturn('9.9.9');
 
-		$configurationService = $this->createMock(ConfigurationService::class);
+		$configurationService = $this->createMock(ConfigurationServiceInterface::class);
 		$configurationService->expects($this->once())
 			->method('importFromApp')
 			->with(
@@ -180,7 +180,7 @@ class AppHostSettingsServiceTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')
-			->with('OCA\OpenRegister\Service\ConfigurationService')
+			->with('OCA\OpenRegister\Service\ConfigurationServiceInterface')
 			->willReturn($configurationService);
 
 		$result = $this->service(
@@ -216,7 +216,7 @@ class AppHostSettingsServiceTest extends TestCase {
 
 		$capturedVersion = null;
 		$capturedData = null;
-		$configurationService = $this->createMock(ConfigurationService::class);
+		$configurationService = $this->createMock(ConfigurationServiceInterface::class);
 		$configurationService->expects($this->once())
 			->method('importFromApp')
 			->willReturnCallback(function ($appId, $data, $version, $force) use (&$capturedVersion, &$capturedData) {

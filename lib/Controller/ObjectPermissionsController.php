@@ -42,8 +42,8 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
-use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
+use OCA\OpenRegister\Service\Rbac\AccessReviewGateInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectAccessReportInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -65,16 +65,16 @@ class ObjectPermissionsController extends Controller {
 	 * @param string             $appName       Application identifier.
 	 * @param IRequest           $request       Active HTTP request.
 	 * @param ObjectOperationsInterface      $objectService Names the register and schema the request resolved.
-	 * @param ObjectAccessReport $report        Assembles the answer.
-	 * @param AccessReviewGate   $gate          Resolves the object and decides who may ask.
+	 * @param ObjectAccessReportInterface $report        Assembles the answer.
+	 * @param AccessReviewGateInterface   $gate          Resolves the object and decides who may ask.
 	 * @param LoggerInterface    $logger        Records why an access set could not be assembled.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly ObjectAccessReport $report,
-		private readonly AccessReviewGate $gate,
+		private readonly ObjectAccessReportInterface $report,
+		private readonly AccessReviewGateInterface $gate,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

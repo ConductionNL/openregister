@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\Service\Operations\JobRunContext;
 use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
 use OCA\OpenRegister\Service\Operations\JobScheduleServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -85,7 +86,7 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 			work: function () use ($argument): void {
 				$this->runRecorded(argument: $argument);
 			},
-			argument: $argument
+			context: new JobRunContext(argument: $argument)
 		);
 
 	}//end run()

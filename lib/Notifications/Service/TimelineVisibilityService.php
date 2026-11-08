@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Notifications\Service;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -63,7 +63,7 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface     $schemaMapper     Resolves the object's schema for the permission check.
-	 * @param PermissionHandlerInterface $permissionHandler Canonical RBAC verdict.
+	 * @param PermissionCheckInterface $permissionHandler Canonical RBAC verdict.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Writes the audit entry on a change.
 	 * @param IUserSession     $userSession      Current caller.
 	 * @param LoggerInterface  $logger           Logger for the fail-closed paths.
@@ -72,7 +72,7 @@ class TimelineVisibilityService implements TimelineVisibilityServiceInterface {
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PermissionHandlerInterface $permissionHandler,
+		private readonly PermissionCheckInterface $permissionHandler,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

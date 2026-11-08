@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationStores;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -121,7 +122,15 @@ class ReferencedCalculationRefresherTest extends TestCase {
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturn(value: $service);
 
-		return new ReferencedCalculationRefresher(registers: $registers, schemas: $schemas, rows: $rows, container: $container, logger: new NullLogger());
+		return new ReferencedCalculationRefresher(
+			new ReferencedCalculationStores(
+				$registers,
+				$schemas,
+				$rows
+			),
+			$container,
+			new NullLogger()
+		);
 	}//end refresher()
 
 	/**

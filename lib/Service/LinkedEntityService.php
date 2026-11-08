@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionEnforcementInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -101,9 +101,9 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	/**
 	 * RBAC handler for write-permission checks (SEC-CTRL-4).
 	 *
-	 * @var PermissionHandlerInterface
+	 * @var PermissionEnforcementInterface
 	 */
-	private readonly PermissionHandlerInterface $permissionHandler;
+	private readonly PermissionEnforcementInterface $permissionHandler;
 
 	/**
 	 * Deep-link registry service for cross-app deep links.
