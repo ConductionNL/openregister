@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -111,7 +112,7 @@ class RetentionRowScannerGoldenTest extends TestCase {
 			);
 		}
 
-		return new RetentionRowScanner(db: $db, registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper, logger: $logger);
+		return new RetentionRowScanner(db: $db, mappers: new ArchivalRegisterMappers(registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper), logger: $logger);
 	}//end scanner()
 
 	/**

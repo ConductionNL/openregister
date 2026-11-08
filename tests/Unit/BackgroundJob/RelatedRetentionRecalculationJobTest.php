@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -124,7 +125,7 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 			$logger,
 			$this->createMock(RetentionRowScanner::class),
 			$calculator,
-			new SelectielijstResolver($this->objectMapper, $this->schemaMapper, $this->registerMapper, $settings, $logger),
+			new SelectielijstResolver(new ArchivalRegisterMappers($this->registerMapper, $this->schemaMapper, $this->objectMapper), $settings, $logger),
 		);
 
 		$this->job = new RelatedRetentionRecalculationJob(

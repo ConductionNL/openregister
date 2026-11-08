@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
+use OCA\OpenRegister\Service\Archival\LegalHoldRecords;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -49,13 +50,7 @@ class LegalHoldServiceTest extends TestCase {
 		$this->jobList = $this->createMock(IJobList::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->service = new LegalHoldService(
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->userSession,
-			$this->jobList,
-			$this->logger
-		);
+		$this->service = new LegalHoldService(new LegalHoldRecords($this->objectMapper, $this->auditTrailMapper), $this->userSession, $this->jobList, $this->logger);
 	}
 
 	/**

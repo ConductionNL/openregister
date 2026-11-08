@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -81,13 +82,7 @@ class RetentionServiceTest extends TestCase {
 			// selectielijst derivation tests below assert which ROW was
 			// applied, and a mocked resolver would assert only that this class
 			// asked something.
-			new SelectielijstResolver(
-				$this->objectMapper,
-				$this->schemaMapper,
-				$this->registerMapper,
-				$this->settingsHandler,
-				$this->logger
-			),
+			new SelectielijstResolver(new ArchivalRegisterMappers($this->registerMapper, $this->schemaMapper, $this->objectMapper), $this->settingsHandler, $this->logger),
 		);
 	}//end setUp()
 

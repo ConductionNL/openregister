@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
+use OCA\OpenRegister\Service\Archival\LegalHoldRecords;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -56,13 +57,7 @@ class LegalHoldPerMatterTest extends TestCase {
 		$mapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['update'])->getMock();
 		$mapper->method('update')->willReturnArgument(0);
 
-		$this->service = new LegalHoldService(
-			$mapper,
-			$this->createMock(AuditTrailMapper::class),
-			$session,
-			$this->createMock(IJobList::class),
-			new NullLogger()
-		);
+		$this->service = new LegalHoldService(new LegalHoldRecords($mapper, $this->createMock(AuditTrailMapper::class)), $session, $this->createMock(IJobList::class), new NullLogger());
 	}//end setUp()
 
 	private function object(array $retention = []): ObjectEntity {

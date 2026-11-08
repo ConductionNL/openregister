@@ -28,9 +28,12 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
+use OCA\OpenRegister\Service\Archival\DestructionListWriter;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
+use OCA\OpenRegister\Service\Archival\DestructionPlatform;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
@@ -139,13 +142,7 @@ class DestructionGoldenTest extends TestCase {
 			}
 		);
 
-		return new DestructionService(
-			objectMapper: $this->mapper(),
-			appConfig: $config,
-			jobList: $jobs,
-			userSession: $session,
-			logger: $this->createMock(LoggerInterface::class),
-		);
+		return new DestructionService(platform: new DestructionPlatform(objectMapper: $this->mapper(), appConfig: $config, jobList: $jobs), userSession: $session, logger: $this->createMock(LoggerInterface::class));
 	}//end destruction()
 
 	/**
@@ -488,13 +485,7 @@ class DestructionGoldenTest extends TestCase {
 		$handler = $this->createMock(ObjectRetentionHandler::class);
 		$handler->method('getArchivalSettingsOnly')->willReturn($settings);
 
-		return new DestructionListCreator(
-			retention: $retention,
-			objectMapper: $this->mapper(),
-			saveObject: $save,
-			settingsHandler: $handler,
-			logger: $this->createMock(LoggerInterface::class)
-		);
+		return new DestructionListCreator(retention: $retention, writer: new DestructionListWriter(objectMapper: $this->mapper(), saveObject: $save), settingsHandler: $handler, logger: $this->createMock(LoggerInterface::class));
 	}//end creator()
 
 	public function testRecordingAnAnswerWritesTheEntryAndTheHistory(): void {
@@ -767,13 +758,7 @@ class DestructionGoldenTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->method('find')->willReturn(new Schema());
 
-		$repository = new DestructionListRepository(
-			objectMapper: $mapper,
-			registerMapper: $registers,
-			schemaMapper: $schemas,
-			settingsHandler: $handler,
-			logger: $this->createMock(LoggerInterface::class)
-		);
+		$repository = new DestructionListRepository(mappers: new ArchivalRegisterMappers(registerMapper: $registers, schemaMapper: $schemas, objectMapper: $mapper), settingsHandler: $handler, logger: $this->createMock(LoggerInterface::class));
 
 		$this->assertSame(
 			[

@@ -18,6 +18,7 @@ namespace Unit\Service\Archival;
 
 use Exception;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -75,7 +76,7 @@ class SelectielijstResolverGoldenTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		return new SelectielijstResolver($objectMapper, $schemaMapper, $registerMapper, $handler, new NullLogger());
+		return new SelectielijstResolver(new ArchivalRegisterMappers($registerMapper, $schemaMapper, $objectMapper), $handler, new NullLogger());
 	}
 
 	/**

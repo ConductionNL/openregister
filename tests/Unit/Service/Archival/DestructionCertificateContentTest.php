@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DestructionService;
+use OCA\OpenRegister\Service\Archival\DestructionPlatform;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
@@ -85,13 +86,7 @@ class DestructionCertificateContentTest extends TestCase {
 			->onlyMethods(['update'])
 			->getMock();
 
-		$this->destructionService = new DestructionService(
-			$objectMapper,
-			$appConfig,
-			$this->jobList,
-			$userSession,
-			$this->createMock(LoggerInterface::class)
-		);
+		$this->destructionService = new DestructionService(new DestructionPlatform($objectMapper, $appConfig, $this->jobList), $userSession, $this->createMock(LoggerInterface::class));
 
 		$this->retentionService = new RetentionService(
 			$objectMapper,

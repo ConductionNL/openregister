@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace Unit\Service\Archival;
 
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -69,14 +70,7 @@ class SelectionListSeederGoldenTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		return new SelectionListSeeder(
-			settingsHandler: $handler,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			objectMapper: $objectMapper,
-			saveObject: $saveObject,
-			logger: new NullLogger()
-		);
+		return new SelectionListSeeder(settingsHandler: $handler, mappers: new ArchivalRegisterMappers(registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper), saveObject: $saveObject, logger: new NullLogger());
 	}
 
 	/**

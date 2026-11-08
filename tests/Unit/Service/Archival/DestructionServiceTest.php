@@ -19,6 +19,7 @@ use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionService;
+use OCA\OpenRegister\Service\Archival\DestructionPlatform;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -50,13 +51,7 @@ class DestructionServiceTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->service = new DestructionService(
-			$this->objectMapper,
-			$this->appConfig,
-			$this->jobList,
-			$this->userSession,
-			$this->logger
-		);
+		$this->service = new DestructionService(new DestructionPlatform($this->objectMapper, $this->appConfig, $this->jobList), $this->userSession, $this->logger);
 
 		// Default app config behavior.
 		$this->appConfig->method('getValueString')

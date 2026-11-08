@@ -38,9 +38,6 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCP\BackgroundJob\IJobList;
-use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -82,61 +79,17 @@ class DestructionService implements DestructionServiceInterface {
 	];
 
 	/**
-	 * Object entity mapper.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private MagicMapperInterface $objectMapper;
-
-	/**
-	 * App configuration.
-	 *
-	 * @var IAppConfig
-	 */
-	private IAppConfig $appConfig;
-
-	/**
-	 * Background job list.
-	 *
-	 * @var IJobList
-	 */
-	private IJobList $jobList;
-
-	/**
-	 * User session.
-	 *
-	 * @var IUserSession
-	 */
-	private IUserSession $userSession;
-
-	/**
-	 * Logger instance.
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $objectMapper Object entity data mapper.
-	 * @param IAppConfig $appConfig App configuration.
-	 * @param IJobList $jobList Background job list.
+	 * @param DestructionPlatform $platform The list objects, the archival configuration and the job queue.
 	 * @param IUserSession $userSession User session service.
 	 * @param LoggerInterface $logger Logger instance.
 	 */
 	public function __construct(
-		MagicMapperInterface $objectMapper,
-		IAppConfig $appConfig,
-		IJobList $jobList,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		private readonly DestructionPlatform $platform,
+		private readonly IUserSession $userSession,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->objectMapper = $objectMapper;
-		$this->appConfig = $appConfig;
-		$this->jobList = $jobList;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -306,7 +259,7 @@ class DestructionService implements DestructionServiceInterface {
 	private function markApproved(array $destructionList, DestructionApproval $approval): array {
 		$destructionList['status'] = self::STATUS_APPROVED;
 
-		$this->jobList->add(
+		$this->platform->jobList->add(
 			\OCA\OpenRegister\BackgroundJob\DestructionExecutionJob::class,
 			['destructionListUuid' => ($approval->listUuid ?? $destructionList['uuid'] ?? null)]
 		);
@@ -651,7 +604,7 @@ class DestructionService implements DestructionServiceInterface {
 	 * @return string ISO 8601 duration.
 	 */
 	private function extensionPeriod(): string {
-		return $this->appConfig->getValueString(
+		return $this->platform->appConfig->getValueString(
 			app: 'openregister',
 			key: 'destruction_extension_period',
 			default: self::DEFAULT_EXTENSION_PERIOD
@@ -670,9 +623,9 @@ class DestructionService implements DestructionServiceInterface {
 	 */
 	private function extendArchiveActionDate(string $uuid, RetentionExtension $extension): void {
 		try {
-			$object = $this->objectMapper->find($uuid);
+			$object = $this->platform->objectMapper->find($uuid);
 			$object->setRetention($this->extendedRetention(retention: ($object->getRetention() ?? []), extension: $extension));
-			$this->objectMapper->update($object);
+			$this->platform->objectMapper->update($object);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[DestructionService] Failed to extend archiefactiedatum',

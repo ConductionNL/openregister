@@ -36,11 +36,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -109,16 +106,12 @@ class RetentionRowScanner {
 	 * Constructor.
 	 *
 	 * @param IDBConnection   $db             Database connection for the row scans.
-	 * @param RegisterMapperInterface  $registerMapper Register repository, used to enumerate pairs.
-	 * @param SchemaMapperInterface    $schemaMapper   Schema repository, used to enumerate pairs.
-	 * @param MagicMapperInterface     $objectMapper   Magic-table resolver and row hydrator.
+	 * @param ArchivalRegisterMappers $mappers The register, schema and object mappers.
 	 * @param LoggerInterface $logger         Logger for skipped sources and truncated runs.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
+		private readonly ArchivalRegisterMappers $mappers,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -251,7 +244,7 @@ class RetentionRowScanner {
 	 */
 	private function registers(): array {
 		try {
-			return $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+			return $this->mappers->registerMapper->findAll(_rbac: false, _multitenancy: false);
 		} catch (Exception $e) {
 			$this->logger->warning(
 				'[RetentionRowScanner] Could not enumerate registers for the retention scan: ' . $e->getMessage(),
@@ -290,13 +283,13 @@ class RetentionRowScanner {
 	 */
 	private function magicTableSource(Register $register, string|int $schemaId): ?array {
 		try {
-			$schema = $this->schemaMapper->find((int)$schemaId);
+			$schema = $this->mappers->schemaMapper->find((int)$schemaId);
 
-			if ($this->objectMapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+			if ($this->mappers->objectMapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
 				return null;
 			}
 
-			$table = $this->objectMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
+			$table = $this->mappers->objectMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
 		} catch (Exception $e) {
 			$this->skipPair(register: $register, schemaId: $schemaId, error: $e);
 			return null;
@@ -483,7 +476,7 @@ class RetentionRowScanner {
 				return ObjectEntity::fromRow($row);
 			}
 
-			return $this->objectMapper->find($row[$source['idColumn']], $source['register'], $source['schema'], false, false, false);
+			return $this->mappers->objectMapper->find($row[$source['idColumn']], $source['register'], $source['schema'], false, false, false);
 		} catch (Exception $e) {
 			return null;
 		}

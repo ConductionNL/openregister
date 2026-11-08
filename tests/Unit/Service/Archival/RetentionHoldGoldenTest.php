@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
 use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
+use OCA\OpenRegister\Service\Archival\LegalHoldRecords;
 use OCA\OpenRegister\Service\Archival\RetentionConditionEvaluator;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
@@ -113,14 +114,7 @@ class RetentionHoldGoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		return new LegalHoldService(
-			objectMapper: $mapper,
-			auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class),
-			userSession: $session,
-			jobList: $jobs,
-			logger: $this->createMock(LoggerInterface::class),
-			scanner: $scanner
-		);
+		return new LegalHoldService(records: new LegalHoldRecords(objectMapper: $mapper, auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class), scanner: $scanner), userSession: $session, jobList: $jobs, logger: $this->createMock(LoggerInterface::class));
 	}//end holds()
 
 	public function testHoldsArePlacedPerMatterAndReleasedPerMatterOrAll(): void {
