@@ -378,12 +378,16 @@ use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\MatrixRowKeys;
 use OCA\OpenRegister\Service\Rbac\MatrixRowWhere;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\RevealFlusher;
 use OCA\OpenRegister\Service\Rbac\RevealFlusherInterface;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
@@ -594,6 +598,8 @@ final class ContractBindings {
 		DeepLinkResolverInterface::class => DeepLinkRegistryService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
 		DenyResolverInterface::class => DenyResolver::class,
+		ObjectGrantResolverInterface::class => ObjectGrantResolver::class,
+		SchemaManageGateInterface::class => SchemaManageGate::class,
 		DependentValueTableInterface::class => DependentValueTable::class,
 		DraftActivationInterface::class => DraftActivation::class,
 		DraftExpiryInterface::class => DraftExpiry::class,
