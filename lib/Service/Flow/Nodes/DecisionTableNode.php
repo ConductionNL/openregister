@@ -325,7 +325,7 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	private function resolveTable(array $config): array {
 		$table     = ($config['table'] ?? null);
 		$reference = trim((string)($config['tableRef'] ?? ''));
-		$hasInline = (is_array($table) === true && $table !== []);
+		$hasInline = $this->isInlineTable(table: $table);
 
 		if ($hasInline === true && $reference !== '') {
 			throw new UnexpectedValueException(
@@ -337,7 +337,37 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 			return $this->storedTable(reference: $reference);
 		}
 
-		if ($hasInline === false) {
+		return $this->validatedInlineTable(table: $table);
+	}//end resolveTable()
+
+	/**
+	 * Whether a config's `table` is a non-empty inline table.
+	 *
+	 * @param mixed $table The configured table.
+	 *
+	 * @return bool True for a non-empty array.
+	 *
+	 * @phpstan-assert-if-true array $table
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md
+	 */
+	private function isInlineTable(mixed $table): bool {
+		return is_array($table) === true && $table !== [];
+	}//end isInlineTable()
+
+	/**
+	 * The inline table, refused when it is missing or the validator finds problems.
+	 *
+	 * @param mixed $table The configured table.
+	 *
+	 * @return array The table.
+	 *
+	 * @throws UnexpectedValueException When there is no table, or it cannot be run.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md
+	 */
+	private function validatedInlineTable(mixed $table): array {
+		if ($this->isInlineTable(table: $table) === false) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('A decision-table step needs a table.')
 			);
@@ -351,7 +381,7 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 		}
 
 		return $table;
-	}//end resolveTable()
+	}//end validatedInlineTable()
 
 	/**
 	 * Read a stored table, which the store has already validated.
@@ -516,7 +546,28 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 			return;
 		}
 
-		if (is_array($config['defaultOutputs']) === false) {
+		$defaults = $config['defaultOutputs'];
+		$this->assertDefaultsShape(defaults: $defaults, table: $table);
+		$this->assertDefaultsCover(defaults: $defaults, outputNames: $outputNames);
+
+	}//end assertDefaults()
+
+	/**
+	 * Refuse a default row that is not a map, or one on a COLLECT table.
+	 *
+	 * @param mixed $defaults The configured `defaultOutputs`.
+	 * @param array $table    The resolved table.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the default row cannot be used.
+	 *
+	 * @phpstan-assert array $defaults
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md
+	 */
+	private function assertDefaultsShape(mixed $defaults, array $table): void {
+		if (is_array($defaults) === false) {
 			throw new UnexpectedValueException(
 				$this->l10n->t('The defaultOutputs must be an object of output name to value.')
 			);
@@ -528,15 +579,30 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 			);
 		}
 
+	}//end assertDefaultsShape()
+
+	/**
+	 * Refuse a default row that misses a declared output or names an undeclared one.
+	 *
+	 * @param array              $defaults    The default row.
+	 * @param array<int, string> $outputNames The table's declared outputs.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException On a partial or over-wide default row.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md
+	 */
+	private function assertDefaultsCover(array $defaults, array $outputNames): void {
 		foreach ($outputNames as $name) {
-			if (array_key_exists($name, $config['defaultOutputs']) === false) {
+			if (array_key_exists($name, $defaults) === false) {
 				throw new UnexpectedValueException(
 					$this->l10n->t('The defaultOutputs are missing a value for output "%s". A partial default writes half a decision.', [$name])
 				);
 			}
 		}
 
-		foreach (array_keys($config['defaultOutputs']) as $name) {
+		foreach (array_keys($defaults) as $name) {
 			if (in_array((string)$name, $outputNames, true) === false) {
 				throw new UnexpectedValueException(
 					$this->l10n->t('The defaultOutputs name "%s", which the table does not declare. The step would silently ignore it.', [(string)$name])
@@ -544,7 +610,7 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 			}
 		}
 
-	}//end assertDefaults()
+	}//end assertDefaultsCover()
 
 	/**
 	 * Refuse a field path that is empty, not a string, or templated.
