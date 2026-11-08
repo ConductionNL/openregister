@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\RulesControllerServices;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue;
 use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -426,8 +426,8 @@ class RulesController extends Controller {
 			return $verdict;
 		}
 
-		$since = ExampleSetTaskDates::moment(value: $this->request->getParam('since'));
-		$until = ExampleSetTaskDates::moment(value: $this->request->getParam('until'));
+		$since = ExampleSetDateValue::moment(value: $this->request->getParam('since'));
+		$until = ExampleSetDateValue::moment(value: $this->request->getParam('until'));
 		$limit = (int)($this->request->getParam('limit') ?? RuleRunMapperInterface::DEFAULT_LIMIT);
 		$offset = (int)($this->request->getParam('offset') ?? 0);
 

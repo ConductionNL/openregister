@@ -58,7 +58,8 @@ use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
@@ -174,9 +175,9 @@ class SchemasController extends Controller {
 	 * mappers — exercising the REAL resolution path instead of a mock of the very
 	 * thing under test.
 	 *
-	 * @var RegisterScopedSchemaResolver
+	 * @var RegisterScopedSchemaResolverInterface
 	 */
-	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+	private readonly RegisterScopedSchemaResolverInterface $scopedSchemaResolver;
 
 	/**
 	 * The call site for the reference-filter operand check.
@@ -313,7 +314,7 @@ class SchemasController extends Controller {
 		$this->schemaImportService = $services->semantics->schemaImportService;
 		$this->semanticTypeResolver = $services->semantics->semanticTypeResolver;
 		$this->semanticRoles = $services->semantics->semanticRoles;
-		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
+		$this->scopedSchemaResolver = RegisterScopedSchemaResolvers::over(
 			registerMapper: $this->registerMapper,
 			schemaMapper: $this->schemaMapper
 		);

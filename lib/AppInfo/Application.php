@@ -52,14 +52,13 @@ use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
-use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\Rbac\RbacRegistrar;
-use OCA\OpenRegister\Service\ServiceRegistrar;
+use OCA\OpenRegister\Service\ServiceBootstrap;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -146,7 +145,7 @@ class Application extends App implements IBootstrap {
 
 		FeatureToggleRegistrar::register(context: $context);
 		AppHostRegistrar::register(context: $context);
-		ServiceRegistrar::register(context: $context);
+		ServiceBootstrap::register(context: $context);
 		SearchRegistrar::register(context: $context);
 		FilesRegistrar::register(context: $context);
 		McpRegistrar::register(context: $context);
@@ -187,7 +186,7 @@ class Application extends App implements IBootstrap {
 
 		FlowRegistrar::register(context: $context);
 		RbacRegistrar::register(context: $context);
-		GdprRegistrar::register(context: $context);
+		ServiceBootstrap::registerGdpr(context: $context);
 
 		// The contracts other components type-hint, bound to their services.
 		ContractBindings::register(context: $context);
