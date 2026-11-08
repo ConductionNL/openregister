@@ -322,7 +322,7 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->setupUser('bob');
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->mapper->expects($this->once())->method('findByObjectAndEntry')
-			->with('abc-123', 'time', null, null, 'tim-1')->willReturn(null);
+			->with('abc-123', $this->callback(static fn (TimeTrackerLink $entry): bool => [$entry->getEntryType(), $entry->getClientId(), $entry->getTaskId(), $entry->getTimeId()] === ['time', null, null, 'tim-1']))->willReturn(null);
 		$this->mapper->method('insert')->willReturnArgument(0);
 		$this->upstreamRow(['name' => 'Standup', 'duration' => 1.5, 'payed' => 0, 'start' => '2026-01-02 09:00:00']);
 
@@ -345,7 +345,7 @@ class TimeTrackerLinkServiceTest extends TestCase {
 	public function testLinkEntryStoresAClientIdForAClient(): void {
 		$this->setupUser();
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
-		$this->mapper->method('findByObjectAndEntry')->with('abc-123', 'client', 'cli-1', null, null)->willReturn(null);
+		$this->mapper->method('findByObjectAndEntry')->with('abc-123', $this->callback(static fn (TimeTrackerLink $entry): bool => [$entry->getEntryType(), $entry->getClientId(), $entry->getTaskId(), $entry->getTimeId()] === ['client', 'cli-1', null, null]))->willReturn(null);
 		$this->mapper->method('insert')->willReturnArgument(0);
 		$this->upstreamRow(['name' => 'Acme']);
 
