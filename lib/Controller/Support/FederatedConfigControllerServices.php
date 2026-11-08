@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
+use OCA\OpenRegister\Service\Config\FederatedConfigAccessInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCP\IConfig;
 
@@ -36,7 +36,7 @@ final class FederatedConfigControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param FederatedConfigServiceInterface $service The federation engine.
-	 * @param FederatedConfigAccess $access Per-org publish/install gating.
+	 * @param FederatedConfigAccessInterface $access Per-org publish/install gating.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param IConfig $config Reads the user's chosen store credential.
 	 *
@@ -44,7 +44,7 @@ final class FederatedConfigControllerServices {
 	 */
 	public function __construct(
 		public readonly FederatedConfigServiceInterface $service,
-		public readonly FederatedConfigAccess $access,
+		public readonly FederatedConfigAccessInterface $access,
 		public readonly ControllerSession $session,
 		public readonly IConfig $config,
 	) {
