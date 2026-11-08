@@ -1061,36 +1061,34 @@ exports[`list page webhookLogs renders loading, empty and filled, and its menus 
 </div>
 </div>
 <div class="tableContainer">
-<table class="webhooksTable">
-<thead>
-<tr>
-<th scope="col">t:Webhook</th>
-<th scope="col">t:Event</th>
-<th scope="col">t:Status</th>
-<th scope="col">t:Status Code</th>
-<th scope="col">t:Attempt</th>
-<th scope="col">t:Created</th>
-<th scope="col">t:Error</th>
-<th scope="col" class="column-actions">t:Actions</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>#1</td>
-<td>
+<x-cndatatable>
+<x-thead>
+<x-th>t:Webhook</x-th>
+<x-th>t:Event</x-th>
+<x-th>t:Status</x-th>
+<x-th>t:Status Code</x-th>
+<x-th>t:Attempt</x-th>
+<x-th>t:Created</x-th>
+<x-th>t:Error</x-th>
+<x-th>t:Actions</x-th>
+</x-thead>
+<x-tbody>
+<x-tr>
+<x-td>#1</x-td>
+<x-td>
 <span class="event-class">-</span>
-</td>
-<td>
+</x-td>
+<x-td>
 <span class="status-success">t:Success</span>
-</td>
-<td>-</td>
-<td>
-</td>
-<td>-</td>
-<td>
+</x-td>
+<x-td>-</x-td>
+<x-td>
+</x-td>
+<x-td>-</x-td>
+<x-td>
 <span>-</span>
-</td>
-<td class="column-actions">
+</x-td>
+<x-td>
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
@@ -1102,10 +1100,10 @@ exports[`list page webhookLogs renders loading, empty and filled, and its menus 
 </x-ncactionbutton>
 </slot-default>
 </x-ncactions>
-</td>
-</tr>
-</tbody>
-</table>
+</x-td>
+</x-tr>
+</x-tbody>
+</x-cndatatable>
 </div>
 </div>",
   "loading": "<div class="viewContainer">
@@ -1351,39 +1349,37 @@ exports[`list page webhooks renders loading, empty and filled, and its menus rea
 </div>
 </div>
 <div class="tableContainer">
-<table class="webhooksTable">
-<thead>
-<tr>
-<th scope="col" class="column-name">t:Name</th>
-<th scope="col" class="column-url">t:URL</th>
-<th scope="col" class="column-method">t:Method</th>
-<th scope="col" class="column-status">t:Status</th>
-<th scope="col" class="column-last-triggered">t:Last Triggered</th>
-<th scope="col" class="column-success-rate">t:Success Rate</th>
-<th scope="col" class="column-actions">t:Actions</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="column-name">
+<x-cndatatable>
+<x-thead>
+<x-th>t:Name</x-th>
+<x-th>t:URL</x-th>
+<x-th>t:Method</x-th>
+<x-th>t:Status</x-th>
+<x-th>t:Last Triggered</x-th>
+<x-th>t:Success Rate</x-th>
+<x-th>t:Actions</x-th>
+</x-thead>
+<x-tbody>
+<x-tr>
+<x-td>
 <div class="webhook-name-cell">
 <x-webhook size="20" class="webhook-icon">
 </x-webhook>
 <span class="webhook-name">On</span>
 </div>
-</td>
-<td class="column-url">
+</x-td>
+<x-td>
 <span class="webhook-url">https://a.example</span>
-</td>
-<td class="column-method">
+</x-td>
+<x-td>
 <span class="badge badge-method">POST</span>
-</td>
-<td class="column-status">
+</x-td>
+<x-td>
 <span class="badge badge-status-enabled">t:Enabled</span>
-</td>
-<td class="column-last-triggered">-</td>
-<td class="column-success-rate">-</td>
-<td class="column-actions">
+</x-td>
+<x-td>-</x-td>
+<x-td>-</x-td>
+<x-td>
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
@@ -1423,28 +1419,28 @@ exports[`list page webhooks renders loading, empty and filled, and its menus rea
 </x-ncactionbutton>
 </slot-default>
 </x-ncactions>
-</td>
-</tr>
-<tr>
-<td class="column-name">
+</x-td>
+</x-tr>
+<x-tr>
+<x-td>
 <div class="webhook-name-cell">
 <x-webhook size="20" class="webhook-icon">
 </x-webhook>
 <span class="webhook-name">Off</span>
 </div>
-</td>
-<td class="column-url">
+</x-td>
+<x-td>
 <span class="webhook-url">https://b.example</span>
-</td>
-<td class="column-method">
+</x-td>
+<x-td>
 <span class="badge badge-method">POST</span>
-</td>
-<td class="column-status">
+</x-td>
+<x-td>
 <span class="badge badge-status-disabled">t:Disabled</span>
-</td>
-<td class="column-last-triggered">-</td>
-<td class="column-success-rate">-</td>
-<td class="column-actions">
+</x-td>
+<x-td>-</x-td>
+<x-td>-</x-td>
+<x-td>
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
@@ -1484,10 +1480,10 @@ exports[`list page webhooks renders loading, empty and filled, and its menus rea
 </x-ncactionbutton>
 </slot-default>
 </x-ncactions>
-</td>
-</tr>
-</tbody>
-</table>
+</x-td>
+</x-tr>
+</x-tbody>
+</x-cndatatable>
 </div>
 </div>",
   "loading": "<div class="viewContainer">
