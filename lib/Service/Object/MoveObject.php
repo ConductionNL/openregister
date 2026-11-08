@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCP\EventDispatcher\IEventDispatcher;
+use Opis\JsonSchema\ValidationResult;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -139,10 +140,24 @@ class MoveObject {
 			return ['fits' => true, 'errors' => []];
 		}
 
-		// `subErrors()`, not `errors()`: opis names it that, and the top-level
-		// error is a summary of them. A caller told only the summary gets "the
-		// data must match schema" and cannot see WHICH property is missing,
-		// which is the whole content of the refusal.
+		return ['fits' => false, 'errors' => $this->errorsOf(result: $result)];
+	}//end fits()
+
+	/**
+	 * The sentences of a failed validation: one per sub-error, else the summary, else a fallback.
+	 *
+	 * `subErrors()`, not `errors()`: opis names it that, and the top-level
+	 * error is a summary of them. A caller told only the summary gets "the
+	 * data must match schema" and cannot see WHICH property is missing,
+	 * which is the whole content of the refusal.
+	 *
+	 * @param ValidationResult $result The failed validation.
+	 *
+	 * @return list<string> The sentences
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	private function errorsOf(ValidationResult $result): array {
 		$top = $result->error();
 		$errors = [];
 		foreach (($top?->subErrors() ?? []) as $error) {
@@ -157,8 +172,8 @@ class MoveObject {
 			$errors[] = 'The object does not fit the target schema.';
 		}
 
-		return ['fits' => false, 'errors' => $errors];
-	}//end fits()
+		return $errors;
+	}//end errorsOf()
 
 	/**
 	 * Move an object, keeping its uuid and everything keyed on it.
@@ -202,21 +217,12 @@ class MoveObject {
 	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
 	 */
 	public function perform(ObjectMove $move): array {
-		$object = $move->object;
-		if ($move->source->ids() === $move->target->ids()) {
-			return $this->refusal(move: $move, error: 'This object is already there.');
+		$refused = $this->preconditionRefusal(move: $move);
+		if ($refused !== null) {
+			return $this->refusal(move: $move, error: $refused);
 		}
 
-		if ($this->isAtSource(move: $move) === false) {
-			return $this->refusal(move: $move, error: 'This object does not live at the address it is being moved from.');
-		}
-
-		$kept = $this->keptReason(object: $object);
-		if ($kept !== null) {
-			return $this->refusal(move: $move, error: $kept);
-		}
-
-		$verdict = $this->fits(object: $object, target: $move->target->schema);
+		$verdict = $this->fits(object: $move->object, target: $move->target->schema);
 		if ($verdict['fits'] === false) {
 			return $move->answer(moved: false, errors: $verdict['errors']);
 		}
@@ -229,6 +235,40 @@ class MoveObject {
 			);
 		}
 
+		return $this->completeMove(move: $move);
+	}//end perform()
+
+	/**
+	 * Why a move may not start: already there, not at the source, or kept where it is.
+	 *
+	 * @param ObjectMove $move The move.
+	 *
+	 * @return string|null The refusal, or null when the move may start
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	private function preconditionRefusal(ObjectMove $move): ?string {
+		if ($move->source->ids() === $move->target->ids()) {
+			return 'This object is already there.';
+		}
+
+		if ($this->isAtSource(move: $move) === false) {
+			return 'This object does not live at the address it is being moved from.';
+		}
+
+		return $this->keptReason(object: $move->object);
+	}//end preconditionRefusal()
+
+	/**
+	 * Remove the source row and record the move; a row that stays behind is reported.
+	 *
+	 * @param ObjectMove $move The move, already written at its target.
+	 *
+	 * @return array The answer
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	private function completeMove(ObjectMove $move): array {
 		$stranded = $this->removeFromSource(move: $move) === false;
 		$this->record(move: $move, stranded: $stranded);
 
@@ -238,7 +278,7 @@ class MoveObject {
 		}
 
 		return $move->answer(moved: true, errors: $errors);
-	}//end perform()
+	}//end completeMove()
 
 	/**
 	 * Why the object has to stay where it is, or null when it may leave.
@@ -413,18 +453,8 @@ class MoveObject {
 	 * @return string The sentence.
 	 */
 	private function sentenceFor(object $error): string {
-		$message = '';
-		if (method_exists($error, 'message') === true) {
-			$message = (string)$error->message();
-		}
-
-		$path = '';
-		if (method_exists($error, 'data') === true) {
-			$info = $error->data();
-			if (is_object($info) === true && method_exists($info, 'path') === true) {
-				$path = implode('/', (array)$info->path());
-			}
-		}
+		$message = self::messageOf(error: $error);
+		$path = self::pathOf(error: $error);
 
 		if ($path !== '' && $message !== '') {
 			return $path . ': ' . $message;
@@ -436,6 +466,45 @@ class MoveObject {
 
 		return 'invalid';
 	}//end sentenceFor()
+
+	/**
+	 * The message of a validation error, or '' when it has none.
+	 *
+	 * @param object $error The error.
+	 *
+	 * @return string The message
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	private static function messageOf(object $error): string {
+		if (method_exists($error, 'message') === true) {
+			return (string)$error->message();
+		}
+
+		return '';
+	}//end messageOf()
+
+	/**
+	 * The data path of a validation error joined by '/', or '' when it has none.
+	 *
+	 * @param object $error The error.
+	 *
+	 * @return string The path
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 */
+	private static function pathOf(object $error): string {
+		if (method_exists($error, 'data') === false) {
+			return '';
+		}
+
+		$info = $error->data();
+		if (is_object($info) === true && method_exists($info, 'path') === true) {
+			return implode('/', (array)$info->path());
+		}
+
+		return '';
+	}//end pathOf()
 
 	/**
 	 * The properties the target declares as platform-minted.
