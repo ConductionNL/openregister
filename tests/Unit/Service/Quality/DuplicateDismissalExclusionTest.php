@@ -104,9 +104,11 @@ class DuplicateDismissalExclusionTest extends TestCase {
 
 		$this->service = new DuplicateDetectionService(
 			$this->objectService,
-			$schemaMapper,
-			$registerMapper,
-			new SimilarityCalculator(),
+			new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(
+				$schemaMapper,
+				$registerMapper,
+				new SimilarityCalculator()
+			),
 			$this->dismissals,
 			$this->createMock(LoggerInterface::class)
 		);
