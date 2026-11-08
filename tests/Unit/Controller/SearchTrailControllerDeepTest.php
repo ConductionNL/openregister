@@ -16,6 +16,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SearchTrailControllerFactory;
+use OCA\OpenRegister\Controller\Support\ResultWindow;
 
 class SearchTrailControllerDeepTest extends TestCase {
 	private SearchTrailController $controller;
@@ -156,7 +157,7 @@ class SearchTrailControllerDeepTest extends TestCase {
 		$method->setAccessible(true);
 
 		$results = range(1, 5);
-		$result = $method->invoke($this->controller, $results, 100, 10, 0, 3);
+		$result = $method->invoke($this->controller, $results, new ResultWindow(100, 10, 0, 3));
 
 		$this->assertEquals(3, $result['page']);
 		$this->assertEquals(10, $result['pages']);
