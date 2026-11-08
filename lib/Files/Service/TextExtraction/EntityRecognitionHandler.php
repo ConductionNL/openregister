@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
-use OCA\OpenRegister\Service\Anonymisation\BackendState;
+use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -513,10 +513,10 @@ class EntityRecognitionHandler {
 	 *
 	 * @param string $method The requested method.
 	 *
-	 * @return string A concrete method from BackendState::METHODS.
+	 * @return string A concrete method from BackendMethodsInterface::METHODS.
 	 */
 	private function resolveMethod(string $method): string {
-		if (in_array($method, BackendState::METHODS, true) === true) {
+		if (in_array($method, BackendMethodsInterface::METHODS, true) === true) {
 			return $method;
 		}
 

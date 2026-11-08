@@ -1227,7 +1227,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$automaticAction = null;
 		try {
 			$automaticAction = $this->container
-				->get(\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class)
+				->get(\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface::class)
 				->applyingAction();
 		} catch (\Throwable $passUnavailable) {
 			$automaticAction = null;

@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunContextInterface;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
@@ -85,12 +85,12 @@ class AuditFlowAttribution extends QBMapper implements AuditFlowAttributionInter
 	 */
 	public function apply(AuditTrail $auditTrail): void {
 		try {
-			$context = $this->container->get(FlowRunContext::class);
+			$context = $this->container->get(FlowRunContextInterface::class);
 		} catch (Throwable $e) {
 			return;
 		}
 
-		if (($context instanceof FlowRunContext) === false) {
+		if (($context instanceof FlowRunContextInterface) === false) {
 			return;
 		}
 
