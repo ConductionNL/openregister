@@ -48,8 +48,8 @@ namespace OCA\OpenRegister\Repair;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
-use OCA\OpenRegister\Db\TaskAuditMapper;
-use OCA\OpenRegister\Db\TaskCandidateMapper;
+use OCA\OpenRegister\Db\TaskAuditMapperInterface;
+use OCA\OpenRegister\Db\TaskCandidateMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Db\TaskSequenceMapperInterface;
@@ -105,8 +105,8 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @param IDBConnection $db Reads the legacy tables and writes the reconciliation column.
 	 * @param TaskBuilder $builder Validates and builds each migrated task.
 	 * @param TaskMapper $tasks Inserts tasks (insert dispatches nothing).
-	 * @param TaskCandidateMapper $candidates Maintains the candidate index.
-	 * @param TaskAuditMapper $audits Appends the migrated decision history.
+	 * @param TaskCandidateMapperInterface $candidates Maintains the candidate index.
+	 * @param TaskAuditMapperInterface $audits Appends the migrated decision history.
 	 * @param TaskSequenceMapperInterface $sequences Inserts one sequence per (chain, object).
 	 * @param IAppConfig $config Records the cutover timestamp.
 	 * @param LoggerInterface $logger Diagnostics.
@@ -115,8 +115,8 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 		private readonly IDBConnection $db,
 		private readonly TaskBuilder $builder,
 		private readonly TaskMapper $tasks,
-		private readonly TaskCandidateMapper $candidates,
-		private readonly TaskAuditMapper $audits,
+		private readonly TaskCandidateMapperInterface $candidates,
+		private readonly TaskAuditMapperInterface $audits,
 		private readonly TaskSequenceMapperInterface $sequences,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
