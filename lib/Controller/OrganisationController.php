@@ -40,7 +40,7 @@ use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageService;
 use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
-use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Controller;
@@ -123,9 +123,9 @@ class OrganisationController extends Controller {
 	/**
 	 * Records a change of who holds the special right `grant_manage`.
 	 *
-	 * @var GrantChangeAuditor|null
+	 * @var GrantChangeAuditorInterface|null
 	 */
-	private ?GrantChangeAuditor $grantAuditor;
+	private ?GrantChangeAuditorInterface $grantAuditor;
 
 	/**
 	 * Measures an organisation's usage

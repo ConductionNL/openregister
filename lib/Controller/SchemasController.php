@@ -32,7 +32,6 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -44,8 +43,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
-use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
-use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
@@ -2091,7 +2089,7 @@ class SchemasController extends Controller {
 	 * @return array<string, mixed> The body with a JSON text block decoded; any other text stays for the write to judge.
 	 */
 	private function withAuthorizationAsStored(array $document): array {
-		$stored = (new CrossOrganisationMarkerChange())->asStored(authorization: ($document['authorization'] ?? null));
+		$stored = RbacRuleChecks::crossOrganisationMarkerChange()->asStored(authorization: ($document['authorization'] ?? null));
 		if (is_array($stored) === true) {
 			$document['authorization'] = $stored;
 		}
@@ -2115,7 +2113,7 @@ class SchemasController extends Controller {
 	 */
 	private function crossOrganisationRefusal(mixed $old, array $document): ?JSONResponse {
 		if (array_key_exists('authorization', $document) === false
-			|| (new CrossOrganisationMarkerChange())->widens(old: $old, new: $document['authorization']) === false
+			|| RbacRuleChecks::crossOrganisationMarkerChange()->widens(old: $old, new: $document['authorization']) === false
 			|| $this->isCurrentUserAdmin() === true
 		) {
 			return null;
@@ -2140,7 +2138,7 @@ class SchemasController extends Controller {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function orphanCleanupRefusal(Schema $schema, array $document): ?JSONResponse {
-		if ((new OrphanCleanupFlag())->changedBy(schema: $schema, document: $document) === false || $this->isCurrentUserAdmin() === true) {
+		if (RbacRuleChecks::orphanCleanupFlag()->changedBy(schema: $schema, document: $document) === false || $this->isCurrentUserAdmin() === true) {
 			return null;
 		}
 
@@ -2826,7 +2824,7 @@ class SchemasController extends Controller {
 	 */
 	private function checkSchemaManagePermission(Schema $schema): bool {
 		try {
-			$rights = new DefinitionWriteRights(
+			$rights = RbacRuleChecks::definitionWriteRights(
 				userSession: $this->container->get(\OCP\IUserSession::class),
 				groupManager: $this->container->get(\OCP\IGroupManager::class)
 			);
