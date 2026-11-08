@@ -947,6 +947,7 @@ final class ContractBindings {
 		ObjectRelationServiceInterface::class => ObjectRelationService::class,
 		ObjectScopeResolverInterface::class => ObjectScopeResolver::class,
 		ObjectStreamingSaveInterface::class => ObjectService::class,
+		ObjectHandlerAccessInterface::class => ObjectService::class,
 		ObjectWriteNodeInterface::class => ObjectWriteNode::class,
 		OpenProjectLinkServiceInterface::class => OpenProjectLinkService::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,

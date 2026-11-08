@@ -100,7 +100,7 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsFactory;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsInterface;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
@@ -2919,7 +2919,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object ID
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectHandlerAccessInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -2937,7 +2937,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function show(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function show(string $id, string $register, string $schema, ObjectHandlerAccessInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.show.in');
 
 		try {
@@ -2962,13 +2962,13 @@ class ObjectsController extends Controller {
 	/**
 	 * What show() asks of the request's object service.
 	 *
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectHandlerAccessInterface $objectService The object service.
 	 *
 	 * @return ShowServices The services.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function showServices(ObjectService $objectService): ShowServices {
+	private function showServices(ObjectHandlerAccessInterface $objectService): ShowServices {
 		return new ShowServices(
 			objects: $objectService,
 			permissions: $objectService->getPermissionHandler(),
@@ -4170,7 +4170,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to delete
 	 * @param string $register The register ID
 	 * @param string $schema The schema ID
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectHandlerAccessInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with success or error.
 	 *
@@ -4184,7 +4184,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function destroy(string $id, string $register, string $schema, ObjectHandlerAccessInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.destroy.in');
 
 		try {
@@ -4313,7 +4313,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to check
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectHandlerAccessInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with DeletionAnalysis
 	 *
@@ -4326,7 +4326,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectHandlerAccessInterface $objectService,
 	): JSONResponse {
 		try {
 			$objectService->setRegister(register: $register);
