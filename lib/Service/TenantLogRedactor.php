@@ -53,7 +53,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  */
-class TenantLogRedactor {
+class TenantLogRedactor implements TenantLogRedactorInterface {
 
 	/**
 	 * What replaces a redacted value.

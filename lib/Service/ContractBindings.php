@@ -70,6 +70,16 @@ use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
 use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolver;
 use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolverInterface;
+use OCA\OpenRegister\Service\Audit\AuditAggregationService;
+use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
+use OCA\OpenRegister\Service\Audit\OrganisationContextAttribution;
+use OCA\OpenRegister\Service\Audit\OrganisationContextAttributionInterface;
+use OCA\OpenRegister\Service\Audit\PurposeAttribution;
+use OCA\OpenRegister\Service\Audit\PurposeAttributionInterface;
+use OCA\OpenRegister\Service\Audit\TokenAttribution;
+use OCA\OpenRegister\Service\Audit\TokenAttributionInterface;
+use OCA\OpenRegister\Service\AuditRetentionResolver;
+use OCA\OpenRegister\Service\AuditRetentionResolverInterface;
 use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryInterface;
 use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryService;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
@@ -172,6 +182,8 @@ use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
 use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCA\OpenRegister\Service\Federation\ShareGrantorInterface;
+use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\FieldEncryptionHandlerInterface;
 use OCA\OpenRegister\Service\Flow\FlowDryRunService;
 use OCA\OpenRegister\Service\Flow\FlowDryRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
@@ -308,6 +320,8 @@ use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
 use OCA\OpenRegister\Service\JsonLd\JsonLdSerializerInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContextInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
@@ -467,6 +481,8 @@ use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
+use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetServiceInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
@@ -491,6 +507,8 @@ use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use OCA\OpenRegister\Service\TenantKeyRotationInterface;
 use OCA\OpenRegister\Service\TenantKeyService;
+use OCA\OpenRegister\Service\TenantLogRedactor;
+use OCA\OpenRegister\Service\TenantLogRedactorInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
@@ -819,6 +837,15 @@ final class ContractBindings {
 		PortalTaskNodeInterface::class => PortalTaskNode::class,
 		PropertyConversionServiceInterface::class => PropertyConversionService::class,
 		PropertyRbacHandlerInterface::class => PropertyRbacHandler::class,
+		AuditAggregationServiceInterface::class => AuditAggregationService::class,
+		OrganisationContextAttributionInterface::class => OrganisationContextAttribution::class,
+		PurposeAttributionInterface::class => PurposeAttribution::class,
+		TokenAttributionInterface::class => TokenAttribution::class,
+		AuditRetentionResolverInterface::class => AuditRetentionResolver::class,
+		FieldEncryptionHandlerInterface::class => FieldEncryptionHandler::class,
+		LifecycleActionContextInterface::class => LifecycleActionContext::class,
+		SharedMasterDataServiceInterface::class => SharedMasterDataService::class,
+		TenantLogRedactorInterface::class => TenantLogRedactor::class,
 		PropertyValidatorHandlerInterface::class => PropertyValidatorHandler::class,
 		PropertyVocabularyInterface::class => PropertyVocabulary::class,
 		QualityScorerInterface::class => QualityScorer::class,

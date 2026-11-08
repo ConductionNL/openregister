@@ -63,8 +63,6 @@ class AuditAggregationService implements AuditAggregationServiceInterface {
 	 */
 	public const CONFIG_KEY = 'audit_aggregation_window_seconds';
 
-	// MAXIMUM_WINDOW_SECONDS is declared on AuditAggregationServiceInterface; this class inherits it.
-
 	/**
 	 * Constructor.
 	 *
