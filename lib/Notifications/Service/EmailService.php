@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Notifications\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
-use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\App\IAppManager;
@@ -51,9 +51,9 @@ class EmailService implements EmailServiceInterface {
 	/**
 	 * Email link mapper.
 	 *
-	 * @var EmailLinkMapper
+	 * @var EmailLinkMapperInterface
 	 */
-	private readonly EmailLinkMapper $emailLinkMapper;
+	private readonly EmailLinkMapperInterface $emailLinkMapper;
 
 	/**
 	 * App manager for checking Mail app availability.
@@ -100,13 +100,13 @@ class EmailService implements EmailServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param EmailLinkMapper    $emailLinkMapper Email link mapper.
+	 * @param EmailLinkMapperInterface    $emailLinkMapper Email link mapper.
 	 * @param EmailMailAppReader $mailApp         App manager, database connection and user session for the Mail app.
 	 * @param EmailLinkedSchemas $linkedSchemas   Schema and object mappers for the mail-linked schemas.
 	 * @param LoggerInterface    $logger          Logger.
 	 */
 	public function __construct(
-		EmailLinkMapper $emailLinkMapper,
+		EmailLinkMapperInterface $emailLinkMapper,
 		EmailMailAppReader $mailApp,
 		EmailLinkedSchemas $linkedSchemas,
 		LoggerInterface $logger,
