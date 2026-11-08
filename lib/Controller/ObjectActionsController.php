@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelection;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -372,7 +373,11 @@ class ObjectActionsController extends Controller {
 	 */
 	private function startJob(Schema $schema, string $register, string $schemaRef, string $action, array $ids, array $inputs): JSONResponse {
 		try {
-			$job = $this->bulk->start(schema: $schema, register: $register, schemaRef: $schemaRef, action: $action, ids: $ids, inputs: $inputs);
+			$job = $this->bulk->start(
+				selection: new ObjectActionSelection(schema: $schema, register: $register, schemaRef: $schemaRef, ids: $ids),
+				action: $action,
+				inputs: $inputs
+			);
 		} catch (BulkJobRefusedException $e) {
 			return new JSONResponse(['error' => $e->getMessage(), 'reason' => $e->getReason()], Http::STATUS_UNPROCESSABLE_ENTITY);
 		} catch (InvalidArgumentException $e) {
