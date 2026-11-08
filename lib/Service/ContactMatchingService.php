@@ -331,24 +331,16 @@ class ContactMatchingService implements ContactMatcherInterface {
 		?string $name = null,
 		?string $organization = null,
 	): array {
-		$allMatches = [];
-
 		// Email matching (highest confidence).
-		$emailMatches = $this->matchByEmail(email: $email);
-		foreach ($emailMatches as $match) {
-			$uuid = $match['uuid'] ?? '';
-			if ($uuid !== '') {
-				$allMatches[$uuid] = $match;
-			}
-		}
+		$allMatches = $this->byUuid(matches: $this->matchByEmail(email: $email));
 
 		// Name matching (medium confidence).
-		if ($name !== null && $name !== '') {
+		if (($name ?? '') !== '') {
 			$allMatches = $this->keepStrongest(allMatches: $allMatches, matches: $this->matchByName(name: $name));
 		}
 
 		// Organization matching (lowest confidence).
-		if ($organization !== null && $organization !== '') {
+		if (($organization ?? '') !== '') {
 			$allMatches = $this->keepStrongest(
 				allMatches: $allMatches,
 				matches: $this->matchByOrganization(organization: $organization)
@@ -366,6 +358,25 @@ class ContactMatchingService implements ContactMatcherInterface {
 
 		return $results;
 	}//end matchContact()
+
+	/**
+	 * Key matches by their uuid, dropping those without one; a later match with the same uuid wins.
+	 *
+	 * @param array<int,array<string,mixed>> $matches The matches.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 */
+	private function byUuid(array $matches): array {
+		$byUuid = [];
+		foreach ($matches as $match) {
+			$uuid = $match['uuid'] ?? '';
+			if ($uuid !== '') {
+				$byUuid[$uuid] = $match;
+			}
+		}
+
+		return $byUuid;
+	}//end byUuid()
 
 	/**
 	 * Get related object counts grouped by schema title.
@@ -428,24 +439,45 @@ class ContactMatchingService implements ContactMatcherInterface {
 		}
 
 		foreach ($object as $key => $value) {
-			if (is_string($value) === false || empty($value) === true) {
-				continue;
-			}
-
-			$keyLower = strtolower((string)$key);
-			$isEmailProperty = false;
-			foreach (self::EMAIL_PROPERTY_PATTERNS as $pattern) {
-				if (str_contains($keyLower, $pattern) === true) {
-					$isEmailProperty = true;
-					break;
-				}
-			}
-
-			if ($isEmailProperty === true && filter_var($value, FILTER_VALIDATE_EMAIL) !== false) {
-				$this->invalidateCache(email: $value);
-			}
+			$this->invalidateForProperty(key: $key, value: $value);
 		}
 	}//end invalidateCacheForObject()
+
+	/**
+	 * Invalidate the cached matches of one property's value when it is an email in an email-like property.
+	 *
+	 * @param int|string $key   The property name.
+	 * @param mixed      $value The property value.
+	 *
+	 * @return void
+	 */
+	private function invalidateForProperty(int|string $key, mixed $value): void {
+		if (is_string($value) === false || empty($value) === true) {
+			return;
+		}
+
+		if ($this->isEmailProperty(key: $key) === true && filter_var($value, FILTER_VALIDATE_EMAIL) !== false) {
+			$this->invalidateCache(email: $value);
+		}
+	}//end invalidateForProperty()
+
+	/**
+	 * Whether a property name looks like an email field.
+	 *
+	 * @param int|string $key The property name.
+	 *
+	 * @return bool
+	 */
+	private function isEmailProperty(int|string $key): bool {
+		$keyLower = strtolower((string)$key);
+		foreach (self::EMAIL_PROPERTY_PATTERNS as $pattern) {
+			if (str_contains($keyLower, $pattern) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isEmailProperty()
 
 	/**
 	 * Per-request cache for the contact-linked-schemas check.
@@ -644,22 +676,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 	 */
 	private function countMatchingNameParts(array $result, array $nameParts): int {
 		$matchedParts = 0;
-		$concatenatedValues = '';
-
-		// Collect all name-like property values.
-		foreach ($result as $key => $value) {
-			if (is_string($value) === false) {
-				continue;
-			}
-
-			$keyLower = strtolower((string)$key);
-			foreach (self::NAME_PROPERTY_PATTERNS as $pattern) {
-				if (str_contains($keyLower, strtolower($pattern)) === true) {
-					$concatenatedValues .= ' ' . strtolower($value);
-					break;
-				}
-			}
-		}
+		$concatenatedValues = $this->nameValues(result: $result);
 
 		foreach ($nameParts as $part) {
 			if (stripos($concatenatedValues, strtolower($part)) !== false) {
@@ -671,6 +688,48 @@ class ContactMatchingService implements ContactMatcherInterface {
 	}//end countMatchingNameParts()
 
 	/**
+	 * The lower-cased string values of all name-like properties, each prefixed by a space.
+	 *
+	 * @param array<string,mixed> $result The search result.
+	 *
+	 * @return string
+	 */
+	private function nameValues(array $result): string {
+		$concatenatedValues = '';
+
+		// Collect all name-like property values.
+		foreach ($result as $key => $value) {
+			if (is_string($value) === false) {
+				continue;
+			}
+
+			if ($this->isNameProperty(key: $key) === true) {
+				$concatenatedValues .= ' ' . strtolower($value);
+			}
+		}
+
+		return $concatenatedValues;
+	}//end nameValues()
+
+	/**
+	 * Whether a property name looks like a name field.
+	 *
+	 * @param int|string $key The property name.
+	 *
+	 * @return bool
+	 */
+	private function isNameProperty(int|string $key): bool {
+		$keyLower = strtolower((string)$key);
+		foreach (self::NAME_PROPERTY_PATTERNS as $pattern) {
+			if (str_contains($keyLower, strtolower($pattern)) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isNameProperty()
+
+	/**
 	 * Format a search result into a match array.
 	 *
 	 * @param array             $result The search result object
@@ -679,41 +738,83 @@ class ContactMatchingService implements ContactMatcherInterface {
 	 * @return array The formatted match
 	 */
 	private function formatMatch(array $result, ContactMatchQuery $query): array {
-		$schemaInfo = [];
-		$registerInfo = [];
-
 		// Extract schema info.
-		if (isset($result['@self']['schema']) === true) {
-			$schemaId = (int)$result['@self']['schema'];
-			try {
-				$schema = $this->schemaMapper->find($schemaId);
-				$schemaInfo = [
-					'id' => $schemaId,
-					'title' => $schema->getTitle() ?? $schema->getName() ?? 'Unknown',
-				];
-			} catch (\Exception $e) {
-				$schemaInfo = ['id' => $schemaId, 'title' => 'Unknown'];
-			}
-		}
+		$schemaInfo = $this->schemaInfo(result: $result);
 
 		// Extract register info.
-		if (isset($result['@self']['register']) === true) {
-			$registerId = (int)$result['@self']['register'];
-			try {
-				$register = $this->registerMapper->find($registerId);
-				$registerInfo = [
-					'id' => $registerId,
-					'title' => $register->getTitle() ?? $register->getName() ?? 'Unknown',
-				];
-			} catch (\Exception $e) {
-				$registerInfo = ['id' => $registerId, 'title' => 'Unknown'];
-			}
-		}
+		$registerInfo = $this->registerInfo(result: $result);
 
 		// Determine a title for the matched object.
 		$title = $result['title'] ?? $result['naam'] ?? $result['name'] ?? $result['@self']['uuid'] ?? 'Unknown';
 
-		// Build properties subset (exclude metadata).
+		return [
+			'uuid' => $result['@self']['uuid'] ?? $result['uuid'] ?? '',
+			'register' => $registerInfo,
+			'schema' => $schemaInfo,
+			'title' => $title,
+			'matchType' => $query->matchType,
+			'confidence' => $query->confidence(),
+			'properties' => $this->scalarProperties(result: $result),
+			'cached' => false,
+		];
+	}//end formatMatch()
+
+	/**
+	 * The id and title of the result's schema; none when it has no schema.
+	 *
+	 * @param array<string,mixed> $result The search result.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function schemaInfo(array $result): array {
+		if (isset($result['@self']['schema']) === false) {
+			return [];
+		}
+
+		$schemaId = (int)$result['@self']['schema'];
+		try {
+			$schema = $this->schemaMapper->find($schemaId);
+			return [
+				'id' => $schemaId,
+				'title' => $schema->getTitle() ?? $schema->getName() ?? 'Unknown',
+			];
+		} catch (\Exception $e) {
+			return ['id' => $schemaId, 'title' => 'Unknown'];
+		}
+	}//end schemaInfo()
+
+	/**
+	 * The id and title of the result's register; none when it has no register.
+	 *
+	 * @param array<string,mixed> $result The search result.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function registerInfo(array $result): array {
+		if (isset($result['@self']['register']) === false) {
+			return [];
+		}
+
+		$registerId = (int)$result['@self']['register'];
+		try {
+			$register = $this->registerMapper->find($registerId);
+			return [
+				'id' => $registerId,
+				'title' => $register->getTitle() ?? $register->getName() ?? 'Unknown',
+			];
+		} catch (\Exception $e) {
+			return ['id' => $registerId, 'title' => 'Unknown'];
+		}
+	}//end registerInfo()
+
+	/**
+	 * The scalar properties of a result, without metadata (`@`/`_` prefixed) keys.
+	 *
+	 * @param array<string,mixed> $result The search result.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function scalarProperties(array $result): array {
 		$properties = [];
 		foreach ($result as $key => $value) {
 			if (str_starts_with($key, '@') === true || str_starts_with($key, '_') === true) {
@@ -725,15 +826,6 @@ class ContactMatchingService implements ContactMatcherInterface {
 			}
 		}
 
-		return [
-			'uuid' => $result['@self']['uuid'] ?? $result['uuid'] ?? '',
-			'register' => $registerInfo,
-			'schema' => $schemaInfo,
-			'title' => $title,
-			'matchType' => $query->matchType,
-			'confidence' => $query->confidence(),
-			'properties' => $properties,
-			'cached' => false,
-		];
-	}//end formatMatch()
+		return $properties;
+	}//end scalarProperties()
 }//end class
