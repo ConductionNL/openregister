@@ -30,7 +30,7 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
  * The methods of SearchTrailMapper that callers outside the Db component use.
  *
  * Callers type against this interface and resolve it from the container; the
- * registrar binds it to SearchTrailMapper.
+ * registrar binds it to SearchTrailMapper. Guarded by C04InterfaceBindingsTest.
  */
 interface SearchTrailMapperInterface {
 

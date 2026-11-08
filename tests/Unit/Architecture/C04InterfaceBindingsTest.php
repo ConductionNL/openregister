@@ -12,20 +12,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\DbRegistrar;
-use OCA\OpenRegister\Db\ProcessingLogMapper;
-use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
-use OCA\OpenRegister\Db\RunObjectLockMapper;
-use OCA\OpenRegister\Db\RunObjectLockMapperInterface;
-use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Db\SearchTrailMapperInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * A missing binding is a 500 at the first request that resolves the
- * interface, which no other unit test catches, so every class hidden here is
- * checked for its binding, for implementing its interface, and for no lib/
- * file outside lib/Db naming it again.
+ * interface, which no other unit test catches. So every lib/Db interface
+ * whose docblock says it is guarded here is checked for its DbRegistrar
+ * binding, for its bound mapper implementing it, and for no lib/ file
+ * outside lib/Db naming that mapper again.
+ *
+ * The rows are discovered from the interfaces rather than listed, so every
+ * change that hides one more mapper carries this same file unchanged.
  *
  * @coversNothing
  */
@@ -39,67 +37,67 @@ final class C04InterfaceBindingsTest extends TestCase {
 	private const LIB = __DIR__ . '/../../../lib';
 
 	/**
-	 * Hidden class => the interface its callers outside lib/Db type against.
+	 * The sentence an interface's docblock carries to be guarded here.
 	 *
-	 * @var array<class-string, class-string>
+	 * @var string
 	 */
-	private const HIDDEN = [
-		ProcessingLogMapper::class => ProcessingLogMapperInterface::class,
-		RunObjectLockMapper::class => RunObjectLockMapperInterface::class,
-		SearchTrailMapper::class => SearchTrailMapperInterface::class,
-	];
+	private const MARKER = 'Guarded by C04InterfaceBindingsTest.';
 
 	/**
-	 * One row per hidden class.
+	 * One row per guarded interface: [interface, the class DbRegistrar binds it to].
 	 *
-	 * @return array<string, array{0: class-string, 1: class-string}>
+	 * @return array<string, array{0: class-string, 1: string|null}>
 	 */
-	public static function hiddenClasses(): array {
+	public static function guardedInterfaces(): array {
 		$rows = [];
-		foreach (self::HIDDEN as $class => $interface) {
-			$rows[$class] = [$class, $interface];
+		foreach (glob(self::LIB . '/Db/*Interface.php') ?: [] as $path) {
+			if (str_contains((string)file_get_contents($path), self::MARKER) === false) {
+				continue;
+			}
+
+			$interface        = 'OCA\\OpenRegister\\Db\\' . basename($path, '.php');
+			$rows[$interface] = [$interface, DbRegistrar::BINDINGS[$interface] ?? null];
 		}
 
+		ksort($rows);
 		return $rows;
-	}//end hiddenClasses()
+	}//end guardedInterfaces()
 
 	/**
-	 * The class implements its interface.
-	 *
-	 * @param class-string $class     The hidden class.
-	 * @param class-string $interface The interface callers type against.
+	 * At least one interface is guarded, so a renamed marker cannot pass silently.
 	 *
 	 * @return void
 	 */
-	#[DataProvider('hiddenClasses')]
-	public function testTheClassImplementsItsInterface(string $class, string $interface): void {
+	public function testSomeInterfaceIsGuarded(): void {
+		$this->assertNotSame([], self::guardedInterfaces());
+	}//end testSomeInterfaceIsGuarded()
+
+	/**
+	 * DbRegistrar binds the interface to a Db class that implements it.
+	 *
+	 * @param class-string $interface The guarded interface.
+	 * @param string|null  $class     The class DbRegistrar binds it to.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('guardedInterfaces')]
+	public function testDbRegistrarBindsTheInterfaceToItsMapper(string $interface, ?string $class): void {
 		$this->assertTrue(interface_exists($interface), $interface . ' exists');
-		$this->assertTrue(is_subclass_of($class, $interface), $class . ' implements ' . $interface);
-	}//end testTheClassImplementsItsInterface()
+		$this->assertNotNull($class, $interface . ' is bound in DbRegistrar');
+		$this->assertStringStartsWith('OCA\\OpenRegister\\Db\\', (string)$class);
+		$this->assertTrue(is_subclass_of((string)$class, $interface), $class . ' implements ' . $interface);
+	}//end testDbRegistrarBindsTheInterfaceToItsMapper()
 
 	/**
-	 * DbRegistrar binds the interface to the class, so it resolves to the same shared mapper.
+	 * No lib/ file outside lib/Db names the bound mapper, in code or as a container id string.
 	 *
-	 * @param class-string $class     The hidden class.
-	 * @param class-string $interface The interface callers type against.
+	 * @param class-string $interface The guarded interface.
+	 * @param string|null  $class     The class DbRegistrar binds it to.
 	 *
 	 * @return void
 	 */
-	#[DataProvider('hiddenClasses')]
-	public function testDbRegistrarBindsTheInterface(string $class, string $interface): void {
-		$this->assertSame($class, DbRegistrar::BINDINGS[$interface] ?? null, $interface . ' is bound in DbRegistrar');
-	}//end testDbRegistrarBindsTheInterface()
-
-	/**
-	 * No lib/ file outside lib/Db names the class, in code or as a container id string.
-	 *
-	 * @param class-string $class     The hidden class.
-	 * @param class-string $interface The interface callers type against.
-	 *
-	 * @return void
-	 */
-	#[DataProvider('hiddenClasses')]
-	public function testNoFileOutsideDbNamesTheClass(string $class, string $interface): void {
+	#[DataProvider('guardedInterfaces')]
+	public function testNoFileOutsideDbNamesTheMapper(string $interface, ?string $class): void {
 		$lib    = (string)realpath(self::LIB) . '/';
 		$naming = [];
 		foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($lib)) as $file) {
@@ -108,14 +106,14 @@ final class C04InterfaceBindingsTest extends TestCase {
 				continue;
 			}
 
-			if (in_array($class, $this->namesIn(path: $path), true) === true) {
+			if (in_array((string)$class, $this->namesIn(path: $path), true) === true) {
 				$naming[] = substr($path, strlen($lib));
 			}
 		}
 
 		sort($naming);
 		$this->assertSame([], $naming, $class . ' is named outside lib/Db; type the caller against ' . $interface);
-	}//end testNoFileOutsideDbNamesTheClass()
+	}//end testNoFileOutsideDbNamesTheMapper()
 
 	/**
 	 * The fully qualified class names one file's code mentions, comments left out.

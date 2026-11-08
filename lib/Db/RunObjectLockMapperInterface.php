@@ -29,7 +29,7 @@ use OCP\DB\Exception as DbException;
  * The methods of RunObjectLockMapper that callers outside the Db component use.
  *
  * Callers type against this interface and resolve it from the container; the
- * registrar binds it to RunObjectLockMapper.
+ * registrar binds it to RunObjectLockMapper. Guarded by C04InterfaceBindingsTest.
  */
 interface RunObjectLockMapperInterface {
 
