@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -98,7 +99,7 @@ class RevertController extends Controller {
 	 */
 	public function revert(string $register, string $schema, string $id): JSONResponse {
 		try {
-			return $this->revertTo(register: $register, schema: $schema, id: $id, data: $this->request->getParams());
+			return $this->revertTo(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), data: $this->request->getParams());
 		} catch (\Exception $e) {
 			return self::refusal(exception: $e);
 		}
@@ -107,25 +108,23 @@ class RevertController extends Controller {
 	/**
 	 * Revert an object to the point the request names, and answer the read.
 	 *
-	 * @param string               $register The register identifier
-	 * @param string               $schema   The schema identifier
-	 * @param string               $id       The object ID
-	 * @param array<string, mixed> $data     The request parameters
+	 * @param ObjectLinkRoute      $route The register identifier, the schema identifier and the object ID
+	 * @param array<string, mixed> $data  The request parameters
 	 *
 	 * @return JSONResponse The reverted object, or 400 when no revert point is named
 	 *
 	 * @throws \Exception Every refusal of the handler, mapped by refusal()
 	 */
-	private function revertTo(string $register, string $schema, string $id, array $data): JSONResponse {
+	private function revertTo(ObjectLinkRoute $route, array $data): JSONResponse {
 		$until = self::revertPoint(data: $data);
 		if ($until === null) {
 			return new JSONResponse(data: ['error' => 'Must specify either datetime, auditTrailId, or version'], statusCode: 400);
 		}
 
 		$revertedObject = $this->revertService->revert(
-			register: $register,
-			schema: $schema,
-			id: $id,
+			register: $route->register,
+			schema: $route->schema,
+			id: $route->id,
 			until: $until,
 			overwriteVersion: ($data['overwriteVersion'] ?? false)
 		);
