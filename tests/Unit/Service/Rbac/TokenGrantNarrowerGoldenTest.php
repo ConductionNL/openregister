@@ -30,6 +30,8 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
+use OCA\OpenRegister\Service\Rbac\TokenGrantReach;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -71,7 +73,7 @@ final class TokenGrantNarrowerGoldenTest extends TestCase {
 			$expiresAt = new DateTimeImmutable($expires);
 		}
 
-		return new TokenGrant($verbs, $registers, $schemas, null, $expiresAt, null, 'tok-1');
+		return new TokenGrant($verbs, new TokenGrantReach($registers, $schemas), new TokenGrantTerms($expiresAt), 'tok-1');
 	}//end grant()
 
 	/**

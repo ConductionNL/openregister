@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\TokenGrant;
+use OCA\OpenRegister\Service\Rbac\TokenGrantReach;
+use OCA\OpenRegister\Service\Rbac\TokenGrantTerms;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -88,8 +90,8 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 			authorization: ['read' => ['medewerkers'], 'update' => ['medewerkers']],
 			grant: new TokenGrant(
 				verbs: ['read'],
-				schemas: ['zaak'],
-				expiresAt: new DateTimeImmutable('+10 years'),
+				reach: new TokenGrantReach(schemas: ['zaak']),
+				terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('+10 years')),
 				tokenId: 'leverancier'
 			),
 			schemaSlug: 'zaak',
@@ -206,7 +208,7 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 			authorization: ['read' => ['medewerkers']],
 			grant: new TokenGrant(
 				verbs: ['read'],
-				expiresAt: new DateTimeImmutable('2020-01-01T00:00:00+00:00'),
+				terms: new TokenGrantTerms(expiresAt: new DateTimeImmutable('2020-01-01T00:00:00+00:00')),
 				tokenId: 'leverancier'
 			),
 			schemaSlug: 'zaak',
