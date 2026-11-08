@@ -204,27 +204,10 @@ class AuditTrailController extends Controller {
 		// Get request parameters for filtering and pagination.
 		$params = $this->request->getParams();
 
-		// Extract pagination parameters.
-		$limit = 20;
-		if (($params['limit'] ?? null) !== null) {
-			$limit = (int)$params['limit'];
-		} elseif (($params['_limit'] ?? null) !== null) {
-			$limit = (int)$params['_limit'];
-		}
-
-		$offset = null;
-		if (($params['offset'] ?? null) !== null) {
-			$offset = (int)$params['offset'];
-		} elseif (($params['_offset'] ?? null) !== null) {
-			$offset = (int)$params['_offset'];
-		}
-
-		$page = null;
-		if (($params['page'] ?? null) !== null) {
-			$page = (int)$params['page'];
-		} elseif (($params['_page'] ?? null) !== null) {
-			$page = (int)$params['_page'];
-		}
+		// Extract pagination parameters: the plain key before its underscore twin.
+		$limit = ($this->firstIntParam(params: $params, key: 'limit', fallbackKey: '_limit') ?? 20);
+		$offset = $this->firstIntParam(params: $params, key: 'offset', fallbackKey: '_offset');
+		$page = $this->firstIntParam(params: $params, key: 'page', fallbackKey: '_page');
 
 		// If we have a page but no offset, calculate the offset.
 		if ($page !== null && $offset === null) {
@@ -248,6 +231,27 @@ class AuditTrailController extends Controller {
 	}//end extractRequestParameters()
 
 	/**
+	 * A paging parameter as an int, read from its plain key before its underscore twin.
+	 *
+	 * @param array  $params      The request parameters.
+	 * @param string $key         The plain key.
+	 * @param string $fallbackKey The underscore key.
+	 *
+	 * @return int|null The value, or null when neither key is set.
+	 */
+	private function firstIntParam(array $params, string $key, string $fallbackKey): int|null {
+		if (($params[$key] ?? null) !== null) {
+			return (int)$params[$key];
+		}
+
+		if (($params[$fallbackKey] ?? null) !== null) {
+			return (int)$params[$fallbackKey];
+		}
+
+		return null;
+	}//end firstIntParam()
+
+	/**
 	 * Build a sort map from raw request params.
 	 *
 	 * Supports bracket format `_sort[field]=ASC|DESC` and flat format
@@ -261,25 +265,8 @@ class AuditTrailController extends Controller {
 	 *     inherently branches on array vs. scalar vs. absent.
 	 */
 	private function buildSortFromParams(array $params): array {
-		$sort = [];
 		$sortRaw = $params['sort'] ?? $params['_sort'] ?? null;
-
-		if (is_array($sortRaw) === true) {
-			// Bracket format: _sort[created]=DESC.
-			foreach ($sortRaw as $field => $direction) {
-				$sort[$field] = 'DESC';
-				if (strtoupper($direction) === 'ASC') {
-					$sort[$field] = 'ASC';
-				}
-			}
-		} elseif ($sortRaw !== null) {
-			// Flat format: sort=created&order=DESC.
-			$sortOrder = $params['order'] ?? $params['_order'] ?? 'DESC';
-			$sort[$sortRaw] = 'DESC';
-			if (strtoupper($sortOrder) === 'ASC') {
-				$sort[$sortRaw] = 'ASC';
-			}
-		}
+		$sort = $this->sortFromRaw(sortRaw: $sortRaw, params: $params);
 
 		if (empty($sort) === true) {
 			$sort['created'] = 'DESC';
@@ -287,6 +274,54 @@ class AuditTrailController extends Controller {
 
 		return $sort;
 	}//end buildSortFromParams()
+
+	/**
+	 * The sort a `sort` parameter asks for.
+	 *
+	 * @param mixed $sortRaw The `sort` (or `_sort`) parameter.
+	 * @param array $params  The request parameters, for `order` / `_order`.
+	 *
+	 * @return array Field => 'ASC'|'DESC', empty when no sort was asked for.
+	 */
+	private function sortFromRaw(mixed $sortRaw, array $params): array {
+		if (is_array($sortRaw) === true) {
+			// Bracket format: _sort[created]=DESC.
+			return $this->sortMap(sortRaw: $sortRaw);
+		}
+
+		if ($sortRaw === null) {
+			return [];
+		}
+
+		// Flat format: sort=created&order=DESC.
+		$sort = [];
+		$sortOrder = $params['order'] ?? $params['_order'] ?? 'DESC';
+		$sort[$sortRaw] = 'DESC';
+		if (strtoupper($sortOrder) === 'ASC') {
+			$sort[$sortRaw] = 'ASC';
+		}
+
+		return $sort;
+	}//end sortFromRaw()
+
+	/**
+	 * A field => direction map, every direction but ASC read as DESC.
+	 *
+	 * @param array $sortRaw The map.
+	 *
+	 * @return array
+	 */
+	private function sortMap(array $sortRaw): array {
+		$sort = [];
+		foreach ($sortRaw as $field => $direction) {
+			$sort[$field] = 'DESC';
+			if (strtoupper($direction) === 'ASC') {
+				$sort[$field] = 'ASC';
+			}
+		}
+
+		return $sort;
+	}//end sortMap()
 
 	/**
 	 * Strip pagination/system keys from raw request params to produce a
@@ -677,6 +712,20 @@ class AuditTrailController extends Controller {
 		// Extract common parameters.
 		$params = $this->extractRequestParameters();
 
+		return $this->adminObjectLogs(register: $register, schema: $schema, id: $id, params: $params);
+	}//end objects()
+
+	/**
+	 * An administrator's read of one object's audit trail, read events included.
+	 *
+	 * @param string $register The register identifier.
+	 * @param string $schema   The schema identifier.
+	 * @param string $id       The object identifier.
+	 * @param array  $params   The parsed paging, sort, search and filter parameters.
+	 *
+	 * @return JSONResponse The page of entries, or 400 / 404 / 409.
+	 */
+	private function adminObjectLogs(string $register, string $schema, string $id, array $params): JSONResponse {
 		try {
 			// Get logs from service.
 			$logs = $this->logService->getLogs(
@@ -716,7 +765,7 @@ class AuditTrailController extends Controller {
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifier(id: $id);
 		}//end try
-	}//end objects()
+	}//end adminObjectLogs()
 
 	/**
 	 * The 409 an identifier two objects of the register and schema hold answers.
@@ -808,6 +857,25 @@ class AuditTrailController extends Controller {
 			return $this->exportPage(format: (string)$format, includeChanges: filter_var($includeChanges, FILTER_VALIDATE_BOOLEAN));
 		}
 
+		return $this->exportAll(
+			format: $format,
+			params: $params,
+			includeChanges: $includeChanges,
+			includeMetadata: $includeMetadata
+		);
+	}//end export()
+
+	/**
+	 * Export every matching entry in one answer.
+	 *
+	 * @param mixed $format          The export format.
+	 * @param array $params          The parsed search and filter parameters.
+	 * @param mixed $includeChanges  Whether to include each entry's changes.
+	 * @param mixed $includeMetadata Whether to include each entry's metadata.
+	 *
+	 * @return JSONResponse The export, or 400 for an unknown format, or 500.
+	 */
+	private function exportAll(mixed $format, array $params, mixed $includeChanges, mixed $includeMetadata): JSONResponse {
 		try {
 			// Build export configuration.
 			$exportConfig = [
@@ -853,7 +921,7 @@ class AuditTrailController extends Controller {
 				statusCode: 500
 			);
 		}//end try
-	}//end export()
+	}//end exportAll()
 
 	/**
 	 * Export the audit page's filtered list, with the chain fields on every row.
@@ -1174,16 +1242,7 @@ class AuditTrailController extends Controller {
 		}
 
 		try {
-			$results = $this->auditTrailMapper->findByIdentifier($identifier);
-			// Explicit-reveal values leave masked here as on every trail route.
-			// The mapper answers raw rows grouped by schema id, `changed` as JSON text.
-			foreach ($results as $schemaId => $rows) {
-				if (is_array($rows) === true) {
-					$results[$schemaId] = $this->logService->maskExplicitReveal(entries: $rows);
-				}
-			}
-
-			return new JSONResponse(data: $results);
+			return new JSONResponse(data: $this->maskedSubjectTrail(identifier: $identifier));
 		} catch (\Exception $e) {
 			return new JSONResponse(
 				data: ['error' => 'Subject audit-trail lookup failed: ' . $e->getMessage()],
@@ -1191,4 +1250,25 @@ class AuditTrailController extends Controller {
 			);
 		}
 	}//end subjectAuditTrail()
+
+	/**
+	 * A subject's audit trail, each schema's rows masked.
+	 *
+	 * Explicit-reveal values leave masked here as on every trail route. The
+	 * mapper answers raw rows grouped by schema id, `changed` as JSON text.
+	 *
+	 * @param mixed $identifier The subject identifier.
+	 *
+	 * @return array Schema id => rows.
+	 */
+	private function maskedSubjectTrail(mixed $identifier): array {
+		$results = $this->auditTrailMapper->findByIdentifier($identifier);
+		foreach ($results as $schemaId => $rows) {
+			if (is_array($rows) === true) {
+				$results[$schemaId] = $this->logService->maskExplicitReveal(entries: $rows);
+			}
+		}
+
+		return $results;
+	}//end maskedSubjectTrail()
 }//end class
