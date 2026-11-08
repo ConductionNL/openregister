@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\ObjectService;
  *
  * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
  */
-class AccessReviewGate {
+class AccessReviewGate implements AccessReviewGateInterface {
 
 	/**
 	 * The verb a schema writes to admit callers to an object's grants list.
