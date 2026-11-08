@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -91,7 +92,8 @@ class RegisterDescriptorServiceTest extends TestCase {
 			new AppRegisterImportRunner(
 				appManager: $this->appManager,
 				containers: $this->containers,
-				configurationService: $this->configurationService
+				configurationService: $this->configurationService,
+				documents: new RegisterDocumentLoader(appManager: $this->appManager)
 			)
 		);
 	}
