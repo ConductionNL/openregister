@@ -664,6 +664,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningSettingsService::class,
 		\OCA\OpenRegister\Service\Hardening\StatementServiceInterface::class => \OCA\OpenRegister\Service\Hardening\StatementService::class,
 		HandoffServiceInterface::class => HandoffService::class,
+		\OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltServiceInterface::class
+			=> \OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		ImportPreviewServiceInterface::class => ImportPreviewService::class,
 		JobAlertServiceInterface::class => JobAlertService::class,
