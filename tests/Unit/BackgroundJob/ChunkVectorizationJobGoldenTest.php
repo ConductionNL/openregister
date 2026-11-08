@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -291,6 +293,7 @@ class ChunkVectorizationJobGoldenTest extends TestCase
         $this->registerService(ChunkStoreInterface::class, fn () => $mapper);
         $this->registerService(EmbeddingGeneratorInterface::class, fn () => $embeddings);
         $this->registerService(VectorStorageHandlerInterface::class, fn () => $storage);
+        $this->registerService(ChunkVectorFactoryInterface::class, fn () => new ChunkVectorFactory());
     }//end wire()
 
     /**

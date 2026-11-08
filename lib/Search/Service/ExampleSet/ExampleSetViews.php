@@ -43,7 +43,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
  */
-class ExampleSetViews extends ExampleSetEngineRows {
+class ExampleSetViews extends ExampleSetEngineRows implements ExampleSetViewRowsInterface {
 	/**
 	 * The view fields a fragment may set.
 	 */
@@ -65,6 +65,17 @@ class ExampleSetViews extends ExampleSetEngineRows {
 		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
+
+	/**
+	 * This writer: the saved views of a fragment.
+	 *
+	 * @return ExampleSetEngineRows
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	public function rows(): ExampleSetEngineRows {
+		return $this;
+	}//end rows()
 
 	/**
 	 * The fragment and record part views live in.

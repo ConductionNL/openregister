@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
-use OCA\OpenRegister\Search\BackgroundJob\SearchIndexRebuildJob;
+use OCA\OpenRegister\Search\BackgroundJob\SearchJobHandles;
 use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunFilter as RunQuery;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
@@ -58,7 +58,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	 * @var array<string, string>
 	 */
 	public const MAINTENANCE_ACTIONS = [
-		'search-index-rebuild' => SearchIndexRebuildJob::class,
+		'search-index-rebuild' => SearchJobHandles::SEARCH_INDEX_REBUILD,
 		'cache-clear-and-warm' => JobHandles::CACHE_CLEAR_AND_WARM,
 		'consistency-check' => JobHandles::CONSISTENCY_CHECK,
 	];
