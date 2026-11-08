@@ -180,13 +180,13 @@ class DeckCardService implements DeckCardServiceInterface {
 		$results = array_map(
 			function (DeckLink $link) use ($cardService): array {
 				$row = $link->jsonSerialize();
-				$widened = $this->extractCardFields(cardService: $cardService, cardId: $link->getCardId());
+				$widened = $this->extractCardFields(cardService: $cardService, cardId: (int)$link->getCardId());
 				$row += $widened;
 
 				// Deep-link to the specific card in the Deck app: reusing the
 				// canonical {app}.page.index route keeps the webroot prefix
 				// correct (mirrors MapLinkService/PhotoLinkService).
-				$deepLink = $this->buildCardDeepLink(boardId: $link->getBoardId(), cardId: $link->getCardId());
+				$deepLink = $this->buildCardDeepLink(boardId: (int)$link->getBoardId(), cardId: (int)$link->getCardId());
 				if ($deepLink !== null) {
 					$row['url'] = $deepLink;
 				}
@@ -206,13 +206,13 @@ class DeckCardService implements DeckCardServiceInterface {
 	 * correct webroot prefix). Returns null when either identifier is missing
 	 * so the relation record is returned without a `url` rather than a broken one.
 	 *
-	 * @param int|null $boardId The Deck board id.
-	 * @param int|null $cardId The Deck card id.
+	 * @param int $boardId The Deck board id; 0 when unknown.
+	 * @param int $cardId  The Deck card id; 0 when unknown.
 	 *
 	 * @return string|null The deep-link URL, or null when not resolvable.
 	 */
-	private function buildCardDeepLink(?int $boardId, ?int $cardId): ?string {
-		if ($boardId === null || $boardId === 0 || $cardId === null || $cardId === 0) {
+	private function buildCardDeepLink(int $boardId, int $cardId): ?string {
+		if ($boardId === 0 || $cardId === 0) {
 			return null;
 		}
 
@@ -253,32 +253,19 @@ class DeckCardService implements DeckCardServiceInterface {
 	 * caller can safely union with the link row.
 	 *
 	 * @param object|null $cardService Deck CardService (may be null).
-	 * @param int|null $cardId Deck card id from the link row.
+	 * @param int         $cardId      Deck card id from the link row; 0 when unknown.
 	 *
 	 * @return array{dueDate: ?string, labels: array, assignees: array}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Defensive null/type guards for service
-	 *   and card availability are mandatory; Deck's entity magic prevents compile-time
-	 *   checks, requiring runtime branches that cannot be removed without losing safety.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      NPath inflation is caused by PHPMD 2.x
-	 *   counting logical sub-expressions in guard conditions independently; the method
-	 *   body is already fully decomposed into extractDueDate/extractLabels/extractAssignees.
 	 */
-	private function extractCardFields(?object $cardService, ?int $cardId): array {
+	private function extractCardFields(?object $cardService, int $cardId): array {
 		$defaults = ['dueDate' => null, 'labels' => [], 'assignees' => []];
 
-		if ($cardService === null || $cardId === null || $cardId === 0) {
+		if ($cardService === null || $cardId === 0) {
 			return $defaults;
 		}
 
-		try {
-			$card = $cardService->find($cardId);
-		} catch (\Throwable $e) {
-			// Card deleted from Deck (link row is stale) — degrade gracefully.
-			return $defaults;
-		}
-
-		if ($card === null || is_object($card) === false) {
+		$card = $this->findCard(cardService: $cardService, cardId: $cardId);
+		if ($card === null) {
 			return $defaults;
 		}
 
@@ -293,6 +280,29 @@ class DeckCardService implements DeckCardServiceInterface {
 			'assignees' => $this->extractAssignees(card: $card),
 		];
 	}//end extractCardFields()
+
+	/**
+	 * Find a Deck card; null when it is gone (stale link row) or not an object.
+	 *
+	 * @param object $cardService Deck CardService.
+	 * @param int    $cardId      Deck card id.
+	 *
+	 * @return object|null
+	 */
+	private function findCard(object $cardService, int $cardId): ?object {
+		try {
+			$card = $cardService->find($cardId);
+		} catch (\Throwable $e) {
+			// Card deleted from Deck (link row is stale) — degrade gracefully.
+			return null;
+		}
+
+		if (is_object($card) === false) {
+			return null;
+		}
+
+		return $card;
+	}//end findCard()
 
 	/**
 	 * Extract the due date string from a Deck card entity.
@@ -409,10 +419,6 @@ class DeckCardService implements DeckCardServiceInterface {
 	 *
 	 * @throws Exception If parameters are missing or Deck operations fail.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two mutually exclusive dispatch paths
-	 *   (link existing card vs. create new card) each require their own guard and error
-	 *   branches; the logic cannot be split further without hiding the business rule.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-8
 	 */
 	public function linkOrCreateCard(string $objectUuid, int $registerId, array $data): DeckLink {
@@ -421,11 +427,37 @@ class DeckCardService implements DeckCardServiceInterface {
 			throw new Exception('No user logged in');
 		}
 
-		$cardId = null;
-		$cardTitle = null;
-		$boardId = 0;
-		$stackId = 0;
+		if ($this->requireCardRequest(data: $data) === true) {
+			// Link existing card.
+			$card = $this->existingCardFields(objectUuid: $objectUuid, cardId: (int)$data['cardId']);
+		} else {
+			// Create new card.
+			$card = $this->newCardFields(objectUuid: $objectUuid, data: $data);
+		}
 
+		$link = new DeckLink();
+		$link->setObjectUuid($objectUuid);
+		$link->setRegisterId($registerId);
+		$link->setBoardId($card['boardId']);
+		$link->setStackId($card['stackId']);
+		$link->setCardId($card['cardId']);
+		$link->setCardTitle($card['cardTitle']);
+		$link->setLinkedBy($user->getUID());
+		$link->setLinkedAt(new DateTime());
+
+		return $this->deckLinkMapper->insert($link);
+	}//end linkOrCreateCard()
+
+	/**
+	 * Check the request names an existing card or a board and stack to create one on.
+	 *
+	 * @param array<string,mixed> $data Card data.
+	 *
+	 * @return bool True to link an existing card, false to create a new one.
+	 *
+	 * @throws Exception When neither cardId nor boardId+stackId is given.
+	 */
+	private function requireCardRequest(array $data): bool {
 		$hasCardId = (empty($data['cardId']) === false);
 		$hasBoardData = (empty($data['boardId']) === false && empty($data['stackId']) === false);
 
@@ -433,55 +465,69 @@ class DeckCardService implements DeckCardServiceInterface {
 			throw new Exception('Either cardId or boardId+stackId is required');
 		}
 
-		if ($hasCardId === true) {
-			// Link existing card.
-			$cardId = (int)$data['cardId'];
-			$cardInfo = $this->getDeckCardInfo(cardId: $cardId);
-			if ($cardInfo === null) {
-				throw new Exception('Deck card not found', 404);
-			}
+		return $hasCardId;
+	}//end requireCardRequest()
 
-			$cardTitle = $cardInfo['title'] ?? 'Unknown';
-			$boardId = $cardInfo['boardId'] ?? 0;
-			$stackId = $cardInfo['stackId'] ?? 0;
-
-			// Check for duplicate.
-			$existing = $this->deckLinkMapper->findByObjectAndCard($objectUuid, $cardId);
-			if ($existing !== null) {
-				throw new Exception('Card already linked to this object', 409);
-			}
+	/**
+	 * The link fields of an existing Deck card not yet linked to the object.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param int    $cardId     The Deck card id.
+	 *
+	 * @return array{cardId:int,cardTitle:mixed,boardId:mixed,stackId:mixed}
+	 *
+	 * @throws Exception When the card is not found (404) or already linked (409).
+	 */
+	private function existingCardFields(string $objectUuid, int $cardId): array {
+		$cardInfo = $this->getDeckCardInfo(cardId: $cardId);
+		if ($cardInfo === null) {
+			throw new Exception('Deck card not found', 404);
 		}
 
-		if ($hasCardId === false && $hasBoardData === true) {
-			// Create new card.
-			$boardId = (int)$data['boardId'];
-			$stackId = (int)$data['stackId'];
-			$cardTitle = $data['title'] ?? 'Untitled';
+		$fields = [
+			'cardId' => $cardId,
+			'cardTitle' => $cardInfo['title'] ?? 'Unknown',
+			'boardId' => $cardInfo['boardId'] ?? 0,
+			'stackId' => $cardInfo['stackId'] ?? 0,
+		];
 
-			$cardId = $this->createDeckCard(
-				boardId: $boardId,
-				stackId: $stackId,
-				title: $cardTitle,
-				description: $data['description'] ?? '',
-				objectUuid: $objectUuid
-			);
-			if ($cardId === null) {
-				throw new Exception('Failed to create Deck card');
-			}
+		// Check for duplicate.
+		$existing = $this->deckLinkMapper->findByObjectAndCard($objectUuid, $cardId);
+		if ($existing !== null) {
+			throw new Exception('Card already linked to this object', 409);
 		}
 
-		$link = new DeckLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setBoardId($boardId);
-		$link->setStackId($stackId);
-		$link->setCardId($cardId);
-		$link->setCardTitle($cardTitle);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		return $fields;
+	}//end existingCardFields()
 
-		return $this->deckLinkMapper->insert($link);
-	}//end linkOrCreateCard()
+	/**
+	 * Create a Deck card on the requested board and stack and return its link fields.
+	 *
+	 * @param string              $objectUuid The object UUID for the back-link.
+	 * @param array<string,mixed> $data       Card data: boardId, stackId, title, description.
+	 *
+	 * @return array{cardId:int,cardTitle:mixed,boardId:int,stackId:int}
+	 *
+	 * @throws Exception When the card cannot be created.
+	 */
+	private function newCardFields(string $objectUuid, array $data): array {
+		$boardId = (int)$data['boardId'];
+		$stackId = (int)$data['stackId'];
+		$cardTitle = $data['title'] ?? 'Untitled';
+
+		$cardId = $this->createDeckCard(
+			stackId: $stackId,
+			title: $cardTitle,
+			description: $data['description'] ?? '',
+			objectUuid: $objectUuid
+		);
+
+		if ($cardId === null) {
+			throw new Exception('Failed to create Deck card');
+		}
+
+		return ['cardId' => $cardId, 'cardTitle' => $cardTitle, 'boardId' => $boardId, 'stackId' => $stackId];
+	}//end newCardFields()
 
 	/**
 	 * Remove a deck link.
@@ -618,18 +664,14 @@ class DeckCardService implements DeckCardServiceInterface {
 	/**
 	 * Create a Deck card using Deck's service classes.
 	 *
-	 * @param int $boardId The board ID.
 	 * @param int $stackId The stack ID.
 	 * @param string $title The card title.
 	 * @param string $description The card description.
 	 * @param string $objectUuid The object UUID for the back-link.
 	 *
 	 * @return int|null The created card ID or null.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) boardId reserved for future board-context APIs.
 	 */
 	private function createDeckCard(
-		int $boardId,
 		int $stackId,
 		string $title,
 		string $description,
