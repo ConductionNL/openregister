@@ -234,9 +234,7 @@ class CasePlanService implements CasePlanServiceInterface {
 		$actor = $this->systemActor(app: $app);
 
 		return $this->ensurer()->ensure(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
+			anchor: new CaseAnchor(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId),
 			definition: $definition,
 			history: $history,
 			actor: $actor

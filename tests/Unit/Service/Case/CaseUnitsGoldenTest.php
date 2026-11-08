@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Service\Case\CaseAnchor;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
@@ -52,7 +53,9 @@ use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
+use OCA\OpenRegister\Service\Case\CaseRealisationRuns;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
+use OCA\OpenRegister\Service\Case\CaseRealisationTasks;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
 use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
@@ -501,9 +504,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		$out = [];
 		$out['fresh'] = self::attempt(
 			fn (): array => $this->ensurer()->ensure(
-				objectUuid: CaseFixtures::OBJECT,
-				registerId: 1,
-				schemaId: 2,
+				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2),
 				definition: CasePlanEnsurerTest::migrated(),
 				history: $history,
 				actor: 'system:dossiq'
@@ -513,9 +514,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		$grown['items'][] = ['key' => 'archief', 'type' => CaseItem::TYPE_MILESTONE, 'state' => CaseItem::STATE_COMPLETED];
 		$out['resumed'] = self::attempt(
 			fn (): array => $this->ensurer()->ensure(
-				objectUuid: CaseFixtures::OBJECT,
-				registerId: null,
-				schemaId: 2,
+				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: null, schemaId: 2),
 				definition: $grown,
 				history: [],
 				actor: 'system:dossiq'
@@ -560,9 +559,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		foreach ($refusals as $label => [$definition, $entries]) {
 			$out['refusals'][$label] = self::attempt(
 				fn (): array => $this->ensurer()->ensure(
-					objectUuid: CaseFixtures::OBJECT,
-					registerId: 1,
-					schemaId: 2,
+					anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2),
 					definition: $definition,
 					history: $entries,
 					actor: 'system:dossiq'
@@ -572,9 +569,7 @@ class CaseUnitsGoldenTest extends TestCase {
 
 		$out['anchor register'] = self::attempt(
 			fn (): array => $this->ensurer()->ensure(
-				objectUuid: CaseFixtures::OBJECT,
-				registerId: 5,
-				schemaId: 2,
+				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 5, schemaId: 2),
 				definition: CasePlanEnsurerTest::migrated(),
 				history: [],
 				actor: 'system:dossiq'
@@ -582,9 +577,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		);
 		$out['anchor schema'] = self::attempt(
 			fn (): array => $this->ensurer()->ensure(
-				objectUuid: CaseFixtures::OBJECT,
-				registerId: 1,
-				schemaId: 7,
+				anchor: new CaseAnchor(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 7),
 				definition: CasePlanEnsurerTest::migrated(),
 				history: [],
 				actor: 'system:dossiq'
@@ -618,9 +611,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		$timers = new CasePlanItemTimers(timers: $core, logger: new NullLogger(), markers: $markers);
 		$out['timed'] = self::attempt(
 			fn (): array => $this->ensurer($timers)->ensure(
-				objectUuid: self::OTHER,
-				registerId: 1,
-				schemaId: 2,
+				anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2),
 				definition: $timed,
 				history: [],
 				actor: 'system:dossiq'
@@ -634,9 +625,7 @@ class CaseUnitsGoldenTest extends TestCase {
 		];
 		$out['timed again'] = self::attempt(
 			fn (): array => $this->ensurer($timers)->ensure(
-				objectUuid: self::OTHER,
-				registerId: 1,
-				schemaId: 2,
+				anchor: new CaseAnchor(objectUuid: self::OTHER, registerId: 1, schemaId: 2),
 				definition: $timed,
 				history: [],
 				actor: 'system:dossiq'
@@ -983,10 +972,8 @@ class CaseUnitsGoldenTest extends TestCase {
 			}
 		);
 		$service = new CaseRealisationService(
-			tasks: $tasks,
-			taskRows: $this->createMock(TaskMapper::class),
-			runs: $runs,
-			runRows: $this->createMock(FlowRunMapperInterface::class),
+			tasks: new CaseRealisationTasks(tasks: $tasks, taskRows: $this->createMock(TaskMapper::class)),
+			runs: new CaseRealisationRuns(runs: $runs, runRows: $this->createMock(FlowRunMapperInterface::class)),
 			logger: new NullLogger()
 		);
 		$bare = CaseFixtures::row(id: 1, key: 'bare', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_AVAILABLE);
