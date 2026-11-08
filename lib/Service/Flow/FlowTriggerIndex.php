@@ -54,21 +54,41 @@ use Throwable;
  */
 class FlowTriggerIndex implements FlowTriggerIndexInterface {
 	/**
+	 * Nodes to triggers.
+	 *
+	 * @var FlowTriggerDerivation
+	 */
+	private readonly FlowTriggerDerivation $derivation;
+
+	/**
+	 * Normalises a derived triple to the slugs matching runs on.
+	 *
+	 * @var FlowTriggerSlugs
+	 */
+	private readonly FlowTriggerSlugs $slugs;
+
+	/**
+	 * Resolves the published graph, when there is one.
+	 *
+	 * @var FlowPublishedGraph|null
+	 */
+	private readonly ?FlowPublishedGraph $published;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowTriggerMapperInterface $mapper The indexed trigger set.
-	 * @param FlowTriggerDerivation $derivation Nodes to triggers.
-	 * @param FlowTriggerSlugs $slugs Normalises a derived triple to the slugs matching runs on.
+	 * @param FlowTriggerSources $sources The derivation, the slug normaliser and the published graph.
 	 * @param LoggerInterface $logger Diagnostics.
-	 * @param FlowPublishedGraph|null $published Resolves the published graph.
 	 */
 	public function __construct(
 		private readonly FlowTriggerMapperInterface $mapper,
-		private readonly FlowTriggerDerivation $derivation,
-		private readonly FlowTriggerSlugs $slugs,
+		FlowTriggerSources $sources,
 		private readonly LoggerInterface $logger,
-		private readonly ?FlowPublishedGraph $published = null,
 	) {
+		$this->derivation = $sources->derivation;
+		$this->slugs      = $sources->slugs;
+		$this->published  = $sources->published;
 
 	}//end __construct()
 

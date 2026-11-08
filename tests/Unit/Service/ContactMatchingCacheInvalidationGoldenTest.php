@@ -17,6 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ContactMatchingMappers;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\ICache;
@@ -74,8 +75,7 @@ class ContactMatchingCacheInvalidationGoldenTest extends TestCase {
 
 		$service = new ContactMatchingService(
 			$this->createMock(ObjectService::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
+			new ContactMatchingMappers($this->createMock(SchemaMapper::class), $this->createMock(RegisterMapper::class)),
 			$factory,
 			$this->createMock(LoggerInterface::class)
 		);
