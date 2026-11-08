@@ -218,7 +218,7 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-leaf-foundation/spec.md
 		\OCA\OpenRegister\Service\AnalyticsSeriesService::class => [
-			'mapper'       => \OCA\OpenRegister\Db\AnalyticsSeriesMapper::class,
+			'mapper'       => \OCA\OpenRegister\Db\AnalyticsSeriesMapperInterface::class,
 			'registry'     => \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class,
 			'userSession'  => \OCP\IUserSession::class,
 			'groupManager' => \OCP\IGroupManager::class,
@@ -372,7 +372,7 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class => [],
 		\OCA\OpenRegister\Service\Schema\SchemaVersioningService::class => [
 			'diffService'     => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
-			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapper::class,
+			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class,
 			'runMapper'       => \OCA\OpenRegister\Db\SchemaRunMapper::class,
 			'runEntryMapper'  => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
 			'userSession'     => \OCP\IUserSession::class,

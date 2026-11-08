@@ -32,7 +32,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<AnalyticsSeries>
  */
-class AnalyticsSeriesMapper extends QBMapper {
+class AnalyticsSeriesMapper extends QBMapper implements AnalyticsSeriesMapperInterface {
 
 	use SelectByColumnTrait;
 	/**

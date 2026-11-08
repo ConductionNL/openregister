@@ -166,7 +166,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\AnalyticsSeriesService' => [
-			'OCA\OpenRegister\Db\AnalyticsSeriesMapper',
+			'OCA\OpenRegister\Db\AnalyticsSeriesMapperInterface',
 			'OCA\OpenRegister\Service\Integration\IntegrationRegistry',
 			'OCP\IUserSession',
 			'OCP\IGroupManager',
@@ -309,7 +309,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		],
 		'OCA\OpenRegister\Service\Schema\SchemaVersioningService' => [
 			'OCA\OpenRegister\Service\Schema\SchemaDiffService',
-			'OCA\OpenRegister\Db\SchemaChangelogMapper',
+			'OCA\OpenRegister\Db\SchemaChangelogMapperInterface',
 			'OCA\OpenRegister\Db\SchemaRunMapper',
 			'OCA\OpenRegister\Db\SchemaRunEntryMapper',
 			'OCP\IUserSession',

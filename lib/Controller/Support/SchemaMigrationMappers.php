@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\SchemaChangelogMapper;
+use OCA\OpenRegister\Db\SchemaChangelogMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
@@ -37,7 +37,7 @@ final class SchemaMigrationMappers {
 	 * Bundle the services.
 	 *
 	 * @param SchemaMapperInterface          $schemaMapper    Schema lookup.
-	 * @param SchemaChangelogMapper $changelogMapper Changelog read.
+	 * @param SchemaChangelogMapperInterface $changelogMapper Changelog read.
 	 * @param SchemaRunMapper       $runMapper       Run read.
 	 * @param SchemaRunEntryMapper  $runEntryMapper  Run entry read.
 	 *
@@ -45,7 +45,7 @@ final class SchemaMigrationMappers {
 	 */
 	public function __construct(
 		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly SchemaChangelogMapper $changelogMapper,
+		public readonly SchemaChangelogMapperInterface $changelogMapper,
 		public readonly SchemaRunMapper $runMapper,
 		public readonly SchemaRunEntryMapper $runEntryMapper,
 	) {
