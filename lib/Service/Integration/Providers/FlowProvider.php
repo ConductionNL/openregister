@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
 use OCA\OpenRegister\Db\FlowLink;
-use OCA\OpenRegister\Db\FlowLinkMapper;
+use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -51,7 +51,7 @@ class FlowProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'workflowengine';
 
 	public function __construct(
-		private FlowLinkMapper $flowLinkMapper,
+		private FlowLinkMapperInterface $flowLinkMapper,
 		private IDBConnection $db,
 		private IAppManager $appManager,
 		private IL10N $l10n,
@@ -77,9 +77,9 @@ class FlowProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads.
 	 *
-	 * @return FlowLinkMapper
+	 * @return FlowLinkMapperInterface
 	 */
-	protected function linkMapper(): FlowLinkMapper {
+	protected function linkMapper(): FlowLinkMapperInterface {
 		return $this->flowLinkMapper;
 	}//end linkMapper()
 

@@ -42,7 +42,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\TalkLink;
-use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\TalkLink\TalkGateway;
 use OCA\OpenRegister\Service\TalkLink\TalkLinkFactory;
 use OCA\OpenRegister\Service\TalkLink\TalkRoomFields;
@@ -100,7 +100,7 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param TalkLinkMapper $talkLinkMapper Persistence for link rows.
+	 * @param TalkLinkMapperInterface $talkLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound Talk classes.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
@@ -109,7 +109,7 @@ class TalkLinkService implements TalkLinkServiceInterface {
 	 * @param SchemaMapperInterface $schemaMapper Resolves the schema an object belongs to (external-participant opt-in check).
 	 */
 	public function __construct(
-		private readonly TalkLinkMapper $talkLinkMapper,
+		private readonly TalkLinkMapperInterface $talkLinkMapper,
 		ContainerInterface $container,
 		IAppManager $appManager,
 		private readonly IUserSession $userSession,

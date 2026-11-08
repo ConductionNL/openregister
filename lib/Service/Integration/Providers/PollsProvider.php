@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
 use OCA\OpenRegister\Db\PollLink;
-use OCA\OpenRegister\Db\PollLinkMapper;
+use OCA\OpenRegister\Db\PollLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -54,7 +54,7 @@ class PollsProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'polls';
 
 	public function __construct(
-		private PollLinkMapper $pollLinkMapper,
+		private PollLinkMapperInterface $pollLinkMapper,
 		private IDBConnection $db,
 		private IAppManager $appManager,
 		private IUserSession $userSession,
@@ -81,9 +81,9 @@ class PollsProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads.
 	 *
-	 * @return PollLinkMapper
+	 * @return PollLinkMapperInterface
 	 */
-	protected function linkMapper(): PollLinkMapper {
+	protected function linkMapper(): PollLinkMapperInterface {
 		return $this->pollLinkMapper;
 	}//end linkMapper()
 
