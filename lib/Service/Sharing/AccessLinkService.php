@@ -65,7 +65,7 @@ use Throwable;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
  */
-class AccessLinkService {
+class AccessLinkService implements AccessLinkServiceInterface {
 
 	/**
 	 * The length of the random anchor, in characters.
@@ -76,27 +76,6 @@ class AccessLinkService {
 	 * @var int
 	 */
 	private const ANCHOR_LENGTH = 43;
-
-	/**
-	 * The audit action written when a link serves its subject.
-	 *
-	 * @var string
-	 */
-	public const ACT_READ = 'accesslink.read';
-
-	/**
-	 * The audit action written when a link leaves a comment.
-	 *
-	 * @var string
-	 */
-	public const ACT_COMMENT = 'accesslink.comment';
-
-	/**
-	 * The audit action written when a link adds a file.
-	 *
-	 * @var string
-	 */
-	public const ACT_UPLOAD = 'accesslink.upload';
 
 	/**
 	 * Constructor.

@@ -90,6 +90,10 @@ use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
 use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
+use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
+use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeServiceInterface;
+use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
+use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
 use OCA\OpenRegister\Service\Capability\ToolReachLevels;
 use OCA\OpenRegister\Service\Capability\ToolReachResolver;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
@@ -503,6 +507,8 @@ final class ContractBindings {
 	 */
 	public const BINDINGS = [
 		\OCA\OpenRegister\Service\Rbac\AdminGateInterface::class => \OCA\OpenRegister\Service\Rbac\AdminGate::class,
+		\OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard::class,
+		\OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkService::class,
 		AdministeredValidationEnforcerInterface::class => AdministeredValidationEnforcer::class,
 		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
@@ -517,6 +523,7 @@ final class ContractBindings {
 		AppConfigurationImporterInterface::class => ConfigurationService::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		ApplicationServiceInterface::class => ApplicationService::class,
+		AppointmentAttendeeServiceInterface::class => AppointmentAttendeeService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		DeclaredGroupInventoryInterface::class => DeclaredGroupInventoryService::class,
 		DoriathCredentialKeys::class => DoriathCredentialStore::class,
@@ -561,7 +568,10 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
 		\OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface::class => \OCA\OpenRegister\Service\Task\TaskMetricsProvider::class,
 		BrpPersonProviderInterface::class => BrpPersonProvider::class,
+		CalendarFeedTokenServiceInterface::class => CalendarFeedTokenService::class,
+		CaseTokenServiceInterface::class => CaseTokenService::class,
 		DoriathApplicationRegistrarInterface::class => DoriathApplicationRegistrar::class,
+		FederationShareServiceInterface::class => FederationShareService::class,
 		ShippedBaselineResetServiceInterface::class => ShippedBaselineResetService::class,
 		FlowStateNodeInterface::class => FlowStateNode::class,
 		IterateNodeInterface::class => IterateNode::class,
