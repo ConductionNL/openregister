@@ -26,6 +26,7 @@ use DateTime;
 use OCA\OpenRegister\Event\ApplicationCreatedEvent;
 use OCA\OpenRegister\Event\ApplicationDeletedEvent;
 use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -114,9 +115,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 	 * for multi-tenancy, RBAC, and event dispatching.
 	 *
 	 * @param IDBConnection $db Database connection for queries
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IGroupManager $groupManager Group manager for RBAC checks
+	 * @param TenancyServices $tenancy Organisation mapper, session and groups for multi-tenancy and RBAC
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for application events
 	 *
 	 * @return void
@@ -124,9 +123,7 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 	public function __construct(
 		IDBConnection $db,
 		// REMOVED: Services should not be in mappers.
-		OrganisationMapperInterface $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		IEventDispatcher $eventDispatcher,
 	) {
 		// Initialize parent mapper with table name and entity class.
@@ -134,9 +131,9 @@ class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 
 		// Store dependencies for use in mapper methods.
 		// REMOVED: Services should not be in mappers.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 		$this->eventDispatcher = $eventDispatcher;
 	}//end __construct()
 

@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
@@ -193,6 +194,6 @@ final class MappingMapperTenancyGoldenTest extends TestCase {
 		$caches = $this->createMock(ICacheFactory::class);
 		$caches->method('createDistributed')->willReturn($this->createMock(ICache::class));
 
-		return new MappingMapper($db, $organisations, $session, $groups, $caches, new NullLogger());
+		return new MappingMapper($db, new TenancyServices($organisations, $session, $groups), $caches, new NullLogger());
 	}//end mapper()
 }//end class
