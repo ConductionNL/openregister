@@ -96,11 +96,7 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 		ProcessingPurposeMapper::class => [
 			'Service/Audit/PurposeRegistry.php',
 		],
-		PurposeGuard::class => [
-			'Db/AuditTrailMapper.php',
-			'Db/MagicMapper.php',
-			'Db/MagicMapper/PurposeBoundTables.php',
-		],
+		PurposeGuard::class => [],
 		SearchTrailMapper::class => [],
 		StateHistoryProjector::class => [
 			'Listener/StateHistoryProjectionListener.php',

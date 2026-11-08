@@ -34,9 +34,9 @@ use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
-use OCA\OpenRegister\Service\Audit\AuditSink;
+use OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface;
 use OCA\OpenRegister\Service\Audit\AuditTrailCollaborators;
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -3196,7 +3196,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		$auditTrail = new AuditTrail();
 		$auditTrail->setUuid((string)Uuid::v4());
-		$auditTrail->setAction(PurposeGuard::ACTION_REFUSED);
+		$auditTrail->setAction(PurposeGuardInterface::ACTION_REFUSED);
 		$auditTrail->setRegister($register);
 		$auditTrail->setSchema($schema);
 		$auditTrail->setResultSummary(
@@ -3310,17 +3310,17 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	private function shipToSink(array $entries): void {
 		try {
 			/*
-			 * @var AuditSink $sink
+			 * @var AuditSinkShipperInterface $sink
 			 */
 
-			$sink = $this->container->get(AuditSink::class);
+			$sink = $this->container->get(AuditSinkShipperInterface::class);
 		} catch (Throwable $e) {
 			// Not registered yet, e.g. during a migration before service
 			// registration completes.
 			return;
 		}
 
-		if (($sink instanceof AuditSink) === false || $sink->isConfigured() === false) {
+		if (($sink instanceof AuditSinkShipperInterface) === false || $sink->isConfigured() === false) {
 			return;
 		}
 
@@ -3359,7 +3359,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	private function recordSinkGap(AuditTrail $unshipped, string $error): void {
 		$gap = new AuditTrail();
 		$gap->setUuid((string)Uuid::v4());
-		$gap->setAction(AuditSink::ACTION_SINK_FAILED);
+		$gap->setAction(AuditSinkShipperInterface::ACTION_SINK_FAILED);
 		$gap->setResultSummary(
 			[
 				'error' => $error,

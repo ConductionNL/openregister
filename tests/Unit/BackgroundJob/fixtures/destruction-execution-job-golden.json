@@ -18,7 +18,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -235,7 +235,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -845,7 +845,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -1440,7 +1440,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -1689,7 +1689,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -1825,7 +1825,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2324,7 +2324,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2536,7 +2536,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2597,7 +2597,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2656,7 +2656,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2730,7 +2730,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {
@@ -2920,7 +2920,7 @@
         },
         {
             "get": [
-                "ObjectRetentionHandler"
+                "ArchivalSettingsReaderInterface"
             ]
         },
         {

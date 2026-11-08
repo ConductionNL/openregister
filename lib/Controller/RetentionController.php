@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\BackgroundJob\IJobList;
@@ -76,9 +76,9 @@ class RetentionController extends Controller {
 	/**
 	 * Settings handler
 	 *
-	 * @var ObjectRetentionHandler
+	 * @var ArchivalSettingsReaderInterface
 	 */
-	private readonly ObjectRetentionHandler $settingsHandler;
+	private readonly ArchivalSettingsReaderInterface $settingsHandler;
 
 	/**
 	 * Save object service
