@@ -545,6 +545,10 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriverInterface;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetServiceInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
@@ -986,6 +990,8 @@ final class ContractBindings {
 		RuleTrialServiceInterface::class => RuleTrialService::class,
 		\OCA\OpenRegister\Service\Flow\FlowTenantMembershipInterface::class => \OCA\OpenRegister\Service\Flow\FlowTenantMembership::class,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkSubject::class,
+		SharePrincipalDeriverInterface::class => SharePrincipalDeriver::class,
+		AccessLinkActsInterface::class => AccessLinkActs::class,
 		RegisterDescriptorServiceInterface::class => RegisterDescriptorService::class,
 		RegisterResolverServiceInterface::class => RegisterResolverService::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
