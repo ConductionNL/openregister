@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
@@ -47,6 +47,7 @@ use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationGroupPreferencesControllerServices;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationRequestTrait;
 
 class NotificationGroupPreferencesController extends Controller {
@@ -67,29 +68,39 @@ class NotificationGroupPreferencesController extends Controller {
 	private readonly IUserSession $userSession;
 
 	/**
+	 * The three-layer preference resolver.
+	 *
+	 * @var NotificationPreferencesInterface
+	 */
+	private readonly NotificationPreferencesInterface $preferenceService;
+
+	/**
+	 * Mapper used to enumerate the notifications a group may hold defaults for.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
-	 * @param NotificationPreferencesInterface $preferenceService The three-layer preference resolver.
-	 * @param SchemaMapperInterface $schemaMapper Mapper used to enumerate the notifications a group may hold defaults for.
-	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param ISubAdmin $subAdmin The authority on who administers one particular group.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One dependency per authority the endpoint consults.
+	 * @param IRequest                                       $request      Request.
+	 * @param NotificationGroupPreferencesControllerServices $services     The preference resolver, the schema mapper and the session.
+	 * @param IGroupManager                                  $groupManager The authority on who is an administrator.
+	 * @param ISubAdmin                                      $subAdmin     The authority on who administers one particular group.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly NotificationPreferencesInterface $preferenceService,
-		private readonly SchemaMapperInterface $schemaMapper,
-		ControllerSession $session,
+		NotificationGroupPreferencesControllerServices $services,
+		IGroupManager $groupManager,
 		private readonly ISubAdmin $subAdmin,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 
-		$this->groupManager = $session->groupManager;
-		$this->userSession = $session->userSession;
+		$this->preferenceService = $services->preferenceService;
+		$this->schemaMapper      = $services->schemaMapper;
+		$this->userSession       = $services->userSession;
+		$this->groupManager      = $groupManager;
 	}//end __construct()
 
 	/**
