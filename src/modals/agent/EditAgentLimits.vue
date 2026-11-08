@@ -12,11 +12,16 @@
   SPDX-FileCopyrightText: 2026 Conduction B.V.
 -->
 <template>
-	<NcModal size="normal" @close="$emit('close')">
-		<div class="agent-limits">
-			<h2>
-				{{ t('openregister', 'Limits of {name}', { name: agent.name }) }}
-			</h2>
+	<CnFormDialog
+		ref="dialog"
+		:dialogTitle="t('openregister', 'Limits of {name}', { name: agent.name })"
+		:cancelLabel="t('openregister', 'Cancel')"
+		:confirmLabel="t('openregister', 'Save')"
+		:recoverDraft="false"
+		:feedback="false"
+		@confirm="save"
+		@close="$emit('close')">
+		<template #form>
 			<NcSelect
 				v-model="selectedTools"
 				:inputLabel="t('openregister', 'Tools')"
@@ -38,23 +43,16 @@
 			<NcNoteCard v-if="error" type="error">
 				{{ error }}
 			</NcNoteCard>
-			<div class="agent-limits__actions">
-				<NcButton :disabled="saving" @click="$emit('close')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton variant="primary" :disabled="saving" @click="save">
-					{{ t('openregister', 'Save') }}
-				</NcButton>
-			</div>
-		</div>
-	</NcModal>
+		</template>
+	</CnFormDialog>
 </template>
 
 <script>
+import { CnFormDialog } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcModal, NcNoteCard, NcSelect } from '@nextcloud/vue'
+import { NcNoteCard, NcSelect } from '@nextcloud/vue'
 
 /**
  * Turn stored ids into select options, keeping an id the catalogue no longer lists.
@@ -71,7 +69,7 @@ export function toSelected(ids, options) {
 
 export default {
 	name: 'EditAgentLimits',
-	components: { NcButton, NcModal, NcNoteCard, NcSelect },
+	components: { CnFormDialog, NcNoteCard, NcSelect },
 	props: {
 		agent: { type: Object, required: true },
 		toolOptions: { type: Array, default: () => [] },
@@ -118,23 +116,10 @@ export default {
 					|| t('openregister', 'Could not save the limits')
 			} finally {
 				this.saving = false
+				// Back to the form with its own error card, not the result phase.
+				this.$refs?.dialog?.setValidationErrors({}, null)
 			}
 		},
 	},
 }
 </script>
-
-<style scoped>
-.agent-limits {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	padding: 24px;
-}
-
-.agent-limits__actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
-}
-</style>

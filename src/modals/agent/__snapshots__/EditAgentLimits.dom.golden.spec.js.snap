@@ -1,24 +1,13 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`EditAgentLimits golden record renders the recorded dialog 1`] = `
-"<x-ncmodal size="normal">
-  <x-slot-default>
-    <div class="agent-limits">
-      <h2>t:Limits of Helper</h2>
-      <x-ncselect modelvalue="[{&quot;id&quot;:&quot;a&quot;,&quot;label&quot;:&quot;Tool A&quot;},{&quot;id&quot;:&quot;gone&quot;,&quot;label&quot;:&quot;gone&quot;}]" inputlabel="t:Tools" options="[{&quot;id&quot;:&quot;a&quot;,&quot;label&quot;:&quot;Tool A&quot;},{&quot;id&quot;:&quot;b&quot;,&quot;label&quot;:&quot;Tool B&quot;}]" label="label" trackby="id" multiple="true" keepopen="" disabled="false"></x-ncselect>
-      <x-ncselect modelvalue="[{&quot;id&quot;:&quot;v-open&quot;,&quot;label&quot;:&quot;Open cases&quot;}]" inputlabel="t:Views" options="[{&quot;id&quot;:&quot;v-open&quot;,&quot;label&quot;:&quot;Open cases&quot;},{&quot;id&quot;:&quot;v-closed&quot;,&quot;label&quot;:&quot;Closed cases&quot;}]" label="label" trackby="id" multiple="true" keepopen="" disabled="false"></x-ncselect>
-      <!--v-if-->
-      <div class="agent-limits__actions">
-        <x-ncbutton disabled="false">
-          <x-slot-default>t:Cancel</x-slot-default>
-        </x-ncbutton>
-        <x-ncbutton variant="primary" disabled="false">
-          <x-slot-default>t:Save</x-slot-default>
-        </x-ncbutton>
-      </div>
-    </div>
-  </x-slot-default>
-</x-ncmodal>"
+"<x-cnformdialog dialogtitle="t:Limits of Helper" cancellabel="t:Cancel" confirmlabel="t:Save" recoverdraft="false" feedback="false">
+  <x-slot-form>
+    <x-ncselect modelvalue="[{&quot;id&quot;:&quot;a&quot;,&quot;label&quot;:&quot;Tool A&quot;},{&quot;id&quot;:&quot;gone&quot;,&quot;label&quot;:&quot;gone&quot;}]" inputlabel="t:Tools" options="[{&quot;id&quot;:&quot;a&quot;,&quot;label&quot;:&quot;Tool A&quot;},{&quot;id&quot;:&quot;b&quot;,&quot;label&quot;:&quot;Tool B&quot;}]" label="label" trackby="id" multiple="true" keepopen="" disabled="false"></x-ncselect>
+    <x-ncselect modelvalue="[{&quot;id&quot;:&quot;v-open&quot;,&quot;label&quot;:&quot;Open cases&quot;}]" inputlabel="t:Views" options="[{&quot;id&quot;:&quot;v-open&quot;,&quot;label&quot;:&quot;Open cases&quot;},{&quot;id&quot;:&quot;v-closed&quot;,&quot;label&quot;:&quot;Closed cases&quot;}]" label="label" trackby="id" multiple="true" keepopen="" disabled="false"></x-ncselect>
+    <!--v-if-->
+  </x-slot-form>
+</x-cnformdialog>"
 `;
 
 exports[`EditAgentLimits golden record renders the recorded selects 1`] = `
