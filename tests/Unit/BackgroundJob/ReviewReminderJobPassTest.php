@@ -26,7 +26,10 @@ use Exception;
 use OCA\OpenRegister\BackgroundJob\ReviewReminderJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
+use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
+use OCA\OpenRegister\Service\Archival\DestructionReviewReminderInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Notification\IManager as INotificationManager;
@@ -113,10 +116,10 @@ class ReviewReminderJobPassTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			fn (string $id): object => match ($id) {
-				DestructionListRepository::class => $this->lists,
-				DestructionReviewService::class => new DestructionReviewService(),
+				DestructionListRepositoryInterface::class => $this->lists,
+				DestructionReviewReminderInterface::class => new DestructionReviewService(),
 				INotificationManager::class => $notificationManager,
-				ObjectRetentionHandler::class => $settings,
+				ArchivalSettingsReaderInterface::class => $settings,
 				default => $logger,
 			}
 		);
