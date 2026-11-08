@@ -206,9 +206,7 @@ class PortalTaskController extends Controller {
 		return $this->asSubject(
 			action: fn (PortalSubject $subject): JSONResponse => $this->completeAs(
 				subject: $subject,
-				uuid: $uuid,
-				outcome: $outcome,
-				comment: $comment
+				completion: ['uuid' => $uuid, 'outcome' => $outcome, 'comment' => $comment]
 			)
 		);
 	}//end complete()
@@ -375,21 +373,20 @@ class PortalTaskController extends Controller {
 	/**
 	 * Complete the task as the subject, with the request's answers and uploads.
 	 *
-	 * @param PortalSubject $subject The acting subject.
-	 * @param string        $uuid    The task uuid.
-	 * @param string        $outcome The outcome to record.
-	 * @param string|null   $comment The party's comment.
+	 * @param PortalSubject                                             $subject    The acting subject.
+	 * @param array{uuid: string, outcome: string, comment: string|null} $completion The task uuid, the outcome to record and
+	 *                                                                               the party's comment.
 	 *
 	 * @return JSONResponse The completed task row.
 	 */
-	private function completeAs(PortalSubject $subject, string $uuid, string $outcome, ?string $comment): JSONResponse {
+	private function completeAs(PortalSubject $subject, array $completion): JSONResponse {
 		$task = $this->portal->complete(
 			subject: $subject,
-			uuid: $uuid,
+			uuid: $completion['uuid'],
 			answers: $this->answers(),
-			comment: $comment,
+			comment: $completion['comment'],
 			files: $this->uploads(),
-			outcome: $outcome
+			outcome: $completion['outcome']
 		);
 
 		return new JSONResponse($this->portal->row(task: $task));
