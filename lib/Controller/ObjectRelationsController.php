@@ -38,15 +38,15 @@ use OCA\OpenRegister\Controller\Support\ObjectRelationsPurposeScope;
 use OCA\OpenRegister\Controller\Support\ObjectRelationsRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Relation\AffectedSet;
 use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
 use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
-use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
+use OCA\OpenRegister\Service\Relation\RelationTypeResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -639,7 +639,7 @@ class ObjectRelationsController extends Controller {
 	private function renderOutgoing(ObjectRelation $row): array {
 		return $this->relations->render(
 			row: $row,
-			direction: RelationTypeResolver::DIRECTION_OUTGOING,
+			direction: RelationTypeResolverInterface::DIRECTION_OUTGOING,
 			language: $this->params->language()
 		);
 	}//end renderOutgoing()

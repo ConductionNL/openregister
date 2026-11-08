@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Service\Vectorization\Strategies;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 
 /**
  * ObjectVectorizationStrategy
@@ -39,7 +38,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrate
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  */
-class ObjectVectorizationStrategy implements VectorizationStrategyInterface {
+class ObjectVectorizationStrategy implements ObjectVectorizationStrategyInterface {
 
 	/**
 	 * Object service

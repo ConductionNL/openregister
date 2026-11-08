@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Dmn;
  *
  * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
  */
-class DecisionTableValidator {
+class DecisionTableValidator implements DecisionTableValidatorInterface {
 
 	/**
 	 * One already-coerced probe value per effective type, used to exercise

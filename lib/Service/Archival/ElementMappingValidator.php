@@ -46,12 +46,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  */
-class ElementMappingValidator {
-
-	/**
-	 * The schema configuration key the mapping lives under.
-	 */
-	public const ANNOTATION_KEY = 'x-openregister-mdto-mapping';
+class ElementMappingValidator implements ElementMappingValidatorInterface {
 
 	/**
 	 * The key naming the object property that fills an element.

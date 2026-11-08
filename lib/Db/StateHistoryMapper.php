@@ -45,7 +45,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
  */
-class StateHistoryMapper extends QBMapper {
+class StateHistoryMapper extends QBMapper implements StateHistoryMapperInterface {
 
 	/**
 	 * Largest candidate set a single predicate answers with.
