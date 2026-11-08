@@ -59,7 +59,7 @@ use InvalidArgumentException;
  *              and take away the one thing a refused reviewer needs, which is
  *              WHICH rule refused them.
  */
-class DestructionReviewService implements DestructionReviewServiceInterface {
+class DestructionReviewService implements DestructionReviewServiceInterface, DestructionReviewReminderInterface {
 
 	/**
 	 * The entries of a destruction list, as a list.

@@ -48,7 +48,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
  */
-class TransferListService implements TransferListServiceInterface {
+class TransferListService implements TransferListServiceInterface, TransferListRunInterface {
 
 	// The transfer list statuses (STATUS_*) are declared on TransferListServiceInterface.
 
