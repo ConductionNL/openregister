@@ -61,14 +61,13 @@ class LegalHoldLedger {
 	 * @param array       $retention The object's retention array.
 	 * @param string      $reason    Why the object is held.
 	 * @param string|null $ownerKey  The matter placing the hold; null for a manual hold.
-	 * @param string      $userId    Who places it.
-	 * @param string      $now       The moment, ISO 8601.
+	 * @param HoldStamp   $stamp     Who places it, and the moment (ISO 8601).
 	 *
 	 * @return array The retention array with the hold in place.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function place(array $retention, string $reason, ?string $ownerKey, string $userId, string $now): array {
+	public function place(array $retention, string $reason, ?string $ownerKey, HoldStamp $stamp): array {
 		$ownerKey = $this->owner(ownerKey: $ownerKey);
 		$holds = $this->holds(legalHold: ($retention['legalHold'] ?? null));
 
@@ -79,7 +78,7 @@ class LegalHoldLedger {
 			return $this->write(retention: $retention, holds: $holds);
 		}
 
-		$holds[] = ['id' => Uuid::v4()->toRfc4122(), 'ownerKey' => $ownerKey, 'reason' => $reason, 'placedBy' => $userId, 'placedDate' => $now];
+		$holds[] = ['id' => Uuid::v4()->toRfc4122(), 'ownerKey' => $ownerKey, 'reason' => $reason, 'placedBy' => $stamp->userId, 'placedDate' => $stamp->now];
 
 		return $this->write(retention: $retention, holds: $holds);
 	}//end place()
@@ -90,14 +89,13 @@ class LegalHoldLedger {
 	 * @param array       $retention     The object's retention array.
 	 * @param string|null $ownerKey      The matter releasing its hold; null lifts every hold.
 	 * @param string      $releaseReason Why it is released.
-	 * @param string      $userId        Who releases it.
-	 * @param string      $now           The moment, ISO 8601.
+	 * @param HoldStamp   $stamp         Who releases it, and the moment (ISO 8601).
 	 *
 	 * @return array The retention array, the released holds moved to history.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function release(array $retention, ?string $ownerKey, string $releaseReason, string $userId, string $now): array {
+	public function release(array $retention, ?string $ownerKey, string $releaseReason, HoldStamp $stamp): array {
 		$history = $this->history(retention: $retention);
 
 		$kept = [];
@@ -107,7 +105,7 @@ class LegalHoldLedger {
 				continue;
 			}
 
-			$history[] = array_merge($hold, ['releasedBy' => $userId, 'releasedDate' => $now, 'releaseReason' => $releaseReason]);
+			$history[] = array_merge($hold, ['releasedBy' => $stamp->userId, 'releasedDate' => $stamp->now, 'releaseReason' => $releaseReason]);
 		}
 
 		$retention['legalHold'] = ['history' => $history];

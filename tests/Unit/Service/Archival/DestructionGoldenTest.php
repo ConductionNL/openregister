@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Archival\DestructionListCreator;
 use OCA\OpenRegister\Service\Archival\DestructionListWriter;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
+use OCA\OpenRegister\Service\Archival\ApprovalChoice;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
@@ -247,9 +248,7 @@ class DestructionGoldenTest extends TestCase {
 		$result = $this->stripNow(
 			$this->destruction(extension: 'P2M')->approveList(
 				destructionList: $list,
-				action: 'approve_partial',
-				excludedIds: ['a', 'b', 'missing'],
-				exclusionReasons: ['a' => 'Nog in gebruik'],
+				choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['a', 'b', 'missing'], exclusionReasons: ['a' => 'Nog in gebruik']),
 				listUuid: 'given-uuid'
 			)
 		);
@@ -293,7 +292,7 @@ class DestructionGoldenTest extends TestCase {
 	public function testPartialActionWithoutExclusionsAndBadExcludedKeyBehaveAsBefore(): void {
 		$result = $this->destruction()->approveList(
 			destructionList: ['objects' => [['uuid' => 'x']], 'excludedObjects' => 'broken', 'approvals' => []],
-			action: 'approve_partial'
+			choice: new ApprovalChoice(action: 'approve_partial')
 		);
 
 		$this->assertSame([['uuid' => 'x']], $result['objects']);
@@ -304,8 +303,7 @@ class DestructionGoldenTest extends TestCase {
 		$this->object('y', ['archiefactiedatum' => '2021-01-01']);
 		$partial = $this->destruction()->approveList(
 			destructionList: ['objects' => [['uuid' => 'y']], 'excludedObjects' => 'broken', 'approvals' => []],
-			action: 'approve_partial',
-			excludedIds: ['y']
+			choice: new ApprovalChoice(action: 'approve_partial', excludedIds: ['y'])
 		);
 		$this->assertSame([], $partial['objects']);
 		$this->assertSame('2022-01-01', $this->updates[0]['retention']['archiefactiedatum']);

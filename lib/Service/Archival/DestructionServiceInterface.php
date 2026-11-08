@@ -40,6 +40,19 @@ interface DestructionServiceInterface {
 	public const STATUS_COMPLETED = 'completed';
 
 	/**
+	 * The choice an archivist makes when approving a list.
+	 *
+	 * @param string                $action           The approval action: 'approve_all' or 'approve_partial'.
+	 * @param array<int, string>    $excludedIds      UUIDs of objects to exclude (for partial approval).
+	 * @param array<string, string> $exclusionReasons Reasons per excluded object UUID.
+	 *
+	 * @return ApprovalChoice The choice, to hand to {@see approveList()}.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function approvalChoice(string $action, array $excludedIds, array $exclusionReasons): ApprovalChoice;
+
+	/**
 	 * Approve a destruction list (full or partial).
 	 *
 	 * The approval is recorded under the CANONICAL `userId` key: it is the shape
@@ -55,9 +68,8 @@ interface DestructionServiceInterface {
 	 * handlePartialApproval(), which REPLACES `objects`.
 	 *
 	 * @param array<string, mixed> $destructionList The destruction list data.
-	 * @param string $action The approval action: 'approve_all' or 'approve_partial'.
-	 * @param array<int, string> $excludedIds UUIDs of objects to exclude (for partial approval).
-	 * @param array<string, string> $exclusionReasons Reasons per excluded object UUID.
+	 * @param ApprovalChoice|null $choice Approve all (the default), or approve with records excluded and why;
+	 *                                    from {@see approvalChoice()}.
 	 * @param bool $requiresDual Whether two-step approval is required.
 	 * @param string|null $listUuid UUID of the persisted destruction list; passed to the
 	 *                              execution job so it can reload the list from storage.
@@ -71,8 +83,7 @@ interface DestructionServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function approveList(
-		array $destructionList, string $action='approve_all', array $excludedIds=[],
-		array $exclusionReasons=[], bool $requiresDual=false, ?string $listUuid=null
+		array $destructionList, ?ApprovalChoice $choice=null, bool $requiresDual=false, ?string $listUuid=null
 	): array;
 
 	/**

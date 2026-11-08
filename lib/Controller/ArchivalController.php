@@ -378,9 +378,7 @@ class ArchivalController extends Controller {
 
 			$result = $this->destructionService->approveList(
 				destructionList: $destructionList,
-				action: $action,
-				excludedIds: $excludedIds,
-				exclusionReasons: $exclusionReasons,
+				choice: $this->destructionService->approvalChoice(action: $action, excludedIds: $excludedIds, exclusionReasons: $exclusionReasons),
 				requiresDual: $requiresDual,
 				listUuid: $id
 			);
@@ -1249,10 +1247,9 @@ class ArchivalController extends Controller {
 		$schema = $subject->schema;
 
 		try {
-			$nomination = $this->nominations->nominate(
+			$nomination = $this->nominations->recompute(
 				object: $object,
 				schema: $schema,
-				trigger: 'recompute',
 				actor: $this->currentUserId(),
 				reason: $reason
 			);
