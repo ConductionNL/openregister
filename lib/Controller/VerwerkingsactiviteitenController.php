@@ -109,7 +109,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly VerwerkingsactiviteitMapper $vrwMapper,
-		ControllerSession $session,
+		private readonly ControllerSession $session,
 		IDBConnection $db,
 		OrganisationServiceInterface $organisationService,
 	) {
@@ -117,7 +117,7 @@ class VerwerkingsactiviteitenController extends Controller {
 
 		$this->visibility = new ProcessingActivityVisibility(organisationService: $organisationService);
 		$this->auditCounts = new ProcessingActivityAuditCounts(db: $db);
-		$this->access = new GdprRegisterAccess(session: $session);
+		$this->access = new GdprRegisterAccess(session: $this->session);
 		$this->params = new GdprRequestParams(request: $request);
 		$this->replies = new GdprRegisterReplies();
 	}//end __construct()

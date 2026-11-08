@@ -95,14 +95,14 @@ class ProcessingLogController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ProcessingLogMapper $logMapper,
-		ControllerSession $session,
+		private readonly ControllerSession $session,
 		IAppConfig $appConfig,
 		OrganisationServiceInterface $organisationService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
 		$this->policy = new ProcessingLogPolicy(appConfig: $appConfig);
-		$this->access = new ProcessingLogAccess(session: $session, policy: $this->policy, organisationService: $organisationService);
+		$this->access = new ProcessingLogAccess(session: $this->session, policy: $this->policy, organisationService: $organisationService);
 		$this->params = new GdprRequestParams(request: $request);
 	}//end __construct()
 

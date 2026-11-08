@@ -87,11 +87,11 @@ class ProcessingPurposeController extends Controller {
 		private readonly ProcessingPurposeMapper $purposes,
 		private readonly PurposeRegistry $registry,
 		private readonly AuditTrailMapperInterface $auditTrail,
-		ControllerSession $session,
+		private readonly ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
-		$this->access = new GdprRegisterAccess(session: $session);
+		$this->access = new GdprRegisterAccess(session: $this->session);
 		$this->replies = new GdprRegisterReplies();
 		$this->params = new GdprRequestParams(request: $request);
 	}//end __construct()
