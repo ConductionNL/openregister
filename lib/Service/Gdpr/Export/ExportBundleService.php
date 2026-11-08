@@ -47,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/specs/dsar-export-bundle/spec.md
  */
-class ExportBundleService {
+class ExportBundleService implements ExportBundleServiceInterface {
 	/**
 	 * Constructor.
 	 *
