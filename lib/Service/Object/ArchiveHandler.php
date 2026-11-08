@@ -118,7 +118,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		$before = clone $object;
 		$object->archive(userSession: $this->userSession, reason: $reason);
 
-		$saved = $this->persist(object: $object, context: $context, action: 'archive', before: $before);
+		$saved = $this->persist(context: $context, action: 'archive', before: $before);
 
 		return [
 			'uuid' => $saved->getUuid(),
@@ -169,7 +169,6 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		$object->unarchive();
 
 		$saved = $this->persist(
-			object: $object,
 			context: $context,
 			action: 'unarchive',
 			before: $before,
@@ -220,7 +219,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		$before = clone $object;
 		$object->freeze(userSession: $this->userSession, reason: $reason, state: $state);
 
-		$saved = $this->persist(object: $object, context: $context, action: 'freeze', before: $before);
+		$saved = $this->persist(context: $context, action: 'freeze', before: $before);
 
 		return [
 			'uuid' => $saved->getUuid(),
@@ -267,7 +266,6 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		$object->unfreeze();
 
 		$saved = $this->persist(
-			object: $object,
 			context: $context,
 			action: 'unfreeze',
 			before: $before,
@@ -314,11 +312,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		$registerEntity = $result['register'];
 		$schemaEntity = $result['schema'];
 
-		if ($schemaEntity instanceof Schema === false || $registerEntity instanceof Register === false) {
-			throw new ArchiveNotOfferedException(
-				message: 'Cannot archive this object: its register and schema could not be resolved.'
-			);
-		}
+		$this->assertResolved(register: $registerEntity, schema: $schemaEntity);
 
 		// The url names a register and a schema, so the object had better be in
 		// them. `findAcrossAllSources()` resolves a uuid wherever it lives, which
@@ -335,23 +329,12 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		// schema with no finished state does not grow an action nobody uses,
 		// and a leaf app rendering an Archive button reads this rather than
 		// deciding for itself.
-		if ($schemaEntity->isArchivingEnabled() === false) {
-			throw new ArchiveNotOfferedException(
-				message: 'Schema "' . (string)$schemaEntity->getTitle()
-					. '" does not declare x-openregister-archive, so its objects cannot be archived.'
-			);
-		}
-
-		$userId = null;
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$userId = $user->getUID();
-		}
+		$this->assertArchivingOffered(schema: $schemaEntity);
 
 		$this->permissionHandler->checkPermission(
 			schema: $schemaEntity,
 			action: 'update',
-			userId: $userId,
+			userId: $this->userSession->getUser()?->getUID(),
 			objectOwner: $object->getOwner(),
 			_rbac: true,
 			object: $object
@@ -363,6 +346,46 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 			'schema' => $schemaEntity,
 		];
 	}//end resolveAndAuthorize()
+
+	/**
+	 * Refuse an object whose register or schema could not be resolved.
+	 *
+	 * @param mixed $register The resolved register.
+	 * @param mixed $schema   The resolved schema.
+	 *
+	 * @return void
+	 *
+	 * @throws ArchiveNotOfferedException When either is missing.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	private function assertResolved(mixed $register, mixed $schema): void {
+		if ($schema instanceof Schema === false || $register instanceof Register === false) {
+			throw new ArchiveNotOfferedException(
+				message: 'Cannot archive this object: its register and schema could not be resolved.'
+			);
+		}
+	}//end assertResolved()
+
+	/**
+	 * Refuse a schema that does not declare the archive annotation.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return void
+	 *
+	 * @throws ArchiveNotOfferedException When the schema offers no archive.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	private function assertArchivingOffered(Schema $schema): void {
+		if ($schema->isArchivingEnabled() === false) {
+			throw new ArchiveNotOfferedException(
+				message: 'Schema "' . (string)$schema->getTitle()
+					. '" does not declare x-openregister-archive, so its objects cannot be archived.'
+			);
+		}
+	}//end assertArchivingOffered()
 
 	/**
 	 * Refuse an object that is not in the register or schema the url names.
@@ -391,7 +414,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		string $kind,
 		string $identifier,
 	): void {
-		if ($named === null || $named === '') {
+		if ((string)$named === '') {
 			return;
 		}
 
@@ -410,8 +433,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	/**
 	 * Write the changed marker and its audit entry.
 	 *
-	 * @param ObjectEntity $object The object carrying the new marker.
-	 * @param array{object: ObjectEntity, register: Register, schema: Schema} $context The resolved context.
+	 * @param array{object: ObjectEntity, register: Register, schema: Schema} $context The resolved context; its object carries the new marker.
 	 * @param string $action The audit action name.
 	 * @param ObjectEntity $before The object as it was, for the audit changeset.
 	 * @param string|null $reason The reason, for the log line on a clearing verb.
@@ -419,12 +441,12 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	 * @return ObjectEntity The saved object.
 	 */
 	private function persist(
-		ObjectEntity $object,
 		array $context,
 		string $action,
 		ObjectEntity $before,
 		?string $reason = null,
 	): ObjectEntity {
+		$object = $context['object'];
 		$saved = $this->magicMapper->updateObjectEntity(
 			entity: $object,
 			register: $context['register'],

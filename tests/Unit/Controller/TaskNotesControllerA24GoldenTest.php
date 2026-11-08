@@ -38,6 +38,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TaskNotesControllerFactory;
 
 /**
  * Pins allowed and refused outcomes of TaskNotesController.
@@ -95,7 +96,7 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($params);
 
-		return new TaskNotesController(
+		return TaskNotesControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			tasks: $this->tasks,
