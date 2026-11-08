@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
 use OCA\OpenRegister\Db\SearchTrail;
+use OCA\OpenRegister\Db\SearchTrailCriteria;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -72,9 +73,9 @@ class SearchTrailQueriesGoldenTest extends TestCase {
 				$s = var_export($search, true);
 				$calls["findAll $tag search $s"] = fn (SearchTrailMapper $m) => array_map(
 					fn (SearchTrail $t) => $t->getId(),
-					$m->findAll(5, 10, ['user' => 'alice'], [], $search, $from, $to)
+					$m->findAll(new SearchTrailCriteria(['user' => 'alice'], $search, $from, $to), 5, 10, [])
 				);
-				$calls["count $tag search $s"] = fn (SearchTrailMapper $m) => $m->count(['user' => 'alice'], $search, $from, $to);
+				$calls["count $tag search $s"] = fn (SearchTrailMapper $m) => $m->count(new SearchTrailCriteria(['user' => 'alice'], $search, $from, $to));
 			}
 
 			$calls["getSearchStatistics $tag"] = fn (SearchTrailMapper $m) => $m->getSearchStatistics($from, $to);

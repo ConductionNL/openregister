@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -140,8 +141,8 @@ class CalculationOnSaveGoldenTest extends TestCase {
 
 		$ruleRuns = $this->createMock(RuleRunRecorderInterface::class);
 		$ruleRuns->method('record')->willReturnCallback(
-			function (string $ruleId, string $schemaSlug, RuleTrace $trace, ?string $objectUuid = null, ?string $registerSlug = null): void {
-				$this->runs[] = $ruleId.'|'.$schemaSlug.'|'.$trace->getVerdict().'|'.($trace->getMessage() ?? '').'|'.$objectUuid.'|'.$registerSlug;
+			function (RuleRunSubject $subject, RuleTrace $trace): void {
+				$this->runs[] = $subject->ruleId.'|'.$subject->schemaSlug.'|'.$trace->getVerdict().'|'.($trace->getMessage() ?? '').'|'.$subject->objectUuid.'|'.$subject->registerSlug;
 			}
 		);
 
