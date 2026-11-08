@@ -151,7 +151,7 @@ class ArchiveActionDateCalculatorGoldenTest extends TestCase {
 			  7 => '2020-02-29T10:00:00+00:00',
 			  8 => '2021-03-01',
 			  9 => '2020-02-29T10:00:00+00:00',
-			  10 => '2029-11-07',
+			  10 => NULL,
 			  11 => '2020-02-29T10:00:00+00:00',
 			  12 => NULL,
 			  13 => '2020-02-29T10:00:00+00:00',
@@ -258,7 +258,7 @@ class ArchiveActionDateCalculatorGoldenTest extends TestCase {
 	}
 
 	private function casePropertyMethods(): mixed {
-		return $this->dates([[["afleidingswijze" => "eigenschap"], [], "P1Y"], [["afleidingswijze" => "eigenschap", "bronEigenschap" => "d"], ["d" => "2019-12-31"], "P10Y"], [["afleidingswijze" => "eigenschap", "bronEigenschap" => "d"], ["d" => null], "P10Y"], [["afleidingswijze" => "ander_datumkenmerk"], [], "P1Y"], [["afleidingswijze" => "ander_datumkenmerk", "sourceDateProperty" => "s"], ["s" => "2018-03-01"], "P3Y"], [["afleidingswijze" => "ander_datumkenmerk", "sourceDateProperty" => "s"], ["s" => "x"], "P3Y"], [["afleidingswijze" => "ander_datumkenmerk", "sourceDateProperty" => "s"], [], "P3Y"]]);
+		return $this->dates([[["afleidingswijze" => "eigenschap"], [], "P1Y"], [["afleidingswijze" => "eigenschap", "bronEigenschap" => "d"], ["d" => "2019-12-31"], "P10Y"], [["afleidingswijze" => "eigenschap", "bronEigenschap" => "d"], ["d" => null], "P10Y"], [["afleidingswijze" => "ander_datumkenmerk"], [], "P1Y"], [["afleidingswijze" => "ander_datumkenmerk", "sourceDateProperty" => "s"], ["s" => "2018-03-01"], "P3Y"], [["afleidingswijze" => "ander_datumkenmerk", "sourceDateProperty" => "s"], ["s" => "not-a-date"], "P3Y"], [["afleidingswijze" => "ander_datumkenmerk", "sourceDateProperty" => "s"], [], "P3Y"]]);
 	}
 
 	private function caseRelationMethods(): mixed {
