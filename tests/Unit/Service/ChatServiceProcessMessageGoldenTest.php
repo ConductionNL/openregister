@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 
 /**
  * Records every collaborator call processMessage() makes, in order, and its result,
@@ -125,9 +126,9 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 			}
 		);
 		$response->method('generateResponse')->willReturnCallback(
-			function (string $userMessage, array $context, array $messageHistory, ?Agent $agent, array $selectedTools = [], ?StreamYieldChannel $channel = null, array $cnAiContext = []) {
-				$this->calls[] = ['llm', $userMessage, $context, $messageHistory, $agent?->getName(), $selectedTools, $channel !== null, $cnAiContext];
-				return 'answer to ' . $userMessage;
+			function (ChatMessageRequest $request, array $context, array $messageHistory, ?Agent $agent) {
+				$this->calls[] = ['llm', $request->userMessage, $context, $messageHistory, $agent?->getName(), $request->selectedTools, $request->channel !== null, $request->cnAiContext];
+				return 'answer to ' . $request->userMessage;
 			}
 		);
 

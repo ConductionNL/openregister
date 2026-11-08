@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 
 class ChatServiceTest extends TestCase {
 
@@ -362,15 +363,12 @@ class ChatServiceTest extends TestCase {
 			->expects($this->once())
 			->method('generateResponse')
 			->willReturnCallback(function (
-				string $userMessage,
+				ChatMessageRequest $request,
 				array $context,
 				array $messageHistory,
 				$agent,
-				array $selectedTools,
-				?StreamYieldChannel $channelArg = null,
-				array $cnAiContext = [],
 			) use (&$capturedChannel): string {
-				$capturedChannel = $channelArg;
+				$capturedChannel = $request->channel;
 				return 'AI says hello';
 			});
 
@@ -410,15 +408,12 @@ class ChatServiceTest extends TestCase {
 			->expects($this->once())
 			->method('generateResponse')
 			->willReturnCallback(function (
-				string $userMessage,
+				ChatMessageRequest $request,
 				array $context,
 				array $messageHistory,
 				$agent,
-				array $selectedTools,
-				?StreamYieldChannel $channelArg = null,
-				array $cnAiContext = [],
 			) use (&$capturedChannel): string {
-				$capturedChannel = $channelArg;
+				$capturedChannel = $request->channel;
 				return 'response';
 			});
 

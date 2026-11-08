@@ -336,13 +336,10 @@ class ChatService implements ChatServiceInterface {
 
 		$started = microtime(true);
 		$aiResponse = $this->responseHandler->generateResponse(
-			userMessage: $request->userMessage,
+			request: $request,
 			context: $context,
 			messageHistory: $messageHistory,
-			agent: $agent,
-			selectedTools: $request->selectedTools,
-			channel: $request->channel,
-			cnAiContext: $request->cnAiContext
+			agent: $agent
 		);
 		$llmTime = microtime(true) - $started;
 
