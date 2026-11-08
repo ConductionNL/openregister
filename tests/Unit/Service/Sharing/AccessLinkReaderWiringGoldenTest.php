@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderFilters;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -99,13 +101,17 @@ class AccessLinkReaderWiringGoldenTest extends TestCase {
 	 */
 	private function makeReader(ObjectService $objects, SchemaMapper $schemas, FileRestrictionStore $restrictions): AccessLinkReader {
 		return new AccessLinkReader(
-			objects: $objects,
-			schemas: $schemas,
-			properties: $this->properties,
-			timeline: $this->timeline,
-			subjects: new AccessLinkSubject(),
-			logger: $this->createMock(LoggerInterface::class),
-			restrictions: $restrictions
+			sources: new AccessLinkReaderSources(
+				objects: $objects,
+				subjects: new AccessLinkSubject(),
+				restrictions: $restrictions
+			),
+			filters: new AccessLinkReaderFilters(
+				schemas: $schemas,
+				properties: $this->properties,
+				timeline: $this->timeline
+			),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}
 
