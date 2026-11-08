@@ -59,6 +59,7 @@ final class DbRegistrar {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		ApiCallRecordMapperInterface::class => ApiCallRecordMapper::class,
 		ApplicationMapperInterface::class => ApplicationMapper::class,
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		BulkJobMapperInterface::class => BulkJobMapper::class,

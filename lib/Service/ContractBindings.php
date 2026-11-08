@@ -40,6 +40,8 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
+use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
@@ -338,6 +340,9 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
 		ActivityFilterServiceInterface::class => ActivityFilterService::class,
 		AnalyticsLinkServiceInterface::class => AnalyticsLinkService::class,
+		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,
+		\OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface::class => \OCA\OpenRegister\Service\ApiVersion\ApiContractService::class,
+		\OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface::class => \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		ApplicationServiceInterface::class => ApplicationService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
