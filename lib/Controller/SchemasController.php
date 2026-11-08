@@ -62,7 +62,7 @@ use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
-use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
@@ -256,9 +256,9 @@ class SchemasController extends Controller {
 	/**
 	 * The schema import service.
 	 *
-	 * @var ?SchemaImportService
+	 * @var ?SchemaImportServiceInterface
 	 */
-	private readonly ?SchemaImportService $schemaImportService;
+	private readonly ?SchemaImportServiceInterface $schemaImportService;
 
 	/**
 	 * The semantic type resolver.
