@@ -63,7 +63,12 @@ class ActivityFeedAndCasesGoldenTest extends TestCase {
 		$this->assertCount(10, $result['groups'][0]['rows']);
 		$this->assertSame('a', $result['groups'][1]['label']);
 		$this->assertSame(
-			['schema' => 'b', 'label' => 'Beta', 'count' => 1, 'rows' => [['objectUuid' => 'u1', 'title' => 'T', 'status' => 's', 'url' => '/x', 'role' => 'r']]],
+			[
+				'schema' => 'b',
+				'label' => 'Beta',
+				'count' => 1,
+				'rows' => [['objectUuid' => 'u1', 'title' => 'T', 'status' => 's', 'url' => '/x', 'role' => 'r']],
+			],
 			$result['groups'][2]
 		);
 	}//end testGroupCountsUnreadableApartAndOrdersGroups()
