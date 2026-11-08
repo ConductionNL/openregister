@@ -315,11 +315,14 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 			return $this->contextCache[$cacheKey];
 		}
 
-		$jsonld     = $this->jsonLdConfig(schema: $schema);
-		$contextUrl = $this->getSchemaContextUrl(register: $register, schema: $schema);
-		$context    = $this->schemaContextHead(schema: $schema, jsonld: $jsonld, contextUrl: $contextUrl);
+		$source  = new JsonLdContextSource(
+			schema: $schema,
+			jsonld: $this->jsonLdConfig(schema: $schema),
+			contextUrl: $this->getSchemaContextUrl(register: $register, schema: $schema)
+		);
+		$context = $this->schemaContextHead(source: $source);
 
-		foreach ($this->propertyTerms(schema: $schema, jsonld: $jsonld, contextUrl: $contextUrl) as $name => $term) {
+		foreach ($this->propertyTerms(source: $source) as $name => $term) {
 			$context[$name] = $term;
 		}
 
@@ -330,20 +333,15 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 	/**
 	 * One context term per named schema property (mapped IRI or fragment term).
 	 *
-	 * @param Schema               $schema     The schema.
-	 * @param array<string, mixed> $jsonld     The schema's JSON-LD configuration.
-	 * @param string               $contextUrl The schema's context URL.
+	 * @param JsonLdContextSource $source The schema, its JSON-LD configuration and context URL.
 	 *
 	 * @return array<string, mixed> The property terms, in property order.
 	 */
-	private function propertyTerms(Schema $schema, array $jsonld, string $contextUrl): array {
-		$propMap = ($jsonld['properties'] ?? []);
-		if (is_array($propMap) === false) {
-			$propMap = [];
-		}
+	private function propertyTerms(JsonLdContextSource $source): array {
+		$propMap = $this->mappedIris(jsonld: $source->jsonld);
 
 		$terms = [];
-		foreach ($schema->getProperties() as $name => $definition) {
+		foreach ($source->schema->getProperties() as $name => $definition) {
 			if ($this->isNonEmptyString(value: $name) === false) {
 				continue;
 			}
@@ -353,10 +351,8 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 			}
 
 			$terms[$name] = $this->buildPropertyTerm(
-				name: $name,
-				definition: $definition,
-				mappedIri: ($propMap[$name] ?? null),
-				contextUrl: $contextUrl
+				id: $this->termId(mappedIri: ($propMap[$name] ?? null), fallback: $source->contextUrl . '#' . $name),
+				definition: $definition
 			);
 		}
 
@@ -364,17 +360,32 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 	}//end propertyTerms()
 
 	/**
+	 * The explicit property => vocabulary IRI map of a JSON-LD configuration.
+	 *
+	 * @param array<string, mixed> $jsonld The schema's JSON-LD configuration.
+	 *
+	 * @return array<mixed> The map; empty when absent or not an array.
+	 */
+	private function mappedIris(array $jsonld): array {
+		$propMap = ($jsonld['properties'] ?? []);
+		if (is_array($propMap) === false) {
+			return [];
+		}
+
+		return $propMap;
+	}//end mappedIris()
+
+	/**
 	 * The base prefixes, the vocabulary and the schema's class term of a schema context.
 	 *
-	 * @param Schema               $schema     The schema.
-	 * @param array<string, mixed> $jsonld     The schema's JSON-LD configuration.
-	 * @param string               $contextUrl The schema's context URL.
+	 * @param JsonLdContextSource $source The schema, its JSON-LD configuration and context URL.
 	 *
 	 * @return array<string, mixed> The context so far.
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
-	private function schemaContextHead(Schema $schema, array $jsonld, string $contextUrl): array {
+	private function schemaContextHead(JsonLdContextSource $source): array {
+		$jsonld = $source->jsonld;
 		// Base prefixes always present.
 		$context = [
 			'or' => self::OR_NAMESPACE,
@@ -388,8 +399,8 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 		}
 
 		// The schema class term itself (used as @type when no jsonld.type IRI).
-		$slug           = $this->slugOf(entity: $schema);
-		$context[$slug] = $this->classTerm(jsonld: $jsonld, fallback: $contextUrl . '#' . $slug);
+		$slug           = $this->slugOf(entity: $source->schema);
+		$context[$slug] = $this->classTerm(jsonld: $jsonld, fallback: $source->contextUrl . '#' . $slug);
 
 		return $context;
 	}//end schemaContextHead()
@@ -570,21 +581,12 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 	/**
 	 * Build a single JSON-LD context term for a schema property.
 	 *
-	 * @param string $name The property name.
+	 * @param string               $id         The term's `@id`.
 	 * @param array<string, mixed> $definition The JSON-Schema property definition.
-	 * @param mixed $mappedIri An explicit vocabulary IRI, or null.
-	 * @param string $contextUrl The context-document URL (for fallback fragment terms).
 	 *
 	 * @return array<string, mixed>|string The term definition (string IRI, or expanded term definition).
 	 */
-	private function buildPropertyTerm(string $name, array $definition, mixed $mappedIri, string $contextUrl): array|string {
-		// Determine the @id of the term: explicit mapping, else fragment term.
-		if (is_string($mappedIri) === true && $mappedIri !== '') {
-			$id = $mappedIri;
-		} else {
-			$id = $contextUrl . '#' . $name;
-		}
-
+	private function buildPropertyTerm(string $id, array $definition): array|string {
 		$coercion = $this->coercionForDefinition(definition: $definition);
 
 		// Plain string term when there is no datatype/node coercion.
@@ -597,6 +599,22 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 			'@type' => $coercion,
 		];
 	}//end buildPropertyTerm()
+
+	/**
+	 * The `@id` of a property term: the explicit mapping, else the fragment term.
+	 *
+	 * @param mixed  $mappedIri An explicit vocabulary IRI, or null.
+	 * @param string $fallback  The fragment term of the property in the context document.
+	 *
+	 * @return string The term's `@id`.
+	 */
+	private function termId(mixed $mappedIri, string $fallback): string {
+		if (is_string($mappedIri) === true && $mappedIri !== '') {
+			return $mappedIri;
+		}
+
+		return $fallback;
+	}//end termId()
 
 	/**
 	 * Map a JSON-Schema property definition to a JSON-LD `@type` coercion.
