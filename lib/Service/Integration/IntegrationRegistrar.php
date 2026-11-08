@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service\Integration;
 use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
+use OCA\OpenRegister\Controller\Support\IntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
 use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
@@ -278,10 +279,12 @@ final class IntegrationRegistrar {
 			static fn (ContainerInterface $container) => new IntegrationsController(
 				appName: 'openregister',
 				request: $container->get('OCP\IRequest'),
-				registry: $container->get(IntegrationRegistry::class),
-				userSession: $container->get('OCP\IUserSession'),
-				groupManager: $container->get('OCP\IGroupManager'),
-				logger: $container->get('Psr\Log\LoggerInterface')
+				services: new IntegrationsControllerServices(
+					registry: $container->get(IntegrationRegistry::class),
+					userSession: $container->get('OCP\IUserSession'),
+					groupManager: $container->get('OCP\IGroupManager'),
+					logger: $container->get('Psr\Log\LoggerInterface')
+				)
 			)
 		);
 	}//end registerIntegrationsController()

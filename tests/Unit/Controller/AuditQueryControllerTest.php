@@ -27,6 +27,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\AuditQueryController;
 use OCA\OpenRegister\Service\AuditQueryService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditQueryControllerFactory;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -69,7 +70,7 @@ class AuditQueryControllerTest extends TestCase {
 	}//end setUp()
 
 	private function buildController(): AuditQueryController {
-		return new AuditQueryController(
+		return AuditQueryControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->auditQueryService,
@@ -88,7 +89,7 @@ class AuditQueryControllerTest extends TestCase {
 			$groupManager->method('isAdmin')->with($user->getUID())->willReturn($isAdmin);
 		}
 
-		return new AuditQueryController(
+		return AuditQueryControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->auditQueryService,
