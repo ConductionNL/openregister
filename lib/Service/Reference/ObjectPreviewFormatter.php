@@ -56,7 +56,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-final class ObjectPreviewFormatter {
+final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 
 	/**
 	 * Internal fields to exclude from preview properties.
