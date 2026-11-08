@@ -43,20 +43,8 @@ use Throwable;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowRunVersionPin {
-	/**
-	 * The trigger an interactive test run carries.
-	 *
-	 * 🔑 THE ONE DISPATCH THAT MAY WALK A DRAFT. Every other path is a live
-	 * process acting on real data and must run a published version. A test run
-	 * is an author pressing "try this" on the graph in front of them — refusing
-	 * it would mean a flow could not be tried until it was published, which is
-	 * exactly backwards: publishing is the thing you do AFTER testing.
-	 *
-	 * @var string
-	 */
-	public const TRIGGER_TEST = 'test';
-
+class FlowRunVersionPin implements FlowRunVersionPinInterface {
+	
 	/**
 	 * Constructor.
 	 *

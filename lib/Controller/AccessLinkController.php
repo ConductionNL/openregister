@@ -53,11 +53,11 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\AccessLinkControllerServices;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
-use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
-use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
-use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -92,9 +92,9 @@ class AccessLinkController extends Controller {
 	/**
 	 * The link lifecycle.
 	 *
-	 * @var AccessLinkService
+	 * @var AccessLinkServiceInterface
 	 */
-	private readonly AccessLinkService $links;
+	private readonly AccessLinkServiceInterface $links;
 
 	/**
 	 * Serves what a link opens.
@@ -106,9 +106,9 @@ class AccessLinkController extends Controller {
 	/**
 	 * Decides whether a caller may publish a subject.
 	 *
-	 * @var AccessLinkMintGuard
+	 * @var AccessLinkMintGuardInterface
 	 */
-	private readonly AccessLinkMintGuard $mintGuard;
+	private readonly AccessLinkMintGuardInterface $mintGuard;
 
 	/**
 	 * Performs the comment and the upload, as the link.
@@ -195,7 +195,7 @@ class AccessLinkController extends Controller {
 		$this->links->recordUse(
 			link: $link,
 			use: new AccessLinkUse(
-				act: AccessLinkService::ACT_READ,
+				act: AccessLinkServiceInterface::ACT_READ,
 				object: $object,
 				ipAddress: $this->request->getRemoteAddress()
 			)
@@ -252,7 +252,7 @@ class AccessLinkController extends Controller {
 		$this->links->recordUse(
 			link: $link,
 			use: new AccessLinkUse(
-				act: AccessLinkService::ACT_COMMENT,
+				act: AccessLinkServiceInterface::ACT_COMMENT,
 				object: $object,
 				ipAddress: $this->request->getRemoteAddress()
 			)
@@ -331,7 +331,7 @@ class AccessLinkController extends Controller {
 		$this->links->recordUse(
 			link: $link,
 			use: new AccessLinkUse(
-				act: AccessLinkService::ACT_UPLOAD,
+				act: AccessLinkServiceInterface::ACT_UPLOAD,
 				object: $object,
 				ipAddress: $this->request->getRemoteAddress(),
 				context: ['fileName' => $fileName]

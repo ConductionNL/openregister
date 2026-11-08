@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\AuditQueryControllerServices;
-use OCA\OpenRegister\Service\AuditQueryService;
+use OCA\OpenRegister\Service\AuditQueryServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -56,9 +56,9 @@ class AuditQueryController extends Controller {
 	/**
 	 * Cross-schema audit-entry query service.
 	 *
-	 * @var AuditQueryService
+	 * @var AuditQueryServiceInterface
 	 */
-	private readonly AuditQueryService $auditQueryService;
+	private readonly AuditQueryServiceInterface $auditQueryService;
 
 	/**
 	 * Active user session for the admin gate.
@@ -208,7 +208,7 @@ class AuditQueryController extends Controller {
 	 *
 	 * Columns: id, registerId, schemaId, objectId, data (JSON), created, userId.
 	 *
-	 * @param array<int, array<string, mixed>> $entries Entries as returned by AuditQueryService::query().
+	 * @param array<int, array<string, mixed>> $entries Entries as returned by AuditQueryServiceInterface::query().
 	 *
 	 * @return string The CSV document (including header row).
 	 *

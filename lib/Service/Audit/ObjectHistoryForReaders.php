@@ -54,7 +54,7 @@ use Throwable;
 /**
  * Reads one object's audit trail on behalf of a non-admin reader of that object.
  */
-class ObjectHistoryForReaders {
+class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 
 	/**
 	 * Filter and sort columns a reader may not use.

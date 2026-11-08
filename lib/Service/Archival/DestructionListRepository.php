@@ -54,14 +54,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  */
-class DestructionListRepository {
-
-	/**
-	 * The statuses of a list that still has review work on it.
-	 *
-	 * @var string[]
-	 */
-	public const OPEN_STATUSES = ['in_review', 'awaiting_second_approval'];
+class DestructionListRepository implements DestructionListRepositoryInterface {
 
 	/**
 	 * The status DestructionExecutionJob gives a list it has carried out.

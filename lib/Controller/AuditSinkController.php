@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\AuditSinkControllerServices;
-use OCA\OpenRegister\Service\Audit\AuditSink;
-use OCA\OpenRegister\Service\Audit\AuditSinkStatus;
+use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
+use OCA\OpenRegister\Service\Audit\AuditSinkStatusInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -45,16 +45,16 @@ class AuditSinkController extends Controller {
 	/**
 	 * The configured sink.
 	 *
-	 * @var AuditSink
+	 * @var AuditSinkInterface
 	 */
-	private readonly AuditSink $sink;
+	private readonly AuditSinkInterface $sink;
 
 	/**
 	 * The sink's health.
 	 *
-	 * @var AuditSinkStatus
+	 * @var AuditSinkStatusInterface
 	 */
-	private readonly AuditSinkStatus $status;
+	private readonly AuditSinkStatusInterface $status;
 
 	/**
 	 * Current user session.
