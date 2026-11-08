@@ -431,6 +431,8 @@ final class ContractBindings {
 		GitHubClientInterface::class => GitHubHandler::class,
 		GitLabHandlerInterface::class => GitLabHandler::class,
 		HandoffServiceInterface::class => HandoffService::class,
+		\OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltServiceInterface::class
+			=> \OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		ImportPreviewServiceInterface::class => ImportPreviewService::class,
 		JobAlertServiceInterface::class => JobAlertService::class,
