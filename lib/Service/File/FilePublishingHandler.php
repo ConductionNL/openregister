@@ -24,7 +24,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCP\Files\File;
@@ -188,7 +188,7 @@ class FilePublishingHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function assertNotRestricted(File $fileNode): void {
-		if ($this->container->get(FileRestrictionGuard::class)->isRestricted(fileId: (int)$fileNode->getId()) === true) {
+		if ($this->container->get(FileRestrictionGuardInterface::class)->isRestricted(fileId: (int)$fileNode->getId()) === true) {
 			throw new Exception('A restricted file cannot be published');
 		}
 	}//end assertNotRestricted()
@@ -382,7 +382,7 @@ class FilePublishingHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function zipFiles(ObjectEntity $object): array {
-		$files = $this->container->get(FileRestrictionGuard::class)->readableNodes(nodes: $this->fileService->getFiles($object));
+		$files = $this->container->get(FileRestrictionGuardInterface::class)->readableNodes(nodes: $this->fileService->getFiles($object));
 		if (empty($files) === true) {
 			throw new Exception('No files found for this object');
 		}

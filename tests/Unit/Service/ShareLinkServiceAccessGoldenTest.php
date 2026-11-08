@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\ShareDraft;
@@ -272,7 +273,7 @@ class ShareLinkServiceAccessGoldenTest extends TestCase {
 			'OCA\\OpenRegister\\Db\\SchemaMapper'                         => $schemas,
 			'OCA\\OpenRegister\\Service\\Object\\PermissionHandlerInterface' => $permissions,
 			'OCA\\OpenRegister\\Service\\Rbac\\GrantChangeAuditor'          => $this->auditor,
-			FileRestrictionGuard::class                                   => $guard,
+			FileRestrictionGuardInterface::class                          => $guard,
 		];
 		$container = new class($services) implements ContainerInterface {
 			public function __construct(private array $services) {
