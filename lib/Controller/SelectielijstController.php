@@ -36,12 +36,12 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
-use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
+use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 use Throwable;
 
@@ -75,14 +75,14 @@ class SelectielijstController extends Controller {
 	 *
 	 * @param string                     $appName         The app name.
 	 * @param IRequest                   $request         The request.
-	 * @param SelectielijstImportService $selectielijst   Imports, versions and diffs a list.
+	 * @param SelectielijstImportServiceInterface $selectielijst   Imports, versions and diffs a list.
 	 * @param ArchivalSettingsReaderInterface     $settingsHandler Names the version in force.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SelectielijstImportService $selectielijst,
+		private readonly SelectielijstImportServiceInterface $selectielijst,
 		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		ControllerSession $session,
 	) {

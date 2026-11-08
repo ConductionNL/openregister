@@ -50,7 +50,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
  */
-class PortalTaskDeliveryService {
+class PortalTaskDeliveryService implements PortalTaskDeliveryServiceInterface {
 
 	/**
 	 * Constructor.

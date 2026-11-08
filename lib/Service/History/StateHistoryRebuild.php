@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service\History;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\StateHistory;
-use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Db\StateHistoryMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -52,12 +52,12 @@ class StateHistoryRebuild implements StateHistoryRebuildInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param StateHistoryMapper $intervals The projection.
+	 * @param StateHistoryMapperInterface $intervals The projection.
 	 * @param AuditTrailMapperInterface   $audit     The trail it derives from.
 	 * @param LoggerInterface    $logger    Diagnostics.
 	 */
 	public function __construct(
-		private readonly StateHistoryMapper $intervals,
+		private readonly StateHistoryMapperInterface $intervals,
 		private readonly AuditTrailMapperInterface $audit,
 		private readonly LoggerInterface $logger,
 	) {

@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\Calculation;
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
  * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
  */
-final class CalculationAnnotationValidator {
+final class CalculationAnnotationValidator implements CalculationAnnotationValidatorInterface {
 	use PropNameReading;
 
 	/**

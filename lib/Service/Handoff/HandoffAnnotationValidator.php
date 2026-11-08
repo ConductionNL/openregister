@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\Handoff;
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Requirement: `x-openregister-handoff` declarative dialect)
  */
-class HandoffAnnotationValidator {
+class HandoffAnnotationValidator implements HandoffAnnotationValidatorInterface {
 
 	/**
 	 * The five mapping expression kinds the v1 dialect permits.

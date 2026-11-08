@@ -65,7 +65,7 @@ use Throwable;
  * name it imports is one side or the other; splitting it would put the two
  * halves of "a task the graph raised" in two files that must agree.
  */
-class FlowTaskBridge {
+class FlowTaskBridge implements FlowTaskBridgeInterface {
 
 	/**
 	 * Resume-slot key holding the created task's uuid.

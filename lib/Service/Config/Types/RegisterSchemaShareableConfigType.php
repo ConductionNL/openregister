@@ -42,7 +42,7 @@ use UnexpectedValueException;
 /**
  * Serialises and installs registers (with their schemas) through the engine.
  */
-class RegisterSchemaShareableConfigType implements IShareableConfigType {
+class RegisterSchemaShareableConfigType implements IShareableConfigType, RegisterSchemaShareableConfigTypeInterface {
 	/**
 	 * Constructor.
 	 *
