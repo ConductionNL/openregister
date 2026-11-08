@@ -1,0 +1,466 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`view modals DOM golden configuration, filled, tab 0 1`] = `
+"<x-ncdialog name="View Configuration: Config" size="large" noclose="">
+  <slot-actions>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-pencil size="20"></x-pencil>
+      </slot-icon>
+      <slot-default> Edit Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-download size="20"></x-download>
+      </slot-icon>
+      <slot-default> Export Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+      <slot-default> Delete Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncbutton variant="primary">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close </slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer viewConfigurationDialog">
+      <div class="configurationDetailsGrid">
+        <div class="configurationMainInfo">
+          <h2>Config</h2>
+          <p class="configurationDescription">About it</p>
+        </div>
+        <div class="configurationProperties">
+          <div class="propertyItem"><strong>t:Type:</strong><span>app</span></div>
+          <div class="propertyItem"><strong>t:Owner:</strong><span>admin</span></div>
+          <div class="propertyItem"><strong>t:Created:</strong><span>2026-01-02T03:04:05.000Z</span></div>
+          <div class="propertyItem"><strong>t:Updated:</strong><span>2026-01-02T03:04:05.000Z</span></div>
+        </div>
+      </div>
+      <div class="tabContainer">
+        <div class="tabHeaders"><button class="tabHeader active">t:Configuration</button><button class="tabHeader">t:Logs</button></div>
+        <div class="tabContent">
+          <div class="tabPanel">
+            <div class="configurationJsonContainer">
+              <h3>t:Configuration Data</h3>
+              <div class="jsonViewer"><pre>{
+  "a": 1
+}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`view modals DOM golden configuration, filled, tab 1 1`] = `
+"<x-ncdialog name="View Configuration: Config" size="large" noclose="">
+  <slot-actions>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-pencil size="20"></x-pencil>
+      </slot-icon>
+      <slot-default> Edit Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-download size="20"></x-download>
+      </slot-icon>
+      <slot-default> Export Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+      <slot-default> Delete Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncbutton variant="primary">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close </slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer viewConfigurationDialog">
+      <div class="configurationDetailsGrid">
+        <div class="configurationMainInfo">
+          <h2>Config</h2>
+          <p class="configurationDescription">About it</p>
+        </div>
+        <div class="configurationProperties">
+          <div class="propertyItem"><strong>t:Type:</strong><span>app</span></div>
+          <div class="propertyItem"><strong>t:Owner:</strong><span>admin</span></div>
+          <div class="propertyItem"><strong>t:Created:</strong><span>2026-01-02T03:04:05.000Z</span></div>
+          <div class="propertyItem"><strong>t:Updated:</strong><span>2026-01-02T03:04:05.000Z</span></div>
+        </div>
+      </div>
+      <div class="tabContainer">
+        <div class="tabHeaders"><button class="tabHeader">t:Configuration</button><button class="tabHeader active">t:Logs</button></div>
+        <div class="tabContent">
+          <div class="tabPanel">
+            <div class="emptyTabContent">
+              <x-ncemptycontent name="t:No logs found" description="t:No logs are available for this configuration.">
+                <slot-icon>
+                  <x-postoutline size="64"></x-postoutline>
+                </slot-icon>
+              </x-ncemptycontent>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`view modals DOM golden configuration, sparse, tab 0 1`] = `
+"<x-ncdialog name="View Configuration: Bare" size="large" noclose="">
+  <slot-actions>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-pencil size="20"></x-pencil>
+      </slot-icon>
+      <slot-default> Edit Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-download size="20"></x-download>
+      </slot-icon>
+      <slot-default> Export Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+      <slot-default> Delete Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncbutton variant="primary">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close </slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer viewConfigurationDialog">
+      <div class="configurationDetailsGrid">
+        <div class="configurationMainInfo">
+          <h2>Bare</h2>
+        </div>
+        <div class="configurationProperties">
+          <div class="propertyItem"><strong>t:Type:</strong><span>Unknown</span></div>
+        </div>
+      </div>
+      <div class="tabContainer">
+        <div class="tabHeaders"><button class="tabHeader active">t:Configuration</button><button class="tabHeader">t:Logs</button></div>
+        <div class="tabContent">
+          <div class="tabPanel">
+            <div class="emptyTabContent">
+              <x-ncemptycontent name="t:No configuration data" description="t:This configuration has no data defined.">
+                <slot-icon>
+                  <x-cogoutline size="64"></x-cogoutline>
+                </slot-icon>
+              </x-ncemptycontent>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`view modals DOM golden configuration, sparse, tab 1 1`] = `
+"<x-ncdialog name="View Configuration: Bare" size="large" noclose="">
+  <slot-actions>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-pencil size="20"></x-pencil>
+      </slot-icon>
+      <slot-default> Edit Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-download size="20"></x-download>
+      </slot-icon>
+      <slot-default> Export Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+      <slot-default> Delete Configuration </slot-default>
+    </x-ncactionbutton>
+    <x-ncbutton variant="primary">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close </slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer viewConfigurationDialog">
+      <div class="configurationDetailsGrid">
+        <div class="configurationMainInfo">
+          <h2>Bare</h2>
+        </div>
+        <div class="configurationProperties">
+          <div class="propertyItem"><strong>t:Type:</strong><span>Unknown</span></div>
+        </div>
+      </div>
+      <div class="tabContainer">
+        <div class="tabHeaders"><button class="tabHeader">t:Configuration</button><button class="tabHeader active">t:Logs</button></div>
+        <div class="tabContent">
+          <div class="tabPanel">
+            <div class="emptyTabContent">
+              <x-ncemptycontent name="t:No logs found" description="t:No logs are available for this configuration.">
+                <slot-icon>
+                  <x-postoutline size="64"></x-postoutline>
+                </slot-icon>
+              </x-ncemptycontent>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`view modals DOM golden source, filled, tab 0 1`] = `
+"<x-ncdialog name="View Source: Source" size="large" noclose="">
+  <slot-actions>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-pencil size="20"></x-pencil>
+      </slot-icon>
+      <slot-default> Edit Source </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+      <slot-default> Delete Source </slot-default>
+    </x-ncactionbutton>
+    <x-ncbutton variant="primary">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close </slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer viewSourceDialog">
+      <div class="sourceDetailsGrid">
+        <div class="sourceMainInfo">
+          <h2>Source</h2>
+          <p class="sourceDescription">About it</p>
+        </div>
+        <div class="sourceProperties">
+          <div class="propertyItem"><strong>t:Type:</strong><span>internal</span></div>
+          <div class="propertyItem"><strong>t:Database URL:</strong><span class="urlValue">mysql://x</span></div>
+          <div class="propertyItem"><strong>t:Created:</strong><span>2026-01-02T03:04:05.000Z</span></div>
+          <div class="propertyItem"><strong>t:Updated:</strong><span>2026-01-02T03:04:05.000Z</span></div>
+        </div>
+      </div>
+      <div class="tabContainer">
+        <div class="tabHeaders"><button class="tabHeader active">t:Registers</button><button class="tabHeader">t:Logs</button></div>
+        <div class="tabContent">
+          <div class="tabPanel">
+            <div class="registersGrid">
+              <div class="registerCard">
+                <div class="registerHeader">
+                  <h3>Reg</h3>
+                  <x-ncactions>
+                    <slot-default>
+                      <x-ncactionbutton closeafterclick="">
+                        <slot-icon>
+                          <x-eye size="20"></x-eye>
+                        </slot-icon>
+                        <slot-default> View </slot-default>
+                      </x-ncactionbutton>
+                      <x-ncactionbutton closeafterclick="">
+                        <slot-icon>
+                          <x-pencil size="20"></x-pencil>
+                        </slot-icon>
+                        <slot-default> Edit </slot-default>
+                      </x-ncactionbutton>
+                    </slot-default>
+                  </x-ncactions>
+                </div>
+                <p class="registerDescription">R</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`view modals DOM golden source, filled, tab 1 1`] = `
+"<x-ncdialog name="View Source: Source" size="large" noclose="">
+  <slot-actions>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-pencil size="20"></x-pencil>
+      </slot-icon>
+      <slot-default> Edit Source </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+      <slot-default> Delete Source </slot-default>
+    </x-ncactionbutton>
+    <x-ncbutton variant="primary">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close </slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer viewSourceDialog">
+      <div class="sourceDetailsGrid">
+        <div class="sourceMainInfo">
+          <h2>Source</h2>
+          <p class="sourceDescription">About it</p>
+        </div>
+        <div class="sourceProperties">
+          <div class="propertyItem"><strong>t:Type:</strong><span>internal</span></div>
+          <div class="propertyItem"><strong>t:Database URL:</strong><span class="urlValue">mysql://x</span></div>
+          <div class="propertyItem"><strong>t:Created:</strong><span>2026-01-02T03:04:05.000Z</span></div>
+          <div class="propertyItem"><strong>t:Updated:</strong><span>2026-01-02T03:04:05.000Z</span></div>
+        </div>
+      </div>
+      <div class="tabContainer">
+        <div class="tabHeaders"><button class="tabHeader">t:Registers</button><button class="tabHeader active">t:Logs</button></div>
+        <div class="tabContent">
+          <div class="tabPanel">
+            <div class="emptyTabContent">
+              <x-ncemptycontent name="t:No logs found" description="t:No logs are available for this source.">
+                <slot-icon>
+                  <x-postoutline size="64"></x-postoutline>
+                </slot-icon>
+              </x-ncemptycontent>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`view modals DOM golden source, sparse, tab 0 1`] = `
+"<x-ncdialog name="View Source: Bare" size="large" noclose="">
+  <slot-actions>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-pencil size="20"></x-pencil>
+      </slot-icon>
+      <slot-default> Edit Source </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+      <slot-default> Delete Source </slot-default>
+    </x-ncactionbutton>
+    <x-ncbutton variant="primary">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close </slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer viewSourceDialog">
+      <div class="sourceDetailsGrid">
+        <div class="sourceMainInfo">
+          <h2>Bare</h2>
+        </div>
+        <div class="sourceProperties">
+          <div class="propertyItem"><strong>t:Type:</strong><span>Unknown</span></div>
+        </div>
+      </div>
+      <div class="tabContainer">
+        <div class="tabHeaders"><button class="tabHeader active">t:Registers</button><button class="tabHeader">t:Logs</button></div>
+        <div class="tabContent">
+          <div class="tabPanel">
+            <div class="emptyTabContent">
+              <x-ncemptycontent name="t:No registers found" description="t:This source has no associated registers.">
+                <slot-icon>
+                  <x-databaseoutline size="64"></x-databaseoutline>
+                </slot-icon>
+              </x-ncemptycontent>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`view modals DOM golden source, sparse, tab 1 1`] = `
+"<x-ncdialog name="View Source: Bare" size="large" noclose="">
+  <slot-actions>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-pencil size="20"></x-pencil>
+      </slot-icon>
+      <slot-default> Edit Source </slot-default>
+    </x-ncactionbutton>
+    <x-ncactionbutton closeafterclick="">
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+      <slot-default> Delete Source </slot-default>
+    </x-ncactionbutton>
+    <x-ncbutton variant="primary">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close </slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer viewSourceDialog">
+      <div class="sourceDetailsGrid">
+        <div class="sourceMainInfo">
+          <h2>Bare</h2>
+        </div>
+        <div class="sourceProperties">
+          <div class="propertyItem"><strong>t:Type:</strong><span>Unknown</span></div>
+        </div>
+      </div>
+      <div class="tabContainer">
+        <div class="tabHeaders"><button class="tabHeader">t:Registers</button><button class="tabHeader active">t:Logs</button></div>
+        <div class="tabContent">
+          <div class="tabPanel">
+            <div class="emptyTabContent">
+              <x-ncemptycontent name="t:No logs found" description="t:No logs are available for this source.">
+                <slot-icon>
+                  <x-postoutline size="64"></x-postoutline>
+                </slot-icon>
+              </x-ncemptycontent>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
