@@ -328,57 +328,33 @@
 								)
 							}}
 						</p>
-						<table v-else class="flowTable">
-							<thead>
-								<tr>
-									<th scope="col">
-										{{ t('openregister', 'Version') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Status') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Published') }}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr
-									v-for="version in versions"
-									:key="version.id || version.version">
-									<td>v{{ version.semver || version.version }}</td>
-									<td>
-										<CnStatusBadge
-											:label="statusLabel(version.status)"
-											:variant="statusVariant(version.status)"
-											size="small" />
-									</td>
-									<td>
-										<template
-											v-if="
-												version.publishedAt
-												&& version.publishedBy
-											">
-											{{
-												t(
-													'openregister',
-													'{date} by {person}',
-													{
-														date: formatDateTime(
-															version.publishedAt,
-														),
-														person: version.publishedBy,
-													},
-												)
-											}}
-										</template>
-										<template v-else>
-											{{ formatDateTime(version.publishedAt) }}
-										</template>
-									</td>
-								</tr>
-							</tbody>
-						</table>
+						<CnDataTable
+							v-else
+							:columns="versionColumns"
+							:rows="versionRows">
+							<template #column-semver="{ row: version }">
+								v{{ version.semver || version.version }}
+							</template>
+							<template #column-status="{ value }">
+								<CnStatusBadge
+									:label="statusLabel(value)"
+									:variant="statusVariant(value)"
+									size="small" />
+							</template>
+							<template #column-publishedAt="{ row: version }">
+								<template v-if="version.publishedAt && version.publishedBy">
+									{{
+										t('openregister', '{date} by {person}', {
+											date: formatDateTime(version.publishedAt),
+											person: version.publishedBy,
+										})
+									}}
+								</template>
+								<template v-else>
+									{{ formatDateTime(version.publishedAt) }}
+								</template>
+							</template>
+						</CnDataTable>
 					</section>
 				</div>
 
@@ -406,53 +382,36 @@
 						class="flowCard__body flowCard__note">
 						{{ t('openregister', 'No runs match this filter.') }}
 					</p>
-					<div v-else class="flowTable__scroll">
-						<table class="flowTable" data-testid="flow-overview-runs">
-							<thead>
-								<tr>
-									<th scope="col">
-										{{ t('openregister', 'Status') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Started') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Duration') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'About') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Stopped at') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Version') }}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="run in pagedRuns" :key="run.uuid">
-									<td>
-										<CnStatusBadge
-											:label="statusLabel(shownStatus(run))"
-											:variant="statusVariant(shownStatus(run))"
-											size="small" />
-									</td>
-									<td>
-										<router-link :to="runRoute(run)">
-											{{ formatDateTime(run.created) }}
-										</router-link>
-									</td>
-									<td>{{ formatDuration(runDuration(run)) }}</td>
-									<td class="mono" :title="run.subjectUuid || ''">
-										{{ shortUuid(run.subjectUuid) }}
-									</td>
-									<td>{{ stoppedAt(run) }}</td>
-									<td>{{ versionLabel(run.flowVersion) }}</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
+					<CnDataTable
+						v-else
+						data-testid="flow-overview-runs"
+						:columns="runColumns"
+						:rows="pagedRuns"
+						rowKey="uuid">
+						<template #column-status="{ row: run }">
+							<CnStatusBadge
+								:label="statusLabel(shownStatus(run))"
+								:variant="statusVariant(shownStatus(run))"
+								size="small" />
+						</template>
+						<template #column-created="{ row: run }">
+							<router-link :to="runRoute(run)">
+								{{ formatDateTime(run.created) }}
+							</router-link>
+						</template>
+						<template #column-duration="{ row: run }">
+							{{ formatDuration(runDuration(run)) }}
+						</template>
+						<template #column-subjectUuid="{ value }">
+							<span class="mono" :title="value || ''">{{ shortUuid(value) }}</span>
+						</template>
+						<template #column-stoppedAt="{ row: run }">
+							{{ stoppedAt(run) }}
+						</template>
+						<template #column-flowVersion="{ value }">
+							{{ versionLabel(value) }}
+						</template>
+					</CnDataTable>
 					<div class="flowCard__foot">
 						<span>
 							{{
@@ -482,7 +441,7 @@
 </template>
 
 <script>
-import { CnStatusBadge } from '@conduction/nextcloud-vue'
+import { CnDataTable, CnStatusBadge } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -524,6 +483,7 @@ export default {
 	name: 'FlowOverview',
 
 	components: {
+		CnDataTable,
 		CnStatusBadge,
 		NcAppContent,
 		NcButton,
@@ -559,6 +519,44 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The versions table columns.
+		 *
+		 * @return {Array<object>} The CnDataTable columns.
+		 */
+		versionColumns() {
+			return [
+				{ key: 'semver', label: t('openregister', 'Version') },
+				{ key: 'status', label: t('openregister', 'Status') },
+				{ key: 'publishedAt', label: t('openregister', 'Published') },
+			]
+		},
+
+		/**
+		 * The versions keyed as the table keyed them: by id, else by number.
+		 *
+		 * @return {Array<object>} The rows.
+		 */
+		versionRows() {
+			return this.versions.map((version) => ({ ...version, id: version.id || version.version }))
+		},
+
+		/**
+		 * The runs table columns.
+		 *
+		 * @return {Array<object>} The CnDataTable columns.
+		 */
+		runColumns() {
+			return [
+				{ key: 'status', label: t('openregister', 'Status') },
+				{ key: 'created', label: t('openregister', 'Started') },
+				{ key: 'duration', label: t('openregister', 'Duration') },
+				{ key: 'subjectUuid', label: t('openregister', 'About') },
+				{ key: 'stoppedAt', label: t('openregister', 'Stopped at') },
+				{ key: 'flowVersion', label: t('openregister', 'Version') },
+			]
+		},
+
 		/**
 		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
 		 */
@@ -1034,30 +1032,6 @@ export default {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 16px 24px;
-}
-
-.flowTable__scroll {
-	overflow-x: auto;
-}
-
-.flowTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.flowTable th {
-	text-align: start;
-	font-weight: 600;
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-	background: var(--color-background-hover);
-	white-space: nowrap;
-}
-
-.flowTable td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-	vertical-align: top;
 }
 
 @include mono;
