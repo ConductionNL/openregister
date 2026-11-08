@@ -75,6 +75,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationSql;
@@ -6560,49 +6561,73 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			]
 		);
 
+		$target = new MagicTableTarget(register: $register, schema: $schema);
+		$target->tableName = $tableName;
 		if ($hardDelete === true) {
-			// Hard delete - actually remove from table.
-			$qb = $this->db->getQueryBuilder();
-			$qb->delete($tableName)
-				->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
-			$qb->executeStatement();
-
-			$this->logger->debug(
-				message: '[MagicMapper] Hard deleted object from register+schema table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'tableName' => $tableName,
-				]
-			);
+			$this->hardDeleteRow(target: $target, uuid: $uuid);
 		}
 
 		if ($hardDelete === false) {
-			// Soft delete - set _deleted field.
-			if ($entity->getDeleted() === null || empty($entity->getDeleted()) === true) {
-				// Mark as deleted using entity method.
-				$entity->delete($this->userSession, 'Soft deleted via MagicMapper', 30);
-			}
-
-			// Update entity in table with deleted field set.
-			$this->updateObjectEntity(entity: $entity, register: $register, schema: $schema);
-
-			$this->logger->debug(
-				message: '[MagicMapper] Soft deleted object in register+schema table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'tableName' => $tableName,
-				]
-			);
+			$this->softDeleteRow(target: $target, entity: $entity);
 		}
 
 		// NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
 		// Do NOT dispatch ObjectDeletedEvent here.
 		return $entity;
 	}//end deleteObjectEntity()
+
+	/**
+	 * Hard delete: remove the row with this uuid from the table.
+	 *
+	 * @param MagicTableTarget $target The register, schema and table name.
+	 * @param string           $uuid   The object uuid.
+	 *
+	 * @return void
+	 */
+	private function hardDeleteRow(MagicTableTarget $target, string $uuid): void {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete($target->tableName)
+			->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
+		$qb->executeStatement();
+
+		$this->logger->debug(
+			message: '[MagicMapper] Hard deleted object from register+schema table',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'tableName' => $target->tableName,
+			]
+		);
+	}//end hardDeleteRow()
+
+	/**
+	 * Soft delete: mark the entity deleted (unless it already is) and write it back to the table.
+	 *
+	 * @param MagicTableTarget $target The register, schema and table name.
+	 * @param ObjectEntity     $entity The object entity.
+	 *
+	 * @return void
+	 */
+	private function softDeleteRow(MagicTableTarget $target, ObjectEntity $entity): void {
+		if ($entity->getDeleted() === null || empty($entity->getDeleted()) === true) {
+			// Mark as deleted using entity method.
+			$entity->delete($this->userSession, 'Soft deleted via MagicMapper', 30);
+		}
+
+		// Update entity in table with deleted field set.
+		$this->updateObjectEntity(entity: $entity, register: $target->register, schema: $target->schema);
+
+		$this->logger->debug(
+			message: '[MagicMapper] Soft deleted object in register+schema table',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $entity->getUuid(),
+				'tableName' => $target->tableName,
+			]
+		);
+	}//end softDeleteRow()
 
 	/**
 	 * Soft-delete multiple pre-resolved objects with ONE UPDATE per magic table.
