@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\FileServiceInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -64,7 +64,7 @@ class TagsController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param ObjectService $objectService Object service instance
+	 * @param ObjectHandlerAccessInterface $objectService Object service instance
 	 * @param FileServiceInterface $fileService File service instance for tag retrieval
 	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for object-level tags
 	 * @param IUserSession $userSession Session for the @PublicPage anonymous-deny guard
@@ -74,7 +74,7 @@ class TagsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
+		private readonly ObjectHandlerAccessInterface $objectService,
 		private readonly FileServiceInterface $fileService,
 		private readonly TaggingHandlerInterface $taggingHandler,
 		private readonly ?IUserSession $userSession = null,
