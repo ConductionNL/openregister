@@ -26,13 +26,7 @@ import {
 			:viewMode="schemaStore.viewMode"
 			:selectable="true"
 			:selectedIds="selectedSchemas"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Add Schema')"
 			rowKey="id"
@@ -121,13 +115,17 @@ import {
 
 <script>
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
+import { NcAppContent } from '@nextcloud/vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import { applyFilterChange, filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
 import { deleteAction, editAction } from '../../services/menuActions.js'
+import {
+	BUILTIN_ACTIONS_OFF,
+	timestampColumns,
+} from '../indexPageOptions.js'
 
 /**
  * The value a schema row is filtered on: the properties column shows a count.
@@ -155,6 +153,7 @@ export default {
 
 	data() {
 		return {
+			builtinActionsOff: BUILTIN_ACTIONS_OFF,
 			selectedSchemas: [],
 			isRefreshing: false,
 			// The header the list is sorted by; null keeps newest first.
@@ -182,18 +181,7 @@ export default {
 					label: t('openregister', 'Properties'),
 					type: 'integer',
 				},
-				{
-					key: 'created',
-					label: t('openregister', 'Created'),
-					sortable: true,
-					type: 'date-time',
-				},
-				{
-					key: 'updated',
-					label: t('openregister', 'Updated'),
-					sortable: true,
-					type: 'date-time',
-				},
+				...timestampColumns({ type: 'date-time' }),
 			]
 		},
 
