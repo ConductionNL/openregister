@@ -956,3 +956,52 @@
 		color: var(--color-warning);
 	}
 }
+
+// The details head of a view modal: the dialog column, the title and
+// description block, and the shaded property list. $name prefixes the
+// classes, as in .view#{Name}Dialog and .#{name}Properties.
+@mixin view-dialog-details($name, $Name) {
+	.view#{$Name}Dialog {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.#{$name}DetailsGrid {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.#{$name}MainInfo h2 {
+		margin: 0 0 0.5rem 0;
+		color: var(--color-main-text);
+	}
+
+	.#{$name}Description {
+		color: var(--color-text-lighter);
+		margin: 0;
+	}
+
+	.#{$name}Properties {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 1rem;
+		background-color: var(--color-background-hover);
+		border-radius: var(--border-radius);
+	}
+
+	@include property-item-rules;
+}
+
+// The tab area of a view modal around ViewDialogTabs.
+@mixin view-dialog-tab-panels {
+	.tabContainer {
+		margin-top: 1rem;
+	}
+
+	.tabPanel {
+		padding: 1rem 0;
+	}
+}
