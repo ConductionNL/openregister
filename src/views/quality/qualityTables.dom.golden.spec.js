@@ -8,6 +8,7 @@
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import GoldenRecordDetail from './GoldenRecordDetail.vue'
+import QualityIndex from './QualityIndex.vue'
 import QueueHealthIndex from './QueueHealthIndex.vue'
 
 jest.mock('@nextcloud/l10n', () => ({
@@ -19,6 +20,10 @@ jest.mock('@conduction/nextcloud-vue', () => mockLibrary())
 jest.mock('vue-material-design-icons/AccountBoxOutline.vue', () =>
 	mockIcon('AccountBoxOutline'),
 )
+jest.mock('vue-material-design-icons/ChartBoxOutline.vue', () =>
+	mockIcon('ChartBoxOutline'),
+)
+jest.mock('./RegisterSchemaSelector.vue', () => mockIcon('RegisterSchemaSelector'))
 jest.mock('vue-material-design-icons/Webhook.vue', () => mockIcon('Webhook'))
 jest.mock('../../modals/mdm/MdmConflictResolutionModal.vue', () =>
 	mockIcon('MdmConflictResolutionModal'),
@@ -86,6 +91,9 @@ function mockIcon(name) {
  */
 function mockStub(name) {
 	const { h: render } = require('vue')
+	if (name === 'CnDataTable') {
+		return mockTable()
+	}
 	return {
 		name,
 		inheritAttrs: false,
@@ -104,6 +112,39 @@ function mockStub(name) {
 					.sort()
 					.map((slot) => render(`slot-${slot}`, this.$slots[slot]({}))),
 			)
+		},
+	}
+}
+
+/**
+ * A stand-in for CnDataTable that draws its column labels and cell values
+ * (or the `column-<key>` slot), so a golden compares what each cell reads.
+ *
+ * @return {object} The stub
+ */
+function mockTable() {
+	const { h: render } = require('vue')
+	return {
+		name: 'CnDataTable',
+		inheritAttrs: false,
+		props: { columns: Array, rows: Array, rowKey: { type: String, default: 'id' } },
+		render() {
+			const head = this.columns.map((col) => render('x-th', col.label))
+			const body = this.rows.map((row) =>
+				render(
+					'x-tr',
+					{ key: row[this.rowKey] },
+					this.columns.map((col) => {
+						const slot = this.$slots[`column-${col.key}`]
+						return render(
+							'x-td',
+							slot ? slot({ row, value: row[col.key] }) : String(row[col.key] ?? '—'),
+						)
+					}),
+				),
+			)
+			const attrs = { ...this.$attrs, rowKey: this.rowKey }
+			return render('x-CnDataTable', attrs, [render('x-thead', head), render('x-tbody', body)])
 		},
 	}
 }
@@ -215,6 +256,25 @@ describe('quality tables golden', () => {
 			}).toMatchSnapshot()
 		})
 	}
+
+	it('quality: renders the histogram fallback and lowest-quality tables', async () => {
+		const wrapper = await mountWith(QualityIndex, {
+			hasSelection: true,
+			isLoading: false,
+			qualityStats: { total: 3, average: 40, histogram: [1, 0, 2] },
+			lowQualityObjects: [
+				{ id: 'q1', qualityScore: 12, qualityStatus: 'poor' },
+				{ id: 'q2', qualityScore: 0 },
+			],
+			lowQualityTotal: 2,
+			lowQualityLimit: 20,
+			lowQualityOffset: 0,
+		})
+		wrapper.vm.chartAvailable = false
+		await flushPromises()
+		expect(markup(wrapper.find('.histogramSection'))).toMatchSnapshot()
+		expect(markup(wrapper.find('.lowestQualitySection'))).toMatchSnapshot()
+	})
 
 	for (const [name, object] of Object.entries(GOLDEN_OBJECTS)) {
 		it(`golden record: renders ${name}`, async () => {

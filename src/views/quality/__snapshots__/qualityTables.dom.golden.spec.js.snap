@@ -103,6 +103,62 @@ exports[`quality tables golden golden record: renders provenance 1`] = `
 </div>"
 `;
 
+exports[`quality tables golden quality: renders the histogram fallback and lowest-quality tables 1`] = `
+"<section class="histogramSection">
+  <h2>t:Score histogram</h2>
+  <table class="histogramTable" data-testid="histogram-fallback-table">
+    <thead>
+      <tr>
+        <th scope="col">t:Bucket</th>
+        <th scope="col">t:Count</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>0-10</td>
+        <td>1</td>
+      </tr>
+      <tr>
+        <td>10-20</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>20-30</td>
+        <td>2</td>
+      </tr>
+    </tbody>
+  </table>
+</section>"
+`;
+
+exports[`quality tables golden quality: renders the histogram fallback and lowest-quality tables 2`] = `
+"<section class="lowestQualitySection">
+  <h2>t:Lowest-quality objects</h2>
+  <table class="lowestQualityTable">
+    <thead>
+      <tr>
+        <th scope="col">t:Id</th>
+        <th scope="col">t:Quality score</th>
+        <th scope="col">t:Quality status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>q1</td>
+        <td>12</td>
+        <td><span class="badge badge-status-poor">poor</span></td>
+      </tr>
+      <tr>
+        <td>q2</td>
+        <td>0</td>
+        <td><span class="badge badge-status-undefined"></span></td>
+      </tr>
+    </tbody>
+  </table>
+  
+</section>"
+`;
+
 exports[`quality tables golden queue health: renders empty 1`] = `
 {
   "markup": "<x-ncappcontent>
