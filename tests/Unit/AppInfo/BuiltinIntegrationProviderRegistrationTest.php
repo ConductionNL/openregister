@@ -189,11 +189,11 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Service\LinkServiceRuntime',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\PollsProvider' => [
-			'OCA\OpenRegister\Db\PollLinkMapperInterface',
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
-			'OCP\IUserSession',
 			'OCP\IL10N',
+			'OCA\OpenRegister\Db\PollLinkMapperInterface',
+			'OCP\IUserSession',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\FlowProvider' => [
 			'OCA\OpenRegister\Db\FlowLinkMapperInterface',

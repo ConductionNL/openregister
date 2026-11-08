@@ -70,6 +70,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
+use OCA\OpenRegister\Service\Integration\Providers\CalendarProviderServices;
 
 /**
  * Contract + delegation tests for all 16 leaf integration providers.
@@ -175,14 +177,16 @@ class LeafProvidersMetadataTest extends TestCase {
 			);
 		}
 
-		// PollsProvider — (mapper, db, appManager, userSession, l10n).
+		// PollsProvider — (platform, mapper, userSession).
 		if ($class === PollsProvider::class) {
 			return new $class(
+				platform: new LeafProviderPlatform(
+					db: $db,
+					appManager: $appManager,
+					l10n: $l10n,
+				),
 				pollLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\PollLinkMapper::class),
-				db: $db,
-				appManager: $appManager,
 				userSession: $this->createMock(IUserSession::class),
-				l10n: $l10n,
 			);
 		}
 
@@ -205,17 +209,19 @@ class LeafProvidersMetadataTest extends TestCase {
 			);
 		}
 
-		// CospendProvider — (db, appManager, l10n, mapper, ?container).
+		// CospendProvider — (platform, mapper, ?container).
 		if ($class === CospendProvider::class) {
 			return new $class(
-				db: $db,
-				appManager: $appManager,
-				l10n: $l10n,
+				platform: new LeafProviderPlatform(
+					db: $db,
+					appManager: $appManager,
+					l10n: $l10n,
+				),
 				cospendLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\CospendLinkMapper::class),
 			);
 		}
 
-		// TimeProvider — (db, appManager, l10n, mapper, config).
+		// TimeProvider — (platform, mapper, config, logger).
 		if ($class === TimeProvider::class) {
 			$config = $this->createMock(\OCP\IConfig::class);
 			$config->method('getAppValue')->willReturnCallback(
@@ -224,16 +230,18 @@ class LeafProvidersMetadataTest extends TestCase {
 				}
 			);
 			return new TimeProvider(
-				db: $db,
-				appManager: $appManager,
-				l10n: $l10n,
+				platform: new LeafProviderPlatform(
+					db: $db,
+					appManager: $appManager,
+					l10n: $l10n,
+				),
 				linkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
 				config: $config,
 				logger: $this->createMock(LoggerInterface::class),
 			);
 		}
 
-		// Providers shaped (db, appManager, l10n, <mapper>).
+		// Providers shaped (platform, <mapper>, logger).
 		$trailingMapper = [
 			AnalyticsProvider::class => \OCA\OpenRegister\Db\AnalyticsLinkMapper::class,
 			CollectivesProvider::class => \OCA\OpenRegister\Db\CollectiveLinkMapper::class,
@@ -243,9 +251,7 @@ class LeafProvidersMetadataTest extends TestCase {
 		];
 		if (isset($trailingMapper[$class]) === true) {
 			return new $class(
-				$db,
-				$appManager,
-				$l10n,
+				new LeafProviderPlatform($db, $appManager, $l10n),
 				$this->buildLinkMapper($trailingMapper[$class]),
 				$this->createMock(LoggerInterface::class),
 			);
@@ -280,8 +286,10 @@ class LeafProvidersMetadataTest extends TestCase {
 	 */
 	public function testCalendarProviderMetadata(): void {
 		$provider = new CalendarProvider(
-			calendarEventService: $this->createMock(CalendarEventService::class),
-			calendarLinkService: $this->createMock(CalendarLinkService::class),
+			calendar: new CalendarProviderServices(
+				calendarEventService: $this->createMock(CalendarEventService::class),
+				calendarLinkService: $this->createMock(CalendarLinkService::class),
+			),
 			appManager: $this->buildAppManager(['calendar']),
 			l10n: $this->buildL10n(),
 			logger: $this->buildLogger(),
@@ -306,8 +314,10 @@ class LeafProvidersMetadataTest extends TestCase {
 			->willReturn([['id' => 'cal1/event.ics', 'source' => 'both']]);
 
 		$provider = new CalendarProvider(
-			calendarEventService: $this->createMock(CalendarEventService::class),
-			calendarLinkService: $link,
+			calendar: new CalendarProviderServices(
+				calendarEventService: $this->createMock(CalendarEventService::class),
+				calendarLinkService: $link,
+			),
 			appManager: $this->buildAppManager(['calendar']),
 			l10n: $this->buildL10n(),
 			logger: $this->buildLogger(),
@@ -335,8 +345,10 @@ class LeafProvidersMetadataTest extends TestCase {
 			);
 
 		$provider = new CalendarProvider(
-			calendarEventService: $this->createMock(CalendarEventService::class),
-			calendarLinkService: $link,
+			calendar: new CalendarProviderServices(
+				calendarEventService: $this->createMock(CalendarEventService::class),
+				calendarLinkService: $link,
+			),
 			appManager: $this->buildAppManager(['calendar']),
 			l10n: $this->buildL10n(),
 			logger: $logger,
@@ -352,8 +364,10 @@ class LeafProvidersMetadataTest extends TestCase {
 		$linkSvc->expects($this->once())->method('unlinkEvent')->with('o', 'ev-uid');
 
 		$provider = new CalendarProvider(
-			calendarEventService: $eventSvc,
-			calendarLinkService: $linkSvc,
+			calendar: new CalendarProviderServices(
+				calendarEventService: $eventSvc,
+				calendarLinkService: $linkSvc,
+			),
 			appManager: $this->buildAppManager(['calendar']),
 			l10n: $this->buildL10n(),
 			logger: $this->buildLogger(),
@@ -367,8 +381,10 @@ class LeafProvidersMetadataTest extends TestCase {
 
 	public function testCalendarProviderHealthReportsUnavailableWhenAppMissing(): void {
 		$provider = new CalendarProvider(
-			calendarEventService: $this->createMock(CalendarEventService::class),
-			calendarLinkService: $this->createMock(CalendarLinkService::class),
+			calendar: new CalendarProviderServices(
+				calendarEventService: $this->createMock(CalendarEventService::class),
+				calendarLinkService: $this->createMock(CalendarLinkService::class),
+			),
 			appManager: $this->buildAppManager([]),
 			l10n: $this->buildL10n(),
 			logger: $this->buildLogger(),
