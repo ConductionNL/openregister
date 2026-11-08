@@ -79,6 +79,10 @@ final class SearchTrailCreateOutcomeTest extends TestCase {
 	 * @return SearchTrail The created trail.
 	 */
 	private function create(array $query, array $counts, float $responseTime, string $type): SearchTrail {
-		return $this->mapper()->createSearchTrail($query, $counts[0], $counts[1], $responseTime, $type);
+		$outcome = new SearchTrail();
+		$outcome->setResultCount($counts[0]);
+		$outcome->setTotalResults($counts[1]);
+		$outcome->setResponseTime((int)round($responseTime));
+		return $this->mapper()->createSearchTrail($query, $outcome, $type);
 	}//end create()
 }//end class

@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\SearchTrailCriteria;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -62,7 +63,7 @@ final class SearchTrailNullFilterTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturnCallback(fn () => $this->recordingBuilder());
 		$mapper = new SearchTrailMapper($db, $this->createMock(IRequest::class), $this->createMock(IUserSession::class), new NullLogger());
 
-		$mapper->count(['search_term' => $marker]);
+		$mapper->count(new SearchTrailCriteria(['search_term' => $marker]));
 
 		$where = array_values(array_filter($this->queryLog, fn (string $line): bool => str_contains($line, 'andWhere(')));
 		$this->assertSame([$predicate], $where);

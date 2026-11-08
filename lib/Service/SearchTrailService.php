@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\SearchTrail;
+use OCA\OpenRegister\Db\SearchTrailCriteria;
 use OCA\OpenRegister\Db\SearchTrailMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -157,8 +158,12 @@ class SearchTrailService implements SearchTrailServiceInterface {
 		string $executionType = 'sync',
 	): SearchTrail {
 		try {
-			// Mapper handles filtering of system parameters (starting with _); arguments in its own parameter order.
-			$trail = $this->searchTrailMapper->createSearchTrail($query, $resultCount, $totalResults, $responseTime, $executionType);
+			// Mapper handles filtering of system parameters (starting with _).
+			$outcome = new SearchTrail();
+			$outcome->setResultCount($resultCount);
+			$outcome->setTotalResults($totalResults);
+			$outcome->setResponseTime((int)round($responseTime));
+			$trail = $this->searchTrailMapper->createSearchTrail(searchQuery: $query, outcome: $outcome, executionType: $executionType);
 			$this->selfClearIfEnabled();
 			return $trail;
 		} catch (Exception $e) {
@@ -429,15 +434,28 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 */
 	private function findTrails(array $query): array {
 		return $this->searchTrailMapper->findAll(
+			criteria: $this->criteria(query: $query),
 			limit: $query['limit'],
 			offset: $query['offset'],
+			sort: $query['sort']
+		);
+	}//end findTrails()
+
+	/**
+	 * The filters, search term and created window of processed query parameters.
+	 *
+	 * @param array $query Processed configuration
+	 *
+	 * @return SearchTrailCriteria
+	 */
+	private function criteria(array $query): SearchTrailCriteria {
+		return new SearchTrailCriteria(
 			filters: $query['filters'],
-			sort: $query['sort'],
 			search: $query['search'],
 			from: $query['from'],
 			to: $query['to']
 		);
-	}//end findTrails()
+	}//end criteria()
 
 	/**
 	 * Count all trails matching processed query parameters.
@@ -447,12 +465,7 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 * @return int
 	 */
 	private function countTrails(array $query): int {
-		return $this->searchTrailMapper->count(
-			filters: $query['filters'],
-			search: $query['search'],
-			from: $query['from'],
-			to: $query['to']
-		);
+		return $this->searchTrailMapper->count(criteria: $this->criteria(query: $query));
 	}//end countTrails()
 
 	/**
