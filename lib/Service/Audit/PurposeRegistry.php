@@ -23,9 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\ProcessingPurpose;
-use OCA\OpenRegister\Db\ProcessingPurposeMapper;
+use OCA\OpenRegister\Db\ProcessingPurposeMapperInterface;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 
 /**
  * Resolves a named purpose, and refuses one that cannot carry a query.
@@ -59,12 +59,12 @@ class PurposeRegistry {
 	/**
 	 * Constructor.
 	 *
-	 * @param ProcessingPurposeMapper     $purposes   The administered purpose list.
-	 * @param VerwerkingsactiviteitMapper $activities The processing activity register.
+	 * @param ProcessingPurposeMapperInterface     $purposes   The administered purpose list.
+	 * @param VerwerkingsactiviteitMapperInterface $activities The processing activity register.
 	 */
 	public function __construct(
-		private readonly ProcessingPurposeMapper $purposes,
-		private readonly VerwerkingsactiviteitMapper $activities,
+		private readonly ProcessingPurposeMapperInterface $purposes,
+		private readonly VerwerkingsactiviteitMapperInterface $activities,
 	) {
 	}//end __construct()
 

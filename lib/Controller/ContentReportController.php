@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ContentReportControllerServices;
 use OCA\OpenRegister\Db\ContentReport;
-use OCA\OpenRegister\Db\ContentReportMapper;
+use OCA\OpenRegister\Db\ContentReportMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Service\Audit\ContentReportService;
 use OCP\AppFramework\Controller;
@@ -49,9 +49,9 @@ class ContentReportController extends Controller {
 	/**
 	 * The reports and their copies.
 	 *
-	 * @var ContentReportMapper
+	 * @var ContentReportMapperInterface
 	 */
-	private readonly ContentReportMapper $reports;
+	private readonly ContentReportMapperInterface $reports;
 
 	/**
 	 * Files a report and resolves reviewer access.

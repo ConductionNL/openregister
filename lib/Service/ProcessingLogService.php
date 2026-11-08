@@ -52,7 +52,7 @@ use OCA\OpenRegister\Db\ProcessingLogMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -104,7 +104,7 @@ class ProcessingLogService {
 	 * Constructor.
 	 *
 	 * @param ProcessingLogMapper $logMapper Append-only log mapper.
-	 * @param VerwerkingsactiviteitMapper $vrwMapper Activity resolver + fallback seed.
+	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper Activity resolver + fallback seed.
 	 * @param SchemaMapperInterface $schemaMapper Schema annotation reader.
 	 * @param RegisterMapperInterface $registerMapper Register annotation reader (inheritance).
 	 * @param IUserSession $userSession Actor identity.
@@ -112,7 +112,7 @@ class ProcessingLogService {
 	 */
 	public function __construct(
 		private readonly ProcessingLogMapper $logMapper,
-		private readonly VerwerkingsactiviteitMapper $vrwMapper,
+		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IUserSession $userSession,

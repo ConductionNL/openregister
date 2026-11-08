@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -91,7 +91,7 @@ class DsarService {
 	 *                                  mapper used to
 	 *                                  load found
 	 *                                  objects.
-	 * @param VerwerkingsactiviteitMapper $vrwMapper Resolves the
+	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper Resolves the
 	 *                                               configured DSAR
 	 *                                               activity reference.
 	 * @param IAppConfig $appConfig App-config reader.
@@ -111,7 +111,7 @@ class DsarService {
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly VerwerkingsactiviteitMapper $vrwMapper,
+		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

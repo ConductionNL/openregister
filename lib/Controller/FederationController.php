@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\FederationControllerServices;
 use OCA\OpenRegister\Db\FederatedShare;
-use OCA\OpenRegister\Db\FederatedShareMapper;
+use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
@@ -118,9 +118,9 @@ class FederationController extends Controller {
 	/**
 	 * Federated-share persistence.
 	 *
-	 * @var FederatedShareMapper
+	 * @var FederatedShareMapperInterface
 	 */
-	private readonly FederatedShareMapper $shareMapper;
+	private readonly FederatedShareMapperInterface $shareMapper;
 
 	/**
 	 * Object read service.

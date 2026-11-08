@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Audit;
 
 use DateTime;
 use OCA\OpenRegister\Db\ContentReport;
-use OCA\OpenRegister\Db\ContentReportMapper;
+use OCA\OpenRegister\Db\ContentReportMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -106,13 +106,13 @@ class ContentReportService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContentReportMapper $reports      The reports and their copies.
+	 * @param ContentReportMapperInterface $reports      The reports and their copies.
 	 * @param IAppConfig          $appConfig    Reviewer group and retention.
 	 * @param IGroupManager       $groupManager Resolves reviewer membership.
 	 * @param LoggerInterface     $logger       Reports a bookkeeping failure.
 	 */
 	public function __construct(
-		private readonly ContentReportMapper $reports,
+		private readonly ContentReportMapperInterface $reports,
 		private readonly IAppConfig $appConfig,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,

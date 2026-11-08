@@ -50,7 +50,7 @@ use DateTime;
 use LogicException;
 use OCA\OpenRegister\BackgroundJob\FlowRunWorker;
 use OCA\OpenRegister\Db\FlowClaim;
-use OCA\OpenRegister\Db\FlowClaimMapper;
+use OCA\OpenRegister\Db\FlowClaimMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -62,12 +62,12 @@ class FlowPlaceClaims {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowClaimMapper $claims The claim rows.
+	 * @param FlowClaimMapperInterface $claims The claim rows.
 	 * @param IDBConnection $db To refuse running inside a transaction.
 	 * @param LoggerInterface $logger Logger for repeated refusals.
 	 */
 	public function __construct(
-		private readonly FlowClaimMapper $claims,
+		private readonly FlowClaimMapperInterface $claims,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 	) {

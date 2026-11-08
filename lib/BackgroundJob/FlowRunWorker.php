@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\FlowClaimMapper;
+use OCA\OpenRegister\Db\FlowClaimMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowStreamMapper;
@@ -173,7 +173,7 @@ class FlowRunWorker extends TimedJob {
 	 *                                           runs are actually parked, because
 	 *                                           a sweep that skips looks exactly
 	 *                                           like one that found nothing.
-	 * @param FlowClaimMapper|null $claims Place claims, for the abandoned-claim reaper.
+	 * @param FlowClaimMapperInterface|null $claims Place claims, for the abandoned-claim reaper.
 	 * @param FlowStreamMapper|null $streams Run streams, for failing an abandoned branch.
 	 * @param FlowLocatorInterface|null $flows Resolves the run's flow, for the abandoned step's `onError` policy.
 	 * @param RunLockRegistry|null $locks Run-held object locks, for the orphaned-lock sweep.
@@ -193,7 +193,7 @@ class FlowRunWorker extends TimedJob {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		private readonly ?DelegationService $delegation = null,
-		private readonly ?FlowClaimMapper $claims = null,
+		private readonly ?FlowClaimMapperInterface $claims = null,
 		private readonly ?FlowStreamMapper $streams = null,
 		private readonly ?FlowLocatorInterface $flows = null,
 		private readonly ?RunLockRegistry $locks = null,

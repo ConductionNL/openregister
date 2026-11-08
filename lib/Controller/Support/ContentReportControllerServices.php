@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\ContentReportMapper;
+use OCA\OpenRegister\Db\ContentReportMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Service\Audit\ContentReportService;
 use OCP\IUserSession;
@@ -36,7 +36,7 @@ final class ContentReportControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ContentReportMapper $reports The reports and their copies.
+	 * @param ContentReportMapperInterface $reports The reports and their copies.
 	 * @param ContentReportService $service Files a report and resolves reviewer access.
 	 * @param MagicObjectFinderInterface $objects Resolves the content being reported.
 	 * @param IUserSession $userSession Current user session.
@@ -44,7 +44,7 @@ final class ContentReportControllerServices {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function __construct(
-		public readonly ContentReportMapper $reports,
+		public readonly ContentReportMapperInterface $reports,
 		public readonly ContentReportService $service,
 		public readonly MagicObjectFinderInterface $objects,
 		public readonly IUserSession $userSession,

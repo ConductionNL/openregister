@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
-use OCA\OpenRegister\Db\FlowClaimMapper;
+use OCA\OpenRegister\Db\FlowClaimMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
@@ -78,7 +78,7 @@ class FlowRunCommit {
 	 * @param IDBConnection $db The connection whose transaction is the critical section.
 	 * @param FlowRunMapperInterface $runs The run rows (locked for update).
 	 * @param FlowStreamMapper $streams The stream rows.
-	 * @param FlowClaimMapper $claims The claim rows.
+	 * @param FlowClaimMapperInterface $claims The claim rows.
 	 * @param FlowRunStepMapper $steps The step rows.
 	 * @param LoggerInterface $logger Logger for rollbacks.
 	 * @param FlowHopAudit|null $hopAudit Audits each committed firing.
@@ -87,7 +87,7 @@ class FlowRunCommit {
 		private readonly IDBConnection $db,
 		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowStreamMapper $streams,
-		private readonly FlowClaimMapper $claims,
+		private readonly FlowClaimMapperInterface $claims,
 		private readonly FlowRunStepMapper $steps,
 		private readonly LoggerInterface $logger,
 		private readonly ?FlowHopAudit $hopAudit = null,

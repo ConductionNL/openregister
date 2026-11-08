@@ -30,7 +30,7 @@ use OCA\OpenRegister\Controller\Support\GdprRegisterReplies;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ProcessingPurpose;
-use OCA\OpenRegister\Db\ProcessingPurposeMapper;
+use OCA\OpenRegister\Db\ProcessingPurposeMapperInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRegistry;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -76,7 +76,7 @@ class ProcessingPurposeController extends Controller {
 	 *
 	 * @param string                    $appName    App identifier.
 	 * @param IRequest                  $request    Active request.
-	 * @param ProcessingPurposeMapper   $purposes   The administered list.
+	 * @param ProcessingPurposeMapperInterface   $purposes   The administered list.
 	 * @param PurposeRegistry           $registry   Resolves a purpose to its activity.
 	 * @param AuditTrailMapperInterface $auditTrail Counts entries per purpose.
 	 * @param ControllerSession         $session    Session, group manager and logger.
@@ -84,7 +84,7 @@ class ProcessingPurposeController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ProcessingPurposeMapper $purposes,
+		private readonly ProcessingPurposeMapperInterface $purposes,
 		private readonly PurposeRegistry $registry,
 		private readonly AuditTrailMapperInterface $auditTrail,
 		private readonly ControllerSession $session,
