@@ -43,6 +43,8 @@ use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Repair\Support\RepairPlatform;
+use OCA\OpenRegister\Repair\Support\ApprovalTaskStores;
 
 /**
  * @covers \OCA\OpenRegister\Repair\MigrateApprovalChainsToTasks
@@ -171,14 +173,9 @@ class MigrateApprovalChainsToTasksTest extends TestCase {
 		});
 
 		return new MigrateApprovalChainsToTasks(
-			db: $db,
+			platform: new RepairPlatform(db: $db, config: $this->createMock(IAppConfig::class), logger: new NullLogger()),
 			builder: new TaskBuilder(),
-			tasks: $tasks,
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			audits: $audits,
-			sequences: $sequences,
-			config: $this->createMock(IAppConfig::class),
-			logger: new NullLogger()
+			stores: new ApprovalTaskStores(tasks: $tasks, candidates: $this->createMock(TaskCandidateMapper::class), audits: $audits, sequences: $sequences)
 		);
 	}//end step()
 
@@ -350,14 +347,9 @@ class MigrateApprovalChainsToTasksTest extends TestCase {
 		$output->expects(self::once())->method('info')->with(self::stringContains('nothing to migrate'));
 
 		$step = new MigrateApprovalChainsToTasks(
-			db: $db,
+			platform: new RepairPlatform(db: $db, config: $this->createMock(IAppConfig::class), logger: new NullLogger()),
 			builder: new TaskBuilder(),
-			tasks: $this->createMock(TaskMapper::class),
-			candidates: $this->createMock(TaskCandidateMapper::class),
-			audits: $this->createMock(TaskAuditMapper::class),
-			sequences: $this->createMock(TaskSequenceMapper::class),
-			config: $this->createMock(IAppConfig::class),
-			logger: new NullLogger()
+			stores: new ApprovalTaskStores(tasks: $this->createMock(TaskMapper::class), candidates: $this->createMock(TaskCandidateMapper::class), audits: $this->createMock(TaskAuditMapper::class), sequences: $this->createMock(TaskSequenceMapper::class))
 		);
 		$step->run($output);
 	}//end testAMissingLegacyTableMeansNothingToMigrate()

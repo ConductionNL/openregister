@@ -44,6 +44,7 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Listener\Support\StateFieldRulePlatform;
 
 /**
  * The save half of a state's field rules.
@@ -90,23 +91,43 @@ class StateFieldRuleListener implements IEventListener {
 	public const CODE_HIDDEN = 'state-field-hidden';
 
 	/**
+	 * Resolves the object's schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Records a refusal for the rule run log.
+	 *
+	 * @var RuleRunRecorderInterface
+	 */
+	private readonly RuleRunRecorderInterface $ruleRuns;
+
+	/**
+	 * PSR logger for lookup failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface            $schemaMapper    Resolves the object's schema.
+	 * @param StateFieldRulePlatform $platform Schema lookup, rule-run recorder and logger.
 	 * @param StateFieldRuleResolverInterface  $resolver        Resolves the rules that apply to this object and user.
 	 * @param StateConditionEvaluatorInterface $stateConditions Evaluates a state's entry and exit conditions.
-	 * @param RuleRunRecorderInterface                  $ruleRuns        Records a refusal for the rule run log.
-	 * @param LoggerInterface                  $logger          PSR logger for lookup failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
+		StateFieldRulePlatform $platform,
 		private readonly StateFieldRuleResolverInterface $resolver,
 		private readonly StateConditionEvaluatorInterface $stateConditions,
-		private readonly RuleRunRecorderInterface $ruleRuns,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $platform->schemaMapper;
+		$this->ruleRuns = $platform->ruleRuns;
+		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**

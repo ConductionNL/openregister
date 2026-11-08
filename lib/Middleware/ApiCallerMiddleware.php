@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
+use OCA\OpenRegister\Middleware\Support\ApiCallerServices;
 
 /**
  * Applies the per-caller bounds and writes the caller record.
@@ -84,23 +85,37 @@ class ApiCallerMiddleware extends Middleware {
 	private ?string $servedVersion = null;
 
 	/**
+	 * Writes the caller record.
+	 *
+	 * @var ApiCallRecorderInterface
+	 */
+	private readonly ApiCallRecorderInterface $recorder;
+
+	/**
+	 * Names the contract that will answer.
+	 *
+	 * @var ApiVersionNegotiatorInterface
+	 */
+	private readonly ApiVersionNegotiatorInterface $negotiator;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param ApiCallRecorderInterface $recorder Writes the caller record.
+	 * @param ApiCallerServices $services Call recorder and version negotiator.
 	 * @param CallerRateLimiterInterface $limiter Applies the administered ceiling.
 	 * @param CallerPolicyInterface $policy Resolves the address binding.
-	 * @param ApiVersionNegotiatorInterface $negotiator Names the contract that will answer.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly ApiCallRecorderInterface $recorder,
+		ApiCallerServices $services,
 		private readonly CallerRateLimiterInterface $limiter,
 		private readonly CallerPolicyInterface $policy,
-		private readonly ApiVersionNegotiatorInterface $negotiator,
 	) {
+		$this->recorder = $services->recorder;
+		$this->negotiator = $services->negotiator;
 
 	}//end __construct()
 
