@@ -31,12 +31,13 @@ class ObjectActionRunRecorderTest extends TestCase {
 		$audit  = $this->createMock(ObjectActionAudit::class);
 		$audit->expects($this->once())->method('record')->with(
 			$object,
-			'sign',
-			'steps',
-			'run-1',
+			$this->callback(fn ($definition): bool => $definition->key === 'sign' && $definition->kind === 'steps'),
+			$this->callback(
+				fn ($outcome): bool => $outcome->run === 'run-1'
+					&& $outcome->changes === [['step' => 's', 'kind' => 'write']]
+					&& $outcome->outcome === 'completed'
+			),
 			$inputs->digest(['note' => 'ok']),
-			[['step' => 's', 'kind' => 'write']],
-			'completed',
 			'anna'
 		);
 		$definition = ObjectActionDefinition::fromDeclaration(

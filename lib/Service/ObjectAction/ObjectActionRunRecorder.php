@@ -62,12 +62,9 @@ class ObjectActionRunRecorder {
 
 		$this->audit->record(
 			object: $object,
-			action: $definition->key,
-			kind: (string)$definition->kind,
-			run: $outcome->run,
+			definition: $definition,
+			outcome: $outcome,
 			inputsDigest: $this->inputs->digest(storable: $storable),
-			changes: $outcome->changes,
-			outcome: $outcome->outcome,
 			userId: $this->gate->userId()
 		);
 	}//end record()
