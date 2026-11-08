@@ -30,6 +30,10 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionFlowEngines;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionFlowRun;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunRecorder;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerChecks;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
@@ -99,16 +103,14 @@ class ObjectActionRunnerTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$l10n->method('getLanguageCode')->willReturn('nl');
 
+		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($this->permissions, $session, $l10n, $this->elevation), new ObjectActionInputs(new OasRequestValidator()));
+		$recorder = new ObjectActionRunRecorder($checks->inputs, $this->audit, $checks->gate);
+
 		return new ObjectActionRunner(
-			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($this->permissions, $session, $l10n, $this->elevation),
-			new ObjectActionInputs(new OasRequestValidator()),
-			$this->steps,
-			$this->audit,
+			$checks,
 			new ObjectActionWriters($this->transitions, $this->createMock(ObjectActionSelfAssign::class)),
-			$this->flows,
-			$this->macros,
-			$this->createMock(LoggerInterface::class)
+			$recorder,
+			new ObjectActionFlowRun(new ObjectActionFlowEngines($this->steps, $this->flows, $this->macros), $checks->inputs, $recorder, $this->createMock(LoggerInterface::class))
 		);
 	}//end runner()
 
