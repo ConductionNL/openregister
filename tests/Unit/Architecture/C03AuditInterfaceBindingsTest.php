@@ -109,9 +109,6 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 		StateHistoryProjector::class => [
 			'Listener/StateHistoryProjectionListener.php',
 		],
-		SubjectExportService::class => [
-			'BackgroundJob/SubjectExportJob.php',
-		],
 		VerwerkingsactiviteitMapper::class => [
 			'Service/Audit/PurposeRegistry.php',
 			'Service/AvgComplianceService.php',
@@ -119,12 +116,6 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 			'Service/Deletion/RetentionClockService.php',
 			'Service/DsarService.php',
 			'Service/ProcessingLogService.php',
-		],
-		ViewerReachResolver::class => [
-			'Listener/ViewAlertAudience.php',
-			'Listener/ViewAlertCrossedListener.php',
-			'Search/Controller/Support/ViewsControllerServices.php',
-			'Search/Controller/ViewsController.php',
 		],
 	];
 

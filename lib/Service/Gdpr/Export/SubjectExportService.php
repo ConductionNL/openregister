@@ -60,7 +60,7 @@ use Throwable;
  *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class SubjectExportService implements SubjectExportServiceInterface {
+class SubjectExportService implements SubjectExportServiceInterface, SubjectExportAssemblerInterface {
 	/**
 	 * The audit action an export is recorded under.
 	 *
