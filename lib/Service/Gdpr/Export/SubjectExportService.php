@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Export;
 
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\SubjectExportJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\SubjectExport;
 use OCA\OpenRegister\Db\SubjectExportMapperInterface;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
@@ -112,7 +112,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 			]
 		);
 
-		$this->jobList->add(SubjectExportJob::class, ['uuid' => $export->getUuid()]);
+		$this->jobList->add(JobHandles::SUBJECT_EXPORT, ['uuid' => $export->getUuid()]);
 
 		$this->audit(export: $export, event: 'requested');
 

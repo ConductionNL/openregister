@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
@@ -105,11 +105,11 @@ class RelatedRetentionRecalculationListener implements IEventListener {
 		}
 
 		$argument = ['uuid' => $uuid];
-		if ($this->jobList->has(RelatedRetentionRecalculationJob::class, $argument) === true) {
+		if ($this->jobList->has(JobHandles::RELATED_RETENTION_RECALCULATION, $argument) === true) {
 			return;
 		}
 
-		$this->jobList->add(RelatedRetentionRecalculationJob::class, $argument);
+		$this->jobList->add(JobHandles::RELATED_RETENTION_RECALCULATION, $argument);
 	}//end queueWhenWatchedChanged()
 
 	/**

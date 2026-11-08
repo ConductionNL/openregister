@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\TranslationProjectionJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -128,7 +128,7 @@ class TranslationProjectionListener implements IEventListener {
 		}
 
 		$this->deferral->defer(
-			jobClass: TranslationProjectionJob::class,
+			jobClass: JobHandles::TRANSLATION_PROJECTION,
 			entry: $this->deferralEntry(object: $object),
 			chunkSize: self::CHUNK_SIZE,
 			dedupeKey: (string)$object->getUuid()

@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\ObjectCleanupJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
@@ -117,7 +117,7 @@ class ObjectCleanupListener implements IEventListener {
 	private function deferCleanup(ObjectEntity $object): void {
 		$objectUuid = (string)$object->getUuid();
 		$this->deferral->defer(
-			jobClass: ObjectCleanupJob::class,
+			jobClass: JobHandles::OBJECT_CLEANUP,
 			entry: [
 				'uuid' => $objectUuid,
 				'register' => (string)$object->getRegister(),
