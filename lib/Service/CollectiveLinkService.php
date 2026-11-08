@@ -403,6 +403,17 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 			return [];
 		}
 
+		return $this->collectiveRows(collectives: $collectives);
+	}//end getAvailableCollectives()
+
+	/**
+	 * The id/name/emoji rows of Collectives, skipping those that cannot be read.
+	 *
+	 * @param iterable<object> $collectives Collective entities.
+	 *
+	 * @return array<int,array{id:int,name:string,emoji:mixed}>
+	 */
+	private function collectiveRows(iterable $collectives): array {
 		$out = [];
 		foreach ($collectives as $collective) {
 			try {
@@ -417,7 +428,7 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 		}
 
 		return $out;
-	}//end getAvailableCollectives()
+	}//end collectiveRows()
 
 	/**
 	 * Return the current user's NC Collectives pages (picker source).
@@ -433,12 +444,12 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function getAvailablePages(?string $search = null): array {
-		$collectiveService = $this->getCollectiveService();
-		$pageService = $this->getPageService();
-		$uid = $this->userSession->getUser()?->getUID();
-		if ($collectiveService === null || $pageService === null || $uid === null) {
+		$context = $this->pageContext();
+		if ($context === null) {
 			return [];
 		}
+
+		[$collectiveService, $pageService, $uid] = $context;
 
 		try {
 			$collectives = $collectiveService->getCollectives($uid);
@@ -448,13 +459,41 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 		}
 
 		$pageSearch = (new PageSearch(pageService: $pageService, uid: $uid))->matching(search: $search);
+		return $this->pagesOf(collectives: $collectives, search: $pageSearch);
+	}//end getAvailablePages()
+
+	/**
+	 * The Collectives and Page services and the current user, or null when any is missing.
+	 *
+	 * @return array{0:object,1:object,2:string}|null
+	 */
+	private function pageContext(): ?array {
+		$collectiveService = $this->getCollectiveService();
+		$pageService = $this->getPageService();
+		$uid = $this->userSession->getUser()?->getUID();
+		if ($collectiveService === null || $pageService === null || $uid === null) {
+			return null;
+		}
+
+		return [$collectiveService, $pageService, $uid];
+	}//end pageContext()
+
+	/**
+	 * The picker rows of the matching pages of every Collective, in Collective order.
+	 *
+	 * @param iterable<object> $collectives Collective entities.
+	 * @param PageSearch       $search      The page service, user and title filter.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function pagesOf(iterable $collectives, PageSearch $search): array {
 		$out = [];
 		foreach ($collectives as $collective) {
-			array_push($out, ...$this->collectPages(search: $pageSearch, collective: $collective));
+			array_push($out, ...$this->collectPages(search: $search, collective: $collective));
 		}
 
 		return $out;
-	}//end getAvailablePages()
+	}//end pagesOf()
 
 	/**
 	 * The picker rows of a collective's pages.
@@ -629,6 +668,20 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 			return null;
 		}
 
+		return $this->findPageIn(collectives: $collectives, pageService: $pageService, pageId: $pageId, uid: $uid);
+	}//end fetchPageInfo()
+
+	/**
+	 * The normalised page from the first Collective that holds it, or null when none does.
+	 *
+	 * @param iterable<object> $collectives Collective entities.
+	 * @param object           $pageService NC Collectives PageService.
+	 * @param int              $pageId      Collectives page id.
+	 * @param string           $uid         The user to read the page as.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function findPageIn(iterable $collectives, object $pageService, int $pageId, string $uid): ?array {
 		foreach ($collectives as $collective) {
 			try {
 				$collectiveId = (int)$collective->getId();
@@ -641,7 +694,7 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 		}
 
 		return null;
-	}//end fetchPageInfo()
+	}//end findPageIn()
 
 	/**
 	 * Normalise a Collectives PageInfo + Collective into the info shape.
