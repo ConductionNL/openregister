@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\RuleCeilingService;
+use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleReplayService;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
@@ -87,10 +88,10 @@ class RuleReplayServiceTest extends TestCase {
 		$summaries->method('findBySchema')->willReturn([]);
 
 		return new RuleInventoryService(
-			triggers: $triggers,
 			summaries: $summaries,
 			propertyCalculations: new PropertyCalculations(),
-			vocabulary: new RuleVocabulary()
+			vocabulary: new RuleVocabulary(),
+			flows: new FlowRuleDescriptors(triggers: $triggers, published: null)
 		);
 	}//end inventory()
 
