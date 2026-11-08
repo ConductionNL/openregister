@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
@@ -47,10 +47,10 @@ class ScheduleRefusalMiddleware extends Middleware {
 	/**
 	 * Constructor.
 	 *
-	 * @param ScheduleRefusals $refusals This request's refusals.
+	 * @param ScheduleRefusalReportInterface $refusals This request's refusals.
 	 */
 	public function __construct(
-		private readonly ScheduleRefusals $refusals,
+		private readonly ScheduleRefusalReportInterface $refusals,
 	) {
 	}//end __construct()
 

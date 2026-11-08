@@ -90,28 +90,15 @@
 					class="avgTextarea" />
 			</label>
 
-			<NcNoteCard v-if="error" type="error">
-				{{ error }}
-			</NcNoteCard>
-
-			<div class="avgEditActions">
-				<NcButton
-					variant="tertiary"
-					:disabled="saving"
-					@click="$emit('close')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton variant="primary" type="submit" :disabled="saving">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-					</template>
-					{{
-						activity
-							? t('openregister', 'Save changes')
-							: t('openregister', 'Create')
-					}}
-				</NcButton>
-			</div>
+			<AvgFormFooter
+				:error="error"
+				:saving="saving"
+				:submitLabel="
+					activity
+						? t('openregister', 'Save changes')
+						: t('openregister', 'Create')
+				"
+				@close="$emit('close')" />
 		</form>
 	</NcDialog>
 </template>
@@ -119,13 +106,11 @@
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	NcButton,
 	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import AvgFormFooter from './AvgFormFooter.vue'
 import {
 	LEGAL_BASIS_VOCABULARY,
 	STATUS_VOCABULARY,
@@ -136,12 +121,10 @@ export default {
 	name: 'EditActivityDialog',
 
 	components: {
+		AvgFormFooter,
 		NcDialog,
 		NcTextField,
-		NcButton,
 		NcSelect,
-		NcLoadingIcon,
-		NcNoteCard,
 	},
 
 	props: {
@@ -328,9 +311,5 @@ export default {
 	border-radius: var(--border-radius);
 	font: inherit;
 	resize: vertical;
-}
-
-.avgEditActions {
-	@include end-aligned-actions;
 }
 </style>

@@ -19,15 +19,9 @@
 				<FileSearchOutline :size="44" />
 			</template>
 			<template #action>
-				<NcButton
-					:disabled="extracting"
-					variant="primary"
-					@click="triggerExtraction">
-					<template v-if="extracting" #icon>
-						<NcLoadingIcon :size="20" />
-					</template>
-					{{ t('openregister', 'Extract now') }}
-				</NcButton>
+				<ExtractNowButton
+					:extracting="extracting"
+					@extract="triggerExtraction" />
 			</template>
 		</NcEmptyContent>
 
@@ -143,15 +137,9 @@
 			<div
 				v-if="status.extractionStatus === 'failed'"
 				class="extraction-tab__actions">
-				<NcButton
-					:disabled="extracting"
-					variant="primary"
-					@click="triggerExtraction">
-					<template v-if="extracting" #icon>
-						<NcLoadingIcon :size="20" />
-					</template>
-					{{ t('openregister', 'Extract now') }}
-				</NcButton>
+				<ExtractNowButton
+					:extracting="extracting"
+					@extract="triggerExtraction" />
 			</div>
 		</div>
 	</div>
@@ -161,35 +149,28 @@
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
-import { fetchFileTab } from './fileTabFetch.js'
+import ExtractNowButton from './ExtractNowButton.vue'
+import { fetchFileTab, fileTab } from './fileTabFetch.js'
 
 export default {
 	name: 'ExtractionTab',
 
 	components: {
 		TabErrorState,
-		NcButton,
+		ExtractNowButton,
 		NcEmptyContent,
 		NcLoadingIcon,
 		FileSearchOutline,
 	},
 
-	props: {
-		fileId: {
-			type: Number,
-			required: true,
-		},
-	},
+	mixins: [fileTab('fetchExtractionStatus')],
 
 	data() {
 		return {
-			loading: false,
 			extracting: false,
-			error: false,
-			errorMessage: '',
 			entitiesExpanded: false,
 			status: {
 				fileId: 0,
@@ -275,22 +256,6 @@ export default {
 			} catch {
 				return this.status.extractedAt
 			}
-		},
-	},
-
-	watch: {
-		fileId: {
-			/**
-			 * @param {number} newVal
-			 * @spec exclude watcher refetching extraction status on fileId change, UI plumbing
-			 */
-			handler(newVal) {
-				if (newVal) {
-					this.fetchExtractionStatus()
-				}
-			},
-
-			immediate: true,
 		},
 	},
 
@@ -488,11 +453,7 @@ export default {
 	justify-content: center;
 }
 
-.material-design-icon {
-	display: inline-flex;
-}
-
-@include material-design-icon-deep-svg;
+@include material-design-icon-block;
 
 @media (prefers-reduced-motion: reduce) {
 	.extraction-tab__chevron {

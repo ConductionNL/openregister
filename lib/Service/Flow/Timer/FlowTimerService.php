@@ -49,7 +49,7 @@ use OCA\OpenRegister\Db\FlowTimerEvent;
 use OCA\OpenRegister\Db\FlowTimerEventMapper;
 use OCA\OpenRegister\Db\FlowTimerFire;
 use OCA\OpenRegister\Db\FlowTimerFireMapper;
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Exception\FlowTimerStateException;
@@ -98,7 +98,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerMapper $timers The timer table.
+	 * @param FlowTimerMapperInterface $timers The timer table.
 	 * @param FlowTimerFireMapper $fires The rung dedup ledger.
 	 * @param FlowTimerEventMapper $events The append-only history.
 	 * @param TaskMapper $tasks The task table, for the projection and the subject read.
@@ -111,7 +111,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly FlowTimerMapper $timers,
+		private readonly FlowTimerMapperInterface $timers,
 		private readonly FlowTimerFireMapper $fires,
 		private readonly FlowTimerEventMapper $events,
 		private readonly TaskMapper $tasks,

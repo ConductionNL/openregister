@@ -243,50 +243,70 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		$this->narrowToFlows(qb: $qb, flowId: $flowId, flowIds: $flowIds);
-		$this->narrowToSinceAndStatus(qb: $qb, since: $since, status: $status);
-		$this->scopeToVisible(qb: $qb, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+		$this->narrowToFlow(qb: $qb, flowId: $flowId);
+		$this->narrowToFlowSet(qb: $qb, flowIds: $flowIds);
+		$this->narrowToSince(qb: $qb, since: $since);
+		$this->narrowToStatus(qb: $qb, status: $status);
+		$this->scopeToVisible(qb: $qb, viewer: new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds));
 
 		return $this->findEntities(query: $qb);
 	}//end findAllRuns()
 
 	/**
-	 * Narrow a run list to one flow and/or a set of flows.
+	 * Narrow a run list to one flow.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param string|null   $flowId One flow; null or empty means no restriction.
+	 *
+	 * @return void
+	 */
+	private function narrowToFlow(IQueryBuilder $qb, string|null $flowId): void {
+		if ($flowId !== null && $flowId !== '') {
+			$qb->andWhere($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
+		}
+	}//end narrowToFlow()
+
+	/**
+	 * Narrow a run list to a set of flows.
 	 *
 	 * @param IQueryBuilder      $qb      The query being built.
-	 * @param string|null        $flowId  One flow; null or empty means no restriction.
 	 * @param array<int, string> $flowIds Any of these flows; empty means no restriction.
 	 *
 	 * @return void
 	 */
-	private function narrowToFlows(IQueryBuilder $qb, string|null $flowId, array $flowIds): void {
-		if ($flowId !== null && $flowId !== '') {
-			$qb->andWhere($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
-		}
-
+	private function narrowToFlowSet(IQueryBuilder $qb, array $flowIds): void {
 		if (empty($flowIds) === false) {
 			$qb->andWhere($qb->expr()->in('flow_id', $qb->createNamedParameter(array_values($flowIds), IQueryBuilder::PARAM_STR_ARRAY)));
 		}
-	}//end narrowToFlows()
+	}//end narrowToFlowSet()
 
 	/**
-	 * Narrow a run list to runs created since a moment and/or with one status.
+	 * Narrow a run list to runs created since a moment.
+	 *
+	 * @param IQueryBuilder $qb    The query being built.
+	 * @param DateTime|null $since Only runs created at or after this moment.
+	 *
+	 * @return void
+	 */
+	private function narrowToSince(IQueryBuilder $qb, DateTime|null $since): void {
+		if ($since !== null) {
+			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+		}
+	}//end narrowToSince()
+
+	/**
+	 * Narrow a run list to one status.
 	 *
 	 * @param IQueryBuilder $qb     The query being built.
-	 * @param DateTime|null $since  Only runs created at or after this moment.
 	 * @param string|null   $status One status; null or empty means no restriction.
 	 *
 	 * @return void
 	 */
-	private function narrowToSinceAndStatus(IQueryBuilder $qb, DateTime|null $since, string|null $status): void {
-		if ($since !== null) {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
-		}
-
+	private function narrowToStatus(IQueryBuilder $qb, string|null $status): void {
 		if ($status !== null && $status !== '') {
 			$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
 		}
-	}//end narrowToSinceAndStatus()
+	}//end narrowToStatus()
 
 	/**
 	 * Per flow: its most recent run and how many runs started since a moment.
@@ -416,6 +436,21 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
 	public function countSinceByFlow(array $flowIds, DateTime $since, ?string $requesterUid, array $ownedFlowIds): array {
+		$qb = $this->runsSinceCountQuery(flowIds: $flowIds, since: $since);
+		$this->scopeToVisible(qb: $qb, viewer: new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds));
+
+		return $this->countsByFlow(qb: $qb);
+	}//end countSinceByFlow()
+
+	/**
+	 * The per-flow count of runs created since a moment, before scoping.
+	 *
+	 * @param array<int, string> $flowIds The flows to count.
+	 * @param DateTime           $since   Count runs created at or after this.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function runsSinceCountQuery(array $flowIds, DateTime $since): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('flow_id')
 			->selectAlias($qb->func()->count('id'), 'total')
@@ -424,8 +459,17 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->groupBy('flow_id');
 
-		$this->scopeToVisible(qb: $qb, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+		return $qb;
+	}//end runsSinceCountQuery()
 
+	/**
+	 * Run a per-flow count query.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return array<string, int> Run count keyed by flow id.
+	 */
+	private function countsByFlow(IQueryBuilder $qb): array {
 		$counts = [];
 		$result = $qb->executeQuery();
 		while (($row = $result->fetch()) !== false) {
@@ -435,7 +479,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		$result->closeCursor();
 
 		return $counts;
-	}//end countSinceByFlow()
+	}//end countsByFlow()
 
 	/**
 	 * The newest visible run of each flow, without its marking.
@@ -460,8 +504,19 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->where($qb->expr()->in('flow_id', $qb->createNamedParameter($flowIds, IQueryBuilder::PARAM_STR_ARRAY)))
 			->groupBy('flow_id');
 
-		$this->scopeToVisible(qb: $qb, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+		$this->scopeToVisible(qb: $qb, viewer: new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds));
 
+		return $this->summaryRowsFor(latest: $this->latestIds(qb: $qb));
+	}//end latestRunsByFlow()
+
+	/**
+	 * Run the newest-id-per-flow query.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return array<int, int> The newest run id of each flow.
+	 */
+	private function latestIds(IQueryBuilder $qb): array {
 		$latest = [];
 		$result = $qb->executeQuery();
 		while (($row = $result->fetch()) !== false) {
@@ -470,6 +525,17 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 
 		$result->closeCursor();
 
+		return $latest;
+	}//end latestIds()
+
+	/**
+	 * The summary columns of these runs; no query when there are none.
+	 *
+	 * @param array<int, int> $latest The run ids.
+	 *
+	 * @return array<int, FlowRun> The runs.
+	 */
+	private function summaryRowsFor(array $latest): array {
 		if ($latest === []) {
 			return [];
 		}
@@ -480,7 +546,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->where($rows->expr()->in('id', $rows->createNamedParameter($latest, IQueryBuilder::PARAM_INT_ARRAY)));
 
 		return $this->findEntities(query: $rows);
-	}//end latestRunsByFlow()
+	}//end summaryRowsFor()
 
 	/**
 	 * Narrow a run query to what one caller may see.
@@ -495,28 +561,27 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	 * semantics and must never be reached by falling through from a missing
 	 * session; callers resolve "no identity" to a refusal before calling.
 	 *
-	 * @param IQueryBuilder      $qb           The query being built.
-	 * @param string|null        $requesterUid The caller, or null for no scoping.
-	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param FlowRunViewer $viewer The caller and the flows the caller owns.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
-	private function scopeToVisible(IQueryBuilder $qb, ?string $requesterUid, array $ownedFlowIds): void {
-		if ($requesterUid === null) {
+	private function scopeToVisible(IQueryBuilder $qb, FlowRunViewer $viewer): void {
+		if ($viewer->requesterUid === null) {
 			return;
 		}
 
 		$visible = $qb->expr()->orX(
-			$qb->expr()->eq('triggered_by', $qb->createNamedParameter($requesterUid))
+			$qb->expr()->eq('triggered_by', $qb->createNamedParameter($viewer->requesterUid))
 		);
 
-		if (empty($ownedFlowIds) === false) {
+		if (empty($viewer->ownedFlowIds) === false) {
 			$visible->add(
 				$qb->expr()->in(
 					'flow_id',
-					$qb->createNamedParameter($ownedFlowIds, IQueryBuilder::PARAM_STR_ARRAY)
+					$qb->createNamedParameter($viewer->ownedFlowIds, IQueryBuilder::PARAM_STR_ARRAY)
 				)
 			);
 		}
@@ -585,14 +650,9 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
 			->setMaxResults(1);
 
-		$this->scopeToVisible(qb: $qb, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+		$this->scopeToVisible(qb: $qb, viewer: new FlowRunViewer(requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds));
 
-		$found = $this->findEntities(query: $qb);
-		if ($found === []) {
-			return null;
-		}
-
-		return $found[0];
+		return ($this->findEntities(query: $qb)[0] ?? null);
 	}//end findByUuidVisibleTo()
 
 	/**
@@ -821,10 +881,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			->orderBy('id', 'DESC')
 			->setMaxResults($limit);
 
-		if ($organisation !== null && $organisation !== '') {
-			$qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
-		}
-
+		$this->narrowToOrganisation(qb: $qb, organisation: $organisation);
 		$this->narrowToSubject(qb: $qb, subject: $subject);
 
 		return $this->findEntities(query: $qb);
@@ -950,10 +1007,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 				)
 			);
 
-		if ($organisation !== null && $organisation !== '') {
-			$qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
-		}
-
+		$this->narrowToOrganisation(qb: $qb, organisation: $organisation);
 		$this->narrowToSubject(qb: $qb, subject: $subject);
 
 		return $this->fetchTotal(qb: $qb);
@@ -1024,6 +1078,22 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 
 		return $this->fetchTotal(qb: $qb);
 	}//end countCompletedForSubject()
+
+	/**
+	 * Narrow an active-run query to one organisation, when one is given.
+	 *
+	 * @param IQueryBuilder $qb           The query being built.
+	 * @param string|null   $organisation The organisation; null or empty means no restriction.
+	 *
+	 * @return void
+	 */
+	private function narrowToOrganisation(IQueryBuilder $qb, ?string $organisation): void {
+		if ($organisation === null || $organisation === '') {
+			return;
+		}
+
+		$qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
+	}//end narrowToOrganisation()
 
 	/**
 	 * Add the subject predicate when a subject was asked for.
@@ -1288,25 +1358,23 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			return [];
 		}
 
-		// Ceil, not floor: with more waiting flows than batch slots a floor
-		// would be zero and the pass would claim nothing at all.
-		$share = (int)ceil($limit / count($flowIds));
-
-		return $this->claimShares(flowIds: $flowIds, share: $share, limit: $limit);
+		return $this->claimShares(flowIds: $flowIds, limit: $limit);
 	}//end findQueued()
 
 	/**
 	 * Take up to one share of queued runs from each flow, in order, within the limit.
 	 *
-	 * @param array<int, string> $flowIds The flows, longest-waiting first.
-	 * @param integer            $share   Maximum runs to take from one flow.
+	 * @param array<int, string> $flowIds The flows, longest-waiting first; never empty.
 	 * @param integer            $limit   Maximum runs to take in total.
 	 *
 	 * @return array<int, FlowRun> The queued runs.
 	 *
 	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
-	private function claimShares(array $flowIds, int $share, int $limit): array {
+	private function claimShares(array $flowIds, int $limit): array {
+		// Ceil, not floor: with more waiting flows than batch slots a floor
+		// would be zero and the pass would claim nothing at all.
+		$share = (int)ceil($limit / count($flowIds));
 		$runs = [];
 
 		foreach ($flowIds as $flowId) {
@@ -1418,10 +1486,22 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			return [];
 		}
 
+		return $this->expireStillQueued(runs: $this->queuedBefore(before: $before, limit: $limit), reason: $reason);
+	}//end expireQueuedBefore()
+
+	/**
+	 * Fail every run of a list that is still queued, all at one moment.
+	 *
+	 * @param array<int, FlowRun> $runs   The queued runs read for expiry.
+	 * @param string              $reason Written to each expired run's error.
+	 *
+	 * @return array<int, FlowRun> The runs that were expired.
+	 */
+	private function expireStillQueued(array $runs, string $reason): array {
 		$expired = [];
 		$now = new DateTime();
 
-		foreach ($this->queuedBefore(before: $before, limit: $limit) as $run) {
+		foreach ($runs as $run) {
 			// Re-checked rather than assumed: the row was read outside a
 			// transaction and a worker pass may have started it since.
 			if ($run->getStatus() !== FlowRun::STATUS_QUEUED) {
@@ -1435,7 +1515,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		}
 
 		return $expired;
-	}//end expireQueuedBefore()
+	}//end expireStillQueued()
 
 	/**
 	 * Queued runs created before a cut-off, oldest first.

@@ -54,6 +54,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\ChunkSizing;
 
 /**
  * Deep coverage tests for TextExtractionService
@@ -858,7 +859,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 	public function testChunkFixedSizeSmallText(): void {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'chunkFixedSize');
 
-		$result = $method->invoke($this->service, 'Short text', 1000, 100);
+		$result = $method->invoke($this->service, 'Short text', new ChunkSizing(1000, 100));
 		$this->assertCount(1, $result);
 		$this->assertEquals('Short text', $result[0]['text']);
 
@@ -873,7 +874,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'chunkFixedSize');
 
 		$text = str_repeat('a', 500);
-		$result = $method->invoke($this->service, $text, 500, 50);
+		$result = $method->invoke($this->service, $text, new ChunkSizing(500, 50));
 		$this->assertCount(1, $result);
 
 	}//end testChunkFixedSizeExact()
@@ -891,7 +892,7 @@ class TextExtractionServiceDeepTest extends TestCase {
 		$method = new \ReflectionMethod(TextExtractionService::class, 'recursiveSplit');
 
 		$text = str_repeat('a', 500);
-		$result = $method->invoke($this->service, $text, [], 200, 20);
+		$result = $method->invoke($this->service, $text, [], new ChunkSizing(200, 20));
 		$this->assertNotEmpty($result);
 
 	}//end testRecursiveSplitNoSeparators()

@@ -30,6 +30,7 @@ jest.mock('vue3-apexcharts', () => ({
 jest.mock('vue-material-design-icons/AccountCircle.vue', () => mockLibrary().AccountCircle)
 jest.mock('vue-material-design-icons/ChartLine.vue', () => mockLibrary().ChartLine)
 jest.mock('vue-material-design-icons/CogOutline.vue', () => mockLibrary().CogOutline)
+jest.mock('vue-material-design-icons/Delete.vue', () => mockLibrary().Delete)
 jest.mock('vue-material-design-icons/DatabaseOutline.vue', () => mockLibrary().DatabaseOutline)
 jest.mock('vue-material-design-icons/Eye.vue', () => mockLibrary().Eye)
 jest.mock('vue-material-design-icons/FilterOffOutline.vue', () => mockLibrary().FilterOffOutline)

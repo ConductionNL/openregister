@@ -13,6 +13,7 @@
 <script>
 import { t } from '@nextcloud/l10n'
 import RadioFilterSidebar from './shared/RadioFilterSidebar.vue'
+import { radioFilterSidebarHost } from './shared/radioFilterSidebarHost.js'
 
 export default {
 	name: 'FilesSidebar',
@@ -21,15 +22,9 @@ export default {
 		RadioFilterSidebar,
 	},
 
-	props: {
-		/**
-		 * @spec exclude two-way-bound search prop, UI plumbing
-		 */
-		search: {
-			type: String,
-			default: '',
-		},
+	mixins: [radioFilterSidebarHost],
 
+	props: {
 		/**
 		 * @spec exclude two-way-bound extraction-status filter prop, UI plumbing
 		 */
@@ -122,10 +117,6 @@ export default {
 				},
 			]
 		},
-	},
-
-	methods: {
-		t,
 	},
 }
 </script>

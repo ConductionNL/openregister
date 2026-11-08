@@ -26,6 +26,8 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -46,6 +48,7 @@ final class AppHostRegistrar {
 	public const BINDINGS = [
 		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
 		ScheduleManifestLoaderInterface::class => ScheduleManifestLoader::class,
+		ScheduleRefusalReportInterface::class => ScheduleRefusals::class,
 		RegisterDocumentLoaderInterface::class => RegisterDocumentLoader::class,
 	];
 

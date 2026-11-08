@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 
 /**
  * Checks a file before its content is replaced and repairs its ownership after: executable screening, the ownership check and the ownership transfer.
@@ -34,12 +34,12 @@ final readonly class UpdateFileGuards {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param FileValidationHandler $fileValidHandler File validation handler.
-	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
+	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
+	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
 	 */
 	public function __construct(
 		public FileValidationHandler $fileValidHandler,
-		public FileOwnershipHandler $fileOwnershipHandler,
+		public FileOwnershipHandlerInterface $fileOwnershipHandler,
 	) {
 	}//end __construct()
 }//end class

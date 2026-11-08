@@ -294,12 +294,7 @@
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="saving" @click="$emit('close')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="saving" @click="$emit('close')" />
 			<NcButton
 				variant="primary"
 				:disabled="saving"
@@ -328,10 +323,10 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import Calendar from 'vue-material-design-icons/Calendar.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 /**
  * Edits one working calendar and previews what its rules mean in a year.
@@ -351,7 +346,7 @@ export default {
 
 	components: {
 		Calendar,
-		Cancel,
+		CloseCancelButton,
 		ContentSave,
 		Delete,
 		NcButton,

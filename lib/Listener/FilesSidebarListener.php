@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\ScriptManifestLoader;
+use OCA\OpenRegister\Service\EntryScripts;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -68,7 +68,7 @@ class FilesSidebarListener implements IEventListener {
 
 		$jsPath = __DIR__ . '/../../js/openregister-filesSidebar.js';
 		if (file_exists($jsPath) === true) {
-			ScriptManifestLoader::addEntryScripts('openregister', 'filesSidebar', 'openregister-filesSidebar');
+			EntryScripts::add(appId: 'openregister', entry: 'filesSidebar', fallbackScript: 'openregister-filesSidebar');
 		}
 	}//end handle()
 }//end class

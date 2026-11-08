@@ -32,6 +32,13 @@ use OCP\IUser;
 interface FileOwnershipHandlerInterface {
 
 	/**
+	 * Application user name: the account openregister owns its files under.
+	 *
+	 * @var string
+	 */
+	public const APP_USER = 'openregister';
+
+	/**
 	 * Gets or creates the OpenRegister user for file operations.
 	 *
 	 * @throws \Exception If OpenRegister user cannot be created.

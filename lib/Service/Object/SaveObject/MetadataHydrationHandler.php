@@ -277,18 +277,33 @@ class MetadataHydrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function extractMetadataValue(array $data, string $fieldPath, array $schemaProperties = []): ?string {
+		return $this->metadataText(fieldPath: $fieldPath, source: new TemplateSource(data: $data, schemaProperties: $schemaProperties));
+	}//end extractMetadataValue()
+
+	/**
+	 * The metadata text a field path, fallback chain or twig-like template yields.
+	 *
+	 * @param string         $fieldPath The field path, fallback chain, or twig-like template.
+	 * @param TemplateSource $source    The object data and schema properties.
+	 *
+	 * @return string|null The extracted/concatenated value, or null if not found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function metadataText(string $fieldPath, TemplateSource $source): ?string {
 		// Check if this is a twig-like template with {{ }} syntax.
 		if (str_contains($fieldPath, '{{') === true && str_contains($fieldPath, '}}') === true) {
-			return $this->processTwigLikeTemplate(data: $data, template: $fieldPath, schemaProperties: $schemaProperties);
+			return $this->renderTemplate(template: $fieldPath, source: $source);
 		}
 
-		// Check if this is a pipe-separated fallback chain (without {{ }} syntax).
+		// Check if this is a pipe-separated fallback chain (without {{ }} syntax);
+		// a bare chain does not resolve relations, so the schema properties stay out.
 		if (str_contains($fieldPath, '|') === true) {
-			return $this->processFieldWithFallbacks(data: $data, fieldChain: $fieldPath);
+			return $this->fallbackValue(fieldChain: $fieldPath, source: new TemplateSource(data: $source->data, schemaProperties: []));
 		}
 
-		return $this->plainMetadataValue(value: $this->getValueFromPath(data: $data, path: $fieldPath));
-	}//end extractMetadataValue()
+		return $this->plainMetadataValue(value: $this->getValueFromPath(data: $source->data, path: $fieldPath));
+	}//end metadataText()
 
 	/**
 	 * A simple field path's value as metadata text.
@@ -389,7 +404,20 @@ class MetadataHydrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function processFieldWithFallbacks(array $data, string $fieldChain, array $schemaProperties = []): ?string {
-		$source = new TemplateSource(data: $data, schemaProperties: $schemaProperties);
+		return $this->fallbackValue(fieldChain: $fieldChain, source: new TemplateSource(data: $data, schemaProperties: $schemaProperties));
+	}//end processFieldWithFallbacks()
+
+	/**
+	 * The first filled value of a pipe-separated fallback chain.
+	 *
+	 * @param string         $fieldChain The pipe-separated field names.
+	 * @param TemplateSource $source     The object data and schema properties.
+	 *
+	 * @return string|null The first non-empty value found, or null if none found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function fallbackValue(string $fieldChain, TemplateSource $source): ?string {
 		foreach (array_map('trim', explode('|', $fieldChain)) as $field) {
 			$value = $this->chainValue(field: $field, source: $source);
 			if ($value !== null) {
@@ -398,7 +426,7 @@ class MetadataHydrationHandler {
 		}
 
 		return null;
-	}//end processFieldWithFallbacks()
+	}//end fallbackValue()
 
 	/**
 	 * One link of a fallback chain: the trimmed value of a filled field, with a
@@ -475,12 +503,25 @@ class MetadataHydrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function processTwigLikeTemplate(array $data, string $template, array $schemaProperties = []): ?string {
+		return $this->renderTemplate(template: $template, source: new TemplateSource(data: $data, schemaProperties: $schemaProperties));
+	}//end processTwigLikeTemplate()
+
+	/**
+	 * A twig-like template with each placeholder replaced by its value.
+	 *
+	 * @param string         $template The twig-like template string.
+	 * @param TemplateSource $source   The object data and schema properties.
+	 *
+	 * @return null|string The processed result or null if no values found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function renderTemplate(string $template, TemplateSource $source): ?string {
 		preg_match_all('/\{\{\s*([^}]+)\s*\}\}/', $template, $matches);
 		if (empty($matches[0]) === true) {
 			return null;
 		}
 
-		$source = new TemplateSource(data: $data, schemaProperties: $schemaProperties);
 		$result = $template;
 		$hasValues = false;
 		foreach ($matches[0] as $index => $fullMatch) {
@@ -490,7 +531,7 @@ class MetadataHydrationHandler {
 		}
 
 		return $this->finishTemplate(result: $result, hasValues: $hasValues);
-	}//end processTwigLikeTemplate()
+	}//end renderTemplate()
 
 	/**
 	 * A rendered template with excess whitespace collapsed, or null when no
@@ -548,15 +589,15 @@ class MetadataHydrationHandler {
 	private function filteredTemplateValue(string $expression, TemplateSource $source): ?string {
 		$value = $this->plainTemplateValue(expression: $expression, source: $source);
 		if (preg_match('/^(.+?)\|\s*ifFilled\s*:\s*(.+)$/s', $expression, $match) === 1) {
-			return $this->processIfFilledFilter(data: $source->data, fieldName: trim($match[1]), definition: trim($match[2]));
+			return $this->ifFilledValue(fieldValue: $this->getValueFromPath(data: $source->data, path: trim($match[1])), definition: trim($match[2]));
 		}
 
 		if (preg_match('/^(.+?)\|\s*map\s*:\s*(.+)$/s', $expression, $match) === 1) {
-			return $this->processMapFilter(data: $source->data, fieldName: trim($match[1]), mapDefinition: trim($match[2]));
+			return $this->mapFilterValue(fieldValue: $this->getValueFromPath(data: $source->data, path: trim($match[1])), mapDefinition: trim($match[2]));
 		}
 
 		if (str_contains($expression, '|') === true) {
-			return $this->processFieldWithFallbacks(data: $source->data, fieldChain: $expression, schemaProperties: $source->schemaProperties);
+			return $this->fallbackValue(fieldChain: $expression, source: $source);
 		}
 
 		return $value;
@@ -598,7 +639,21 @@ class MetadataHydrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function processMapFilter(array $data, string $fieldName, string $mapDefinition): ?string {
-		$fieldValue = $this->getValueFromPath(data: $data, path: $fieldName);
+		return $this->mapFilterValue(fieldValue: $this->getValueFromPath(data: $data, path: $fieldName), mapDefinition: $mapDefinition);
+	}//end processMapFilter()
+
+	/**
+	 * The mapped value of a field value, the raw value without a mapping, or
+	 * the first mapped value when the field is empty.
+	 *
+	 * @param mixed  $fieldValue    The field's value, as getValueFromPath() reads it.
+	 * @param string $mapDefinition The map definition string (e.g., "key1=val1, key2=val2").
+	 *
+	 * @return string|null The mapped value.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function mapFilterValue(mixed $fieldValue, string $mapDefinition): ?string {
 		$map = new MapFilterDefinition(definition: $mapDefinition);
 
 		// When the field is empty, default to the first mapped value.
@@ -608,7 +663,7 @@ class MetadataHydrationHandler {
 
 		// Return the mapped value or fall back to the raw field value.
 		return $map->lookup(value: trim((string)$fieldValue));
-	}//end processMapFilter()
+	}//end mapFilterValue()
 
 	/**
 	 * Processes an ifFilled filter expression that returns one value when a field is filled
@@ -629,18 +684,32 @@ class MetadataHydrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function processIfFilledFilter(array $data, string $fieldName, string $definition): ?string {
+		return $this->ifFilledValue(fieldValue: $this->getValueFromPath(data: $data, path: $fieldName), definition: $definition);
+	}//end processIfFilledFilter()
+
+	/**
+	 * The first value of "valueIfFilled, valueIfEmpty" when the field value is filled, the second otherwise.
+	 *
+	 * @param mixed  $fieldValue The field's value, as getValueFromPath() reads it.
+	 * @param string $definition The comma-separated pair "valueIfFilled, valueIfEmpty".
+	 *
+	 * @return string The selected value (explode() always yields a first part).
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function ifFilledValue(mixed $fieldValue, string $definition): string {
 		$parts = array_map('trim', explode(',', $definition, 2));
 		if (count($parts) < 2) {
 			return $parts[0] ?? null;
 		}
 
 		// $parts holds "valueIfFilled, valueIfEmpty".
-		if ($this->isFilled(value: $this->getValueFromPath(data: $data, path: $fieldName)) === true) {
+		if ($this->isFilled(value: $fieldValue) === true) {
 			return $parts[0];
 		}
 
 		return $parts[1];
-	}//end processIfFilledFilter()
+	}//end ifFilledValue()
 
 	/**
 	 * Whether a field value is meaningful: not null, not a blank string and

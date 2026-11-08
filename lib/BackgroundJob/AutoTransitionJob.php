@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
+use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
@@ -74,7 +74,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 	 * @param IUserManager $userManager Resolver for the captured user id, and the disabled check.
 	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param DeferredEntryObjectResolver $resolver Stale-safe entry re-fetch.
+	 * @param DeferredEntryObjectResolverInterface $resolver Stale-safe entry re-fetch.
 	 * @param TransitionEngine $engine The one path every automatic move goes through.
 	 * @param AutoTransitionPass $pass The pass, resumed with the entry's carried lineage.
 	 *
@@ -86,7 +86,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 		private readonly IUserManager $userManager,
 		OrganisationServiceInterface $organisation,
 		LoggerInterface $logger,
-		private readonly DeferredEntryObjectResolver $resolver,
+		private readonly DeferredEntryObjectResolverInterface $resolver,
 		private readonly TransitionEngine $engine,
 		private readonly AutoTransitionPass $pass,
 	) {

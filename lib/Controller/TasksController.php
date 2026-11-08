@@ -33,7 +33,7 @@ use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Task\TaskState;
+use OCA\OpenRegister\Service\Task\TaskStateRules;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCP\AppFramework\Controller;
@@ -286,7 +286,7 @@ class TasksController extends Controller {
 
 		$states = [];
 		foreach (array_filter(array_map('trim', explode(',', $raw))) as $value) {
-			$states[] = TaskState::normalise(value: $value)['state'];
+			$states[] = TaskStateRules::normalise(value: $value)['state'];
 		}
 
 		return array_values(array_unique($states));

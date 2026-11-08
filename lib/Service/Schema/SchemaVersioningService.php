@@ -47,7 +47,7 @@ use OCA\OpenRegister\Db\SchemaChangelogMapperInterface;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
-use OCA\OpenRegister\Db\SchemaRunMapper;
+use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -61,7 +61,7 @@ class SchemaVersioningService {
 	 *
 	 * @param SchemaDiffService $diffService Pure diff/classification.
 	 * @param SchemaChangelogMapperInterface $changelogMapper Changelog persistence.
-	 * @param SchemaRunMapper $runMapper Run persistence (for invalid counts).
+	 * @param SchemaRunMapperInterface $runMapper Run persistence (for invalid counts).
 	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
 	 * @param IUserSession $userSession Current user resolution.
 	 * @param LoggerInterface $logger Logger.
@@ -69,7 +69,7 @@ class SchemaVersioningService {
 	public function __construct(
 		private readonly SchemaDiffService $diffService,
 		private readonly SchemaChangelogMapperInterface $changelogMapper,
-		private readonly SchemaRunMapper $runMapper,
+		private readonly SchemaRunMapperInterface $runMapper,
 		private readonly SchemaRunEntryMapper $runEntryMapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

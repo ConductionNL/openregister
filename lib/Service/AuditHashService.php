@@ -69,7 +69,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
-class AuditHashService implements AuditHashServiceInterface, AuditSealInterface {
+class AuditHashService implements AuditHashServiceInterface, AuditSealInterface, AuditRechainInterface {
 	/**
 	 * The genesis seed used for the first entry in the hash chain.
 	 *

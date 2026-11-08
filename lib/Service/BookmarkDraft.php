@@ -43,6 +43,13 @@ final class BookmarkDraft {
 	private array $tags = [];
 
 	/**
+	 * The owning user's id; '' when none was set.
+	 *
+	 * @var string
+	 */
+	private string $ownerId = '';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $title Bookmark title as given.
@@ -94,4 +101,30 @@ final class BookmarkDraft {
 	public function tags(): array {
 		return $this->tags;
 	}//end tags()
+
+	/**
+	 * A copy owned by the given user.
+	 *
+	 * @param string $ownerId The owning user's id.
+	 *
+	 * @return self The copy.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function ownedBy(string $ownerId): self {
+		$copy          = clone $this;
+		$copy->ownerId = $ownerId;
+		return $copy;
+	}//end ownedBy()
+
+	/**
+	 * The owning user's id; '' when none was set.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function ownerId(): string {
+		return $this->ownerId;
+	}//end ownerId()
 }//end class

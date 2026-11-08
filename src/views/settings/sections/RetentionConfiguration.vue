@@ -6,12 +6,7 @@
 		:loadingMessage="t('openregister', 'Loading retention settings...')">
 		<!-- Actions slot -->
 		<template #actions>
-			<SectionSaveActions
-				:loading="loading"
-				:saving="saving"
-				:rebasing="rebasing"
-				@rebase="showRebaseDialog"
-				@save="saveSettings" />
+			<SectionSaveActions v-bind="saveActions" />
 		</template>
 
 		<!-- Section Description -->

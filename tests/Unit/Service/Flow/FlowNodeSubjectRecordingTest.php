@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\ObjectService;
@@ -102,18 +103,12 @@ final class FlowNodeSubjectRecordingTest extends TestCase {
 	private function spy(): FlowRunSubjectRecorder {
 		$spy = $this->createMock(FlowRunSubjectRecorder::class);
 		$spy->method('recordOne')->willReturnCallback(
-			function (
-				array $context,
-				string $role,
-				array $uuids,
-				string $register = '',
-				string $schema = ''
-			): void {
+			function (array $context, FlowSubjectCandidates $candidates): void {
 				$this->recorded[] = [
-					'role' => $role,
-					'uuids' => $uuids,
-					'register' => $register,
-					'schema' => $schema,
+					'role' => $candidates->role,
+					'uuids' => $candidates->uuids,
+					'register' => $candidates->register,
+					'schema' => $candidates->schema,
 				];
 			}
 		);

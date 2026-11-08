@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\BackgroundJob\ObjectCleanupJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
-use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
 use OCA\OpenRegister\Service\ObjectRelationCleanupServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -65,7 +65,7 @@ class ObjectCleanupListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ListenerDeferralService $deferral Buffers the entry and enqueues the chunk job.
+	 * @param ListenerDeferralInterface $deferral Buffers the entry and enqueues the chunk job.
 	 * @param ObjectRelationCleanupServiceInterface $cleanup Shared cleanup, used by the inline fallback.
 	 *
 	 * @return void
@@ -73,7 +73,7 @@ class ObjectCleanupListener implements IEventListener {
 	 * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
 	 */
 	public function __construct(
-		private readonly ListenerDeferralService $deferral,
+		private readonly ListenerDeferralInterface $deferral,
 		private readonly ObjectRelationCleanupServiceInterface $cleanup,
 	) {
 	}//end __construct()
