@@ -1,0 +1,114 @@
+[
+    [
+        "info",
+        "[TransferListService] Transfer list rejected",
+        {
+            "uuid": "l1",
+            "rejectedBy": "archivist-1",
+            "reason": "not ready"
+        }
+    ],
+    [
+        "save",
+        {
+            "uuid": "l1",
+            "status": "rejected",
+            "objectReferences": [
+                {
+                    "uuid": "a"
+                },
+                {
+                    "uuid": "b"
+                },
+                {
+                    "uuid": "c"
+                }
+            ],
+            "exclusions": [
+                {
+                    "uuid": "z",
+                    "reason": "earlier",
+                    "excludedAt": "then"
+                }
+            ],
+            "objectCount": 3,
+            "approvalMetadata": {
+                "rejectedBy": "archivist-1",
+                "rejectedAt": "<now>",
+                "rejectionReason": "not ready"
+            }
+        }
+    ],
+    [
+        "returned",
+        {
+            "uuid": "l1",
+            "status": "rejected",
+            "objectReferences": [
+                {
+                    "uuid": "a"
+                },
+                {
+                    "uuid": "b"
+                },
+                {
+                    "uuid": "c"
+                }
+            ],
+            "exclusions": [
+                {
+                    "uuid": "z",
+                    "reason": "earlier",
+                    "excludedAt": "then"
+                }
+            ],
+            "objectCount": 3,
+            "approvalMetadata": {
+                "rejectedBy": "archivist-1",
+                "rejectedAt": "<now>",
+                "rejectionReason": "not ready"
+            },
+            "saved": true
+        }
+    ],
+    [
+        "refused",
+        "Cannot reject transfer list with status 'approved'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot reject transfer list with status 'rejected'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot reject transfer list with status 'in_progress'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot reject transfer list with status 'completed'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot reject transfer list with status 'partially_failed'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot reject transfer list with status 'failed'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Cannot reject transfer list with status 'bogus'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Rejection reason is required"
+    ],
+    [
+        "refused",
+        "Cannot reject transfer list with status 'approved'; expected 'in_review'"
+    ],
+    [
+        "refused",
+        "Rejection reason is required"
+    ]
+]

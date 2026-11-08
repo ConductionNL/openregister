@@ -3,7 +3,7 @@
 /**
  * The instance-wide audit page: its keyset list and its export.
  *
- * The list pages by cursor through AuditTrailPageQuery and never counts the
+ * The list pages by cursor through AuditTrailPageQueryInterface and never counts the
  * table. The export selects its rows through the same query and the same
  * filters, so the file cannot disagree with the list; up to
  * AuditTrailExportJob::INLINE_LIMIT rows it is rendered in the request, past
@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
-use OCA\OpenRegister\Db\AuditTrailPageQuery;
+use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
 use OCA\OpenRegister\Service\LogService;
 use OCP\BackgroundJob\IJobList;
 
@@ -36,17 +36,17 @@ use OCP\BackgroundJob\IJobList;
  *
  * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
  */
-class AuditTrailPageService {
+class AuditTrailPageService implements AuditTrailPageServiceInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailPageQuery $pageQuery  The keyset query.
+	 * @param AuditTrailPageQueryInterface $pageQuery  The keyset query.
 	 * @param LogService          $logService Renders an export.
 	 * @param IJobList            $jobList    Queues a large export.
 	 */
 	public function __construct(
-		private readonly AuditTrailPageQuery $pageQuery,
+		private readonly AuditTrailPageQueryInterface $pageQuery,
 		private readonly LogService $logService,
 		private readonly IJobList $jobList,
 	) {
@@ -55,7 +55,7 @@ class AuditTrailPageService {
 	/**
 	 * One page, newest first.
 	 *
-	 * @param array<string, mixed> $filters The filters (see AuditTrailPageQuery::page()).
+	 * @param array<string, mixed> $filters The filters (see AuditTrailPageQueryInterface::page()).
 	 * @param string|null          $search  Full text on the change summary.
 	 * @param int                  $limit   Page size.
 	 * @param int                  $cursor  The cursor, 0 for the first page.
@@ -71,7 +71,7 @@ class AuditTrailPageService {
 
 		return [
 			'results' => $page['results'],
-			'limit' => max(1, min($limit, AuditTrailPageQuery::MAX_LIMIT)),
+			'limit' => max(1, min($limit, AuditTrailPageQueryInterface::MAX_LIMIT)),
 			'cursor' => $cursor,
 			'nextCursor' => $page['nextCursor'],
 		];

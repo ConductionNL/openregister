@@ -32,6 +32,7 @@ use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
@@ -190,11 +191,11 @@ class ExampleSetUserObjectRowsGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['error' => '', 'entry' => ['user' => 'alice', 'objectUuid' => 'o-1']],
-			$states->write('app', 'k', ['user' => 'alice', 'objectUuid' => 'o-1', 'register' => 'r', 'schema' => 's', 'seenAt' => '2025-03-04T05:06:07+00:00'])
+			$states->write(new ExampleSetRow('app', 'k', ['user' => 'alice', 'objectUuid' => 'o-1', 'register' => 'r', 'schema' => 's', 'seenAt' => '2025-03-04T05:06:07+00:00']))
 		);
 		$this->assertSame(
 			['error' => 'db down', 'entry' => null],
-			$states->write('app', 'k', ['user' => 'bob', 'objectUuid' => 'o-2'])
+			$states->write(new ExampleSetRow('app', 'k', ['user' => 'bob', 'objectUuid' => 'o-2']))
 		);
 	}//end testReadStateWrite()
 
@@ -220,11 +221,11 @@ class ExampleSetUserObjectRowsGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['error' => '', 'entry' => ['user' => 'bob', 'objectUuid' => 'o-1']],
-			$watchers->write('app', 'k', ['user' => 'bob', 'objectUuid' => 'o-1', 'register' => 7, 'notify' => false])
+			$watchers->write(new ExampleSetRow('app', 'k', ['user' => 'bob', 'objectUuid' => 'o-1', 'register' => 7, 'notify' => false]))
 		);
 		$this->assertSame(
 			['error' => 'no table', 'entry' => null],
-			$watchers->write('app', 'k', ['user' => 'alice', 'objectUuid' => 'o-2', 'schema' => 's'])
+			$watchers->write(new ExampleSetRow('app', 'k', ['user' => 'alice', 'objectUuid' => 'o-2', 'schema' => 's']))
 		);
 		$this->assertSame([['bob', 'o-1', '7', null, false], ['alice', 'o-2', null, 's', null]], $seen);
 	}//end testWatcherWrite()
@@ -263,11 +264,11 @@ class ExampleSetUserObjectRowsGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['error' => '', 'entry' => ['id' => '42']],
-			$notes->write('app', 'k', ['user' => 'alice', 'objectUuid' => 'o-1', 'message' => 'Hi', 'createdAt' => '2025-03-04T05:06:07+00:00'])
+			$notes->write(new ExampleSetRow('app', 'k', ['user' => 'alice', 'objectUuid' => 'o-1', 'message' => 'Hi', 'createdAt' => '2025-03-04T05:06:07+00:00']))
 		);
 		$this->assertSame(
 			['error' => '', 'entry' => ['id' => '42']],
-			$notes->write('app', 'k', ['user' => 'bob', 'objectUuid' => 'o-2', 'message' => 'Yo'])
+			$notes->write(new ExampleSetRow('app', 'k', ['user' => 'bob', 'objectUuid' => 'o-2', 'message' => 'Yo']))
 		);
 		$this->assertSame(
 			[
@@ -297,7 +298,7 @@ class ExampleSetUserObjectRowsGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['error' => 'no comments', 'entry' => null],
-			$notes->write('app', 'k', ['user' => 'alice', 'objectUuid' => 'o-1', 'message' => 'Hi'])
+			$notes->write(new ExampleSetRow('app', 'k', ['user' => 'alice', 'objectUuid' => 'o-1', 'message' => 'Hi']))
 		);
 	}//end testNoteWriteFailure()
 	/**

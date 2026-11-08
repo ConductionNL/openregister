@@ -33,7 +33,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<CaseToken>
  */
-class CaseTokenMapper extends QBMapper {
+class CaseTokenMapper extends QBMapper implements CaseTokenMapperInterface {
 	/**
 	 * Constructor.
 	 *

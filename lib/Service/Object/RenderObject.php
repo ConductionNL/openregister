@@ -48,8 +48,8 @@ use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Service\FileReaderInterface;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
@@ -233,7 +233,7 @@ class RenderObject implements RenderObjectInterface {
 	 * @param CacheHandlerInterface $objectCacheService Object cache service for optimized loading.
 	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
-	 * @param FileService $fileService File service for file operations.
+	 * @param FileReaderInterface $fileService File service for file operations.
 	 * @param ComputedFieldHandler $computedFieldHandler Handler for computed field evaluation.
 	 * @param TranslationHandler $translationHandler Handler for translatable property resolution.
 	 * @param LinkedEntityEnricher $linkedEntityEnricher Enricher for linked entity metadata.
@@ -271,7 +271,7 @@ class RenderObject implements RenderObjectInterface {
 		private readonly CacheHandlerInterface $objectCacheService,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
 		private readonly LoggerInterface $logger,
-		private readonly FileService $fileService,
+		private readonly FileReaderInterface $fileService,
 		private readonly ComputedFieldHandler $computedFieldHandler,
 		private readonly TranslationHandler $translationHandler,
 		private readonly LinkedEntityEnricher $linkedEntityEnricher,
@@ -2054,7 +2054,7 @@ class RenderObject implements RenderObjectInterface {
 			return $fileRecords;
 		}
 
-		$verdicts = $this->container->get(FileRestrictionGuard::class)->readable(
+		$verdicts = $this->container->get(FileRestrictionGuardInterface::class)->readable(
 			fileIds: array_map(static fn (array $record): int => (int)($record['fileid'] ?? 0), $fileRecords)
 		);
 

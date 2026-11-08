@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanTimerRearm;
+use OCA\OpenRegister\Service\Case\CaseRearmSources;
 use OCA\OpenRegister\Service\Case\UnarmedTimerMarkers;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCP\IAppConfig;
@@ -76,9 +77,7 @@ class CasePlanTimerRearmTest extends TestCase {
 	 */
 	private function pass(): CasePlanTimerRearm {
 		return new CasePlanTimerRearm(
-			markers: $this->markers,
-			items: $this->items,
-			timerRows: $this->timerRows,
+			sources: new CaseRearmSources(markers: $this->markers, items: $this->items, timerRows: $this->timerRows),
 			timers: new CasePlanItemTimers(timers: $this->core, logger: new NullLogger(), markers: $this->markers),
 			plans: $this->plans,
 			logger: new NullLogger()

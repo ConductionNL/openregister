@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\MdiIconRenderer;
+use OCA\OpenRegister\Service\MdiIconSvg;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -72,7 +72,7 @@ class IconController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 240, period: 60)]
 	public function mdi(string $name): DataDisplayResponse {
-		$svg = MdiIconRenderer::svg(icon: $name);
+		$svg = MdiIconSvg::of(icon: $name);
 		if ($svg === null) {
 			return new DataDisplayResponse(data: '', statusCode: Http::STATUS_NOT_FOUND);
 		}

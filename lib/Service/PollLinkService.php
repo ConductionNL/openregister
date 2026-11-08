@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\PollLink;
-use OCA\OpenRegister\Db\PollLinkMapper;
+use OCA\OpenRegister\Db\PollLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -91,18 +91,14 @@ class PollLinkService implements PollLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param PollLinkMapper $pollLinkMapper Persistence for link rows.
+	 * @param PollLinkMapperInterface $pollLinkMapper Persistence for link rows.
 	 * @param IDBConnection $db Database connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 */
 	public function __construct(
-		private readonly PollLinkMapper $pollLinkMapper,
+		private readonly PollLinkMapperInterface $pollLinkMapper,
 		private readonly IDBConnection $db,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -112,7 +108,7 @@ class PollLinkService implements PollLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isPollsAvailable(): bool {
-		return $this->appManager->isEnabledForUser('polls');
+		return $this->runtime->appManager()->isEnabledForUser('polls');
 	}//end isPollsAvailable()
 
 	/**
@@ -131,7 +127,7 @@ class PollLinkService implements PollLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function linkPoll(LinkTarget $target, int $pollId): PollLink {
-		$user = $this->userSession->getUser() ?? throw new Exception('No user logged in');
+		$user = $this->runtime->userSession()->getUser() ?? throw new Exception('No user logged in');
 		if ($this->pollLinkMapper->findByObjectAndPoll($target->objectUuid, $pollId) !== null) {
 			throw new Exception('Poll already linked to this object', 409);
 		}
@@ -290,7 +286,7 @@ class PollLinkService implements PollLinkServiceInterface {
 			return [];
 		}
 
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			return [];
 		}
@@ -315,7 +311,7 @@ class PollLinkService implements PollLinkServiceInterface {
 		try {
 			return $this->ownedPollsQuery(uid: $uid, search: $search)->executeQuery()->fetchAll();
 		} catch (Throwable $e) {
-			$this->logger->warning('PollLinkService::getAvailablePolls failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('PollLinkService::getAvailablePolls failed: ' . $e->getMessage());
 			return [];
 		}
 	}//end ownedPollRows()
@@ -382,7 +378,7 @@ class PollLinkService implements PollLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function createAndLinkPoll(LinkTarget $target, PollDraft $draft): PollLink {
-		$user = $this->userSession->getUser() ?? throw new Exception('No user logged in');
+		$user = $this->runtime->userSession()->getUser() ?? throw new Exception('No user logged in');
 
 		if ($this->isPollsAvailable() === false) {
 			throw new Exception('Polls is not available', 503);
@@ -420,7 +416,7 @@ class PollLinkService implements PollLinkServiceInterface {
 			$pollId = $this->createdPollId();
 			$this->insertPollOptions(pollId: $pollId, draft: $draft);
 		} catch (Throwable $e) {
-			$this->logger->warning('Failed to create poll: ' . $e->getMessage());
+			$this->runtime->logger()->warning('Failed to create poll: ' . $e->getMessage());
 			throw new Exception('Failed to create poll: ' . $e->getMessage(), 500);
 		}
 
@@ -621,7 +617,7 @@ class PollLinkService implements PollLinkServiceInterface {
 
 			return $row;
 		} catch (Throwable $e) {
-			$this->logger->debug('fetchPollRow failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('fetchPollRow failed: ' . $e->getMessage());
 			return null;
 		}
 	}//end fetchPollRow()

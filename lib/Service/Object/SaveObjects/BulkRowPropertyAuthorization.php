@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
 /**
  * A value the caller may not write is refused (unchanged values pass, as in a PATCH). On an
@@ -32,9 +32,9 @@ final class BulkRowPropertyAuthorization {
 	/**
 	 * The property rules.
 	 *
-	 * @var PropertyRbacHandler
+	 * @var PropertyRbacHandlerInterface
 	 */
-	private readonly PropertyRbacHandler $propertyRbac;
+	private readonly PropertyRbacHandlerInterface $propertyRbac;
 
 	/**
 	 * The row's schema.
@@ -67,11 +67,11 @@ final class BulkRowPropertyAuthorization {
 	/**
 	 * Constructor.
 	 *
-	 * @param PropertyRbacHandler $propertyRbac The property rules.
+	 * @param PropertyRbacHandlerInterface $propertyRbac The property rules.
 	 * @param Schema              $schema       The row's schema.
 	 * @param ObjectEntity|null   $existing     The stored row on an update, null on a create.
 	 */
-	public function __construct(PropertyRbacHandler $propertyRbac, Schema $schema, ?ObjectEntity $existing) {
+	public function __construct(PropertyRbacHandlerInterface $propertyRbac, Schema $schema, ?ObjectEntity $existing) {
 		$this->propertyRbac = $propertyRbac;
 		$this->schema       = $schema;
 		$this->updates      = ($existing !== null);

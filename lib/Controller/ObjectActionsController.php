@@ -37,17 +37,19 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ObjectActionsControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectActionsSelection;
+use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Flow\FlowNextHint;
+use OCA\OpenRegister\Service\Flow\FlowNextHintsInterface;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -115,9 +117,9 @@ class ObjectActionsController extends Controller {
 	/**
 	 * Reads the runs recorded on an object.
 	 *
-	 * @var ObjectActionHistory
+	 * @var ObjectActionHistoryInterface
 	 */
-	private readonly ObjectActionHistory $history;
+	private readonly ObjectActionHistoryInterface $history;
 
 	/**
 	 * Hands a large selection to a bulk job.
@@ -172,18 +174,13 @@ class ObjectActionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->findObject(id: $id);
-		$subjectSchema = null;
-		if ($object !== null) {
-			$subjectSchema = $this->macros->loadSchema(schema: (string)$object->getSchema());
-		}
-
-		if ($object === null || $subjectSchema === null) {
-			return new JSONResponse(['error' => 'No such object'], Http::STATUS_NOT_FOUND);
+		$subject = $this->subjectOf(id: $id);
+		if ($subject === null) {
+			return $this->noSuchObject();
 		}
 
 		try {
-			return new JSONResponse(['actions' => $this->list->forObject(object: $object, schema: $subjectSchema)]);
+			return new JSONResponse(['actions' => $this->list->forObject(object: $subject['object'], schema: $subject['schema'])]);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		} catch (LifecycleProviderException $e) {
@@ -209,18 +206,13 @@ class ObjectActionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function history(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->findObject(id: $id);
-		$subjectSchema = null;
-		if ($object !== null) {
-			$subjectSchema = $this->macros->loadSchema(schema: (string)$object->getSchema());
-		}
-
-		if ($object === null || $subjectSchema === null) {
-			return new JSONResponse(['error' => 'No such object'], Http::STATUS_NOT_FOUND);
+		$subject = $this->subjectOf(id: $id);
+		if ($subject === null) {
+			return $this->noSuchObject();
 		}
 
 		try {
-			return new JSONResponse(['results' => $this->history->forObject(object: $object, schema: $subjectSchema)]);
+			return new JSONResponse(['results' => $this->history->forObject(object: $subject['object'], schema: $subject['schema'])]);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		}
@@ -277,23 +269,13 @@ class ObjectActionsController extends Controller {
 			return new JSONResponse(['error' => 'Send the inputs as an object "inputs".'], Http::STATUS_BAD_REQUEST);
 		}
 
-		$object = $this->findObject(id: $id);
-		$subjectSchema = null;
-		if ($object !== null) {
-			$subjectSchema = $this->macros->loadSchema(schema: (string)$object->getSchema());
+		$subject = $this->subjectOf(id: $id);
+		if ($subject === null) {
+			return $this->noSuchObject();
 		}
 
-		if ($object === null || $subjectSchema === null) {
-			return new JSONResponse(['error' => 'No such object'], Http::STATUS_NOT_FOUND);
-		}
-
-		$result = $this->runner->run(
-			object: $object,
-			schema: $subjectSchema,
-			key: $action,
-			given: $inputs,
-			subject: ['uuid' => (string)$object->getUuid(), 'register' => $register, 'schema' => $schema]
-		);
+		$run = new ObjectActionsSelection(route: ['register' => $register, 'schema' => $schema], action: $action, ids: [$id], inputs: $inputs);
+		$result = $this->runOn(subject: $subject, run: $run);
 
 		return new JSONResponse($result['body'], $result['status']);
 	}//end invoke()
@@ -319,66 +301,121 @@ class ObjectActionsController extends Controller {
 		$ids = $this->request->getParam('ids', []);
 		$inputs = $this->request->getParam('inputs', []);
 		if (is_array($ids) === false || $ids === [] || is_array($inputs) === false) {
-			return new JSONResponse(
-				['error' => 'Send the selection as a non-empty list "ids" and the inputs as an object "inputs".'],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		$selectionSchema = $this->macros->loadSchema(schema: $schema);
-		$definition = null;
-		if ($selectionSchema !== null) {
-			$definition = $this->findDefinition(schema: $selectionSchema, action: $action, register: $register);
-		}
-
-		if ($definition === null || $definition->isRunnable() === false || $definition->offersBulk() === false) {
-			return new JSONResponse(['error' => sprintf('Action "%s" is not offered on a selection.', $action)], Http::STATUS_BAD_REQUEST);
+			return $this->malformedSelection();
 		}
 
 		$ids = array_values(array_unique(array_map('strval', $ids)));
-		if (count($ids) > self::SELECTION_LIMIT) {
-			return $this->startJob(schema: $selectionSchema, register: $register, schemaRef: $schema, action: $action, ids: $ids, inputs: $inputs);
+		$route = ['register' => $register, 'schema' => $schema];
+		$selection = new ObjectActionsSelection(route: $route, action: $action, ids: $ids, inputs: $inputs);
+
+		$offered = $this->offeredOnSelection(selection: $selection);
+		if ($offered === null) {
+			return new JSONResponse(['error' => sprintf('Action "%s" is not offered on a selection.', $action)], Http::STATUS_BAD_REQUEST);
 		}
 
-		$results = array_map(
-			fn (string $id): array => $this->runOnSelected(id: $id, action: $action, inputs: $inputs, register: $register, schema: $schema),
-			$ids
+		return $this->runSelection(offered: $offered, selection: $selection);
+	}//end invokeOnSelection()
+
+	/**
+	 * The 400 for a selection that is not a non-empty list of ids with an object of inputs.
+	 *
+	 * @return JSONResponse The 400.
+	 */
+	private function malformedSelection(): JSONResponse {
+		return new JSONResponse(
+			['error' => 'Send the selection as a non-empty list "ids" and the inputs as an object "inputs".'],
+			Http::STATUS_BAD_REQUEST
 		);
+	}//end malformedSelection()
+
+	/**
+	 * The selection's schema and its declaration of the action, when the action is offered on a selection.
+	 *
+	 * @param ObjectActionsSelection $selection The selection: the action key and the register and schema as the caller named them.
+	 *
+	 * @return array{schema: Schema, definition: ObjectActionDefinition}|null The schema and declaration, or null when not offered.
+	 */
+	private function offeredOnSelection(ObjectActionsSelection $selection): ?array {
+		$selectionSchema = $this->macros->loadSchema(schema: $selection->route['schema']);
+		if ($selectionSchema === null) {
+			return null;
+		}
+
+		$definition = $this->findDefinition(schema: $selectionSchema, selection: $selection);
+		if (self::offersBulk(definition: $definition) === false) {
+			return null;
+		}
+
+		return ['schema' => $selectionSchema, 'definition' => $definition];
+	}//end offeredOnSelection()
+
+	/**
+	 * Whether a declaration can be run on a selection.
+	 *
+	 * @param ObjectActionDefinition|null $definition The declaration, or null when it cannot be read.
+	 *
+	 * @return bool True for a runnable action offered on the `bulk` surface.
+	 */
+	private static function offersBulk(?ObjectActionDefinition $definition): bool {
+		return $definition !== null && $definition->isRunnable() === true && $definition->offersBulk() === true;
+	}//end offersBulk()
+
+	/**
+	 * Run an offered action on a selection: one run per object, or a bulk job above the limit.
+	 *
+	 * @param array{schema: Schema, definition: ObjectActionDefinition} $offered   The selection's schema and the action's declaration.
+	 * @param ObjectActionsSelection                                    $selection The selection.
+	 *
+	 * @return JSONResponse The summary per object and `next`, or 202 with the job.
+	 */
+	private function runSelection(array $offered, ObjectActionsSelection $selection): JSONResponse {
+		if (count($selection->ids) > self::SELECTION_LIMIT) {
+			return $this->startJob(schema: $offered['schema'], selection: $selection);
+		}
+
+		$definition = $offered['definition'];
+		$results = array_map(fn (string $id): array => $this->runOnSelected(id: $id, selection: $selection), $selection->ids);
 		$succeeded = count(array_filter($results, static fn (array $row): bool => $row['status'] === 'succeeded'));
 
 		return new JSONResponse(
 			[
-				'action' => $action,
+				'action' => $selection->action,
 				'summary' => ['succeeded' => $succeeded, 'failed' => (count($results) - $succeeded)],
 				'results' => $results,
-				'next' => ($definition->next ?? FlowNextHint::LIST),
+				'next' => ($definition->next ?? FlowNextHintsInterface::LIST),
 			]
 		);
-	}//end invokeOnSelection()
+	}//end runSelection()
 
 	/**
 	 * Hand a selection above the limit to a previewed bulk job.
 	 *
-	 * @param Schema               $schema    The selection's schema.
-	 * @param string               $register  The register as the caller named it.
-	 * @param string               $schemaRef The schema as the caller named it.
-	 * @param string               $action    The action key.
-	 * @param list<string>         $ids       The selection.
-	 * @param array<string, mixed> $inputs    The inputs.
+	 * @param Schema                 $schema    The selection's schema.
+	 * @param ObjectActionsSelection $selection The selection.
 	 *
 	 * @return JSONResponse 202 with the job and the link to commit it.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One argument per part of the request being handed over.
 	 */
-	private function startJob(Schema $schema, string $register, string $schemaRef, string $action, array $ids, array $inputs): JSONResponse {
+	private function startJob(Schema $schema, ObjectActionsSelection $selection): JSONResponse {
 		try {
-			$job = $this->bulk->start(schema: $schema, register: $register, schemaRef: $schemaRef, action: $action, ids: $ids, inputs: $inputs);
+			$job = $selection->startOn(bulk: $this->bulk, schema: $schema);
 		} catch (BulkJobRefusedException $e) {
 			return new JSONResponse(['error' => $e->getMessage(), 'reason' => $e->getReason()], Http::STATUS_UNPROCESSABLE_ENTITY);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
+		return self::jobAccepted(job: $job, action: $selection->action);
+	}//end startJob()
+
+	/**
+	 * The 202 for a selection handed to a bulk job.
+	 *
+	 * @param BulkJob $job    The job.
+	 * @param string  $action The action key.
+	 *
+	 * @return JSONResponse 202 with the job and the link to commit it.
+	 */
+	private static function jobAccepted(BulkJob $job, string $action): JSONResponse {
 		return new JSONResponse(
 			[
 				'action' => $action,
@@ -387,38 +424,36 @@ class ObjectActionsController extends Controller {
 			],
 			Http::STATUS_ACCEPTED
 		);
-	}//end startJob()
+	}//end jobAccepted()
 
 	/**
 	 * Run the action on one selected object and summarise the outcome.
 	 *
-	 * @param string               $id       The object's id.
-	 * @param string               $action   The action key.
-	 * @param array<string, mixed> $inputs   The inputs.
-	 * @param string               $register The register as the caller named it.
-	 * @param string               $schema   The schema as the caller named it.
+	 * @param string                 $id        The object's id.
+	 * @param ObjectActionsSelection $selection The selection.
 	 *
 	 * @return array<string, mixed> The summary row.
 	 */
-	private function runOnSelected(string $id, string $action, array $inputs, string $register, string $schema): array {
-		$object = $this->findObject(id: $id);
-		$subjectSchema = null;
-		if ($object !== null) {
-			$subjectSchema = $this->macros->loadSchema(schema: (string)$object->getSchema());
-		}
-
-		if ($object === null || $subjectSchema === null) {
+	private function runOnSelected(string $id, ObjectActionsSelection $selection): array {
+		$subject = $this->subjectOf(id: $id);
+		if ($subject === null) {
 			return ['id' => $id, 'status' => 'failed', 'reason' => 'No such object'];
 		}
 
-		$one = $this->runner->run(
-			object: $object,
-			schema: $subjectSchema,
-			key: $action,
-			given: $inputs,
-			subject: ['uuid' => (string)$object->getUuid(), 'register' => $register, 'schema' => $schema]
-		);
+		$one = $this->runOn(subject: $subject, run: $selection);
 
+		return self::selectedRow(id: $id, one: $one);
+	}//end runOnSelected()
+
+	/**
+	 * The summary row of one run on a selected object.
+	 *
+	 * @param string               $id  The object's id.
+	 * @param array<string, mixed> $one The run's status and body.
+	 *
+	 * @return array<string, mixed> The summary row.
+	 */
+	private static function selectedRow(string $id, array $one): array {
 		if ($one['status'] === Http::STATUS_OK || $one['status'] === Http::STATUS_ACCEPTED) {
 			return [
 				'id' => $id,
@@ -429,7 +464,55 @@ class ObjectActionsController extends Controller {
 		}
 
 		return ['id' => $id, 'status' => 'failed', 'reason' => (string)($one['body']['message'] ?? ($one['body']['error'] ?? 'refused'))];
-	}//end runOnSelected()
+	}//end selectedRow()
+
+	/**
+	 * Run an action on one resolved object, with the subject as the caller named it.
+	 *
+	 * @param array{object: ObjectEntity, schema: Schema} $subject The object and its schema.
+	 * @param ObjectActionsSelection                       $run     The action key, the inputs, and the register and schema as the caller named them.
+	 *
+	 * @return array<string, mixed> The run's status and body.
+	 */
+	private function runOn(array $subject, ObjectActionsSelection $run): array {
+		return $this->runner->run(
+			object: $subject['object'],
+			schema: $subject['schema'],
+			key: $run->action,
+			given: $run->inputs,
+			subject: ['uuid' => (string)$subject['object']->getUuid(), 'register' => $run->route['register'], 'schema' => $run->route['schema']]
+		);
+	}//end runOn()
+
+	/**
+	 * The object and its schema, or null when there is no object the caller can reach or its schema does not load.
+	 *
+	 * @param string $id The object's id, uuid or slug.
+	 *
+	 * @return array{object: ObjectEntity, schema: Schema}|null The subject.
+	 */
+	private function subjectOf(string $id): ?array {
+		$object = $this->findObject(id: $id);
+		if ($object === null) {
+			return null;
+		}
+
+		$schema = $this->macros->loadSchema(schema: (string)$object->getSchema());
+		if ($schema === null) {
+			return null;
+		}
+
+		return ['object' => $object, 'schema' => $schema];
+	}//end subjectOf()
+
+	/**
+	 * The 404 for an object the caller cannot reach.
+	 *
+	 * @return JSONResponse The 404.
+	 */
+	private function noSuchObject(): JSONResponse {
+		return new JSONResponse(['error' => 'No such object'], Http::STATUS_NOT_FOUND);
+	}//end noSuchObject()
 
 	/**
 	 * The schema's declaration of an action, or null when it cannot be read.
@@ -439,15 +522,15 @@ class ObjectActionsController extends Controller {
 	 * configuration is a 400 on the selection and never a 500. The cause is
 	 * logged, so a defect behind the 400 still leaves a trace.
 	 *
-	 * @param Schema $schema   The selection's schema.
-	 * @param string $action   The action key.
-	 * @param string $register The register as the caller named it.
+	 * @param Schema                 $schema    The selection's schema.
+	 * @param ObjectActionsSelection $selection The selection: the action key and the register as the caller named it.
 	 *
 	 * @return ObjectActionDefinition|null The declaration.
 	 */
-	private function findDefinition(Schema $schema, string $action, string $register): ?ObjectActionDefinition {
+	private function findDefinition(Schema $schema, ObjectActionsSelection $selection): ?ObjectActionDefinition {
+		$action = $selection->action;
 		try {
-			return $this->definitions->find(schema: $schema, key: $action, register: $register);
+			return $this->definitions->find(schema: $schema, key: $action, register: $selection->route['register']);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'Object action "{action}" of schema {schema} could not be read: {message}',

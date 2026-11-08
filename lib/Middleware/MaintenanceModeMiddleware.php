@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use OCA\OpenRegister\Controller\OperationsConsoleController;
-use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
+use OCA\OpenRegister\Service\Operations\MaintenanceModeHoldInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -59,9 +59,9 @@ class MaintenanceModeMiddleware extends Middleware {
 	/**
 	 * Constructor.
 	 *
-	 * @param MaintenanceModeService $maintenance The mode.
+	 * @param MaintenanceModeHoldInterface $maintenance The mode.
 	 */
-	public function __construct(private readonly MaintenanceModeService $maintenance) {
+	public function __construct(private readonly MaintenanceModeHoldInterface $maintenance) {
 	}//end __construct()
 
 	/**

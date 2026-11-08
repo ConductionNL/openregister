@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -79,10 +80,12 @@ class SchemaScopedProvidersGoldenTest extends TestCase {
 		$this->previews = new ObjectPreviewFormatter(
 			$this->urls,
 			$l10n,
-			$this->objects,
-			$links,
-			$this->schemaMapper,
-			$this->registerMapper,
+			new ObjectPreviewSources(
+				objectService: $this->objects,
+				deepLinkRegistry: $links,
+				schemaMapper: $this->schemaMapper,
+				registerMapper: $this->registerMapper
+			),
 			$this->createMock(LoggerInterface::class)
 		);
 		$this->results  = new ObjectSearchResultFormatter($this->urls, $links, $this->previews);

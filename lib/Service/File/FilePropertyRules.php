@@ -49,12 +49,23 @@ class FilePropertyRules {
 		}
 
 		$items = ($property['items'] ?? null);
-		if (($property['type'] ?? null) === 'array' && is_array($items) === true && ($items['type'] ?? null) === 'file') {
+		if (($property['type'] ?? null) === 'array' && $this->isFileItems(items: $items) === true) {
 			return $items;
 		}
 
 		return null;
 	}//end fileConfigOf()
+
+	/**
+	 * Whether an array property's `items` declare a file.
+	 *
+	 * @param mixed $items The declared items.
+	 *
+	 * @return bool
+	 */
+	private function isFileItems(mixed $items): bool {
+		return is_array($items) === true && ($items['type'] ?? null) === 'file';
+	}//end isFileItems()
 
 	/**
 	 * The MIME types a file property accepts.

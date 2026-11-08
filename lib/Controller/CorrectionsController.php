@@ -28,7 +28,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\CorrectionService;
+use OCA\OpenRegister\Service\Object\CorrectionServiceInterface;
+use OCA\OpenRegister\Service\Object\CorrectionTarget;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -51,7 +52,7 @@ class CorrectionsController extends Controller {
 	 *
 	 * @param string $appName The name of the app.
 	 * @param IRequest $request The request object.
-	 * @param CorrectionService $corrections The correction act.
+	 * @param CorrectionServiceInterface $corrections The correction act.
 	 * @param IUserSession $userSession The user session.
 	 *
 	 * @return void
@@ -61,7 +62,7 @@ class CorrectionsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly CorrectionService $corrections,
+		private readonly CorrectionServiceInterface $corrections,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -110,9 +111,7 @@ class CorrectionsController extends Controller {
 
 		try {
 			$result = $this->corrections->correct(
-				register: $register,
-				schema: $schema,
-				id: $id,
+				target: new CorrectionTarget(register: $register, schema: $schema, id: $id),
 				values: $values,
 				reason: $this->request->getParam('reason')
 			);

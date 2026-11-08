@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
-use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
+use OCA\OpenRegister\Service\Credential\OAuth2CredentialSweepInterface;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -73,7 +73,7 @@ class OAuth2TokenRefreshJob extends TimedJob {
 	 * @param ITimeFactory $time Time factory for TimedJob.
 	 * @param ObjectOperationsInterface $objectService Lists the brokered credentials.
 	 * @param ProviderCatalogue $catalogue Resolves each credential's provider entry.
-	 * @param OAuth2RefreshService $refresh Performs the rotation, under the shared lock.
+	 * @param OAuth2CredentialSweepInterface $refresh Performs the rotation, under the shared lock.
 	 * @param LoggerInterface $logger Reports what was swept and what failed.
 	 *
 	 * @return void
@@ -82,7 +82,7 @@ class OAuth2TokenRefreshJob extends TimedJob {
 		ITimeFactory $time,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly ProviderCatalogue $catalogue,
-		private readonly OAuth2RefreshService $refresh,
+		private readonly OAuth2CredentialSweepInterface $refresh,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

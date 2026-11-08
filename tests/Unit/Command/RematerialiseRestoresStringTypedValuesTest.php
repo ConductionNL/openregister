@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
+use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
+use OCA\OpenRegister\Command\Support\RematerialiseStorage;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -41,6 +43,7 @@ use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\ValidationLookups;
 use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -127,13 +130,9 @@ class RematerialiseRestoresStringTypedValuesTest extends TestCase {
 		);
 
 		$command = new RematerialiseCalculationsCommand(
-			$registers,
-			$schemas,
-			$magic,
-			$objects,
-			$evaluator,
-			$this->createMock(ReferenceResolver::class),
-			($aggregates ?? $this->createMock(AggregateReferenceResolver::class))
+			new RematerialiseStorage($registers, $schemas, $magic, $objects),
+			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), ($aggregates ?? $this->createMock(AggregateReferenceResolver::class))),
+			new SchemaTypeConverter()
 		);
 
 		$output = new BufferedOutput();

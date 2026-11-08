@@ -55,25 +55,57 @@ final class SearchTermNode {
 	public const TYPE_NOT = 'not';
 
 	/**
+	 * One of the TYPE_* constants.
+	 *
+	 * @var string
+	 */
+	public readonly string $type;
+
+	/**
+	 * Literal text for a term node; empty for a boolean node.
+	 *
+	 * @var string
+	 */
+	public readonly string $value;
+
+	/**
+	 * Children for a boolean node; empty for a term node.
+	 *
+	 * @var list<SearchTermNode>
+	 */
+	public readonly array $children;
+
+	/**
+	 * Whether the term began with `*`.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $leadingWildcard;
+
+	/**
+	 * Whether the term ended with `*`.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $trailingWildcard;
+
+	/**
 	 * Constructor, private so the named factories are the only entry.
 	 *
-	 * @param string            $type           One of the TYPE_* constants.
-	 * @param string            $value          Literal text for a term node.
-	 * @param SearchTermNode[]  $children       Children for a boolean node.
-	 * @param bool              $leadingWildcard  Whether the term began with `*`.
-	 * @param bool              $trailingWildcard Whether the term ended with `*`.
+	 * @param string            $type     One of the TYPE_* constants.
+	 * @param SearchTermNode[]  $children Children for a boolean node.
+	 * @param SearchTermLiteral $literal  Literal text and wildcard flags for a term node.
 	 *
 	 * @phpstan-param list<SearchTermNode> $children
 	 *
 	 * @psalm-param list<SearchTermNode> $children
 	 */
-	private function __construct(
-		public readonly string $type,
-		public readonly string $value,
-		public readonly array $children,
-		public readonly bool $leadingWildcard,
-		public readonly bool $trailingWildcard,
-	) {
+	private function __construct(string $type, array $children, SearchTermLiteral $literal) {
+		$this->type = $type;
+		$this->value = $literal->value;
+		$this->children = $children;
+		$this->leadingWildcard = $literal->leadingWildcard;
+		$this->trailingWildcard = $literal->trailingWildcard;
 	}//end __construct()
 
 	/**
@@ -98,10 +130,12 @@ final class SearchTermNode {
 	): self {
 		return new self(
 			type: self::TYPE_TERM,
-			value: $value,
 			children: [],
-			leadingWildcard: $leadingWildcard,
-			trailingWildcard: $trailingWildcard
+			literal: new SearchTermLiteral(
+				value: $value,
+				leadingWildcard: $leadingWildcard,
+				trailingWildcard: $trailingWildcard
+			)
 		);
 	}//end term()
 
@@ -123,13 +157,7 @@ final class SearchTermNode {
 			return $children[0];
 		}
 
-		return new self(
-			type: self::TYPE_AND,
-			value: '',
-			children: array_values($children),
-			leadingWildcard: false,
-			trailingWildcard: false
-		);
+		return new self(type: self::TYPE_AND, children: array_values($children), literal: new SearchTermLiteral());
 	}//end all()
 
 	/**
@@ -150,13 +178,7 @@ final class SearchTermNode {
 			return $children[0];
 		}
 
-		return new self(
-			type: self::TYPE_OR,
-			value: '',
-			children: array_values($children),
-			leadingWildcard: false,
-			trailingWildcard: false
-		);
+		return new self(type: self::TYPE_OR, children: array_values($children), literal: new SearchTermLiteral());
 	}//end any()
 
 	/**
@@ -169,13 +191,7 @@ final class SearchTermNode {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public static function not(self $child): self {
-		return new self(
-			type: self::TYPE_NOT,
-			value: '',
-			children: [$child],
-			leadingWildcard: false,
-			trailingWildcard: false
-		);
+		return new self(type: self::TYPE_NOT, children: [$child], literal: new SearchTermLiteral());
 	}//end not()
 
 	/**

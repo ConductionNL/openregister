@@ -42,7 +42,7 @@ use OCA\OpenRegister\Exception\CodedValueException;
 /**
  * Refuses the coded values a scheme's lifecycle rules say cannot be written.
  */
-class CodedValueGuard {
+class CodedValueGuard implements CodedValueGuardInterface {
 
 	/**
 	 * The write refusals each resolved value is judged against.

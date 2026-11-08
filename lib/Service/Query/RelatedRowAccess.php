@@ -26,7 +26,7 @@ use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
-use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
@@ -51,11 +51,11 @@ class RelatedRowAccess {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicRbacHandler       $rbac   Builds the related schema's row predicate.
-	 * @param LoggerInterface        $logger The logger, for the default guard.
-	 * @param PropertyReadGuard|null $guard  The property read guard; defaults to one without a container, which fails closed on a governed schema.
+	 * @param RelatedRowRbacInterface $rbac   Builds the related schema's row predicate.
+	 * @param LoggerInterface         $logger The logger, for the default guard.
+	 * @param PropertyReadGuard|null  $guard  The property read guard; defaults to one without a container, which fails closed on a governed schema.
 	 */
-	public function __construct(private readonly MagicRbacHandler $rbac, LoggerInterface $logger, ?PropertyReadGuard $guard = null) {
+	public function __construct(private readonly RelatedRowRbacInterface $rbac, LoggerInterface $logger, ?PropertyReadGuard $guard = null) {
 		$this->guard = ($guard ?? new PropertyReadGuard(container: null, logger: $logger));
 	}//end __construct()
 
@@ -88,19 +88,24 @@ class RelatedRowAccess {
 	 * with the outer query); this only renders it for the related alias. A mode
 	 * it does not know matches nothing.
 	 *
-	 * @param IQueryBuilder                                  $qb            The query, which receives the organisation parameters.
-	 * @param Schema                                         $schema        The related schema.
-	 * @param string                                         $alias         The related row's alias.
-	 * @param string                                         $tableName     The bare related table, for the row predicate.
-	 * @param array{mode: string, uuids: array<int, string>} $scope         The decided organisation scope.
+	 * @param IQueryBuilder                                  $qb     The query, which receives the organisation parameters.
+	 * @param RelatedRowSource                               $source The related schema, its bare table (for the row predicate)
+	 *                                                               and the related row's alias.
+	 * @param array{mode: string, uuids: array<int, string>} $scope  The decided organisation scope.
 	 *
 	 * @return string The combined predicate.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function predicate(IQueryBuilder $qb, Schema $schema, string $alias, string $tableName, array $scope): string {
-		$rbacPredicate = $this->rbac->buildRbacPredicateForAlias(schema: $schema, alias: $alias, action: 'read', tableName: $tableName);
-		$column = $alias . '._organisation';
+	public function predicate(IQueryBuilder $qb, RelatedRowSource $source, array $scope): string {
+		$alias         = $source->alias;
+		$rbacPredicate = $this->rbac->buildRbacPredicateForAlias(
+			schema: $source->schema,
+			alias: $alias,
+			action: 'read',
+			tableName: $source->tableName
+		);
+		$column        = $alias . '._organisation';
 		$mode   = ($scope['mode'] ?? null);
 
 		if ($mode === MagicOrganizationHandler::SCOPE_ALL) {

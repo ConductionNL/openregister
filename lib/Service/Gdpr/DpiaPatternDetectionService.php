@@ -46,7 +46,7 @@ use DateTimeImmutable;
  * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
  *   (Requirement: DPIA pattern detection over DSAR cases)
  */
-class DpiaPatternDetectionService {
+class DpiaPatternDetectionService implements DpiaPatternDetectorInterface {
 
 	/**
 	 * Default threshold, matching pipelinq's `DpiaDetectionService::DEFAULT_THRESHOLD`.
@@ -92,65 +92,23 @@ class DpiaPatternDetectionService {
 	 *   (Scenario: Threshold crossing flags the group)
 	 */
 	public function detect(array $cases, array $config, DateTimeImmutable $now): array {
-		$threshold = (int)($config['threshold'] ?? 0);
-		$windowDays = (int)($config['windowDays'] ?? 0);
-		$groupBy = ($config['groupBy'] ?? null);
+		$threshold = $this->positiveInt(config: $config, key: 'threshold');
+		$windowDays = $this->positiveInt(config: $config, key: 'windowDays');
 
 		// Fail-safe: an unusable configuration produces no groups — never a
 		// false DPIA flag (no-pack / no-block callers pass an empty config).
-		if ($threshold < 1 || $windowDays < 1) {
+		if ($threshold === 0 || $windowDays === 0) {
 			return [];
 		}
 
-		if (is_array($groupBy) === false || $groupBy === []) {
-			$groupBy = self::DEFAULT_GROUP_BY;
-		}
+		$groups = $this->groupCases(
+			cases: $cases,
+			groupBy: $this->groupByOf(config: $config),
+			windowStart: $now->modify(sprintf('-%d days', $windowDays)),
+			now: $now
+		);
 
-		$windowStart = $now->modify(sprintf('-%d days', $windowDays));
-
-		$groups = [];
-		foreach ($cases as $case) {
-			if (is_array($case) === false) {
-				continue;
-			}
-
-			$receivedAt = $this->parseDate(value: ($case['receivedAt'] ?? null));
-			if ($receivedAt === null || $receivedAt < $windowStart || $receivedAt > $now) {
-				continue;
-			}
-
-			$key = $this->groupKey(case: $case, groupBy: $groupBy);
-
-			if (isset($groups[$key]) === false) {
-				$groups[$key] = [
-					'key' => $key,
-					'count' => 0,
-					'caseUuids' => [],
-					'unflaggedUuids' => [],
-				];
-			}
-
-			$groups[$key]['count']++;
-
-			$uuid = (string)($case['@uuid'] ?? ($case['id'] ?? ''));
-			if ($uuid === '') {
-				continue;
-			}
-
-			$groups[$key]['caseUuids'][] = $uuid;
-			if (($case['dpiaRequired'] ?? false) !== true) {
-				$groups[$key]['unflaggedUuids'][] = $uuid;
-			}
-		}//end foreach
-
-		$triggering = [];
-		foreach ($groups as $group) {
-			if ($group['count'] >= $threshold) {
-				$triggering[] = $group;
-			}
-		}
-
-		return $triggering;
+		return array_values(array_filter($groups, static fn (array $group): bool => $group['count'] >= $threshold));
 	}//end detect()
 
 	/**
@@ -196,6 +154,107 @@ class DpiaPatternDetectionService {
 
 		return (string)preg_replace('/\s+/', ' ', $normalised);
 	}//end normalise()
+
+	/**
+	 * A configured integer, or 0 when absent or below 1.
+	 *
+	 * @param array<string, mixed> $config The pack's `dpiaDetection` block.
+	 * @param string               $key    The setting.
+	 *
+	 * @return int
+	 */
+	private function positiveInt(array $config, string $key): int {
+		return max((int)($config[$key] ?? 0), 0);
+
+	}//end positiveInt()
+
+	/**
+	 * Group every in-window case by its key, in first-seen order.
+	 *
+	 * @param array<int, mixed>  $cases       Case payloads.
+	 * @param array<int, mixed>  $groupBy     The grouping field names.
+	 * @param DateTimeImmutable  $windowStart Start of the rolling window.
+	 * @param DateTimeImmutable  $now         The evaluation clock.
+	 *
+	 * @return array<string, array{key: string, count: int, caseUuids: array<int, string>, unflaggedUuids: array<int, string>}>
+	 */
+	private function groupCases(array $cases, array $groupBy, DateTimeImmutable $windowStart, DateTimeImmutable $now): array {
+		$groups = [];
+		foreach ($cases as $case) {
+			if ($this->inWindow(entry: $case, windowStart: $windowStart, now: $now) === true) {
+				$this->tally(groups: $groups, entry: $case, key: $this->groupKey(case: $case, groupBy: $groupBy));
+			}
+		}
+
+		return $groups;
+
+	}//end groupCases()
+
+	/**
+	 * The configured grouping fields, or the defaults when unset / empty / not a list.
+	 *
+	 * @param array<string, mixed> $config The pack's `dpiaDetection` block.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function groupByOf(array $config): array {
+		$groupBy = ($config['groupBy'] ?? null);
+		if (is_array($groupBy) === false || $groupBy === []) {
+			return self::DEFAULT_GROUP_BY;
+		}
+
+		return $groupBy;
+
+	}//end groupByOf()
+
+	/**
+	 * Whether a case was received inside the window (both ends inclusive).
+	 *
+	 * A non-array case or an unusable `receivedAt` is outside.
+	 *
+	 * @param mixed             $entry       One element of the case list.
+	 * @param DateTimeImmutable $windowStart Start of the rolling window.
+	 * @param DateTimeImmutable $now         The evaluation clock.
+	 *
+	 * @return bool
+	 */
+	private function inWindow(mixed $entry, DateTimeImmutable $windowStart, DateTimeImmutable $now): bool {
+		if (is_array($entry) === false) {
+			return false;
+		}
+
+		$receivedAt = $this->parseDate(value: ($entry['receivedAt'] ?? null));
+
+		return $receivedAt !== null && $receivedAt >= $windowStart && $receivedAt <= $now;
+
+	}//end inWindow()
+
+	/**
+	 * Count a case into its group, listing its uuid (and as unflagged unless flagged).
+	 *
+	 * Every case counts; only a case with an `@uuid` / `id` is listed.
+	 *
+	 * @param array<string, array<string, mixed>> $groups The groups so far (mutated by reference).
+	 * @param array<string, mixed>                $entry  The case payload.
+	 * @param string                              $key    Its group key.
+	 *
+	 * @return void
+	 */
+	private function tally(array &$groups, array $entry, string $key): void {
+		$groups[$key] ??= ['key' => $key, 'count' => 0, 'caseUuids' => [], 'unflaggedUuids' => []];
+		$groups[$key]['count']++;
+
+		$uuid = (string)($entry['@uuid'] ?? ($entry['id'] ?? ''));
+		if ($uuid === '') {
+			return;
+		}
+
+		$groups[$key]['caseUuids'][] = $uuid;
+		if (($entry['dpiaRequired'] ?? false) !== true) {
+			$groups[$key]['unflaggedUuids'][] = $uuid;
+		}
+
+	}//end tally()
 
 	/**
 	 * Parse a date-time value defensively, null on anything unusable.

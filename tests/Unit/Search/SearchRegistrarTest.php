@@ -20,7 +20,9 @@ use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
+use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
+use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
@@ -48,8 +50,8 @@ final class SearchRegistrarTest extends TestCase {
 		$doubles = [
 			VectorEmbeddingsInterface::class => $this->createMock(VectorEmbeddingsInterface::class),
 			LoggerInterface::class => $this->createMock(LoggerInterface::class),
-			FileVectorizationStrategy::class => $file,
-			ObjectVectorizationStrategy::class => $object,
+			FileVectorizationStrategyInterface::class => $file,
+			ObjectVectorizationStrategyInterface::class => $object,
 		];
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->willReturnCallback(static fn (string $id) => $doubles[$id]);

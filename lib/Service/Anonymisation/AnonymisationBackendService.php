@@ -44,7 +44,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Aggregates several OCP services by design.
  */
-class AnonymisationBackendService {
+class AnonymisationBackendService implements AnonymisationBackendServiceInterface {
 	/**
 	 * App id of the AppAPI app required for ExApp detection.
 	 */

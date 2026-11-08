@@ -42,11 +42,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use JsonSerializable;
+use OCA\OpenRegister\Controller\Support\ApiSurfaceControllerServices;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
-use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
-use OCA\OpenRegister\Service\ApiVersion\ApiContractService;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersion;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -57,7 +58,6 @@ use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -79,36 +79,54 @@ class ApiSurfaceController extends Controller {
 	private readonly IUserSession $userSession;
 
 	/**
-	 * The logger.
+	 * Builds the capabilities answer.
 	 *
-	 * @var LoggerInterface
+	 * @var ApiCapabilitiesServiceInterface
 	 */
-	private readonly LoggerInterface $logger;
+	private readonly ApiCapabilitiesServiceInterface $capabilities;
+
+	/**
+	 * The declared contract versions.
+	 *
+	 * @var ApiVersionCatalogueInterface
+	 */
+	private readonly ApiVersionCatalogueInterface $catalogue;
+
+	/**
+	 * Builds one description per version.
+	 *
+	 * @var ApiContractServiceInterface
+	 */
+	private readonly ApiContractServiceInterface $contracts;
+
+	/**
+	 * The session bundle; the user session and the logger come from it.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The incoming request.
-	 * @param ApiCapabilitiesService $capabilities Builds the capabilities answer.
-	 * @param ApiVersionCatalogue $catalogue The declared contract versions.
-	 * @param ApiContractService $contracts Builds one description per version.
-	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param ApiSurfaceControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ApiCapabilitiesService $capabilities,
-		private readonly ApiVersionCatalogue $catalogue,
-		private readonly ApiContractService $contracts,
-		ControllerSession $session,
+		ApiSurfaceControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->capabilities = $services->capabilities;
+		$this->catalogue = $services->catalogue;
+		$this->contracts = $services->contracts;
 
-		$this->userSession = $session->userSession;
-		$this->logger = $session->logger;
+		$this->session = $services->session;
+		$this->userSession = $services->session->userSession;
 	}//end __construct()
 
 	/**
@@ -163,7 +181,7 @@ class ApiSurfaceController extends Controller {
 			data: [
 				'currentVersion' => $this->catalogue->current()->id,
 				'versions' => array_values(array_map(
-					static fn (ApiVersion $version): array => $version->jsonSerialize(),
+					static fn (JsonSerializable $version): array => $version->jsonSerialize(),
 					$this->catalogue->all()
 				)),
 			]
@@ -233,7 +251,7 @@ class ApiSurfaceController extends Controller {
 				registerId: $this->registerFilter(),
 			);
 		} catch (Throwable $e) {
-			$this->logger->error(
+			$this->session->logger->error(
 				'OpenRegister: could not generate the description for API version ' . $declared->id . '.',
 				['exception' => $e]
 			);

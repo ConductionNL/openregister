@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
-use OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifier;
+use OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifierInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -51,13 +51,13 @@ class ExternalGrantLapseJob extends TimedJob {
 	 * @param ITimeFactory               $time     Time factory for TimedJob.
 	 * @param LoggerInterface            $logger   Diagnostics.
 	 * @param SchemaMapperInterface      $schemas  Lists the schemas whose grants are read.
-	 * @param ExternalGrantLapseNotifier $notifier Warns the holders.
+	 * @param ExternalGrantLapseNotifierInterface $notifier Warns the holders.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly LoggerInterface $logger,
 		private readonly SchemaMapperInterface $schemas,
-		private readonly ExternalGrantLapseNotifier $notifier,
+		private readonly ExternalGrantLapseNotifierInterface $notifier,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);

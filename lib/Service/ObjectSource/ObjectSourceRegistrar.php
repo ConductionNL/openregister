@@ -84,10 +84,13 @@ final class ObjectSourceRegistrar {
 			'userSession'  => 'OCP\IUserSession',
 			'logger'       => 'Psr\Log\LoggerInterface',
 		],
+		OrganisationActingUser::class => [
+			'userSession'  => 'OCP\IUserSession',
+			'groupManager' => 'OCP\IGroupManager',
+		],
 		OrganisationObjectSourceProvider::class => [
-			'organisationMapper'  => 'OCA\OpenRegister\Db\OrganisationMapper',
-			'userSession'         => 'OCP\IUserSession',
-			'groupManager'        => 'OCP\IGroupManager',
+			'organisationMapper'  => 'OCA\OpenRegister\Db\OrganisationMapperInterface',
+			'actingUser'          => OrganisationActingUser::class,
 			'logger'              => 'Psr\Log\LoggerInterface',
 			'organisationService' => 'OCA\OpenRegister\Service\OrganisationService',
 		],
@@ -156,13 +159,16 @@ final class ObjectSourceRegistrar {
 			'columnMapper'   => TablesColumnMapper::class,
 			'logger'         => 'Psr\Log\LoggerInterface',
 		],
-		TablesObjectSourceProvider::class => [
+		TablesProviderParts::class => [
 			'reader'       => TablesTableReader::class,
 			'columnMapper' => TablesColumnMapper::class,
 			'uuidDeriver'  => TablesUuidDeriver::class,
 			'syncService'  => TablesSchemaSyncService::class,
-			'userSession'  => 'OCP\IUserSession',
-			'logger'       => 'Psr\Log\LoggerInterface',
+		],
+		TablesObjectSourceProvider::class => [
+			'parts'       => TablesProviderParts::class,
+			'userSession' => 'OCP\IUserSession',
+			'logger'      => 'Psr\Log\LoggerInterface',
 		],
 	];
 

@@ -46,7 +46,7 @@ use Exception;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
-use OCA\OpenRegister\Db\CaseTokenMapper;
+use OCA\OpenRegister\Db\CaseTokenMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCP\IURLGenerator;
@@ -62,8 +62,10 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Service composes the token mapper, secure-random,
  * user-session, URL generator and the lazily-resolved ObjectService — each is required for the
  * mint / resolve / revoke contract.
+ *
+ * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
-class CaseTokenService {
+class CaseTokenService implements CaseTokenServiceInterface {
 
 	/**
 	 * Token length in characters (URL-safe alphanumeric). 43 chars of
@@ -89,7 +91,7 @@ class CaseTokenService {
 	/**
 	 * Constructor.
 	 *
-	 * @param CaseTokenMapper $mapper Token persistence.
+	 * @param CaseTokenMapperInterface $mapper Token persistence.
 	 * @param ISecureRandom $secureRandom NC secure RNG.
 	 * @param IUserSession $userSession Current user (minter).
 	 * @param IURLGenerator $urlGenerator Public URL builder.
@@ -99,7 +101,7 @@ class CaseTokenService {
 	 * @return void
 	 */
 	public function __construct(
-		private CaseTokenMapper $mapper,
+		private CaseTokenMapperInterface $mapper,
 		private ISecureRandom $secureRandom,
 		private IUserSession $userSession,
 		private IURLGenerator $urlGenerator,
@@ -132,7 +134,23 @@ class CaseTokenService {
 		?string $label = null,
 		?int $ttlSeconds = null,
 	): array {
-		if (trim($objectUuid) === '') {
+		$target = ['objectUuid' => $objectUuid, 'registerId' => $registerId, 'schemaId' => $schemaId, 'label' => $label];
+		return $this->mintFor(target: $target, ttlSeconds: $ttlSeconds);
+	}//end mint()
+
+	/**
+	 * Mint a token for the object a target names.
+	 *
+	 * @param array{objectUuid: string, registerId: int|null, schemaId: int|null, label: string|null} $target The object and label.
+	 * @param int|null $ttlSeconds Time-to-live in seconds; null = never expires.
+	 *
+	 * @return array<string,mixed> Minted token metadata + the public URL.
+	 *
+	 * @throws InvalidArgumentException When objectUuid is empty or the
+	 *                                  minter is anonymous.
+	 */
+	private function mintFor(array $target, ?int $ttlSeconds): array {
+		if (trim($target['objectUuid']) === '') {
 			throw new InvalidArgumentException('objectUuid is required to mint a case token');
 		}
 
@@ -144,22 +162,14 @@ class CaseTokenService {
 		}
 
 		$now = new DateTime();
-		$expires = null;
-		if ($ttlSeconds !== null && $ttlSeconds > 0) {
-			$expires = (clone $now)->modify('+' . $ttlSeconds . ' seconds');
-		}
+		$expires = $this->expiryOf(now: $now, ttlSeconds: $ttlSeconds);
 
 		$token = $this->secureRandom->generate(
 			self::TOKEN_LENGTH,
 			ISecureRandom::CHAR_ALPHANUMERIC
 		);
 
-		$entity = new CaseToken();
-		$entity->setToken($token);
-		$entity->setObjectUuid($objectUuid);
-		$entity->setRegisterId($registerId);
-		$entity->setSchemaId($schemaId);
-		$entity->setLabel($label);
+		$entity = $this->newToken(token: $token, target: $target);
 		$entity->setCreatedBy($user->getUID());
 		$entity->setCreatedAt($now);
 		$entity->setExpiresAt($expires);
@@ -170,7 +180,42 @@ class CaseTokenService {
 		$data = $saved->jsonSerialize();
 		$data['url'] = $this->buildPublicUrl(token: $token);
 		return $data;
-	}//end mint()
+	}//end mintFor()
+
+	/**
+	 * When a token minted now expires.
+	 *
+	 * @param DateTime $now        The mint moment.
+	 * @param int|null $ttlSeconds Time-to-live in seconds.
+	 *
+	 * @return DateTime|null The expiry, or null when the ttl is absent or not positive.
+	 */
+	private function expiryOf(DateTime $now, ?int $ttlSeconds): ?DateTime {
+		if ($ttlSeconds === null || $ttlSeconds <= 0) {
+			return null;
+		}
+
+		return (clone $now)->modify('+' . $ttlSeconds . ' seconds');
+	}//end expiryOf()
+
+	/**
+	 * A new, unsaved token row bound to the target object.
+	 *
+	 * @param string $token The opaque token.
+	 * @param array{objectUuid: string, registerId: int|null, schemaId: int|null, label: string|null} $target The object and label.
+	 *
+	 * @return CaseToken
+	 */
+	private function newToken(string $token, array $target): CaseToken {
+		$entity = new CaseToken();
+		$entity->setToken($token);
+		$entity->setObjectUuid($target['objectUuid']);
+		$entity->setRegisterId($target['registerId']);
+		$entity->setSchemaId($target['schemaId']);
+		$entity->setLabel($target['label']);
+
+		return $entity;
+	}//end newToken()
 
 	/**
 	 * Resolve a token to a PUBLIC-SAFE view of the referenced object.
@@ -200,17 +245,8 @@ class CaseTokenService {
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
 	public function resolve(string $token): ?array {
-		if (trim($token) === '') {
-			return null;
-		}
-
-		$row = $this->mapper->findByToken($token);
+		$row = $this->validToken(token: $token);
 		if ($row === null) {
-			return null;
-		}
-
-		if ($row->isValidAt(new DateTime()) === false) {
-			// Revoked or expired — fail closed.
 			return null;
 		}
 
@@ -233,27 +269,7 @@ class CaseTokenService {
 				_multitenancy: true
 			);
 
-			if ($entity === null) {
-				return null;
-			}
-
-			$rendered = $objectService->renderEntity(
-				entity: $entity,
-				_extend: [],
-				depth: 0,
-				filter: [],
-				fields: [],
-				unset: [],
-				_rbac: true,
-				_multitenancy: true
-			);
-
-			return [
-				'token' => $row->getToken(),
-				'label' => $row->getLabel(),
-				'object' => $rendered,
-				'timeline' => $this->publicTimeline(entity: $entity),
-			];
+			return $this->publicView(row: $row, read: ['objectService' => $objectService, 'entity' => $entity]);
 		} catch (Throwable $e) {
 			// RBAC-denied / not-found / any read failure → 404 (null).
 			// Logged server-side; the caller never learns why.
@@ -262,8 +278,65 @@ class CaseTokenService {
 				['exception' => $e]
 			);
 			return null;
-		}//end try
+		}
 	}//end resolve()
+
+	/**
+	 * The stored row of a token that may be resolved now.
+	 *
+	 * @param string $token The opaque token.
+	 *
+	 * @return CaseToken|null The row, or null when blank, unknown, revoked or expired.
+	 */
+	private function validToken(string $token): ?CaseToken {
+		if (trim($token) === '') {
+			return null;
+		}
+
+		$row = $this->mapper->findByToken($token);
+		if ($row === null || $row->isValidAt(new DateTime()) === false) {
+			// Unknown, revoked or expired — fail closed.
+			return null;
+		}
+
+		return $row;
+	}//end validToken()
+
+	/**
+	 * The public-safe view of the object a token addresses.
+	 *
+	 * The object is read in {@see resolve()}; this renders it through the
+	 * same RBAC- and tenancy-respecting path.
+	 *
+	 * @param CaseToken $row The valid token row.
+	 * @param array{objectService: object, entity: ?object} $read The ObjectService and the object it found.
+	 *
+	 * @return array<string,mixed>|null The view, or null when the object is not found.
+	 */
+	private function publicView(CaseToken $row, array $read): ?array {
+		$entity = $read['entity'];
+		if ($entity === null) {
+			return null;
+		}
+
+		$rendered = $read['objectService']->renderEntity(
+			entity: $entity,
+			_extend: [],
+			depth: 0,
+			filter: [],
+			fields: [],
+			unset: [],
+			_rbac: true,
+			_multitenancy: true
+		);
+
+		return [
+			'token' => $row->getToken(),
+			'label' => $row->getLabel(),
+			'object' => $rendered,
+			'timeline' => $this->publicTimeline(entity: $entity),
+		];
+	}//end publicView()
 
 	/**
 	 * The public entries on one object, as a stranger may read them.
@@ -320,14 +393,7 @@ class CaseTokenService {
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
 	public function revoke(string $objectUuid, string $tokenOrId): bool {
-		$row = $this->mapper->findByToken($tokenOrId);
-		if ($row === null && ctype_digit($tokenOrId) === true) {
-			$row = $this->mapper->findById((int)$tokenOrId);
-		}
-
-		if ($row === null || $row->getObjectUuid() !== $objectUuid) {
-			throw new Exception('Token not found', 404);
-		}
+		$row = $this->tokenOfObject(objectUuid: $objectUuid, tokenOrId: $tokenOrId);
 
 		if ($row->getRevokedAt() !== null) {
 			// Already revoked — idempotent no-op.
@@ -338,6 +404,29 @@ class CaseTokenService {
 		$this->mapper->update($row);
 		return true;
 	}//end revoke()
+
+	/**
+	 * The token row, addressed by token or numeric id, of one object.
+	 *
+	 * @param string $objectUuid The object the token must be minted against.
+	 * @param string $tokenOrId  The opaque token, or its numeric row id.
+	 *
+	 * @return CaseToken The row.
+	 *
+	 * @throws Exception With code 404 when no token of this object matches.
+	 */
+	private function tokenOfObject(string $objectUuid, string $tokenOrId): CaseToken {
+		$row = $this->mapper->findByToken($tokenOrId);
+		if ($row === null && ctype_digit($tokenOrId) === true) {
+			$row = $this->mapper->findById((int)$tokenOrId);
+		}
+
+		if ($row === null || $row->getObjectUuid() !== $objectUuid) {
+			throw new Exception('Token not found', 404);
+		}
+
+		return $row;
+	}//end tokenOfObject()
 
 	/**
 	 * List the (public-safe metadata of) tokens minted against an object.

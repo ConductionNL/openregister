@@ -45,3 +45,46 @@ export async function fetchFileTab(tab, endpoint, keep) {
 	}
 	return failure
 }
+
+/**
+ * A mixin for a Files sidebar tab: the `fileId` prop, the `loading`,
+ * `error` and `errorMessage` state, and a reload through the tab's method
+ * `load` whenever the file changes (and on creation).
+ *
+ * @param {string} load The name of the tab's method that loads the file's data
+ * @return {object} The mixin
+ */
+export function fileTab(load) {
+	return {
+		props: {
+			fileId: {
+				type: Number,
+				required: true,
+			},
+		},
+
+		data() {
+			return {
+				loading: false,
+				error: false,
+				errorMessage: '',
+			}
+		},
+
+		watch: {
+			fileId: {
+				/**
+				 * @param {number} newVal The id of the file now shown
+				 * @spec exclude watcher reloading the tab on fileId change, UI plumbing
+				 */
+				handler(newVal) {
+					if (newVal) {
+						this[load]()
+					}
+				},
+
+				immediate: true,
+			},
+		},
+	}
+}

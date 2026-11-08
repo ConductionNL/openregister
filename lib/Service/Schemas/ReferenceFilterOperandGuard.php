@@ -68,22 +68,31 @@ class ReferenceFilterOperandGuard {
 	 */
 	public function assertProperties(array $properties): void {
 		foreach ($properties as $name => $config) {
-			if (is_array($config) === false) {
-				continue;
+			if (is_array($config) === true) {
+				$this->assertProperty(name: (string)$name, config: $config, properties: $properties);
 			}
-
-			$declaration = ReferenceFilterDeclaration::fromProperty(property: $config, path: (string)$name);
-			if ($declaration === null) {
-				continue;
-			}
-
-			$declaration->assertOperandsExist(
-				ownProperties: $properties,
-				farProperties: $this->propertiesOf(config: $config),
-				path: (string)$name
-			);
 		}
 	}//end assertProperties()
+
+	/**
+	 * Refuse the filter of one property when it names a property nobody declares.
+	 *
+	 * @param string               $name       The property name, which is also its path.
+	 * @param array<string, mixed> $config     The property declaration.
+	 * @param array<string, mixed> $properties The `properties` block of the schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws ReferenceFilterException When an operand is not declared on either schema.
+	 */
+	private function assertProperty(string $name, array $config, array $properties): void {
+		$declaration = ReferenceFilterDeclaration::fromProperty(property: $config, path: $name);
+		if ($declaration === null) {
+			return;
+		}
+
+		$declaration->assertOperandsExist(ownProperties: $properties, farProperties: $this->propertiesOf(config: $config), path: $name);
+	}//end assertProperty()
 
 	/**
 	 * The properties of the schema a reference points at.
@@ -100,7 +109,7 @@ class ReferenceFilterOperandGuard {
 	 * @return array<string, mixed> The referenced schema's properties, or an empty array.
 	 */
 	private function propertiesOf(array $config): array {
-		$target = $this->targetOf(config: $config);
+		$target = ReferenceFilterDeclaration::targetSchemaOf(config: $config);
 		if ($target === null) {
 			return [];
 		}
@@ -111,38 +120,21 @@ class ReferenceFilterOperandGuard {
 			return [];
 		}
 
-		$properties = $schema->getProperties();
-		if (is_array($properties) === false) {
-			return [];
-		}
-
-		return $properties;
+		return self::arrayOrEmpty(value: $schema->getProperties());
 	}//end propertiesOf()
 
 	/**
-	 * The identifier of the schema a reference property points at.
+	 * A value when it is an array, else an empty array.
 	 *
-	 * Mirrors what a reference means everywhere else in this app: `$ref` or
-	 * `schema` on the property, and for an array of references, the same two
-	 * keys on its `items`.
+	 * @param mixed $value The value.
 	 *
-	 * @param array<string, mixed> $config The reference property's declaration.
-	 *
-	 * @return string|null The target identifier, or null when the property names none.
+	 * @return array<string, mixed> The array.
 	 */
-	private function targetOf(array $config): ?string {
-		foreach (['$ref', 'schema'] as $key) {
-			$value = ($config[$key] ?? null);
-			if (is_string($value) === true && $value !== '') {
-				return $value;
-			}
+	private static function arrayOrEmpty(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
 		}
 
-		$items = ($config['items'] ?? null);
-		if (is_array($items) === true) {
-			return $this->targetOf(config: $items);
-		}
-
-		return null;
-	}//end targetOf()
+		return $value;
+	}//end arrayOrEmpty()
 }//end class

@@ -318,13 +318,33 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			throw new RuntimeException('openregister.user-task needs a node resume slot; without one every heartbeat would create a task.');
 		}
 
+		$step = new UserTaskStep(items: $items, config: $config, context: $context, nodeId: $resume->nodeId());
+
 		$taskUuid = trim((string)$resume->get(key: FlowTaskBridge::SLOT_TASK_UUID, default: ''));
 		if ($taskUuid === '') {
-			$this->createTask(items: $items, config: $config, context: $context, resume: $resume);
+			$this->createTask(step: $step, resume: $resume);
 
 			throw $this->suspension(config: $config, items: $items);
 		}
 
+		return $this->answerFromTask(step: $step, taskUuid: $taskUuid);
+	}//end execute()
+
+	/**
+	 * Read the task this step is waiting on: suspend again until it is terminal, then place its outcome.
+	 *
+	 * @param UserTaskStep $step     The items, configuration and run context.
+	 * @param string       $taskUuid The task held in this node's slot.
+	 *
+	 * @return array The items, each carrying the outcome.
+	 *
+	 * @throws RuntimeException When the task no longer exists.
+	 * @throws FlowSuspension   While the task is not terminal.
+	 * @throws FlowStop         On a rejection the flow opted to stop on.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function answerFromTask(UserTaskStep $step, string $taskUuid): array {
 		$task = $this->bridge->taskOrNull(uuid: $taskUuid);
 		if ($task === null) {
 			// The row this run was waiting on is gone. Waiting further would
@@ -337,7 +357,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 			// Claimed, reassigned, delegated, nudged: none of those is an
 			// answer. Suspend again, and do NOT touch the slot: askedAt stays
 			// what it was.
-			throw $this->suspension(config: $config, items: $items);
+			throw $this->suspension(config: $step->config, items: $step->items);
 		}
 
 		// A terminal read with no signal in hand means the completion's wake
@@ -345,38 +365,56 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		// heartbeat is what recovered it. Recorded on the task's audit,
 		// attributed to its completer, BEFORE the outcome is applied below:
 		// the applying is identical on both paths, which is the contract.
-		if (array_key_exists(FlowRunServiceInterface::SIGNAL_CONTEXT_KEY, $context) === false) {
+		if (array_key_exists(FlowRunServiceInterface::SIGNAL_CONTEXT_KEY, $step->context) === false) {
 			$this->bridge->recordHeartbeatRecovery(task: $task);
 		}
 
 		$bag = FlowTaskBridge::outcomeBagFor(task: $task);
 
-		if ($bag['rejected'] === true && ($config['failOnReject'] ?? false) === true) {
+		$this->refuseIfRejected(step: $step, bag: $bag);
+
+		return $this->placeOutcome(step: $step, bag: $bag);
+	}//end answerFromTask()
+
+	/**
+	 * Stop the run on a rejection, when the flow opted in with `failOnReject`.
+	 *
+	 * @param UserTaskStep         $step The items and configuration.
+	 * @param array<string, mixed> $bag  The outcome bag.
+	 *
+	 * @return void
+	 *
+	 * @throws FlowStop On an opted-in rejection.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	private function refuseIfRejected(UserTaskStep $step, array $bag): void {
+		if ($bag['rejected'] === true && ($step->config['failOnReject'] ?? false) === true) {
 			throw new FlowStop(
 				reason: sprintf(
 					'Rejected: %s',
-					trim((string)($bag['comment'] ?? $this->config->renderedTitle(config: $config, items: $items)))
+					trim((string)($bag['comment'] ?? $this->config->renderedTitle(config: $step->config, items: $step->items)))
 				),
 				isError: true
 			);
 		}
 
-		return $this->placeOutcome(items: $items, config: $config, bag: $bag);
-	}//end execute()
+	}//end refuseIfRejected()
 
 	/**
 	 * Create the one task and remember it in this node's slot.
 	 *
-	 * @param array $items The input items; the first is the representative.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param UserTaskStep        $step   The items (the first is the representative),
+	 *                                    configuration, run context and node id.
 	 * @param FlowNodeResumeState $resume This node's slot.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
-	private function createTask(array $items, array $config, array $context, FlowNodeResumeState $resume): void {
+	private function createTask(UserTaskStep $step, FlowNodeResumeState $resume): void {
+		$context = $step->context;
+		$config  = $step->config;
 		$runUuid = trim((string)($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? '')));
 		if ($runUuid === '') {
 			throw new RuntimeException('openregister.user-task cannot create a task outside a persisted run: the task must carry the run uuid.');
@@ -384,12 +422,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 
 		$this->performers->refuseIfNobodyHoldsThem(config: $config);
 
-		$data = $this->config->taskData(
-			config: $config,
-			items: $items,
-			nodeId: $resume->nodeId(),
-			nodeType: $this->getId()
-		);
+		$data = $this->config->taskData(step: $step, nodeType: $this->getId());
 
 		// 🔴 BEFORE THE TASK EXISTS, AND IT THROWS. `attachTo` naming a role the
 		// run never recorded fails the step and creates NOTHING: a task attached
@@ -423,21 +456,24 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 		// (subjectType: 'task', subjectUuid) pair that
 		// FlowTimerSubjectTerminalListener already cancels on completion. Arm
 		// somewhere the uuid is not yet known and the two halves cannot meet.
-		$this->performers->askAnyAgent(config: $config, task: $task, context: $context);
+		$this->performers->askAnyAgent(step: $step, task: $task);
 
 		$this->armDeadline(
-			config: $config,
-			taskUuid: (string)$task->getUuid(),
-			runUuid: $runUuid,
-			nodeId: $resume->nodeId(),
-			context: $context
+			step: $step,
+			binding: [
+				'subjectType' => 'task',
+				'subjectUuid' => (string)$task->getUuid(),
+				'runUuid' => $runUuid,
+				'nodeId' => $resume->nodeId(),
+				'appId' => 'openregister',
+			]
 		);
 
 		// Written ONCE. A heartbeat re-enters execute() and finds the uuid
 		// held, so it never reaches this line again; askedAt therefore records
 		// when somebody was first asked, not when the run last checked.
 		$resume->merge(
-			values: $this->config->slotValues(config: $config, items: $items, taskUuid: (string)$task->getUuid())
+			values: $this->config->slotValues(step: $step, taskUuid: (string)$task->getUuid())
 		);
 
 	}//end createTask()
@@ -460,48 +496,80 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 * recorded as provenance, which is what the timer model asks for — a timer
 	 * is subject-bound, and its run is optional context.
 	 *
-	 * @param array<string, mixed> $config The node configuration.
-	 * @param string $taskUuid The uuid of the task just created.
-	 * @param string $runUuid The run this node is executing in.
-	 * @param string $nodeId This node's id.
-	 * @param array<string, mixed> $context The execution context.
+	 * @param UserTaskStep         $step    The node configuration and execution context.
+	 * @param array<string, mixed> $binding The timer's subject (the task just created) and provenance (run, node, app).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
-	private function armDeadline(array $config, string $taskUuid, string $runUuid, string $nodeId, array $context): void {
-		$sla = ($config['sla'] ?? null);
-		if ($sla === null || $sla === '' || $sla === []) {
+	private function armDeadline(UserTaskStep $step, array $binding): void {
+		$config = $step->config;
+		if ($this->declaresSla(config: $config) === false) {
 			return;
 		}
 
+		$timerConfig = $binding + ['title' => $this->timerTitle(config: $config), 'sla' => $config['sla']]
+			+ $this->optionalTimerKeys(config: $config);
+
+		$this->timers->arm(config: $timerConfig, actor: $this->actingIdentity(context: $step->context));
+
+	}//end armDeadline()
+
+	/**
+	 * Whether the node declares an SLA at all: absent, null, '' and [] do not.
+	 *
+	 * @param array<string, mixed> $config The node configuration.
+	 *
+	 * @return bool True when a deadline should be armed.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function declaresSla(array $config): bool {
+		$sla = ($config['sla'] ?? null);
+		return $sla !== null && $sla !== '' && $sla !== [];
+	}//end declaresSla()
+
+	/**
+	 * The timer's title: the node's trimmed title, or null when it has none.
+	 *
+	 * @param array<string, mixed> $config The node configuration.
+	 *
+	 * @return string|null The title.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function timerTitle(array $config): ?string {
 		$title = trim((string)($config['title'] ?? ''));
 		if ($title === '') {
-			$title = null;
+			return null;
 		}
 
-		$timerConfig = [
-			'subjectType' => 'task',
-			'subjectUuid' => $taskUuid,
-			'runUuid' => $runUuid,
-			'nodeId' => $nodeId,
-			'appId' => 'openregister',
-			'title' => $title,
-			'sla' => $sla,
-		];
+		return $title;
+	}//end timerTitle()
 
-		// Only forward what the author actually set: `build()` applies its own
-		// defaults, and passing an explicit null would override them.
+	/**
+	 * The optional timer keys the author actually set.
+	 *
+	 * Only forward what the author actually set: `build()` applies its own
+	 * defaults, and passing an explicit null would override them.
+	 *
+	 * @param array<string, mixed> $config The node configuration.
+	 *
+	 * @return array<string, mixed> The keys that are present, not null and not ''.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
+	 */
+	private function optionalTimerKeys(array $config): array {
+		$set = [];
 		foreach (['calendar', 'ladder', 'escalationRules', 'purpose', 'legalEffect', 'onExpiry', 'organisation'] as $key) {
 			if (array_key_exists($key, $config) === true && $config[$key] !== null && $config[$key] !== '') {
-				$timerConfig[$key] = $config[$key];
+				$set[$key] = $config[$key];
 			}
 		}
 
-		$this->timers->arm(config: $timerConfig, actor: $this->actingIdentity(context: $context));
-
-	}//end armDeadline()
+		return $set;
+	}//end optionalTimerKeys()
 
 	/**
 	 * Write the outcome bag onto every item, under the configured key.
@@ -511,16 +579,16 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 * something only the run holds. Non-array items are left alone rather
 	 * than failing the run.
 	 *
-	 * @param array $items The items to pass on.
-	 * @param array $config The step configuration.
-	 * @param array<string, mixed> $bag The outcome bag.
+	 * @param UserTaskStep         $step The items to pass on and the step configuration.
+	 * @param array<string, mixed> $bag  The outcome bag.
 	 *
 	 * @return array The items, each carrying the bag.
 	 *
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
 	 */
-	private function placeOutcome(array $items, array $config, array $bag): array {
-		$key = $this->config->outcomeKey(config: $config);
+	private function placeOutcome(UserTaskStep $step, array $bag): array {
+		$key   = $this->config->outcomeKey(config: $step->config);
+		$items = $step->items;
 
 		foreach ($items as $index => $item) {
 			if (is_array($item) === false) {

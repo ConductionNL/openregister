@@ -47,18 +47,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) One call, to {@see OAuth2InstanceHost}, a
  * stateless security predicate; injecting it would make the host-lock substitutable.
  */
-class OAuth2InstanceClient {
-	/**
-	 * Claims key naming the client credential this call minted.
-	 *
-	 * Set only when ensure() registered a new client, never for one it reused,
-	 * so a caller whose later step fails knows exactly what to remove. It is not
-	 * a claim: the caller takes it out before the claims are signed.
-	 *
-	 * @var string
-	 */
-	public const MINTED_KEY = '_minted';
-
+class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
+	
 	/**
 	 * Constructor.
 	 *

@@ -44,7 +44,7 @@ use OCA\OpenRegister\Service\WriteCause;
  *
  * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
-class AppointmentAttendeeService {
+class AppointmentAttendeeService implements AppointmentAttendeeServiceInterface {
 
 	/**
 	 * The object property the answers are stored under.
@@ -169,16 +169,7 @@ class AppointmentAttendeeService {
 			throw new InvalidArgumentException('An attendee response must name the attendee.');
 		}
 
-		$status = strtoupper(trim($status));
-		if (in_array($status, self::STATUSES, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					"'%s' is not an attendee answer: use %s.",
-					$status,
-					implode(', ', self::STATUSES)
-				)
-			);
-		}
+		$status = $this->answerStatus(status: $status);
 
 		$object = WriteCause::asLookup(fn () => $this->objects->find(id: $objectUuid));
 		if ($object === null) {
@@ -187,29 +178,18 @@ class AppointmentAttendeeService {
 			);
 		}
 
-		$moment = $respondedAt;
-		if ($moment === null) {
-			$moment = new DateTime();
-		}
+		$moment = ($respondedAt ?? new DateTime());
 
 		$data = $object->getObject();
-		$responses = $this->normalise(value: ($data[self::RESPONSES_PROPERTY] ?? null));
-
-		$responses = array_values(
-			array_filter(
-				$responses,
-				static function (array $response) use ($attendee): bool {
-					return ($response['attendee'] ?? null) !== $attendee;
-				}
-			)
+		$responses = $this->replaceResponse(
+			responses: $this->normalise(value: ($data[self::RESPONSES_PROPERTY] ?? null)),
+			response: [
+				'attendee' => $attendee,
+				'status' => $status,
+				'respondedBy' => $respondedBy,
+				'respondedAt' => $moment->format('c'),
+			]
 		);
-
-		$responses[] = [
-			'attendee' => $attendee,
-			'status' => $status,
-			'respondedBy' => $respondedBy,
-			'respondedAt' => $moment->format('c'),
-		];
 
 		$data[self::RESPONSES_PROPERTY] = $responses;
 
@@ -222,6 +202,55 @@ class AppointmentAttendeeService {
 
 		return $responses;
 	}//end recordResponse()
+
+	/**
+	 * The normalised answer, refusing anything that is not one of STATUSES.
+	 *
+	 * @param string $status The submitted answer.
+	 *
+	 * @return string The upper-cased, trimmed answer.
+	 *
+	 * @throws InvalidArgumentException When the status is not an answer.
+	 */
+	private function answerStatus(string $status): string {
+		$status = strtoupper(trim($status));
+		if (in_array($status, self::STATUSES, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf(
+					"'%s' is not an attendee answer: use %s.",
+					$status,
+					implode(', ', self::STATUSES)
+				)
+			);
+		}
+
+		return $status;
+	}//end answerStatus()
+
+	/**
+	 * Drop the invitee's earlier answer, when any, and append the new one.
+	 *
+	 * @param array<int, array<string, mixed>> $responses The stored responses.
+	 * @param array<string, mixed>             $response  The new answer.
+	 *
+	 * @return array<int, array<string, mixed>> The responses after the answer.
+	 */
+	private function replaceResponse(array $responses, array $response): array {
+		$attendee = $response['attendee'];
+
+		$kept = array_values(
+			array_filter(
+				$responses,
+				static function (array $stored) use ($attendee): bool {
+					return ($stored['attendee'] ?? null) !== $attendee;
+				}
+			)
+		);
+
+		$kept[] = $response;
+
+		return $kept;
+	}//end replaceResponse()
 
 	/**
 	 * The answers recorded on an object, as stored.
@@ -301,18 +330,28 @@ class AppointmentAttendeeService {
 
 		$responses = [];
 		foreach ($value as $entry) {
-			if (is_array($entry) === false) {
-				continue;
+			if ($this->isReadableResponse(entry: $entry) === true) {
+				$responses[] = $entry;
 			}
-
-			$attendee = ($entry['attendee'] ?? null);
-			if (is_string($attendee) === false || trim($attendee) === '') {
-				continue;
-			}
-
-			$responses[] = $entry;
 		}
 
 		return $responses;
 	}//end normalise()
+
+	/**
+	 * Whether a stored entry is a response naming an attendee.
+	 *
+	 * @param mixed $entry The stored entry.
+	 *
+	 * @return bool True when the entry is readable.
+	 */
+	private function isReadableResponse(mixed $entry): bool {
+		if (is_array($entry) === false) {
+			return false;
+		}
+
+		$attendee = ($entry['attendee'] ?? null);
+
+		return (is_string($attendee) === true && trim($attendee) !== '');
+	}//end isReadableResponse()
 }//end class

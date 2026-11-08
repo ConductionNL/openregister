@@ -362,61 +362,117 @@ class McpProviderDiscovery {
 			$scanner = new AttributeToolScanner();
 
 			foreach ($appManager->getInstalledApps() as $appId) {
-				// The `IMcpScannableServices::<appId>` opt-in alias — and the
-				// scanned service class itself (ADR-041) — live in the opting-in
-				// app's OWN DI container, NOT OR's shared container: a leaf app
-				// registers them via $context->registerServiceAlias() in its own
-				// Application::register(), which binds into that app's
-				// \OC\AppFramework\DependencyInjection\DIContainer. Resolving them
-				// off the shared $container silently returns nothing (#390), so
-				// both alias and instance resolution must go through the app's
-				// own container. Fail-soft: an app with no registered container
-				// (or a container whose resolution throws) is simply skipped.
-				$appContainer = $this->getRegisteredAppContainer(appId: $appId, container: $container);
-				if ($appContainer === null) {
-					continue;
-				}
-
-				$classNames = $this->resolveScannableServiceClasses(
-					appContainer: $appContainer,
-					logger: $logger,
-					appId: $appId
-				);
-
-				if ($classNames === []) {
-					continue;
-				}
-
-				$descriptors = $scanner->scanClasses(appId: $appId, classNames: $classNames, logger: $logger);
-				if ($descriptors === []) {
-					continue;
-				}
-
-				$entries = $this->resolveAttributeEntries(
-					appContainer: $appContainer,
+				$provider = $this->attributeProviderFor(
+					container: $container,
 					logger: $logger,
 					appId: $appId,
-					descriptors: $descriptors,
-					providers: $providers
+					context: ['scanner' => $scanner, 'providers' => $providers]
 				);
-
-				if ($entries === []) {
-					continue;
+				if ($provider !== null) {
+					$providers[] = $provider;
 				}
-
-				$providers[] = (new AttributeToolProvider(
-					appId: $appId,
-					entries: $entries,
-					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
-					logger: $logger
-				))->translatedBy(appContainer: $appContainer);
-			}//end foreach
+			}
 		} catch (\Throwable $e) {
 			$logger->warning(
 				'[Application] Attributed-tool provider enumeration failed: ' . $e->getMessage()
 			);
 		}//end try
 	}//end collectAttributeMcpProviders()
+
+	/**
+	 * The attributed-tool provider of one installed app, or null when it opts
+	 * in to nothing usable.
+	 *
+	 * @param ContainerInterface       $container The shared server container.
+	 * @param \Psr\Log\LoggerInterface $logger    Logger.
+	 * @param string                   $appId     The installed app.
+	 * @param array{scanner: AttributeToolScanner, providers: list<IMcpToolProvider>} $context The scanner and the providers collected so far.
+	 *
+	 * @return AttributeToolProvider|null
+	 */
+	private function attributeProviderFor(
+		ContainerInterface $container,
+		\Psr\Log\LoggerInterface $logger,
+		string $appId,
+		array $context,
+	): ?AttributeToolProvider {
+		// The `IMcpScannableServices::<appId>` opt-in alias — and the
+		// scanned service class itself (ADR-041) — live in the opting-in
+		// app's OWN DI container, NOT OR's shared container: a leaf app
+		// registers them via $context->registerServiceAlias() in its own
+		// Application::register(), which binds into that app's
+		// \OC\AppFramework\DependencyInjection\DIContainer. Resolving them
+		// off the shared $container silently returns nothing (#390), so
+		// both alias and instance resolution must go through the app's
+		// own container. Fail-soft: an app with no registered container
+		// (or a container whose resolution throws) is simply skipped.
+		$appContainer = $this->getRegisteredAppContainer(appId: $appId, container: $container);
+		if ($appContainer === null) {
+			return null;
+		}
+
+		$descriptors = $this->scanAttributedTools(
+			appContainer: $appContainer,
+			logger: $logger,
+			appId: $appId,
+			scanner: $context['scanner']
+		);
+		if ($descriptors === []) {
+			return null;
+		}
+
+		$entries = $this->resolveAttributeEntries(
+			appContainer: $appContainer,
+			logger: $logger,
+			appId: $appId,
+			descriptors: $this->withoutCollidingDescriptors(
+				logger: $logger,
+				appId: $appId,
+				descriptors: $descriptors,
+				providers: $context['providers']
+			)
+		);
+
+		if ($entries === []) {
+			return null;
+		}
+
+		return (new AttributeToolProvider(
+			appId: $appId,
+			entries: $entries,
+			auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
+			logger: $logger
+		))->translatedBy(appContainer: $appContainer);
+	}//end attributeProviderFor()
+
+	/**
+	 * The attributed-tool descriptors of an app's declared scannable services.
+	 *
+	 * @param ContainerInterface       $appContainer The app's own DI container.
+	 * @param \Psr\Log\LoggerInterface $logger       Logger.
+	 * @param string                   $appId        The app.
+	 * @param AttributeToolScanner     $scanner      The scanner.
+	 *
+	 * @return array<int, array<string, mixed>> The descriptors; none when nothing is declared.
+	 */
+	private function scanAttributedTools(
+		ContainerInterface $appContainer,
+		\Psr\Log\LoggerInterface $logger,
+		string $appId,
+		AttributeToolScanner $scanner,
+	): array {
+		$classNames = $this->resolveScannableServiceClasses(
+			appContainer: $appContainer,
+			logger: $logger,
+			appId: $appId
+		);
+
+		if ($classNames === []) {
+			return [];
+		}
+
+		return $scanner->scanClasses(appId: $appId, classNames: $classNames, logger: $logger);
+	}//end scanAttributedTools()
 
 	/**
 	 * Obtain the opting-in app's OWN DI container so its
@@ -492,48 +548,26 @@ class McpProviderDiscovery {
 	}//end resolveScannableServiceClasses()
 
 	/**
-	 * Resolve every scanned descriptor for one app to an invocable entry
-	 * (attaching the owning app's own DI-resolved service instance —
-	 * ADR-041), applying the collision policy documented on
+	 * Drop the scanned descriptors whose tool id collides with a tool the
+	 * same app already provides, applying the collision policy documented on
 	 * {@see collectAttributeMcpProviders()}.
 	 *
-	 * The service instance is resolved from the owning app's OWN container
-	 * (#390) — the scanned class and its dependencies are only reliably
-	 * wireable there, not in OR's shared container.
-	 *
-	 * @param ContainerInterface $appContainer The owning app's own DI container.
 	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
 	 * @param string $appId The owning app id.
 	 * @param array<int, array<string, mixed>> $descriptors Scanned descriptors (see AttributeToolScanner).
 	 * @param array<IMcpToolProvider> $providers Providers collected so far (for collision checks).
 	 *
-	 * @return list<array<string, mixed>> Invocable entries (descriptor + resolved `instance`).
+	 * @return list<array<string, mixed>> The descriptors that survive the collision policy.
 	 */
-	private function resolveAttributeEntries(
-		ContainerInterface $appContainer,
+	private function withoutCollidingDescriptors(
 		\Psr\Log\LoggerInterface $logger,
 		string $appId,
 		array $descriptors,
 		array $providers,
 	): array {
-		$derivedIds = [];
-		$otherIds = [];
+		[$derivedIds, $otherIds] = $this->appToolIds(appId: $appId, providers: $providers);
 
-		foreach ($providers as $provider) {
-			if ($provider->getAppId() !== $appId) {
-				continue;
-			}
-
-			$ids = array_column($provider->getTools(), 'id');
-			if ($provider instanceof SchemaDerivedToolProvider) {
-				$derivedIds = array_merge($derivedIds, $ids);
-				continue;
-			}
-
-			$otherIds = array_merge($otherIds, $ids);
-		}
-
-		$entries = [];
+		$kept = [];
 
 		foreach ($descriptors as $descriptor) {
 			$id = (string)$descriptor['id'];
@@ -552,6 +586,66 @@ class McpProviderDiscovery {
 				continue;
 			}
 
+			$kept[] = $descriptor;
+		}//end foreach
+
+		return $kept;
+	}//end withoutCollidingDescriptors()
+
+	/**
+	 * The tool ids an app already has: its schema-derived ids and its other (hand-written) ids.
+	 *
+	 * @param string                 $appId     The app.
+	 * @param list<IMcpToolProvider> $providers Providers collected so far.
+	 *
+	 * @return array{0: list<string>, 1: list<string>} Derived ids, other ids.
+	 */
+	private function appToolIds(string $appId, array $providers): array {
+		$derivedIds = [];
+		$otherIds = [];
+
+		foreach ($providers as $provider) {
+			if ($provider->getAppId() !== $appId) {
+				continue;
+			}
+
+			$ids = array_column($provider->getTools(), 'id');
+			if ($provider instanceof SchemaDerivedToolProvider) {
+				$derivedIds = array_merge($derivedIds, $ids);
+				continue;
+			}
+
+			$otherIds = array_merge($otherIds, $ids);
+		}
+
+		return [$derivedIds, $otherIds];
+	}//end appToolIds()
+
+	/**
+	 * Resolve every kept descriptor for one app to an invocable entry
+	 * (attaching the owning app's own DI-resolved service instance —
+	 * ADR-041).
+	 *
+	 * The service instance is resolved from the owning app's OWN container
+	 * (#390) — the scanned class and its dependencies are only reliably
+	 * wireable there, not in OR's shared container.
+	 *
+	 * @param ContainerInterface $appContainer The owning app's own DI container.
+	 * @param \Psr\Log\LoggerInterface $logger PSR logger.
+	 * @param string $appId The owning app id.
+	 * @param array<int, array<string, mixed>> $descriptors Descriptors that survived the collision policy.
+	 *
+	 * @return list<array<string, mixed>> Invocable entries (descriptor + resolved `instance`).
+	 */
+	private function resolveAttributeEntries(
+		ContainerInterface $appContainer,
+		\Psr\Log\LoggerInterface $logger,
+		string $appId,
+		array $descriptors,
+	): array {
+		$entries = [];
+
+		foreach ($descriptors as $descriptor) {
 			try {
 				$descriptor['instance'] = $appContainer->get($descriptor['class']);
 			} catch (\Throwable $e) {

@@ -17,14 +17,7 @@ import {
 		:subname="t('openregister', 'View search analytics and manage search logs')"
 		:open="navigationStore.sidebarState.searchTrail"
 		@update:open="(e) => navigationStore.setSidebarState('searchTrail', e)">
-		<NcAppSidebarTab
-			id="filters-tab"
-			:name="t('openregister', 'Filters')"
-			:order="1">
-			<template #icon>
-				<FilterOutline :size="20" />
-			</template>
-
+		<FiltersSidebarTab>
 			<!-- Filter Section -->
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Search Trails') }}</h3>
@@ -111,14 +104,7 @@ import {
 				</div>
 			</div>
 
-			<div class="actionGroup">
-				<NcButton @click="clearFilters">
-					<template #icon>
-						<FilterOffOutline :size="20" />
-					</template>
-					{{ t('openregister', 'Clear filters') }}
-				</NcButton>
-			</div>
+			<ClearFiltersButton @clear="clearFilters" />
 
 			<NcNoteCard type="info" class="filter-hint">
 				{{
@@ -128,82 +114,37 @@ import {
 					)
 				}}
 			</NcNoteCard>
-		</NcAppSidebarTab>
+		</FiltersSidebarTab>
 
-		<NcAppSidebarTab
-			id="stats-tab"
-			:name="t('openregister', 'Statistics')"
-			:order="2">
-			<template #icon>
-				<ChartLine :size="20" />
-			</template>
-
+		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Search Trail Statistics') }}</h3>
 				<div class="statGrid">
-					<div class="statCard">
-						<div class="statNumber">
-							{{ totalSearchTrails }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Searches') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ totalResults }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Results') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ averageResultsPerSearch }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Results/Search') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">{{ averageExecutionTime }}ms</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Execution Time') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ (successRate * 100).toFixed(1) }}%
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Success Rate') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ uniqueSearchTerms }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Unique Search Terms') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ avgSearchesPerSession }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Searches/Session') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ avgObjectViewsPerSession }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Object Views/Session') }}
-						</div>
-					</div>
+					<SidebarStatCard
+						:value="totalSearchTrails"
+						:label="t('openregister', 'Total Searches')" />
+					<SidebarStatCard
+						:value="totalResults"
+						:label="t('openregister', 'Total Results')" />
+					<SidebarStatCard
+						:value="averageResultsPerSearch"
+						:label="t('openregister', 'Avg Results/Search')" />
+					<SidebarStatCard
+						:value="`${averageExecutionTime}ms`"
+						:label="t('openregister', 'Avg Execution Time')" />
+					<SidebarStatCard
+						:value="`${(successRate * 100).toFixed(1)}%`"
+						:label="t('openregister', 'Success Rate')" />
+					<SidebarStatCard
+						:value="uniqueSearchTerms"
+						:label="t('openregister', 'Unique Search Terms')" />
+					<SidebarStatCard
+						:value="avgSearchesPerSession"
+						:label="t('openregister', 'Avg Searches/Session')" />
+					<SidebarStatCard
+						:value="avgObjectViewsPerSession"
+						:label="t('openregister', 'Avg Object Views/Session')" />
 				</div>
 			</div>
 
@@ -211,69 +152,24 @@ import {
 			<div class="complexitySection">
 				<h4>{{ t('openregister', 'Query Complexity Distribution') }}</h4>
 				<div class="complexityBars">
-					<div class="complexityBar">
+					<div
+						v-for="level in complexityLevels"
+						:key="level.key"
+						class="complexityBar">
 						<div class="complexityLabel">
 							<span
-								:title="
-									t(
-										'openregister',
-										'Simple queries: basic text searches with minimal parameters (e.g., single search term, no advanced filters)',
-									)
-								"
+								:title="level.title"
 								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Simple') }}
+								{{ level.label }}
 							</span>
-							<span>{{ queryComplexity.simple }}</span>
+							<span>{{ queryComplexity[level.key] }}</span>
 						</div>
 						<div class="complexityProgress">
 							<div
-								class="complexityProgressBar simple"
+								class="complexityProgressBar"
+								:class="level.key"
 								:style="{
-									width: getComplexityPercentage('simple') + '%',
-								}" />
-						</div>
-					</div>
-					<div class="complexityBar">
-						<div class="complexityLabel">
-							<span
-								:title="
-									t(
-										'openregister',
-										'Medium queries: searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)',
-									)
-								"
-								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Medium') }}
-							</span>
-							<span>{{ queryComplexity.medium }}</span>
-						</div>
-						<div class="complexityProgress">
-							<div
-								class="complexityProgressBar medium"
-								:style="{
-									width: getComplexityPercentage('medium') + '%',
-								}" />
-						</div>
-					</div>
-					<div class="complexityBar">
-						<div class="complexityLabel">
-							<span
-								:title="
-									t(
-										'openregister',
-										'Complex queries: advanced searches with multiple filters, operators, and complex parameter combinations',
-									)
-								"
-								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Complex') }}
-							</span>
-							<span>{{ queryComplexity.complex }}</span>
-						</div>
-						<div class="complexityProgress">
-							<div
-								class="complexityProgressBar complex"
-								:style="{
-									width: getComplexityPercentage('complex') + '%',
+									width: getComplexityPercentage(level.key) + '%',
 								}" />
 						</div>
 					</div>
@@ -284,22 +180,15 @@ import {
 			<div class="popularTermsSection">
 				<h4>{{ t('openregister', 'Popular Search Terms') }}</h4>
 				<div class="popularTermsList">
-					<NcListItem
+					<CountListItem
 						v-for="(term, index) in popularTerms"
 						:key="index"
 						:name="term.term"
-						:bold="false">
+						:subname="searchesLabel(term.count)">
 						<template #icon>
 							<MagnifyPlus :size="32" />
 						</template>
-						<template #subname>
-							{{
-								t('openregister', '{count} searches', {
-									count: term.count,
-								})
-							}}
-						</template>
-					</NcListItem>
+					</CountListItem>
 				</div>
 			</div>
 
@@ -307,25 +196,18 @@ import {
 			<div class="registerSchemaSection">
 				<h4>{{ t('openregister', 'Register/Schema Usage') }}</h4>
 				<div class="registerSchemaList">
-					<NcListItem
+					<CountListItem
 						v-for="(stat, index) in registerSchemaStats"
 						:key="index"
 						:name="getRegisterSchemaName(stat)"
-						:bold="false">
+						:subname="searchesLabel(stat.count)">
 						<template #icon>
 							<DatabaseOutline :size="32" />
 						</template>
-						<template #subname>
-							{{
-								t('openregister', '{count} searches', {
-									count: stat.count,
-								})
-							}}
-						</template>
-					</NcListItem>
+					</CountListItem>
 				</div>
 			</div>
-		</NcAppSidebarTab>
+		</StatisticsSidebarTab>
 
 		<NcAppSidebarTab
 			id="analytics-tab"
@@ -389,22 +271,15 @@ import {
 				<div class="userAgentSection">
 					<h4>{{ t('openregister', 'User Agent Statistics') }}</h4>
 					<div class="userAgentList">
-						<NcListItem
+						<CountListItem
 							v-for="(agent, index) in userAgentStats"
 							:key="index"
 							:name="getBrowserName(agent)"
-							:bold="false">
+							:subname="searchesLabel(agent.count)">
 							<template #icon>
 								<Monitor :size="32" />
 							</template>
-							<template #subname>
-								{{
-									t('openregister', '{count} searches', {
-										count: agent.count,
-									})
-								}}
-							</template>
-						</NcListItem>
+						</CountListItem>
 					</div>
 				</div>
 			</div>
@@ -416,20 +291,20 @@ import {
 import {
 	NcAppSidebar,
 	NcAppSidebarTab,
-	NcButton,
-	NcListItem,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
-import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
+import ClearFiltersButton from '../../components/shared/ClearFiltersButton.vue'
+import CountListItem from '../../components/shared/CountListItem.vue'
+import FiltersSidebarTab from '../../components/shared/FiltersSidebarTab.vue'
+import SidebarStatCard from '../../components/shared/SidebarStatCard.vue'
+import StatisticsSidebarTab from '../../components/shared/StatisticsSidebarTab.vue'
 import ScopeFilterFields from '../ScopeFilterFields.vue'
 import TrailUserDateFields from './TrailUserDateFields.vue'
 import eventBus from '../../eventBus.js'
@@ -446,7 +321,7 @@ import {
 	addScopeIds,
 	trailUserOptions,
 } from '../../services/trailFilters.js'
-import { routeBoundFilters } from '../routeBoundFilters.js'
+import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
 
 /**
  * Leave a statistic as the API reports it.
@@ -525,23 +400,23 @@ const RANGE_FILTERS = Object.keys(ROUTE_FIELDS)
 export default {
 	name: 'SearchTrailSideBar',
 	components: {
+		ClearFiltersButton,
+		CountListItem,
+		FiltersSidebarTab,
+		SidebarStatCard,
+		StatisticsSidebarTab,
 		TrailUserDateFields,
 		ScopeFilterFields,
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcSelect,
 		NcNoteCard,
-		NcButton,
-		NcListItem,
 		NcTextField,
 		NcLoadingIcon,
-		FilterOutline,
-		ChartLine,
 		TrendingUp,
 		MagnifyPlus,
 		DatabaseOutline,
 		Monitor,
-		FilterOffOutline,
 	},
 
 	mixins: [routeBoundFilters('/search-trails')],
@@ -630,6 +505,41 @@ export default {
 		userOptions() {
 			return trailUserOptions(searchTrailStore.searchTrailList)
 		},
+
+		/**
+		 * The query complexity levels the distribution shows, in order.
+		 *
+		 * @spec exclude Presentational labels of the complexity bars.
+		 * @return {Array<{key: string, label: string, title: string}>} The levels
+		 */
+		complexityLevels() {
+			return [
+				{
+					key: 'simple',
+					label: t('openregister', 'Simple'),
+					title: t(
+						'openregister',
+						'Simple queries: basic text searches with minimal parameters (e.g., single search term, no advanced filters)',
+					),
+				},
+				{
+					key: 'medium',
+					label: t('openregister', 'Medium'),
+					title: t(
+						'openregister',
+						'Medium queries: searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)',
+					),
+				},
+				{
+					key: 'complex',
+					label: t('openregister', 'Complex'),
+					title: t(
+						'openregister',
+						'Complex queries: advanced searches with multiple filters, operators, and complex parameter combinations',
+					),
+				},
+			]
+		},
 	},
 
 	watch: {
@@ -671,6 +581,17 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * "{count} searches", translated, for a row of a top list.
+		 *
+		 * @param {number} count How often the row occurs
+		 * @spec exclude Presentational count label.
+		 * @return {string} The label
+		 */
+		searchesLabel(count) {
+			return t('openregister', '{count} searches', { count })
+		},
+
 		/**
 		 * Load search trail data and update filtered count
 		 *
@@ -762,10 +683,7 @@ export default {
 			if (this.selectedSuccessStatus) {
 				filters.success = this.selectedSuccessStatus.value
 			}
-			addScopeIds(filters, {
-				register: registerStore.registerItem,
-				schema: schemaStore.schemaItem,
-			})
+			addScopeIds(filters, selectedScope())
 			addJoinedValues(filters, ['user', this.selectedUsers])
 			addPresent(filters, [
 				['dateFrom', this.dateFrom],
@@ -1070,16 +988,13 @@ export default {
 	text-align: center;
 }
 
-.statNumber {
+// Smaller than SidebarStatCard's own number and label, to fit two columns.
+.statGrid :deep(.statCard .statNumber) {
 	font-size: 1.5rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
 }
 
-.statLabel {
+.statGrid :deep(.statCard .statLabel) {
 	font-size: 0.8rem;
-	color: var(--color-text-maxcontrast);
 }
 
 .complexitySection,

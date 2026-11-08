@@ -53,11 +53,12 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\AccessLinkControllerServices;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\StoredEntity;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
-use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
-use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
-use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -86,14 +87,14 @@ class AccessLinkController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfaces::ACCESS_LINK;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::ACCESS_LINK;
 
 	/**
 	 * The link lifecycle.
 	 *
-	 * @var AccessLinkService
+	 * @var AccessLinkServiceInterface
 	 */
-	private readonly AccessLinkService $links;
+	private readonly AccessLinkServiceInterface $links;
 
 	/**
 	 * Serves what a link opens.
@@ -105,9 +106,9 @@ class AccessLinkController extends Controller {
 	/**
 	 * Decides whether a caller may publish a subject.
 	 *
-	 * @var AccessLinkMintGuard
+	 * @var AccessLinkMintGuardInterface
 	 */
-	private readonly AccessLinkMintGuard $mintGuard;
+	private readonly AccessLinkMintGuardInterface $mintGuard;
 
 	/**
 	 * Performs the comment and the upload, as the link.
@@ -193,9 +194,11 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(
 			link: $link,
-			act: AccessLinkService::ACT_READ,
-			object: $object,
-			ipAddress: $this->request->getRemoteAddress()
+			use: new AccessLinkUse(
+				act: AccessLinkServiceInterface::ACT_READ,
+				object: $object,
+				ipAddress: $this->request->getRemoteAddress()
+			)
 		);
 
 		return new JSONResponse(array_merge(['link' => $link->publicDescriptor()], $body));
@@ -248,9 +251,11 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(
 			link: $link,
-			act: AccessLinkService::ACT_COMMENT,
-			object: $object,
-			ipAddress: $this->request->getRemoteAddress()
+			use: new AccessLinkUse(
+				act: AccessLinkServiceInterface::ACT_COMMENT,
+				object: $object,
+				ipAddress: $this->request->getRemoteAddress()
+			)
 		);
 
 		return new JSONResponse($note, Http::STATUS_CREATED);
@@ -325,10 +330,12 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(
 			link: $link,
-			act: AccessLinkService::ACT_UPLOAD,
-			object: $object,
-			ipAddress: $this->request->getRemoteAddress(),
-			context: ['fileName' => $fileName]
+			use: new AccessLinkUse(
+				act: AccessLinkServiceInterface::ACT_UPLOAD,
+				object: $object,
+				ipAddress: $this->request->getRemoteAddress(),
+				context: ['fileName' => $fileName]
+			)
 		);
 
 		return new JSONResponse($stored, Http::STATUS_CREATED);

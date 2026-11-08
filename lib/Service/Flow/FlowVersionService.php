@@ -39,7 +39,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
-use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -70,7 +70,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowVersionMapper  $versions The version rows.
+	 * @param FlowVersionMapperInterface  $versions The version rows.
 	 * @param FlowMapperInterface         $flows    The flows whose head mirrors the versions.
 	 * @param FlowDefinitionPin  $pin      Canonicalises and stores a graph by hash.
 	 * @param FlowLifecycleGuard $guard    The preconditions on every transition.
@@ -80,7 +80,7 @@ class FlowVersionService implements FlowVersionServiceInterface {
 	 * @param LoggerInterface    $logger   Diagnostics.
 	 */
 	public function __construct(
-		private readonly FlowVersionMapper $versions,
+		private readonly FlowVersionMapperInterface $versions,
 		private readonly FlowMapperInterface $flows,
 		private readonly FlowDefinitionPin $pin,
 		private readonly FlowLifecycleGuard $guard,

@@ -70,21 +70,16 @@ class TrustTierResolver {
 	): ?string {
 		$best = null;
 		$bestFrom = null;
+		$tuple = new TrustTuple(entityType: $entityType, attribute: $attribute, sourceSystem: $sourceSystem);
 
 		foreach ($trustRows as $row) {
-			$candidate = $this->eligibleCandidate(
-				row: $row,
-				entityType: $entityType,
-				attribute: $attribute,
-				sourceSystem: $sourceSystem,
-				asOf: $asOf
-			);
+			$candidate = $this->eligibleCandidate(row: $row, tuple: $tuple, asOf: $asOf);
 			if ($candidate === null) {
 				continue;
 			}
 
 			[$tier, $rank] = $candidate;
-			if ($best === null || $rank >= $bestFrom) {
+			if ($this->supersedes(rank: $rank, bestFrom: $bestFrom) === true) {
 				$best = $tier;
 				$bestFrom = $rank;
 			}
@@ -94,35 +89,36 @@ class TrustTierResolver {
 	}//end resolveTier()
 
 	/**
+	 * Whether an eligible row supersedes the best one so far: there is none
+	 * yet, or its effectiveFrom rank is the same or later (a later row in the
+	 * list wins a tie).
+	 *
+	 * @param int      $rank     The row's effectiveFrom rank.
+	 * @param int|null $bestFrom The best row's rank, null when none yet.
+	 *
+	 * @return bool True when the row becomes the best.
+	 */
+	private function supersedes(int $rank, ?int $bestFrom): bool {
+		return $bestFrom === null || $rank >= $bestFrom;
+	}//end supersedes()
+
+	/**
 	 * Evaluate a single candidate row for the tuple: matches the tuple, is
 	 * effective as of `$asOf`, and declares a non-empty tier.
 	 *
 	 * @param mixed $row Candidate row (validated to be an array here).
-	 * @param string $entityType Entity type to match.
-	 * @param string $attribute Attribute name to match.
-	 * @param string $sourceSystem Source system to match.
+	 * @param TrustTuple $tuple The tuple to match.
 	 * @param DateTimeImmutable $asOf Reference instant for effectiveFrom resolution.
 	 *
 	 * @return array{0: string, 1: int}|null [tier, effectiveFrom-rank], or null when ineligible.
 	 */
-	private function eligibleCandidate(
-		mixed $row,
-		string $entityType,
-		string $attribute,
-		string $sourceSystem,
-		DateTimeImmutable $asOf,
-	): ?array {
-		if (is_array($row) === false) {
+	private function eligibleCandidate(mixed $row, TrustTuple $tuple, DateTimeImmutable $asOf): ?array {
+		if ($this->isMatchingRow(row: $row, tuple: $tuple) === false) {
 			return null;
 		}
 
-		if ($this->matchesTuple(row: $row, entityType: $entityType, attribute: $attribute, sourceSystem: $sourceSystem) === false) {
-			return null;
-		}
-
-		$effectiveFrom = $this->parseDate(value: ($row['effectiveFrom'] ?? null));
-		if ($effectiveFrom !== null && $effectiveFrom > $asOf) {
-			// Future-dated row: not yet effective.
+		$rank = $this->effectiveRank(row: $row, asOf: $asOf);
+		if ($rank === null) {
 			return null;
 		}
 
@@ -131,10 +127,40 @@ class TrustTierResolver {
 			return null;
 		}
 
-		$rank = ($effectiveFrom?->getTimestamp() ?? PHP_INT_MIN);
-
 		return [$tier, $rank];
 	}//end eligibleCandidate()
+
+	/**
+	 * Whether a candidate row is an array matching the tuple.
+	 *
+	 * @param mixed      $row   Candidate row (untrusted).
+	 * @param TrustTuple $tuple The tuple to match.
+	 *
+	 * @return bool True when the row is an array matching all three fields.
+	 */
+	private function isMatchingRow(mixed $row, TrustTuple $tuple): bool {
+		return is_array($row) === true && $this->matchesTuple(row: $row, tuple: $tuple) === true;
+	}//end isMatchingRow()
+
+	/**
+	 * The effectiveFrom rank of a row: its timestamp, PHP_INT_MIN for a row
+	 * without a readable effectiveFrom (always effective), or null for a
+	 * future-dated row that is not yet effective as of `$asOf`.
+	 *
+	 * @param array<string, mixed> $row  Candidate row.
+	 * @param DateTimeImmutable    $asOf Reference instant for effectiveFrom resolution.
+	 *
+	 * @return int|null The rank, or null when not yet effective.
+	 */
+	private function effectiveRank(array $row, DateTimeImmutable $asOf): ?int {
+		$effectiveFrom = $this->parseDate(value: ($row['effectiveFrom'] ?? null));
+		if ($effectiveFrom !== null && $effectiveFrom > $asOf) {
+			// Future-dated row: not yet effective.
+			return null;
+		}
+
+		return ($effectiveFrom?->getTimestamp() ?? PHP_INT_MIN);
+	}//end effectiveRank()
 
 	/**
 	 * Apply freshness decay: step the tier down exactly one level on
@@ -159,17 +185,50 @@ class TrustTierResolver {
 		?DateTimeImmutable $anchor,
 		DateTimeImmutable $asOf,
 	): string {
-		if ($freshnessDecayDays === null || $freshnessDecayDays <= 0 || $anchor === null) {
-			return $tier;
-		}
-
-		$elapsedDays = (int)floor(($asOf->getTimestamp() - $anchor->getTimestamp()) / 86400);
-		if ($elapsedDays <= $freshnessDecayDays) {
+		if ($this->hasDecayed(freshnessDecayDays: $freshnessDecayDays, anchor: $anchor, asOf: $asOf) === false) {
 			return $tier;
 		}
 
 		return $this->stepDown(tier: $tier, tierOrder: $tierOrder);
 	}//end applyFreshnessDecay()
+
+	/**
+	 * Whether the tier decays: a decay window and an anchor are present and
+	 * more whole days than the window have elapsed since the anchor.
+	 *
+	 * @param int|null               $freshnessDecayDays Decay window in days, or null for no decay.
+	 * @param DateTimeImmutable|null $anchor             The source's freshness anchor date, or null.
+	 * @param DateTimeImmutable      $asOf               Reference instant.
+	 *
+	 * @return bool True when the tier steps down.
+	 */
+	private function hasDecayed(?int $freshnessDecayDays, ?DateTimeImmutable $anchor, DateTimeImmutable $asOf): bool {
+		if ($freshnessDecayDays === null || $anchor === null) {
+			return false;
+		}
+
+		return $this->elapsedBeyond(freshnessDecayDays: $freshnessDecayDays, anchor: $anchor, asOf: $asOf);
+	}//end hasDecayed()
+
+	/**
+	 * Whether more whole days than the decay window have elapsed since the
+	 * anchor. A non-positive window never decays.
+	 *
+	 * @param int               $freshnessDecayDays Decay window in days.
+	 * @param DateTimeImmutable $anchor             The source's freshness anchor date.
+	 * @param DateTimeImmutable $asOf               Reference instant.
+	 *
+	 * @return bool True when the tier steps down.
+	 */
+	private function elapsedBeyond(int $freshnessDecayDays, DateTimeImmutable $anchor, DateTimeImmutable $asOf): bool {
+		if ($freshnessDecayDays <= 0) {
+			return false;
+		}
+
+		$elapsedDays = (int)floor(($asOf->getTimestamp() - $anchor->getTimestamp()) / 86400);
+
+		return $elapsedDays > $freshnessDecayDays;
+	}//end elapsedBeyond()
 
 	/**
 	 * Step a tier down exactly one level on the ordered tier list (weakest
@@ -215,17 +274,15 @@ class TrustTierResolver {
 	/**
 	 * Check whether a trust-configuration row matches the given tuple.
 	 *
-	 * @param array<string, mixed> $row Candidate row.
-	 * @param string $entityType Entity type to match.
-	 * @param string $attribute Attribute to match.
-	 * @param string $sourceSystem Source system to match.
+	 * @param array<string, mixed> $row   Candidate row.
+	 * @param TrustTuple           $tuple The tuple to match.
 	 *
 	 * @return bool True when all three fields match.
 	 */
-	private function matchesTuple(array $row, string $entityType, string $attribute, string $sourceSystem): bool {
-		return (string)($row['entityType'] ?? '') === $entityType
-			&& (string)($row['attribute'] ?? '') === $attribute
-			&& (string)($row['sourceSystem'] ?? '') === $sourceSystem;
+	private function matchesTuple(array $row, TrustTuple $tuple): bool {
+		return (string)($row['entityType'] ?? '') === $tuple->entityType
+			&& (string)($row['attribute'] ?? '') === $tuple->attribute
+			&& (string)($row['sourceSystem'] ?? '') === $tuple->sourceSystem;
 	}//end matchesTuple()
 
 	/**

@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectLockInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectWriterInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsInterface;
@@ -38,6 +39,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableLocatorInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableMaintenanceInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
@@ -59,17 +61,51 @@ final class DbRegistrar {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AccessLinkMapperInterface::class => AccessLinkMapper::class,
+		AnalyticsLinkMapperInterface::class => AnalyticsLinkMapper::class,
+		AnalyticsSeriesMapperInterface::class => AnalyticsSeriesMapper::class,
+		ApiCallRecordMapperInterface::class => ApiCallRecordMapper::class,
 		ApplicationMapperInterface::class => ApplicationMapper::class,
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
+		AuditTrailPageQueryInterface::class => AuditTrailPageQuery::class,
+		BookmarkLinkMapperInterface::class => BookmarkLinkMapper::class,
 		BulkJobMapperInterface::class => BulkJobMapper::class,
 		BulkJobMemberMapperInterface::class => BulkJobMemberMapper::class,
+		CalendarFeedTokenMapperInterface::class => CalendarFeedTokenMapper::class,
+		CalendarLinkMapperInterface::class => CalendarLinkMapper::class,
+		CaseItemMapperInterface::class => CaseItemMapper::class,
+		CaseTokenMapperInterface::class => CaseTokenMapper::class,
+		CollectiveLinkMapperInterface::class => CollectiveLinkMapper::class,
 		ConfigurationMapperInterface::class => ConfigurationMapper::class,
+		ConsumerMapperInterface::class => ConsumerMapper::class,
+		ContactLinkMapperInterface::class => ContactLinkMapper::class,
+		ContentReportMapperInterface::class => ContentReportMapper::class,
+		CospendLinkMapperInterface::class => CospendLinkMapper::class,
+		DecisionMapperInterface::class => DecisionMapper::class,
+		DeckLinkMapperInterface::class => DeckLinkMapper::class,
+		DelegationGrantMapperInterface::class => DelegationGrantMapper::class,
+		EmailLinkMapperInterface::class => EmailLinkMapper::class,
 		EndpointLogMapperInterface::class => EndpointLogMapper::class,
 		EndpointMapperInterface::class => EndpointMapper::class,
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
+		ErasurePreviewMapperInterface::class => ErasurePreviewMapper::class,
+		FederatedShareMapperInterface::class => FederatedShareMapper::class,
+		FeedbackMapperInterface::class => FeedbackMapper::class,
+		FlowDefinitionMapperInterface::class => FlowDefinitionMapper::class,
+		FlowLinkMapperInterface::class => FlowLinkMapper::class,
 		FlowMapperInterface::class => FlowMapper::class,
 		FlowRunMapperInterface::class => FlowRunMapper::class,
+		FlowRunStepMapperInterface::class => FlowRunStepMapper::class,
+		FlowStateMapperInterface::class => FlowStateMapper::class,
+		FlowTimerMapperInterface::class => FlowTimerMapper::class,
 		FlowTriggerMapperInterface::class => FlowTriggerMapper::class,
+		FlowVersionMapperInterface::class => FlowVersionMapper::class,
+		HandoffQueueEntryMapperInterface::class => HandoffQueueEntryMapper::class,
+		ImportPreviewFinderInterface::class => ImportPreviewMapper::class,
+		ImportPreviewMapperInterface::class => ImportPreviewMapper::class,
+		ImportPreviewRowMapperInterface::class => ImportPreviewRowMapper::class,
+		SchemaRunMapperInterface::class => SchemaRunMapper::class,
+		SchemaRunStoreInterface::class => SchemaRunMapper::class,
 		JobRunMapperInterface::class => JobRunMapper::class,
 		MagicAccessPredicateInterface::class => MagicMapper::class,
 		MagicColumnDriftInterface::class => MagicMapper::class,
@@ -87,17 +123,45 @@ final class DbRegistrar {
 		MagicTableLocatorInterface::class => MagicMapper::class,
 		MagicTableMaintenanceInterface::class => MagicMapper::class,
 		MagicTableRowReaderInterface::class => MagicMapper::class,
+		MapLinkMapperInterface::class => MapLinkMapper::class,
 		MappingMapperInterface::class => MappingMapper::class,
+		MigrationPackMapperInterface::class => MigrationPackMapper::class,
+		ObjectReadStateMapperInterface::class => ObjectReadStateMapper::class,
 		ObjectRelationMapperInterface::class => ObjectRelationMapper::class,
+		OpenProjectLinkMapperInterface::class => OpenProjectLinkMapper::class,
 		OrganisationMapperInterface::class => OrganisationMapper::class,
+		\OCA\OpenRegister\Db\ProcessingPurposeMapperInterface::class => \OCA\OpenRegister\Db\ProcessingPurposeMapper::class,
+		PhotoLinkMapperInterface::class => PhotoLinkMapper::class,
+		PollLinkMapperInterface::class => PollLinkMapper::class,
+		ProcessingLogMapperInterface::class => ProcessingLogMapper::class,
 		RegisterMapperInterface::class => RegisterMapper::class,
+		RegistrySubscriptionMapperInterface::class => RegistrySubscriptionMapper::class,
+		RelatedRowRbacInterface::class => MagicRbacHandler::class,
+		RuleRunMapperInterface::class => RuleRunMapper::class,
 		RuleRunSummaryMapperInterface::class => RuleRunSummaryMapper::class,
+		RunObjectLockMapperInterface::class => RunObjectLockMapper::class,
+		\OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class => \OCA\OpenRegister\Db\SchemaChangelogMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
+		\OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
+		SearchTrailCleanupInterface::class => SearchTrailMapper::class,
+		SearchTrailMapperInterface::class => SearchTrailMapper::class,
+		SequenceMapperInterface::class => SequenceMapper::class,
 		SourceMapperInterface::class => SourceMapper::class,
+		StateHistoryMapperInterface::class => StateHistoryMapper::class,
+		SubjectExportMapperInterface::class => SubjectExportMapper::class,
 		SyncRecordMapperInterface::class => SyncRecordMapper::class,
+		TalkLinkMapperInterface::class => TalkLinkMapper::class,
+		TaskAuditMapperInterface::class => TaskAuditMapper::class,
+		TaskCandidateMapperInterface::class => TaskCandidateMapper::class,
+		TaskProjectionStateMapperInterface::class => TaskProjectionStateMapper::class,
+		TaskRelationMapperInterface::class => TaskRelationMapper::class,
+		TaskSequenceMapperInterface::class => TaskSequenceMapper::class,
+		TimeTrackerLinkMapperInterface::class => TimeTrackerLinkMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,
+		\OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface::class => \OCA\OpenRegister\Db\VerwerkingsactiviteitMapper::class,
 		WebhookLogMapperInterface::class => WebhookLogMapper::class,
 		WebhookMapperInterface::class => WebhookMapper::class,
+		XwikiLinkMapperInterface::class => XwikiLinkMapper::class,
 	];
 
 	/**

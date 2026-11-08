@@ -48,7 +48,7 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  */
-class GitHubGuards {
+class GitHubGuards implements GitHubGuardsInterface {
 	/**
 	 * Per-user GET cache-miss rate-limit window, in seconds (task 1.19).
 	 */

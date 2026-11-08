@@ -29,10 +29,9 @@ use OCA\OpenRegister\BackgroundJob\CacheClearAndWarmJob;
 use OCA\OpenRegister\BackgroundJob\ConsistencyCheckJob;
 use OCA\OpenRegister\Search\BackgroundJob\SearchIndexRebuildJob;
 use OCA\OpenRegister\Db\JobRun;
+use OCA\OpenRegister\Db\JobRunFilter as RunQuery;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
-use OCP\BackgroundJob\IJobList;
-use Psr\Container\ContainerInterface;
 use Throwable;
 
 /**
@@ -68,43 +67,39 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param JobRunMapperInterface       $runs      The run log.
-	 * @param JobScheduleService $schedules The administered schedules.
-	 * @param JobAlertService    $alerts    The failure threshold.
-	 * @param IJobList           $jobList   Nextcloud's registered jobs.
-	 * @param ContainerInterface $container Resolves a job class to a job.
-	 * @param JobRunRecorder     $recorder  Records the run-now, with its cause.
+	 * @param JobRunMapperInterface    $runs      The run log.
+	 * @param JobScheduleService       $schedules The administered schedules.
+	 * @param JobAlertService          $alerts    The failure threshold.
+	 * @param OperationsRunNowServices $runNow    The job list, the container and the recorder.
 	 */
 	public function __construct(
 		private readonly JobRunMapperInterface $runs,
 		private readonly JobScheduleService $schedules,
 		private readonly JobAlertService $alerts,
-		private readonly IJobList $jobList,
-		private readonly ContainerInterface $container,
-		private readonly JobRunRecorder $recorder,
+		private readonly OperationsRunNowServices $runNow,
 	) {
 	}//end __construct()
 
 	/**
 	 * The run history, filtered by job, outcome and period.
 	 *
-	 * @param string|null $jobClass    Narrow to one job class.
-	 * @param string|null $outcome     Narrow to one outcome.
-	 * @param int|null    $windowHours How far back to look, null for all of it.
-	 * @param int         $limit       How many rows to return.
-	 * @param int         $offset      Where to start.
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 * @param int          $limit  How many rows to return.
+	 * @param int          $offset Where to start.
 	 *
 	 * @return array<string, mixed> The rows, and how many there are.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
 	public function runs(
-		?string $jobClass = null,
-		?string $outcome = null,
-		?int $windowHours = null,
+		JobRunFilter $filter = new JobRunFilter(),
 		int $limit = JobRunMapperInterface::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array {
+		$jobClass    = $filter->jobClass;
+		$outcome     = $filter->outcome;
+		$windowHours = $filter->windowHours;
+
 		$since = null;
 
 		if ($windowHours !== null && $windowHours > 0) {
@@ -112,9 +107,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 		}
 
 		$rows = $this->runs->findRecent(
-			jobClass: $jobClass,
-			outcome: $outcome,
-			since: $since,
+			filter: new RunQuery(jobClass: $jobClass, outcome: $outcome, since: $since),
 			limit: $limit,
 			offset: $offset
 		);
@@ -173,16 +166,15 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 
 		$job = $this->resolve(class: $class);
 
-		$this->recorder->around(
+		$this->runNow->recorder->around(
 			jobClass: $class,
 			work: function () use ($job): void {
-				$job->start($this->jobList);
+				$job->start($this->runNow->jobList);
 			},
-			cause: JobRun::CAUSE_MANUAL,
-			actor: $actor
+			context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $actor)
 		);
 
-		$started = $this->runs->findRecent(jobClass: $class, limit: 1);
+		$started = $this->runs->findRecent(filter: new RunQuery(jobClass: $class), limit: 1);
 
 		return [
 			'job' => $class,
@@ -212,30 +204,15 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	/**
 	 * Administer one job's schedule.
 	 *
-	 * @param string    $jobClass        The job class.
-	 * @param bool|null $enabled         Whether it may run at all.
-	 * @param int|null  $intervalSeconds How often it is due.
-	 * @param int|null  $windowStartHour The first hour it may run in.
-	 * @param int|null  $windowEndHour   The last hour it may run in.
+	 * @param string            $jobClass The job class.
+	 * @param JobScheduleChange $change   What to change; a null part is left as it is.
 	 *
 	 * @return array<string, mixed> The schedule now in force.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
-	public function administerSchedule(
-		string $jobClass,
-		?bool $enabled = null,
-		?int $intervalSeconds = null,
-		?int $windowStartHour = null,
-		?int $windowEndHour = null,
-	): array {
-		$this->schedules->administer(
-			jobClass: $jobClass,
-			enabled: $enabled,
-			intervalSeconds: $intervalSeconds,
-			windowStartHour: $windowStartHour,
-			windowEndHour: $windowEndHour
-		);
+	public function administerSchedule(string $jobClass, JobScheduleChange $change): array {
+		$this->schedules->administer(jobClass: $jobClass, change: $change);
 
 		return $this->schedule(jobClass: $jobClass);
 
@@ -266,7 +243,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	 * @return int The timestamp.
 	 */
 	private function lastRunTimestamp(string $jobClass): int {
-		$rows = $this->runs->findRecent(jobClass: $jobClass, limit: 1);
+		$rows = $this->runs->findRecent(filter: new RunQuery(jobClass: $jobClass), limit: 1);
 
 		if ($rows === []) {
 			return 0;
@@ -292,7 +269,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 			// A registered recurring job carries no argument, which is the
 			// case run now serves; a queued job with an argument was asked for
 			// by something that already decided it should happen.
-			return $this->jobList->has($class, null);
+			return $this->runNow->jobList->has($class, null);
 		} catch (Throwable $exception) {
 			return false;
 		}
@@ -310,7 +287,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	 */
 	private function resolve(string $class): \OCP\BackgroundJob\IJob {
 		try {
-			$job = $this->container->get($class);
+			$job = $this->runNow->container->get($class);
 		} catch (Throwable $exception) {
 			throw new JobRunRefusedException(
 				message: 'This job could not be built: '.$exception->getMessage(),

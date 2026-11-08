@@ -93,23 +93,43 @@ class MapsOverviewService {
 	];
 
 	/**
+	 * Canonical RBAC-scoped object read facade.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private ObjectOperationsInterface $objectService;
+
+	/**
+	 * Extracts geometry from object rows.
+	 *
+	 * @var GeoFeatureCollectionBuilder
+	 */
+	private GeoFeatureCollectionBuilder $geoBuilder;
+
+	/**
+	 * Registry for the page-widget surface.
+	 *
+	 * @var PageWidgetRegistryInterface
+	 */
+	private PageWidgetRegistryInterface $registry;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objectService Canonical RBAC-scoped object read facade.
-	 * @param GeoFeatureCollectionBuilder $geoBuilder Extracts geometry from object rows.
-	 * @param PageWidgetRegistryInterface $registry Registry for the page-widget surface.
+	 * @param MapsOverviewSources $sources The object read facade, geometry builder and page-widget registry.
 	 * @param IUserSession $userSession Current user (RBAC / write guard).
 	 * @param IGroupManager $groupManager Admin check (RBAC bypass for admins).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private ObjectOperationsInterface $objectService,
-		private GeoFeatureCollectionBuilder $geoBuilder,
-		private PageWidgetRegistryInterface $registry,
+		MapsOverviewSources $sources,
 		private IUserSession $userSession,
 		private IGroupManager $groupManager,
 	) {
+		$this->objectService = $sources->objectService;
+		$this->geoBuilder    = $sources->geoBuilder;
+		$this->registry      = $sources->registry;
 	}//end __construct()
 
 	/**
@@ -168,13 +188,7 @@ class MapsOverviewService {
 		array $filters = [],
 		?array $baseLayer = null,
 	): array {
-		if (trim($overviewKey) === '') {
-			throw new InvalidArgumentException('overviewKey is required to register a map overview');
-		}
-
-		if ((string)$register === '' || (string)$schema === '') {
-			throw new InvalidArgumentException('register and schema are required to register a map overview');
-		}
+		$this->assertRegistrable(overviewKey: $overviewKey, register: $register, schema: $schema);
 
 		$config = [
 			'overviewKey' => $overviewKey,
@@ -199,6 +213,27 @@ class MapsOverviewService {
 
 		return $this->registry->getPageWidget('maps-overview:' . $overviewKey) ?? [];
 	}//end registerOverview()
+
+	/**
+	 * Refuse an overview declaration without a key or scope.
+	 *
+	 * @param string $overviewKey Stable overview/widget key.
+	 * @param string|int $register Register slug or id.
+	 * @param string|int $schema Schema slug or id.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException On empty key / register / schema.
+	 */
+	private function assertRegistrable(string $overviewKey, string|int $register, string|int $schema): void {
+		if (trim($overviewKey) === '') {
+			throw new InvalidArgumentException('overviewKey is required to register a map overview');
+		}
+
+		if ((string)$register === '' || (string)$schema === '') {
+			throw new InvalidArgumentException('register and schema are required to register a map overview');
+		}
+	}//end assertRegistrable()
 
 	/**
 	 * Authorisation guard for the points (read) path — RBAC-scopes the
@@ -272,11 +307,6 @@ class MapsOverviewService {
 			throw new InvalidArgumentException('register and schema are required to query map points');
 		}
 
-		$cap = self::MAX_POINTS;
-		if ($limit !== null && $limit > 0 && $limit < $cap) {
-			$cap = $limit;
-		}
-
 		// RBAC: admins read everything; everyone else (anonymous included)
 		// is scoped to what the public group / their groups may read. This
 		// is the SAME read posture ObjectsController uses for the objects
@@ -289,7 +319,7 @@ class MapsOverviewService {
 
 		$result = $this->objectService->findAll(
 			config: [
-				'limit' => $cap,
+				'limit' => $this->pointCap(limit: $limit),
 				'filters' => $objectFilters,
 			],
 			_rbac: $rbac,
@@ -305,8 +335,37 @@ class MapsOverviewService {
 		// register/schema — indistinguishable from "nothing has geometry".
 		// `jsonSerialize()` is the rendered array shape `pointFromRow()` reads
 		// (@self + id + the schema properties at top level).
+		return $this->rowsToPoints(rows: $result, geoProperty: $geoProperty, register: $register, schema: $schema);
+	}//end queryPoints()
+
+	/**
+	 * The marker cap: a positive limit below MAX_POINTS, else MAX_POINTS.
+	 *
+	 * @param int|null $limit Requested limit.
+	 *
+	 * @return int
+	 */
+	private function pointCap(?int $limit): int {
+		if ($limit !== null && $limit > 0 && $limit < self::MAX_POINTS) {
+			return $limit;
+		}
+
+		return self::MAX_POINTS;
+	}//end pointCap()
+
+	/**
+	 * Turn readable rows into markers, skipping unusable and geometry-less rows.
+	 *
+	 * @param iterable<mixed> $rows Rows as returned by ObjectService::findAll().
+	 * @param string|null $geoProperty Geometry property name; null = auto-detect.
+	 * @param string|int $register Register scope (echoed onto the marker).
+	 * @param string|int $schema Schema scope (echoed onto the marker).
+	 *
+	 * @return array<int,array<string,mixed>> The markers, in row order.
+	 */
+	private function rowsToPoints(iterable $rows, ?string $geoProperty, string|int $register, string|int $schema): array {
 		$points = [];
-		foreach ($result as $row) {
+		foreach ($rows as $row) {
 			$rowArray = $this->rowToArray(row: $row);
 			if ($rowArray === null) {
 				continue;
@@ -319,7 +378,7 @@ class MapsOverviewService {
 		}
 
 		return $points;
-	}//end queryPoints()
+	}//end rowsToPoints()
 
 	/**
 	 * Normalise one `findAll()` row to the rendered array shape.
@@ -451,18 +510,8 @@ class MapsOverviewService {
 			return null;
 		}
 
-		// Drill down to the first [lon, lat] position regardless of nesting
-		// depth (Point=0, LineString=1, Polygon=2, MultiPolygon=3).
-		$position = $coordinates;
-		$guard = 0;
-		while (isset($position[0]) === true && is_array($position[0]) === true && $guard < 4) {
-			$position = $position[0];
-			$guard++;
-		}
-
-		if (isset($position[0]) === false || isset($position[1]) === false
-			|| is_numeric($position[0]) === false || is_numeric($position[1]) === false
-		) {
+		$position = $this->firstPosition(coordinates: $coordinates);
+		if ($this->isNumericPair(position: $position) === false) {
 			return null;
 		}
 
@@ -471,6 +520,37 @@ class MapsOverviewService {
 			'lng' => (float)$position[0],
 		];
 	}//end representativeLatLng()
+
+	/**
+	 * Drill down to the first [lon, lat] position regardless of nesting
+	 * depth (Point=0, LineString=1, Polygon=2, MultiPolygon=3), at most four levels.
+	 *
+	 * @param array<int|string,mixed> $coordinates GeoJSON coordinates.
+	 *
+	 * @return array<int|string,mixed> The innermost position reached.
+	 */
+	private function firstPosition(array $coordinates): array {
+		$position = $coordinates;
+		$guard = 0;
+		while (isset($position[0]) === true && is_array($position[0]) === true && $guard < 4) {
+			$position = $position[0];
+			$guard++;
+		}
+
+		return $position;
+	}//end firstPosition()
+
+	/**
+	 * Whether a position starts with two numeric values.
+	 *
+	 * @param array<int|string,mixed> $position A GeoJSON position.
+	 *
+	 * @return bool
+	 */
+	private function isNumericPair(array $position): bool {
+		return isset($position[0]) === true && isset($position[1]) === true
+			&& is_numeric($position[0]) === true && is_numeric($position[1]) === true;
+	}//end isNumericPair()
 
 	/**
 	 * Derive a human-readable marker label from a rendered object row.
@@ -486,16 +566,10 @@ class MapsOverviewService {
 	 * @return string The marker label.
 	 */
 	private function deriveLabel(array $row, array $self, mixed $id): string {
-		foreach (['name', 'title'] as $key) {
-			if (isset($self[$key]) === true && is_scalar($self[$key]) === true && (string)$self[$key] !== '') {
-				return (string)$self[$key];
-			}
-		}
-
-		foreach (['name', 'title', 'naam', 'titel'] as $key) {
-			if (isset($row[$key]) === true && is_scalar($row[$key]) === true && (string)$row[$key] !== '') {
-				return (string)$row[$key];
-			}
+		$label = $this->firstFilledScalar(source: $self, keys: ['name', 'title'])
+			?? $this->firstFilledScalar(source: $row, keys: ['name', 'title', 'naam', 'titel']);
+		if ($label !== null) {
+			return $label;
 		}
 
 		if ($id !== null) {
@@ -504,6 +578,35 @@ class MapsOverviewService {
 
 		return '';
 	}//end deriveLabel()
+
+	/**
+	 * The first of the given keys holding a non-empty scalar, as a string.
+	 *
+	 * @param array<string,mixed> $source The array to read.
+	 * @param string[] $keys Keys to try, in order.
+	 *
+	 * @return string|null The value, or null when no key holds one.
+	 */
+	private function firstFilledScalar(array $source, array $keys): ?string {
+		foreach ($keys as $key) {
+			if ($this->isFilledScalar(value: ($source[$key] ?? null)) === true) {
+				return (string)$source[$key];
+			}
+		}
+
+		return null;
+	}//end firstFilledScalar()
+
+	/**
+	 * Whether a value is a scalar that does not stringify to ''.
+	 *
+	 * @param mixed $value The value (null when the key is absent).
+	 *
+	 * @return bool
+	 */
+	private function isFilledScalar(mixed $value): bool {
+		return $value !== null && is_scalar($value) === true && (string)$value !== '';
+	}//end isFilledScalar()
 
 	/**
 	 * Whether the current user is an admin (RBAC bypass).

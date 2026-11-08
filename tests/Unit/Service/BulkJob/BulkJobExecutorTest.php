@@ -41,6 +41,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
+use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
+use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IUser;
@@ -160,14 +162,18 @@ final class BulkJobExecutorTest extends TestCase {
 
 	private function executor(): BulkJobExecutor {
 		return new BulkJobExecutor(
-			$this->jobMapper,
-			$this->memberMapper,
-			$this->resolver,
-			$this->registry,
-			$this->permissionHandler,
-			$this->schemaMapper,
-			$this->auditTrailMapper,
-			$this->userManager,
+			new BulkJobExecutorStores(
+				$this->jobMapper,
+				$this->memberMapper,
+				$this->schemaMapper,
+				$this->auditTrailMapper
+			),
+			new BulkJobExecutorServices(
+				$this->resolver,
+				$this->registry,
+				$this->permissionHandler,
+				$this->userManager
+			),
 			new NullLogger()
 		);
 	}
@@ -255,6 +261,46 @@ final class BulkJobExecutorTest extends TestCase {
 		$this->assertCount(2, $this->written);
 		$this->assertSame(BulkJobMember::OUTCOME_APPLIED, $this->written[0]['outcome']);
 		$this->assertSame('1.0.0', $this->written[0]['schemaVersion']);
+	}
+
+	public function testThePreviewMemberRowsArePinnedKeyForKey(): void {
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+
+		$this->executor()->writePreviewMembers(
+			$this->job(),
+			['a', 'gone'],
+			['a' => $this->object('a', '2.1.0')],
+			$this->action([], BulkActionResult::skipped('nothing to change')),
+			null,
+			true
+		);
+
+		$this->assertSame(
+			[
+				[
+					'jobId' => $this->job()->getId(),
+					'objectUuid' => 'a',
+					'outcome' => BulkJobMember::OUTCOME_SKIPPED,
+					'reason' => 'nothing to change',
+					'schemaVersion' => '2.1.0',
+					'addedAtCommit' => true,
+					'priorValues' => null,
+					'appliedValues' => null,
+				],
+				[
+					'jobId' => $this->job()->getId(),
+					'objectUuid' => 'gone',
+					'outcome' => BulkJobMember::OUTCOME_REFUSED,
+					'reason' => $this->written[1]['reason'],
+					'schemaVersion' => null,
+					'addedAtCommit' => true,
+					'priorValues' => null,
+					'appliedValues' => null,
+				],
+			],
+			$this->written
+		);
+		$this->assertNotSame('', (string)$this->written[1]['reason']);
 	}
 
 	public function testAnObjectTheActorMayNotWriteIsRefusedAndNotSkipped(): void {

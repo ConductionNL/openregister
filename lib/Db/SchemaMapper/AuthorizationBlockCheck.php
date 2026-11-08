@@ -21,10 +21,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
-use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
+use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -93,13 +93,13 @@ final class AuthorizationBlockCheck {
 	 */
 	private function assertGrantsAndDeny(Schema $schema, array $authorization): void {
 		$subject = sprintf('the schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? ''));
-		(new PermissionCatalogue(eventDispatcher: $this->eventDispatcher))->assertGrantable(
+		AccessDeclarationValidators::permissionCatalogue(eventDispatcher: $this->eventDispatcher)->assertGrantable(
 			authorization: $this->withoutDeclaredActions(authorization: $authorization, declared: $schema->declaredActionNames()),
 			roleDefinitions: null,
 			subject: $subject
 		);
 
-		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
+		AccessDeclarationValidators::denyValidator()->assertStorable(
 			authorization: $authorization,
 			subject: $subject
 		);
@@ -121,8 +121,8 @@ final class AuthorizationBlockCheck {
 	private function withoutDeclaredActions(array $authorization, array $declared): array {
 		$names = array_flip($declared);
 		$checked = array_diff_key($authorization, $names);
-		if (is_array($checked[DenyResolver::DENY_KEY] ?? null) === true) {
-			$checked[DenyResolver::DENY_KEY] = array_diff_key($checked[DenyResolver::DENY_KEY], $names);
+		if (is_array($checked[DenyResolverInterface::DENY_KEY] ?? null) === true) {
+			$checked[DenyResolverInterface::DENY_KEY] = array_diff_key($checked[DenyResolverInterface::DENY_KEY], $names);
 		}
 
 		return $checked;

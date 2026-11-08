@@ -97,17 +97,27 @@ class FileLockHandler {
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->cache = $this->openCache(cacheFactory: $cacheFactory);
+	}//end __construct()
+
+	/**
+	 * The distributed lock cache, or null to fall back to the per-instance map.
+	 *
+	 * @param ICacheFactory $cacheFactory The cache factory.
+	 *
+	 * @return ICache|null The cache.
+	 */
+	private function openCache(ICacheFactory $cacheFactory): ?ICache {
 		try {
-			$this->cache = $cacheFactory->createDistributed('openregister_file_locks');
+			return $cacheFactory->createDistributed('openregister_file_locks');
 		} catch (\Throwable $e) {
-			$this->cache = null;
 			$this->logger->warning(
 				message: '[FileLockHandler] Distributed cache unavailable; falling back to per-instance map (volatile).',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
+			return null;
 		}
-
-	}//end __construct()
+	}//end openCache()
 
 	/**
 	 * Lock a file.
@@ -163,15 +173,7 @@ class FileLockHandler {
 			return ['locked' => false];
 		}
 
-		// Allow unlock if: same user, admin with force, or no lock.
-		if ($lockInfo['lockedBy'] !== $currentUserId && $force === false) {
-			throw new Exception('Only the lock owner or an admin can unlock this file');
-		}
-
-		if ($force === true && $this->isCurrentUserAdmin() === false) {
-			throw new Exception('Only administrators can force-unlock files');
-		}
-
+		$this->assertMayUnlock(lockedBy: $lockInfo['lockedBy'], currentUserId: $currentUserId, force: $force);
 		$this->removeLockEntry(fileId: $fileId);
 
 		$this->logger->info(
@@ -181,6 +183,29 @@ class FileLockHandler {
 
 		return ['locked' => false];
 	}//end unlockFile()
+
+	/**
+	 * Refuse an unlock unless the caller owns the lock, or forces it as an
+	 * administrator. Forcing needs administrator rights even for the owner.
+	 *
+	 * @param string $lockedBy      Who holds the lock.
+	 * @param string $currentUserId Who asks.
+	 * @param bool   $force         Whether the caller forces the unlock.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the unlock is not allowed.
+	 */
+	private function assertMayUnlock(string $lockedBy, string $currentUserId, bool $force): void {
+		// Allow unlock if: same user, admin with force, or no lock.
+		if ($lockedBy !== $currentUserId && $force === false) {
+			throw new Exception('Only the lock owner or an admin can unlock this file');
+		}
+
+		if ($force === true && $this->isCurrentUserAdmin() === false) {
+			throw new Exception('Only administrators can force-unlock files');
+		}
+	}//end assertMayUnlock()
 
 	/**
 	 * Check if a file is locked.
@@ -215,7 +240,29 @@ class FileLockHandler {
 			return null;
 		}
 
-		// Defensive TTL re-check (cache may serve a slightly stale entry).
+		$expiresAt = $this->liveExpiry(fileId: $fileId, entry: $entry);
+		if ($expiresAt === null) {
+			return null;
+		}
+
+		return [
+			'lockedBy' => $entry['lockedBy'],
+			'lockedAt' => new DateTime($entry['lockedAt']),
+			'expiresAt' => $expiresAt,
+		];
+	}//end getLockInfo()
+
+	/**
+	 * When a stored lock expires, or null when it has expired or is malformed;
+	 * either way the entry is removed. This is a defensive TTL re-check: the
+	 * cache may serve a slightly stale entry.
+	 *
+	 * @param int                  $fileId The file id.
+	 * @param array<string, mixed> $entry  The stored entry.
+	 *
+	 * @return DateTime|null The expiry of a live lock.
+	 */
+	private function liveExpiry(int $fileId, array $entry): ?DateTime {
 		$now = new DateTime();
 		try {
 			$expiresAt = new DateTime($entry['expiresAt']);
@@ -225,22 +272,28 @@ class FileLockHandler {
 			return null;
 		}
 
-		if ($expiresAt <= $now) {
-			$this->removeLockEntry(fileId: $fileId);
-			$this->logger->info(
-				message: "[FileLockHandler] Lock on file {$fileId} expired, auto-cleared",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
+		if ($expiresAt > $now) {
+			return $expiresAt;
 		}
 
-		return [
-			'lockedBy' => $entry['lockedBy'],
-			'lockedAt' => new DateTime($entry['lockedAt']),
-			'expiresAt' => $expiresAt,
-		];
+		$this->clearExpired(fileId: $fileId);
+		return null;
+	}//end liveExpiry()
 
-	}//end getLockInfo()
+	/**
+	 * Remove an expired lock entry and log it.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return void
+	 */
+	private function clearExpired(int $fileId): void {
+		$this->removeLockEntry(fileId: $fileId);
+		$this->logger->info(
+			message: "[FileLockHandler] Lock on file {$fileId} expired, auto-cleared",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end clearExpired()
 
 	/**
 	 * Check if the current user can modify a locked file.
@@ -286,7 +339,6 @@ class FileLockHandler {
 			'lockedAt' => $now->format('c'),
 			'expiresAt' => $expires->format('c'),
 		];
-
 		$this->writeLockEntry(fileId: $fileId, entry: $entry, ttlSeconds: ($ttlMinutes * 60));
 
 		$this->logger->info(
@@ -294,13 +346,7 @@ class FileLockHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		return [
-			'locked' => true,
-			'lockedBy' => $userId,
-			'lockedAt' => $now->format('c'),
-			'expiresAt' => $expires->format('c'),
-		];
-
+		return (['locked' => true] + $entry);
 	}//end setLock()
 
 	/**
@@ -382,10 +428,7 @@ class FileLockHandler {
 	 */
 	private function isCurrentUserAdmin(): bool {
 		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
 
-		return $this->groupManager->isAdmin($user->getUID());
+		return $user !== null && $this->groupManager->isAdmin($user->getUID()) === true;
 	}//end isCurrentUserAdmin()
 }//end class

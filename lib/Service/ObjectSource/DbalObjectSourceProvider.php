@@ -35,10 +35,8 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
-use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
-use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -167,43 +165,98 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		$idColumns = $this->idColumns(config: $config);
+		return $this->findObject(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config, id: $id));
+	}//end find()
+
+	/**
+	 * Read the one object a reference addresses.
+	 *
+	 * @param DbalObjectRef $ref The object reference, with its id.
+	 *
+	 * @return ObjectEntity|null The virtual object, or null when absent/unreachable/list-only.
+	 */
+	private function findObject(DbalObjectRef $ref): ?ObjectEntity {
+		$idColumns = $this->idColumns(config: $ref->config);
 		if ($idColumns === []) {
 			// List-only schema (no primary key): no stable object identity.
 			return null;
 		}
 
-		$context = $this->resolveContext(config: $config, schema: $schema);
+		$target = $this->openForFind(ref: $ref);
+		if ($target === null) {
+			return null;
+		}
+
+		$row = $this->findRow(target: $target);
+		if ($row === false) {
+			return null;
+		}
+
+		return $this->toObjectEntity(ref: $ref, row: $row);
+	}//end findObject()
+
+	/**
+	 * Resolve the source and connect for a single-object read.
+	 *
+	 * @param DbalObjectRef $ref The object reference.
+	 *
+	 * @return DbalTarget|null The opened table, or null when unresolvable/unreachable.
+	 */
+	private function openForFind(DbalObjectRef $ref): ?DbalTarget {
+		$context = $this->resolveContext(config: $ref->config, schema: $ref->schema);
 		if ($context === null) {
 			return null;
 		}
 
 		[$source, $columns] = $context;
 
+		$connection = $this->connectForFind(source: $source);
+		if ($connection === null) {
+			return null;
+		}
+
+		return new DbalTarget(connection: $connection, ref: $ref, columns: $columns);
+	}//end openForFind()
+
+	/**
+	 * Connect for a single-object read; an unreachable database finds nothing.
+	 *
+	 * @param Source $source The backing database source.
+	 *
+	 * @return Connection|null The connection, or null when it cannot be opened.
+	 */
+	private function connectForFind(Source $source): ?Connection {
 		try {
-			$connection = $this->connect(source: $source);
+			return $this->connect(source: $source);
 		} catch (DbalConnectionException $e) {
 			$this->logger->warning('[ObjectSource:dbal-source] connection unavailable for find: ' . $e->getMessage());
 			return null;
 		}
+	}//end connectForFind()
 
+	/**
+	 * Read the one row whose key matches the reference's object id.
+	 *
+	 * @param DbalTarget $target The opened table; its reference carries the id
+	 *                           (composite ids are separator-joined).
+	 *
+	 * @return array<string, mixed>|false The row, or false when none matches.
+	 *
+	 * @throws DbalObjectSourceException When the query fails (502).
+	 */
+	private function findRow(DbalTarget $target): array|false {
 		try {
-			$qb = $this->baseSelect(connection: $connection, config: $config, columns: $columns);
-			(new DbalStatement(qb: $qb, connection: $connection))->andEquals(pairs: self::idPairs(idColumns: $idColumns, id: $id));
+			$qb = $this->baseSelect(target: $target);
+			$pairs = self::idPairs(idColumns: $this->idColumns(config: $target->ref->config), id: (string)$target->ref->id);
+			(new DbalStatement(qb: $qb, connection: $target->connection))->andEquals(pairs: $pairs);
 			$qb->setMaxResults(1);
 
-			$row = $qb->executeQuery()->fetchAssociative();
+			return $qb->executeQuery()->fetchAssociative();
 		} catch (DbalException $e) {
 			$this->logger->warning('[ObjectSource:dbal-source] query failed for find: ' . $e->getMessage());
 			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
 		}
-
-		if ($row === false) {
-			return null;
-		}
-
-		return $this->toObjectEntity(register: $register, schema: $schema, row: $row, config: $config);
-	}//end find()
+	}//end findRow()
 
 	/**
 	 * {@inheritDoc}
@@ -222,48 +275,105 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$context = $this->resolveContext(config: $config, schema: $schema);
+		return $this->listObjects(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config), query: $query);
+	}//end findAll()
+
+	/**
+	 * Read one page of the objects a reference's schema projects.
+	 *
+	 * @param DbalObjectRef        $ref   The object reference.
+	 * @param array<string, mixed> $query Query (filters/search/sort/limit/offset).
+	 *
+	 * @return ObjectEntity[] The matching virtual objects (possibly empty).
+	 */
+	private function listObjects(DbalObjectRef $ref, array $query): array {
+		$context = $this->resolveContext(config: $ref->config, schema: $ref->schema);
 		if ($context === null) {
 			return [];
 		}
 
 		[$source, $columns] = $context;
 
+		$connection = $this->connectForList(source: $source);
+		if ($connection === null) {
+			return [];
+		}
+
+		$rows = $this->listRows(target: new DbalTarget(connection: $connection, ref: $ref, columns: $columns), query: $query);
+
+		$objects = [];
+		foreach ($rows as $row) {
+			$objects[] = $this->toObjectEntity(ref: $ref, row: $row);
+		}
+
+		return $objects;
+	}//end listObjects()
+
+	/**
+	 * Connect for a list read; a missing driver extension lists nothing.
+	 *
+	 * @param Source $source The backing database source.
+	 *
+	 * @return Connection|null The connection, or null when the driver is missing.
+	 *
+	 * @throws DbalObjectSourceException When the external database is unreachable (503).
+	 */
+	private function connectForList(Source $source): ?Connection {
 		try {
-			$connection = $this->connect(source: $source);
+			return $this->connect(source: $source);
 		} catch (DbalConnectionException $e) {
 			if ($this->driverMissing(source: $source) === true) {
 				$this->logger->warning('[ObjectSource:dbal-source] driver unavailable — returning empty list: ' . $e->getMessage());
-				return [];
+				return null;
 			}
 
 			throw new DbalObjectSourceException('The external database is unreachable.', 503, $e);
 		}
+	}//end connectForList()
 
+	/**
+	 * Read one page of filtered, sorted rows.
+	 *
+	 * @param DbalTarget           $target The opened table.
+	 * @param array<string, mixed> $query  Query (filters/search/sort/limit/offset).
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 *
+	 * @throws DbalObjectSourceException When the query fails (502).
+	 */
+	private function listRows(DbalTarget $target, array $query): array {
 		try {
-			$qb = $this->baseSelect(connection: $connection, config: $config, columns: $columns);
-			$statement = new DbalStatement(qb: $qb, connection: $connection);
-			$this->applyFilters(statement: $statement, query: $query, filterable: $this->filterableColumns(columns: $columns, config: $config));
-			$this->applySort(statement: $statement, query: $query, columns: $columns);
+			$qb = $this->baseSelect(target: $target);
+			$clauses = $this->listClauses(target: $target, qb: $qb);
+			$clauses->filter(query: $query);
+			$clauses->sort(query: $query, columns: $target->columns);
 
 			$limit = $this->limit(query: $query);
 			$offset = max(0, (int)($query['offset'] ?? 0));
 			$qb->setMaxResults($limit);
 			$qb->setFirstResult($offset);
 
-			$rows = $qb->executeQuery()->fetchAllAssociative();
+			return $qb->executeQuery()->fetchAllAssociative();
 		} catch (DbalException $e) {
 			$this->logger->warning('[ObjectSource:dbal-source] query failed for findAll: ' . $e->getMessage());
 			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
 		}//end try
+	}//end listRows()
 
-		$objects = [];
-		foreach ($rows as $row) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, row: $row, config: $config);
-		}
-
-		return $objects;
-	}//end findAll()
+	/**
+	 * The filter, search and sort clauses of one statement on an opened table.
+	 *
+	 * @param DbalTarget   $target The opened table.
+	 * @param QueryBuilder $qb     The statement's query builder.
+	 *
+	 * @return DbalListClauses
+	 */
+	private function listClauses(DbalTarget $target, QueryBuilder $qb): DbalListClauses {
+		return new DbalListClauses(
+			statement: new DbalStatement(qb: $qb, connection: $target->connection),
+			filterable: $this->filterableColumns(columns: $target->columns, config: $target->ref->config)
+		);
+	}//end listClauses()
 
 	/**
 	 * {@inheritDoc}
@@ -278,36 +388,53 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @return int The number of matching virtual objects.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register kept for interface parity.
-	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		$context = $this->resolveContext(config: $config, schema: $schema);
+		return $this->countObjects(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config), query: $query);
+	}//end count()
+
+	/**
+	 * Count the objects a reference's schema projects; a missing driver counts nothing.
+	 *
+	 * @param DbalObjectRef        $ref   The object reference.
+	 * @param array<string, mixed> $query Query (filters/search).
+	 *
+	 * @return int The number of matching virtual objects.
+	 *
+	 * @throws DbalObjectSourceException On an unreachable DB (503) or query error (502).
+	 */
+	private function countObjects(DbalObjectRef $ref, array $query): int {
+		$context = $this->resolveContext(config: $ref->config, schema: $ref->schema);
 		if ($context === null) {
 			return 0;
 		}
 
 		[$source, $columns] = $context;
 
-		try {
-			$connection = $this->connect(source: $source);
-		} catch (DbalConnectionException $e) {
-			if ($this->driverMissing(source: $source) === true) {
-				return 0;
-			}
-
-			throw new DbalObjectSourceException('The external database is unreachable.', 503, $e);
+		$connection = $this->connectUnlessDriverMissing(source: $source);
+		if ($connection === null) {
+			return 0;
 		}
 
+		return $this->countRows(target: new DbalTarget(connection: $connection, ref: $ref, columns: $columns), query: $query);
+	}//end countObjects()
+
+	/**
+	 * `SELECT COUNT(*)` with the list's WHERE predicate.
+	 *
+	 * @param DbalTarget           $target The opened table.
+	 * @param array<string, mixed> $query  Query (filters/search).
+	 *
+	 * @return int The number of matching rows.
+	 *
+	 * @throws DbalObjectSourceException When the query fails (502).
+	 */
+	private function countRows(DbalTarget $target, array $query): int {
 		try {
-			$qb = $connection->createQueryBuilder();
-			$qb->select('COUNT(*)')->from($this->fromExpression(connection: $connection, config: $config));
-			$this->applyFilters(
-				statement: new DbalStatement(qb: $qb, connection: $connection),
-				query: $query,
-				filterable: $this->filterableColumns(columns: $columns, config: $config)
-			);
+			$qb = $target->connection->createQueryBuilder();
+			$qb->select('COUNT(*)')->from($this->fromExpression(connection: $target->connection, config: $target->ref->config));
+			$this->listClauses(target: $target, qb: $qb)->filter(query: $query);
 
 			$total = $qb->executeQuery()->fetchOne();
 		} catch (DbalException $e) {
@@ -316,7 +443,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		}
 
 		return (int)$total;
-	}//end count()
+	}//end countRows()
 
 	/**
 	 * Compute an aggregation live against the external table.
@@ -395,7 +522,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			return null;
 		}
 
-		$connection = $this->connectForAggregation(source: $source);
+		$connection = $this->connectUnlessDriverMissing(source: $source);
 		if ($connection === null) {
 			return null;
 		}
@@ -418,7 +545,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function connectForAggregation(Source $source): ?Connection {
+	private function connectUnlessDriverMissing(Source $source): ?Connection {
 		try {
 			return $this->connect(source: $source);
 		} catch (DbalConnectionException $e) {
@@ -428,7 +555,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 			throw new DbalObjectSourceException('The external database is unreachable.', 503, $e);
 		}
-	}//end connectForAggregation()
+	}//end connectUnlessDriverMissing()
 
 	/**
 	 * Resolve the backing source and the allowlisted scalar column set.
@@ -486,12 +613,23 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			return null;
 		}
 
-		if ($source === null || (string)$source->getType() !== 'database') {
+		if (self::isDatabaseSource(source: $source) === false) {
 			return null;
 		}
 
 		return $source;
 	}//end resolveSource()
+
+	/**
+	 * Whether a loaded source is a database source.
+	 *
+	 * @param Source|null $source The loaded source.
+	 *
+	 * @return bool
+	 */
+	private static function isDatabaseSource(?Source $source): bool {
+		return $source !== null && (string)$source->getType() === 'database';
+	}//end isDatabaseSource()
 
 	/**
 	 * Open the read-only DBAL connection for a source.
@@ -529,19 +667,18 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * The FROM source is a quoted base table, or a `(<query>) src` derived table
 	 * for a query-backed schema (see {@see fromExpression()}).
 	 *
-	 * @param Connection $connection The DBAL connection.
-	 * @param array<string, mixed> $config The object-source config block.
-	 * @param array<int, string> $columns The scalar columns to select.
+	 * @param DbalTarget $target The opened table; its scalar columns are selected.
 	 *
 	 * @return QueryBuilder The query builder.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function baseSelect(Connection $connection, array $config, array $columns): QueryBuilder {
+	private function baseSelect(DbalTarget $target): QueryBuilder {
+		$connection = $target->connection;
 		$qb = $connection->createQueryBuilder();
 
 		$selects = [];
-		foreach ($columns as $column) {
+		foreach ($target->columns as $column) {
 			$selects[] = $this->quote(connection: $connection, identifier: $column);
 		}
 
@@ -549,138 +686,10 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			$selects = ['*'];
 		}
 
-		$qb->select(...$selects)->from($this->fromExpression(connection: $connection, config: $config));
+		$qb->select(...$selects)->from($this->fromExpression(connection: $connection, config: $target->ref->config));
 
 		return $qb;
 	}//end baseSelect()
-
-	/**
-	 * Apply equality and `like` filters on the filterable columns and a `_search` LIKE, all bound.
-	 *
-	 * @param DbalStatement        $statement  The statement (mutated).
-	 * @param array<string, mixed> $query      The OR query.
-	 * @param array<int, string>   $filterable The filterable columns.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
-	 */
-	private function applyFilters(DbalStatement $statement, array $query, array $filterable): void {
-		$filters = ($query['filters'] ?? []);
-		if (is_array($filters) === false) {
-			$filters = [];
-		}
-
-		foreach ($filters as $column => $value) {
-			if (is_string($column) === false || in_array($column, $filterable, true) === false) {
-				continue;
-			}
-
-			if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-				$this->applyLikeFilter(statement: $statement, column: $column, value: $value[LikeOperator::KEY]);
-				continue;
-			}
-
-			if (is_array($value) === false && is_object($value) === false) {
-				$statement->andEquals(pairs: [[$column, $value]]);
-			}
-		}
-
-		$this->applySearch(statement: $statement, query: $query, filterable: $filterable);
-	}//end applyFilters()
-
-	/**
-	 * Apply a `like` filter on one allowlisted column with bound parameters.
-	 *
-	 * The other operators in the bag stay unsupported on this path, as before.
-	 *
-	 * @param DbalStatement $statement The statement (mutated).
-	 * @param string $column The allowlisted column.
-	 * @param mixed $value The value under the `like` key: one term or a list.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
-	 */
-	private function applyLikeFilter(DbalStatement $statement, string $column, mixed $value): void {
-		$like = new LikeOperator(databasePlatform: $statement->connection->getDatabasePlatform());
-		$placeholders = [];
-		foreach ($like->terms(value: $value) as $term) {
-			$placeholders[] = $statement->qb->createNamedParameter($like->pattern(term: $term));
-		}
-
-		$condition = $like->anyCondition(column: $statement->quote(identifier: $column), patternSqls: $placeholders);
-		if ($condition !== null) {
-			$statement->qb->andWhere($condition);
-		}
-	}//end applyLikeFilter()
-
-	/**
-	 * Apply a `_search` term as a bound LIKE across the filterable columns.
-	 *
-	 * @param DbalStatement $statement The statement (mutated).
-	 * @param array<string, mixed> $query The OR query.
-	 * @param array<int, string> $filterable The filterable columns.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function applySearch(DbalStatement $statement, array $query, array $filterable): void {
-		$search = (string)($query['_search'] ?? $query['search'] ?? '');
-		if ($search === '' || $filterable === []) {
-			return;
-		}
-
-		// LIKE only exists for text operands: on PostgreSQL `integer LIKE
-		// text` raises "operator does not exist" (observed live), so every
-		// column is CAST to the platform's text type first. MySQL spells the
-		// cast target CHAR; PostgreSQL and SQLite use TEXT.
-		$castType = 'TEXT';
-		if ($statement->connection->getDatabasePlatform() instanceof AbstractMySQLPlatform === true) {
-			$castType = 'CHAR';
-		}
-
-		$param = $statement->qb->createNamedParameter('%' . $search . '%');
-		$ors   = [];
-		foreach ($filterable as $column) {
-			$ors[] = 'CAST(' . $statement->quote(identifier: $column) . ' AS ' . $castType . ') LIKE ' . $param;
-		}
-
-		$statement->qb->andWhere('(' . implode(' OR ', $ors) . ')');
-	}//end applySearch()
-
-	/**
-	 * Apply a validated sort column/direction.
-	 *
-	 * @param DbalStatement $statement The statement (mutated).
-	 * @param array<string, mixed> $query The OR query.
-	 * @param array<int, string> $columns The allowlisted scalar columns.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function applySort(DbalStatement $statement, array $query, array $columns): void {
-		$sort = ($query['sort'] ?? $query['_order'] ?? null);
-		if (is_array($sort) === false || $sort === []) {
-			return;
-		}
-
-		foreach ($sort as $column => $direction) {
-			if (is_string($column) === false || in_array($column, $columns, true) === false) {
-				continue;
-			}
-
-			$dir = 'ASC';
-			if (strtolower((string)$direction) === 'desc') {
-				$dir = 'DESC';
-			}
-
-			$statement->qb->addOrderBy($statement->quote(identifier: $column), $dir);
-		}
-	}//end applySort()
 
 	/**
 	 * The column and value pairs that select a single object by its id.
@@ -711,17 +720,15 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	/**
 	 * Map a fetched row onto a non-persisted virtual ObjectEntity.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
+	 * @param DbalObjectRef        $ref The register, schema and config the row belongs to.
 	 * @param array<string, mixed> $row The fetched row.
-	 * @param array<string, mixed> $config The object-source config block.
 	 *
 	 * @return ObjectEntity The virtual object (never saved).
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function toObjectEntity(Register $register, Schema $schema, array $row, array $config): ObjectEntity {
-		$id = $this->rowId(row: $row, config: $config);
+	private function toObjectEntity(DbalObjectRef $ref, array $row): ObjectEntity {
+		$id = $this->rowId(row: $row, config: $ref->config);
 
 		$data = $row;
 		if ($id !== null) {
@@ -733,8 +740,8 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			$entity->setUuid($id);
 		}
 
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
+		$entity->setRegister((string)$ref->register->getId());
+		$entity->setSchema((string)$ref->schema->getId());
 		$entity->setObject($data);
 
 		return $entity;
@@ -826,7 +833,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * The query definition is emitted verbatim as a sub-select (DBAL's
 	 * QueryBuilder::from() does not quote a raw expression), so it MUST be
 	 * trusted config authored by an administrator — never request input. It is
-	 * read-only: writes are rejected in {@see writeContext()}.
+	 * read-only: writes are rejected in {@see refuseReadOnlySchema()}.
 	 *
 	 * @param Connection $connection The DBAL connection.
 	 * @param array<string, mixed> $config The object-source config block.
@@ -959,33 +966,41 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function insert(Register $register, Schema $schema, array $data, array $config = []): ObjectEntity {
-		[, $connection, $columns] = $this->writeContext(schema: $schema, config: $config, needsId: false);
+		return $this->insertObject(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config), data: $data);
+	}//end insert()
 
-		$values = $this->writeValues(data: $data, columns: $columns, config: $config);
-		$idColumns = $this->idColumns(config: $config);
-		$table = $this->table(config: $config);
+	/**
+	 * Insert one row for a reference and answer the created object.
+	 *
+	 * @param DbalObjectRef        $ref  The object reference (no id: the insert makes one).
+	 * @param array<string, mixed> $data The validated object data.
+	 *
+	 * @return ObjectEntity The created virtual object.
+	 *
+	 * @throws \RuntimeException When the source is not writable (read-only rejection).
+	 * @throws DbalWriteException On a refused payload or a driver error.
+	 */
+	private function insertObject(DbalObjectRef $ref, array $data): ObjectEntity {
+		$target = $this->openForWrite(ref: $ref);
+
+		$values = $this->writeValues(data: $data, columns: $target->columns);
 
 		try {
-			$newId = $this->executeInsert(
-				connection: $connection,
-				table: $table,
-				values: $values,
-				idColumns: $idColumns
-			);
+			$newId = $this->executeInsert(target: $target, values: $values);
 		} catch (DbalException $e) {
 			throw $this->translateWriteError(exception: $e);
 		}
 
 		if ($newId !== null) {
-			$created = $this->find(register: $register, schema: $schema, id: $newId, config: $config);
+			$created = $this->findObject(ref: $ref->withId(id: $newId));
 			if ($created !== null) {
 				return $created;
 			}
 		}
 
 		// No-PK (append-only) tables — or a re-read miss — echo the written values.
-		return $this->toObjectEntity(register: $register, schema: $schema, row: $values, config: $config);
-	}//end insert()
+		return $this->toObjectEntity(ref: $ref, row: $values);
+	}//end insertObject()
 
 	/**
 	 * {@inheritDoc}
@@ -1008,13 +1023,53 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function update(Register $register, Schema $schema, string $id, array $data, array $config = []): ObjectEntity {
-		[, $connection, $columns] = $this->writeContext(schema: $schema, config: $config, needsId: true);
+		return $this->updateObject(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config, id: $id), data: $data);
+	}//end update()
 
-		$idColumns = $this->idColumns(config: $config);
-		$values = $this->writeValues(data: $data, columns: $columns, config: $config);
+	/**
+	 * Update the row a reference addresses and answer it as re-read.
+	 *
+	 * @param DbalObjectRef        $ref  The object reference, with its id.
+	 * @param array<string, mixed> $data The validated object data.
+	 *
+	 * @return ObjectEntity The updated virtual object.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no external row matches the id.
+	 */
+	private function updateObject(DbalObjectRef $ref, array $data): ObjectEntity {
+		$id     = (string)$ref->id;
+		$target = $this->openForRowWrite(ref: $ref);
+
+		$values   = $this->updateValues(data: $data, target: $target);
+		$affected = $this->executeUpdate(target: $target, values: $values);
+
+		if ($affected === 0) {
+			throw new DoesNotExistException('No external row matches id ' . $id);
+		}
+
+		$updated = $this->findObject(ref: $ref);
+		if ($updated !== null) {
+			return $updated;
+		}
+
+		return $this->toObjectEntity(ref: $ref, row: array_merge($values, ['id' => $id]));
+	}//end updateObject()
+
+	/**
+	 * The column values an update writes: the payload minus the key columns, never empty.
+	 *
+	 * @param array<string, mixed> $data   The validated object data.
+	 * @param DbalTarget           $target The opened table (scalar columns and key columns).
+	 *
+	 * @return array<string, mixed> The column => value map to write.
+	 *
+	 * @throws DbalWriteException When the payload names a non-column property or nothing writable (400).
+	 */
+	private function updateValues(array $data, DbalTarget $target): array {
+		$values = $this->writeValues(data: $data, columns: $target->columns);
 
 		// Primary-key columns are the row's identity — never updatable.
-		foreach ($idColumns as $idColumn) {
+		foreach ($this->idColumns(config: $target->ref->config) as $idColumn) {
 			unset($values[$idColumn]);
 		}
 
@@ -1022,29 +1077,49 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			throw new DbalWriteException('The update contains no writable columns.', 400);
 		}
 
+		return $values;
+	}//end updateValues()
+
+	/**
+	 * Execute the key-predicated UPDATE and return the affected row count.
+	 *
+	 * @param DbalTarget           $target The opened table; its reference carries the id.
+	 * @param array<string, mixed> $values The column => value map.
+	 *
+	 * @return int The affected row count.
+	 *
+	 * @throws DbalWriteException On a malformed composite id or a driver error.
+	 */
+	private function executeUpdate(DbalTarget $target, array $values): int {
+		$connection = $target->connection;
+		$config     = $target->ref->config;
 		try {
 			$qb = $connection->createQueryBuilder()->update($this->quote(connection: $connection, identifier: $this->table(config: $config)));
 			foreach ($values as $column => $value) {
 				$qb->set($this->quote(connection: $connection, identifier: $column), $qb->createNamedParameter($value));
 			}
 
-			(new DbalStatement(qb: $qb, connection: $connection))->andEquals(pairs: self::writeIdPairs(idColumns: $idColumns, id: $id));
-			$affected = (int)$qb->executeStatement();
+			$this->whereRowId(qb: $qb, target: $target);
+			return (int)$qb->executeStatement();
 		} catch (DbalException $e) {
 			throw $this->translateWriteError(exception: $e);
 		}
+	}//end executeUpdate()
 
-		if ($affected === 0) {
-			throw new DoesNotExistException('No external row matches id ' . $id);
-		}
-
-		$updated = $this->find(register: $register, schema: $schema, id: $id, config: $config);
-		if ($updated !== null) {
-			return $updated;
-		}
-
-		return $this->toObjectEntity(register: $register, schema: $schema, row: array_merge($values, ['id' => $id]), config: $config);
-	}//end update()
+	/**
+	 * Restrict a write statement to the row its target's reference addresses.
+	 *
+	 * @param QueryBuilder $qb     The UPDATE or DELETE builder (mutated).
+	 * @param DbalTarget   $target The opened table; its reference carries the id.
+	 *
+	 * @return void
+	 *
+	 * @throws DbalWriteException When the id does not match the composite key shape (400).
+	 */
+	private function whereRowId(QueryBuilder $qb, DbalTarget $target): void {
+		$pairs = self::writeIdPairs(idColumns: $this->idColumns(config: $target->ref->config), id: (string)$target->ref->id);
+		(new DbalStatement(qb: $qb, connection: $target->connection))->andEquals(pairs: $pairs);
+	}//end whereRowId()
 
 	/**
 	 * {@inheritDoc}
@@ -1062,64 +1137,114 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function remove(Register $register, Schema $schema, string $id, array $config = []): bool {
-		[, $connection] = $this->writeContext(schema: $schema, config: $config, needsId: true);
+		return $this->removeObject(ref: new DbalObjectRef(register: $register, schema: $schema, config: $config, id: $id));
+	}//end remove()
 
-		$idColumns = $this->idColumns(config: $config);
+	/**
+	 * Delete the row a reference addresses.
+	 *
+	 * @param DbalObjectRef $ref The object reference, with its id.
+	 *
+	 * @return bool True when a row was deleted; false when no row matched.
+	 */
+	private function removeObject(DbalObjectRef $ref): bool {
+		$target     = $this->openForRowWrite(ref: $ref);
+		$connection = $target->connection;
 
 		try {
-			$qb = $connection->createQueryBuilder()->delete($this->quote(connection: $connection, identifier: $this->table(config: $config)));
-			(new DbalStatement(qb: $qb, connection: $connection))->andEquals(pairs: self::writeIdPairs(idColumns: $idColumns, id: $id));
+			$qb = $connection->createQueryBuilder()->delete($this->quote(connection: $connection, identifier: $this->table(config: $ref->config)));
+			$this->whereRowId(qb: $qb, target: $target);
 			$affected = (int)$qb->executeStatement();
 		} catch (DbalException $e) {
 			throw $this->translateWriteError(exception: $e);
 		}
 
 		return ($affected > 0);
-	}//end remove()
+	}//end removeObject()
 
 	/**
-	 * Resolve and verify the write context for a schema (design D2, fail closed).
+	 * Open a table for an insert (design D2, fail closed).
 	 *
-	 * Re-verifies AT WRITE TIME that the backing source exists, is a database
-	 * source, and currently has `authConfig.writable === true` — a stale
-	 * schema annotation alone can never authorize a write. Views never accept
-	 * writes; tables without a primary key reject id-addressed writes.
+	 * @param DbalObjectRef $ref The object reference.
 	 *
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $config The object-source `config` block.
-	 * @param bool $needsId Whether the operation needs an id predicate (update/delete).
+	 * @return DbalTarget The writable table.
 	 *
-	 * @return array{0: Source, 1: Connection, 2: array<int, string>} [source, connection, scalar columns].
-	 *
-	 * @throws \RuntimeException When the source is not writable (read-only rejection).
+	 * @throws \RuntimeException When the schema or source is read-only.
 	 * @throws DbalObjectSourceException When the external database is unreachable.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function writeContext(Schema $schema, array $config, bool $needsId): array {
-		$readOnlyError = sprintf(
-			'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
-			(string)$schema->getSlug(),
-			$this->getId()
-		);
+	private function openForWrite(DbalObjectRef $ref): DbalTarget {
+		$this->refuseReadOnlySchema(ref: $ref);
 
-		if (($config['isView'] ?? false) === true || $this->isQueryBacked(config: $config) === true) {
-			throw new RuntimeException($readOnlyError);
-		}
+		return $this->openWritable(ref: $ref);
+	}//end openForWrite()
 
-		if ($needsId === true && $this->idColumns(config: $config) === []) {
+	/**
+	 * Open a table for an id-addressed write (update/delete), design D2, fail closed.
+	 *
+	 * The read-only refusal comes first, then the keyless one, then the
+	 * source checks: a keyless view is refused as read-only.
+	 *
+	 * @param DbalObjectRef $ref The object reference, with its id.
+	 *
+	 * @return DbalTarget The writable table.
+	 *
+	 * @throws \RuntimeException When the schema or source is read-only.
+	 * @throws DbalWriteException When the table has no primary key (400).
+	 * @throws DbalObjectSourceException When the external database is unreachable.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function openForRowWrite(DbalObjectRef $ref): DbalTarget {
+		$this->refuseReadOnlySchema(ref: $ref);
+
+		if ($this->idColumns(config: $ref->config) === []) {
 			throw new DbalWriteException('This external table has no primary key; rows cannot be updated or deleted.', 400);
 		}
 
-		$source = $this->resolveSource(config: $config);
+		return $this->openWritable(ref: $ref);
+	}//end openForRowWrite()
+
+	/**
+	 * Refuse a write on a view or a query-backed schema.
+	 *
+	 * @param DbalObjectRef $ref The object reference.
+	 *
+	 * @return void
+	 *
+	 * @throws \RuntimeException When the schema is a view or query-backed.
+	 */
+	private function refuseReadOnlySchema(DbalObjectRef $ref): void {
+		if (($ref->config['isView'] ?? false) === true || $this->isQueryBacked(config: $ref->config) === true) {
+			throw new RuntimeException($this->readOnlyError(schema: $ref->schema));
+		}
+	}//end refuseReadOnlySchema()
+
+	/**
+	 * Resolve and verify the backing source AT WRITE TIME, then connect.
+	 *
+	 * The source must exist, be a database source, and currently have
+	 * `authConfig.writable === true` — a stale schema annotation alone can
+	 * never authorize a write.
+	 *
+	 * @param DbalObjectRef $ref The object reference.
+	 *
+	 * @return DbalTarget The writable table.
+	 *
+	 * @throws \RuntimeException When the source is not writable (read-only rejection).
+	 * @throws DbalObjectSourceException When the external database is unreachable.
+	 */
+	private function openWritable(DbalObjectRef $ref): DbalTarget {
+		$source = $this->resolveSource(config: $ref->config);
 		if ($source === null) {
 			// Fail closed: an unresolvable source can never authorize a write.
-			throw new RuntimeException($readOnlyError);
+			throw new RuntimeException($this->readOnlyError(schema: $ref->schema));
 		}
 
 		$authConfig = ($source->getAuthConfig() ?? []);
 		if (($authConfig['writable'] ?? false) !== true) {
-			throw new RuntimeException($readOnlyError);
+			throw new RuntimeException($this->readOnlyError(schema: $ref->schema));
 		}
 
 		try {
@@ -1128,8 +1253,23 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			throw new DbalObjectSourceException('The external database is unreachable.', 503, $e);
 		}
 
-		return [$source, $connection, $this->scalarColumns(schema: $schema)];
-	}//end writeContext()
+		return new DbalTarget(connection: $connection, ref: $ref, columns: $this->scalarColumns(schema: $ref->schema));
+	}//end openWritable()
+
+	/**
+	 * The read-only rejection message for a schema.
+	 *
+	 * @param Schema $schema The sourced schema.
+	 *
+	 * @return string
+	 */
+	private function readOnlyError(Schema $schema): string {
+		return sprintf(
+			'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
+			(string)$schema->getSlug(),
+			$this->getId()
+		);
+	}//end readOnlyError()
 
 	/**
 	 * Restrict a write payload to introspected scalar columns.
@@ -1140,7 +1280,6 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @param array<string, mixed> $data The validated object data.
 	 * @param array<int, string> $columns The scalar column allowlist.
-	 * @param array<string, mixed> $config The object-source `config` block.
 	 *
 	 * @return array<string, mixed> The column => value map to write.
 	 *
@@ -1148,7 +1287,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function writeValues(array $data, array $columns, array $config): array {
+	private function writeValues(array $data, array $columns): array {
 		unset($data['id'], $data['@self']);
 
 		$values = [];
@@ -1177,10 +1316,8 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	/**
 	 * Execute the INSERT and return the new object id (or null for no-PK tables).
 	 *
-	 * @param Connection $connection The DBAL connection.
-	 * @param string $table The unquoted table name.
+	 * @param DbalTarget           $target The opened table.
 	 * @param array<string, mixed> $values The column => value map.
-	 * @param array<int, string> $idColumns The id columns (empty for no-PK).
 	 *
 	 * @return string|null The new object id, or null when the table has no primary key.
 	 *
@@ -1188,67 +1325,126 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function executeInsert(Connection $connection, string $table, array $values, array $idColumns): ?string {
+	private function executeInsert(DbalTarget $target, array $values): ?string {
+		$idColumns = $this->idColumns(config: $target->ref->config);
+
 		// Composite key: every part must be supplied; the id is derived from the payload.
 		if (count($idColumns) > 1) {
-			$parts = [];
-			foreach ($idColumns as $idColumn) {
-				if (isset($values[$idColumn]) === false) {
-					throw new DbalWriteException(
-						sprintf('Composite-key inserts must supply every key column; "%s" is missing.', $idColumn),
-						400
-					);
-				}
-
-				$parts[] = (string)$values[$idColumn];
-			}
-
-			$connection->insert(
-				$this->quote(connection: $connection, identifier: $table),
-				$this->quoteColumns(connection: $connection, values: $values)
-			);
-			return implode(DatabaseIntrospectionService::COMPOSITE_ID_SEPARATOR, $parts);
+			return $this->insertComposite(target: $target, values: $values);
 		}
 
-		$idColumn = ($idColumns[0] ?? null);
+		if (($idColumns[0] ?? null) === null) {
+			$this->insertRow(target: $target, values: $values);
+			return null;
+		}
+
+		return $this->insertKeyed(target: $target, values: $values);
+	}//end executeInsert()
+
+	/**
+	 * Insert into a composite-key table; every key part must be in the payload.
+	 *
+	 * @param DbalTarget           $target The opened table.
+	 * @param array<string, mixed> $values The column => value map.
+	 *
+	 * @return string The separator-joined object id.
+	 *
+	 * @throws DbalWriteException When a key part is missing (400).
+	 * @throws DbalException On any driver error (translated by the caller).
+	 */
+	private function insertComposite(DbalTarget $target, array $values): string {
+		$parts = [];
+		foreach ($this->idColumns(config: $target->ref->config) as $idColumn) {
+			if (isset($values[$idColumn]) === false) {
+				throw new DbalWriteException(
+					sprintf('Composite-key inserts must supply every key column; "%s" is missing.', $idColumn),
+					400
+				);
+			}
+
+			$parts[] = (string)$values[$idColumn];
+		}
+
+		$this->insertRow(target: $target, values: $values);
+		return implode(DatabaseIntrospectionService::COMPOSITE_ID_SEPARATOR, $parts);
+	}//end insertComposite()
+
+	/**
+	 * Insert into a single-key table and return the key, supplied or generated.
+	 *
+	 * @param DbalTarget           $target The opened single-key table.
+	 * @param array<string, mixed> $values The column => value map.
+	 *
+	 * @return string The new object id.
+	 *
+	 * @throws DbalException On any driver error (translated by the caller).
+	 */
+	private function insertKeyed(DbalTarget $target, array $values): string {
+		$idColumn = $this->idColumns(config: $target->ref->config)[0];
 
 		// Caller-supplied primary key wins (no generation round-trip needed).
-		if ($idColumn !== null && isset($values[$idColumn]) === true) {
-			$connection->insert(
-				$this->quote(connection: $connection, identifier: $table),
-				$this->quoteColumns(connection: $connection, values: $values)
-			);
+		if (isset($values[$idColumn]) === true) {
+			$this->insertRow(target: $target, values: $values);
 			return (string)$values[$idColumn];
 		}
 
 		// PostgreSQL: RETURNING is the only reliable generated-key retrieval.
-		if ($idColumn !== null && $connection->getDatabasePlatform() instanceof PostgreSQLPlatform === true) {
-			$columnsSql = [];
-			$params = [];
-			foreach ($values as $column => $value) {
-				$columnsSql[] = $this->quote(connection: $connection, identifier: $column);
-				$params[] = $value;
-			}
-
-			$sql = sprintf(
-				'INSERT INTO %s (%s) VALUES (%s) RETURNING %s',
-				$this->quote(connection: $connection, identifier: $table),
-				implode(', ', $columnsSql),
-				implode(', ', array_fill(0, count($params), '?')),
-				$this->quote(connection: $connection, identifier: $idColumn)
-			);
-
-			$newId = $connection->fetchOne($sql, $params);
-			return (string)$newId;
+		if ($target->connection->getDatabasePlatform() instanceof PostgreSQLPlatform === true) {
+			return $this->insertReturning(target: $target, values: $values);
 		}
 
-		$connection->insert($this->quote(connection: $connection, identifier: $table), $this->quoteColumns(connection: $connection, values: $values));
-		if ($idColumn === null) {
-			return null;
+		$this->insertRow(target: $target, values: $values);
+		return (string)$target->connection->lastInsertId();
+	}//end insertKeyed()
+
+	/**
+	 * Insert with `RETURNING` the generated key (PostgreSQL).
+	 *
+	 * @param DbalTarget           $target The opened single-key table.
+	 * @param array<string, mixed> $values The column => value map.
+	 *
+	 * @return string The generated key.
+	 *
+	 * @throws DbalException On any driver error (translated by the caller).
+	 */
+	private function insertReturning(DbalTarget $target, array $values): string {
+		$connection = $target->connection;
+		$columnsSql = [];
+		$params = [];
+		foreach ($values as $column => $value) {
+			$columnsSql[] = $this->quote(connection: $connection, identifier: $column);
+			$params[] = $value;
 		}
 
-		return (string)$connection->lastInsertId();
-	}//end executeInsert()
+		$sql = sprintf(
+			'INSERT INTO %s (%s) VALUES (%s) RETURNING %s',
+			$this->quote(connection: $connection, identifier: $this->table(config: $target->ref->config)),
+			implode(', ', $columnsSql),
+			implode(', ', array_fill(0, count($params), '?')),
+			$this->quote(connection: $connection, identifier: $this->idColumns(config: $target->ref->config)[0])
+		);
+
+		$newId = $connection->fetchOne($sql, $params);
+		return (string)$newId;
+	}//end insertReturning()
+
+	/**
+	 * Insert one row with platform-quoted table and column names.
+	 *
+	 * @param DbalTarget           $target The opened table.
+	 * @param array<string, mixed> $values The column => value map.
+	 *
+	 * @return void
+	 *
+	 * @throws DbalException On any driver error (translated by the caller).
+	 */
+	private function insertRow(DbalTarget $target, array $values): void {
+		$connection = $target->connection;
+		$connection->insert(
+			$this->quote(connection: $connection, identifier: $this->table(config: $target->ref->config)),
+			$this->quoteColumns(connection: $connection, values: $values)
+		);
+	}//end insertRow()
 
 	/**
 	 * Quote the column keys of a value map for Connection::insert().
@@ -1302,21 +1498,12 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	private function translateWriteError(DbalException $exception): DbalWriteException {
 		// Doctrine's typed constraint exceptions are platform-independent
 		// (SQLite reports the generic SQLSTATE 23000 for every constraint
-		// class); prefer them over raw SQLSTATE inspection.
-		if ($exception instanceof \Doctrine\DBAL\Exception\UniqueConstraintViolationException === true) {
-			return new DbalWriteException('A unique constraint on the external table was violated.', 409, $exception);
-		}
-
-		if ($exception instanceof \Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException === true) {
-			return new DbalWriteException('A foreign-key constraint on the external table was violated.', 409, $exception);
-		}
-
-		if ($exception instanceof \Doctrine\DBAL\Exception\NotNullConstraintViolationException === true) {
-			return new DbalWriteException('A required (not-null) column on the external table was not provided.', 422, $exception);
-		}
-
-		if ($exception instanceof \Doctrine\DBAL\Exception\ConstraintViolationException === true) {
-			return new DbalWriteException('A constraint on the external table was violated.', 422, $exception);
+		// class); prefer them over raw SQLSTATE inspection. The generic
+		// constraint class comes last: the others extend it.
+		foreach (self::constraintErrors() as [$class, $message, $status]) {
+			if ($exception instanceof $class === true) {
+				return new DbalWriteException($message, $status, $exception);
+			}
 		}
 
 		$sqlState = '';
@@ -1326,4 +1513,20 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		return DbalWriteException::fromSqlState(sqlState: $sqlState, previous: $exception);
 	}//end translateWriteError()
+
+	/**
+	 * Typed constraint errors and the sanitized message and status each maps to.
+	 *
+	 * Checked in order: the generic constraint class is last because the others extend it.
+	 *
+	 * @return array<int, array{0: class-string, 1: string, 2: int}>
+	 */
+	private static function constraintErrors(): array {
+		return [
+			[\Doctrine\DBAL\Exception\UniqueConstraintViolationException::class, 'A unique constraint on the external table was violated.', 409],
+			[\Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException::class, 'A foreign-key constraint on the external table was violated.', 409],
+			[\Doctrine\DBAL\Exception\NotNullConstraintViolationException::class, 'A required (not-null) column on the external table was not provided.', 422],
+			[\Doctrine\DBAL\Exception\ConstraintViolationException::class, 'A constraint on the external table was violated.', 422],
+		];
+	}//end constraintErrors()
 }//end class

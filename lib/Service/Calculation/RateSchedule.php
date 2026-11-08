@@ -65,24 +65,50 @@ final class RateSchedule {
 			return null;
 		}
 
-		if (is_numeric($quantity) === false || is_array($bands) === false) {
-			throw new EvaluationException('graduated/bandRate needs a numeric quantity and a list of bands.');
-		}
-
+		$this->assertOperands(quantity: $quantity, bands: $bands);
 		if ($cumulative === false) {
 			return $this->rateAt(unit: ($quantity + 0), bands: $bands);
 		}
 
-		if ($cap !== null && is_numeric($cap) === false) {
+		return $this->accrued(quantity: ($quantity + 0), bands: $bands, cap: $this->checkedCap(cap: $cap));
+	}//end evaluate()
+
+	/**
+	 * Refuse a quantity that is not numeric or a schedule that is not a list.
+	 *
+	 * @param mixed $quantity The quantity or the unit.
+	 * @param mixed $bands The schedule.
+	 *
+	 * @return void
+	 *
+	 * @throws EvaluationException When an operand has the wrong type.
+	 */
+	private function assertOperands(mixed $quantity, mixed $bands): void {
+		if (is_numeric($quantity) === false || is_array($bands) === false) {
+			throw new EvaluationException('graduated/bandRate needs a numeric quantity and a list of bands.');
+		}
+	}//end assertOperands()
+
+	/**
+	 * The cap of graduated as a number, or null for no cap.
+	 *
+	 * @param mixed $cap The cap operand.
+	 *
+	 * @return int|float|null The cap.
+	 *
+	 * @throws EvaluationException When the cap is not numeric.
+	 */
+	private function checkedCap(mixed $cap): int|float|null {
+		if ($cap === null) {
+			return null;
+		}
+
+		if (is_numeric($cap) === false) {
 			throw new EvaluationException('The cap of graduated must be numeric.');
 		}
 
-		if ($cap !== null) {
-			$cap = ($cap + 0);
-		}
-
-		return $this->accrued(quantity: ($quantity + 0), bands: $bands, cap: $cap);
-	}//end evaluate()
+		return ($cap + 0);
+	}//end checkedCap()
 
 	/**
 	 * The amount a quantity accrues over the schedule, capped when a cap is given.
@@ -98,6 +124,25 @@ final class RateSchedule {
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function accrued(int|float $quantity, array $bands, int|float|null $cap): int|float {
+		$total = $this->uncappedTotal(quantity: $quantity, bands: $bands);
+		if ($cap !== null && $total > $cap) {
+			return $cap;
+		}
+
+		return $total;
+	}//end accrued()
+
+	/**
+	 * The amount a quantity accrues over the schedule, before any cap.
+	 *
+	 * @param int|float $quantity How many units accrued.
+	 * @param array<int, mixed> $bands The schedule, see the class comment.
+	 *
+	 * @return int|float The accrued amount.
+	 *
+	 * @throws EvaluationException When the schedule is malformed.
+	 */
+	private function uncappedTotal(int|float $quantity, array $bands): int|float {
 		$total = 0;
 		$floor = 0;
 		foreach ($this->normalise(bands: $bands) as $band) {
@@ -105,21 +150,29 @@ final class RateSchedule {
 				break;
 			}
 
-			$ceiling = $quantity;
-			if ($band['upTo'] !== null && $band['upTo'] < $quantity) {
-				$ceiling = $band['upTo'];
-			}
-
+			$ceiling = $this->ceilingOf(band: $band, quantity: $quantity);
 			$total += (($ceiling - $floor) * $band['rate']);
 			$floor  = $ceiling;
 		}
 
-		if ($cap !== null && $total > $cap) {
-			return $cap;
+		return $total;
+	}//end uncappedTotal()
+
+	/**
+	 * Where a band stops counting for a quantity: its bound, or the quantity when it is lower.
+	 *
+	 * @param array{upTo: int|float|null, rate: int|float} $band The checked band.
+	 * @param int|float $quantity How many units accrued.
+	 *
+	 * @return int|float The ceiling.
+	 */
+	private function ceilingOf(array $band, int|float $quantity): int|float {
+		if ($band['upTo'] !== null && $band['upTo'] < $quantity) {
+			return $band['upTo'];
 		}
 
-		return $total;
-	}//end accrued()
+		return $quantity;
+	}//end ceilingOf()
 
 	/**
 	 * The rate of the band a unit falls in.
@@ -195,17 +248,44 @@ final class RateSchedule {
 
 		$upTo = ($band['upTo'] ?? null);
 		if ($upTo === null) {
-			if ($isLast === false) {
-				throw new EvaluationException('Only the last band of a rate schedule may leave out upTo.');
-			}
-
-			return ['upTo' => null, 'rate' => ($band['rate'] + 0)];
+			return ['upTo' => $this->openBound(isLast: $isLast), 'rate' => ($band['rate'] + 0)];
 		}
 
+		return ['upTo' => $this->closedBound(upTo: $upTo, previous: $previous), 'rate' => ($band['rate'] + 0)];
+	}//end checkBand()
+
+	/**
+	 * The bound of a band that leaves out upTo: none, allowed only on the last band.
+	 *
+	 * @param bool $isLast Whether this is the last band.
+	 *
+	 * @return null No bound.
+	 *
+	 * @throws EvaluationException When the band is not the last one.
+	 */
+	private function openBound(bool $isLast): null {
+		if ($isLast === false) {
+			throw new EvaluationException('Only the last band of a rate schedule may leave out upTo.');
+		}
+
+		return null;
+	}//end openBound()
+
+	/**
+	 * The bound of a band that states upTo, which must be numeric and rise.
+	 *
+	 * @param mixed $upTo The bound as authored.
+	 * @param int|float $previous The upper bound of the band before it, 0 for the first.
+	 *
+	 * @return int|float The bound.
+	 *
+	 * @throws EvaluationException When the bound is not numeric or does not rise.
+	 */
+	private function closedBound(mixed $upTo, int|float $previous): int|float {
 		if (is_numeric($upTo) === false || ($upTo + 0) <= $previous) {
 			throw new EvaluationException('The upTo bounds of a rate schedule must rise from band to band.');
 		}
 
-		return ['upTo' => ($upTo + 0), 'rate' => ($band['rate'] + 0)];
-	}//end checkBand()
+		return ($upTo + 0);
+	}//end closedBound()
 }//end class

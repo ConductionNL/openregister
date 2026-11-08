@@ -35,7 +35,7 @@ use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
- * Binds the Mcp component's interfaces.
+ * Binds the Mcp component's interfaces and registers its McpToolsService factory.
  */
 final class McpRegistrar
 {
@@ -64,5 +64,10 @@ final class McpRegistrar
         foreach (self::BINDINGS as $contract => $service) {
             $context->registerServiceAlias($contract, $service);
         }
+
+        // McpToolsService is registered once, here, so the bootstrap names only
+        // this registrar. The factory is lazy, so where it sits among the other
+        // registrations does not change what it resolves to.
+        (new McpProviderDiscovery())->register(context: $context);
     }//end register()
 }//end class

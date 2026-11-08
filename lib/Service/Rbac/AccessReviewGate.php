@@ -24,9 +24,8 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\ObjectService;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 
 /**
  * The object resolution and the access-review checks of the per-object access reads.
@@ -38,7 +37,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
  */
-class AccessReviewGate {
+class AccessReviewGate implements AccessReviewGateInterface {
 
 	/**
 	 * The verb a schema writes to admit callers to an object's grants list.
@@ -52,15 +51,13 @@ class AccessReviewGate {
 	 *
 	 * @param ObjectService      $objectService Resolves the object through the RBAC boundary.
 	 * @param ObjectAccessReport $report        Resolves the schema the request named.
-	 * @param IUserSession       $userSession   The calling principal.
-	 * @param IGroupManager      $groupManager  Administrator detection and the caller's groups.
+	 * @param CallerContext      $caller        The calling principal and its groups.
 	 * @param GrantManageGuard   $grantManage   The owner, owning group, administrator and `grant_manage` rule.
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
 		private readonly ObjectAccessReport $report,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly CallerContext $caller,
 		private readonly GrantManageGuard $grantManage,
 	) {
 	}//end __construct()
@@ -115,7 +112,7 @@ class AccessReviewGate {
 			return true;
 		}
 
-		if ($userId !== null && $this->groupManager->isAdmin($userId) === true) {
+		if ($userId !== null && $this->caller->groupManager->isAdmin($userId) === true) {
 			return true;
 		}
 
@@ -203,7 +200,7 @@ class AccessReviewGate {
 	 *
 	 * @return bool True when a written entry admits the caller.
 	 */
-	private function writtenRuleAdmits(string $action, ?string $userId, ?ObjectEntity $object): bool {
+	private function writtenRuleAdmits(string $action, string|null $userId, ObjectEntity|null $object): bool {
 		$schema = $this->schema();
 		if ($schema === null) {
 			return false;
@@ -211,35 +208,8 @@ class AccessReviewGate {
 
 		$handler = $this->objectService->getPermissionHandler();
 
-		try {
-			$resolved = $handler->resolveAuthorization(schema: $schema, object: $object);
-		} catch (\Throwable $e) {
-			// Fail closed: rules nobody could resolve admit nobody.
-			return false;
-		}
-
-		if (is_array($resolved) === false || empty($resolved[$action]) === true || is_array($resolved[$action]) === false) {
-			return false;
-		}
-
-		$ownList = [$action => $resolved[$action]];
-		$admitted = false;
-		foreach (['authenticated', ...$this->callerGroups()] as $groupId) {
-			if ($handler->hasGroupPermission(
-				authorization: $ownList,
-				groupId: (string)$groupId,
-				action: $action,
-				userId: $userId,
-				objectData: $object?->getMatchEnvelope(),
-				objectOrganisation: $object?->getOrganisation()
-			) === true
-			) {
-				$admitted = true;
-				break;
-			}
-		}
-
-		if ($admitted === false) {
+		$ownList = $this->ownRuleList(handler: $handler, schema: $schema, object: $object, action: $action);
+		if ($ownList === [] || $this->aGroupAdmits(handler: $handler, ownList: $ownList, userId: $userId, object: $object) === false) {
 			return false;
 		}
 
@@ -253,17 +223,81 @@ class AccessReviewGate {
 	}//end writtenRuleAdmits()
 
 	/**
+	 * The action's own rule list, as a one-action block; empty when the rules cannot admit.
+	 *
+	 * @param PermissionHandlerInterface $handler The permission handler.
+	 * @param Schema                     $schema  The schema.
+	 * @param ObjectEntity|null          $object  The record, or null for a schema-level question.
+	 * @param string                     $action  The verb.
+	 *
+	 * @return array<string, array> [$action => rules], or [] when nothing could admit.
+	 */
+	private function ownRuleList(
+		PermissionHandlerInterface $handler,
+		Schema $schema,
+		ObjectEntity|null $object,
+		string $action
+	): array {
+		try {
+			$resolved = $handler->resolveAuthorization(schema: $schema, object: $object);
+		} catch (\Throwable $e) {
+			// Fail closed: rules nobody could resolve admit nobody.
+			return [];
+		}
+
+		if (is_array($resolved) === false || empty($resolved[$action]) === true || is_array($resolved[$action]) === false) {
+			return [];
+		}
+
+		return [$action => $resolved[$action]];
+	}//end ownRuleList()
+
+	/**
+	 * Whether the caller's groups (authenticated first) are named by the one-action block.
+	 *
+	 * @param PermissionHandlerInterface $handler The permission handler.
+	 * @param array<string, array>       $ownList [$action => rules].
+	 * @param string|null                $userId  The caller.
+	 * @param ObjectEntity|null          $object  The record, or null.
+	 *
+	 * @return bool True at the first group the block admits.
+	 */
+	private function aGroupAdmits(
+		PermissionHandlerInterface $handler,
+		array $ownList,
+		string|null $userId,
+		ObjectEntity|null $object
+	): bool {
+		$action = (string)array_key_first($ownList);
+		foreach (['authenticated', ...$this->callerGroups()] as $groupId) {
+			if ($handler->hasGroupPermission(
+				authorization: $ownList,
+				groupId: (string)$groupId,
+				action: $action,
+				userId: $userId,
+				objectData: $object?->getMatchEnvelope(),
+				objectOrganisation: $object?->getOrganisation()
+			) === true
+			) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end aGroupAdmits()
+
+	/**
 	 * The caller's group ids.
 	 *
 	 * @return string[] The groups, empty when anonymous.
 	 */
 	private function callerGroups(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
 
-		return $this->groupManager->getUserGroupIds($user);
+		return $this->caller->groupManager->getUserGroupIds($user);
 	}//end callerGroups()
 
 	/**
@@ -291,6 +325,6 @@ class AccessReviewGate {
 	 * @return string|null The uid, or null when anonymous.
 	 */
 	private function callerUid(): ?string {
-		return $this->userSession->getUser()?->getUID();
+		return $this->caller->userSession->getUser()?->getUID();
 	}//end callerUid()
 }//end class

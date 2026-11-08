@@ -53,19 +53,6 @@ final class BuiltinIntegrationServices {
 	private const OWN_APP_ID = 'openregister';
 
 	/**
-	 * The arguments every link service takes after its own link mapper.
-	 *
-	 * @var array<string, string>
-	 */
-	private const LINK_SERVICE_ARGUMENTS = [
-		'container'    => self::CONTAINER,
-		'appManager'   => \OCP\App\IAppManager::class,
-		'userSession'  => \OCP\IUserSession::class,
-		'urlGenerator' => \OCP\IURLGenerator::class,
-		'logger'       => \Psr\Log\LoggerInterface::class,
-	];
-
-	/**
 	 * Named constructor arguments per service class.
 	 *
 	 * @var array<class-string, array<string, string>>
@@ -101,15 +88,13 @@ final class BuiltinIntegrationServices {
 			'router'          => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
 			'appManager'      => \OCP\App\IAppManager::class,
 			'l10n'            => \OCP\IL10N::class,
-			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapper::class,
+			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-xwiki/spec.md
 		\OCA\OpenRegister\Service\XwikiLinkService::class => [
-			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapper::class,
+			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapperInterface::class,
 			'container'       => self::CONTAINER,
-			'appManager'      => \OCP\App\IAppManager::class,
-			'userSession'     => \OCP\IUserSession::class,
-			'logger'          => \Psr\Log\LoggerInterface::class,
+			'runtime'         => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
 		// @spec openspec/specs/integration-registry/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\KvkProvider::class => [
@@ -137,16 +122,14 @@ final class BuiltinIntegrationServices {
 			'router'     => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
 			'appManager' => \OCP\App\IAppManager::class,
 			'l10n'       => \OCP\IL10N::class,
-			'linkMapper' => \OCA\OpenRegister\Db\OpenProjectLinkMapper::class,
+			'linkMapper' => \OCA\OpenRegister\Db\OpenProjectLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-openproject/spec.md
 		\OCA\OpenRegister\Service\OpenProjectLinkService::class => [
-			'openProjectLinkMapper' => \OCA\OpenRegister\Db\OpenProjectLinkMapper::class,
+			'openProjectLinkMapper' => \OCA\OpenRegister\Db\OpenProjectLinkMapperInterface::class,
 			'provider'              => \OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider::class,
 			'router'                => \OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter::class,
-			'appManager'            => \OCP\App\IAppManager::class,
-			'userSession'           => \OCP\IUserSession::class,
-			'logger'                => \Psr\Log\LoggerInterface::class,
+			'runtime'               => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
 		// @spec openspec/specs/integration-calendar/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\CalendarProvider::class => [
@@ -202,7 +185,7 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-leaf-foundation/spec.md
 		\OCA\OpenRegister\Service\CaseTokenService::class => [
-			'mapper'       => \OCA\OpenRegister\Db\CaseTokenMapper::class,
+			'mapper'       => \OCA\OpenRegister\Db\CaseTokenMapperInterface::class,
 			'secureRandom' => \OCP\Security\ISecureRandom::class,
 			'userSession'  => \OCP\IUserSession::class,
 			'urlGenerator' => \OCP\IURLGenerator::class,
@@ -218,7 +201,7 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-leaf-foundation/spec.md
 		\OCA\OpenRegister\Service\AnalyticsSeriesService::class => [
-			'mapper'       => \OCA\OpenRegister\Db\AnalyticsSeriesMapper::class,
+			'mapper'       => \OCA\OpenRegister\Db\AnalyticsSeriesMapperInterface::class,
 			'registry'     => \OCA\OpenRegister\Service\Integration\IntegrationRegistry::class,
 			'userSession'  => \OCP\IUserSession::class,
 			'groupManager' => \OCP\IGroupManager::class,
@@ -230,7 +213,7 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-bookmarks/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider::class => [
-			'bookmarkLinkMapper' => \OCA\OpenRegister\Db\BookmarkLinkMapper::class,
+			'bookmarkLinkMapper' => \OCA\OpenRegister\Db\BookmarkLinkMapperInterface::class,
 			'appManager'         => \OCP\App\IAppManager::class,
 			'l10n'               => \OCP\IL10N::class,
 		],
@@ -240,21 +223,19 @@ final class BuiltinIntegrationServices {
 			'appManager'     => \OCP\App\IAppManager::class,
 			'userSession'    => \OCP\IUserSession::class,
 			'l10n'           => \OCP\IL10N::class,
-			'talkLinkMapper' => \OCA\OpenRegister\Db\TalkLinkMapper::class,
+			'talkLinkMapper' => \OCA\OpenRegister\Db\TalkLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-talk/spec.md
 		\OCA\OpenRegister\Service\TalkLinkService::class => [
-			'talkLinkMapper' => \OCA\OpenRegister\Db\TalkLinkMapper::class,
+			'talkLinkMapper' => \OCA\OpenRegister\Db\TalkLinkMapperInterface::class,
 			'container'      => self::CONTAINER,
-			'appManager'     => \OCP\App\IAppManager::class,
-			'userSession'    => \OCP\IUserSession::class,
 			'l10n'           => \OCP\IL10N::class,
-			'logger'         => \Psr\Log\LoggerInterface::class,
 			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+			'runtime'        => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
 		// @spec openspec/specs/integration-polls/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\PollsProvider::class => [
-			'pollLinkMapper' => \OCA\OpenRegister\Db\PollLinkMapper::class,
+			'pollLinkMapper' => \OCA\OpenRegister\Db\PollLinkMapperInterface::class,
 			'db'             => \OCP\IDBConnection::class,
 			'appManager'     => \OCP\App\IAppManager::class,
 			'userSession'    => \OCP\IUserSession::class,
@@ -262,7 +243,7 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-flow/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class => [
-			'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapper::class,
+			'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapperInterface::class,
 			'db'             => \OCP\IDBConnection::class,
 			'appManager'     => \OCP\App\IAppManager::class,
 			'l10n'           => \OCP\IL10N::class,
@@ -275,7 +256,7 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-flow/spec.md
 		\OCA\OpenRegister\Service\FlowLinkService::class => [
-			'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapper::class,
+			'flowLinkMapper' => \OCA\OpenRegister\Db\FlowLinkMapperInterface::class,
 			'db'             => \OCP\IDBConnection::class,
 			'appManager'     => \OCP\App\IAppManager::class,
 			'userSession'    => \OCP\IUserSession::class,
@@ -287,31 +268,37 @@ final class BuiltinIntegrationServices {
 			'db'            => \OCP\IDBConnection::class,
 			'appManager'    => \OCP\App\IAppManager::class,
 			'l10n'          => \OCP\IL10N::class,
-			'mapLinkMapper' => \OCA\OpenRegister\Db\MapLinkMapper::class,
+			'mapLinkMapper' => \OCA\OpenRegister\Db\MapLinkMapperInterface::class,
 			'logger'        => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-maps/spec.md
 		\OCA\OpenRegister\Service\MapLinkService::class => [
-			'mapLinkMapper' => \OCA\OpenRegister\Db\MapLinkMapper::class,
-		] + self::LINK_SERVICE_ARGUMENTS,
+			'mapLinkMapper' => \OCA\OpenRegister\Db\MapLinkMapperInterface::class,
+			'container'     => self::CONTAINER,
+			'urlGenerator'  => \OCP\IURLGenerator::class,
+			'runtime'       => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
+		],
 		// @spec openspec/specs/integration-photos/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class => [
 			'db'              => \OCP\IDBConnection::class,
 			'appManager'      => \OCP\App\IAppManager::class,
 			'l10n'            => \OCP\IL10N::class,
-			'photoLinkMapper' => \OCA\OpenRegister\Db\PhotoLinkMapper::class,
+			'photoLinkMapper' => \OCA\OpenRegister\Db\PhotoLinkMapperInterface::class,
 			'logger'          => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-photos/spec.md
 		\OCA\OpenRegister\Service\PhotoLinkService::class => [
-			'photoLinkMapper' => \OCA\OpenRegister\Db\PhotoLinkMapper::class,
-		] + self::LINK_SERVICE_ARGUMENTS,
+			'photoLinkMapper' => \OCA\OpenRegister\Db\PhotoLinkMapperInterface::class,
+			'container'       => self::CONTAINER,
+			'urlGenerator'    => \OCP\IURLGenerator::class,
+			'runtime'         => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
+		],
 		// @spec openspec/specs/integration-collectives/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class => [
 			'db'                   => \OCP\IDBConnection::class,
 			'appManager'           => \OCP\App\IAppManager::class,
 			'l10n'                 => \OCP\IL10N::class,
-			'collectiveLinkMapper' => \OCA\OpenRegister\Db\CollectiveLinkMapper::class,
+			'collectiveLinkMapper' => \OCA\OpenRegister\Db\CollectiveLinkMapperInterface::class,
 			'logger'               => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-analytics/spec.md
@@ -319,7 +306,7 @@ final class BuiltinIntegrationServices {
 			'db'                  => \OCP\IDBConnection::class,
 			'appManager'          => \OCP\App\IAppManager::class,
 			'l10n'                => \OCP\IL10N::class,
-			'analyticsLinkMapper' => \OCA\OpenRegister\Db\AnalyticsLinkMapper::class,
+			'analyticsLinkMapper' => \OCA\OpenRegister\Db\AnalyticsLinkMapperInterface::class,
 			'logger'              => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-cospend/spec.md
@@ -327,27 +314,26 @@ final class BuiltinIntegrationServices {
 			'db'                => \OCP\IDBConnection::class,
 			'appManager'        => \OCP\App\IAppManager::class,
 			'l10n'              => \OCP\IL10N::class,
-			'cospendLinkMapper' => \OCA\OpenRegister\Db\CospendLinkMapper::class,
+			'cospendLinkMapper' => \OCA\OpenRegister\Db\CospendLinkMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-cospend/spec.md
 		\OCA\OpenRegister\Service\CospendLinkService::class => [
-			'cospendLinkMapper' => \OCA\OpenRegister\Db\CospendLinkMapper::class,
+			'cospendLinkMapper' => \OCA\OpenRegister\Db\CospendLinkMapperInterface::class,
 			'container'         => self::CONTAINER,
-			'appManager'        => \OCP\App\IAppManager::class,
-			'userSession'       => \OCP\IUserSession::class,
+			'runtime'           => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 			'db'                => \OCP\IDBConnection::class,
-			'logger'            => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-collectives/spec.md
 		\OCA\OpenRegister\Service\CollectiveLinkService::class => [
-			'collectiveLinkMapper' => \OCA\OpenRegister\Db\CollectiveLinkMapper::class,
-		] + self::LINK_SERVICE_ARGUMENTS,
+			'collectiveLinkMapper' => \OCA\OpenRegister\Db\CollectiveLinkMapperInterface::class,
+			'container'            => self::CONTAINER,
+			'runtime'              => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
+			'urlGenerator'         => \OCP\IURLGenerator::class,
+		],
 		// @spec openspec/specs/integration-analytics/spec.md
 		\OCA\OpenRegister\Service\AnalyticsLinkService::class => [
-			'analyticsLinkMapper' => \OCA\OpenRegister\Db\AnalyticsLinkMapper::class,
-			'appManager'          => \OCP\App\IAppManager::class,
-			'userSession'         => \OCP\IUserSession::class,
-			'logger'              => \Psr\Log\LoggerInterface::class,
+			'analyticsLinkMapper' => \OCA\OpenRegister\Db\AnalyticsLinkMapperInterface::class,
+			'runtime'             => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 			'container'           => self::CONTAINER,
 		],
 		// @spec openspec/specs/integration-time-tracker/spec.md
@@ -355,31 +341,29 @@ final class BuiltinIntegrationServices {
 			'db'         => \OCP\IDBConnection::class,
 			'appManager' => \OCP\App\IAppManager::class,
 			'l10n'       => \OCP\IL10N::class,
-			'linkMapper' => \OCA\OpenRegister\Db\TimeTrackerLinkMapper::class,
+			'linkMapper' => \OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface::class,
 			'config'     => \OCP\IConfig::class,
 			'logger'     => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-time-tracker/spec.md
 		\OCA\OpenRegister\Service\TimeTrackerLinkService::class => [
-			'timeTrackerLinkMapper' => \OCA\OpenRegister\Db\TimeTrackerLinkMapper::class,
+			'timeTrackerLinkMapper' => \OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface::class,
 			'db'                    => \OCP\IDBConnection::class,
 			'container'             => self::CONTAINER,
-			'appManager'            => \OCP\App\IAppManager::class,
-			'userSession'           => \OCP\IUserSession::class,
-			'logger'                => \Psr\Log\LoggerInterface::class,
+			'runtime'               => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaDiffService::class => [],
 		\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class => [],
 		\OCA\OpenRegister\Service\Schema\SchemaVersioningService::class => [
 			'diffService'     => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
-			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapper::class,
-			'runMapper'       => \OCA\OpenRegister\Db\SchemaRunMapper::class,
+			'changelogMapper' => \OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class,
+			'runMapper'       => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
 			'runEntryMapper'  => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
 			'userSession'     => \OCP\IUserSession::class,
 			'logger'          => \Psr\Log\LoggerInterface::class,
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class => [
-			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapper::class,
+			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
 			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
 			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
@@ -388,7 +372,7 @@ final class BuiltinIntegrationServices {
 		],
 		\OCA\OpenRegister\Service\Schema\SchemaMigrationService::class => [
 			'planner'        => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
-			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapper::class,
+			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapperInterface::class,
 			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
 			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,

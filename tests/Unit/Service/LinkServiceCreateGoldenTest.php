@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Db\EmailLinkMapper;
@@ -243,7 +244,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->session('alice'),
-				\OCA\OpenRegister\Files\Service\File\FileRestrictionGuard::class => new class {
+				\OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface::class => new class {
 					public function readableNodes(array $nodes): array {
 						return $nodes;
 					}
@@ -401,10 +402,12 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$service = new MapLinkService(
 			$mapper,
 			$this->container(['OCA\\Maps\\Service\\FavoritesService' => $favorites]),
-			$apps,
-			$this->session('alice'),
 			$this->createMock(IURLGenerator::class),
-			$this->createMock(LoggerInterface::class)
+			new LinkServiceRuntime(
+				$apps,
+				$this->session('alice'),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$this->assertGolden(

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
+use OCA\OpenRegister\Search\Controller\Support\ReportsControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -52,23 +53,39 @@ use Psr\Log\LoggerInterface;
  */
 class ReportsController extends Controller {
 	/**
+	 * Composer.
+	 *
+	 * @var ReportRenderService
+	 */
+	private readonly ReportRenderService $renderService;
+
+	/**
+	 * Dashboard loader.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objectMapper;
+
+	/**
+	 * Logger for render diagnostics.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier.
-	 * @param IRequest $request Active request.
-	 * @param ReportRenderService $renderService Composer.
-	 * @param MagicObjectFinderInterface $objectMapper Dashboard loader.
-	 * @param LoggerInterface $logger Logger for render diagnostics.
+	 * @param string                    $appName  The application name.
+	 * @param IRequest                  $request  The current request.
+	 * @param ReportsControllerServices $services The reports API services.
 	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		private readonly ReportRenderService $renderService,
-		private readonly MagicObjectFinderInterface $objectMapper,
-		private readonly LoggerInterface $logger,
-	) {
+	public function __construct(string $appName, IRequest $request, ReportsControllerServices $services) {
 		parent::__construct(appName: $appName, request: $request);
 
+		$this->renderService = $services->renderService;
+		$this->objectMapper  = $services->objectMapper;
+		$this->logger        = $services->logger;
 	}//end __construct()
 
 	/**

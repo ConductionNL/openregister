@@ -108,24 +108,20 @@ class PreviewHandler {
 	/**
 	 * Constructor for PreviewHandler.
 	 *
-	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param LoggerInterface $logger The logger interface.
-	 * @param FetchHandler $fetchHandler The fetch handler for remote data fetching.
-	 * @param MagicMapperInterface $objectMapper The object mapper, to find the local object a remote one would update.
+	 * @param PreviewMappers  $mappers      The register, schema and object mappers.
+	 * @param LoggerInterface $logger       The logger interface.
+	 * @param FetchHandler    $fetchHandler The fetch handler for remote data fetching.
 	 */
 	public function __construct(
-		RegisterMapperInterface $registerMapper,
-		SchemaMapperInterface $schemaMapper,
+		PreviewMappers $mappers,
 		LoggerInterface $logger,
 		FetchHandler $fetchHandler,
-		MagicMapperInterface $objectMapper,
 	) {
-		$this->registerMapper = $registerMapper;
-		$this->schemaMapper = $schemaMapper;
+		$this->registerMapper = $mappers->registerMapper;
+		$this->schemaMapper = $mappers->schemaMapper;
 		$this->logger = $logger;
 		$this->fetchHandler = $fetchHandler;
-		$this->objectMapper = $objectMapper;
+		$this->objectMapper = $mappers->objectMapper;
 	}//end __construct()
 
 	/**

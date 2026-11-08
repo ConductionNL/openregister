@@ -69,10 +69,7 @@ class PackagedFileChecksum {
 			throw new RuntimeException('Cannot read ' . $path . ' to checksum it, so it is not transferred');
 		}
 
-		if (is_string($stored) === true
-			&& preg_match('/^[0-9a-fA-F]{64}$/', $stored) === 1
-			&& hash_equals(strtolower($stored), $checksum) === false
-		) {
+		if (self::contradicts(stored: $stored, checksum: $checksum) === true) {
 			throw new RuntimeException(
 				'Fixity failure: the SHA-256 recorded for ' . $path
 				. ' does not match its bytes, so it is not transferred'
@@ -81,4 +78,19 @@ class PackagedFileChecksum {
 
 		return ['checksum' => $checksum, 'checksumDate' => (new DateTime())->format(DateTime::ATOM)];
 	}//end compute()
+
+	/**
+	 * Whether a stored SHA-256 disagrees with the bytes' checksum. A stored
+	 * value that is not SHA-256-shaped cannot be compared, so it never does.
+	 *
+	 * @param mixed  $stored   The checksum stored with the file reference.
+	 * @param string $checksum The checksum of the bytes.
+	 *
+	 * @return bool True on a fixity failure.
+	 */
+	private static function contradicts(mixed $stored, string $checksum): bool {
+		return is_string($stored) === true
+			&& preg_match('/^[0-9a-fA-F]{64}$/', $stored) === 1
+			&& hash_equals(strtolower($stored), $checksum) === false;
+	}//end contradicts()
 }//end class

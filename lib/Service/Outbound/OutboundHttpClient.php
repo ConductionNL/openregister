@@ -67,13 +67,13 @@ class OutboundHttpClient implements IClient {
 	 * Constructor.
 	 *
 	 * @param IClient $inner The client this one decorates.
-	 * @param ProxySettings $proxy The one administered proxy setting.
+	 * @param ProxySettingsInterface $proxy The one administered proxy setting.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IClient $inner,
-		private readonly ProxySettings $proxy,
+		private readonly ProxySettingsInterface $proxy,
 	) {
 
 	}//end __construct()

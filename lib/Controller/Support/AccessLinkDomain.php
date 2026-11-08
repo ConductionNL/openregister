@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
-use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
-use OCA\OpenRegister\Service\Sharing\AccessLinkService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
 
 /**
  * The domain services of the access link API.
@@ -36,17 +36,17 @@ final class AccessLinkDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param AccessLinkService   $links     The link lifecycle.
+	 * @param AccessLinkServiceInterface   $links     The link lifecycle.
 	 * @param AccessLinkReaderInterface    $reader    Serves what a link opens.
-	 * @param AccessLinkMintGuard $mintGuard Decides whether a caller may publish a subject.
+	 * @param AccessLinkMintGuardInterface $mintGuard Decides whether a caller may publish a subject.
 	 * @param AccessLinkActs      $acts      Performs the comment and the upload, as the link.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
 	public function __construct(
-		public readonly AccessLinkService $links,
+		public readonly AccessLinkServiceInterface $links,
 		public readonly AccessLinkReaderInterface $reader,
-		public readonly AccessLinkMintGuard $mintGuard,
+		public readonly AccessLinkMintGuardInterface $mintGuard,
 		public readonly AccessLinkActs $acts,
 	) {
 	}//end __construct()

@@ -48,11 +48,11 @@ namespace OCA\OpenRegister\Repair;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
-use OCA\OpenRegister\Db\TaskAuditMapper;
-use OCA\OpenRegister\Db\TaskCandidateMapper;
+use OCA\OpenRegister\Db\TaskAuditMapperInterface;
+use OCA\OpenRegister\Db\TaskCandidateMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskSequence;
-use OCA\OpenRegister\Db\TaskSequenceMapper;
+use OCA\OpenRegister\Db\TaskSequenceMapperInterface;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -105,9 +105,9 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @param IDBConnection $db Reads the legacy tables and writes the reconciliation column.
 	 * @param TaskBuilder $builder Validates and builds each migrated task.
 	 * @param TaskMapper $tasks Inserts tasks (insert dispatches nothing).
-	 * @param TaskCandidateMapper $candidates Maintains the candidate index.
-	 * @param TaskAuditMapper $audits Appends the migrated decision history.
-	 * @param TaskSequenceMapper $sequences Inserts one sequence per (chain, object).
+	 * @param TaskCandidateMapperInterface $candidates Maintains the candidate index.
+	 * @param TaskAuditMapperInterface $audits Appends the migrated decision history.
+	 * @param TaskSequenceMapperInterface $sequences Inserts one sequence per (chain, object).
 	 * @param IAppConfig $config Records the cutover timestamp.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
@@ -115,9 +115,9 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 		private readonly IDBConnection $db,
 		private readonly TaskBuilder $builder,
 		private readonly TaskMapper $tasks,
-		private readonly TaskCandidateMapper $candidates,
-		private readonly TaskAuditMapper $audits,
-		private readonly TaskSequenceMapper $sequences,
+		private readonly TaskCandidateMapperInterface $candidates,
+		private readonly TaskAuditMapperInterface $audits,
+		private readonly TaskSequenceMapperInterface $sequences,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
 	) {
@@ -217,7 +217,6 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @return int How many steps were migrated this run.
 	 */
 	private function migrateStepSet(array $chain, array $template, string $objectUuid, array $steps): int {
-		$pending = array_filter($steps, static fn (array $step): bool => (string)$step['status'] === 'pending');
 		$unmigrated = array_filter($steps, static fn (array $step): bool => trim((string)($step['migrated_task_uuid'] ?? '')) === '');
 		if ($unmigrated === []) {
 			return 0;
@@ -227,8 +226,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 			chain: $chain,
 			template: $template,
 			objectUuid: $objectUuid,
-			steps: $steps,
-			pendingOrdinal: $this->firstOrdinal(steps: $pending)
+			steps: $steps
 		);
 
 		$count = 0;
@@ -246,12 +244,13 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @param array<string, mixed> $chain The legacy chain row.
 	 * @param array<string, mixed> $template The derived template.
 	 * @param string $objectUuid The anchor.
-	 * @param array<int, array<string, mixed>> $steps All the set's step rows.
-	 * @param int|null $pendingOrdinal The ordinal that was pending, when any.
+	 * @param array<int, array<string, mixed>> $steps All the set's step rows; the
+	 *                                               first pending one's ordinal is
+	 *                                               the new sequence's cursor.
 	 *
 	 * @return TaskSequence The sequence the set's tasks belong to.
 	 */
-	private function sequenceFor(array $chain, array $template, string $objectUuid, array $steps, ?int $pendingOrdinal): TaskSequence {
+	private function sequenceFor(array $chain, array $template, string $objectUuid, array $steps): TaskSequence {
 		foreach ($steps as $step) {
 			$taskUuid = trim((string)($step['migrated_task_uuid'] ?? ''));
 			if ($taskUuid === '') {
@@ -288,7 +287,8 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 		$sequence->setSchemaId($schemaId);
 		$sequence->setChainKey((string)$chain['name']);
 		$sequence->setRequesterId($requester);
-		$sequence->setPositionCursor($pendingOrdinal ?? (int)($steps[0]['step_order'] ?? 1));
+		$pending = array_filter($steps, static fn (array $step): bool => (string)$step['status'] === 'pending');
+		$sequence->setPositionCursor($this->firstOrdinal(steps: $pending) ?? (int)($steps[0]['step_order'] ?? 1));
 		$sequence->setStatus($status);
 		$sequence->setOutcome($outcome);
 		$sequence->setOpenedAt($this->parseDbDate(value: ($steps[0]['created'] ?? null)) ?? new DateTime());

@@ -46,7 +46,7 @@ use Throwable;
  *
  * @spec openspec/specs/tenant-lifecycle/spec.md
  */
-class OrganisationLifecycleAuditor {
+class OrganisationLifecycleAuditor implements OrganisationEditAuditorInterface {
 
 	/**
 	 * The typed action a change of an organisation's status writes.

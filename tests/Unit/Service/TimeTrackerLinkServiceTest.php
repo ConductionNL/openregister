@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
@@ -96,9 +97,11 @@ class TimeTrackerLinkServiceTest extends TestCase {
 			$this->mapper,
 			$this->db,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}//end setUp()
 

@@ -1,0 +1,317 @@
+{
+    "validate:absent": [],
+    "validate:no-matrix-key": [],
+    "validate:not-an-object": [
+        {
+            "code": "matrix.not-object",
+            "message": "authorization.matrix must be an object."
+        }
+    ],
+    "validate:empty-object": [
+        {
+            "code": "matrix.no-field",
+            "message": "A matrix must name the object field it keys on."
+        },
+        {
+            "code": "matrix.no-user-source",
+            "message": "A matrix must declare where a user's own values come from."
+        },
+        {
+            "code": "matrix.no-rows",
+            "message": "A matrix must declare at least one row."
+        }
+    ],
+    "validate:valid": [],
+    "validate:blank-field": [
+        {
+            "code": "matrix.no-field",
+            "message": "A matrix must name the object field it keys on."
+        }
+    ],
+    "validate:unknown-field": [
+        {
+            "code": "matrix.unknown-field",
+            "message": "The matrix field \"afdeling\" is not a property of this schema."
+        }
+    ],
+    "validate:no-user-source": [
+        {
+            "code": "matrix.no-user-source",
+            "message": "A matrix must declare where a user's own values come from."
+        }
+    ],
+    "validate:user-source-string": [
+        {
+            "code": "matrix.no-user-source",
+            "message": "A matrix must declare where a user's own values come from."
+        }
+    ],
+    "validate:user-source-empty": [
+        {
+            "code": "matrix.bad-user-source",
+            "message": "userSource must declare groups: true, a groupPrefix, or a schema and property pair."
+        }
+    ],
+    "validate:user-source-groups": [],
+    "validate:user-source-groups-truthy": [
+        {
+            "code": "matrix.bad-user-source",
+            "message": "userSource must declare groups: true, a groupPrefix, or a schema and property pair."
+        }
+    ],
+    "validate:user-source-blank-prefix": [
+        {
+            "code": "matrix.bad-user-source",
+            "message": "userSource must declare groups: true, a groupPrefix, or a schema and property pair."
+        }
+    ],
+    "validate:user-source-schema": [],
+    "validate:user-source-schema-no-property": [
+        {
+            "code": "matrix.bad-user-source",
+            "message": "userSource must declare groups: true, a groupPrefix, or a schema and property pair."
+        }
+    ],
+    "validate:no-rows": [
+        {
+            "code": "matrix.no-rows",
+            "message": "A matrix must declare at least one row."
+        }
+    ],
+    "validate:rows-empty": [
+        {
+            "code": "matrix.no-rows",
+            "message": "A matrix must declare at least one row."
+        }
+    ],
+    "validate:rows-string": [
+        {
+            "code": "matrix.no-rows",
+            "message": "A matrix must declare at least one row."
+        }
+    ],
+    "validate:rows-from": [],
+    "validate:rows-from-empty-rows": [],
+    "validate:rows-from-with-rows": [
+        {
+            "code": "matrix.no-group",
+            "message": "Row 0 names no role group."
+        }
+    ],
+    "validate:rows-from-blank": [
+        {
+            "code": "matrix.bad-rows-from",
+            "message": "rowsFrom must name a provider."
+        }
+    ],
+    "validate:rows-from-number": [
+        {
+            "code": "matrix.bad-rows-from",
+            "message": "rowsFrom must name a provider."
+        }
+    ],
+    "validate:file-verbs-ok": [],
+    "validate:file-verbs-bad": [
+        {
+            "code": "matrix.bad-file-verbs",
+            "message": "fileVerbs must be true or false."
+        }
+    ],
+    "validate:file-verbs-null": [
+        {
+            "code": "matrix.bad-file-verbs",
+            "message": "fileVerbs must be true or false."
+        }
+    ],
+    "validate:everything-wrong": [
+        {
+            "code": "matrix.no-field",
+            "message": "A matrix must name the object field it keys on."
+        },
+        {
+            "code": "matrix.no-user-source",
+            "message": "A matrix must declare where a user's own values come from."
+        },
+        {
+            "code": "matrix.bad-rows-from",
+            "message": "rowsFrom must name a provider."
+        },
+        {
+            "code": "matrix.bad-file-verbs",
+            "message": "fileVerbs must be true or false."
+        }
+    ],
+    "validate:keyed-rows": [
+        {
+            "code": "matrix.no-group",
+            "message": "Row first names no role group."
+        }
+    ],
+    "validate:row:not-an-object": [
+        {
+            "code": "matrix.bad-row",
+            "message": "Row 1 is not an object."
+        }
+    ],
+    "validate:row:list-row": [
+        {
+            "code": "matrix.no-group",
+            "message": "Row 1 names no role group."
+        },
+        {
+            "code": "matrix.no-actions",
+            "message": "Row 1 grants no action."
+        }
+    ],
+    "validate:row:no-group": [
+        {
+            "code": "matrix.no-group",
+            "message": "Row 1 names no role group."
+        }
+    ],
+    "validate:row:blank-group": [
+        {
+            "code": "matrix.no-group",
+            "message": "Row 1 names no role group."
+        }
+    ],
+    "validate:row:no-actions": [
+        {
+            "code": "matrix.no-actions",
+            "message": "Row 1 grants no action."
+        }
+    ],
+    "validate:row:actions-string": [
+        {
+            "code": "matrix.no-actions",
+            "message": "Row 1 grants no action."
+        }
+    ],
+    "validate:row:empty-actions": [
+        {
+            "code": "matrix.no-actions",
+            "message": "Row 1 grants no action."
+        }
+    ],
+    "validate:row:unknown-actions": [
+        {
+            "code": "matrix.unknown-action",
+            "message": "Row 1 names the action \"bogus\", which is not one this engine resolves."
+        },
+        {
+            "code": "matrix.unknown-action",
+            "message": "Row 1 names the action \"7\", which is not one this engine resolves."
+        }
+    ],
+    "validate:row:no-group-no-actions": [
+        {
+            "code": "matrix.no-group",
+            "message": "Row 1 names no role group."
+        },
+        {
+            "code": "matrix.no-actions",
+            "message": "Row 1 grants no action."
+        }
+    ],
+    "validate:row:until-ok": [],
+    "validate:row:until-bad": [
+        {
+            "code": "matrix.bad-until",
+            "message": "Row 1 has an end that is not a date."
+        }
+    ],
+    "validate:row:until-number": [
+        {
+            "code": "matrix.bad-until",
+            "message": "Row 1 has an end that is not a date."
+        }
+    ],
+    "validate:row:until-null": [],
+    "validate:row:where-string": [
+        {
+            "code": "matrix.bad-where",
+            "message": "Row 1: where must be an object."
+        }
+    ],
+    "validate:row:where-list": [
+        {
+            "code": "matrix.bad-where",
+            "message": "Row 1: where must be an object."
+        }
+    ],
+    "validate:row:where-empty": [],
+    "validate:row:where-ok": [],
+    "validate:row:where-repeats-field": [
+        {
+            "code": "matrix.where-repeats-field",
+            "message": "Row 1: where repeats the matrix field \"department\"."
+        }
+    ],
+    "validate:row:where-unknown": [
+        {
+            "code": "matrix.where-unknown-field",
+            "message": "Row 1: where names \"ghost\", which is neither a property of this schema nor _organisation or _owner."
+        },
+        {
+            "code": "matrix.bad-where-value",
+            "message": "Row 1: the condition on \"status\" must be a value, a non-empty list of values or {$in: [...]}."
+        }
+    ],
+    "validate:row:where-bad-values": [
+        {
+            "code": "matrix.bad-where-value",
+            "message": "Row 1: the condition on \"status\" must be a value, a non-empty list of values or {$in: [...]}."
+        }
+    ],
+    "validate:row:where-org-marked": [],
+    "validate:row:where-unknown-and-bad": [
+        {
+            "code": "matrix.where-unknown-field",
+            "message": "Row 1: where names \"ghost\", which is neither a property of this schema nor _organisation or _owner."
+        }
+    ],
+    "validate:row:until-and-where-bad": [
+        {
+            "code": "matrix.no-group",
+            "message": "Row 1 names no role group."
+        },
+        {
+            "code": "matrix.no-actions",
+            "message": "Row 1 grants no action."
+        },
+        {
+            "code": "matrix.bad-where",
+            "message": "Row 1: where must be an object."
+        }
+    ],
+    "findingsForRow:row": [
+        {
+            "code": "matrix.bad-row",
+            "message": "Row 0 is not an object."
+        }
+    ],
+    "findingsForRow:array": [
+        {
+            "code": "matrix.no-group",
+            "message": "Row 0 names no role group."
+        },
+        {
+            "code": "matrix.unknown-action",
+            "message": "Row 0 names the action \"nope\", which is not one this engine resolves."
+        },
+        {
+            "code": "matrix.where-repeats-field",
+            "message": "Row 0: where repeats the matrix field \"department\"."
+        },
+        {
+            "code": "matrix.where-unknown-field",
+            "message": "Row 0: where names \"ghost\", which is neither a property of this schema nor _organisation or _owner."
+        }
+    ],
+    "withDeclaredActions": [
+        {
+            "code": "matrix.unknown-action",
+            "message": "Row 0 names the action \"approve\", which is not one this engine resolves."
+        }
+    ]
+}

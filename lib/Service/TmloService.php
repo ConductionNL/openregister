@@ -51,7 +51,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class TmloService {
+class TmloService implements TmloServiceInterface {
 
 	/**
 	 * Valid values for archiefnominatie field
@@ -59,13 +59,7 @@ class TmloService {
 	public const ARCHIEFNOMINATIE_BLIJVEND_BEWAREN = 'blijvend_bewaren';
 	public const ARCHIEFNOMINATIE_VERNIETIGEN = 'vernietigen';
 
-	/**
-	 * Valid values for archiefstatus field
-	 */
-	public const ARCHIEFSTATUS_ACTIEF = 'actief';
-	public const ARCHIEFSTATUS_SEMI_STATISCH = 'semi_statisch';
-	public const ARCHIEFSTATUS_OVERGEBRACHT = 'overgebracht';
-	public const ARCHIEFSTATUS_VERNIETIGD = 'vernietigd';
+	// The archiefstatus values (ARCHIEFSTATUS_*) are declared on TmloServiceInterface.
 
 	/**
 	 * MDTO XML namespace
@@ -131,6 +125,32 @@ class TmloService {
 	];
 
 	/**
+	 * Enumerated TMLO fields and their allowed values, in validation order.
+	 *
+	 * @var array<string, string[]>
+	 */
+	private const ENUM_FIELDS = [
+		'archiefnominatie' => self::VALID_ARCHIEFNOMINATIE,
+		'archiefstatus'    => self::VALID_ARCHIEFSTATUS,
+	];
+
+	/**
+	 * Required fields and archiefnominatie per target archiefstatus.
+	 *
+	 * @var array<string, array{fields: string[], nominatie: string}>
+	 */
+	private const TRANSITION_REQUIREMENTS = [
+		self::ARCHIEFSTATUS_OVERGEBRACHT => [
+			'fields'    => ['archiefactiedatum', 'classification', 'archiefnominatie'],
+			'nominatie' => self::ARCHIEFNOMINATIE_BLIJVEND_BEWAREN,
+		],
+		self::ARCHIEFSTATUS_VERNIETIGD   => [
+			'fields'    => ['archiefactiedatum', 'classification', 'archiefnominatie', 'vernietigingsCategorie'],
+			'nominatie' => self::ARCHIEFNOMINATIE_VERNIETIGEN,
+		],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger interface
@@ -189,8 +209,6 @@ class TmloService {
 	 *
 	 * @return ObjectEntity The object with populated TMLO metadata
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-2
 	 */
 	public function populateDefaults(ObjectEntity $object, Register $register, Schema $schema): ObjectEntity {
@@ -204,30 +222,48 @@ class TmloService {
 			$tmlo = [];
 		}
 
-		// Get schema-level defaults.
-		$defaults = $this->getSchemaDefaults(schema: $schema);
+		$tmlo = $this->mergeSchemaDefaults(tmlo: $tmlo, defaults: $this->getSchemaDefaults(schema: $schema));
+		$object->setTmlo($this->withDerivedDefaults(tmlo: $tmlo));
 
-		// Merge defaults: only fill in fields that are not already set.
+		return $object;
+	}//end populateDefaults()
+
+	/**
+	 * Fill every TMLO field that is not set (or null) from the schema defaults.
+	 *
+	 * @param array $tmlo     The object's TMLO metadata.
+	 * @param array $defaults The schema-level TMLO defaults.
+	 *
+	 * @return array The merged TMLO metadata.
+	 */
+	private function mergeSchemaDefaults(array $tmlo, array $defaults): array {
 		foreach (self::TMLO_FIELDS as $field) {
 			if (isset($tmlo[$field]) === false || $tmlo[$field] === null) {
 				$tmlo[$field] = ($defaults[$field] ?? null);
 			}
 		}
 
-		// Always default archiefstatus to 'actief' if not set.
+		return $tmlo;
+	}//end mergeSchemaDefaults()
+
+	/**
+	 * Default archiefstatus to 'actief', and derive archiefactiedatum from bewaarTermijn when unset.
+	 *
+	 * @param array $tmlo The merged TMLO metadata.
+	 *
+	 * @return array The TMLO metadata with derived defaults.
+	 */
+	private function withDerivedDefaults(array $tmlo): array {
 		if (($tmlo['archiefstatus'] ?? null) === null) {
 			$tmlo['archiefstatus'] = self::ARCHIEFSTATUS_ACTIEF;
 		}
 
-		// Calculate archiefactiedatum from bewaarTermijn if not explicitly set.
 		if (($tmlo['archiefactiedatum'] ?? null) === null && ($tmlo['bewaarTermijn'] ?? null) !== null) {
 			$tmlo['archiefactiedatum'] = $this->calculateArchiveActionDate(duration: $tmlo['bewaarTermijn']);
 		}
 
-		$object->setTmlo($tmlo);
-
-		return $object;
-	}//end populateDefaults()
+		return $tmlo;
+	}//end withDerivedDefaults()
 
 	/**
 	 * Calculate archiefactiedatum from an ISO-8601 duration string.
@@ -262,54 +298,91 @@ class TmloService {
 	 *
 	 * @return array Array of validation errors (empty if valid)
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-3
 	 */
 	public function validateFieldValues(array $tmlo): array {
-		$errors = [];
-
-		// Validate archiefnominatie.
-		if (isset($tmlo['archiefnominatie']) === true
-			&& in_array($tmlo['archiefnominatie'], self::VALID_ARCHIEFNOMINATIE, true) === false
-		) {
-			$allowed = implode(', ', self::VALID_ARCHIEFNOMINATIE);
-			$got = $tmlo['archiefnominatie'];
-			$errors[] = "archiefnominatie must be one of: {$allowed}. Got: {$got}";
-		}
-
-		// Validate archiefstatus.
-		if (isset($tmlo['archiefstatus']) === true
-			&& in_array($tmlo['archiefstatus'], self::VALID_ARCHIEFSTATUS, true) === false
-		) {
-			$allowed = implode(', ', self::VALID_ARCHIEFSTATUS);
-			$got = $tmlo['archiefstatus'];
-			$errors[] = "archiefstatus must be one of: {$allowed}. Got: {$got}";
-		}
+		// Validate archiefnominatie and archiefstatus against their allowed values.
+		$errors = $this->enumFieldErrors(tmlo: $tmlo);
 
 		// Validate bewaarTermijn as ISO-8601 duration.
-		if (isset($tmlo['bewaarTermijn']) === true) {
-			try {
-				new DateInterval($tmlo['bewaarTermijn']);
-			} catch (Exception $e) {
-				$got = $tmlo['bewaarTermijn'];
-				$errors[] = "bewaarTermijn must be a valid ISO-8601 duration (e.g., P7Y, P5Y6M). Got: {$got}";
-			}
+		$durationError = $this->bewaarTermijnError(tmlo: $tmlo);
+		if ($durationError !== null) {
+			$errors[] = $durationError;
 		}
 
 		// Validate archiefactiedatum as ISO-8601 date.
-		if (isset($tmlo['archiefactiedatum']) === true) {
-			$date = DateTime::createFromFormat('Y-m-d', $tmlo['archiefactiedatum']);
-			if ($date === false || $date->format('Y-m-d') !== $tmlo['archiefactiedatum']) {
-				$got = $tmlo['archiefactiedatum'];
-				$errors[] = "archiefactiedatum must be a valid ISO-8601 date (YYYY-MM-DD). Got: {$got}";
-			}
+		$dateError = $this->archiefactiedatumError(tmlo: $tmlo);
+		if ($dateError !== null) {
+			$errors[] = $dateError;
 		}
 
 		return $errors;
 	}//end validateFieldValues()
+
+	/**
+	 * Errors for the enumerated fields (archiefnominatie, archiefstatus), in that order.
+	 *
+	 * @param array $tmlo The TMLO metadata to validate
+	 *
+	 * @return array Array of validation errors
+	 */
+	private function enumFieldErrors(array $tmlo): array {
+		$errors = [];
+		foreach (self::ENUM_FIELDS as $field => $validValues) {
+			if (isset($tmlo[$field]) === true
+				&& in_array($tmlo[$field], $validValues, true) === false
+			) {
+				$allowed  = implode(', ', $validValues);
+				$got      = $tmlo[$field];
+				$errors[] = "{$field} must be one of: {$allowed}. Got: {$got}";
+			}
+		}
+
+		return $errors;
+	}//end enumFieldErrors()
+
+	/**
+	 * Error for a bewaarTermijn that is not an ISO-8601 duration.
+	 *
+	 * @param array $tmlo The TMLO metadata to validate
+	 *
+	 * @return string|null The error, or null when absent or valid
+	 */
+	private function bewaarTermijnError(array $tmlo): ?string {
+		if (isset($tmlo['bewaarTermijn']) === false) {
+			return null;
+		}
+
+		try {
+			new DateInterval($tmlo['bewaarTermijn']);
+		} catch (Exception $e) {
+			$got = $tmlo['bewaarTermijn'];
+			return "bewaarTermijn must be a valid ISO-8601 duration (e.g., P7Y, P5Y6M). Got: {$got}";
+		}
+
+		return null;
+	}//end bewaarTermijnError()
+
+	/**
+	 * Error for an archiefactiedatum that is not an ISO-8601 date.
+	 *
+	 * @param array $tmlo The TMLO metadata to validate
+	 *
+	 * @return string|null The error, or null when absent or valid
+	 */
+	private function archiefactiedatumError(array $tmlo): ?string {
+		if (isset($tmlo['archiefactiedatum']) === false) {
+			return null;
+		}
+
+		$date = date_create_from_format('Y-m-d', $tmlo['archiefactiedatum']);
+		if ($date === false || $date->format('Y-m-d') !== $tmlo['archiefactiedatum']) {
+			$got = $tmlo['archiefactiedatum'];
+			return "archiefactiedatum must be a valid ISO-8601 date (YYYY-MM-DD). Got: {$got}";
+		}
+
+		return null;
+	}//end archiefactiedatumError()
 
 	/**
 	 * Validate an archival status transition.
@@ -324,68 +397,91 @@ class TmloService {
 	 *
 	 * @return array Array of validation errors (empty if valid)
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-4
 	 */
 	public function validateStatusTransition(array $tmlo, string $oldStatus): array {
-		$errors = [];
 		$newStatus = ($tmlo['archiefstatus'] ?? null);
 
 		// No change in status.
 		if ($newStatus === null || $newStatus === $oldStatus) {
-			return $errors;
+			return [];
 		}
 
 		// Check if the transition is allowed.
 		$allowedTargets = (self::VALID_TRANSITIONS[$oldStatus] ?? []);
 		if (in_array($newStatus, $allowedTargets, true) === false) {
-			$allowed = 'none (terminal state)';
-			if (empty($allowedTargets) === false) {
-				$allowed = implode(', ', $allowedTargets);
-			}//end if
-
-			$errors[] = sprintf(
-				"Transition from '%s' to '%s' is not allowed. Allowed transitions from '%s': %s",
-				$oldStatus,
-				$newStatus,
-				$oldStatus,
-				$allowed
-			);
-			return $errors;
+			return [$this->transitionNotAllowedError(oldStatus: $oldStatus, newStatus: $newStatus, allowedTargets: $allowedTargets)];
 		}
 
-		// Validate required fields for transfer (overgebracht).
-		if ($newStatus === self::ARCHIEFSTATUS_OVERGEBRACHT) {
-			$requiredFields = ['archiefactiedatum', 'classification', 'archiefnominatie'];
-			foreach ($requiredFields as $field) {
-				if (($tmlo[$field] ?? null) === null || $tmlo[$field] === '') {
-					$errors[] = "Field '{$field}' is required for transition to 'overgebracht'";
-				}
-			}
+		// Validate required fields and nominatie for the target status.
+		return $this->transitionRequirementErrors(tmlo: $tmlo, newStatus: $newStatus);
+	}//end validateStatusTransition()
 
-			if (($tmlo['archiefnominatie'] ?? null) !== self::ARCHIEFNOMINATIE_BLIJVEND_BEWAREN) {
-				$errors[] = "archiefnominatie must be 'blijvend_bewaren' for transition to 'overgebracht'";
-			}
+	/**
+	 * The error for a transition the state machine does not allow.
+	 *
+	 * @param string $oldStatus      The current/old archiefstatus
+	 * @param mixed  $newStatus      The requested archiefstatus
+	 * @param array  $allowedTargets The statuses reachable from $oldStatus
+	 *
+	 * @return string The error
+	 */
+	private function transitionNotAllowedError(string $oldStatus, mixed $newStatus, array $allowedTargets): string {
+		$allowed = 'none (terminal state)';
+		if (empty($allowedTargets) === false) {
+			$allowed = implode(', ', $allowedTargets);
+		}//end if
+
+		return sprintf(
+			"Transition from '%s' to '%s' is not allowed. Allowed transitions from '%s': %s",
+			$oldStatus,
+			$newStatus,
+			$oldStatus,
+			$allowed
+		);
+	}//end transitionNotAllowedError()
+
+	/**
+	 * Errors for the fields and nominatie an allowed target status requires.
+	 *
+	 * @param array  $tmlo      The full TMLO metadata (with new archiefstatus)
+	 * @param string $newStatus The requested (allowed) archiefstatus
+	 *
+	 * @return array Array of validation errors (empty if valid)
+	 */
+	private function transitionRequirementErrors(array $tmlo, string $newStatus): array {
+		$requirement = (self::TRANSITION_REQUIREMENTS[$newStatus] ?? null);
+		if ($requirement === null) {
+			return [];
 		}
 
-		// Validate required fields for destruction (vernietigd).
-		if ($newStatus === self::ARCHIEFSTATUS_VERNIETIGD) {
-			$requiredFields = ['archiefactiedatum', 'classification', 'archiefnominatie', 'vernietigingsCategorie'];
-			foreach ($requiredFields as $field) {
-				if (($tmlo[$field] ?? null) === null || $tmlo[$field] === '') {
-					$errors[] = "Field '{$field}' is required for transition to 'vernietigd'";
-				}
-			}
+		$errors = $this->missingFieldErrors(tmlo: $tmlo, fields: $requirement['fields'], newStatus: $newStatus);
+		if (($tmlo['archiefnominatie'] ?? null) !== $requirement['nominatie']) {
+			$errors[] = "archiefnominatie must be '{$requirement['nominatie']}' for transition to '{$newStatus}'";
+		}
 
-			if (($tmlo['archiefnominatie'] ?? null) !== self::ARCHIEFNOMINATIE_VERNIETIGEN) {
-				$errors[] = "archiefnominatie must be 'vernietigen' for transition to 'vernietigd'";
+		return $errors;
+	}//end transitionRequirementErrors()
+
+	/**
+	 * Errors for required fields that are absent, null or empty.
+	 *
+	 * @param array    $tmlo      The full TMLO metadata (with new archiefstatus)
+	 * @param string[] $fields    The fields the target status requires
+	 * @param string   $newStatus The requested (allowed) archiefstatus
+	 *
+	 * @return array Array of validation errors, in field order
+	 */
+	private function missingFieldErrors(array $tmlo, array $fields, string $newStatus): array {
+		$errors = [];
+		foreach ($fields as $field) {
+			if (($tmlo[$field] ?? null) === null || $tmlo[$field] === '') {
+				$errors[] = "Field '{$field}' is required for transition to '{$newStatus}'";
 			}
 		}
 
 		return $errors;
-	}//end validateStatusTransition()
+	}//end missingFieldErrors()
 
 	/**
 	 * Generate the MDTO document for a single object.
@@ -417,8 +513,7 @@ class TmloService {
 	 * @spec openspec/specs/tmlo-export/spec.md#requirement-mdto-compliant-xml-export
 	 */
 	public function generateMdtoXml(ObjectEntity $object): string {
-		$tmlo = $object->getTmlo();
-		if (is_array($tmlo) === false || empty($tmlo) === true) {
+		if ($this->hasTmlo(object: $object) === false) {
 			throw new InvalidArgumentException(
 				'Object ' . $object->getUuid() . ' has no TMLO metadata. MDTO export requires TMLO metadata.'
 			);
@@ -453,19 +548,39 @@ class TmloService {
 		$dom->appendChild($envelope);
 
 		foreach ($objects as $object) {
-			$tmlo = $object->getTmlo();
-			if (is_array($tmlo) === false || empty($tmlo) === true) {
-				continue;
+			if ($this->hasTmlo(object: $object) === true) {
+				$envelope->appendChild($this->importMdtoDocument(dom: $dom, object: $object));
 			}
-
-			$document = new DOMDocument('1.0', 'UTF-8');
-			$document->loadXML($this->mdtoGenerator->generate($object));
-
-			$imported = $dom->importNode($document->documentElement, true);
-			$envelope->appendChild($imported);
 		}
 
 		return (string)$dom->saveXML();
 	}//end generateBatchMdtoXml()
+
+	/**
+	 * Whether the object carries a non-empty TMLO metadata array.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return bool
+	 */
+	private function hasTmlo(ObjectEntity $object): bool {
+		$tmlo = $object->getTmlo();
+		return is_array($tmlo) === true && empty($tmlo) === false;
+	}//end hasTmlo()
+
+	/**
+	 * Generate the object's MDTO document and import its root into the envelope document.
+	 *
+	 * @param DOMDocument  $dom    The envelope document.
+	 * @param ObjectEntity $object The object to export.
+	 *
+	 * @return \DOMNode The imported MDTO root element.
+	 */
+	private function importMdtoDocument(DOMDocument $dom, ObjectEntity $object): \DOMNode {
+		$document = new DOMDocument('1.0', 'UTF-8');
+		$document->loadXML($this->mdtoGenerator->generate($object));
+
+		return $dom->importNode($document->documentElement, true);
+	}//end importMdtoDocument()
 
 }//end class

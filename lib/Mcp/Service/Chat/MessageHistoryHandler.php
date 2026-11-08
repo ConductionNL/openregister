@@ -105,9 +105,6 @@ class MessageHistoryHandler {
 	 *
 	 * @psalm-return list<LLPhantMessage>
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)         LLPhantMessage factory methods are standard LLPhant pattern
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Message role handling requires multiple conditional branches
-	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function buildMessageHistory(int $conversationId): array {
@@ -129,56 +126,11 @@ class MessageHistoryHandler {
 
 		$history = [];
 		foreach ($messages as $message) {
-			$content = $message->getContent();
-			$role = $message->getRole();
-
-			$this->logger->debug(
-				message: '[MessageHistoryHandler] Adding message to history',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'role' => $role,
-					'contentLength' => strlen($content ?? ''),
-					'hasContent' => empty($content) === false,
-					'hasRole' => empty($role) === false,
-				]
-			);
-
-			// Only add messages that have both role and content.
-			if (empty($role) === false && empty($content) === false) {
-				// Use static factory methods based on role.
-				if ($role === 'user') {
-					$history[] = LLPhantMessage::user($content);
-				} elseif ($role === 'assistant') {
-					$history[] = LLPhantMessage::assistant($content);
-				} elseif ($role === 'system') {
-					$history[] = LLPhantMessage::system($content);
-				}
-
-				if ($role !== 'user' && $role !== 'assistant' && $role !== 'system') {
-					$this->logger->warning(
-						message: '[MessageHistoryHandler] Unknown message role',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'role' => $role,
-						]
-					);
-				}
-			}//end if
-
-			if (empty($role) === true || empty($content) === true) {
-				$this->logger->warning(
-					message: '[MessageHistoryHandler] Skipping message with missing role or content',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'hasRole' => empty($role) === false,
-						'hasContent' => empty($content) === false,
-					]
-				);
-			}//end if
-		}//end foreach
+			$llmMessage = $this->toLlmMessage(message: $message);
+			if ($llmMessage !== null) {
+				$history[] = $llmMessage;
+			}
+		}
 
 		$this->logger->info(
 			message: '[MessageHistoryHandler] Message history built',
@@ -191,6 +143,86 @@ class MessageHistoryHandler {
 
 		return $history;
 	}//end buildMessageHistory()
+
+	/**
+	 * Convert one stored message to an LLPhant message, logging skipped ones.
+	 *
+	 * @param Message $message Stored message.
+	 *
+	 * @return LLPhantMessage|null Null when the message is skipped
+	 */
+	private function toLlmMessage(Message $message): ?LLPhantMessage {
+		$content = $message->getContent();
+		$role = $message->getRole();
+
+		$this->logger->debug(
+			message: '[MessageHistoryHandler] Adding message to history',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'role' => $role,
+				'contentLength' => strlen($content ?? ''),
+				'hasContent' => empty($content) === false,
+				'hasRole' => empty($role) === false,
+			]
+		);
+
+		// Only add messages that have both role and content.
+		if (empty($role) === true || empty($content) === true) {
+			$this->logger->warning(
+				message: '[MessageHistoryHandler] Skipping message with missing role or content',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'hasRole' => empty($role) === false,
+					'hasContent' => empty($content) === false,
+				]
+			);
+			return null;
+		}
+
+		return $this->llmMessageFor(role: $role, content: $content);
+	}//end toLlmMessage()
+
+	/**
+	 * The LLPhant message for a role, or null (logged) for an unsupported role.
+	 *
+	 * @param string $role    Message role.
+	 * @param string $content Message content.
+	 *
+	 * @return LLPhantMessage|null
+	 */
+	private function llmMessageFor(string $role, string $content): ?LLPhantMessage {
+		if (in_array($role, ['user', 'assistant', 'system'], true) === false) {
+			$this->logUnknownRole(role: $role);
+			return null;
+		}
+
+		// Use static factory methods based on role.
+		return match ($role) {
+			'user' => LLPhantMessage::user($content),
+			'assistant' => LLPhantMessage::assistant($content),
+			default => LLPhantMessage::system($content),
+		};
+	}//end llmMessageFor()
+
+	/**
+	 * Log a message role the LLM history does not support.
+	 *
+	 * @param string $role Message role.
+	 *
+	 * @return void
+	 */
+	private function logUnknownRole(string $role): void {
+		$this->logger->warning(
+			message: '[MessageHistoryHandler] Unknown message role',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'role' => $role,
+			]
+		);
+	}//end logUnknownRole()
 
 	/**
 	 * Store a message in the database
@@ -222,9 +254,9 @@ class MessageHistoryHandler {
 		$message->setContent($content);
 		$message->setCreated(new DateTime());
 
-		// Add sources metadata if provided.
-		if ($sources !== null && empty($sources) === false) {
-			$message->setMetadata(['sources' => $sources]);
+		// Add RAG sources if provided.
+		if ($this->hasEntries(value: $sources) === true) {
+			$message->setSources($sources);
 		}
 
 		// Persist the CnAiContext snapshot the frontend sent with the
@@ -232,7 +264,7 @@ class MessageHistoryHandler {
 		// user's scope at send-time. Only set when non-empty; null/empty
 		// leaves the column at its DEFAULT '{}' to avoid noise in the
 		// audit trail.
-		if ($context !== null && empty($context) === false) {
+		if ($this->hasEntries(value: $context) === true) {
 			$message->setContext($context);
 		}
 
@@ -246,10 +278,21 @@ class MessageHistoryHandler {
 				'messageId' => $message->getId(),
 				'conversationId' => $conversationId,
 				'role' => $role,
-				'hasSources' => $sources !== null && empty($sources) === false,
+				'hasSources' => $this->hasEntries(value: $sources),
 			]
 		);
 
 		return $message;
 	}//end storeMessage()
+
+	/**
+	 * Whether an optional array is set and non-empty.
+	 *
+	 * @param array|null $value Optional array.
+	 *
+	 * @return bool
+	 */
+	private function hasEntries(?array $value): bool {
+		return $value !== null && empty($value) === false;
+	}//end hasEntries()
 }//end class

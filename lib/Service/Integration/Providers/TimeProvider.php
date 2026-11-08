@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\TimeTrackerLink;
-use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
+use OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IConfig;
@@ -84,7 +84,7 @@ class TimeProvider extends AbstractIntegrationProvider {
 	 * @param IDBConnection $db NC DB connection (well-known idiom; used for legacy marker fallback queries).
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IL10N $l10n Localisation.
-	 * @param TimeTrackerLinkMapper $linkMapper Time-tracker-link mapper (Tier-2 link table).
+	 * @param TimeTrackerLinkMapperInterface $linkMapper Time-tracker-link mapper (Tier-2 link table).
 	 * @param IConfig $config NC config (reads the time-tracker.backend admin override).
 	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
 	 *
@@ -94,7 +94,7 @@ class TimeProvider extends AbstractIntegrationProvider {
 		private IDBConnection $db,
 		private IAppManager $appManager,
 		private IL10N $l10n,
-		private TimeTrackerLinkMapper $linkMapper,
+		private TimeTrackerLinkMapperInterface $linkMapper,
 		private IConfig $config,
 		private LoggerInterface $logger,
 	) {
@@ -147,9 +147,9 @@ class TimeProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return TimeTrackerLinkMapper
+	 * @return TimeTrackerLinkMapperInterface
 	 */
-	protected function linkMapper(): TimeTrackerLinkMapper {
+	protected function linkMapper(): TimeTrackerLinkMapperInterface {
 		return $this->linkMapper;
 	}//end linkMapper()
 

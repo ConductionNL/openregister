@@ -52,7 +52,7 @@ class FlowRunRetryTest extends TestCase {
 		$pin = $this->pinReturning();
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($versions, $pin): object {
-				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 

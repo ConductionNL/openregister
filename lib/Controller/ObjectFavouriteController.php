@@ -37,12 +37,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -52,6 +51,17 @@ use Psr\Log\LoggerInterface;
  * Star an object for the calling user, and unstar it.
  */
 class ObjectFavouriteController extends Controller {
+
+	/**
+	 * Resolves the target object through the RBAC boundary, runs the primitive
+	 * and maps its refusals.
+	 *
+	 * An object the caller cannot READ is refused with 404 rather than 403, so
+	 * these endpoints cannot be used to probe which object ids exist.
+	 *
+	 * @var ObjectSharingEndpoint
+	 */
+	private readonly ObjectSharingEndpoint $endpoint;
 
 	/**
 	 * Constructor.
@@ -65,12 +75,13 @@ class ObjectFavouriteController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectOperationsInterface $objectService,
+		ObjectOperationsInterface $objectService,
 		private readonly FavouriteServiceInterface $favourites,
-		private readonly LoggerInterface $logger,
+		LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-
+		$failure = 'Could not complete the favourite request';
+		$this->endpoint = new ObjectSharingEndpoint(objectService: $objectService, logger: $logger, file: __FILE__, failure: $failure);
 	}//end __construct()
 
 	/**
@@ -92,31 +103,19 @@ class ObjectFavouriteController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function star(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
-			$favourite = $this->favourites->star(
-				object: $object,
-				register: $register,
-				schema: $schema
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'star');
+		$star = fn (): Watcher => $this->favourites->star(object: $object, register: $register, schema: $schema);
+		$favourite = $this->endpoint->run(operation: $star, context: 'star');
+		if ($favourite instanceof JSONResponse) {
+			return $favourite;
 		}
 
-		return $this->deprecated(
-			response: new JSONResponse(
-				array_merge($favourite->jsonSerialize(), ['favourite' => true, 'watching' => true])
-			),
-			register: $register,
-			schema: $schema,
-			id: $id
-		);
+		$body = array_merge($favourite->jsonSerialize(), ['favourite' => true, 'watching' => true]);
+		return $this->deprecated(response: new JSONResponse($body), register: $register, schema: $schema, id: $id);
 
 	}//end star()
 
@@ -139,25 +138,18 @@ class ObjectFavouriteController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function unstar(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		try {
-			$removed = $this->favourites->unstar(object: $object);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (\Throwable $e) {
-			return $this->unexpected(exception: $e, context: 'unstar');
+		$removed = $this->endpoint->run(operation: fn (): bool => $this->favourites->unstar(object: $object), context: 'unstar');
+		if ($removed instanceof JSONResponse) {
+			return $removed;
 		}
 
-		return $this->deprecated(
-			response: new JSONResponse(['favourite' => false, 'watching' => false, 'removed' => $removed]),
-			register: $register,
-			schema: $schema,
-			id: $id
-		);
+		$body = ['favourite' => false, 'watching' => false, 'removed' => $removed];
+		return $this->deprecated(response: new JSONResponse($body), register: $register, schema: $schema, id: $id);
 
 	}//end unstar()
 
@@ -181,57 +173,4 @@ class ObjectFavouriteController extends Controller {
 		return $response;
 
 	}//end deprecated()
-
-	/**
-	 * Resolve the target object through the RBAC boundary.
-	 *
-	 * An object the caller cannot READ is refused with 404 rather than 403, so
-	 * this endpoint cannot be used to probe which object ids exist, and a user
-	 * without read can never write a favourite row.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object uuid.
-	 *
-	 * @return ObjectEntity|JSONResponse The object, or the response to return.
-	 */
-	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		try {
-			$object = $this->objectService->getObject();
-		} catch (\Throwable $e) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		if (($object instanceof ObjectEntity) === false) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		return $object;
-
-	}//end resolveObject()
-
-	/**
-	 * Log an unexpected failure and return a generic error.
-	 *
-	 * @param \Throwable $exception The failure.
-	 * @param string $context Short label for the log line.
-	 *
-	 * @return JSONResponse A generic 500.
-	 */
-	private function unexpected(\Throwable $exception, string $context): JSONResponse {
-		$this->logger->error(
-			message: '[ObjectFavouriteController] '.$context.': '.$exception->getMessage(),
-			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
-		);
-
-		return new JSONResponse(
-			['message' => 'Could not complete the favourite request'],
-			Http::STATUS_INTERNAL_SERVER_ERROR
-		);
-
-	}//end unexpected()
 }//end class

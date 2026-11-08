@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Regulator;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Gdpr\Seam\SeamStatus;
 
 /**
  * The outcome of escalating a DSAR case to a supervisory authority.
@@ -80,15 +81,7 @@ final class RegulatorEscalateResult {
 		private readonly string $reference = '',
 		private readonly ?string $message = null,
 	) {
-		if (in_array($status, self::ALLOWED, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'RegulatorEscalateResult status "%s" is invalid; expected one of: %s',
-					$status,
-					implode(', ', self::ALLOWED)
-				)
-			);
-		}
+		SeamStatus::assertAllowed(resultName: 'RegulatorEscalateResult', status: $status, allowed: self::ALLOWED);
 	}//end __construct()
 
 	/**
@@ -126,6 +119,17 @@ final class RegulatorEscalateResult {
 	}//end refused()
 
 	/**
+	 * Optional human-readable detail.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
+	 */
+	public function getMessage(): ?string {
+		return $this->message;
+	}//end getMessage()
+
+	/**
 	 * The status.
 	 *
 	 * @return string One of the STATUS_* constants.
@@ -135,17 +139,6 @@ final class RegulatorEscalateResult {
 	public function getStatus(): string {
 		return $this->status;
 	}//end getStatus()
-
-	/**
-	 * The id of the provider that produced this result.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
-	 */
-	public function getProviderId(): string {
-		return $this->providerId;
-	}//end getProviderId()
 
 	/**
 	 * The regulator reference (empty string when refused).
@@ -159,15 +152,15 @@ final class RegulatorEscalateResult {
 	}//end getReference()
 
 	/**
-	 * Optional human-readable detail.
+	 * The id of the provider that produced this result.
 	 *
-	 * @return string|null
+	 * @return string
 	 *
 	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
-	public function getMessage(): ?string {
-		return $this->message;
-	}//end getMessage()
+	public function getProviderId(): string {
+		return $this->providerId;
+	}//end getProviderId()
 
 	/**
 	 * Whether the case was actually escalated.

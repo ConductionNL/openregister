@@ -28,13 +28,10 @@
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcButton variant="primary" :disabled="loading" @click="refresh">
-						<template #icon>
-							<NcLoadingIcon v-if="loading" :size="20" />
-							<Refresh v-else :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcButton>
+					<RefreshButton
+						variant="primary"
+						:loading="loading"
+						@click="refresh" />
 				</div>
 			</div>
 
@@ -105,16 +102,11 @@
 </template>
 
 <script>
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent } from '@nextcloud/vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import RefreshButton from '../../components/shared/RefreshButton.vue'
 import { reportsStore } from '../../store/store.js'
 
 export default {
@@ -122,10 +114,8 @@ export default {
 
 	components: {
 		NcAppContent,
-		NcButton,
 		NcEmptyContent,
-		NcLoadingIcon,
-		Refresh,
+		RefreshButton,
 		ChartLine,
 		ChartBoxOutline,
 		ClockOutline,

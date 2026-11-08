@@ -55,7 +55,7 @@ use Throwable;
  *
  * @spec openspec/specs/authorization-rbac/spec.md
  */
-class ReachRevocationService {
+class ReachRevocationService implements ReachRevocationServiceInterface {
 	/**
 	 * The rule a revocation runs under, carried on every audit line.
 	 *
@@ -64,27 +64,45 @@ class ReachRevocationService {
 	public const RULE = 'reach-revoked-in-one-act';
 
 	/**
+	 * Schema authorization blocks.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Grants derived from sign-in claims.
+	 *
+	 * @var DerivedGrantStore
+	 */
+	private readonly DerivedGrantStore $derived;
+
+	/**
+	 * Delegations held.
+	 *
+	 * @var DelegationGrantMapper
+	 */
+	private readonly DelegationGrantMapper $delegations;
+
+	/**
 	 * Wire the act.
 	 *
-	 * @param PrincipalReachService     $reach        The listing the act runs from.
-	 * @param SchemaMapperInterface              $schemaMapper Schema authorization blocks.
-	 * @param DerivedGrantStore         $derived      Grants derived from sign-in claims.
-	 * @param DelegationGrantMapper     $delegations  Delegations held.
-	 * @param AuthorizationAuditService $audit        The record of what was removed.
-	 * @param IUserSession              $userSession  The acting administrator.
-	 * @param LoggerInterface           $logger       PSR logger.
-	 *
-	 * @return void
+	 * @param PrincipalReachService     $reach       The listing the act runs from.
+	 * @param ReachSources              $sources     Schema authorization blocks, derived grants and delegations held.
+	 * @param AuthorizationAuditService $audit       The record of what was removed.
+	 * @param IUserSession              $userSession The acting administrator.
+	 * @param LoggerInterface           $logger      PSR logger.
 	 */
 	public function __construct(
 		private readonly PrincipalReachService $reach,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly DerivedGrantStore $derived,
-		private readonly DelegationGrantMapper $delegations,
+		ReachSources $sources,
 		private readonly AuthorizationAuditService $audit,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->derived = $sources->derived;
+		$this->delegations = $sources->delegations;
 	}//end __construct()
 
 	/**

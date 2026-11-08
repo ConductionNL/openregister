@@ -46,7 +46,7 @@ use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -76,21 +76,35 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	public const LOG_ENTRY = 'migrated';
 
 	/**
+	 * Open timers of a run.
+	 *
+	 * @var FlowTimerMapperInterface
+	 */
+	private readonly FlowTimerMapperInterface $timers;
+
+	/**
+	 * Supersession.
+	 *
+	 * @var FlowTimerService
+	 */
+	private readonly FlowTimerService $timerService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapperInterface               $runs         The run store.
-	 * @param FlowRunMigrationValidator   $validator    Whether a run fits the target version.
-	 * @param FlowTimerMapper             $timers       Open timers of a run.
-	 * @param FlowTimerService            $timerService Supersession.
-	 * @param LoggerInterface             $logger       The logger.
+	 * @param FlowRunMapperInterface    $runs      The run store.
+	 * @param FlowRunMigrationValidator $validator Whether a run fits the target version.
+	 * @param FlowRunMigrationTimers    $timers    Open timers of a run, and their supersession.
+	 * @param LoggerInterface           $logger    The logger.
 	 */
 	public function __construct(
 		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunMigrationValidator $validator,
-		private readonly FlowTimerMapper $timers,
-		private readonly FlowTimerService $timerService,
+		FlowRunMigrationTimers $timers,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->timers       = $timers->timers;
+		$this->timerService = $timers->timerService;
 	}//end __construct()
 
 	/**
@@ -187,7 +201,24 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 		}
 
 		$verdict = $this->validate(run: $run, targetVersion: $migration->targetVersion, mapping: $migration->mapping());
-		$from    = $run->getFlowVersion();
+
+		return $this->actOnVerdict(run: $run, migration: $migration, verdict: $verdict);
+	}//end perform()
+
+	/**
+	 * Answer a refused verdict or a dry run without writing; otherwise apply the move.
+	 *
+	 * @param FlowRun              $run       The run.
+	 * @param FlowRunMigration     $migration The request.
+	 * @param array<string, mixed> $verdict   What validate() decided.
+	 *
+	 * @return array<string, mixed> The answer.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function actOnVerdict(FlowRun $run, FlowRunMigration $migration, array $verdict): array {
+		$dryRun = $migration->isDryRun();
+		$from   = $run->getFlowVersion();
 		if ($verdict['ok'] === false) {
 			return $this->answer(
 				migration: $migration,
@@ -208,7 +239,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 		$applied = ['migrated' => true, 'marking' => $verdict['marking'], 'reason' => $migration->reason];
 
 		return $this->answer(migration: $migration, from: $from, fields: $applied);
-	}//end perform()
+	}//end actOnVerdict()
 
 	/**
 	 * Write the migration: the run's version, marking and log, then its timers.
@@ -369,6 +400,20 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 			return ['migrated' => false, 'reason' => 'The flow runs of this object could not be read, so nothing was migrated.', 'runs' => []];
 		}
 
+		return self::liveRunsRefusal(live: $live, targetDefinitionRef: $targetDefinitionRef);
+	}//end subjectRefusal()
+
+	/**
+	 * Why the readable live runs of a subject are not migrated, or null when they are.
+	 *
+	 * @param array<int, FlowRun> $live                The subject's live runs.
+	 * @param string              $targetDefinitionRef The requested target.
+	 *
+	 * @return array<string, mixed>|null The answer, or null to proceed.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private static function liveRunsRefusal(array $live, string $targetDefinitionRef): ?array {
 		if ($live === []) {
 			return ['migrated' => true, 'reason' => 'This object has no flow run in progress, so there was nothing to migrate.', 'runs' => []];
 		}
@@ -381,7 +426,7 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 		}
 
 		return null;
-	}//end subjectRefusal()
+	}//end liveRunsRefusal()
 
 	/**
 	 * Why runs on a subject are not moved onto another flow.

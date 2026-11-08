@@ -70,7 +70,7 @@ use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\FileServicePlatform;
-use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandlerInterface;
 use OCA\OpenRegister\Service\File\FileStorageHandlers;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
@@ -110,7 +110,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.LongVariable)             Handler properties use descriptive names for clarity
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
-class FileService implements FileServiceInterface {
+class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
 
 
@@ -177,9 +177,9 @@ class FileService implements FileServiceInterface {
 	/**
 	 * File sharing handler
 	 *
-	 * @var FileSharingHandler
+	 * @var FileSharingHandlerInterface
 	 */
-	private FileSharingHandler $fileSharingHandler;
+	private FileSharingHandlerInterface $fileSharingHandler;
 
 	/**
 	 * Create file handler (Single Responsibility: File creation)

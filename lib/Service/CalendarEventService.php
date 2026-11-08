@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\CalendarEvent\UserCalendarSelector;
 use OCA\OpenRegister\Service\CalendarEvent\VeventCodec;
 use OCP\IConfig;
 use OCP\IURLGenerator;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Document;
@@ -273,7 +274,35 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 */
 	private function buildEventDeepLink(?string $calendarUri, ?string $objectUri): ?string {
 		$user = $this->userSession->getUser();
-		if ($user === null || in_array($calendarUri, [null, ''], true) === true || in_array($objectUri, [null, ''], true) === true) {
+		if ($this->hasDeepLinkPath(calendarUri: $calendarUri, objectUri: $objectUri) === false) {
+			return null;
+		}
+
+		return $this->deepLinkOf(user: $user, path: $calendarUri . '/' . $objectUri);
+	}//end buildEventDeepLink()
+
+	/**
+	 * Whether both the calendar URI and the object URI are present.
+	 *
+	 * @param string|null $calendarUri The CalDAV calendar URI.
+	 * @param string|null $objectUri   The VEVENT object URI.
+	 *
+	 * @return bool
+	 */
+	private function hasDeepLinkPath(?string $calendarUri, ?string $objectUri): bool {
+		return in_array($calendarUri, [null, ''], true) === false && in_array($objectUri, [null, ''], true) === false;
+	}//end hasDeepLinkPath()
+
+	/**
+	 * The Calendar app deep-link for a user's event path, or null without a user or Calendar app.
+	 *
+	 * @param IUser|null $user The current user.
+	 * @param string     $path `{calendarUri}/{objectUri}`.
+	 *
+	 * @return string|null
+	 */
+	private function deepLinkOf(?IUser $user, string $path): ?string {
+		if ($user === null) {
 			return null;
 		}
 
@@ -282,8 +311,8 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 			return null;
 		}
 
-		return rtrim($base, '/') . '/edit/' . $this->eventDavToken(userId: $user->getUID(), path: $calendarUri . '/' . $objectUri);
-	}//end buildEventDeepLink()
+		return rtrim($base, '/') . '/edit/' . $this->eventDavToken(userId: $user->getUID(), path: $path);
+	}//end deepLinkOf()
 
 	/**
 	 * The Calendar app's objectId for an event: its URL-encoded, base64 DAV href.
@@ -396,6 +425,23 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 		string $objectTitle,
 		array $data,
 	): ?array {
+		return $this->createTaggedEvent(
+			link: ['registerId' => $registerId, 'schemaId' => $schemaId, 'objectUuid' => $objectUuid, 'objectTitle' => $objectTitle],
+			data: $data
+		);
+	}//end createEvent()
+
+	/**
+	 * Write a new VEVENT tagged with its object to the user's calendar.
+	 *
+	 * @param array{registerId:int, schemaId:int, objectUuid:string, objectTitle:string} $link The object it is linked to.
+	 * @param array<string,mixed>                                                         $data Event data.
+	 *
+	 * @return array|null The created event.
+	 *
+	 * @throws Exception When the data has no usable start, or no user or calendar.
+	 */
+	private function createTaggedEvent(array $link, array $data): ?array {
 		// A VEVENT without DTSTART is not merely incomplete, it is unreachable.
 		// Its firstoccurence is NULL so it matches no time-range query and no
 		// calendar view can show it, and Sabre's ITip plugin then rejects both
@@ -417,14 +463,14 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 			uid: $uid,
 			dtstart: $dtstart,
 			data: $data,
-			link: ['registerId' => $registerId, 'schemaId' => $schemaId, 'objectUuid' => $objectUuid, 'objectTitle' => $objectTitle]
+			link: $link
 		);
 		$uri = $uid . '.ics';
 
 		$this->calDavBackend->createCalendarObject($calendarId, $uri, $calendarData);
 
 		return $this->veventToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $uri);
-	}//end createEvent()
+	}//end createTaggedEvent()
 
 	/**
 	 * Link an existing calendar event to an object by adding X-OPENREGISTER-* properties.
@@ -448,17 +494,34 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 		int $schemaId,
 		string $objectUuid,
 	): ?array {
-		$vcalendar = $this->readVevent(calendarId: $calendarId, eventUri: $eventUri);
+		return $this->tagEvent(
+			event: new CalendarObjectRef(calendarId: $calendarId, uri: $eventUri),
+			target: (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId)
+		);
+	}//end linkEvent()
+
+	/**
+	 * Tag a stored VEVENT with the register, schema and object it is linked to.
+	 *
+	 * @param CalendarObjectRef $event  The stored event.
+	 * @param LinkTarget        $target The object, register and schema.
+	 *
+	 * @return array|null The updated event.
+	 *
+	 * @throws Exception When the event does not exist or is not a VEVENT.
+	 */
+	private function tagEvent(CalendarObjectRef $event, LinkTarget $target): ?array {
+		$vcalendar = $this->readVevent(calendarId: $event->calendarId, eventUri: $event->uri);
 		$vevent = $this->veventOf(document: $vcalendar);
-		$vevent->add('X-OPENREGISTER-REGISTER', (string)$registerId);
-		$vevent->add('X-OPENREGISTER-SCHEMA', (string)$schemaId);
-		$vevent->add('X-OPENREGISTER-OBJECT', $objectUuid);
+		$vevent->add('X-OPENREGISTER-REGISTER', (string)$target->registerId);
+		$vevent->add('X-OPENREGISTER-SCHEMA', (string)$target->schemaId());
+		$vevent->add('X-OPENREGISTER-OBJECT', $target->objectUuid);
 
 		$calendarData = $vcalendar->serialize();
-		$this->calDavBackend->updateCalendarObject($calendarId, $eventUri, $calendarData);
+		$this->calDavBackend->updateCalendarObject($event->calendarId, $event->uri, $calendarData);
 
-		return $this->veventToArray(calendarData: $calendarData, calendarId: (string)$calendarId, uri: $eventUri);
-	}//end linkEvent()
+		return $this->veventToArray(calendarData: $calendarData, calendarId: (string)$event->calendarId, uri: $event->uri);
+	}//end tagEvent()
 
 	/**
 	 * Load a stored calendar object that must hold a VEVENT.

@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Throwable;
 
@@ -40,14 +40,14 @@ use Throwable;
 class PersonLinkService implements PersonLinkServiceInterface {
 
 	/**
-	 * @param ContactLinkMapper $links The link rows.
+	 * @param ContactLinkMapperInterface $links The link rows.
 	 * @param ContactService $contacts The CardDAV side of a contact link.
 	 * @param UserLinkWriter $userLinks The account side of a user link.
 	 * @param SchemaMapperInterface $schemas The schemas, for the role vocabulary.
 	 * @param PersonLinkEvents $events Announces what happened to a link.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
+		private readonly ContactLinkMapperInterface $links,
 		private readonly ContactService $contacts,
 		private readonly UserLinkWriter $userLinks,
 		private readonly SchemaMapperInterface $schemas,
@@ -140,7 +140,11 @@ class PersonLinkService implements PersonLinkServiceInterface {
 		$role = $this->roleOf(payload: $payload);
 		$this->assertRoleAllowed(schemaId: $schemaId, role: $role);
 
-		$link = $this->linkContact(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, payload: $payload, role: $role);
+		$link = $this->linkContact(
+			target: new PersonLinkTarget(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId),
+			payload: $payload,
+			role: $role
+		);
 
 		$link = $this->applyPeriodAndNote(link: $link, payload: $payload);
 		$this->events->linked(link: $link);
@@ -232,9 +236,7 @@ class PersonLinkService implements PersonLinkServiceInterface {
 	 * Write the link: a user link when a user id is given, else a contact link
 	 * through ContactService, which keeps the vCard in step.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId The schema id.
+	 * @param PersonLinkTarget $target The object linked to.
 	 * @param array<string, mixed> $payload `userId`, or `addressbookId` and `contactUri`.
 	 * @param string|null $role The role.
 	 *
@@ -242,23 +244,27 @@ class PersonLinkService implements PersonLinkServiceInterface {
 	 *
 	 * @throws Exception 400 when the payload names no contact.
 	 */
-	private function linkContact(string $objectUuid, int $registerId, ?int $schemaId, array $payload, ?string $role): ContactLink {
+	private function linkContact(PersonLinkTarget $target, array $payload, ?string $role): ContactLink {
 		$userId = trim((string)($payload['userId'] ?? ''));
 		if ($userId !== '') {
-			return $this->userLinks->write(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, userId: $userId, role: $role);
+			return $this->userLinks->write(
+				objectUuid: $target->objectUuid,
+				registerId: $target->registerId,
+				schemaId: $target->schemaId,
+				userId: $userId,
+				role: $role
+			);
 		}
 
 		$contact = [(int)($payload['addressbookId'] ?? 0), trim((string)($payload['contactUri'] ?? ''))];
 
-		return $this->linkAddressbookContact(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, contact: $contact, role: $role);
+		return $this->linkAddressbookContact(target: $target, contact: $contact, role: $role);
 	}//end linkContact()
 
 	/**
 	 * Write a contact link through ContactService, which keeps the vCard in step.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId The schema id.
+	 * @param PersonLinkTarget $target The object linked to.
 	 * @param array{0: int, 1: string} $contact The addressbook id and the trimmed contact uri.
 	 * @param string|null $role The role.
 	 *
@@ -266,12 +272,12 @@ class PersonLinkService implements PersonLinkServiceInterface {
 	 *
 	 * @throws Exception 400 when the payload names no contact.
 	 */
-	private function linkAddressbookContact(string $objectUuid, int $registerId, ?int $schemaId, array $contact, ?string $role): ContactLink {
+	private function linkAddressbookContact(PersonLinkTarget $target, array $contact, ?string $role): ContactLink {
 		if ($contact[0] <= 0 || $contact[1] === '') {
 			throw new Exception('Either userId or addressbookId+contactUri is required', 400);
 		}
 
-		return $this->contacts->linkContact($objectUuid, $registerId, $contact[0], $contact[1], $role, $schemaId);
+		return $this->contacts->linkContact($target->objectUuid, $target->registerId, $contact[0], $contact[1], $role, $target->schemaId);
 	}//end linkAddressbookContact()
 
 	/**
@@ -410,7 +416,25 @@ class PersonLinkService implements PersonLinkServiceInterface {
 	 */
 	private function assertRoleAllowed(?int $schemaId, ?string $role): void {
 		$vocabulary = $this->roleVocabulary(schemaId: $schemaId);
-		if ($vocabulary === [] || $role === null) {
+		if ($role === null) {
+			return;
+		}
+
+		$this->assertRoleInVocabulary(vocabulary: $vocabulary, role: $role);
+	}//end assertRoleAllowed()
+
+	/**
+	 * Refuse a role a non-empty vocabulary does not name.
+	 *
+	 * @param array<int, array{key: string, label: string, description?: string}> $vocabulary The schema's roles.
+	 * @param string $role The role.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception 400 naming the allowed keys.
+	 */
+	private function assertRoleInVocabulary(array $vocabulary, string $role): void {
+		if ($vocabulary === []) {
 			return;
 		}
 
@@ -420,7 +444,7 @@ class PersonLinkService implements PersonLinkServiceInterface {
 		}
 
 		throw new Exception('Role "' . $role . '" is not one of: ' . implode(', ', $keys), 400);
-	}//end assertRoleAllowed()
+	}//end assertRoleInVocabulary()
 
 	/**
 	 * A date from a payload value, null when empty or unreadable.

@@ -134,7 +134,7 @@ class CascadeCreateRightsTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('not available'));
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$userManager,
 			$groupManager,

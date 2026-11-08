@@ -64,7 +64,7 @@ use InvalidArgumentException;
  *
  * @spec openspec/specs/delegation-grants/spec.md
  */
-class DelegationConsentService {
+class DelegationConsentService implements DelegationConsentServiceInterface {
 
 	/**
 	 * How long a granted delegation lasts when the granter names no expiry.

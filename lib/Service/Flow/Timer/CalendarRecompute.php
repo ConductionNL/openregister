@@ -90,21 +90,41 @@ class CalendarRecompute {
 	public const DONE_KEY_PREFIX = 'calendar_recompute_done_';
 
 	/**
+	 * The one dependency question.
+	 *
+	 * @var CalendarDependency
+	 */
+	private readonly CalendarDependency $dependency;
+
+	/**
+	 * The resolver.
+	 *
+	 * @var WorkingCalendarService
+	 */
+	private readonly WorkingCalendarService $calendars;
+
+	/**
+	 * The engine.
+	 *
+	 * @var SlaCalculatorInterface
+	 */
+	private readonly SlaCalculatorInterface $calculator;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CalendarDependency     $dependency The one dependency question.
-	 * @param WorkingCalendarService $calendars  The resolver.
-	 * @param SlaCalculatorInterface          $calculator The engine.
-	 * @param IAppConfig             $appConfig  Where the idempotency mark lives.
-	 * @param LoggerInterface        $logger     The logger.
+	 * @param CalendarRecomputeSources $sources   The dependency question, the resolver and the engine.
+	 * @param IAppConfig               $appConfig Where the idempotency mark lives.
+	 * @param LoggerInterface          $logger    The logger.
 	 */
 	public function __construct(
-		private readonly CalendarDependency $dependency,
-		private readonly WorkingCalendarService $calendars,
-		private readonly SlaCalculatorInterface $calculator,
+		CalendarRecomputeSources $sources,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->dependency = $sources->dependency;
+		$this->calendars  = $sources->calendars;
+		$this->calculator = $sources->calculator;
 	}//end __construct()
 
 	/**
@@ -173,7 +193,8 @@ class CalendarRecompute {
 
 		foreach ($timers as $timer) {
 			$counts['examined']++;
-			$counts[$this->outcomeFor(timer: $timer, slug: $slug, supersede: $supersede)]++;
+			$outcome = ($this->outcomeFor(timer: $timer, slug: $slug) ?? $this->superseded(timer: $timer, slug: $slug, supersede: $supersede));
+			$counts[$outcome]++;
 		}//end foreach
 
 		$this->logger->info(
@@ -193,17 +214,17 @@ class CalendarRecompute {
 	}//end recomputeBatch()
 
 	/**
-	 * What became of ONE timer, as the counter key to raise.
+	 * What became of ONE timer without superseding it, as the counter key to
+	 * raise, or null when its moment moved and it must be superseded.
 	 *
-	 * @param FlowTimer                $timer     The timer.
-	 * @param string                   $slug      The changed calendar.
-	 * @param callable(FlowTimer):void $supersede What to do with a timer whose moment moved.
+	 * @param FlowTimer $timer The timer.
+	 * @param string    $slug  The changed calendar.
 	 *
-	 * @return string One of moved, unchanged, deferred or unresolvable.
+	 * @return string|null One of unchanged, deferred or unresolvable; null to supersede.
 	 *
 	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
 	 */
-	private function outcomeFor(FlowTimer $timer, string $slug, callable $supersede): string {
+	private function outcomeFor(FlowTimer $timer, string $slug): ?string {
 		$verdict = $this->dependency->verdictFor(timer: $timer, changedSlug: $slug);
 
 		if ($verdict === CalendarDependency::UNRESOLVABLE) {
@@ -226,6 +247,21 @@ class CalendarRecompute {
 			return 'deferred';
 		}
 
+		return $this->armedOutcome(timer: $timer, slug: $slug);
+	}//end outcomeFor()
+
+	/**
+	 * For an armed timer: unresolvable when it cannot be projected, unchanged
+	 * when its stored moment already matches, null when it moved.
+	 *
+	 * @param FlowTimer $timer The armed timer.
+	 * @param string    $slug  The changed calendar.
+	 *
+	 * @return string|null The counter key, or null to supersede.
+	 *
+	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
+	 */
+	private function armedOutcome(FlowTimer $timer, string $slug): ?string {
 		$projected = $this->projectedFireAt(timer: $timer, slug: $slug);
 		if ($projected === null) {
 			return 'unresolvable';
@@ -236,6 +272,21 @@ class CalendarRecompute {
 			return 'unchanged';
 		}
 
+		return null;
+	}//end armedOutcome()
+
+	/**
+	 * Supersede a timer whose moment moved, as the counter key to raise.
+	 *
+	 * @param FlowTimer                $timer     The timer.
+	 * @param string                   $slug      The changed calendar.
+	 * @param callable(FlowTimer):void $supersede What to do with a timer whose moment moved.
+	 *
+	 * @return string Moved, or unresolvable when superseding failed.
+	 *
+	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
+	 */
+	private function superseded(FlowTimer $timer, string $slug, callable $supersede): string {
 		try {
 			$supersede($timer);
 			return 'moved';
@@ -253,7 +304,7 @@ class CalendarRecompute {
 
 			return 'unresolvable';
 		}//end try
-	}//end outcomeFor()
+	}//end superseded()
 
 	/**
 	 * The fire moment this timer would have under the changed calendar.

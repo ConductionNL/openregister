@@ -20,8 +20,9 @@
 
 namespace OCA\OpenRegister\Db\Tenancy;
 
-use OCA\OpenRegister\Service\SharedMasterDataService;
-use OCA\OpenRegister\Service\TenantLogRedactor;
+use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
+use OCA\OpenRegister\Service\TenancyCollaborators;
+use OCA\OpenRegister\Service\TenantLogRedactorInterface;
 use OCP\IAppConfig;
 use OCP\IUser;
 
@@ -49,11 +50,11 @@ trait TenancyIdentityTrait {
 	 * trait already documents as required, and holds no state beyond a
 	 * per-request cache.
 	 *
-	 * @var SharedMasterDataService|null
+	 * @var SharedMasterDataServiceInterface|null
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md
 	 */
-	private ?SharedMasterDataService $sharedMasterData = null;
+	private ?SharedMasterDataServiceInterface $sharedMasterData = null;
 
 	/**
 	 * The shared master data resolver for this mapper.
@@ -65,11 +66,11 @@ trait TenancyIdentityTrait {
 	 * `TenancyGuardHost`, the stand-in in the trait's own unit test, supplies
 	 * both, as a real mapper does.
 	 *
-	 * @return SharedMasterDataService The resolver.
+	 * @return SharedMasterDataServiceInterface The resolver.
 	 */
-	private function sharedMasterData(): SharedMasterDataService {
+	private function sharedMasterData(): SharedMasterDataServiceInterface {
 		if ($this->sharedMasterData === null) {
-			$this->sharedMasterData = new SharedMasterDataService(db: $this->db);
+			$this->sharedMasterData = TenancyCollaborators::sharedMasterData(db: $this->db);
 		}
 
 		return $this->sharedMasterData;
@@ -85,7 +86,7 @@ trait TenancyIdentityTrait {
 	 * @return bool
 	 */
 	private function isSharedMasterDataTable(string $table): bool {
-		return $table === SharedMasterDataService::REGISTERS || $table === SharedMasterDataService::SCHEMAS;
+		return $table === SharedMasterDataServiceInterface::REGISTERS || $table === SharedMasterDataServiceInterface::SCHEMAS;
 	}//end isSharedMasterDataTable()
 
 	/**
@@ -117,12 +118,12 @@ trait TenancyIdentityTrait {
 	/**
 	 * The log redactor for this mapper.
 	 *
-	 * @return TenantLogRedactor The redactor, with the app config when there is one.
+	 * @return TenantLogRedactorInterface The redactor, with the app config when there is one.
 	 *
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
-	private function tenantLogRedactor(): TenantLogRedactor {
-		return new TenantLogRedactor(appConfig: $this->tenancyAppConfig());
+	private function tenantLogRedactor(): TenantLogRedactorInterface {
+		return TenancyCollaborators::tenantLogRedactor(appConfig: $this->tenancyAppConfig());
 	}//end tenantLogRedactor()
 
 	/**

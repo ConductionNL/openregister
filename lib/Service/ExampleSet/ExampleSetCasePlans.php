@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\CaseItem;
-use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CaseItemMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Case\CasePlanService;
@@ -155,15 +155,15 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	/**
 	 * Bring the plan's items in through the case layer as the fragment's app.
 	 *
-	 * @param string               $app  The app that ships the fragment; the plan is written as that app.
-	 * @param string               $key  The plan's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled plan fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{object: string, created: array<int, string>}|null} The entry, or why not.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$objectUuid = (string) $data['object'];
 		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {
@@ -232,7 +232,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 */
 	public function revert(array $entry): string {
 		try {
-			$mapper = $this->container->get(CaseItemMapper::class);
+			$mapper = $this->container->get(CaseItemMapperInterface::class);
 			foreach ($this->createdItems(entry: $entry) as $item) {
 				$this->deleteRealisationTask(item: $item);
 				$mapper->delete($item);
@@ -277,7 +277,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	private function createdItems(array $entry): array {
 		$keys  = array_map('strval', (array) ($entry['created'] ?? []));
 		$items = array_filter(
-			$this->container->get(CaseItemMapper::class)->findByObject(objectUuid: (string) $entry['object']),
+			$this->container->get(CaseItemMapperInterface::class)->findByObject(objectUuid: (string) $entry['object']),
 			static fn (CaseItem $item): bool => in_array((string) $item->getItemKey(), $keys, true)
 		);
 

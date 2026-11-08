@@ -56,7 +56,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
 use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -133,7 +133,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 * @param SchemaMapperInterface $schemaMapper Schema registry (to build the reverse index).
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory for the reverse index.
-	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service (ADR-078).
+	 * @param ListenerDeferralInterface $deferral Actor-forwarding deferral service (ADR-078).
 	 * @param MasterRecomputeService $recompute Golden-record recompute, used on the inline fallback only.
 	 *
 	 * @return void
@@ -144,7 +144,7 @@ class SourceRecordChangeListener implements IEventListener {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 		ICacheFactory $cacheFactory,
-		private readonly ListenerDeferralService $deferral,
+		private readonly ListenerDeferralInterface $deferral,
 		private readonly MasterRecomputeService $recompute,
 	) {
 		try {
@@ -167,33 +167,64 @@ class SourceRecordChangeListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		try {
-			if ($event instanceof SchemaCreatedEvent
-				|| $event instanceof SchemaUpdatedEvent
-				|| $event instanceof SchemaDeletedEvent
-			) {
-				// A schema change can add/remove reverse-FK sourceLink
-				// declarations — drop the cached index so it is rebuilt.
-				$this->reverseIndex = null;
-				$this->indexCache?->remove(self::REVERSE_INDEX_CACHE_KEY);
-				return;
-			}
-
-			if ($event instanceof ObjectCreatedEvent || $event instanceof ObjectDeletedEvent) {
-				$this->processSource(object: $event->getObject(), oldObject: null);
-				return;
-			}
-
-			if ($event instanceof ObjectUpdatedEvent) {
-				$this->processSource(object: $event->getNewObject(), oldObject: $event->getOldObject());
-				return;
-			}
+			$this->dispatch(event: $event);
 		} catch (Throwable $e) {
 			$this->logger->warning('Source-record change recompute failed: ' . $e->getMessage());
-		}//end try
+		}
 	}//end handle()
 
 	/**
+	 * Route one event: a schema change drops the reverse index, an object change recomputes its masters.
+	 *
+	 * @param Event $event Inbound dispatcher event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 */
+	private function dispatch(Event $event): void {
+		if (self::isSchemaEvent(event: $event) === true) {
+			// A schema change can add/remove reverse-FK sourceLink
+			// declarations — drop the cached index so it is rebuilt.
+			$this->reverseIndex = null;
+			$this->indexCache?->remove(self::REVERSE_INDEX_CACHE_KEY);
+			return;
+		}
+
+		if ($event instanceof ObjectCreatedEvent || $event instanceof ObjectDeletedEvent) {
+			$this->processSource(object: $event->getObject(), oldObject: null);
+			return;
+		}
+
+		if ($event instanceof ObjectUpdatedEvent) {
+			$this->processSource(object: $event->getNewObject(), oldObject: $event->getOldObject());
+		}
+	}//end dispatch()
+
+	/**
+	 * Whether an event is a schema lifecycle event.
+	 *
+	 * @param Event $event Inbound dispatcher event.
+	 *
+	 * @return bool True for a schema created, updated or deleted event.
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 */
+	private static function isSchemaEvent(Event $event): bool {
+		return $event instanceof SchemaCreatedEvent
+			|| $event instanceof SchemaUpdatedEvent
+			|| $event instanceof SchemaDeletedEvent;
+	}//end isSchemaEvent()
+
+	/**
 	 * Recompute the master(s) referenced by a changed source object.
+	 *
+	 * ADR-078 / openregister#2420: the recompute is a full
+	 * ObjectService::saveObject(), so it MUST NOT run inside the write
+	 * that triggered it. Deferring also lets the buffer coalesce on the
+	 * master uuid — N sources of one master become ONE recompute, which
+	 * is the ordinary shape of a reverse-FK relationship. The inline
+	 * branch exists only for the `inline` kill switch.
 	 *
 	 * @param ObjectEntity $object The changed source object.
 	 * @param ObjectEntity|null $oldObject The pre-change source object (updates only).
@@ -208,11 +239,28 @@ class SourceRecordChangeListener implements IEventListener {
 			return;
 		}
 
-		$data = ($object->getObject() ?? []);
-		$oldData = [];
-		if ($oldObject !== null) {
-			$oldData = ($oldObject->getObject() ?? []);
+		$masterUuids = self::masterUuidsOf(referenceFields: $referenceFields, object: $object, oldObject: $oldObject);
+		$deferralEnabled = $this->deferral->isDeferralEnabled();
+		foreach ($masterUuids as $masterUuid) {
+			$this->queueRecompute(masterUuid: $masterUuid, deferralEnabled: $deferralEnabled);
 		}
+	}//end processSource()
+
+	/**
+	 * The distinct, non-empty master uuids a source names in its reference
+	 * fields, now and (for an update) before the change.
+	 *
+	 * @param array<int, string> $referenceFields The reference-field names.
+	 * @param ObjectEntity $object The changed source object.
+	 * @param ObjectEntity|null $oldObject The pre-change source object (updates only).
+	 *
+	 * @return array<int|string, string> The master uuids.
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 */
+	private static function masterUuidsOf(array $referenceFields, ObjectEntity $object, ?ObjectEntity $oldObject): array {
+		$data = ($object->getObject() ?? []);
+		$oldData = ($oldObject?->getObject() ?? []);
 
 		$masterUuids = [];
 		foreach ($referenceFields as $referenceField) {
@@ -220,28 +268,32 @@ class SourceRecordChangeListener implements IEventListener {
 			$masterUuids[] = (string)($oldData[$referenceField] ?? '');
 		}
 
-		// ADR-078 / openregister#2420: the recompute is a full
-		// ObjectService::saveObject(), so it MUST NOT run inside the write
-		// that triggered it. Deferring also lets the buffer coalesce on the
-		// master uuid — N sources of one master become ONE recompute, which
-		// is the ordinary shape of a reverse-FK relationship. The inline
-		// branch exists only for the `inline` kill switch.
-		$deferralEnabled = $this->deferral->isDeferralEnabled();
+		return array_unique(array_filter($masterUuids));
+	}//end masterUuidsOf()
 
-		foreach (array_unique(array_filter($masterUuids)) as $masterUuid) {
-			if ($deferralEnabled === false) {
-				$this->recompute->recompute(masterUuid: (string)$masterUuid);
-				continue;
-			}
-
-			$this->deferral->defer(
-				jobClass: SourceRecordRecomputeJob::class,
-				entry: ['masterUuid' => (string)$masterUuid],
-				chunkSize: self::CHUNK_SIZE,
-				dedupeKey: (string)$masterUuid
-			);
+	/**
+	 * Recompute one master inline (kill switch) or defer it, coalesced on its uuid.
+	 *
+	 * @param string $masterUuid The master to recompute.
+	 * @param bool $deferralEnabled Whether deferral is on.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 */
+	private function queueRecompute(string $masterUuid, bool $deferralEnabled): void {
+		if ($deferralEnabled === false) {
+			$this->recompute->recompute(masterUuid: $masterUuid);
+			return;
 		}
-	}//end processSource()
+
+		$this->deferral->defer(
+			jobClass: SourceRecordRecomputeJob::class,
+			entry: ['masterUuid' => $masterUuid],
+			chunkSize: self::CHUNK_SIZE,
+			dedupeKey: $masterUuid
+		);
+	}//end queueRecompute()
 
 	/**
 	 * The reference-field names that make the given object a reverse-FK source
@@ -273,53 +325,74 @@ class SourceRecordChangeListener implements IEventListener {
 	}//end referenceFieldsFor()
 
 	/**
-	 * Build (once) the reverse index of source-schema identifier => reference
-	 * fields, from every schema whose survivorship annotation declares a
-	 * reverse-FK `sourceLink`.
+	 * The reverse index of source-schema identifier => reference fields:
+	 * memoised on the instance, then the cross-request cache, then built.
+	 *
+	 * Cross-request cache: building the index loads EVERY schema, which
+	 * would otherwise run on the first object write of every request.
+	 * Invalidated eagerly on Schema created/updated/deleted events.
 	 *
 	 * @return array<string, array<int, string>>
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	private function reverseIndex(): array {
-		if ($this->reverseIndex !== null) {
-			return $this->reverseIndex;
+		if ($this->reverseIndex === null) {
+			$cached = $this->indexCache?->get(self::REVERSE_INDEX_CACHE_KEY);
+			if (is_array($cached) === true) {
+				$this->reverseIndex = $cached;
+				return $this->reverseIndex;
+			}
+
+			$this->reverseIndex = $this->buildReverseIndex();
 		}
 
-		// Cross-request cache: building the index loads EVERY schema, which
-		// would otherwise run on the first object write of every request.
-		// Invalidated eagerly on Schema created/updated/deleted events.
-		$cached = $this->indexCache?->get(self::REVERSE_INDEX_CACHE_KEY);
-		if (is_array($cached) === true) {
-			$this->reverseIndex = $cached;
-			return $this->reverseIndex;
-		}
+		return $this->reverseIndex;
+	}//end reverseIndex()
 
-		$index = [];
+	/**
+	 * Build the reverse index from every schema whose survivorship or merge
+	 * annotation declares a reverse-FK `sourceLink`, and cache it. When the
+	 * schemas cannot be loaded the index is empty and NOT cached.
+	 *
+	 * @return array<string, array<int, string>>
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 */
+	private function buildReverseIndex(): array {
 		try {
 			$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->warning('Source-record change: could not load schemas for reverse index: ' . $e->getMessage());
-			$this->reverseIndex = [];
-			return $this->reverseIndex;
+			return [];
 		}
 
+		$index = $this->indexOf(schemas: $schemas);
+		$this->indexCache?->set(self::REVERSE_INDEX_CACHE_KEY, $index, self::REVERSE_INDEX_CACHE_TTL);
+
+		return $index;
+	}//end buildReverseIndex()
+
+	/**
+	 * Group the reverse-FK links of the given schemas by source schema, each
+	 * source's reference fields de-duplicated.
+	 *
+	 * @param array<int, Schema> $schemas The schemas.
+	 *
+	 * @return array<string, array<int, string>>
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 */
+	private function indexOf(array $schemas): array {
+		$index = [];
 		foreach ($schemas as $schema) {
 			foreach ($this->reverseLinksFor(schema: $schema) as $link) {
 				$index[$link['sourceSchema']][] = $link['referenceField'];
 			}
 		}
 
-		// De-duplicate reference fields per source schema.
-		foreach ($index as $key => $fields) {
-			$index[$key] = array_values(array_unique($fields));
-		}
-
-		$this->reverseIndex = $index;
-		$this->indexCache?->set(self::REVERSE_INDEX_CACHE_KEY, $index, self::REVERSE_INDEX_CACHE_TTL);
-
-		return $this->reverseIndex;
-	}//end reverseIndex()
+		return array_map(static fn (array $fields): array => array_values(array_unique($fields)), $index);
+	}//end indexOf()
 
 	/**
 	 * Extract the reverse-FK `sourceLink` declarations from a single schema's
@@ -336,27 +409,53 @@ class SourceRecordChangeListener implements IEventListener {
 
 		$links = [];
 		foreach (['x-openregister-survivorship', 'x-openregister-merge'] as $annotationKey) {
-			$sourceLink = ($config[$annotationKey]['sourceLink'] ?? null);
-			if (is_array($sourceLink) === false
-				|| (string)($sourceLink['mode'] ?? 'embedded') !== 'reverseFk'
-			) {
-				continue;
+			$link = self::reverseLinkOf(sourceLink: ($config[$annotationKey]['sourceLink'] ?? null));
+			if ($link !== null) {
+				$links[] = $link;
 			}
-
-			$sourceSchema = (string)($sourceLink['sourceSchema'] ?? '');
-			$referenceField = (string)($sourceLink['referenceField'] ?? '');
-			if ($sourceSchema === '' || $referenceField === '') {
-				continue;
-			}
-
-			$links[] = [
-				'sourceSchema' => $sourceSchema,
-				'referenceField' => $referenceField,
-			];
-		}//end foreach
+		}
 
 		return $links;
 	}//end reverseLinksFor()
+
+	/**
+	 * One annotation's `sourceLink` as a reverse-FK link, or null when it is
+	 * not a complete reverse-FK declaration.
+	 *
+	 * @param mixed $sourceLink The annotation's `sourceLink` value.
+	 *
+	 * @return array{sourceSchema: string, referenceField: string}|null
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 */
+	private static function reverseLinkOf(mixed $sourceLink): ?array {
+		if (self::declaresReverseFk(sourceLink: $sourceLink) === false) {
+			return null;
+		}
+
+		$link = [
+			'sourceSchema' => (string)($sourceLink['sourceSchema'] ?? ''),
+			'referenceField' => (string)($sourceLink['referenceField'] ?? ''),
+		];
+		if (in_array('', $link, true) === true) {
+			return null;
+		}
+
+		return $link;
+	}//end reverseLinkOf()
+
+	/**
+	 * Whether a `sourceLink` value is a block in reverse-FK mode (the mode defaults to embedded).
+	 *
+	 * @param mixed $sourceLink The annotation's `sourceLink` value.
+	 *
+	 * @return bool True for a reverse-FK block.
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 */
+	private static function declaresReverseFk(mixed $sourceLink): bool {
+		return is_array($sourceLink) === true && (string)($sourceLink['mode'] ?? 'embedded') === 'reverseFk';
+	}//end declaresReverseFk()
 
 	/**
 	 * Resolve a schema by reference (id/uuid/slug), or null on failure.
@@ -368,14 +467,15 @@ class SourceRecordChangeListener implements IEventListener {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	private function resolveSchema(string $ref): ?Schema {
-		if ($ref === '') {
-			return null;
+		$schema = null;
+		if ($ref !== '') {
+			try {
+				$schema = $this->schemaMapper->find($ref, _multitenancy: false);
+			} catch (Throwable) {
+				$schema = null;
+			}
 		}
 
-		try {
-			return $this->schemaMapper->find($ref, _multitenancy: false);
-		} catch (Throwable) {
-			return null;
-		}
+		return $schema;
 	}//end resolveSchema()
 }//end class

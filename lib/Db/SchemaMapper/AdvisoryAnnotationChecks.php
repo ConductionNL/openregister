@@ -23,10 +23,8 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
-use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\MasterDataAnnotationValidators;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 use Psr\Log\LoggerInterface;
 
@@ -87,7 +85,7 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-quality');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: (new QualityAnnotationValidator())->validate($annotation->shape()),
+				errors: MasterDataAnnotationValidators::quality()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (quality score not materialised)'
 			);
 		}
@@ -109,7 +107,7 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-dedup');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: (new DedupAnnotationValidator())->validate($annotation->shape()),
+				errors: MasterDataAnnotationValidators::dedup()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (declared match rules not used)'
 			);
 		}
@@ -180,7 +178,7 @@ final class AdvisoryAnnotationChecks {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-merge');
 		if ($annotation->isBlock() === true) {
 			$this->warn(
-				errors: (new MergeAnnotationValidator())->validate($annotation->shape()),
+				errors: MasterDataAnnotationValidators::merge()->validate($annotation->shape()),
 				text: $annotation->label() . ' is invalid and was ignored (merge falls back to defaults)'
 			);
 		}

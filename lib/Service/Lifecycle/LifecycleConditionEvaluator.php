@@ -122,21 +122,10 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 		string $schemaSlug,
 		string $field,
 	): ?array {
-		if (array_key_exists('condition', $spec) === false || $spec['condition'] === null) {
-			return null;
-		}
-
-		// A condition switched off from the rule inventory refuses nothing. The
-		// switch bites HERE, at the one place a transition condition is
-		// evaluated, so that the inventory reports a state it actually causes.
-		if (($spec['enabled'] ?? true) === false) {
-			return null;
-		}
-
-		$condition = $spec['condition'];
-
+		$condition = $this->activeCondition(spec: $spec);
 		if (
-			$this->holds(
+			$condition === null
+			|| $this->holds(
 				rule: $condition,
 				newData: $newData,
 				oldData: $oldData,
@@ -150,22 +139,51 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 			return null;
 		}
 
-		// LOG LEVEL ONLY, NOT A GUARD. The fail-closed refusal of a value that
-		// is not a rule object lives in holds(), which has already warned about
-		// it by the time this runs. This reads the same shape to decide whether
-		// the miss deserves the quieter line: a well-formed rule that simply
-		// does not hold is the feature working, and is debug. It is logged at
-		// all because a mistyped `var` path resolves to null and is
-		// indistinguishable, in the response, from an honest refusal.
-		if (is_array($condition) === true && $condition !== []) {
-			$this->logger->debug(
-				'[LifecycleConditionEvaluator] Transition condition did not hold.',
-				['schema' => $schemaSlug, 'action' => $action, 'field' => $field]
-			);
-		}
+		$this->logMiss(condition: $condition, context: ['schema' => $schemaSlug, 'action' => $action, 'field' => $field]);
 
 		return $this->refusalFor(spec: $spec, action: $action, field: $field);
 	}//end refusal()
+
+	/**
+	 * The transition's condition, or null when there is none to evaluate.
+	 *
+	 * A condition switched off from the rule inventory refuses nothing. The
+	 * switch bites HERE, at the one place a transition condition is
+	 * evaluated, so that the inventory reports a state it actually causes.
+	 *
+	 * @param array<string, mixed> $spec The matched transition's spec.
+	 *
+	 * @return mixed The condition, or null when absent, null or switched off.
+	 */
+	private function activeCondition(array $spec): mixed {
+		if (array_key_exists('condition', $spec) === false || ($spec['enabled'] ?? true) === false) {
+			return null;
+		}
+
+		return $spec['condition'];
+	}//end activeCondition()
+
+	/**
+	 * Log a well-formed condition that did not hold.
+	 *
+	 * LOG LEVEL ONLY, NOT A GUARD. The fail-closed refusal of a value that
+	 * is not a rule object lives in holds(), which has already warned about
+	 * it by the time this runs. This reads the same shape to decide whether
+	 * the miss deserves the quieter line: a well-formed rule that simply
+	 * does not hold is the feature working, and is debug. It is logged at
+	 * all because a mistyped `var` path resolves to null and is
+	 * indistinguishable, in the response, from an honest refusal.
+	 *
+	 * @param mixed $condition The condition that did not hold.
+	 * @param array<string, string> $context Schema, action and field.
+	 *
+	 * @return void
+	 */
+	private function logMiss(mixed $condition, array $context): void {
+		if (is_array($condition) === true && $condition !== []) {
+			$this->logger->debug('[LifecycleConditionEvaluator] Transition condition did not hold.', $context);
+		}
+	}//end logMiss()
 
 	/**
 	 * Whether a lifecycle rule holds for this object and transition.
@@ -337,19 +355,52 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 		$default = ($map['defaultLocale'] ?? null);
 		unset($map['defaultLocale']);
 
-		$candidates = [$this->l10n->getLanguageCode(), $default, 'en'];
+		return $this->localeText(map: $map, candidates: [$this->l10n->getLanguageCode(), $default, 'en']) ?? $this->firstText(map: $map);
+	}//end fromLocaleMap()
+
+	/**
+	 * The text of the first candidate locale the map carries usable text for.
+	 *
+	 * @param array<string, mixed> $map The locale map, without `defaultLocale`.
+	 * @param array<int, mixed> $candidates The locales to try, in order.
+	 *
+	 * @return string|null The text, or null when no candidate has one.
+	 */
+	private function localeText(array $map, array $candidates): ?string {
 		foreach ($candidates as $candidate) {
-			if (is_string($candidate) === true && is_string($map[$candidate] ?? null) === true && $map[$candidate] !== '') {
+			if (is_string($candidate) === true && $this->usableText(text: ($map[$candidate] ?? null)) === true) {
 				return $map[$candidate];
 			}
 		}
 
+		return null;
+	}//end localeText()
+
+	/**
+	 * The first usable text in the map, whatever its locale.
+	 *
+	 * @param array<string, mixed> $map The locale map, without `defaultLocale`.
+	 *
+	 * @return string|null The text, or null when the map has none.
+	 */
+	private function firstText(array $map): ?string {
 		foreach ($map as $text) {
-			if (is_string($text) === true && $text !== '') {
+			if ($this->usableText(text: $text) === true) {
 				return $text;
 			}
 		}
 
 		return null;
-	}//end fromLocaleMap()
+	}//end firstText()
+
+	/**
+	 * Whether a value is a non-empty string.
+	 *
+	 * @param mixed $text The value.
+	 *
+	 * @return bool True for a non-empty string.
+	 */
+	private function usableText(mixed $text): bool {
+		return is_string($text) === true && $text !== '';
+	}//end usableText()
 }//end class

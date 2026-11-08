@@ -58,16 +58,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Public API surface for destruction workflow management
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class DestructionService {
-
-	/**
-	 * Destruction list status constants.
-	 */
-	public const STATUS_IN_REVIEW = 'in_review';
-	public const STATUS_APPROVED = 'approved';
-	public const STATUS_AWAITING_SECOND = 'awaiting_second_approval';
-	public const STATUS_REJECTED = 'rejected';
-	public const STATUS_COMPLETED = 'completed';
+class DestructionService implements DestructionServiceInterface {
 
 	/**
 	 * Default extension period when objects are excluded or rejected (1 year).
@@ -235,14 +226,19 @@ class DestructionService {
 		$destructionList['approvals'][] = ['userId' => $userId, 'approvedAt' => (new DateTime())->format('c'), 'action' => $action];
 
 		if ($action === 'approve_partial' && empty($excludedIds) === false) {
-			$destructionList = $this->handlePartialApproval(destructionList: $destructionList, excludedIds: $excludedIds, exclusionReasons: $exclusionReasons);
+			$exclusion = new PartialExclusion(excludedIds: $excludedIds, reasons: $exclusionReasons, extensionPeriod: $this->extensionPeriod());
+			$destructionList = $this->handlePartialApproval(destructionList: $destructionList, exclusion: $exclusion);
 		}
 
 		$destructionList = $this->withholdDecidedEntries(destructionList: $destructionList);
 
-		$unfinished = $this->unfinishedDualApproval(destructionList: $destructionList, userId: $userId, requiresDual: $requiresDual);
+		$unfinished = null;
+		if ($requiresDual === true) {
+			$unfinished = $this->unfinishedDualApproval(destructionList: $destructionList, userId: $userId);
+		}
 
-		return ($unfinished ?? $this->markApproved(destructionList: $destructionList, listUuid: $listUuid, userId: $userId, action: $action));
+		$approval = new DestructionApproval(userId: $userId, action: $action, listUuid: $listUuid);
+		return ($unfinished ?? $this->markApproved(destructionList: $destructionList, approval: $approval));
 	}//end approveList()
 
 	/**
@@ -252,17 +248,14 @@ class DestructionService {
 	 * the same archivist it is not a second pair of eyes, so it is dropped and
 	 * the list keeps waiting.
 	 *
+	 * Only asked when two-step approval is required at all.
+	 *
 	 * @param array<string, mixed> $destructionList The destruction list, with this approval recorded.
 	 * @param string               $userId          The approver.
-	 * @param bool                 $requiresDual    Whether two-step approval is required at all.
 	 *
 	 * @return array<string, mixed>|null The list still awaiting approval, or null when it may be approved.
 	 */
-	private function unfinishedDualApproval(array $destructionList, string $userId, bool $requiresDual): ?array {
-		if ($requiresDual === false) {
-			return null;
-		}
-
+	private function unfinishedDualApproval(array $destructionList, string $userId): ?array {
 		if (count($destructionList['approvals']) < 2) {
 			return $this->awaitingSecondApproval(destructionList: $destructionList, userId: $userId);
 		}
@@ -306,23 +299,21 @@ class DestructionService {
 	 * uuid, which is why the caller must have persisted it first.
 	 *
 	 * @param array<string, mixed> $destructionList The destruction list.
-	 * @param string|null          $listUuid        UUID of the persisted list, when given.
-	 * @param string               $userId          The approver.
-	 * @param string               $action          The approval action.
+	 * @param DestructionApproval  $approval        The approver, the action and the persisted list's UUID.
 	 *
 	 * @return array<string, mixed> The approved list.
 	 */
-	private function markApproved(array $destructionList, ?string $listUuid, string $userId, string $action): array {
+	private function markApproved(array $destructionList, DestructionApproval $approval): array {
 		$destructionList['status'] = self::STATUS_APPROVED;
 
 		$this->jobList->add(
 			\OCA\OpenRegister\BackgroundJob\DestructionExecutionJob::class,
-			['destructionListUuid' => ($listUuid ?? $destructionList['uuid'] ?? null)]
+			['destructionListUuid' => ($approval->listUuid ?? $destructionList['uuid'] ?? null)]
 		);
 
 		$this->logger->info(
 			message: '[DestructionService] Destruction list approved, execution job queued',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'approvedBy' => $userId, 'action' => $action]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'approvedBy' => $approval->userId, 'action' => $approval->action]
 		);
 
 		return $destructionList;
@@ -332,49 +323,43 @@ class DestructionService {
 	 * Handle partial approval by excluding specific objects and extending their dates.
 	 *
 	 * @param array<string, mixed> $destructionList The destruction list.
-	 * @param array<int, string> $excludedIds UUIDs to exclude.
-	 * @param array<string, string> $exclusionReasons Reasons per UUID.
+	 * @param PartialExclusion     $exclusion       The UUIDs to exclude, their reasons and the extension period.
 	 *
 	 * @return array<string, mixed> The updated destruction list.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function handlePartialApproval(array $destructionList, array $excludedIds, array $exclusionReasons): array {
-		$extensionPeriod = $this->extensionPeriod();
-
-		$excluded = [];
-		$approved = [];
+	private function handlePartialApproval(array $destructionList, PartialExclusion $exclusion): array {
+		$split = ['kept' => [], 'withheld' => []];
 		foreach ($destructionList['objects'] as $objectEntry) {
-			if (in_array($objectEntry['uuid'], $excludedIds, true) === true) {
-				$excluded[] = $this->excludeEntry(objectEntry: $objectEntry, exclusionReasons: $exclusionReasons, extensionPeriod: $extensionPeriod);
+			if (in_array($objectEntry['uuid'], $exclusion->excludedIds, true) === true) {
+				$split['withheld'][] = $this->excludeEntry(objectEntry: $objectEntry, exclusion: $exclusion);
 				continue;
 			}
 
 			$objectEntry['status'] = 'approved';
-			$approved[] = $objectEntry;
+			$split['kept'][]       = $objectEntry;
 		}
 
-		return $this->withExcluded(destructionList: $destructionList, kept: $approved, excluded: $excluded);
+		return $this->withExcluded(destructionList: $destructionList, split: $split);
 	}//end handlePartialApproval()
 
 	/**
 	 * Mark one entry excluded by the approver, and extend its archiefactiedatum.
 	 *
-	 * @param array<string, mixed>  $objectEntry      The entry.
-	 * @param array<string, string> $exclusionReasons Reasons per UUID.
-	 * @param string                $extensionPeriod  ISO 8601 duration to add.
+	 * @param array<string, mixed> $objectEntry The entry.
+	 * @param PartialExclusion     $exclusion   The reasons per UUID and the extension period.
 	 *
 	 * @return array<string, mixed> The excluded entry.
 	 */
-	private function excludeEntry(array $objectEntry, array $exclusionReasons, string $extensionPeriod): array {
+	private function excludeEntry(array $objectEntry, PartialExclusion $exclusion): array {
 		$uuid = $objectEntry['uuid'];
 		$objectEntry['status'] = 'uitgezonderd';
-		$objectEntry['exclusionReason'] = $exclusionReasons[$uuid] ?? 'Geen reden opgegeven';
+		$objectEntry['exclusionReason'] = $exclusion->reasons[$uuid] ?? 'Geen reden opgegeven';
 
 		$this->extendArchiveActionDate(
 			uuid: $uuid,
-			extensionPeriod: $extensionPeriod,
-			reason: $objectEntry['exclusionReason']
+			extension: new RetentionExtension(period: $exclusion->extensionPeriod, reason: $objectEntry['exclusionReason'])
 		);
 
 		return $objectEntry;
@@ -390,13 +375,14 @@ class DestructionService {
 	 * of `objects`; what was lost was the exclusion RECORD, on a path whose
 	 * whole output is a destruction certificate.
 	 *
-	 * @param array<string, mixed>       $destructionList The destruction list.
-	 * @param array<int, mixed>          $kept            The entries that stay on the list.
-	 * @param array<int, array<string, mixed>> $excluded  The entries taken off it.
+	 * @param array<string, mixed>                                                    $destructionList The destruction list.
+	 * @param array{kept: array<int, mixed>, withheld: array<int, array<string, mixed>>} $split           The kept and taken-off entries.
 	 *
 	 * @return array<string, mixed> The updated destruction list.
 	 */
-	private function withExcluded(array $destructionList, array $kept, array $excluded): array {
+	private function withExcluded(array $destructionList, array $split): array {
+		$kept     = $split['kept'];
+		$excluded = $split['withheld'];
 		$existing = ($destructionList['excludedObjects'] ?? []);
 		if (is_array($existing) === false) {
 			$existing = [];
@@ -473,7 +459,7 @@ class DestructionService {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'withheldCount' => count($split['withheld']), 'remainingCount' => count($split['kept'])]
 		);
 
-		return $this->withExcluded(destructionList: $destructionList, kept: $split['kept'], excluded: $split['withheld']);
+		return $this->withExcluded(destructionList: $destructionList, split: $split);
 	}//end withholdDecidedEntries()
 
 	/**
@@ -496,7 +482,7 @@ class DestructionService {
 				continue;
 			}
 
-			$split['withheld'][] = $this->withheldEntry(destructionList: $destructionList, objectEntry: $objectEntry, decision: (string)$decision);
+			$split['withheld'][] = $this->withheldEntry(destructionList: $destructionList, objectEntry: $objectEntry);
 		}
 
 		return $split;
@@ -506,14 +492,13 @@ class DestructionService {
 	 * Mark one entry withheld by a recorded review decision.
 	 *
 	 * @param array<string, mixed> $destructionList The destruction list data.
-	 * @param array<string, mixed> $objectEntry     The entry being withheld.
-	 * @param string               $decision        The recorded answer.
+	 * @param array<string, mixed> $objectEntry     The entry being withheld, carrying its recorded answer.
 	 *
 	 * @return array<string, mixed> The withheld entry.
 	 */
-	private function withheldEntry(array $destructionList, array $objectEntry, string $decision): array {
+	private function withheldEntry(array $destructionList, array $objectEntry): array {
 		$objectEntry['status'] = 'uitgezonderd';
-		$objectEntry['exclusionReason'] = $this->withholdingReason(destructionList: $destructionList, objectEntry: $objectEntry, decision: $decision);
+		$objectEntry['exclusionReason'] = $this->withholdingReason(destructionList: $destructionList, objectEntry: $objectEntry);
 
 		return $objectEntry;
 	}//end withheldEntry()
@@ -569,14 +554,14 @@ class DestructionService {
 	 * in the list's `decisions` history.
 	 *
 	 * @param array<string, mixed> $destructionList The destruction list data.
-	 * @param array<string, mixed> $objectEntry     The entry being withheld.
-	 * @param string               $decision        The recorded answer.
+	 * @param array<string, mixed> $objectEntry     The entry being withheld, carrying its recorded answer.
 	 *
 	 * @return string The exclusion reason.
 	 */
-	private function withholdingReason(array $destructionList, array $objectEntry, string $decision): string {
+	private function withholdingReason(array $destructionList, array $objectEntry): string {
+		$decision = (string)($objectEntry['decision'] ?? '');
 		$reviewer = (string)($objectEntry['decidedBy'] ?? '');
-		$reason = $this->recordedReason(history: ($destructionList['decisions'] ?? []), uuid: (string)($objectEntry['uuid'] ?? ''), decision: $decision);
+		$reason = $this->recordedReason(history: ($destructionList['decisions'] ?? []), objectEntry: $objectEntry);
 
 		$sentence = sprintf('Review decision "%s"', $decision);
 		if ($reviewer !== '') {
@@ -594,20 +579,19 @@ class DestructionService {
 	 * The reason recorded with the LAST matching decision, so a corrected answer
 	 * reads as the reason rather than the first draft.
 	 *
-	 * @param mixed  $history  The list's `decisions` history.
-	 * @param string $uuid     The entry's uuid.
-	 * @param string $decision The recorded answer.
+	 * @param mixed                $history     The list's `decisions` history.
+	 * @param array<string, mixed> $objectEntry The entry, carrying its uuid and recorded answer.
 	 *
 	 * @return string The reason, empty when none was recorded.
 	 */
-	private function recordedReason(mixed $history, string $uuid, string $decision): string {
+	private function recordedReason(mixed $history, array $objectEntry): string {
 		if (is_array($history) === false) {
 			return '';
 		}
 
 		$reason = '';
 		foreach ($history as $recorded) {
-			if ($this->isDecisionFor(recorded: $recorded, uuid: $uuid, decision: $decision) === true) {
+			if ($this->isDecisionFor(recorded: $recorded, objectEntry: $objectEntry) === true) {
 				$reason = (string)($recorded['reason'] ?? '');
 			}
 		}
@@ -618,16 +602,15 @@ class DestructionService {
 	/**
 	 * Whether one history row records this answer for this entry.
 	 *
-	 * @param mixed  $recorded The history row.
-	 * @param string $uuid     The entry's uuid.
-	 * @param string $decision The recorded answer.
+	 * @param mixed                $recorded    The history row.
+	 * @param array<string, mixed> $objectEntry The entry, carrying its uuid and recorded answer.
 	 *
 	 * @return bool True when it does.
 	 */
-	private function isDecisionFor(mixed $recorded, string $uuid, string $decision): bool {
+	private function isDecisionFor(mixed $recorded, array $objectEntry): bool {
 		return is_array($recorded) === true
-			&& (string)($recorded['entry'] ?? '') === $uuid
-			&& (string)($recorded['answer'] ?? '') === $decision;
+			&& (string)($recorded['entry'] ?? '') === (string)($objectEntry['uuid'] ?? '')
+			&& (string)($recorded['answer'] ?? '') === (string)($objectEntry['decision'] ?? '');
 	}//end isDecisionFor()
 
 	/**
@@ -649,8 +632,9 @@ class DestructionService {
 		$destructionList['rejections'][] = ['rejectedBy' => $userId, 'rejectedAt' => (new DateTime())->format('c'), 'reason' => $reason];
 
 		// Extend archiefactiedatum for all objects on the list.
+		$extension = new RetentionExtension(period: $extensionPeriod, reason: 'Destruction list rejected: ' . $reason);
 		foreach ($destructionList['objects'] as $objectEntry) {
-			$this->extendArchiveActionDate(uuid: $objectEntry['uuid'], extensionPeriod: $extensionPeriod, reason: 'Destruction list rejected: ' . $reason);
+			$this->extendArchiveActionDate(uuid: $objectEntry['uuid'], extension: $extension);
 		}
 
 		$this->logger->info(
@@ -677,18 +661,17 @@ class DestructionService {
 	/**
 	 * Extend the archiefactiedatum for an object by the configured period.
 	 *
-	 * @param string $uuid The object UUID.
-	 * @param string $extensionPeriod ISO 8601 duration to add.
-	 * @param string $reason The reason for extension.
+	 * @param string             $uuid      The object UUID.
+	 * @param RetentionExtension $extension The ISO 8601 duration to add and the reason.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function extendArchiveActionDate(string $uuid, string $extensionPeriod, string $reason): void {
+	private function extendArchiveActionDate(string $uuid, RetentionExtension $extension): void {
 		try {
 			$object = $this->objectMapper->find($uuid);
-			$object->setRetention($this->extendedRetention(retention: ($object->getRetention() ?? []), extensionPeriod: $extensionPeriod, reason: $reason));
+			$object->setRetention($this->extendedRetention(retention: ($object->getRetention() ?? []), extension: $extension));
 			$this->objectMapper->update($object);
 		} catch (\Exception $e) {
 			$this->logger->error(
@@ -701,26 +684,25 @@ class DestructionService {
 	/**
 	 * A retention block with its archiefactiedatum moved and the move recorded.
 	 *
-	 * @param array<string, mixed> $retention       The object's retention block.
-	 * @param string               $extensionPeriod ISO 8601 duration to add.
-	 * @param string               $reason          The reason for extension.
+	 * @param array<string, mixed> $retention The object's retention block.
+	 * @param RetentionExtension   $extension The ISO 8601 duration to add and the reason.
 	 *
 	 * @return array<string, mixed> The extended retention block.
 	 *
 	 * @throws \Exception When the stored date or the period cannot be read.
 	 */
-	private function extendedRetention(array $retention, string $extensionPeriod, string $reason): array {
+	private function extendedRetention(array $retention, RetentionExtension $extension): array {
 		$currentDate = $retention['archiefactiedatum'] ?? null;
 		if ($currentDate !== null) {
 			$date = new DateTime($currentDate);
-			$date->add(new DateInterval($extensionPeriod));
+			$date->add(new DateInterval($extension->period));
 			$retention['archiefactiedatum'] = $date->format('Y-m-d');
 		}
 
 		// Record in exclusion history.
 		$exclusionHistory = $retention['exclusionHistory'] ?? [];
 		$exclusionHistory[] = [
-			'date' => (new DateTime())->format('c'), 'reason' => $reason, 'newArchiefactiedatum' => ($retention['archiefactiedatum'] ?? null),
+			'date' => (new DateTime())->format('c'), 'reason' => $extension->reason, 'newArchiefactiedatum' => ($retention['archiefactiedatum'] ?? null),
 		];
 		$retention['exclusionHistory'] = $exclusionHistory;
 

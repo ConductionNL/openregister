@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/specs/retention-management/spec.md
  */
-class SelectielijstReferenceResolver {
+class SelectielijstReferenceResolver implements SelectielijstReferenceResolverInterface {
 
 	/**
 	 * The hosts a selectielijst URL may point at.

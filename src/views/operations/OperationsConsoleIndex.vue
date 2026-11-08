@@ -618,19 +618,35 @@ export default {
 		 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 		 */
 		async act(job, verb) {
-			this.acting = job.id
-			this.error = ''
-
-			try {
+			await this.perform(job.id, 'error', async () => {
 				await axios.post(
 					generateUrl(
 						`/apps/openregister/api/bulk-jobs/${job.id}/${verb}`,
 					),
 				)
 				await this.load()
+			})
+		},
+
+		/**
+		 * Run one console action: mark what is busy, clear the last error,
+		 * and show the server's own words when it refuses.
+		 *
+		 * @param {string} acting What the busy marker names while it runs.
+		 * @param {string} field The answer field the refusal is worded in.
+		 * @param {function(): Promise<void>} work The request and what follows.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+		 */
+		async perform(acting, field, work) {
+			this.acting = acting
+			this.error = ''
+
+			try {
+				await work()
 			} catch (exception) {
 				this.error =
-					(exception.response || {}).data?.error
+					(exception.response || {}).data?.[field]
 					|| t('openregister', 'That did not go through.')
 			} finally {
 				this.acting = null
@@ -702,22 +718,13 @@ export default {
 		 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 		 */
 		async runNow(slug) {
-			this.acting = slug
-			this.error = ''
-
-			try {
+			await this.perform(slug, 'message', async () => {
 				await axios.post(
 					generateUrl('/apps/openregister/api/operations/run-now'),
 					{ job: slug },
 				)
 				await this.loadRuns()
-			} catch (exception) {
-				this.error =
-					(exception.response || {}).data?.message
-					|| t('openregister', 'That did not go through.')
-			} finally {
-				this.acting = null
-			}
+			})
 		},
 
 		/**
@@ -727,22 +734,13 @@ export default {
 		 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 		 */
 		async enterMaintenance() {
-			this.acting = 'maintenance'
-			this.error = ''
-
-			try {
+			await this.perform('maintenance', 'message', async () => {
 				const answer = await axios.post(
 					generateUrl('/apps/openregister/api/operations/maintenance'),
 					{ message: this.maintenance.message || undefined },
 				)
 				this.maintenance = answer.data
-			} catch (exception) {
-				this.error =
-					(exception.response || {}).data?.message
-					|| t('openregister', 'That did not go through.')
-			} finally {
-				this.acting = null
-			}
+			})
 		},
 
 		/**
@@ -752,21 +750,12 @@ export default {
 		 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 		 */
 		async leaveMaintenance() {
-			this.acting = 'maintenance'
-			this.error = ''
-
-			try {
+			await this.perform('maintenance', 'message', async () => {
 				const answer = await axios.delete(
 					generateUrl('/apps/openregister/api/operations/maintenance'),
 				)
 				this.maintenance = answer.data
-			} catch (exception) {
-				this.error =
-					(exception.response || {}).data?.message
-					|| t('openregister', 'That did not go through.')
-			} finally {
-				this.acting = null
-			}
+			})
 		},
 
 		/**
@@ -811,11 +800,7 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/views.scss' as *;
 
-@include view-container-3;
-
-.viewHeader h1 {
-	margin-bottom: 4px;
-}
+@include view-container-3-subtitled;
 
 .paneRow {
 	display: flex;

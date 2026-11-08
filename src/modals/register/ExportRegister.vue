@@ -40,12 +40,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton :label="t('openregister', 'Cancel')" @click="closeModal" />
 			<NcButton :disabled="loading" variant="primary" @click="exportObjects">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -65,8 +60,8 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 /**
  * Whether both the register and the schema have an id.
@@ -100,7 +95,7 @@ export default {
 		NcSelect,
 		// Icons
 		Export,
-		Cancel,
+		CloseCancelButton,
 	},
 
 	data() {

@@ -57,6 +57,13 @@ class MatchResolver {
 	private const CANDIDATE_CAP = 3;
 
 	/**
+	 * Key properties filtered under another name: `@self.id` is the id filter.
+	 *
+	 * @var array<string, string>
+	 */
+	private const FILTER_ALIASES = ['@self.id' => 'id'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objectService The object read path.
@@ -152,6 +159,17 @@ class MatchResolver {
 			);
 		}//end try
 
+		return $this->uuidsOf(found: $found);
+	}//end resolve()
+
+	/**
+	 * The distinct uuids of the entries a lookup returned.
+	 *
+	 * @param array<int|string, mixed> $found The lookup's entries.
+	 *
+	 * @return array<int, string> The uuids, in the order found.
+	 */
+	private function uuidsOf(array $found): array {
 		$uuids = [];
 		foreach ($found as $entry) {
 			$uuid = $this->readUuid(entry: $entry);
@@ -161,7 +179,7 @@ class MatchResolver {
 		}
 
 		return array_values(array_unique($uuids));
-	}//end resolve()
+	}//end uuidsOf()
 
 	/**
 	 * The filter set for one row's lookup, or null when the row carries no
@@ -191,12 +209,7 @@ class MatchResolver {
 				return null;
 			}
 
-			$key = $property;
-			if ($property === 'id' || $property === '@self.id') {
-				$key = 'id';
-			}
-
-			$filters[$key] = $value;
+			$filters[(self::FILTER_ALIASES[$property] ?? $property)] = $value;
 		}
 
 		return $filters;
@@ -237,11 +250,7 @@ class MatchResolver {
 	 */
 	private function readUuid(mixed $entry): ?string {
 		if (is_array($entry) === false) {
-			if (is_object($entry) === true && method_exists($entry, 'getUuid') === true) {
-				return $entry->getUuid();
-			}
-
-			return null;
+			return self::readEntityUuid(entry: $entry);
 		}
 
 		$uuid = ($entry['@self']['id'] ?? $entry['uuid'] ?? $entry['id'] ?? null);
@@ -252,4 +261,19 @@ class MatchResolver {
 
 		return (string)$uuid;
 	}//end readUuid()
+
+	/**
+	 * Read the uuid off an entry that is not an array, such as an entity.
+	 *
+	 * @param mixed $entry The entry.
+	 *
+	 * @return string|null The uuid, or null when the entry offers none.
+	 */
+	private static function readEntityUuid(mixed $entry): ?string {
+		if (is_object($entry) === true && method_exists($entry, 'getUuid') === true) {
+			return $entry->getUuid();
+		}
+
+		return null;
+	}//end readEntityUuid()
 }//end class

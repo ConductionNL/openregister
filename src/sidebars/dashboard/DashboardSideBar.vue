@@ -30,82 +30,39 @@ import {
 				<Magnify :size="20" />
 			</template>
 
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Statistics') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{
-						t('openregister', 'Register')
-					}}</label>
-					<NcSelect
-						v-bind="registerOptions"
-						id="registerSelect"
-						:modelValue="selectedRegisterValue"
-						:loading="registerLoading"
-						:disabled="registerLoading"
-						:inputLabel="t('openregister', 'Register')"
-						:placeholder="t('openregister', 'Select a register')"
-						@update:modelValue="handleRegisterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{
-						t('openregister', 'Schema')
-					}}</label>
-					<NcSelect
-						v-bind="schemaOptions"
-						id="schemaSelect"
-						:modelValue="selectedSchemaValue"
-						:loading="schemaLoading"
-						:disabled="!registerStore.registerItem || schemaLoading"
-						:inputLabel="t('openregister', 'Schema')"
-						:placeholder="t('openregister', 'Select a schema')"
-						@update:modelValue="handleSchemaChange" />
-				</div>
-			</div>
+			<StatisticsScopeFilter
+				:registerLoading="registerLoading"
+				:schemaLoading="schemaLoading" />
 
 			<!-- System Totals Section -->
-			<div class="section">
-				<h3 class="sectionTitle">
-					{{ t('openregister', 'Totals') }}
-				</h3>
-				<div v-if="dashboardStore.loading" class="loadingContainer">
-					<NcLoadingIcon :size="20" />
-					<span>{{ t('openregister', 'Loading statistics...') }}</span>
-				</div>
-				<div v-else-if="systemTotals" class="statsContainer">
+			<SidebarStatsSection
+				:title="t('openregister', 'Totals')"
+				:loading="dashboardStore.loading">
+				<div v-if="systemTotals" class="statsContainer">
 					<StatisticsTotalsTable
 						:stats="systemTotals.stats"
 						:leadingRows="registerCountRows" />
 				</div>
-			</div>
+			</SidebarStatsSection>
 
 			<!-- Orphaned Items Section -->
-			<div class="section">
-				<h3 class="sectionTitle">
-					{{ t('openregister', 'Orphaned Items') }}
-				</h3>
-				<div v-if="dashboardStore.loading" class="loadingContainer">
-					<NcLoadingIcon :size="20" />
-					<span>{{ t('openregister', 'Loading statistics...') }}</span>
-				</div>
-				<div v-else-if="orphanedItems" class="statsContainer">
+			<SidebarStatsSection
+				:title="t('openregister', 'Orphaned Items')"
+				:loading="dashboardStore.loading">
+				<div v-if="orphanedItems" class="statsContainer">
 					<StatisticsTotalsTable :stats="orphanedItems.stats" />
 				</div>
-			</div>
+			</SidebarStatsSection>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
-import {
-	NcAppSidebar,
-	NcAppSidebarTab,
-	NcLoadingIcon,
-	NcSelect,
-} from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
+import SidebarStatsSection from '../SidebarStatsSection.vue'
+import StatisticsScopeFilter from '../StatisticsScopeFilter.vue'
 import StatisticsTotalsTable from './StatisticsTotalsTable.vue'
-import { scopePickers } from '../../services/scopePickers.js'
 import { dashboardScope } from '../dashboardScope.js'
 import { scopeListLoader } from '../scopeListLoader.js'
 
@@ -114,13 +71,13 @@ export default {
 	components: {
 		NcAppSidebar,
 		NcAppSidebarTab,
-		NcSelect,
-		NcLoadingIcon,
 		Magnify,
 		StatisticsTotalsTable,
+		SidebarStatsSection,
+		StatisticsScopeFilter,
 	},
 
-	mixins: [scopePickers, scopeListLoader, dashboardScope],
+	mixins: [scopeListLoader, dashboardScope],
 
 	data() {
 		return {
@@ -252,24 +209,9 @@ export default {
 </style>
 
 <style lang="scss" scoped>
-@use '../../styles/sidebars.scss' as *;
-@include sidebar-section;
-
-.sectionTitle {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
-
-@include sidebar-loading;
-
 .statsContainer {
 	padding: 0 16px;
 }
-
-@include filter-section-block;
 
 .dateRangeInputs {
 	display: flex;

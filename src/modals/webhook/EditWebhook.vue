@@ -49,52 +49,29 @@
 							</template>
 						</NcTextField>
 
-						<div class="selectField">
-							<label class="dialog-label">{{
-								t('openregister', 'HTTP Method')
-							}}</label>
-							<NcSelect
-								v-model="selectedMethod"
-								inputLabel="Selected Method"
-								:options="httpMethodOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t('openregister', 'Select HTTP method')
-								"
-								@update:modelValue="updateMethod">
-								<template #option="{ label, description }">
-									<SelectOption
-										:title="label"
-										:description="description" />
-								</template>
-							</NcSelect>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'HTTP method used to send webhook requests',
-									)
-								}}
-							</p>
-						</div>
+						<FormSelectField
+							v-model="selectedMethod"
+							:title="t('openregister', 'HTTP Method')"
+							:hint="
+								t(
+									'openregister',
+									'HTTP method used to send webhook requests',
+								)
+							"
+							inputLabel="Selected Method"
+							:options="httpMethodOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="t('openregister', 'Select HTTP method')"
+							@update:modelValue="updateMethod" />
 
-						<div class="checkboxField">
-							<NcCheckboxRadioSwitch
-								:modelValue="webhookItem?.enabled !== false"
-								@update:modelValue="updateEnabled">
-								{{ t('openregister', 'Enabled') }}
-							</NcCheckboxRadioSwitch>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Enable or disable this webhook',
-									)
-								}}
-							</p>
-						</div>
+						<FormCheckboxField
+							:modelValue="webhookItem?.enabled !== false"
+							:hint="t('openregister', 'Enable or disable this webhook')"
+							@update:modelValue="updateEnabled">
+							{{ t('openregister', 'Enabled') }}
+						</FormCheckboxField>
 					</div>
 				</AppTab>
 
@@ -106,90 +83,70 @@
 					</template>
 
 					<div class="form-editor">
-						<div class="selectField">
-							<label class="dialog-label">{{
-								t('openregister', 'Event')
-							}}</label>
-							<NcSelect
-								v-model="selectedEvent"
-								inputLabel="Selected Event"
-								:options="eventOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="
-									t('openregister', 'Select event to listen to...')
-								"
-								@searchChange="searchEvents"
-								@update:modelValue="updateEvent">
-								<template
-									#option="{ label, description, category, type }">
-									<SelectOption
-										:title="label"
-										:description="description">
-										<span class="option-meta">
-											{{ category }} •
-											{{
-												type === 'before'
-													? t('openregister', 'Before')
-													: t('openregister', 'After')
-											}}
-										</span>
-									</SelectOption>
-								</template>
-								<template #no-options>
-									<span v-if="loadingEvents">{{
-										t('openregister', 'Loading events...')
-									}}</span>
-									<span v-else>{{
-										t('openregister', 'No events found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Select the event this webhook should listen to',
-									)
-								}}
-							</p>
-						</div>
+						<FormSelectField
+							v-model="selectedEvent"
+							:title="t('openregister', 'Event')"
+							:hint="
+								t(
+									'openregister',
+									'Select the event this webhook should listen to',
+								)
+							"
+							inputLabel="Selected Event"
+							:options="eventOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="
+								t('openregister', 'Select event to listen to...')
+							"
+							@searchChange="searchEvents"
+							@update:modelValue="updateEvent">
+							<template
+								#option="{ label, description, category, type }">
+								<SelectOption
+									:title="label"
+									:description="description">
+									<span class="option-meta">
+										{{ category }} •
+										{{
+											type === 'before'
+												? t('openregister', 'Before')
+												: t('openregister', 'After')
+										}}
+									</span>
+								</SelectOption>
+							</template>
+							<template #noOptions>
+								<span v-if="loadingEvents">{{
+									t('openregister', 'Loading events...')
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No events found')
+								}}</span>
+							</template>
+						</FormSelectField>
 
-						<div v-if="selectedEvent" class="selectField">
-							<label class="dialog-label">{{
-								t('openregister', 'Event Property for Payload')
-							}}</label>
-							<NcSelect
-								v-model="selectedEventProperty"
-								inputLabel="Selected Event Property"
-								:options="eventPropertyOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t(
-										'openregister',
-										'Select property to send as payload',
-									)
-								"
-								@update:modelValue="updateEventProperty">
-								<template #option="{ label, description }">
-									<SelectOption
-										:title="label"
-										:description="description" />
-								</template>
-							</NcSelect>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Select which property from the event should be used as the webhook payload data',
-									)
-								}}
-							</p>
-						</div>
+						<FormSelectField
+							v-if="selectedEvent"
+							v-model="selectedEventProperty"
+							:title="t('openregister', 'Event Property for Payload')"
+							:hint="
+								t(
+									'openregister',
+									'Select which property from the event should be used as the webhook payload data',
+								)
+							"
+							inputLabel="Selected Event Property"
+							:options="eventPropertyOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="
+								t('openregister', 'Select property to send as payload')
+							"
+							@update:modelValue="updateEventProperty" />
 					</div>
 				</AppTab>
 
@@ -201,91 +158,58 @@
 					</template>
 
 					<div class="form-editor">
-						<div class="checkboxField">
-							<NcCheckboxRadioSwitch
-								:modelValue="configuration.sendCloudEvent !== false"
-								@update:modelValue="updateSendCloudEvent">
-								{{ t('openregister', 'Send as CloudEvent') }}
-							</NcCheckboxRadioSwitch>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Wrap webhook payload in CloudEvents format for better interoperability',
-									)
-								}}
-							</p>
-						</div>
+						<FormCheckboxField
+							:modelValue="configuration.sendCloudEvent !== false"
+							:hint="
+								t(
+									'openregister',
+									'Wrap webhook payload in CloudEvents format for better interoperability',
+								)
+							"
+							@update:modelValue="updateSendCloudEvent">
+							{{ t('openregister', 'Send as CloudEvent') }}
+						</FormCheckboxField>
 
-						<div class="checkboxField">
-							<NcCheckboxRadioSwitch
-								:modelValue="configuration.waitForResponse === true"
-								@update:modelValue="updateWaitForResponse">
-								{{ t('openregister', 'Wait for Response') }}
-							</NcCheckboxRadioSwitch>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Wait for webhook response before continuing (required for request/response flows)',
-									)
-								}}
-							</p>
-						</div>
+						<FormCheckboxField
+							:modelValue="configuration.waitForResponse === true"
+							:hint="
+								t(
+									'openregister',
+									'Wait for webhook response before continuing (required for request/response flows)',
+								)
+							"
+							@update:modelValue="updateWaitForResponse">
+							{{ t('openregister', 'Wait for Response') }}
+						</FormCheckboxField>
 
-						<div class="checkboxField">
-							<NcCheckboxRadioSwitch
-								:modelValue="
-									configuration.allowPrivateTargets === true
-								"
-								@update:modelValue="updateAllowPrivateTargets">
-								{{
-									t(
-										'openregister',
-										'Allow private/loopback targets',
-									)
-								}}
-							</NcCheckboxRadioSwitch>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Disable the SSRF guard for this webhook so it can deliver to private, loopback or link-local addresses (e.g. http://localhost:8000). Only enable this for local testing.',
-									)
-								}}
-							</p>
-						</div>
+						<FormCheckboxField
+							:modelValue="configuration.allowPrivateTargets === true"
+							:hint="
+								t(
+									'openregister',
+									'Disable the SSRF guard for this webhook so it can deliver to private, loopback or link-local addresses (e.g. http://localhost:8000). Only enable this for local testing.',
+								)
+							"
+							@update:modelValue="updateAllowPrivateTargets">
+							{{ t('openregister', 'Allow private/loopback targets') }}
+						</FormCheckboxField>
 
-						<div class="selectField">
-							<label class="dialog-label">{{
-								t('openregister', 'Retry Policy')
-							}}</label>
-							<NcSelect
-								v-model="selectedRetryPolicy"
-								inputLabel="Selected Retry Policy"
-								:options="retryPolicyOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t('openregister', 'Select retry policy')
-								"
-								@update:modelValue="updateRetryPolicy">
-								<template #option="{ label, description }">
-									<SelectOption
-										:title="label"
-										:description="description" />
-								</template>
-							</NcSelect>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'How to handle retries for failed webhook deliveries',
-									)
-								}}
-							</p>
-						</div>
+						<FormSelectField
+							v-model="selectedRetryPolicy"
+							:title="t('openregister', 'Retry Policy')"
+							:hint="
+								t(
+									'openregister',
+									'How to handle retries for failed webhook deliveries',
+								)
+							"
+							inputLabel="Selected Retry Policy"
+							:options="retryPolicyOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="t('openregister', 'Select retry policy')"
+							@update:modelValue="updateRetryPolicy" />
 
 						<div class="selectField">
 							<label class="dialog-label">{{
@@ -473,7 +397,6 @@ import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
-	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
@@ -487,6 +410,8 @@ import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Tune from 'vue-material-design-icons/Tune.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import FormCheckboxField from '../../components/shared/FormCheckboxField.vue'
+import FormSelectField from '../../components/shared/FormSelectField.vue'
 import SelectOption from '../../components/shared/SelectOption.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
@@ -502,13 +427,14 @@ export default {
 	components: {
 		NcDialog,
 		NcButton,
-		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		NcTextField,
 		NcTextArea,
 		AppTabs,
+		FormCheckboxField,
+		FormSelectField,
 		SelectOption,
 		AppTab,
 		Cancel,

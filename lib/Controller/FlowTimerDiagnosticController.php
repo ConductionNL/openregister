@@ -36,9 +36,11 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
+use OCA\OpenRegister\Service\Flow\Timer\TermQuery;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -55,22 +57,42 @@ use OCP\IUserSession;
 class FlowTimerDiagnosticController extends Controller {
 
 	/**
+	 * Who is asking.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Whether they are an administrator.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The engine, narrating.
+	 *
+	 * @var TermDiagnostic
+	 */
+	private readonly TermDiagnostic $diagnostic;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param IUserSession $userSession Who is asking.
-	 * @param IGroupManager $groupManager Whether they are an administrator.
-	 * @param TermDiagnostic $diagnostic The engine, narrating.
+	 * @param FlowTimerDiagnosticControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly TermDiagnostic $diagnostic,
+		FlowTimerDiagnosticControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->diagnostic = $services->diagnostic;
 	}//end __construct()
 
 	/**
@@ -101,7 +123,16 @@ class FlowTimerDiagnosticController extends Controller {
 		try {
 			$anchor = $this->readAnchor(anchorAt: $anchorAt);
 
-			return new JSONResponse(data: $this->diagnostic->explain(calendar: WorkingCalendar::fromArray(definition: $calendar), anchor: $anchor, sla: $sla, ladder: $ladder));
+			return new JSONResponse(
+				data: $this->diagnostic->explain(
+					query: new TermQuery(
+						calendar: WorkingCalendars::fromDefinition(definition: $calendar),
+						anchor: $anchor,
+						sla: $sla,
+						ladder: $ladder
+					)
+				)
+			);
 		} catch (FlowTimerValidationException $refused) {
 			// A calendar that cannot be saved is not explainable, for the save path's own reason.
 			return $this->refused(message: $refused->getMessage());

@@ -36,8 +36,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCP\IAppConfig;
-use OCP\IConfig;
 use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -47,7 +45,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class DerivedGrantStore {
+class DerivedGrantStore implements DerivedGrantStoreInterface {
 
 	/**
 	 * The app every key below belongs to.
@@ -84,15 +82,13 @@ class DerivedGrantStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param IConfig              $config      Per-user preferences.
-	 * @param IAppConfig           $appConfig   Where the rules are declared.
+	 * @param DerivedGrantConfig   $stores      Per-user preferences and the declared rules.
 	 * @param IUserManager         $userManager The accounts a re-run walks.
 	 * @param DerivedGrantResolver $resolver    The pure derivation.
 	 * @param LoggerInterface      $logger      Where a rule nobody can read is reported.
 	 */
 	public function __construct(
-		private readonly IConfig $config,
-		private readonly IAppConfig $appConfig,
+		private readonly DerivedGrantConfig $stores,
 		private readonly IUserManager $userManager,
 		private readonly DerivedGrantResolver $resolver,
 		private readonly LoggerInterface $logger,
@@ -108,7 +104,7 @@ class DerivedGrantStore {
 	 */
 	public function rules(): array {
 		try {
-			$raw = $this->appConfig->getValueString(app: self::APP_ID, key: self::RULES_KEY, default: '');
+			$raw = $this->stores->appConfig->getValueString(app: self::APP_ID, key: self::RULES_KEY, default: '');
 		} catch (\Throwable $e) {
 			return [];
 		}
@@ -147,7 +143,7 @@ class DerivedGrantStore {
 		}
 
 		return $this->decodeList(
-			raw: $this->config->getUserValue($userId, self::APP_ID, self::GRANTS_KEY, '')
+			raw: $this->stores->config->getUserValue($userId, self::APP_ID, self::GRANTS_KEY, '')
 		);
 	}//end grantsFor()
 
@@ -161,7 +157,7 @@ class DerivedGrantStore {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function claimsFor(string $userId): array {
-		$raw = $this->config->getUserValue($userId, self::APP_ID, self::CLAIMS_KEY, '');
+		$raw = $this->stores->config->getUserValue($userId, self::APP_ID, self::CLAIMS_KEY, '');
 		if (trim($raw) === '') {
 			return [];
 		}
@@ -198,8 +194,8 @@ class DerivedGrantStore {
 			);
 		}
 
-		$this->config->setUserValue($userId, self::APP_ID, self::CLAIMS_KEY, (string)json_encode($claims));
-		$this->config->setUserValue($userId, self::APP_ID, self::GRANTS_KEY, (string)json_encode($derived['grants']));
+		$this->stores->config->setUserValue($userId, self::APP_ID, self::CLAIMS_KEY, (string)json_encode($claims));
+		$this->stores->config->setUserValue($userId, self::APP_ID, self::GRANTS_KEY, (string)json_encode($derived['grants']));
 
 		return $derived['grants'];
 	}//end apply()
@@ -218,7 +214,7 @@ class DerivedGrantStore {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function forget(string $userId): void {
-		$this->config->setUserValue($userId, self::APP_ID, self::GRANTS_KEY, '[]');
+		$this->stores->config->setUserValue($userId, self::APP_ID, self::GRANTS_KEY, '[]');
 	}//end forget()
 
 	/**

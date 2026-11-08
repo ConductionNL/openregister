@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Settings;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SettingsDirectory;
+use OCA\OpenRegister\Service\Settings\ConfigurationSettingsSupport;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroup;
@@ -178,11 +180,8 @@ class ConfigurationSettingsHandlerGoldenTest extends TestCase {
 
 		$handler = new ConfigurationSettingsHandler(
 			$appConfig,
-			$groups,
-			$users,
-			$organisations,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IAppManager::class)
+			new SettingsDirectory($groups, $users, $organisations),
+			new ConfigurationSettingsSupport($this->createMock(LoggerInterface::class), $this->createMock(IAppManager::class))
 		);
 
 		if ($argument === null) {

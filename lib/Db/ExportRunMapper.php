@@ -51,6 +51,20 @@ class ExportRunMapper extends QBMapper {
 	public const TABLE = 'openregister_export_runs';
 
 	/**
+	 * The list filters findForActor() accepts, mapped to their column.
+	 *
+	 * @var array<string, string>
+	 */
+	private const FILTER_COLUMNS = [
+		'register' => 'register_name',
+		'schema' => 'schema_name',
+		'profile' => 'profile',
+		'source' => 'source',
+		'status' => 'status',
+		'actor' => 'actor',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
@@ -103,15 +117,6 @@ class ExportRunMapper extends QBMapper {
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
 	public function findForActor(?string $actor, array $filters = [], int $limit = 50, int $offset = 0): array {
-		$columns = [
-			'register' => 'register_name',
-			'schema' => 'schema_name',
-			'profile' => 'profile',
-			'source' => 'source',
-			'status' => 'status',
-			'actor' => 'actor',
-		];
-
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from(self::TABLE)
@@ -119,13 +124,39 @@ class ExportRunMapper extends QBMapper {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
+		$this->narrowToActor(qb: $qb, actor: $actor);
+		$this->narrowToPeriod(qb: $qb, filters: $filters);
+		$this->narrowToColumns(qb: $qb, filters: $filters);
+
+		return $this->findEntities(query: $qb);
+	}//end findForActor()
+
+	/**
+	 * Scope a run list to one actor; null (an administrator) adds nothing.
+	 *
+	 * @param IQueryBuilder $qb    The query being built.
+	 * @param string|null   $actor The actor, or null for every actor.
+	 *
+	 * @return void
+	 */
+	private function narrowToActor(IQueryBuilder $qb, ?string $actor): void {
 		if ($actor !== null) {
 			$qb->andWhere($qb->expr()->eq('actor', $qb->createNamedParameter($actor)));
 		}
+	}//end narrowToActor()
 
-		// The period bounds `produced_at`, inclusive on both ends. They arrive
-		// as DateTime values; the controller parsed and refused a bad
-		// date already, so nothing here guesses at a string.
+	/**
+	 * Bound `produced_at` by the `from` / `until` filters, inclusive on both ends.
+	 *
+	 * They arrive as DateTime values; the controller parsed and refused a bad
+	 * date already, so nothing here guesses at a string.
+	 *
+	 * @param IQueryBuilder $qb      The query being built.
+	 * @param array         $filters The list filters.
+	 *
+	 * @return void
+	 */
+	private function narrowToPeriod(IQueryBuilder $qb, array $filters): void {
 		$from = ($filters['from'] ?? null);
 		if ($from instanceof DateTime === true) {
 			$qb->andWhere($qb->expr()->gte('produced_at', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
@@ -135,22 +166,31 @@ class ExportRunMapper extends QBMapper {
 		if ($until instanceof DateTime === true) {
 			$qb->andWhere($qb->expr()->lte('produced_at', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
 		}
+	}//end narrowToPeriod()
 
+	/**
+	 * Add one equality predicate per known column filter.
+	 *
+	 * An unknown filter key is DROPPED rather than widening the result: a
+	 * query that silently ignores a narrowing term returns more than the
+	 * caller asked for, which is the wrong direction to fail in.
+	 *
+	 * @param IQueryBuilder $qb      The query being built.
+	 * @param array         $filters The list filters; `from` / `until` are skipped.
+	 *
+	 * @return void
+	 */
+	private function narrowToColumns(IQueryBuilder $qb, array $filters): void {
 		unset($filters['from'], $filters['until']);
 
 		foreach ($filters as $key => $value) {
-			// An unknown filter key is DROPPED rather than widening the result:
-			// a query that silently ignores a narrowing term returns more than
-			// the caller asked for, which is the wrong direction to fail in.
-			if (isset($columns[$key]) === false || is_scalar($value) === false || $value === '') {
+			if (isset(self::FILTER_COLUMNS[$key]) === false || is_scalar($value) === false || $value === '') {
 				continue;
 			}
 
-			$qb->andWhere($qb->expr()->eq($columns[$key], $qb->createNamedParameter((string)$value)));
+			$qb->andWhere($qb->expr()->eq(self::FILTER_COLUMNS[$key], $qb->createNamedParameter((string)$value)));
 		}
-
-		return $this->findEntities(query: $qb);
-	}//end findForActor()
+	}//end narrowToColumns()
 
 	/**
 	 * The runs whose STORED expiry has passed and whose file is still there.

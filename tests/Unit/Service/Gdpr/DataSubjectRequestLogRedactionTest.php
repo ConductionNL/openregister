@@ -31,6 +31,10 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectDeadline;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectEntityIndex;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectLoader;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectWriter;
+use OCA\OpenRegister\Service\Gdpr\Subject\SubjectRetentionGate;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\IDBConnection;
@@ -62,18 +66,23 @@ class DataSubjectRequestLogRedactionTest extends TestCase {
 		);
 
 		$service = new DataSubjectRequestService(
-			$db,
-			$this->createMock(MagicMapper::class),
-			$this->createMock(ObjectService::class),
-			$this->createMock(RetentionService::class),
-			$this->createMock(DsarService::class),
-			new DataSubjectDeadline(),
-			$this->createMock(IUserSession::class),
-			$logger,
-			new ArchivalRetentionGuard(
-				$this->createMock(SchemaMapper::class),
+			new SubjectEntityIndex($db, $logger),
+			new SubjectObjectLoader($this->createMock(MagicMapper::class), $this->createMock(LoggerInterface::class)),
+			new SubjectObjectWriter(
+				$this->createMock(ObjectService::class),
+				$this->createMock(DsarService::class),
+				$this->createMock(IUserSession::class),
 				$this->createMock(LoggerInterface::class)
-			)
+			),
+			new SubjectRetentionGate(
+				$this->createMock(RetentionService::class),
+				new ArchivalRetentionGuard(
+					$this->createMock(SchemaMapper::class),
+					$this->createMock(LoggerInterface::class)
+				)
+			),
+			new DataSubjectDeadline(),
+			$this->createMock(LoggerInterface::class)
 		);
 
 		$result = $service->findSubjectObjects($subject);

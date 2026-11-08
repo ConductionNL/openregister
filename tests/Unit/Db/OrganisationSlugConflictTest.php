@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\OrganisationUsageService;
@@ -253,8 +254,7 @@ class OrganisationSlugConflictTest extends TestCase {
 		$userSession->method('getUser')->willReturnCallback(fn (): ?IUser => $this->actingUser);
 		$provider = new OrganisationObjectSourceProvider(
 			organisationMapper: $this->mapper,
-			userSession: $userSession,
-			groupManager: $this->createMock(IGroupManager::class),
+			actingUser: new OrganisationActingUser(userSession: $userSession, groupManager: $this->createMock(IGroupManager::class)),
 			logger: new NullLogger(),
 			organisationService: $this->service()
 		);

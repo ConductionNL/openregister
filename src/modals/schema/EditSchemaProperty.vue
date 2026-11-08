@@ -983,16 +983,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success !== null
-						? t('openregister', 'Close')
-						: t('openregister', 'Cancel')
-				}}
-			</NcButton>
+			<CloseCancelButton :label="success !== null ? t('openregister', 'Close') : t('openregister', 'Cancel')" @click="closeModal" />
 
 			<NcButton
 				v-if="success === null"
@@ -1041,6 +1032,7 @@ import {
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import {
 	codedStoreOptions,
 	emptyCodedConfig,

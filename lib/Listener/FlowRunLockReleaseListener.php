@@ -84,17 +84,7 @@ class FlowRunLockReleaseListener implements IEventListener {
 		}
 
 		try {
-			$released = $this->locks->releaseRunLocks(runUuid: $event->getRunUuid());
-			if ($released > 0) {
-				$this->logger->info(
-					sprintf(
-						'[FlowRunLockReleaseListener] Released %d object lock(s) of run %s (%s).',
-						$released,
-						$event->getRunUuid(),
-						$event->getStatus()
-					)
-				);
-			}
+			$this->releaseLocksOf(event: $event);
 		} catch (Throwable $failure) {
 			// Never rethrow: see the class docblock. The TTL and the sweep
 			// remain as layers 3 and 2.
@@ -104,4 +94,25 @@ class FlowRunLockReleaseListener implements IEventListener {
 			);
 		}//end try
 	}//end handle()
+
+	/**
+	 * Release every object lock the run holds, and say how many in the log.
+	 *
+	 * @param FlowRunTerminalEvent $event The run's terminal write.
+	 *
+	 * @return void
+	 */
+	private function releaseLocksOf(FlowRunTerminalEvent $event): void {
+		$released = $this->locks->releaseRunLocks(runUuid: $event->getRunUuid());
+		if ($released > 0) {
+			$this->logger->info(
+				sprintf(
+					'[FlowRunLockReleaseListener] Released %d object lock(s) of run %s (%s).',
+					$released,
+					$event->getRunUuid(),
+					$event->getStatus()
+				)
+			);
+		}
+	}//end releaseLocksOf()
 }//end class

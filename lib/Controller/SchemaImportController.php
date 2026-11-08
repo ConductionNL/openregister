@@ -32,10 +32,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\SchemaImportControllerServices;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\SchemaImportException;
+use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaImport\ImportedSchema;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
@@ -118,7 +120,7 @@ class SchemaImportController extends Controller {
 		try {
 			return new JSONResponse($this->importService->discover($dialect, $query));
 		} catch (SchemaImportException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
+			return $this->importFailure(e: $e);
 		}
 
 	}//end types()
@@ -138,7 +140,7 @@ class SchemaImportController extends Controller {
 		try {
 			return new JSONResponse($this->importService->snapshotInfo($dialect));
 		} catch (SchemaImportException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
+			return $this->importFailure(e: $e);
 		}
 
 	}//end snapshot()
@@ -166,29 +168,34 @@ class SchemaImportController extends Controller {
 		try {
 			$imported = $this->importService->import($dialect, $reference, $options);
 		} catch (SchemaImportException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
+			return $this->importFailure(e: $e);
 		}
 
+		return $this->persistImported(imported: $imported, registerId: $options->targetRegister);
+
+	}//end import()
+
+	/**
+	 * Persist an imported schema, associate it with the target register, and answer 201.
+	 *
+	 * @param ImportedSchema $imported The mapped schema.
+	 * @param int|null $registerId The register to associate it with, or null.
+	 *
+	 * @return JSONResponse The created schema, or the 500.
+	 */
+	private function persistImported(ImportedSchema $imported, ?int $registerId): JSONResponse {
 		try {
 			$schema = $this->persistNewSchema(imported: $imported);
 		} catch (\Throwable $e) {
 			return $this->failPersist(e: $e);
 		}
 
-		$registerId = $options->targetRegister;
 		if ($registerId !== null) {
 			$this->associateWithRegister(registerId: $registerId, schemaId: (int)$schema->getId());
 		}
 
-		return new JSONResponse(
-			[
-				'schema' => $schema->jsonSerialize(),
-				'unknownRequested' => $imported->unknownRequested,
-			],
-			Http::STATUS_CREATED
-		);
-
-	}//end import()
+		return new JSONResponse(['schema' => $schema->jsonSerialize(), 'unknownRequested' => $imported->unknownRequested], Http::STATUS_CREATED);
+	}//end persistImported()
 
 	/**
 	 * Update an imported schema from its recorded source (three-way merge).
@@ -208,36 +215,14 @@ class SchemaImportController extends Controller {
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 */
 	public function reimport(int $id): JSONResponse {
-		try {
-			$schema = $this->schemaMapper->find($id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
+		$schema = $this->importedSchema(id: $id);
+		if ($schema instanceof JSONResponse) {
+			return $schema;
 		}
 
-		$configuration = ($schema->getConfiguration() ?? []);
-		$importSource = ($configuration['importSource'] ?? null);
-		if (is_array($importSource) === false) {
-			return new JSONResponse(
-				['error' => 'This schema was not imported from a standard; nothing to update from.'],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-
-		$resolveConflicts = $this->request->getParam('resolveConflicts', []);
-		if (is_array($resolveConflicts) === false) {
-			$resolveConflicts = [];
-		}
-
-		$resolveConflicts = array_values(array_filter($resolveConflicts, 'is_string'));
-
-		try {
-			$diff = $this->importService->previewUpdateFromSource(
-				importSource: $importSource,
-				currentProperties: $schema->getProperties(),
-				resolvedConflicts: $resolveConflicts
-			);
-		} catch (SchemaImportException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
+		$diff = $this->sourceDiff(schema: $schema);
+		if ($diff instanceof JSONResponse) {
+			return $diff;
 		}
 
 		$apply = filter_var($this->request->getParam('apply', false), FILTER_VALIDATE_BOOLEAN);
@@ -245,12 +230,81 @@ class SchemaImportController extends Controller {
 			return new JSONResponse($this->previewPayload(diff: $diff));
 		}
 
+		return $this->applyConfirmed(schema: $schema, diff: $diff);
+
+	}//end reimport()
+
+	/**
+	 * The schema, when it exists and was imported from a standard.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @return Schema|JSONResponse The schema, or a 404/422 refusal.
+	 */
+	private function importedSchema(int $id): Schema|JSONResponse {
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
+		}
+
+		if (is_array($this->importSourceOf(schema: $schema)) === false) {
+			return new JSONResponse(
+				['error' => 'This schema was not imported from a standard; nothing to update from.'],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		return $schema;
+	}//end importedSchema()
+
+	/**
+	 * The recorded import source of a schema, if any.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return mixed The `importSource` configuration entry, or null.
+	 */
+	private function importSourceOf(Schema $schema): mixed {
+		return (($schema->getConfiguration() ?? [])['importSource'] ?? null);
+	}//end importSourceOf()
+
+	/**
+	 * The three-way merge of the schema with its source, honouring the confirmed conflicts.
+	 *
+	 * @param Schema $schema The imported schema.
+	 *
+	 * @return array<string, mixed>|JSONResponse The merge result, or the import failure.
+	 */
+	private function sourceDiff(Schema $schema): array|JSONResponse {
+		$resolveConflicts = $this->request->getParam('resolveConflicts', []);
+		if (is_array($resolveConflicts) === false) {
+			$resolveConflicts = [];
+		}
+
+		try {
+			return $this->importService->previewUpdateFromSource(
+				importSource: $this->importSourceOf(schema: $schema),
+				currentProperties: $schema->getProperties(),
+				resolvedConflicts: array_values(array_filter($resolveConflicts, 'is_string'))
+			);
+		} catch (SchemaImportException $e) {
+			return $this->importFailure(e: $e);
+		}
+	}//end sourceDiff()
+
+	/**
+	 * Apply a merge whose conflicts were all confirmed, or refuse it.
+	 *
+	 * @param Schema $schema The schema.
+	 * @param array<string, mixed> $diff The merge result.
+	 *
+	 * @return JSONResponse The updated schema, a 409 for unresolved conflicts, or the 500.
+	 */
+	private function applyConfirmed(Schema $schema, array $diff): JSONResponse {
 		if ($diff['applied'] === false) {
 			return new JSONResponse(
-				[
-					'error' => 'Unresolved conflicts. Confirm each conflicting property via "resolveConflicts" before applying.',
-					'conflicts' => $diff['conflicts'],
-				],
+				['error' => 'Unresolved conflicts. Confirm each conflicting property via "resolveConflicts" before applying.', 'conflicts' => $diff['conflicts']],
 				Http::STATUS_CONFLICT
 			);
 		}
@@ -261,14 +315,8 @@ class SchemaImportController extends Controller {
 			return $this->failPersist(e: $e);
 		}
 
-		return new JSONResponse(
-			[
-				'schema' => $schema->jsonSerialize(),
-				'applied' => $this->previewPayload(diff: $diff),
-			]
-		);
-
-	}//end reimport()
+		return new JSONResponse(['schema' => $schema->jsonSerialize(), 'applied' => $this->previewPayload(diff: $diff)]);
+	}//end applyConfirmed()
 
 	/**
 	 * Persist a freshly-imported schema.
@@ -288,53 +336,107 @@ class SchemaImportController extends Controller {
 	/**
 	 * Apply a confirmed merge to an imported schema and persist it.
 	 *
+	 * The caller confirmed each conflict, but the merge still changes the
+	 * definition, so it is classified, versioned and recorded as every
+	 * definition update is (#4102). Classified before the properties move.
+	 *
 	 * @param Schema $schema The schema.
 	 * @param array<string, mixed> $diff The merge result.
 	 *
 	 * @return Schema The updated schema entity.
 	 */
 	private function applyMerge(Schema $schema, array $diff): Schema {
-		// The caller confirmed each conflict, but the merge still changes the
-		// definition, so it is classified, versioned and recorded as every
-		// definition update is (#4102). Classified before the properties move.
+		$changeSet = $this->classifyMerge(schema: $schema, merged: $diff['merged']);
+
+		$schema->setProperties($diff['merged']);
+		$schema->setConfiguration($this->refreshedConfiguration(configuration: ($schema->getConfiguration() ?? []), diff: $diff));
+
+		$schema = $this->schemaMapper->update($schema);
+		if ($changeSet !== null) {
+			$this->recordMerge(schema: $schema, changeSet: $changeSet);
+		}
+
+		return $schema;
+	}//end applyMerge()
+
+	/**
+	 * Record a persisted source merge in the schema changelog.
+	 *
+	 * @param Schema $schema The persisted schema.
+	 * @param SchemaChangeSet $changeSet The classified change set.
+	 *
+	 * @return void
+	 */
+	private function recordMerge(Schema $schema, SchemaChangeSet $changeSet): void {
+		$this->schemaVersioning?->recordChangelog(
+			schemaId: (int)$schema->getId(),
+			version: $schema->getVersion(),
+			changeSet: $changeSet,
+			acknowledged: false,
+			origin: 'source merge'
+		);
+	}//end recordMerge()
+
+	/**
+	 * Classify the merged definition and bump the schema's version when it changes anything.
+	 *
+	 * @param Schema $schema The schema, still holding its current definition.
+	 * @param array<string, mixed> $merged The merged properties.
+	 *
+	 * @return SchemaChangeSet|null The change set, or null without versioning.
+	 */
+	private function classifyMerge(Schema $schema, array $merged): ?SchemaChangeSet {
 		$changeSet = $this->schemaVersioning?->classify(
 			existing: $schema,
-			newDefinition: ['properties' => $diff['merged'], 'required' => ($schema->getRequired() ?? [])]
+			newDefinition: ['properties' => $merged, 'required' => ($schema->getRequired() ?? [])]
 		);
 		if ($changeSet !== null && $changeSet->hasChanges() === true) {
 			$schema->setVersion($this->schemaVersioning->nextVersion(existing: $schema, changeSet: $changeSet));
 		}
 
-		$schema->setProperties($diff['merged']);
+		return $changeSet;
+	}//end classifyMerge()
 
-		// Refresh the import baseline + jsonld block from the new source so the
-		// next update-from-source diffs against what was actually applied.
-		$configuration = ($schema->getConfiguration() ?? []);
-		if (isset($diff['incomingSource']) === true && is_array($diff['incomingSource']) === true) {
-			$incomingSource = $diff['incomingSource'];
+	/**
+	 * Refresh the import baseline + jsonld block from the new source.
+	 *
+	 * So the next update-from-source diffs against what was actually applied.
+	 *
+	 * @param array<string, mixed> $configuration The schema's configuration.
+	 * @param array<string, mixed> $diff The merge result.
+	 *
+	 * @return array<string, mixed> The refreshed configuration.
+	 */
+	private function refreshedConfiguration(array $configuration, array $diff): array {
+		$incomingSource = $this->arrayAt(diff: $diff, key: 'incomingSource');
+		if ($incomingSource !== null) {
 			$incomingSource['baseline'] = $diff['merged'];
 			$configuration['importSource'] = $incomingSource;
 		}
 
-		if (isset($diff['jsonld']) === true && is_array($diff['jsonld']) === true && $diff['jsonld'] !== []) {
-			$configuration['jsonld'] = $diff['jsonld'];
+		$jsonld = $this->arrayAt(diff: $diff, key: 'jsonld');
+		if ($jsonld !== null && $jsonld !== []) {
+			$configuration['jsonld'] = $jsonld;
 		}
 
-		$schema->setConfiguration($configuration);
+		return $configuration;
+	}//end refreshedConfiguration()
 
-		$schema = $this->schemaMapper->update($schema);
-		if ($changeSet !== null) {
-			$this->schemaVersioning?->recordChangelog(
-				schemaId: (int)$schema->getId(),
-				version: $schema->getVersion(),
-				changeSet: $changeSet,
-				acknowledged: false,
-				origin: 'source merge'
-			);
+	/**
+	 * An array entry of the merge result, or null when it is absent or not an array.
+	 *
+	 * @param array<string, mixed> $diff The merge result.
+	 * @param string $key The entry.
+	 *
+	 * @return array<string, mixed>|null The entry, or null.
+	 */
+	private function arrayAt(array $diff, string $key): ?array {
+		if (isset($diff[$key]) === true && is_array($diff[$key]) === true) {
+			return $diff[$key];
 		}
 
-		return $schema;
-	}//end applyMerge()
+		return null;
+	}//end arrayAt()
 
 	/**
 	 * Associate a newly-imported schema with a target register (best-effort).
@@ -346,14 +448,7 @@ class SchemaImportController extends Controller {
 	 */
 	private function associateWithRegister(int $registerId, int $schemaId): void {
 		try {
-			$register = $this->registerMapper->find($registerId);
-
-			$schemas = $register->getSchemas();
-			if (in_array($schemaId, $schemas, false) === false) {
-				$schemas[] = $schemaId;
-				$register->setSchemas($schemas);
-				$this->registerMapper->update($register);
-			}
+			$this->addSchemaTo(register: $this->registerMapper->find($registerId), schemaId: $schemaId);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'[SchemaImportController] Could not associate imported schema with register',
@@ -362,6 +457,23 @@ class SchemaImportController extends Controller {
 		}
 
 	}//end associateWithRegister()
+
+	/**
+	 * Add a schema to a register's schema list, when it is not on it yet.
+	 *
+	 * @param Register $register The register.
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return void
+	 */
+	private function addSchemaTo(Register $register, int $schemaId): void {
+		$schemas = $register->getSchemas();
+		if (in_array($schemaId, $schemas, false) === false) {
+			$schemas[] = $schemaId;
+			$register->setSchemas($schemas);
+			$this->registerMapper->update($register);
+		}
+	}//end addSchemaTo()
 
 	/**
 	 * Shape the merge result for an API response (drops the merged map).
@@ -396,4 +508,15 @@ class SchemaImportController extends Controller {
 		);
 		return new JSONResponse(['error' => 'Failed to persist the imported schema: ' . $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
 	}//end failPersist()
+
+	/**
+	 * Map a standards-import failure onto its HTTP status.
+	 *
+	 * @param SchemaImportException $e The failure.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function importFailure(SchemaImportException $e): JSONResponse {
+		return new JSONResponse(['error' => $e->getMessage()], $e->getHttpStatus());
+	}//end importFailure()
 }//end class

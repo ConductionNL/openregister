@@ -20,343 +20,65 @@
 
 			<div class="stats-content">
 				<div class="stats-grid">
-					<!-- Warning Stats -->
-					<div class="stats-card warning-stats">
-						<h4>⚠️ Items Requiring Attention</h4>
+					<div
+						v-for="table in statsTables"
+						:key="table.className"
+						class="stats-card"
+						:class="table.className">
+						<h4>{{ table.title }}</h4>
 						<div class="stats-table-container">
 							<table class="stats-table">
 								<thead>
 									<tr>
-										<th scope="col" class="stats-table-header">
-											Issue
-										</th>
-										<th scope="col" class="stats-table-header">
-											Count
-										</th>
-										<th scope="col" class="stats-table-header">
-											Size
+										<th
+											v-for="header in table.headers"
+											:key="header"
+											scope="col"
+											class="stats-table-header">
+											{{ header }}
 										</th>
 									</tr>
 								</thead>
 								<tbody>
-									<tr class="stats-table-row">
+									<tr
+										v-for="row in table.rows"
+										:key="row.label"
+										class="stats-table-row">
 										<td class="stats-table-label">
-											Objects without owner
+											{{ row.label }}
 										</td>
 										<td
 											class="stats-table-value"
-											:class="{
-												danger:
-													stats.warnings
-														.objectsWithoutOwner > 0,
-											}">
-											{{ stats.warnings.objectsWithoutOwner }}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Objects without organisation
-										</td>
-										<td
-											class="stats-table-value"
-											:class="{
-												danger:
-													stats.warnings
-														.objectsWithoutOrganisation
-													> 0,
-											}">
-											{{
-												stats.warnings
-													.objectsWithoutOrganisation
-											}}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Audit trails without expiry
-										</td>
-										<td
-											class="stats-table-value"
-											:class="{
-												danger:
-													stats.warnings
-														.auditTrailsWithoutExpiry
-													> 0,
-											}">
-											{{
-												stats.warnings
-													.auditTrailsWithoutExpiry
-											}}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Search trails without expiry
-										</td>
-										<td
-											class="stats-table-value"
-											:class="{
-												danger:
-													stats.warnings
-														.searchTrailsWithoutExpiry
-													> 0,
-											}">
-											{{
-												stats.warnings
-													.searchTrailsWithoutExpiry
-											}}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Expired audit trails
-										</td>
-										<td
-											class="stats-table-value"
-											:class="{
-												danger:
-													stats.warnings.expiredAuditTrails
-													> 0,
-											}">
-											{{ stats.warnings.expiredAuditTrails }}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Expired search trails
-										</td>
-										<td
-											class="stats-table-value"
-											:class="{
-												danger:
-													stats.warnings
-														.expiredSearchTrails > 0,
-											}">
-											{{ stats.warnings.expiredSearchTrails }}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Expired objects
-										</td>
-										<td
-											class="stats-table-value"
-											:class="{
-												danger:
-													stats.warnings.expiredObjects
-													> 0,
-											}">
-											{{ stats.warnings.expiredObjects }}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</div>
-
-					<!-- General Stats -->
-					<div class="stats-card general-stats">
-						<h4>📊 System Overview</h4>
-						<div class="stats-table-container">
-							<table class="stats-table">
-								<thead>
-									<tr>
-										<th scope="col" class="stats-table-header">
-											Resource
-										</th>
-										<th scope="col" class="stats-table-header">
-											Count
-										</th>
-										<th scope="col" class="stats-table-header">
-											Size
-										</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">Objects</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalObjects }}
+											:class="{ danger: row.danger }">
+											{{ row.count }}
 										</td>
 										<td class="stats-table-value">
-											{{ formatBytes(stats.totals.totalSize) }}
+											<template v-if="row.clear">
+												<NcButton
+													v-if="row.count > 0"
+													variant="error"
+													size="small"
+													:disabled="
+														loading
+														|| saving
+														|| rebasing
+														|| row.clearing
+													"
+													@click="row.clear">
+													<template #icon>
+														<NcLoadingIcon
+															v-if="row.clearing"
+															:size="16" />
+														<Delete v-else :size="16" />
+													</template>
+													Clear All
+												</NcButton>
+												<span v-else>-</span>
+											</template>
+											<template v-else>
+												{{ row.size }}
+											</template>
 										</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											└─ Blob Storage Objects
-										</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalBlobObjects }}
-										</td>
-										<td class="stats-table-value">
-											<NcButton
-												v-if="
-													stats.totals.totalBlobObjects > 0
-												"
-												variant="error"
-												size="small"
-												:disabled="
-													loading
-													|| saving
-													|| rebasing
-													|| clearingBlobObjects
-												"
-												@click="showClearBlobObjectsDialog">
-												<template #icon>
-													<NcLoadingIcon
-														v-if="clearingBlobObjects"
-														:size="16" />
-													<Delete v-else :size="16" />
-												</template>
-												Clear All
-											</NcButton>
-											<span v-else>-</span>
-										</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											└─ Magic Mapper Objects
-										</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalMagicObjects }}
-										</td>
-										<td class="stats-table-value">
-											{{
-												formatBytes(
-													stats.totals.totalMagicSize,
-												)
-											}}
-										</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Configurations
-										</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalConfigurations }}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Audit Trails
-										</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalAuditTrails }}
-										</td>
-										<td class="stats-table-value">
-											<NcButton
-												v-if="
-													stats.totals.totalAuditTrails > 0
-												"
-												variant="error"
-												size="small"
-												:disabled="
-													loading
-													|| saving
-													|| rebasing
-													|| clearingAuditTrails
-												"
-												@click="showClearAuditTrailsDialog">
-												<template #icon>
-													<NcLoadingIcon
-														v-if="clearingAuditTrails"
-														:size="16" />
-													<Delete v-else :size="16" />
-												</template>
-												Clear All
-											</NcButton>
-											<span v-else>-</span>
-										</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Search Trails
-										</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalSearchTrails }}
-										</td>
-										<td class="stats-table-value">
-											<NcButton
-												v-if="
-													stats.totals.totalSearchTrails
-													> 0
-												"
-												variant="error"
-												size="small"
-												:disabled="
-													loading
-													|| saving
-													|| rebasing
-													|| clearingSearchTrails
-												"
-												@click="showClearSearchTrailsDialog">
-												<template #icon>
-													<NcLoadingIcon
-														v-if="clearingSearchTrails"
-														:size="16" />
-													<Delete v-else :size="16" />
-												</template>
-												Clear All
-											</NcButton>
-											<span v-else>-</span>
-										</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Webhook Logs
-										</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalWebhookLogs }}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Deleted Objects
-										</td>
-										<td class="stats-table-value">
-											{{ stats.totals.deletedObjects }}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">
-											Organisations
-										</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalOrganisations }}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">Registers</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalRegisters }}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">Schemas</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalSchemas }}
-										</td>
-										<td class="stats-table-value">-</td>
-									</tr>
-									<tr class="stats-table-row">
-										<td class="stats-table-label">Sources</td>
-										<td class="stats-table-value">
-											{{ stats.totals.totalSources }}
-										</td>
-										<td class="stats-table-value">-</td>
 									</tr>
 								</tbody>
 							</table>
@@ -482,7 +204,6 @@
 
 <script>
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
-import { mapStores } from 'pinia'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
@@ -493,7 +214,47 @@ import ClearSearchTrailsDialog from '../../../dialogs/settings/ClearSearchTrails
 // eslint-disable-next-line n/no-unpublished-import -- false positive: this bundled dialog (identical in shape to the sibling dialogs imported below, which lint clean) is app source shipped via webpack, not an npm package.
 import RebaseConfirmationDialog from '../../../dialogs/settings/RebaseConfirmationDialog.vue'
 import MassValidateModal from '../../../modals/settings/MassValidateModal.vue'
-import { useSettingsStore } from '../../../store/settings.js'
+import { settingsSectionState } from './settingsSectionState.js'
+
+/**
+ * The rows of the attention table: their label and warning count.
+ */
+const WARNING_ROWS = [
+	['Objects without owner', 'objectsWithoutOwner'],
+	['Objects without organisation', 'objectsWithoutOrganisation'],
+	['Audit trails without expiry', 'auditTrailsWithoutExpiry'],
+	['Search trails without expiry', 'searchTrailsWithoutExpiry'],
+	['Expired audit trails', 'expiredAuditTrails'],
+	['Expired search trails', 'expiredSearchTrails'],
+	['Expired objects', 'expiredObjects'],
+]
+
+/**
+ * The rows of the overview table: their label, the totals they show and,
+ * for a clearable resource, the suffix of its clearing flag and dialog.
+ */
+const TOTAL_ROWS = [
+	{ label: 'Objects', count: 'totalObjects', size: 'totalSize' },
+	{
+		label: '└─ Blob Storage Objects',
+		count: 'totalBlobObjects',
+		clear: 'BlobObjects',
+	},
+	{
+		label: '└─ Magic Mapper Objects',
+		count: 'totalMagicObjects',
+		size: 'totalMagicSize',
+	},
+	{ label: 'Configurations', count: 'totalConfigurations' },
+	{ label: 'Audit Trails', count: 'totalAuditTrails', clear: 'AuditTrails' },
+	{ label: 'Search Trails', count: 'totalSearchTrails', clear: 'SearchTrails' },
+	{ label: 'Webhook Logs', count: 'totalWebhookLogs' },
+	{ label: 'Deleted Objects', count: 'deletedObjects' },
+	{ label: 'Organisations', count: 'totalOrganisations' },
+	{ label: 'Registers', count: 'totalRegisters' },
+	{ label: 'Schemas', count: 'totalSchemas' },
+	{ label: 'Sources', count: 'totalSources' },
+]
 
 export default {
 	name: 'StatisticsOverview',
@@ -511,6 +272,8 @@ export default {
 		ClearSearchTrailsDialog,
 		ClearBlobObjectsDialog,
 	},
+
+	mixins: [settingsSectionState],
 
 	data() {
 		return {
@@ -541,7 +304,44 @@ export default {
 	},
 
 	computed: {
-		...mapStores(useSettingsStore),
+		/**
+		 * The attention and overview tables, for display.
+		 *
+		 * @spec exclude UI plumbing — table layout of the statistics
+		 * @return {Array<object>}
+		 */
+		statsTables() {
+			return [
+				{
+					className: 'warning-stats',
+					title: '⚠️ Items Requiring Attention',
+					headers: ['Issue', 'Count', 'Size'],
+					rows: this.warningRows,
+				},
+				{
+					className: 'general-stats',
+					title: '📊 System Overview',
+					headers: ['Resource', 'Count', 'Size'],
+					rows: TOTAL_ROWS.map((row) => this.totalRow(row)),
+				},
+			]
+		},
+
+		/**
+		 * The rows of the attention table, a count above zero marked as danger.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {Array<object>}
+		 */
+		warningRows() {
+			const warnings = this.stats.warnings
+			return WARNING_ROWS.map(([label, key]) => ({
+				label,
+				count: warnings[key],
+				danger: warnings[key] > 0,
+				size: '-',
+			}))
+		},
 
 		/**
 		 * Statistics object from the settings store, for display.
@@ -561,36 +361,6 @@ export default {
 		 */
 		loadingStats() {
 			return this.settingsStore.loadingStats
-		},
-
-		/**
-		 * Whether the settings store is loading, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		loading() {
-			return this.settingsStore.loading
-		},
-
-		/**
-		 * Whether settings are saving, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		saving() {
-			return this.settingsStore.saving
-		},
-
-		/**
-		 * Whether a rebase is in progress, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		rebasing() {
-			return this.settingsStore.rebasing
 		},
 
 		/**
@@ -704,6 +474,29 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * One row of the overview table: its count, its size or a dash, and
+		 * for a clearable resource its clearing flag and dialog opener.
+		 *
+		 * @param {object} row The row from TOTAL_ROWS
+		 * @param {string} row.label The label
+		 * @param {string} row.count The totals key of the count
+		 * @param {string} [row.size] The totals key of the size, if any
+		 * @param {string} [row.clear] The suffix of the clearing flag and dialog, if any
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {object} The row to display
+		 */
+		totalRow({ label, count, size, clear }) {
+			const totals = this.stats.totals
+			return {
+				label,
+				count: totals[count],
+				size: size ? this.formatBytes(totals[size]) : '-',
+				clearing: clear ? this[`clearing${clear}`] : false,
+				clear: clear ? this[`showClear${clear}Dialog`] : null,
+			}
+		},
+
 		/**
 		 * Load statistics from the settings store.
 		 *
@@ -1103,17 +896,6 @@ export default {
 @media (max-width: 768px) {
 	.stats-grid {
 		grid-template-columns: 1fr;
-	}
-
-	.section-header-inline {
-		position: static;
-		margin-bottom: 1rem;
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.button-group {
-		justify-content: center;
 	}
 }
 </style>

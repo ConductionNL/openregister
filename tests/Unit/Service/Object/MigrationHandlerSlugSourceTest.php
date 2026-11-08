@@ -142,10 +142,8 @@ class MigrationHandlerSlugSourceTest extends TestCase {
 		$handler = $this->migrationHandler(mapper: $mapper, utility: $utility, dataManip: $dataManip);
 
 		return $handler->migrateObjects(
-			sourceRegister: $sourceRegister,
-			sourceSchema: $sourceSchema,
-			targetRegister: 'target',
-			targetSchema: 'target',
+			source: [$sourceRegister, $sourceSchema],
+			target: ['target', 'target'],
 			objectIds: ['u-1'],
 			mapping: ['title' => 'title']
 		);

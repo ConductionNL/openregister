@@ -40,7 +40,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\StateHistory;
-use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Db\StateHistoryMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,17 +48,17 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
  */
-class StateHistoryProjector {
+class StateHistoryProjector implements StateHistoryProjectorInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param StateHistoryMapper $mapper       The projection.
+	 * @param StateHistoryMapperInterface $mapper       The projection.
 	 * @param SchemaMapperInterface       $schemaMapper Resolves a schema's declared lifecycle field.
 	 * @param LoggerInterface    $logger       Diagnostics.
 	 */
 	public function __construct(
-		private readonly StateHistoryMapper $mapper,
+		private readonly StateHistoryMapperInterface $mapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {

@@ -1,0 +1,660 @@
+{
+    "findAllRuns / defaults": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / flow id": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = f1, 2",
+            "#1 expr.eq(flow_id, :p1, NULL)",
+            "#1 andWhere(eq(flow_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / empty flow id": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / status": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = failed, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 andWhere(eq(status, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / empty status": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / paging": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / since": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / flow ids": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = [\"a\",\"b\"], 102",
+            "#1 expr.in(flow_id, :p1, NULL)",
+            "#1 andWhere(in(flow_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / empty flow ids": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / caller alone": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(triggered_by, :p1, NULL)",
+            "#1 expr.orX(eq(triggered_by, :p1, NULL))",
+            "#1 andWhere(orX(eq(triggered_by, :p1, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / caller with owned flows": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(triggered_by, :p1, NULL)",
+            "#1 expr.orX(eq(triggered_by, :p1, NULL))",
+            "#1 param :p2 = [\"f9\",\"f8\"], 102",
+            "#1 expr.in(flow_id, :p2, NULL)",
+            "#1 andWhere(orX(eq(triggered_by, :p1, NULL))+[in(flow_id, :p2, NULL)])",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / owned flows without caller": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAllRuns / everything": {
+        "result": [
+            {
+                "uuid": "r1",
+                "flowId": "f1",
+                "status": null
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(1)",
+            "#1 param :p1 = f1, 2",
+            "#1 expr.eq(flow_id, :p1, NULL)",
+            "#1 andWhere(eq(flow_id, :p1, NULL))",
+            "#1 param :p2 = [\"f1\",\"f2\"], 102",
+            "#1 expr.in(flow_id, :p2, NULL)",
+            "#1 andWhere(in(flow_id, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.gte(created, :p3, NULL)",
+            "#1 andWhere(gte(created, :p3, NULL))",
+            "#1 param :p4 = running, 2",
+            "#1 expr.eq(status, :p4, NULL)",
+            "#1 andWhere(eq(status, :p4, NULL))",
+            "#1 param :p5 = bob, 2",
+            "#1 expr.eq(triggered_by, :p5, NULL)",
+            "#1 expr.orX(eq(triggered_by, :p5, NULL))",
+            "#1 param :p6 = [\"f2\"], 102",
+            "#1 expr.in(flow_id, :p6, NULL)",
+            "#1 andWhere(orX(eq(triggered_by, :p5, NULL))+[in(flow_id, :p6, NULL)])",
+            "#1 executeQuery()"
+        ]
+    },
+    "summarizeByFlow / no flows": {
+        "result": [],
+        "queries": []
+    },
+    "summarizeByFlow / only blank flows": {
+        "result": [],
+        "queries": []
+    },
+    "summarizeByFlow / never ran": {
+        "result": {
+            "f1": {
+                "lastRun": null,
+                "runsSince": 0
+            },
+            "f2": {
+                "lastRun": null,
+                "runsSince": 0
+            }
+        },
+        "queries": [
+            "#1 select(flow_id)",
+            "#1 func.count(id, )",
+            "#1 selectAlias(count(id, ), total)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = [\"f1\",\"f2\"], 102",
+            "#1 expr.in(flow_id, :p1, NULL)",
+            "#1 where(in(flow_id, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 groupBy(flow_id)",
+            "#1 executeQuery()",
+            "#2 func.max(id)",
+            "#2 selectAlias(max(id), latest)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#2 param :p3 = [\"f1\",\"f2\"], 102",
+            "#2 expr.in(flow_id, :p3, NULL)",
+            "#2 where(in(flow_id, :p3, NULL))",
+            "#2 groupBy(flow_id)",
+            "#2 executeQuery()"
+        ]
+    },
+    "summarizeByFlow / counts and a latest run": {
+        "result": {
+            "f1": {
+                "lastRun": {
+                    "uuid": "r7",
+                    "status": "completed",
+                    "outcome": "completed",
+                    "error": null,
+                    "created": "2026-01-02T03:04:05+00:00",
+                    "updated": null
+                },
+                "runsSince": 3
+            },
+            "f2": {
+                "lastRun": null,
+                "runsSince": 0
+            },
+            "12": {
+                "lastRun": null,
+                "runsSince": 0
+            }
+        },
+        "queries": [
+            "#1 select(flow_id)",
+            "#1 func.count(id, )",
+            "#1 selectAlias(count(id, ), total)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = [\"f1\",\"f2\",\"12\"], 102",
+            "#1 expr.in(flow_id, :p1, NULL)",
+            "#1 where(in(flow_id, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 groupBy(flow_id)",
+            "#1 param :p3 = alice, 2",
+            "#1 expr.eq(triggered_by, :p3, NULL)",
+            "#1 expr.orX(eq(triggered_by, :p3, NULL))",
+            "#1 param :p4 = [\"f2\"], 102",
+            "#1 expr.in(flow_id, :p4, NULL)",
+            "#1 andWhere(orX(eq(triggered_by, :p3, NULL))+[in(flow_id, :p4, NULL)])",
+            "#1 executeQuery()",
+            "#2 func.max(id)",
+            "#2 selectAlias(max(id), latest)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#2 param :p5 = [\"f1\",\"f2\",\"12\"], 102",
+            "#2 expr.in(flow_id, :p5, NULL)",
+            "#2 where(in(flow_id, :p5, NULL))",
+            "#2 groupBy(flow_id)",
+            "#2 param :p6 = alice, 2",
+            "#2 expr.eq(triggered_by, :p6, NULL)",
+            "#2 expr.orX(eq(triggered_by, :p6, NULL))",
+            "#2 param :p7 = [\"f2\"], 102",
+            "#2 expr.in(flow_id, :p7, NULL)",
+            "#2 andWhere(orX(eq(triggered_by, :p6, NULL))+[in(flow_id, :p7, NULL)])",
+            "#2 executeQuery()",
+            "#3 select(id, uuid, flow_id, status, log, error, created, updated)",
+            "#3 from(openregister_flow_runs, NULL)",
+            "#3 param :p8 = [7,9], 101",
+            "#3 expr.in(id, :p8, NULL)",
+            "#3 where(in(id, :p8, NULL))",
+            "#3 executeQuery()"
+        ]
+    },
+    "summarizeByFlow / numeric flow id": {
+        "result": {
+            "12": {
+                "lastRun": null,
+                "runsSince": 2
+            }
+        },
+        "queries": [
+            "#1 select(flow_id)",
+            "#1 func.count(id, )",
+            "#1 selectAlias(count(id, ), total)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = [\"12\"], 102",
+            "#1 expr.in(flow_id, :p1, NULL)",
+            "#1 where(in(flow_id, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 groupBy(flow_id)",
+            "#1 executeQuery()",
+            "#2 func.max(id)",
+            "#2 selectAlias(max(id), latest)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#2 param :p3 = [\"12\"], 102",
+            "#2 expr.in(flow_id, :p3, NULL)",
+            "#2 where(in(flow_id, :p3, NULL))",
+            "#2 groupBy(flow_id)",
+            "#2 executeQuery()"
+        ]
+    },
+    "summarizeByFlow / caller alone": {
+        "result": {
+            "f1": {
+                "lastRun": null,
+                "runsSince": 0
+            }
+        },
+        "queries": [
+            "#1 select(flow_id)",
+            "#1 func.count(id, )",
+            "#1 selectAlias(count(id, ), total)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = [\"f1\"], 102",
+            "#1 expr.in(flow_id, :p1, NULL)",
+            "#1 where(in(flow_id, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 groupBy(flow_id)",
+            "#1 param :p3 = carol, 2",
+            "#1 expr.eq(triggered_by, :p3, NULL)",
+            "#1 expr.orX(eq(triggered_by, :p3, NULL))",
+            "#1 andWhere(orX(eq(triggered_by, :p3, NULL)))",
+            "#1 executeQuery()",
+            "#2 func.max(id)",
+            "#2 selectAlias(max(id), latest)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#2 param :p4 = [\"f1\"], 102",
+            "#2 expr.in(flow_id, :p4, NULL)",
+            "#2 where(in(flow_id, :p4, NULL))",
+            "#2 groupBy(flow_id)",
+            "#2 param :p5 = carol, 2",
+            "#2 expr.eq(triggered_by, :p5, NULL)",
+            "#2 expr.orX(eq(triggered_by, :p5, NULL))",
+            "#2 andWhere(orX(eq(triggered_by, :p5, NULL)))",
+            "#2 executeQuery()"
+        ]
+    },
+    "findQueued / zero limit": {
+        "result": [],
+        "queries": []
+    },
+    "findQueued / negative limit": {
+        "result": [],
+        "queries": []
+    },
+    "findQueued / nothing queued": {
+        "result": [],
+        "queries": [
+            "#1 select(flow_id)",
+            "#1 func.min(id)",
+            "#1 selectAlias(min(id), oldest_id)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = queued, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 groupBy(flow_id)",
+            "#1 orderBy(oldest_id, ASC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findQueued / one flow": {
+        "result": [
+            {
+                "uuid": "q1",
+                "flowId": "a",
+                "status": "queued"
+            },
+            {
+                "uuid": "q2",
+                "flowId": "a",
+                "status": "queued"
+            },
+            {
+                "uuid": "q3",
+                "flowId": "a",
+                "status": "queued"
+            }
+        ],
+        "queries": [
+            "#1 select(flow_id)",
+            "#1 func.min(id)",
+            "#1 selectAlias(min(id), oldest_id)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = queued, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 groupBy(flow_id)",
+            "#1 orderBy(oldest_id, ASC)",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#2 param :p2 = queued, 2",
+            "#2 expr.eq(status, :p2, NULL)",
+            "#2 where(eq(status, :p2, NULL))",
+            "#2 param :p3 = a, 2",
+            "#2 expr.eq(flow_id, :p3, NULL)",
+            "#2 andWhere(eq(flow_id, :p3, NULL))",
+            "#2 orderBy(id, ASC)",
+            "#2 setMaxResults(3)",
+            "#2 executeQuery()"
+        ]
+    },
+    "findQueued / two flows share": {
+        "result": [
+            {
+                "uuid": "q1",
+                "flowId": "a",
+                "status": "queued"
+            },
+            {
+                "uuid": "q3",
+                "flowId": "a",
+                "status": "queued"
+            },
+            {
+                "uuid": "q5",
+                "flowId": "a",
+                "status": "queued"
+            },
+            {
+                "uuid": "q2",
+                "flowId": "b",
+                "status": "queued"
+            }
+        ],
+        "queries": [
+            "#1 select(flow_id)",
+            "#1 func.min(id)",
+            "#1 selectAlias(min(id), oldest_id)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = queued, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 groupBy(flow_id)",
+            "#1 orderBy(oldest_id, ASC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#2 param :p2 = queued, 2",
+            "#2 expr.eq(status, :p2, NULL)",
+            "#2 where(eq(status, :p2, NULL))",
+            "#2 param :p3 = a, 2",
+            "#2 expr.eq(flow_id, :p3, NULL)",
+            "#2 andWhere(eq(flow_id, :p3, NULL))",
+            "#2 orderBy(id, ASC)",
+            "#2 setMaxResults(3)",
+            "#2 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_flow_runs, NULL)",
+            "#3 param :p4 = queued, 2",
+            "#3 expr.eq(status, :p4, NULL)",
+            "#3 where(eq(status, :p4, NULL))",
+            "#3 param :p5 = b, 2",
+            "#3 expr.eq(flow_id, :p5, NULL)",
+            "#3 andWhere(eq(flow_id, :p5, NULL))",
+            "#3 orderBy(id, ASC)",
+            "#3 setMaxResults(2)",
+            "#3 executeQuery()"
+        ]
+    },
+    "findQueued / more flows than slots": {
+        "result": [
+            {
+                "uuid": "q1",
+                "flowId": "a",
+                "status": "queued"
+            },
+            {
+                "uuid": "q2",
+                "flowId": "b",
+                "status": "queued"
+            }
+        ],
+        "queries": [
+            "#1 select(flow_id)",
+            "#1 func.min(id)",
+            "#1 selectAlias(min(id), oldest_id)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = queued, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 groupBy(flow_id)",
+            "#1 orderBy(oldest_id, ASC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#2 param :p2 = queued, 2",
+            "#2 expr.eq(status, :p2, NULL)",
+            "#2 where(eq(status, :p2, NULL))",
+            "#2 param :p3 = a, 2",
+            "#2 expr.eq(flow_id, :p3, NULL)",
+            "#2 andWhere(eq(flow_id, :p3, NULL))",
+            "#2 orderBy(id, ASC)",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_flow_runs, NULL)",
+            "#3 param :p4 = queued, 2",
+            "#3 expr.eq(status, :p4, NULL)",
+            "#3 where(eq(status, :p4, NULL))",
+            "#3 param :p5 = b, 2",
+            "#3 expr.eq(flow_id, :p5, NULL)",
+            "#3 andWhere(eq(flow_id, :p5, NULL))",
+            "#3 orderBy(id, ASC)",
+            "#3 setMaxResults(1)",
+            "#3 executeQuery()"
+        ]
+    },
+    "findQueued / short flow leaves room": {
+        "result": [
+            {
+                "uuid": "q2",
+                "flowId": "b",
+                "status": "queued"
+            },
+            {
+                "uuid": "q4",
+                "flowId": "b",
+                "status": "queued"
+            }
+        ],
+        "queries": [
+            "#1 select(flow_id)",
+            "#1 func.min(id)",
+            "#1 selectAlias(min(id), oldest_id)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#1 param :p1 = queued, 2",
+            "#1 expr.eq(status, :p1, NULL)",
+            "#1 where(eq(status, :p1, NULL))",
+            "#1 groupBy(flow_id)",
+            "#1 orderBy(oldest_id, ASC)",
+            "#1 setMaxResults(4)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_flow_runs, NULL)",
+            "#2 param :p2 = queued, 2",
+            "#2 expr.eq(status, :p2, NULL)",
+            "#2 where(eq(status, :p2, NULL))",
+            "#2 param :p3 = a, 2",
+            "#2 expr.eq(flow_id, :p3, NULL)",
+            "#2 andWhere(eq(flow_id, :p3, NULL))",
+            "#2 orderBy(id, ASC)",
+            "#2 setMaxResults(2)",
+            "#2 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_flow_runs, NULL)",
+            "#3 param :p4 = queued, 2",
+            "#3 expr.eq(status, :p4, NULL)",
+            "#3 where(eq(status, :p4, NULL))",
+            "#3 param :p5 = b, 2",
+            "#3 expr.eq(flow_id, :p5, NULL)",
+            "#3 andWhere(eq(flow_id, :p5, NULL))",
+            "#3 orderBy(id, ASC)",
+            "#3 setMaxResults(2)",
+            "#3 executeQuery()"
+        ]
+    }
+}

@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Service\File\ExecutableContentDetector;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -68,13 +68,13 @@ final class FilePropertyParts {
 	 * Build the parts.
 	 *
 	 * @param LoggerInterface           $logger              Logger for logging operations.
-	 * @param FileService               $fileService         File service for file operations.
+	 * @param ObjectFilesInterface      $fileService         File service for file operations.
 	 * @param ExecutableContentDetector $executableDetector  Shared executable-content detection.
 	 * @param list<string>              $dangerousExtensions The executable file extensions to block.
 	 */
 	public function __construct(
 		LoggerInterface $logger,
-		FileService $fileService,
+		ObjectFilesInterface $fileService,
 		ExecutableContentDetector $executableDetector,
 		array $dangerousExtensions,
 	) {
