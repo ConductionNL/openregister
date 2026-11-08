@@ -780,27 +780,28 @@ exports[`list page templates renders loading, empty and filled, and its menus re
 </div>
 </div>
 <div class="tableContainer">
-<table class="templatesTable">
+<div data-stub="CnDataTable" data-loading="false" class="templatesTable">
+<table>
 <thead>
 <tr>
-<th scope="col" class="column-name">t:Name</th>
-<th scope="col" class="column-type">t:Type</th>
-<th scope="col" class="column-description">t:Description</th>
-<th scope="col" class="column-updated">t:Updated At</th>
-<th scope="col" class="column-actions">t:Actions</th>
+<th>t:Name</th>
+<th>t:Type</th>
+<th>t:Description</th>
+<th>t:Updated At</th>
+<th>t:Actions</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="column-name">
+<td>
 <span class="template-name">Letter</span>
 </td>
-<td class="column-type">
+<td>
 <span class="badge badge-type">docx</span>
 </td>
-<td class="column-description">-</td>
-<td class="column-updated">-</td>
-<td class="column-actions">
+<td>-</td>
+<td>-</td>
+<td>
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
@@ -816,6 +817,7 @@ exports[`list page templates renders loading, empty and filled, and its menus re
 </tr>
 </tbody>
 </table>
+</div>
 </div>
 </div>",
   "loading": "<div class="viewContainer">

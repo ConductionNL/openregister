@@ -29,6 +29,10 @@ jest.mock('@nextcloud/l10n', () => ({
 }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
 jest.mock('@nextcloud/vue', () => mockLibrary())
+jest.mock('@conduction/nextcloud-vue', () => ({
+	...jest.requireActual('@conduction/nextcloud-vue'),
+	CnDataTable: jest.requireActual('../../tests/unit/support/tableGolden.js').CnDataTableStub,
+}))
 jest.mock('vue-material-design-icons/AccountOutline.vue', () =>
 	mockModule('AccountOutline'),
 )
