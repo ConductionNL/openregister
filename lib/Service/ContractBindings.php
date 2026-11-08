@@ -704,6 +704,7 @@ final class ContractBindings {
 		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
 		DateTimeNormalizerInterface::class => DateTimeNormalizer::class,
 		DecisionTableNodeInterface::class => DecisionTableNode::class,
+		\OCA\OpenRegister\Service\Outbound\ProxySettingsInterface::class => \OCA\OpenRegister\Service\Outbound\ProxySettings::class,
 		DeckCardServiceInterface::class => DeckCardService::class,
 		DeckLinkServiceInterface::class => DeckLinkService::class,
 		DeepLinkRegistryServiceInterface::class => DeepLinkRegistryService::class,
