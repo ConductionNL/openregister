@@ -1274,7 +1274,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function partyRoles(): PartyRoleService {
 		$roles = $this->createMock(PartyRoleService::class);
 		$roles->method('importParty')->willReturnCallback(
-			function (string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, string $linkedBy): ContactLink {
+			function (ObjectEntity $object, array $payload, string $linkedBy): ContactLink {
+				$objectUuid = (string) $object->getUuid();
+				$registerId = (int) $object->getRegister();
 				if (str_starts_with((string) $payload['partyUuid'], 'not-a-party') === true) {
 					throw new \Exception('Object "'.$payload['partyUuid'].'" is not a party', 400);
 				}

@@ -162,6 +162,26 @@ class PartyRoleServiceTest extends TestCase {
 	}//end partyOfKind()
 
 	/**
+	 * The object a trusted import puts the party on.
+	 *
+	 * @param string $uuid The object uuid.
+	 * @param int $registerId The register id.
+	 * @param int|string|null $schemaId The object's schema id.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectOn(string $uuid, int $registerId, int|string|null $schemaId): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		$object->setRegister((string) $registerId);
+		if ($schemaId !== null) {
+			$object->setSchema((string) $schemaId);
+		}
+
+		return $object;
+	}//end objectOn()
+
+	/**
 	 * A stored party link.
 	 *
 	 * @param string $partyUuid The party.
@@ -225,9 +245,7 @@ class PartyRoleServiceTest extends TestCase {
 		);
 
 		$link = $this->service->importParty(
-			objectUuid: 'case-1',
-			registerId: 3,
-			schemaId: null,
+			object: $this->objectOn(uuid: 'case-1', registerId: 3, schemaId: null),
 			payload: ['partyUuid' => 'party-a', 'role' => 'gemachtigde', 'validUntil' => '2026-12-31', 'note' => 'Awb 2:1'],
 			linkedBy: 'dossiq'
 		);
@@ -256,9 +274,7 @@ class PartyRoleServiceTest extends TestCase {
 		$this->writer->method('write')->willReturn($this->storedLink(partyUuid: 'party-a', role: 'aanvrager'));
 
 		$link = $this->service->importParty(
-			objectUuid: 'case-1',
-			registerId: 1,
-			schemaId: 7,
+			object: $this->objectOn(uuid: 'case-1', registerId: 1, schemaId: 7),
 			payload: ['partyUuid' => 'party-a', 'role' => 'aanvrager'],
 			linkedBy: 'portaliq'
 		);
