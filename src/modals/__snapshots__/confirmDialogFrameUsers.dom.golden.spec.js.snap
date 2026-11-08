@@ -154,7 +154,7 @@ exports[`dialog clearCacheDialog asks 1`] = `
         </div>
       </div>
       <div class="dialog-actions">
-        <x-ncbutton disabled="false">
+        <x-ncbutton>
           <slot-default>t:Cancel</slot-default>
         </x-ncbutton>
         <x-ncbutton variant="error" disabled="false">
@@ -207,7 +207,7 @@ exports[`dialog clearCacheDialog confirms 1`] = `
         </div>
       </div>
       <div class="dialog-actions">
-        <x-ncbutton disabled="false">
+        <x-ncbutton>
           <slot-default>t:Cancel</slot-default>
         </x-ncbutton>
         <x-ncbutton variant="error" disabled="false">
