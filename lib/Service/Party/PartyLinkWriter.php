@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Party;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IUserSession;
 
@@ -48,12 +48,12 @@ class PartyLinkWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $links The link rows.
+	 * @param ContactLinkMapperInterface $links The link rows.
 	 * @param TrustedPartyReaderInterface $parties The party records.
 	 * @param IUserSession $session The signed-in user, recorded as the linker.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
+		private readonly ContactLinkMapperInterface $links,
 		private readonly TrustedPartyReaderInterface $parties,
 		private readonly IUserSession $session,
 	) {

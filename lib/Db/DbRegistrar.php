@@ -63,6 +63,8 @@ final class DbRegistrar {
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		BulkJobMapperInterface::class => BulkJobMapper::class,
 		BulkJobMemberMapperInterface::class => BulkJobMemberMapper::class,
+		ContactLinkMapperInterface::class => ContactLinkMapper::class,
+		EmailLinkMapperInterface::class => EmailLinkMapper::class,
 		EndpointLogMapperInterface::class => EndpointLogMapper::class,
 		EndpointMapperInterface::class => EndpointMapper::class,
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,

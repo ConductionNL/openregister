@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
-use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -121,9 +121,9 @@ class EntityRelationsController extends Controller {
 	/**
 	 * EmailLink loader (for email-bound authz indirection).
 	 *
-	 * @var EmailLinkMapper
+	 * @var EmailLinkMapperInterface
 	 */
-	private readonly EmailLinkMapper $emailLinkMapper;
+	private readonly EmailLinkMapperInterface $emailLinkMapper;
 
 	/**
 	 * Structured log sink.
