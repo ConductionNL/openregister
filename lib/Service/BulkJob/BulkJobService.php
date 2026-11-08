@@ -248,11 +248,13 @@ class BulkJobService implements BulkJobServiceInterface {
 		);
 
 		$this->actions->executor->writePreviewMembers(
-			job: $job,
-			uuids: $uuids,
-			objects: $objects,
-			action: $action,
-			actor: $this->environment->userManager->get($request->actorUid)
+			pass: new BulkJobPass(
+				job: $job,
+				action: $action,
+				actor: $this->environment->userManager->get($request->actorUid),
+				objects: $objects
+			),
+			uuids: $uuids
 		);
 
 		// The cursor is still zero, so refreshCounts reports nothing walked
@@ -579,13 +581,14 @@ class BulkJobService implements BulkJobServiceInterface {
 			schemaId: $job->getSchemaId()
 		);
 
-		$this->actions->executor->writePreviewMembers(
-			job: $job,
-			uuids: $added,
-			objects: $objects,
-			action: $action,
-			actor: $this->environment->userManager->get((string)$job->getStartedBy()),
-			addedAtCommit: true
+		$this->actions->executor->writeAddedMembers(
+			pass: new BulkJobPass(
+				job: $job,
+				action: $action,
+				actor: $this->environment->userManager->get((string)$job->getStartedBy()),
+				objects: $objects
+			),
+			uuids: $added
 		);
 
 		$job->setTotal(($job->getTotal() + count($added)));
