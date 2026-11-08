@@ -118,7 +118,8 @@ class RematerialiseCalculationsCommand extends Command {
 	 * Wire the mappers, evaluator, and object service used by the command.
 	 *
 	 * @param RematerialiseStorage    $storage    Register, schema and object stores.
-	 * @param RematerialiseEvaluation $evaluation Evaluator, reference pre-resolvers and type converter.
+	 * @param RematerialiseEvaluation $evaluation Evaluator and reference pre-resolvers.
+	 * @param SchemaTypeConverter     $types      Restores the stored form of `type: string` values the read decoded.
 	 *
 	 * @return void
 	 *
@@ -126,7 +127,11 @@ class RematerialiseCalculationsCommand extends Command {
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
 	 */
-	public function __construct(RematerialiseStorage $storage, RematerialiseEvaluation $evaluation) {
+	public function __construct(
+		RematerialiseStorage $storage,
+		RematerialiseEvaluation $evaluation,
+		SchemaTypeConverter $types=new SchemaTypeConverter(),
+	) {
 		$this->registerMapper = $storage->registerMapper;
 		$this->schemaMapper = $storage->schemaMapper;
 		$this->magicMapper = $storage->magicMapper;
@@ -134,7 +139,7 @@ class RematerialiseCalculationsCommand extends Command {
 		$this->evaluator = $evaluation->evaluator;
 		$this->references = $evaluation->references;
 		$this->aggregates = $evaluation->aggregates;
-		$this->types = $evaluation->types;
+		$this->types = $types;
 		parent::__construct();
 	}//end __construct()
 
