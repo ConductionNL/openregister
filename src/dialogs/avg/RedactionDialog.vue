@@ -37,40 +37,23 @@
 				:reduce="(o) => o.value"
 				required />
 
-			<NcNoteCard v-if="error" type="error">
-				{{ error }}
-			</NcNoteCard>
-
-			<div class="redactionActions">
-				<NcButton
-					variant="tertiary"
-					:disabled="saving"
-					@click="$emit('close')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					variant="primary"
-					type="submit"
-					:disabled="saving || !form.field || !form.ground">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-					</template>
-					{{ t('openregister', 'Apply redaction') }}
-				</NcButton>
-			</div>
+			<AvgFormFooter
+				:error="error"
+				:saving="saving"
+				:incomplete="!form.field || !form.ground"
+				:submitLabel="t('openregister', 'Apply redaction')"
+				@close="$emit('close')" />
 		</form>
 	</NcDialog>
 </template>
 
 <script>
 import {
-	NcButton,
 	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import AvgFormFooter from './AvgFormFooter.vue'
 import { resolveGroundOptions } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
 
@@ -78,12 +61,10 @@ export default {
 	name: 'RedactionDialog',
 
 	components: {
+		AvgFormFooter,
 		NcDialog,
 		NcTextField,
 		NcSelect,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
 	},
 
 	props: {
@@ -162,9 +143,5 @@ export default {
 
 .redactionIntro {
 	color: var(--color-text-maxcontrast);
-}
-
-.redactionActions {
-	@include end-aligned-actions;
 }
 </style>
