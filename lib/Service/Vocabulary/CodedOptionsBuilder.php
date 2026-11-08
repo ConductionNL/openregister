@@ -43,7 +43,7 @@ use DateTimeInterface;
 /**
  * Produces the options and the option tree for a coded property.
  */
-class CodedOptionsBuilder {
+class CodedOptionsBuilder implements CodedOptionsBuilderInterface {
 
 	/**
 	 * Constructor.

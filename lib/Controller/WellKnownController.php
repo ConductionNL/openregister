@@ -41,14 +41,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder;
+use OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilderInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 
@@ -67,7 +67,7 @@ class WellKnownController extends Controller {
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The incoming request.
-	 * @param SecurityTxtBuilder $securityTxt Builds the administered security contact file.
+	 * @param SecurityTxtBuilderInterface $securityTxt Builds the administered security contact file.
 	 * @param IURLGenerator $urlGenerator Names this instance's own base URL.
 	 *
 	 * @return void
@@ -75,7 +75,7 @@ class WellKnownController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SecurityTxtBuilder $securityTxt,
+		private readonly SecurityTxtBuilderInterface $securityTxt,
 		private readonly IURLGenerator $urlGenerator,
 	) {
 		parent::__construct(appName: $appName, request: $request);

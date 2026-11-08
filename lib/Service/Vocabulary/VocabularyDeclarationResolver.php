@@ -38,7 +38,7 @@ use Throwable;
  *
  * @spec openspec/specs/skos-concept-registers/spec.md
  */
-class VocabularyDeclarationResolver {
+class VocabularyDeclarationResolver implements VocabularyDeclarationResolverInterface {
 
 	/**
 	 * Constructor.

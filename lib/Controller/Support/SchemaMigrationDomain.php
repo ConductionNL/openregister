@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
-use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
-use OCA\OpenRegister\Service\Schema\SchemaObjectReader;
+use OCA\OpenRegister\Service\Schema\SchemaMigrationServiceInterface;
+use OCA\OpenRegister\Service\Schema\SchemaObjectReaderInterface;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 
 /**
@@ -37,16 +37,16 @@ final class SchemaMigrationDomain {
 	 * Bundle the services.
 	 *
 	 * @param SchemaRevalidationService           $revalidationService Revalidation engine.
-	 * @param SchemaMigrationService              $migrationService    Migration engine.
-	 * @param SchemaObjectReader                  $objectReader        Locates a schema's register and reads its stored values.
+	 * @param SchemaMigrationServiceInterface              $migrationService    Migration engine.
+	 * @param SchemaObjectReaderInterface                  $objectReader        Locates a schema's register and reads its stored values.
 	 * @param ?PropertyConversionServiceInterface $conversions         Publishes and previews a property type change.
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function __construct(
 		public readonly SchemaRevalidationService $revalidationService,
-		public readonly SchemaMigrationService $migrationService,
-		public readonly SchemaObjectReader $objectReader,
+		public readonly SchemaMigrationServiceInterface $migrationService,
+		public readonly SchemaObjectReaderInterface $objectReader,
 		public readonly ?PropertyConversionServiceInterface $conversions = null,
 	) {
 	}//end __construct()

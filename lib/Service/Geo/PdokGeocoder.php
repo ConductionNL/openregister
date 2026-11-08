@@ -46,7 +46,7 @@ use Throwable;
  *   Coupling to NC's IAppManager + the DI container is required to
  *   detect and lazily resolve the OpenConnector CallService.
  */
-class PdokGeocoder {
+class PdokGeocoder implements PdokGeocoderInterface {
 
 	/**
 	 * PDOK Locatieserver v3.1 base URL (REQ-GEO-005).

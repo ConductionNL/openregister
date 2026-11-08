@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
-use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
+use OCA\OpenRegister\Service\Dbal\DbalConnectionFactoryInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 
@@ -38,7 +38,7 @@ final class SourcesDomain {
 	 *
 	 * @param SourceFetcherRegistry                 $fetcherRegistry      Resolves the transport for a source type
 	 * @param HarvestPipelineServiceInterface       $pipeline             Harvest pipeline orchestrator
-	 * @param DbalConnectionFactory                 $connectionFactory    Opens read-only DBAL connections for database sources
+	 * @param DbalConnectionFactoryInterface                 $connectionFactory    Opens read-only DBAL connections for database sources
 	 * @param DatabaseIntrospectionServiceInterface $introspectionService Introspects a database source into a virtual register
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
@@ -46,7 +46,7 @@ final class SourcesDomain {
 	public function __construct(
 		public readonly SourceFetcherRegistry $fetcherRegistry,
 		public readonly HarvestPipelineServiceInterface $pipeline,
-		public readonly DbalConnectionFactory $connectionFactory,
+		public readonly DbalConnectionFactoryInterface $connectionFactory,
 		public readonly DatabaseIntrospectionServiceInterface $introspectionService,
 	) {
 	}//end __construct()

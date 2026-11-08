@@ -316,6 +316,8 @@ use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepositoryInterface;
+use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
+use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -345,6 +347,8 @@ final class ContractBindings {
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
+		\OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilderInterface::class => \OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder::class,
+		\OCA\OpenRegister\Service\Dbal\DbalConnectionFactoryInterface::class => \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class,
 		FlowStateNodeInterface::class => FlowStateNode::class,
 		IterateNodeInterface::class => IterateNode::class,
 		LinkObjectNodeInterface::class => LinkObjectNode::class,
@@ -352,9 +356,16 @@ final class ContractBindings {
 		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
+		\OCA\OpenRegister\Service\Geo\PdokGeocoderInterface::class => \OCA\OpenRegister\Service\Geo\PdokGeocoder::class,
+		\OCA\OpenRegister\Service\Registers\RegisterCacheHandlerInterface::class => \OCA\OpenRegister\Service\Registers\RegisterCacheHandler::class,
+		\OCA\OpenRegister\Service\Serializer\RegisterSerializerInterface::class => \OCA\OpenRegister\Service\Serializer\RegisterSerializer::class,
 		RouterNodeInterface::class => RouterNode::class,
+		\OCA\OpenRegister\Service\Schema\SchemaMigrationServiceInterface::class => \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
+		\OCA\OpenRegister\Service\Schema\SchemaObjectReaderInterface::class => \OCA\OpenRegister\Service\Schema\SchemaObjectReader::class,
+		\OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilderInterface::class => \OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder::class,
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
+		VocabularyDeclarationResolverInterface::class => VocabularyDeclarationResolver::class,
 		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,

@@ -29,13 +29,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\RulesControllerServices;
-use OCA\OpenRegister\Exception\BulkJobRefusedException;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates;
-use OCA\OpenRegister\Db\RuleRunMapper;
+use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
+use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
+use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
@@ -84,9 +84,9 @@ class RulesController extends Controller {
 	/**
 	 * Reads the run log.
 	 *
-	 * @var RuleRunMapper
+	 * @var RuleRunMapperInterface
 	 */
-	private readonly RuleRunMapper $runs;
+	private readonly RuleRunMapperInterface $runs;
 
 	/**
 	 * Evaluates a rule without committing.
@@ -428,7 +428,7 @@ class RulesController extends Controller {
 
 		$since = ExampleSetTaskDates::moment(value: $this->request->getParam('since'));
 		$until = ExampleSetTaskDates::moment(value: $this->request->getParam('until'));
-		$limit = (int)($this->request->getParam('limit') ?? RuleRunMapper::DEFAULT_LIMIT);
+		$limit = (int)($this->request->getParam('limit') ?? RuleRunMapperInterface::DEFAULT_LIMIT);
 		$offset = (int)($this->request->getParam('offset') ?? 0);
 
 		$runs = $this->runs->findByRule(ruleId: $ruleId, verdict: $verdict, since: $since, until: $until, limit: $limit, offset: $offset);

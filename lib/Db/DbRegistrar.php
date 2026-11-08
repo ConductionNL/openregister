@@ -89,6 +89,7 @@ final class DbRegistrar {
 		ObjectRelationMapperInterface::class => ObjectRelationMapper::class,
 		OrganisationMapperInterface::class => OrganisationMapper::class,
 		RegisterMapperInterface::class => RegisterMapper::class,
+		\OCA\OpenRegister\Db\RuleRunMapperInterface::class => \OCA\OpenRegister\Db\RuleRunMapper::class,
 		RuleRunSummaryMapperInterface::class => RuleRunSummaryMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
 		SourceMapperInterface::class => SourceMapper::class,

@@ -43,14 +43,9 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class RuleRunMapper extends QBMapper {
+class RuleRunMapper extends QBMapper implements RuleRunMapperInterface {
 
-	/**
-	 * How many rows one run-log read returns unless the caller asks for fewer.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_LIMIT = 50;
+	// DEFAULT_LIMIT is declared on RuleRunMapperInterface.
 
 	/**
 	 * The most rows one run-log read will ever return.

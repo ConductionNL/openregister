@@ -60,16 +60,11 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth class is WriteCause, the ambient
  *                                                  audit-cause frame its object reads run in.
  */
-class SchemaMigrationService {
+class SchemaMigrationService implements SchemaMigrationServiceInterface {
 
 	use SchemaRunPopulation;
 
-	/**
-	 * Default preview sample size.
-	 *
-	 * @var int
-	 */
-	public const DEFAULT_PREVIEW_SAMPLE = 10;
+	// DEFAULT_PREVIEW_SAMPLE is declared on SchemaMigrationServiceInterface.
 
 	/**
 	 * Default per-batch object count.

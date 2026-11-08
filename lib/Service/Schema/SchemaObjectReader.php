@@ -34,7 +34,7 @@ use OCP\IRequest;
 /**
  * Locates a schema's register and reads its stored property values.
  */
-class SchemaObjectReader {
+class SchemaObjectReader implements SchemaObjectReaderInterface {
 
 	/**
 	 * How many objects a conversion preview reads.
