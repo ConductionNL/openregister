@@ -54,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
  */
-class RecordTemplateService {
+class RecordTemplateService implements RecordTemplateStoreInterface {
 
 	/**
 	 * Reads the shares the way a saved view does.

@@ -456,8 +456,12 @@ use OCA\OpenRegister\Service\Rbac\RevealFlusher;
 use OCA\OpenRegister\Service\Rbac\RevealFlusherInterface;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
+use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
+use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStoreInterface;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionLifecycleInterface;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\LinkExposureInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
@@ -682,7 +686,10 @@ final class ContractBindings {
 		OAuth2ConnectionRepositoryInterface::class => OAuth2ConnectionRepository::class,
 		OpenConnectorTransportInterface::class => OpenConnectorTransport::class,
 		PortalTaskDeliveryServiceInterface::class => PortalTaskDeliveryService::class,
+		\OCA\OpenRegister\Service\Portal\PortalTaskReminderInterface::class => PortalTaskDeliveryService::class,
 		PrincipalResolverRegistryInterface::class => PrincipalResolverRegistry::class,
+		RecordTemplateStoreInterface::class => RecordTemplateService::class,
+		RegistrySubscriptionLifecycleInterface::class => RegistrySubscriptionService::class,
 		RestApiTransportInterface::class => RestApiTransport::class,
 		RouterNodeInterface::class => RouterNode::class,
 		SelectielijstImportServiceInterface::class => SelectielijstImportService::class,
