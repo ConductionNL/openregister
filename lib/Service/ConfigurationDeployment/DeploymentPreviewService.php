@@ -48,7 +48,7 @@ use OCA\OpenRegister\Db\ConfigurationDraftSet;
 /**
  * The diff a deployment would apply.
  */
-class DeploymentPreviewService {
+class DeploymentPreviewService implements DeploymentPreviewServiceInterface {
 
 	/**
 	 * The address is not in the declared vocabulary.

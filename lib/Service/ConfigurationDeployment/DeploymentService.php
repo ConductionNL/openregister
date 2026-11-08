@@ -60,7 +60,7 @@ use Throwable;
  * set, the preview, the value store, the history and the transaction. Splitting
  * it would put the all-or-nothing rule in two places.
  */
-class DeploymentService {
+class DeploymentService implements DeploymentServiceInterface {
 
 	/**
 	 * Constructor.
