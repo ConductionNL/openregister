@@ -42,6 +42,8 @@ use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\OwnershipLog;
+use OCA\OpenRegister\Service\Rbac\OwnershipSources;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnerWriter;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -175,15 +177,14 @@ class ObjectOwnershipServiceTest extends TestCase {
 				grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
 				permissions: $this->permissions
 			),
-			directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager),
+			sources: new OwnershipSources(directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager), lookup: new ObjectLookup(magicMapper: $this->magicMapper, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper)),
 			writers: new OwnershipWriters(
 				ownerWriter: $this->ownerWriter,
 				authorizationWriter: $this->authorizationWriter,
 				auditTrailMapper: $this->auditTrailMapper,
 				notificationManager: $this->notificationManager
 			),
-			lookup: new ObjectLookup(magicMapper: $this->magicMapper, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper),
-			logger: $this->createMock(LoggerInterface::class)
+			log: new OwnershipLog(logger: $this->createMock(LoggerInterface::class))
 		);
 	}//end setUp()
 
@@ -705,15 +706,14 @@ class ObjectOwnershipServiceTest extends TestCase {
 				grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
 				permissions: $this->permissions
 			),
-			directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager),
+			sources: new OwnershipSources(directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager), lookup: new ObjectLookup(magicMapper: $this->magicMapper, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper)),
 			writers: new OwnershipWriters(
 				ownerWriter: $this->ownerWriter,
 				authorizationWriter: $this->authorizationWriter,
 				auditTrailMapper: $this->auditTrailMapper,
 				notificationManager: $this->notificationManager
 			),
-			lookup: new ObjectLookup(magicMapper: $this->magicMapper, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper),
-			logger: $this->createMock(LoggerInterface::class)
+			log: new OwnershipLog(logger: $this->createMock(LoggerInterface::class))
 		);
 
 		$this->notificationManager->expects($this->never())->method('notify');

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorGuard;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\Hardening\HardeningSettingsService;
+use OCA\OpenRegister\Service\Hardening\HardeningSettingsStore;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -102,9 +103,7 @@ class HardeningSettingsServiceTest extends TestCase {
 		return new HardeningSettingsService(
 			$policy,
 			new HardeningFloorGuard($policy),
-			$this->appConfig,
-			$this->auditTrailMapper,
-			$this->createMock(LoggerInterface::class),
+			new HardeningSettingsStore($this->appConfig, $this->auditTrailMapper, $this->createMock(LoggerInterface::class))
 		);
 	}
 
