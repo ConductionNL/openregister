@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
+use OCA\OpenRegister\Service\Hinge\LensSources;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -83,8 +84,7 @@ final class LensResolverTest extends TestCase {
 		$userSession->method('getUser')->willReturn(null);
 
 		return new LensResolver(
-			magicMapper: $magicMapper,
-			schemaMapper: $schemaMapper,
+			sources: new LensSources(magicMapper: $magicMapper, schemaMapper: $schemaMapper),
 			permissionHandler: $permissionHandler,
 			userSession: $userSession,
 			logger: new NullLogger()

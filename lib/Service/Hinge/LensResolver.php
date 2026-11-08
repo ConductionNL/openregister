@@ -25,10 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hinge;
 
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -62,8 +60,7 @@ class LensResolver {
 	/**
 	 * Wire the lookups a lens resolves through.
 	 *
-	 * @param MagicObjectFinderInterface       $magicMapper       Object storage, to read the referenced record.
-	 * @param SchemaMapperInterface      $schemaMapper      Schema lookup for the referenced record.
+	 * @param LensSources $sources The object finder and the schema mapper a lens reads through.
 	 * @param PermissionHandlerInterface $permissionHandler The read check over the referenced record.
 	 * @param IUserSession      $userSession       The caller, for that check.
 	 * @param LoggerInterface   $logger            PSR logger for unresolvable lenses.
@@ -73,8 +70,7 @@ class LensResolver {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicObjectFinderInterface $magicMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly LensSources $sources,
 		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
@@ -184,7 +180,7 @@ class LensResolver {
 			// see it", and rendering those two the same way is the defect D-3
 			// exists to prevent. Nothing but the one declared property leaves this
 			// method, and only after mayRead() says so.
-			$referenced = $this->magicMapper->find(
+			$referenced = $this->sources->magicMapper->find(
 				identifier: $reference,
 				_rbac: false,
 				_multitenancy: false
@@ -220,7 +216,7 @@ class LensResolver {
 		}
 
 		try {
-			$schema = $this->schemaMapper->find(
+			$schema = $this->sources->schemaMapper->find(
 				id: $referenced->getSchema(),
 				_rbac: false,
 				_multitenancy: false

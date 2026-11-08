@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
+use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStore;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\IGroupManager;
@@ -332,11 +333,9 @@ class RecordTemplateServiceTest extends TestCase {
 		);
 
 		return new RecordTemplateService(
-			mapper: $mapper,
-			schemas: $schemas,
+			store: new RecordTemplateStore(mapper: $mapper, schemas: $schemas, logger: new NullLogger()),
 			permissions: $permissions,
-			viewers: $viewers,
-			logger: new NullLogger()
+			viewers: $viewers
 		);
 	}//end service()
 }//end class
