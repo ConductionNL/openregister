@@ -73,6 +73,15 @@
 	}
 }
 
+// An inline icon whose svg is drawn at 64px, as the Files sidebar tabs show it.
+@mixin material-design-icon-block {
+	.material-design-icon {
+		display: inline-flex;
+	}
+
+	@include material-design-icon-deep-svg;
+}
+
 @mixin lead {
 	.lead {
 		color: var(--color-text-maxcontrast);
