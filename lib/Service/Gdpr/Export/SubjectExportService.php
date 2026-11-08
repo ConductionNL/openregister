@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Export;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\SubjectExportJob;
 use OCA\OpenRegister\Db\SubjectExport;
-use OCA\OpenRegister\Db\SubjectExportMapper;
+use OCA\OpenRegister\Db\SubjectExportMapperInterface;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCP\BackgroundJob\IJobList;
 use OCP\IGroupManager;
@@ -71,7 +71,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 	/**
 	 * Wire the service.
 	 *
-	 * @param SubjectExportMapper       $mapper       The export rows.
+	 * @param SubjectExportMapperInterface       $mapper       The export rows.
 	 * @param DataSubjectRequestService $subjects     The RBAC scoped assembler.
 	 * @param IJobList                  $jobList      Where the assembly is queued.
 	 * @param IUserSession              $userSession  The requester.
@@ -81,7 +81,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SubjectExportMapper $mapper,
+		private readonly SubjectExportMapperInterface $mapper,
 		private readonly DataSubjectRequestService $subjects,
 		private readonly IJobList $jobList,
 		private readonly IUserSession $userSession,

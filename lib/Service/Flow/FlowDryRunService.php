@@ -38,7 +38,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class FlowDryRunService {
+class FlowDryRunService implements FlowDryRunServiceInterface {
 	/**
 	 * Constructor.
 	 *

@@ -38,7 +38,7 @@ use OCP\IDBConnection;
  *   query builder into every caller, where the next one gets the predicate
  *   subtly wrong and nothing says so.
  */
-class ContactLinkMapper extends QBMapper {
+class ContactLinkMapper extends QBMapper implements ContactLinkMapperInterface {
 	use FindLinksByObjectUuidTrait;
 	use DeleteLinksByObjectUuidTrait;
 	use CountLinksByObjectUuidTrait;

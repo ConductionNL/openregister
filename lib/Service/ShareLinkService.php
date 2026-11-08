@@ -78,7 +78,7 @@ use Throwable;
  * resolveCurrentUserId, resolveObjectEntity, lookup, resolveContainer); each is a required step
  * of a distinct public flow.
  */
-class ShareLinkService {
+class ShareLinkService implements ShareLinkServiceInterface {
 
 	/**
 	 * Share types the service surfaces when listing. Mirrors

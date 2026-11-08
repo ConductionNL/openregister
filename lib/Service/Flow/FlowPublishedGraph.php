@@ -38,7 +38,7 @@ use Psr\Container\ContainerInterface;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowPublishedGraph {
+class FlowPublishedGraph implements FlowPublishedGraphInterface {
 	/**
 	 * Constructor.
 	 *

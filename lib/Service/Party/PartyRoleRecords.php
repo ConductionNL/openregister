@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Party;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 
 /**
  * The stores a party role on an object is written to and recorded in.
@@ -35,12 +35,12 @@ final readonly class PartyRoleRecords {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param ContactLinkMapper $links The link rows.
+	 * @param ContactLinkMapperInterface $links The link rows.
 	 * @param PartyLinkWriter $writer Writes one party link.
 	 * @param AuditTrailMapperInterface $audit The audit trail.
 	 */
 	public function __construct(
-		public ContactLinkMapper $links,
+		public ContactLinkMapperInterface $links,
 		public PartyLinkWriter $writer,
 		public AuditTrailMapperInterface $audit,
 	) {

@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
  *
  * @spec openspec/specs/data-import-export/spec.md#requirement-a-bundle-uploaded-by-a-register-manager-stays-inside-that-register
  */
-class RegisterBundleBinding {
+class RegisterBundleBinding implements RegisterBundleBindingInterface {
 
 	/**
 	 * The bundle parts a register manager may bring in.

@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltService;
+use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -40,14 +40,14 @@ class OrganisationHaltController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                  $appName The app name.
-	 * @param IRequest                $request The request.
-	 * @param OrganisationHaltService $halts   The halts.
+	 * @param string                           $appName The app name.
+	 * @param IRequest                         $request The request.
+	 * @param OrganisationHaltServiceInterface $halts   The halts.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly OrganisationHaltService $halts,
+		private readonly OrganisationHaltServiceInterface $halts,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

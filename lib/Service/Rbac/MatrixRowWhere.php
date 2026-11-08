@@ -33,14 +33,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class MatrixRowWhere {
-
-	/**
-	 * The row key that declares a row may read across organisations.
-	 *
-	 * @var string
-	 */
-	public const CROSS_ORGANISATION_KEY = 'crossOrganisation';
+class MatrixRowWhere implements MatrixRowKeys {
 
 	/**
 	 * A row's extra conditions, key-sorted, or null when the row must be dropped.

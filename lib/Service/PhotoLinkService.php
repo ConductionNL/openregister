@@ -52,7 +52,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\PhotoLink;
-use OCA\OpenRegister\Db\PhotoLinkMapper;
+use OCA\OpenRegister\Db\PhotoLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -83,7 +83,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param PhotoLinkMapper $photoLinkMapper Persistence for link rows.
+	 * @param PhotoLinkMapperInterface $photoLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound Photos classes.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
@@ -91,7 +91,7 @@ class PhotoLinkService implements PhotoLinkServiceInterface {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly PhotoLinkMapper $photoLinkMapper,
+		private readonly PhotoLinkMapperInterface $photoLinkMapper,
 		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,

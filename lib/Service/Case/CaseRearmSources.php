@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Case;
 
-use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CaseItemMapperInterface;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 
 /**
@@ -36,12 +36,12 @@ final readonly class CaseRearmSources {
 	 * Bundle the collaborators.
 	 *
 	 * @param UnarmedTimerMarkers $markers The items that lack their statutory timer.
-	 * @param CaseItemMapper $items The plan-item table.
+	 * @param CaseItemMapperInterface $items The plan-item table.
 	 * @param FlowTimerMapper $timerRows Reads the timers an item already has.
 	 */
 	public function __construct(
 		public UnarmedTimerMarkers $markers,
-		public CaseItemMapper $items,
+		public CaseItemMapperInterface $items,
 		public FlowTimerMapper $timerRows,
 	) {
 	}//end __construct()

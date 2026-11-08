@@ -96,11 +96,7 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 			'Notifications/Service/Party/PartyNotificationService.php',
 			'Notifications/Service/Party/PartyReachGates.php',
 		],
-		ProcessingLogMapper::class => [
-			'BackgroundJob/ProcessingLogRetentionJob.php',
-			'Service/AvgComplianceService.php',
-			'Service/ProcessingLogService.php',
-		],
+		ProcessingLogMapper::class => [],
 		ProcessingPurposeMapper::class => [
 			'Service/Audit/PurposeRegistry.php',
 		],
@@ -109,10 +105,7 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 			'Db/MagicMapper.php',
 			'Db/MagicMapper/PurposeBoundTables.php',
 		],
-		SearchTrailMapper::class => [
-			'BackgroundJob/LogCleanUpTask.php',
-			'Service/SearchTrailService.php',
-		],
+		SearchTrailMapper::class => [],
 		StateHistoryProjector::class => [
 			'Listener/StateHistoryProjectionListener.php',
 		],

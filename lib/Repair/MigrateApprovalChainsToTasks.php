@@ -52,7 +52,7 @@ use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\TaskSequence;
-use OCA\OpenRegister\Db\TaskSequenceMapper;
+use OCA\OpenRegister\Db\TaskSequenceMapperInterface;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -107,7 +107,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 * @param TaskMapper $tasks Inserts tasks (insert dispatches nothing).
 	 * @param TaskCandidateMapper $candidates Maintains the candidate index.
 	 * @param TaskAuditMapper $audits Appends the migrated decision history.
-	 * @param TaskSequenceMapper $sequences Inserts one sequence per (chain, object).
+	 * @param TaskSequenceMapperInterface $sequences Inserts one sequence per (chain, object).
 	 * @param IAppConfig $config Records the cutover timestamp.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
@@ -117,7 +117,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 		private readonly TaskMapper $tasks,
 		private readonly TaskCandidateMapper $candidates,
 		private readonly TaskAuditMapper $audits,
-		private readonly TaskSequenceMapper $sequences,
+		private readonly TaskSequenceMapperInterface $sequences,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
 	) {

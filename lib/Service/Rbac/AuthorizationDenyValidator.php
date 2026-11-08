@@ -52,7 +52,7 @@ use OCA\OpenRegister\Exception\AuthorizationBlockException;
 /**
  * Refuses an authorization block whose deny contradicts its grants.
  */
-class AuthorizationDenyValidator {
+class AuthorizationDenyValidator implements AuthorizationDenyValidatorInterface {
 
 	/**
 	 * The verb that carries administration of a register.

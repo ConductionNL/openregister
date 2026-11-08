@@ -56,20 +56,13 @@ use OCA\OpenRegister\Db\Schema;
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-class RelationTypeResolver {
+class RelationTypeResolver implements RelationTypeResolverInterface {
 	/**
 	 * What the far side reads when the referencing property declares nothing.
 	 *
 	 * @var string
 	 */
 	public const FALLBACK_INVERSE_LABEL = 'referenced by';
-
-	/**
-	 * The row travels from the object being read towards the object it names.
-	 *
-	 * @var string
-	 */
-	public const DIRECTION_OUTGOING = 'outgoing';
 
 	/**
 	 * The row travels from another object towards the object being read.

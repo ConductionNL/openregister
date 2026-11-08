@@ -31,6 +31,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\AccessLinkMapper;
+use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetActingAs;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -149,7 +150,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$mapper = $this->linkMapper();
 		$this->services = [
 			ExampleSetActingAs::class   => new ExampleSetActingAs(userSession: $this->session, userManager: $this->users, cli: true),
-			AccessLinkMapper::class     => $mapper,
+			AccessLinkMapperInterface::class => $mapper,
 			AccessLinkService::class    => $this->linkService(mapper: $mapper),
 			AccessLinkMintGuard::class  => $this->mintGuard(),
 			ObjectSharingService::class => $this->sharingService(session: $this->session),

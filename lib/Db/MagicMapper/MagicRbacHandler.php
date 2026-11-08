@@ -44,15 +44,15 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
+use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
-use OCA\OpenRegister\Service\Rbac\DenyResolver;
-use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RuleColumns;
@@ -91,7 +91,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- * @SuppressWarnings(PHPMD.StaticAccess) PermissionHandler::stripMcpScope() is deliberately static and pure so BOTH rule
+ * @SuppressWarnings(PHPMD.StaticAccess) McpScope::strip() is deliberately static and pure so BOTH rule
  *      interpreters apply the byte-identical transform. Injecting it would let this one be constructed without it and
  *      silently diverge from the PHP-layer evaluator on which entries are inert — the exact drift ADR-011 warns about.
  */
@@ -165,12 +165,12 @@ class MagicRbacHandler {
 	 * constructor argument would be a fatal at every existing construction
 	 * site.
 	 *
-	 * @return DenyResolver The one reader of the deny grammar.
+	 * @return DenyResolverInterface The one reader of the deny grammar.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function denyResolver(): DenyResolver {
-		return ($this->resolvers->denyResolver ?? new DenyResolver());
+	private function denyResolver(): DenyResolverInterface {
+		return ($this->resolvers->denyResolver ?? RbacCollaborators::denyResolver());
 	}//end denyResolver()
 
 	/**
@@ -316,16 +316,16 @@ class MagicRbacHandler {
 	 * fresh instance per call would re-read core's shares on every row-level
 	 * decision.
 	 *
-	 * @return ObjectGrantResolver|null The resolver, or null when unavailable.
+	 * @return ObjectGrantResolverInterface|null The resolver, or null when unavailable.
 	 */
-	private function objectGrants(): ?ObjectGrantResolver {
+	private function objectGrants(): ?ObjectGrantResolverInterface {
 		if ($this->resolvers?->objectGrantResolver !== null) {
 			return $this->resolvers->objectGrantResolver;
 		}
 
 		try {
-			$resolved = $this->container->get(ObjectGrantResolver::class);
-			if (($resolved instanceof ObjectGrantResolver) === true) {
+			$resolved = RbacCollaborators::objectGrantsFrom(container: $this->container);
+			if (($resolved instanceof ObjectGrantResolverInterface) === true) {
 				return $resolved;
 			}
 
@@ -1168,7 +1168,7 @@ class MagicRbacHandler {
 	 * @return array<int, mixed> The rules; none for a schema without its own block or an unresolvable one.
 	 */
 	private function ownReadRules(Schema $schema): array {
-		if (empty(PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization())) === true) {
+		if (empty(RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization())) === true) {
 			return [];
 		}
 
@@ -1660,7 +1660,7 @@ class MagicRbacHandler {
 	 *
 	 * The row-level PHP half of the deny, and the third of the four enforcement
 	 * paths. It reads the SAME cascaded block the emitters read and the SAME
-	 * object block the row carries, through the same {@see DenyResolver}, so a
+	 * object block the row carries, through the same {@see DenyResolverInterface}, so a
 	 * relation-path check and a list cannot disagree about a denial.
 	 *
 	 * The two levels UNION rather than override: an object block that replaced
@@ -1706,7 +1706,7 @@ class MagicRbacHandler {
 			return null;
 		}
 
-		return [DenyResolver::DENY_KEY => $merged];
+		return [DenyResolverInterface::DENY_KEY => $merged];
 	}//end mergedDenyBlock()
 
 	/**
@@ -2326,7 +2326,7 @@ class MagicRbacHandler {
 
 		if ($this->getCurrentUserId() === null) {
 			return (new ReadRuleTenancy())->readsPublicUnconditionally(
-				readRules: ((PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization()) ?? [])[$action] ?? [])
+				readRules: ((RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization()) ?? [])[$action] ?? [])
 			);
 		}
 
@@ -2354,7 +2354,7 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
 	public function admitsOrganisationlessRowsThroughCascade(Schema $schema, string $action = 'read'): bool {
-		$ownAuthorization = PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
+		$ownAuthorization = RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization());
 		if (empty($ownAuthorization) === false) {
 			return false;
 		}
@@ -2641,7 +2641,7 @@ class MagicRbacHandler {
 				message: '[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
+			return RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization());
 		}
 	}//end resolveSchemaAuthorization()
 

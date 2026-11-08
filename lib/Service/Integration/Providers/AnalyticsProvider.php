@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\AnalyticsLink;
-use OCA\OpenRegister\Db\AnalyticsLinkMapper;
+use OCA\OpenRegister\Db\AnalyticsLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -72,14 +72,14 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 	 * @param IDBConnection $db NC DB connection.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IL10N $l10n Localisation.
-	 * @param AnalyticsLinkMapper $analyticsLinkMapper Analytics-link mapper (Tier-2 link table).
+	 * @param AnalyticsLinkMapperInterface $analyticsLinkMapper Analytics-link mapper (Tier-2 link table).
 	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
 	 */
 	public function __construct(
 		private IDBConnection $db,
 		private IAppManager $appManager,
 		private IL10N $l10n,
-		private AnalyticsLinkMapper $analyticsLinkMapper,
+		private AnalyticsLinkMapperInterface $analyticsLinkMapper,
 		private LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -103,9 +103,9 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return AnalyticsLinkMapper
+	 * @return AnalyticsLinkMapperInterface
 	 */
-	protected function linkMapper(): AnalyticsLinkMapper {
+	protected function linkMapper(): AnalyticsLinkMapperInterface {
 		return $this->analyticsLinkMapper;
 	}//end linkMapper()
 

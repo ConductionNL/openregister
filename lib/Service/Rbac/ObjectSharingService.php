@@ -77,7 +77,7 @@ use Throwable;
  * suppression on {@see \OCA\OpenRegister\Service\ShareLinkService}, which spans the
  * same core-share types for the same reason.
  */
-class ObjectSharingService {
+class ObjectSharingService implements ObjectSharingServiceInterface {
 
 	/**
 	 * Share types this service will create or revoke as an object grant.

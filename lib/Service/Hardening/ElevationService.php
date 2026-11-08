@@ -52,7 +52,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class ElevationService {
+class ElevationService implements ElevationServiceInterface {
 
 	/**
 	 * The control that says how long an elevated session lasts.

@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use DateTimeZone;
 use OCA\OpenRegister\Db\CalendarLink;
-use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Db\CalendarLinkMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\IUserManager;
@@ -196,7 +196,7 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 		$this->setWhenAndWhere(link: $link, data: $data);
 		$link->setLinkedBy($app);
 		$link->setLinkedAt(new DateTime());
-		$this->container->get(CalendarLinkMapper::class)->insert($link);
+		$this->container->get(CalendarLinkMapperInterface::class)->insert($link);
 	}//end insertLink()
 
 	/**
@@ -264,7 +264,7 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 */
 	public function revert(array $entry): string {
 		try {
-			$links = $this->container->get(CalendarLinkMapper::class);
+			$links = $this->container->get(CalendarLinkMapperInterface::class);
 			$links->deleteByObjectAndEvent(objectUuid: (string) $entry['object'], eventUid: (string) $entry['uid']);
 			if ($this->lost(entry: $entry) === false) {
 				$this->caldav()->deleteCalendarObject((int) $entry['calendar'], (string) $entry['uri']);

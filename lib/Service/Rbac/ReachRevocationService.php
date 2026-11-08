@@ -55,7 +55,7 @@ use Throwable;
  *
  * @spec openspec/specs/authorization-rbac/spec.md
  */
-class ReachRevocationService {
+class ReachRevocationService implements ReachRevocationServiceInterface {
 	/**
 	 * The rule a revocation runs under, carried on every audit line.
 	 *

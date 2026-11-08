@@ -54,14 +54,7 @@ use UnexpectedValueException;
 /**
  * Reads and records a run's declared subject set.
  */
-class FlowRunSubjects {
-
-	/**
-	 * The role a trigger's own object is recorded under.
-	 *
-	 * @var string
-	 */
-	public const ROLE_TRIGGER = 'trigger';
+class FlowRunSubjects implements FlowRunSubjectsInterface {
 
 	/**
 	 * Constructor.

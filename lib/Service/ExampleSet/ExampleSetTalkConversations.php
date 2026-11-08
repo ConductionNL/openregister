@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TalkLink;
-use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -247,7 +247,10 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 */
 	public function revert(array $entry): string {
 		try {
-			$this->container->get(TalkLinkMapper::class)->deleteByObjectAndRoom(objectUuid: (string) $entry['object'], roomToken: (string) $entry['token']);
+			$this->container->get(TalkLinkMapperInterface::class)->deleteByObjectAndRoom(
+				objectUuid: (string) $entry['object'],
+				roomToken: (string) $entry['token']
+			);
 			if (($entry['createdRoom'] ?? false) === true && $this->store()->roomExists(token: (string) $entry['token']) === true) {
 				$this->store()->deleteRoom(token: (string) $entry['token']);
 			}
@@ -267,7 +270,7 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 	 * @return int The link id.
 	 */
 	private function link(ObjectEntity $object, array $conversation): int {
-		$mapper   = $this->container->get(TalkLinkMapper::class);
+		$mapper   = $this->container->get(TalkLinkMapperInterface::class);
 		$existing = $mapper->findByObjectAndRoom((string) $conversation['data']['object'], $conversation['room']['token']);
 		if ($existing !== null) {
 			return (int) $existing->getId();

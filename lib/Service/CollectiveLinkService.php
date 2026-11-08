@@ -57,7 +57,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\CollectiveLink;
-use OCA\OpenRegister\Db\CollectiveLinkMapper;
+use OCA\OpenRegister\Db\CollectiveLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -91,7 +91,7 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CollectiveLinkMapper $collectiveLinkMapper Persistence for link rows.
+	 * @param CollectiveLinkMapperInterface $collectiveLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound Collectives classes.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
@@ -99,7 +99,7 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly CollectiveLinkMapper $collectiveLinkMapper,
+		private readonly CollectiveLinkMapperInterface $collectiveLinkMapper,
 		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,

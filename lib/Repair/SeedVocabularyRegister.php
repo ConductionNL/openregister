@@ -36,7 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
+use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCP\App\IAppManager;
@@ -93,7 +93,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationServiceInterface $configurationService The OR configuration importer (register/schema).
+	 * @param AppConfigurationImporterInterface $configurationService The OR configuration importer (register/schema).
 	 * @param VocabularyImporterInterface $importService The SKOS/JSON-LD import service (concept data).
 	 * @param IAppManager $appManager Resolves the openregister app path on disk.
 	 * @param LoggerInterface $logger Logger for seed diagnostics.
@@ -101,7 +101,7 @@ class SeedVocabularyRegister implements IRepairStep {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ConfigurationServiceInterface $configurationService,
+		private readonly AppConfigurationImporterInterface $configurationService,
 		private readonly VocabularyImporterInterface $importService,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,

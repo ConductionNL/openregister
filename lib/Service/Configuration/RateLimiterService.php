@@ -49,7 +49,7 @@ use OCP\ICacheFactory;
  *
  * @psalm-suppress UnusedClass
  */
-class RateLimiterService {
+class RateLimiterService implements RateLimiterServiceInterface {
 	/**
 	 * Distributed cache namespace shared by all rate-limit buckets in this service.
 	 */

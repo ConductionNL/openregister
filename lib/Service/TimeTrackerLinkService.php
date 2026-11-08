@@ -52,7 +52,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\TimeTrackerLink;
-use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
+use OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -124,7 +124,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param TimeTrackerLinkMapper $timeTrackerLinkMapper Persistence for link rows.
+	 * @param TimeTrackerLinkMapperInterface $timeTrackerLinkMapper Persistence for link rows.
 	 * @param IDBConnection $db DB connection for upstream client/task lookups.
 	 * @param ContainerInterface $container Container for late-bound TimeManager classes.
 	 * @param IAppManager $appManager NC app manager.
@@ -136,7 +136,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * the Tier-2 service pattern and abbreviating it would obscure its purpose.
 	 */
 	public function __construct(
-		private readonly TimeTrackerLinkMapper $timeTrackerLinkMapper,
+		private readonly TimeTrackerLinkMapperInterface $timeTrackerLinkMapper,
 		private readonly IDBConnection $db,
 		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,

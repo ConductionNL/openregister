@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -181,7 +182,7 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 			$container = $this->createMock(ContainerInterface::class);
 			$container->method('get')->willReturnCallback(
 				function (string $id) use ($rbac) {
-					if ($id === PropertyRbacHandler::class) {
+					if ($id === PropertyRbacHandlerInterface::class) {
 						return $rbac;
 					}
 

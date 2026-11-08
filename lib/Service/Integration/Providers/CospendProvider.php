@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
 use OCA\OpenRegister\Db\CospendLink;
-use OCA\OpenRegister\Db\CospendLinkMapper;
+use OCA\OpenRegister\Db\CospendLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -95,7 +95,7 @@ class CospendProvider extends AbstractIntegrationProvider {
 	 * @param IDBConnection $db NC DB connection.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IL10N $l10n Localisation.
-	 * @param CospendLinkMapper $cospendLinkMapper Tier-2 link table mapper.
+	 * @param CospendLinkMapperInterface $cospendLinkMapper Tier-2 link table mapper.
 	 * @param ContainerInterface|null $container Optional server-container override (tests).
 	 *
 	 * @return void
@@ -104,7 +104,7 @@ class CospendProvider extends AbstractIntegrationProvider {
 		private IDBConnection $db,
 		private IAppManager $appManager,
 		private IL10N $l10n,
-		private CospendLinkMapper $cospendLinkMapper,
+		private CospendLinkMapperInterface $cospendLinkMapper,
 		?ContainerInterface $container = null,
 	) {
 		$this->container = $container;
@@ -129,9 +129,9 @@ class CospendProvider extends AbstractIntegrationProvider {
 	/**
 	 * The link mapper this provider reads first.
 	 *
-	 * @return CospendLinkMapper
+	 * @return CospendLinkMapperInterface
 	 */
-	protected function linkMapper(): CospendLinkMapper {
+	protected function linkMapper(): CospendLinkMapperInterface {
 		return $this->cospendLinkMapper;
 	}//end linkMapper()
 

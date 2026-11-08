@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTime;
 use OCA\OpenRegister\Db\DeckLink;
-use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCP\IUserManager;
@@ -227,7 +227,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 * @return void
 	 */
 	private function deleteCard(ExampleSetDeckStore $store, array $entry): void {
-		$this->container->get(DeckLinkMapper::class)->deleteByObjectAndCard(objectUuid: (string) $entry['object'], cardId: (int) $entry['card']);
+		$this->container->get(DeckLinkMapperInterface::class)->deleteByObjectAndCard(objectUuid: (string) $entry['object'], cardId: (int) $entry['card']);
 		$store->deleteCard(card: (int) $entry['card']);
 		foreach ((array) ($entry['createdLabels'] ?? []) as $label) {
 			$store->deleteLabel(label: (int) $label);
@@ -346,7 +346,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 		$link->setLinkedBy($app);
 		$link->setLinkedAt(new DateTime());
 
-		return (int) $this->container->get(DeckLinkMapper::class)->insert($link)->getId();
+		return (int) $this->container->get(DeckLinkMapperInterface::class)->insert($link)->getId();
 	}//end link()
 
 	/**

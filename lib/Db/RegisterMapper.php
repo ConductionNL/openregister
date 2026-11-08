@@ -27,10 +27,8 @@ use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
-use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
 use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
@@ -692,7 +690,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		// unknown verb used to survive longest. It matched nothing, so it
 		// granted nothing, and the role read as correctly configured in every
 		// screen that showed it.
-		(new PermissionCatalogue(eventDispatcher: $this->eventDispatcher))->assertGrantable(
+		AccessDeclarationValidators::permissionCatalogue(eventDispatcher: $this->eventDispatcher)->assertGrantable(
 			authorization: $authorization,
 			roleDefinitions: $roleDefinitions,
 			subject: $subject
@@ -705,7 +703,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		(new MetadataConditionFindings(db: $this->db))->assertRegisterSavable(register: $register, subject: $subject);
 		(new UnknownRuleKeyFindings(db: $this->db))->assertRegisterSavable(register: $register, subject: $subject);
 
-		(new AuthorizationDenyValidator(denyResolver: new DenyResolver()))->assertStorable(
+		AccessDeclarationValidators::denyValidator()->assertStorable(
 			authorization: $authorization,
 			subject: $subject
 		);

@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  *
  * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
  */
-class ShippedBaselineResetService {
+class ShippedBaselineResetService implements ShippedBaselineResetServiceInterface {
 
 	/**
 	 * The schema parts the guard keeps a baseline of.

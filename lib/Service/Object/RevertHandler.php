@@ -48,7 +48,7 @@ use Psr\Container\ContainerInterface;
  * lock. Splitting the class to avoid naming one more type would trade a real
  * guard for a metric.
  */
-class RevertHandler {
+class RevertHandler implements RevertHandlerInterface {
 
 	/**
 	 * Audit trail mapper
@@ -81,16 +81,16 @@ class RevertHandler {
 	/**
 	 * Permission handler for RBAC enforcement
 	 *
-	 * @var PermissionHandlerInterface
+	 * @var PermissionCheckInterface
 	 */
-	private PermissionHandlerInterface $permissionHandler;
+	private PermissionCheckInterface $permissionHandler;
 
 	/**
 	 * Validator the save path uses, so a revert meets the same schema.
 	 *
-	 * @var ValidateObjectInterface
+	 * @var ObjectValidatorInterface
 	 */
-	private ValidateObjectInterface $validateHandler;
+	private ObjectValidatorInterface $validateHandler;
 
 	/**
 	 * RevertHandler constructor.
@@ -99,16 +99,16 @@ class RevertHandler {
 	 * @param ContainerInterface $container DI container.
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher.
 	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper.
-	 * @param PermissionHandlerInterface $permissionHandler Permission handler for RBAC.
-	 * @param ValidateObjectInterface $validateHandler Schema validator of the save path.
+	 * @param PermissionCheckInterface $permissionHandler Permission handler for RBAC.
+	 * @param ObjectValidatorInterface $validateHandler Schema validator of the save path.
 	 */
 	public function __construct(
 		AuditTrailMapperInterface $auditTrailMapper,
 		ContainerInterface $container,
 		IEventDispatcher $eventDispatcher,
 		MagicMapperInterface $objectEntityMapper,
-		PermissionHandlerInterface $permissionHandler,
-		ValidateObjectInterface $validateHandler,
+		PermissionCheckInterface $permissionHandler,
+		ObjectValidatorInterface $validateHandler,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
 		$this->container = $container;

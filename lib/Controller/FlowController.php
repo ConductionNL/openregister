@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\FlowControllerServices;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 use OCA\OpenRegister\Exception\FlowRunRefused;
@@ -137,9 +137,9 @@ class FlowController extends Controller {
 	/**
 	 * Reads state a flow keeps between runs.
 	 *
-	 * @var FlowStateMapper
+	 * @var FlowStateMapperInterface
 	 */
-	private readonly FlowStateMapper $flowState;
+	private readonly FlowStateMapperInterface $flowState;
 
 	/**
 	 * Resolves a document's step types.

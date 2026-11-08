@@ -33,6 +33,8 @@ use OCA\OpenRegister\Exception\RepairRefusedException;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
 use OCA\OpenRegister\Service\Operations\ConsistencyRepairServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
+use OCA\OpenRegister\Service\Operations\JobRunFilter;
+use OCA\OpenRegister\Service\Operations\JobScheduleChange;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
@@ -259,12 +261,10 @@ class OperationsControllersA24GoldenTest extends TestCase {
 	public function testRunsParsesFilters(): void {
 		$this->jobs->method('runs')->willReturnCallback(
 			fn (
-				?string $jobClass,
-				?string $outcome,
-				?int $windowHours,
+				JobRunFilter $filter,
 				int $limit,
 				int $offset
-			): array => [$jobClass, $outcome, $windowHours, $limit, $offset]
+			): array => [$filter->jobClass, $filter->outcome, $filter->windowHours, $limit, $offset]
 		);
 		$this->assertSame(
 			['J', 'failed', 3, 10, 20],
@@ -323,7 +323,13 @@ class OperationsControllersA24GoldenTest extends TestCase {
 	 */
 	public function testScheduleAdministered(): void {
 		$this->jobs->expects($this->exactly(2))->method('administerSchedule')->willReturnCallback(
-			fn (string $jobClass, ?bool $enabled, ?int $intervalSeconds, ?int $windowStartHour, ?int $windowEndHour): array => func_get_args()
+			fn (string $jobClass, JobScheduleChange $change): array => [
+				$jobClass,
+				$change->enabled,
+				$change->intervalSeconds,
+				$change->windowStartHour,
+				$change->windowEndHour,
+			]
 		);
 		$r = $this->consoleController(
 			['job' => 'J', 'enabled' => false, 'intervalSeconds' => '60', 'windowStartHour' => 1, 'windowEndHour' => 'x'],

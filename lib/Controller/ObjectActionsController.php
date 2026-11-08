@@ -44,12 +44,12 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Flow\FlowNextHint;
+use OCA\OpenRegister\Service\Flow\FlowNextHintsInterface;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -117,9 +117,9 @@ class ObjectActionsController extends Controller {
 	/**
 	 * Reads the runs recorded on an object.
 	 *
-	 * @var ObjectActionHistory
+	 * @var ObjectActionHistoryInterface
 	 */
-	private readonly ObjectActionHistory $history;
+	private readonly ObjectActionHistoryInterface $history;
 
 	/**
 	 * Hands a large selection to a bulk job.
@@ -383,7 +383,7 @@ class ObjectActionsController extends Controller {
 				'action' => $selection->action,
 				'summary' => ['succeeded' => $succeeded, 'failed' => (count($results) - $succeeded)],
 				'results' => $results,
-				'next' => ($definition->next ?? FlowNextHint::LIST),
+				'next' => ($definition->next ?? FlowNextHintsInterface::LIST),
 			]
 		);
 	}//end runSelection()

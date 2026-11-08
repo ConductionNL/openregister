@@ -54,7 +54,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiCaller
  */
-class CallerRateLimiter {
+class CallerRateLimiter implements CallerRateLimiterInterface {
 
 	/**
 	 * Cache key prefix for the per-caller counters.

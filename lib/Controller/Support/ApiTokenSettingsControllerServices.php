@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 
@@ -39,7 +39,7 @@ final class ApiTokenSettingsControllerServices {
 	 * @param IAppConfig           $config             App configuration.
 	 * @param AppSettingsInterface $settingsService    Settings service.
 	 * @param IClientService       $clientService      HTTP client factory for the token probes.
-	 * @param ConnectionReporter   $connectionReporter Tells integriq's connection registry about saves and token tests.
+	 * @param ConnectionReporterInterface   $connectionReporter Tells integriq's connection registry about saves and token tests.
 	 *
 	 * @spec openspec/specs/production-observability/spec.md
 	 */
@@ -47,7 +47,7 @@ final class ApiTokenSettingsControllerServices {
 		public readonly IAppConfig $config,
 		public readonly AppSettingsInterface $settingsService,
 		public readonly IClientService $clientService,
-		public readonly ConnectionReporter $connectionReporter,
+		public readonly ConnectionReporterInterface $connectionReporter,
 	) {
 	}//end __construct()
 }//end class

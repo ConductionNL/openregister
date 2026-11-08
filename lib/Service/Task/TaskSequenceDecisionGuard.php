@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskSequence;
-use OCA\OpenRegister\Db\TaskSequenceMapper;
+use OCA\OpenRegister\Db\TaskSequenceMapperInterface;
 use OCA\OpenRegister\Exception\TaskSeparationOfDutiesException;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -51,10 +51,10 @@ class TaskSequenceDecisionGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskSequenceMapper $sequences Resolves the task's sequence.
+	 * @param TaskSequenceMapperInterface $sequences Resolves the task's sequence.
 	 */
 	public function __construct(
-		private readonly TaskSequenceMapper $sequences,
+		private readonly TaskSequenceMapperInterface $sequences,
 	) {
 
 	}//end __construct()

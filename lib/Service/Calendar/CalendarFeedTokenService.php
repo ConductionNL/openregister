@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Calendar;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CalendarFeedToken;
-use OCA\OpenRegister\Db\CalendarFeedTokenMapper;
+use OCA\OpenRegister\Db\CalendarFeedTokenMapperInterface;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 
@@ -61,12 +61,12 @@ class CalendarFeedTokenService {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalendarFeedTokenMapper $mapper The token store.
+	 * @param CalendarFeedTokenMapperInterface $mapper The token store.
 	 * @param ISecureRandom $secureRandom Nextcloud's secure RNG.
 	 * @param IURLGenerator $urlGenerator The URL generator, for the subscribable link.
 	 */
 	public function __construct(
-		private readonly CalendarFeedTokenMapper $mapper,
+		private readonly CalendarFeedTokenMapperInterface $mapper,
 		private readonly ISecureRandom $secureRandom,
 		private readonly IURLGenerator $urlGenerator,
 	) {

@@ -70,22 +70,35 @@ class FormDependentsCheck {
 	private array $claimed = [];
 
 	/**
+	 * Asks the owning apps for their forms.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $dispatcher;
+
+	/**
+	 * Tells an author their form was unpublished.
+	 *
+	 * @var IManager
+	 */
+	private readonly IManager $notifications;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IEventDispatcher         $dispatcher    Asks the owning apps for their forms.
-	 * @param FormDestinationValidator $validator     Judges each form.
-	 * @param IAppConfig               $appConfig     Reads each owning app's break setting.
-	 * @param IManager                 $notifications Tells an author their form was unpublished.
-	 * @param LoggerInterface          $logger        Records an unpublish that failed.
+	 * @param FormDependentsSignals    $signals   The event and notification channels the form dependents check reports through.
+	 * @param FormDestinationValidator $validator Judges each form.
+	 * @param IAppConfig               $appConfig Reads each owning app's break setting.
+	 * @param LoggerInterface          $logger    Records an unpublish that failed.
 	 */
 	public function __construct(
-		private readonly IEventDispatcher $dispatcher,
+		FormDependentsSignals $signals,
 		private readonly FormDestinationValidator $validator,
 		private readonly IAppConfig $appConfig,
-		private readonly IManager $notifications,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->dispatcher = $signals->dispatcher;
+		$this->notifications = $signals->notifications;
 	}//end __construct()
 
 	/**

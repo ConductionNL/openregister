@@ -36,12 +36,12 @@ use OCA\OpenRegister\Listener\Support\CalculationOnSaveEngine;
 use OCA\OpenRegister\Listener\Support\CalculationOnSaveLookups;
 use OCA\OpenRegister\Listener\Support\CalculationSaveRun;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
-use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
+use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -450,7 +450,7 @@ class CalculationOnSaveListener implements IEventListener {
 		}
 
 		$config = ($schema->getConfiguration() ?? []);
-		$merged = (new PropertyCalculations())->merge(
+		$merged = SchemaDeclarationValidators::propertyCalculations()->merge(
 			annotation: $this->arrayOrEmpty(value: ($config['x-openregister-calculations'] ?? [])),
 			properties: $this->arrayOrEmpty(value: ($schema->getProperties() ?? []))
 		);

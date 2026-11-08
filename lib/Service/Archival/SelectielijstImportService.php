@@ -64,7 +64,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Importing register objects needs the
  *              register, the schema, the settings that name both, and the save path.
  */
-class SelectielijstImportService {
+class SelectielijstImportService implements SelectielijstImportServiceInterface {
 
 	/**
 	 * The property each imported row carries its version under.

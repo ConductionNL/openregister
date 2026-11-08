@@ -27,11 +27,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices;
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
-use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
-use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\SftpTransport;
+use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
+use OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\SftpTransportInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -88,37 +88,37 @@ class EdepotSettingsController extends Controller {
 	/**
 	 * The transfer service.
 	 *
-	 * @var EdepotTransferService
+	 * @var EdepotTransferServiceInterface
 	 */
-	private readonly EdepotTransferService $transferService;
+	private readonly EdepotTransferServiceInterface $transferService;
 
 	/**
 	 * SFTP transport.
 	 *
-	 * @var SftpTransport
+	 * @var SftpTransportInterface
 	 */
-	private readonly SftpTransport $sftpTransport;
+	private readonly SftpTransportInterface $sftpTransport;
 
 	/**
 	 * REST API transport.
 	 *
-	 * @var RestApiTransport
+	 * @var RestApiTransportInterface
 	 */
-	private readonly RestApiTransport $restTransport;
+	private readonly RestApiTransportInterface $restTransport;
 
 	/**
 	 * OpenConnector transport.
 	 *
-	 * @var OpenConnectorTransport
+	 * @var OpenConnectorTransportInterface
 	 */
-	private readonly OpenConnectorTransport $ocTransport;
+	private readonly OpenConnectorTransportInterface $ocTransport;
 
 	/**
 	 * Reports connection test outcomes to integriq's connection registry.
 	 *
-	 * @var ConnectionReporter
+	 * @var ConnectionReporterInterface
 	 */
-	private readonly ConnectionReporter $connectionReporter;
+	private readonly ConnectionReporterInterface $connectionReporter;
 
 	/**
 	 * Constructor.

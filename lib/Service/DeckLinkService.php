@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\DeckLink;
-use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -68,7 +68,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param DeckLinkMapper $deckLinkMapper Persistence for link rows.
+	 * @param DeckLinkMapperInterface $deckLinkMapper Persistence for link rows.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
 	 * @param IUserManager $userManager User lookup for assignee displayName.
@@ -76,7 +76,7 @@ class DeckLinkService implements DeckLinkServiceInterface {
 	 * @param ContainerInterface $container App container Deck's services are resolved from.
 	 */
 	public function __construct(
-		private readonly DeckLinkMapper $deckLinkMapper,
+		private readonly DeckLinkMapperInterface $deckLinkMapper,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,

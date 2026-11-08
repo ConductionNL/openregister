@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\ObjectStreamingSaveInterface;
-use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
 
 /**
  * Services of the bulk API.
@@ -39,7 +39,7 @@ final class BulkStore {
 	 * @param RegisterMapperInterface      $registerMapper   Mapper for resolving registers (RBAC gates)
 	 * @param SchemaMapperInterface        $schemaMapper     Mapper for resolving schemas (RBAC gates)
 	 * @param ObjectStreamingSaveInterface $objectService    The object service, with the streaming save
-	 * @param ?SchemaManageGate            $schemaManageGate Who may manage a schema. Built from the collaborators above when null.
+	 * @param ?SchemaManageGateInterface            $schemaManageGate Who may manage a schema. Built from the collaborators above when null.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -47,7 +47,7 @@ final class BulkStore {
 		public readonly RegisterMapperInterface $registerMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly ObjectStreamingSaveInterface $objectService,
-		public readonly ?SchemaManageGate $schemaManageGate = null,
+		public readonly ?SchemaManageGateInterface $schemaManageGate = null,
 	) {
 	}//end __construct()
 }//end class

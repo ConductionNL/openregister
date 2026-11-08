@@ -32,18 +32,18 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
-use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
-use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\TmloServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -63,10 +63,10 @@ class TmloController extends Controller {
 	 * @var array<int, string>
 	 */
 	private const ARCHIEFSTATUSES = [
-		TmloService::ARCHIEFSTATUS_ACTIEF,
-		TmloService::ARCHIEFSTATUS_SEMI_STATISCH,
-		TmloService::ARCHIEFSTATUS_OVERGEBRACHT,
-		TmloService::ARCHIEFSTATUS_VERNIETIGD,
+		TmloServiceInterface::ARCHIEFSTATUS_ACTIEF,
+		TmloServiceInterface::ARCHIEFSTATUS_SEMI_STATISCH,
+		TmloServiceInterface::ARCHIEFSTATUS_OVERGEBRACHT,
+		TmloServiceInterface::ARCHIEFSTATUS_VERNIETIGD,
 	];
 
 	/**
@@ -86,9 +86,9 @@ class TmloController extends Controller {
 	/**
 	 * TMLO metadata service
 	 *
-	 * @var TmloService
+	 * @var TmloServiceInterface
 	 */
-	private readonly TmloService $tmloService;
+	private readonly TmloServiceInterface $tmloService;
 
 	/**
 	 * Object service for querying objects
