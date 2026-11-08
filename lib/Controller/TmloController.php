@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Export\ExportGate;
+use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCA\OpenRegister\Service\TmloServiceInterface;
@@ -115,9 +115,9 @@ class TmloController extends Controller {
 	/**
 	 * The export verb, checked before any archival metadata leaves.
 	 *
-	 * @var ExportGate
+	 * @var ExportGateInterface
 	 */
-	private readonly ExportGate $exportGate;
+	private readonly ExportGateInterface $exportGate;
 
 	/**
 	 * Constructor.

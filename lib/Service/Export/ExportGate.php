@@ -44,7 +44,7 @@ use Throwable;
  *
  * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
  */
-class ExportGate {
+class ExportGate implements ExportGateInterface {
 
 	/**
 	 * Constructor.
