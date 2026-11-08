@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -126,10 +127,9 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$container,
 					$this->createMock(IUserSession::class),
 					$this->createMock(IRequest::class),
-					$this->createMock(LoggerInterface::class),
+					new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class)),
 				]
 			)
 			->onlyMethods(['insert'])
