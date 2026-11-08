@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Service;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCA\OpenRegister\Notifications\Service\Notification\SystemSchemaRules;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
 use OCP\IConfig;
@@ -226,7 +227,7 @@ class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 			return new NotificationPreferenceService($config, $mapper, $this->createMock(LoggerInterface::class));
 		}
 
-		return new NotificationPreferenceService($config, $mapper, $this->createMock(LoggerInterface::class), $this->groupManager(groups: $groups), $this->userManager());
+		return new NotificationPreferenceService($config, $mapper, $this->createMock(LoggerInterface::class), new UserGroupServices($this->groupManager(groups: $groups), $this->userManager()));
 	}//end service()
 
 	private function read(string $key, string $default): string {
