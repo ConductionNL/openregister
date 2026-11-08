@@ -59,6 +59,20 @@ use UnexpectedValueException;
  * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
  */
 class TaskFormReader {
+	/**
+	 * Resolves the subject schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * Reads a transition's declared inputs.
+	 *
+	 * @var TransitionEngine
+	 */
+	private readonly TransitionEngine $engine;
+
 
 	/**
 	 * The Nextcloud app the external kind depends on.
@@ -91,19 +105,19 @@ class TaskFormReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface $schemas Resolves the subject schema.
-	 * @param TransitionEngine $engine Reads a transition's declared inputs.
+	 * @param TaskFormSources $sources The subject schema and the transition's declared inputs.
 	 * @param IAppManager $apps Answers whether the Forms app is installed.
 	 * @param IL10N $l10n Translations, for refusals an author reads.
 	 * @param FormDestinationValidator|null $validator The field check this reader delegates to; built from $l10n when absent.
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemas,
-		private readonly TransitionEngine $engine,
+		TaskFormSources $sources,
 		private readonly IAppManager $apps,
 		private readonly IL10N $l10n,
 		?FormDestinationValidator $validator = null,
 	) {
+		$this->schemas = $sources->schemas;
+		$this->engine  = $sources->engine;
 		$this->validator = ($validator ?? new FormDestinationValidator(l10n: $l10n, rules: new FormFieldRules()));
 	}//end __construct()
 
