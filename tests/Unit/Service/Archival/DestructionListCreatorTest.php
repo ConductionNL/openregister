@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
+use OCA\OpenRegister\Service\Archival\DestructionListWriter;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -116,8 +117,7 @@ class DestructionListCreatorTest extends TestCase {
 
 		$this->creator = new DestructionListCreator(
 			retention: $retention,
-			objectMapper: $objectMapper,
-			saveObject: $saveObject,
+			writer: new DestructionListWriter(objectMapper: $objectMapper, saveObject: $saveObject),
 			settingsHandler: $settings,
 			logger: $this->createMock(LoggerInterface::class)
 		);

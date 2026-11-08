@@ -19,6 +19,7 @@ namespace Unit\Service\Archival;
 use RuntimeException;
 use Throwable;
 use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -77,7 +78,7 @@ class SelectielijstImportServiceGoldenTest extends TestCase {
 			}
 		);
 
-		return new SelectielijstImportService($handler, $registerMapper, $schemaMapper, $objectMapper, $saveObject, new NullLogger());
+		return new SelectielijstImportService($handler, new ArchivalRegisterMappers($registerMapper, $schemaMapper, $objectMapper), $saveObject, new NullLogger());
 	}
 
 	/**

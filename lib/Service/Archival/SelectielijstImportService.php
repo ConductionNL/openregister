@@ -38,10 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
@@ -102,17 +99,13 @@ class SelectielijstImportService implements SelectielijstImportServiceInterface 
 	 * Constructor.
 	 *
 	 * @param ArchivalSettingsReaderInterface $settingsHandler Names the selectielijst register and schema.
-	 * @param RegisterMapperInterface         $registerMapper  Resolves the register.
-	 * @param SchemaMapperInterface           $schemaMapper    Resolves the schema.
-	 * @param MagicMapperInterface            $objectMapper    Reads the rows already stored.
+	 * @param ArchivalRegisterMappers $mappers The register, schema and object mappers.
 	 * @param SaveObjectWriterInterface             $saveObject      Writes an imported row.
 	 * @param LoggerInterface        $logger          Reports a row that could not be stored.
 	 */
 	public function __construct(
 		private readonly ArchivalSettingsReaderInterface $settingsHandler,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
+		private readonly ArchivalRegisterMappers $mappers,
 		private readonly SaveObjectWriterInterface $saveObject,
 		private readonly LoggerInterface $logger,
 	) {
@@ -604,7 +597,7 @@ class SelectielijstImportService implements SelectielijstImportServiceInterface 
 		}
 
 		try {
-			return $this->objectMapper->findAll(limit: self::MAX_ROWS, register: $register, schema: $schema);
+			return $this->mappers->objectMapper->findAll(limit: self::MAX_ROWS, register: $register, schema: $schema);
 		} catch (Throwable $e) {
 			$this->logger->warning('[SelectielijstImportService] Could not read the selectielijst: ' . $e->getMessage());
 			return [];
@@ -648,8 +641,8 @@ class SelectielijstImportService implements SelectielijstImportServiceInterface 
 		}
 
 		return [
-			$this->registerMapper->find((int)$registerId),
-			$this->schemaMapper->find((int)$schemaId),
+			$this->mappers->registerMapper->find((int)$registerId),
+			$this->mappers->schemaMapper->find((int)$schemaId),
 		];
 	}//end target()
 }//end class
