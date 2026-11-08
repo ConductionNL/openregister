@@ -28,7 +28,7 @@ use DateTime;
  * The methods of ObjectReadStateMapper that callers outside the Db component use.
  *
  * Callers type against this interface and resolve it from the container; the
- * registrar binds it to ObjectReadStateMapper.
+ * registrar binds it to ObjectReadStateMapper. Guarded by C04InterfaceBindingsTest.
  */
 interface ObjectReadStateMapperInterface {
 

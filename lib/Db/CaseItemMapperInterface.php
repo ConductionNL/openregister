@@ -28,7 +28,7 @@ use OCP\AppFramework\Db\Entity;
  * The methods of CaseItemMapper that callers outside the Db component use.
  *
  * Callers type against this interface and resolve it from the container; the
- * registrar binds it to CaseItemMapper.
+ * registrar binds it to CaseItemMapper. Guarded by C04InterfaceBindingsTest.
  */
 interface CaseItemMapperInterface {
 
