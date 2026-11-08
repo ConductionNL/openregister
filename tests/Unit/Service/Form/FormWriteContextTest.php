@@ -33,6 +33,7 @@ class FormWriteContextTest extends TestCase {
 
 	public function testAUsersWriteIsUnderRbacAndOwned(): void {
 		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
 		$context = new FormWriteContext(subject: $user, owner: DraftOwner::ofUser(user: $user));
 
 		$this->assertFalse($context->isScoped());
