@@ -33,7 +33,6 @@ use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
-use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
@@ -298,13 +297,7 @@ class ChatService implements ChatServiceInterface {
 	 * @return void
 	 */
 	private function recordUserMessage(ChatMessageRequest $request, Conversation $conversation): void {
-		$this->historyHandler->storeMessage(
-			conversationId: $request->conversationId,
-			role: Message::ROLE_USER,
-			content: $request->userMessage,
-			sources: null,
-			context: $request->cnAiContext
-		);
+		$this->historyHandler->storeUserMessage(request: $request);
 
 		$this->conversationHandler->checkAndSummarize($conversation);
 	}//end recordUserMessage()
@@ -365,9 +358,8 @@ class ChatService implements ChatServiceInterface {
 	 * @return array The reply, its stored message id, sources and timings.
 	 */
 	private function storeAnswer(ChatMessageRequest $request, array $answer): array {
-		$assistantStored = $this->historyHandler->storeMessage(
+		$assistantStored = $this->historyHandler->storeAssistantMessage(
 			conversationId: $request->conversationId,
-			role: Message::ROLE_ASSISTANT,
 			content: $answer['message'],
 			sources: $answer['sources']
 		);

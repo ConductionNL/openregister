@@ -116,8 +116,12 @@ class ChatServiceTest extends TestCase {
 			->willReturn($conversation);
 
 		$this->historyHandler
-			->expects($this->exactly(2))
-			->method('storeMessage');
+			->expects($this->once())
+			->method('storeUserMessage');
+
+		$this->historyHandler
+			->expects($this->once())
+			->method('storeAssistantMessage');
 
 		$this->conversationHandler
 			->expects($this->once())

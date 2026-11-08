@@ -83,11 +83,17 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 		});
 
 		$history = $this->createMock(MessageHistoryHandler::class);
-		$history->method('storeMessage')->willReturnCallback(
-			function (int $conversationId, string $role, string $content, ?array $sources = null, ?array $context = null) use ($s) {
-				$this->calls[] = ['history.store', $conversationId, $role, $content, $sources, $context];
+		$history->method('storeUserMessage')->willReturnCallback(
+			function (ChatMessageRequest $request) {
+				$this->calls[] = ['history.store', $request->conversationId, Message::ROLE_USER, $request->userMessage, null, $request->cnAiContext];
+				return new Message();
+			}
+		);
+		$history->method('storeAssistantMessage')->willReturnCallback(
+			function (int $conversationId, string $content, ?array $sources) use ($s) {
+				$this->calls[] = ['history.store', $conversationId, Message::ROLE_ASSISTANT, $content, $sources, null];
 				$message = new Message();
-				if ($role === Message::ROLE_ASSISTANT && $s['storedId'] !== null) {
+				if ($s['storedId'] !== null) {
 					$message->setId($s['storedId']);
 				}
 				return $message;
