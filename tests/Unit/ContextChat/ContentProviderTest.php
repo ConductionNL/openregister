@@ -31,6 +31,8 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\ContextChat\Support\ContentProviderSources;
+use OCA\OpenRegister\ContextChat\Support\ContentProviderLinks;
 
 /**
  * @covers \OCA\OpenRegister\ContextChat\ContentProvider
@@ -65,11 +67,8 @@ class ContentProviderTest extends TestCase {
 
 		$this->provider = new ContentProvider(
 			$this->submissionListener,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->magicMapper,
-			$this->deepLinkRegistry,
-			$this->urlGenerator,
+			new ContentProviderSources($this->schemaMapper, $this->registerMapper, $this->magicMapper),
+			new ContentProviderLinks($this->deepLinkRegistry, $this->urlGenerator),
 			$this->createMock(LoggerInterface::class)
 		);
 	}
