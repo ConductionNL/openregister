@@ -463,7 +463,7 @@ class FlowEngine {
 	 *
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
-	private function runSingleHop(FlowWalkHop $hop): ?array {
+	private function runSingleHop(FlowWalkHop $hop): array|null {
 		$pass = $hop->pass;
 		$pinned = $this->placement->pinnedItems(pass: $pass, transitionName: $hop->name());
 		if ($pinned !== null) {
@@ -473,6 +473,26 @@ class FlowEngine {
 			return null;
 		}
 
+		$outcome = $this->dispatchSingleHop(hop: $hop);
+		if ($outcome !== null) {
+			return $outcome;
+		}
+
+		$this->advanceSingle(hop: $hop);
+		return null;
+	}//end runSingleHop()
+
+	/**
+	 * Attribute, check oversight for and dispatch one unpinned hop.
+	 *
+	 * @param FlowWalkHop $hop The hop.
+	 *
+	 * @return array|null The run result when the hop ends the run, null when the walk advances.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	private function dispatchSingleHop(FlowWalkHop $hop): array|null {
+		$pass = $hop->pass;
 		$this->enterHop(hop: $hop);
 
 		try {
@@ -487,17 +507,13 @@ class FlowEngine {
 			return $hop->suspended(suspension: $suspension);
 		} catch (Throwable $e) {
 			$pass->log[] = $hop->failedEntry(error: $e);
-			$outcome = $this->outcomeForFailedStep(hop: $hop, error: $e);
-			if ($outcome !== null) {
-				return $outcome;
-			}
+			return $this->outcomeForFailedStep(hop: $hop, error: $e);
 		} finally {
 			$this->runContext?->pop();
 		}//end try
 
-		$this->advanceSingle(hop: $hop);
 		return null;
-	}//end runSingleHop()
+	}//end dispatchSingleHop()
 
 	/**
 	 * Move the token and the items past a fired hop.
