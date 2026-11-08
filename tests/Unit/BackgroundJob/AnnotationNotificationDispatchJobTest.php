@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\AnnotationNotificationDispatchJob;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
@@ -46,10 +47,12 @@ class AnnotationNotificationDispatchJobTest extends TestCase {
 
 		$this->job = new AnnotationNotificationDispatchJob(
 			time: $this->createMock(ITimeFactory::class),
-			userSession: $this->createMock(IUserSession::class),
-			userManager: $this->userManager,
-			organisation: $this->createMock(OrganisationService::class),
-			logger: $this->createMock(LoggerInterface::class),
+			actor: new ActorForwardingServices(
+				userSession: $this->createMock(IUserSession::class),
+				userManager: $this->userManager,
+				organisation: $this->createMock(OrganisationService::class),
+				logger: $this->createMock(LoggerInterface::class),
+			),
 			resolver: $this->resolver,
 			dispatcher: $this->dispatcher,
 		);

@@ -28,15 +28,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeInterface;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
+use OCA\OpenRegister\BackgroundJob\Support\AutoTransitionServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
-use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -67,36 +67,58 @@ use Throwable;
 class AutoTransitionJob extends ActorForwardedJob {
 
 	/**
+	 * Resolver for the captured user id, and the disabled check.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Stale-safe entry re-fetch.
+	 *
+	 * @var DeferredEntryObjectResolverInterface
+	 */
+	private readonly DeferredEntryObjectResolverInterface $resolver;
+
+	/**
+	 * The one path every automatic move goes through.
+	 *
+	 * @var TransitionEngine
+	 */
+	private readonly TransitionEngine $engine;
+
+	/**
+	 * The pass, resumed with the entry's carried lineage.
+	 *
+	 * @var AutoTransitionPassInterface
+	 */
+	private readonly AutoTransitionPassInterface $pass;
+
+	/**
 	 * Wire the application collaborators on top of the actor plumbing.
 	 *
-	 * @param ITimeFactory $time Time factory for the parent job class.
-	 * @param IUserSession $userSession Session to impersonate on / restore.
-	 * @param IUserManager $userManager Resolver for the captured user id, and the disabled check.
-	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param DeferredEntryObjectResolverInterface $resolver Stale-safe entry re-fetch.
-	 * @param TransitionEngine $engine The one path every automatic move goes through.
-	 * @param AutoTransitionPassInterface $pass The pass, resumed with the entry's carried lineage.
+	 * @param ITimeFactory            $time  Time factory for the parent job class.
+	 * @param ActorForwardingServices $actor Session, user manager (also the disabled check), organisation and logger.
+	 * @param AutoTransitionServices  $moves Entry re-fetch, the transition engine and the pass.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		IUserSession $userSession,
-		private readonly IUserManager $userManager,
-		OrganisationServiceInterface $organisation,
-		LoggerInterface $logger,
-		private readonly DeferredEntryObjectResolverInterface $resolver,
-		private readonly TransitionEngine $engine,
-		private readonly AutoTransitionPassInterface $pass,
+		ActorForwardingServices $actor,
+		AutoTransitionServices $moves,
 	) {
 		parent::__construct(
 			time: $time,
-			userSession: $userSession,
-			userManager: $this->userManager,
-			organisation: $organisation,
-			logger: $logger
+			userSession: $actor->userSession,
+			userManager: $actor->userManager,
+			organisation: $actor->organisation,
+			logger: $actor->logger
 		);
+		$this->userManager = $actor->userManager;
+		$this->resolver = $moves->resolver;
+		$this->engine = $moves->engine;
+		$this->pass = $moves->pass;
 	}//end __construct()
 
 	/**
