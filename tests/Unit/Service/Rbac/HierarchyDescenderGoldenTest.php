@@ -475,4 +475,58 @@ final class HierarchyDescenderGoldenTest extends TestCase {
 			$this->logs
 		);
 	}//end testAnUnreadableParentStopsTheWalk()
+	/**
+	 * Which registers claim a schema whose table lacks the parent column (and so warn).
+	 *
+	 * The registers here are plain objects, so the schemas list reaches the
+	 * descender exactly as written, object-shaped entries and failures included.
+	 *
+	 * @return void
+	 */
+	public function testWhichRegistersClaimTheSchema(): void {
+		$make = static function (int $id, callable $schemas): object {
+			return new class($id, $schemas) {
+				/**
+				 * @param integer  $id      Id.
+				 * @param callable $schemas Answers getSchemas().
+				 */
+				public function __construct(private int $id, private $schemas) {
+				}
+
+				/**
+				 * @return integer
+				 */
+				public function getId(): int {
+					return $this->id;
+				}
+
+				/**
+				 * @return mixed
+				 */
+				public function getSchemas(): mixed {
+					return ($this->schemas)();
+				}
+			};
+		};
+
+		$registers = [
+			$make(1, static fn () => [['id' => 10]]),
+			$make(2, static fn () => [['schema' => '10']]),
+			$make(3, static fn () => [['id' => 9, 'schema' => 10]]),
+			$make(4, static fn () => [['other' => 10]]),
+			$make(5, static fn () => ['9', 10]),
+			$make(6, static fn () => 'not-a-list'),
+			$make(7, static function () {
+				throw new RuntimeException('gone');
+			}),
+			$make(8, static fn () => []),
+		];
+
+		$descender = $this->descender([], [], [$this->schema(10, 'parent')], $registers);
+		$this->assertSame([], $descender->hierarchicalTables());
+		$this->assertSame(
+			['openregister_table_1_10', 'openregister_table_2_10', 'openregister_table_5_10'],
+			array_map(static fn (array $log): string => $log[2]['table'], $this->logs)
+		);
+	}//end testWhichRegistersClaimTheSchema()
 }//end class
