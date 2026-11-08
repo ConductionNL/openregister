@@ -254,7 +254,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		}
 
 		$this->readTrace()->record(method: 'find');
-		\OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'schema.db.read');
+		\OCA\OpenRegister\Service\WritePhase::count(event: 'schema.db.read');
 
 		return $this->loadAndCache(lookup: $lookup);
 	}//end find()
