@@ -59,7 +59,7 @@ use OCA\OpenRegister\Service\Credential\OAuth2InstanceHost;
 use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
 use OCA\OpenRegister\Service\Credential\OAuth2RelayGuardInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2StateServiceInterface;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -107,7 +107,7 @@ class CredentialOauth2Controller extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfaces::OAUTH2_CALLBACK;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::OAUTH2_CALLBACK;
 
 	/**
 	 * Builds authorization URLs and redeems codes.
