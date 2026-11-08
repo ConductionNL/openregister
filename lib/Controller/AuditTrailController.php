@@ -32,16 +32,16 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
-use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
+use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
-use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
-use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
-use OCA\OpenRegister\Service\AuditHashService;
+use OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface;
+use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\LogService;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -81,9 +81,9 @@ class AuditTrailController extends Controller {
 	/**
 	 * The audit hash chain service
 	 *
-	 * @var AuditHashService
+	 * @var AuditHashServiceInterface
 	 */
-	private readonly AuditHashService $auditHashService;
+	private readonly AuditHashServiceInterface $auditHashService;
 
 	/**
 	 * Active user session for caller identity.
@@ -102,30 +102,30 @@ class AuditTrailController extends Controller {
 	/**
 	 * Lists the trail within one caller's read scope.
 	 *
-	 * @var ReadableAuditTrailLister
+	 * @var ReadableAuditTrailListerInterface
 	 */
-	private readonly ReadableAuditTrailLister $readableLister;
+	private readonly ReadableAuditTrailListerInterface $readableLister;
 
 	/**
 	 * The audit page's keyset list and export.
 	 *
-	 * @var AuditTrailPageService
+	 * @var AuditTrailPageServiceInterface
 	 */
-	private readonly AuditTrailPageService $auditPage;
+	private readonly AuditTrailPageServiceInterface $auditPage;
 
 	/**
 	 * One object's history for a non-admin reader of it.
 	 *
-	 * @var ObjectHistoryForReaders
+	 * @var ObjectHistoryForReadersInterface
 	 */
-	private readonly ObjectHistoryForReaders $historyForReaders;
+	private readonly ObjectHistoryForReadersInterface $historyForReaders;
 
 	/**
 	 * Masks explicit-reveal values in the admin lists.
 	 *
-	 * @var ?ExplicitRevealTrailMasker
+	 * @var ?ExplicitRevealTrailMaskerInterface
 	 */
-	private readonly ?ExplicitRevealTrailMasker $revealMasker;
+	private readonly ?ExplicitRevealTrailMaskerInterface $revealMasker;
 
 	/**
 	 * Constructor for AuditTrailController

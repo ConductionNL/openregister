@@ -75,6 +75,7 @@ final class DbRegistrar {
 		CollectiveLinkMapperInterface::class => CollectiveLinkMapper::class,
 		ConsumerMapperInterface::class => ConsumerMapper::class,
 		ContactLinkMapperInterface::class => ContactLinkMapper::class,
+		ContentReportMapperInterface::class => ContentReportMapper::class,
 		CospendLinkMapperInterface::class => CospendLinkMapper::class,
 		DecisionMapperInterface::class => DecisionMapper::class,
 		DeckLinkMapperInterface::class => DeckLinkMapper::class,
