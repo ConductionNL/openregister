@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\TranslationSlot;
+use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -292,12 +294,12 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 	private function mirrorTranslation(ObjectTranslationRequest $request, array $translation): void {
 		try {
 			$this->translationMapper->upsert(
-				objectUuid: (string)$request->object->getUuid(),
-				property: $translation['property'],
-				language: $request->toLong,
-				value: $translation['value'],
-				status: Translation::STATUS_MACHINE_TRANSLATED,
-				translator: 'provider:' . $this->provider->getIdentifier()
+				slot: new TranslationSlot(objectUuid: (string)$request->object->getUuid(), property: $translation['property'], language: $request->toLong),
+				edit: new TranslationEdit(
+					value: $translation['value'],
+					status: Translation::STATUS_MACHINE_TRANSLATED,
+					translator: 'provider:' . $this->provider->getIdentifier()
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(

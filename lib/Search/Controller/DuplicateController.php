@@ -181,7 +181,6 @@ class DuplicateController extends Controller {
 				register: $register,
 				schema: $schema,
 				candidate: $candidate,
-				matchRules: null,
 				threshold: $threshold
 			);
 		} catch (NotAuthorizedException $e) {

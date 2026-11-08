@@ -9,6 +9,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\TranslationEdit;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -60,7 +62,8 @@ class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 		});
 
 		$mapper = $this->createMock(TranslationMapper::class);
-		$mapper->method('upsert')->willReturnCallback(function (...$args) {
+		$mapper->method('upsert')->willReturnCallback(function (TranslationSlot $slot, TranslationEdit $edit) {
+			$args = [$slot->objectUuid, $slot->property, $slot->language, $edit->value, $edit->status, $edit->translator, $edit->sourceLanguage];
 			$this->calls[] = ['upsert', $args];
 			if (($args['property'] ?? '') === 'sidecarFails') {
 				throw new Exception('sidecar down');
