@@ -538,30 +538,26 @@ exports[`list page action menus golden configurations 1`] = `
 </div>
 </div>
 <div>
-<div class="viewTableContainer">
-<table class="viewTable">
+<div data-stub="CnDataTable" data-loading="false" rowclicktoview="" selectalllabel="t:Select All">
+<table>
 <thead>
 <tr>
-<th class="tableColumnCheckbox">
-<x-nccheckboxradioswitch modelvalue="false" indeterminate="false" aria-label="t:Select All">
-</x-nccheckboxradioswitch>
+<th class="stub-checkbox">
 </th>
-<th scope="col">t:Title</th>
-<th scope="col">t:Source</th>
-<th scope="col">t:Local Version</th>
-<th scope="col">t:Remote Version</th>
-<th scope="col">t:Status</th>
-<th scope="col">t:Updated</th>
-<th scope="col" class="tableColumnActions">t:Actions</th>
+<th>t:Title</th>
+<th>t:Source</th>
+<th>t:Local Version</th>
+<th>t:Remote Version</th>
+<th>t:Status</th>
+<th>t:Updated</th>
+<th>t:Actions</th>
 </tr>
 </thead>
 <tbody>
-<tr class="viewTableRow">
-<td class="tableColumnCheckbox">
-<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="configuration-row-title-1">
-</x-nccheckboxradioswitch>
+<tr>
+<td class="stub-checkbox">
 </td>
-<td id="configuration-row-title-1" class="tableColumnTitle">
+<td>
 <div class="titleContent">
 <strong>Local</strong>
 </div>
@@ -577,7 +573,7 @@ exports[`list page action menus golden configurations 1`] = `
 </div>
 </td>
 <td>-</td>
-<td class="tableColumnActions">
+<td>
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
@@ -612,12 +608,10 @@ exports[`list page action menus golden configurations 1`] = `
 </x-ncactions>
 </td>
 </tr>
-<tr class="viewTableRow">
-<td class="tableColumnCheckbox">
-<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="configuration-row-title-2">
-</x-nccheckboxradioswitch>
+<tr>
+<td class="stub-checkbox">
 </td>
-<td id="configuration-row-title-2" class="tableColumnTitle">
+<td>
 <div class="titleContent">
 <strong>Remote</strong>
 </div>
@@ -636,7 +630,7 @@ exports[`list page action menus golden configurations 1`] = `
 </div>
 </td>
 <td>-</td>
-<td class="tableColumnActions">
+<td>
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
