@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Object\Permission;
 
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
-use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 
 /**
@@ -38,7 +38,7 @@ final class PermissionRuleServices {
 	 *
 	 * @param ConditionMatcher     $conditionMatcher    Shared PHP-side match evaluator (ADR-011).
 	 * @param ?IEventDispatcher    $eventDispatcher     Optional dispatcher for custom-scope events.
-	 * @param ?ObjectScopeResolver $objectScopeResolver Shared object-scope resolver; absent means a fresh one.
+	 * @param ?ObjectScopeResolverInterface $objectScopeResolver Shared object-scope resolver; absent means a fresh one.
 	 * @param ?ObjectGrantResolver $objectGrantResolver Shared per-object grant resolver; absent means a fresh one.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
@@ -46,7 +46,7 @@ final class PermissionRuleServices {
 	public function __construct(
 		public readonly ConditionMatcher $conditionMatcher,
 		public readonly ?IEventDispatcher $eventDispatcher = null,
-		public readonly ?ObjectScopeResolver $objectScopeResolver = null,
+		public readonly ?ObjectScopeResolverInterface $objectScopeResolver = null,
 		public readonly ?ObjectGrantResolver $objectGrantResolver = null,
 	) {
 	}//end __construct()

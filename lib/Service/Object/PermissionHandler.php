@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixPersonValues;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
@@ -60,7 +61,9 @@ use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use OCA\OpenRegister\Service\Rbac\RoleBlockExpander;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
@@ -387,9 +390,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	/**
 	 * Shared object-scope resolver; null means a fresh one.
 	 *
-	 * @var ObjectScopeResolver|null
+	 * @var ObjectScopeResolverInterface|null
 	 */
-	private readonly ?ObjectScopeResolver $objectScopeResolver;
+	private readonly ?ObjectScopeResolverInterface $objectScopeResolver;
 
 	/**
 	 * Shared per-object grant resolver; null means a fresh one.
@@ -401,9 +404,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	/**
 	 * Shared deny-grammar reader; null means a fresh one.
 	 *
-	 * @var DenyResolver|null
+	 * @var DenyResolverInterface|null
 	 */
-	private readonly ?DenyResolver $denyResolver;
+	private readonly ?DenyResolverInterface $denyResolver;
 
 	/**
 	 * The staging switch; null means one over the app config.
@@ -415,9 +418,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	/**
 	 * The grantable set.
 	 *
-	 * @var PermissionCatalogue|null
+	 * @var PermissionCatalogueInterface|null
 	 */
-	private readonly ?PermissionCatalogue $permissionCatalogue;
+	private readonly ?PermissionCatalogueInterface $permissionCatalogue;
 
 	/**
 	 * Reads an entry's end and the area it is confined to.
@@ -505,11 +508,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * resolver is a stateless value object, so a fresh instance is equivalent to
 	 * the injected one.
 	 *
-	 * @return DenyResolver The one reader of the deny grammar.
+	 * @return DenyResolverInterface The one reader of the deny grammar.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function denyResolver(): DenyResolver {
+	private function denyResolver(): DenyResolverInterface {
 		return ($this->denyResolver ?? new DenyResolver());
 	}//end denyResolver()
 
@@ -521,9 +524,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * value object, so falling back to a fresh instance is equivalent to the
 	 * injected one.
 	 *
-	 * @return ObjectScopeResolver The one definition of the scope vocabulary.
+	 * @return ObjectScopeResolverInterface The one definition of the scope vocabulary.
 	 */
-	private function objectScope(): ObjectScopeResolver {
+	private function objectScope(): ObjectScopeResolverInterface {
 		return ($this->objectScopeResolver ?? new ObjectScopeResolver());
 	}//end objectScope()
 
@@ -1572,11 +1575,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * WITHOUT a dispatcher answers the canonical verbs alone, which is the
 	 * fail-closed direction: it can only make a verb unknown, never grantable.
 	 *
-	 * @return PermissionCatalogue The set that can be granted here.
+	 * @return PermissionCatalogueInterface The set that can be granted here.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function permissionCatalogue(): PermissionCatalogue {
+	private function permissionCatalogue(): PermissionCatalogueInterface {
 		return ($this->permissionCatalogue ?? new PermissionCatalogue(eventDispatcher: $this->eventDispatcher));
 	}//end permissionCatalogue()
 

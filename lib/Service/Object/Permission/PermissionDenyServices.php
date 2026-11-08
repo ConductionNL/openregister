@@ -23,9 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object\Permission;
 
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
-use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 
 /**
  * Permission handler deny services: the deny grammar, its staging switch and the grantable set.
@@ -36,17 +36,17 @@ final class PermissionDenyServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ?DenyResolver        $denyResolver        Shared deny-grammar reader.
+	 * @param ?DenyResolverInterface $denyResolver        Shared deny-grammar reader.
 	 * @param ?DenyEnforcementMode $denyEnforcementMode The staging switch.
-	 * @param ?PermissionCatalogue $permissionCatalogue The grantable set.
+	 * @param ?PermissionCatalogueInterface $permissionCatalogue The grantable set.
 	 * @param ?GrantConstraints    $grantConstraints    Reads an entry's end and the area it is confined to.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function __construct(
-		public readonly ?DenyResolver $denyResolver = null,
+		public readonly ?DenyResolverInterface $denyResolver = null,
 		public readonly ?DenyEnforcementMode $denyEnforcementMode = null,
-		public readonly ?PermissionCatalogue $permissionCatalogue = null,
+		public readonly ?PermissionCatalogueInterface $permissionCatalogue = null,
 		public readonly ?GrantConstraints $grantConstraints = null,
 	) {
 	}//end __construct()
