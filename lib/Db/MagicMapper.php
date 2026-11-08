@@ -8465,7 +8465,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		try {
 			$jobList = $this->container->get(\OCP\BackgroundJob\IJobList::class);
 			$jobList->add(
-				\OCA\OpenRegister\BackgroundJob\DeferredObjectEventJob::class,
+				\OCA\OpenRegister\BackgroundJob\JobHandles::DEFERRED_OBJECT_EVENT,
 				[
 					'uuid' => $uuid,
 					'registerId' => (int)($register?->getId() ?? 0),

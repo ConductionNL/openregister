@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
@@ -339,7 +339,7 @@ class BulkJobService implements BulkJobServiceInterface {
 		$job->setCursor(0);
 		$saved = $this->store->jobMapper->save($job);
 
-		$this->store->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+		$this->store->jobList->add(JobHandles::BULK_JOB_RUNNER, ['job_id' => $saved->getId()]);
 
 		return $saved;
 	}//end commit()
@@ -435,7 +435,7 @@ class BulkJobService implements BulkJobServiceInterface {
 		$job->setState(BulkJob::STATE_RUNNING);
 		$saved = $this->store->jobMapper->save($job);
 
-		$this->store->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+		$this->store->jobList->add(JobHandles::BULK_JOB_RUNNER, ['job_id' => $saved->getId()]);
 
 		return $saved;
 	}//end resume()
@@ -481,7 +481,7 @@ class BulkJobService implements BulkJobServiceInterface {
 		$job->setCursor(0);
 		$saved = $this->store->jobMapper->save($job);
 
-		$this->store->jobList->add(BulkJobRunner::class, ['job_id' => $saved->getId()]);
+		$this->store->jobList->add(JobHandles::BULK_JOB_RUNNER, ['job_id' => $saved->getId()]);
 
 		return $saved;
 	}//end retry()
