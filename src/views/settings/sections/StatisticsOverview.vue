@@ -204,7 +204,6 @@
 
 <script>
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
-import { mapStores } from 'pinia'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
@@ -215,7 +214,7 @@ import ClearSearchTrailsDialog from '../../../dialogs/settings/ClearSearchTrails
 // eslint-disable-next-line n/no-unpublished-import -- false positive: this bundled dialog (identical in shape to the sibling dialogs imported below, which lint clean) is app source shipped via webpack, not an npm package.
 import RebaseConfirmationDialog from '../../../dialogs/settings/RebaseConfirmationDialog.vue'
 import MassValidateModal from '../../../modals/settings/MassValidateModal.vue'
-import { useSettingsStore } from '../../../store/settings.js'
+import { settingsSectionState } from './settingsSectionState.js'
 
 /**
  * The rows of the attention table: their label and warning count.
@@ -274,6 +273,8 @@ export default {
 		ClearBlobObjectsDialog,
 	},
 
+	mixins: [settingsSectionState],
+
 	data() {
 		return {
 			showMassValidateModal: false,
@@ -303,8 +304,6 @@ export default {
 	},
 
 	computed: {
-		...mapStores(useSettingsStore),
-
 		/**
 		 * The attention and overview tables, for display.
 		 *
@@ -362,36 +361,6 @@ export default {
 		 */
 		loadingStats() {
 			return this.settingsStore.loadingStats
-		},
-
-		/**
-		 * Whether the settings store is loading, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		loading() {
-			return this.settingsStore.loading
-		},
-
-		/**
-		 * Whether settings are saving, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		saving() {
-			return this.settingsStore.saving
-		},
-
-		/**
-		 * Whether a rebase is in progress, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		rebasing() {
-			return this.settingsStore.rebasing
 		},
 
 		/**
