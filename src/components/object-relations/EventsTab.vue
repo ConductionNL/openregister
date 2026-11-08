@@ -179,65 +179,8 @@ export default {
 }
 </script>
 
-<style scoped>
-.events-tab__toolbar {
-	display: flex;
-	gap: 8px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
 
-.events-tab__loading {
-	display: flex;
-	justify-content: center;
-	padding: 2em 0;
-}
-
-.events-tab__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.events-tab__item {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.events-tab__item:last-child {
-	border-bottom: none;
-}
-
-.events-tab__icon {
-	flex-shrink: 0;
-	color: var(--color-text-maxcontrast);
-}
-
-.events-tab__content {
-	flex-grow: 1;
-	min-width: 0;
-}
-
-.events-tab__summary {
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.events-tab__meta {
-	display: flex;
-	gap: 6px;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.85em;
-}
-
-.events-tab__calendar {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
+@include relation-tab-list('events-tab', 'summary', 'calendar');
 </style>

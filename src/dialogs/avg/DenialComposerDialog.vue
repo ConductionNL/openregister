@@ -172,7 +172,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/dialogs.scss' as *;
+
 .denialForm {
 	display: flex;
 	flex-direction: column;
@@ -208,9 +210,6 @@ export default {
 }
 
 .denialActions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 8px;
+	@include end-aligned-actions;
 }
 </style>

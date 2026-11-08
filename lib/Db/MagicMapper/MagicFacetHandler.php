@@ -2640,13 +2640,10 @@ class MagicFacetHandler {
 	 * @param string $field The field name for cache key.
 	 * @param Schema $schema The current schema context.
 	 * @param Register $register The current register context.
-	 * @param string $tableName The magic mapper table name (optional, for cache key).
 	 *
 	 * @return array<string, string> Map of UUID to label.
-	 *
-	 * @psalm-suppress UnusedParam $tableName reserved for cache key usage in future optimization
 	 */
-	private function batchResolveUuidLabels(array $uuids, string $field, Schema $schema, Register $register, string $tableName = ''): array {
+	private function batchResolveUuidLabels(array $uuids, string $field, Schema $schema, Register $register): array {
 		if (empty($uuids) === true) {
 			return [];
 		}

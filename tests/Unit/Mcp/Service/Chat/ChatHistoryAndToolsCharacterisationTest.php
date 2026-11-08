@@ -135,17 +135,19 @@ class ChatHistoryAndToolsCharacterisationTest extends TestCase
     }
 
     /**
-     * Pins the current outcome: a non-empty sources list is written through a
-     * setter the Message entity does not have, so nothing is inserted.
+     * A non-empty sources list is stored on the sources column and inserted.
      */
-    public function testStoreMessageWithSourcesThrowsBeforeInsert(): void
+    public function testStoreMessageWithSourcesStoresThem(): void
     {
         $mapper = $this->createMock(MessageMapperInterface::class);
-        $mapper->expects($this->never())->method('insert');
+        $mapper->expects($this->once())->method('insert')->willReturnArgument(0);
         $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->logger());
 
-        $this->expectException(\BadFunctionCallException::class);
-        $handler->storeMessage(5, 'assistant', 'body', ['s'], ['c' => 1]);
+        $message = $handler->storeMessage(5, 'assistant', 'body', ['s'], ['c' => 1]);
+
+        $this->assertSame(['s'], $message->getSources());
+        $this->assertSame(['c' => 1], $message->getContext());
+        $this->assertTrue($this->logged[0][2]['hasSources']);
     }
 
     private function tool(): ToolInterface

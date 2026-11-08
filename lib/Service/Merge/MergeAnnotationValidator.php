@@ -60,18 +60,7 @@ class MergeAnnotationValidator {
 			];
 		}
 
-		$errors = [];
-
-		if (array_key_exists('reversalWindowDays', $annotation) === true) {
-			$window = $annotation['reversalWindowDays'];
-			if (is_int($window) === false || $window <= 0) {
-				$errors[] = [
-					'code' => 'merge.invalid-reversal-window',
-					'message' => 'x-openregister-merge "reversalWindowDays" must be a positive integer.',
-				];
-			}
-		}
-
+		$errors = $this->validateReversalWindow(annotation: $annotation);
 		$errors = array_merge($errors, $this->validateStringFields(annotation: $annotation));
 		$errors = array_merge($errors, $this->validateSourceLink(annotation: $annotation));
 
@@ -104,6 +93,19 @@ class MergeAnnotationValidator {
 			];
 		}
 
+		return $this->validateReverseFk(sourceLink: $sourceLink);
+	}//end validateSourceLink()
+
+	/**
+	 * A reverseFk sourceLink must name both its source schema and its reference field.
+	 *
+	 * Any other mode (embedded is the default) has nothing to check here.
+	 *
+	 * @param array<string, mixed> $sourceLink The sourceLink object.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors (empty when valid).
+	 */
+	private function validateReverseFk(array $sourceLink): array {
 		if ((string)($sourceLink['mode'] ?? 'embedded') !== 'reverseFk') {
 			return [];
 		}
@@ -119,7 +121,32 @@ class MergeAnnotationValidator {
 		}
 
 		return $errors;
-	}//end validateSourceLink()
+	}//end validateReverseFk()
+
+	/**
+	 * `reversalWindowDays`, when present, must be a positive integer.
+	 *
+	 * @param array<string, mixed> $annotation The merge annotation.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors (empty when valid).
+	 */
+	private function validateReversalWindow(array $annotation): array {
+		if (array_key_exists('reversalWindowDays', $annotation) === false) {
+			return [];
+		}
+
+		$window = $annotation['reversalWindowDays'];
+		if (is_int($window) === false || $window <= 0) {
+			return [
+				[
+					'code' => 'merge.invalid-reversal-window',
+					'message' => 'x-openregister-merge "reversalWindowDays" must be a positive integer.',
+				],
+			];
+		}
+
+		return [];
+	}//end validateReversalWindow()
 
 	/**
 	 * Validate the optional string-valued fields, when present.

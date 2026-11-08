@@ -254,9 +254,9 @@ class MessageHistoryHandler {
 		$message->setContent($content);
 		$message->setCreated(new DateTime());
 
-		// Add sources metadata if provided.
+		// Add RAG sources if provided.
 		if ($this->hasEntries(value: $sources) === true) {
-			$message->setMetadata(['sources' => $sources]);
+			$message->setSources($sources);
 		}
 
 		// Persist the CnAiContext snapshot the frontend sent with the

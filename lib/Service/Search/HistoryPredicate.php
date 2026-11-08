@@ -89,32 +89,16 @@ final class HistoryPredicate implements JsonSerializable {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public static function parse(array $query): self {
-		$wasEver = [];
-		$changedBetween = [];
-		$unparsed = [];
+		[$wasEver, $unparsedWasEver] = self::parseWasEver(raw: (array)($query[self::WAS_EVER] ?? []));
+		[$changedBetween, $unparsedChanged] = self::parseChangedBetween(
+			raw: (array)($query[self::CHANGED_BETWEEN] ?? [])
+		);
 
-		foreach ((array)($query[self::WAS_EVER] ?? []) as $property => $value) {
-			$name = self::readPropertyName(raw: $property);
-			if ($name === null || is_scalar($value) === false || (string)$value === '') {
-				$unparsed[] = self::WAS_EVER . '[' . (string)$property . ']';
-				continue;
-			}
-
-			$wasEver[$name] = (string)$value;
-		}
-
-		foreach ((array)($query[self::CHANGED_BETWEEN] ?? []) as $property => $value) {
-			$name = self::readPropertyName(raw: $property);
-			$period = self::readPeriod(raw: $value);
-			if ($name === null || $period === null) {
-				$unparsed[] = self::CHANGED_BETWEEN . '[' . (string)$property . ']';
-				continue;
-			}
-
-			$changedBetween[$name] = $period;
-		}
-
-		return new self(wasEver: $wasEver, changedBetween: $changedBetween, unparsed: $unparsed);
+		return new self(
+			wasEver: $wasEver,
+			changedBetween: $changedBetween,
+			unparsed: array_merge($unparsedWasEver, $unparsedChanged)
+		);
 	}//end parse()
 
 	/**
@@ -228,6 +212,54 @@ final class HistoryPredicate implements JsonSerializable {
 	}//end jsonSerialize()
 
 	/**
+	 * Read the `was ever at` filters.
+	 *
+	 * @param array<array-key, mixed> $raw property => value, as the query carries them.
+	 *
+	 * @return array{0: array<string, string>, 1: list<string>} The filters and the keys that did not read.
+	 */
+	private static function parseWasEver(array $raw): array {
+		$wasEver = [];
+		$unparsed = [];
+		foreach ($raw as $property => $value) {
+			$name = self::readPropertyName(raw: $property);
+			if ($name === null || is_scalar($value) === false || (string)$value === '') {
+				$unparsed[] = self::WAS_EVER . '[' . (string)$property . ']';
+				continue;
+			}
+
+			$wasEver[$name] = (string)$value;
+		}
+
+		return [$wasEver, $unparsed];
+	}//end parseWasEver()
+
+	/**
+	 * Read the `changed between` filters.
+	 *
+	 * @param array<array-key, mixed> $raw property => period, as the query carries them.
+	 *
+	 * @return array{0: array<string, array{after: DateTimeImmutable, before: DateTimeImmutable}>, 1: list<string>}
+	 *     The filters and the keys that did not read.
+	 */
+	private static function parseChangedBetween(array $raw): array {
+		$changedBetween = [];
+		$unparsed = [];
+		foreach ($raw as $property => $value) {
+			$name = self::readPropertyName(raw: $property);
+			$period = self::readPeriod(raw: $value);
+			if ($name === null || $period === null) {
+				$unparsed[] = self::CHANGED_BETWEEN . '[' . (string)$property . ']';
+				continue;
+			}
+
+			$changedBetween[$name] = $period;
+		}
+
+		return [$changedBetween, $unparsed];
+	}//end parseChangedBetween()
+
+	/**
 	 * Read a property name, refusing anything that is not one.
 	 *
 	 * @param mixed $raw The raw key.
@@ -255,23 +287,24 @@ final class HistoryPredicate implements JsonSerializable {
 	 * @return array{after: DateTimeImmutable, before: DateTimeImmutable}|null The period, or null.
 	 */
 	private static function readPeriod(mixed $raw): ?array {
-		$after = null;
-		$before = null;
-
-		if (is_string($raw) === true) {
-			$parts = array_map('trim', explode(',', $raw));
-			if (count($parts) === 2) {
-				[$after, $before] = $parts;
-			}
-		} elseif (is_array($raw) === true) {
-			$after = ($raw['after'] ?? null);
-			$before = ($raw['before'] ?? null);
-		}
+		[$after, $before] = self::periodBounds(raw: $raw);
 
 		if (is_string($after) === false || is_string($before) === false) {
 			return null;
 		}
 
+		return self::readDates(after: $after, before: $before);
+	}//end readPeriod()
+
+	/**
+	 * Read both bounds as dates, refusing an unreadable or backwards period.
+	 *
+	 * @param string $after  The start of the period.
+	 * @param string $before The end of the period.
+	 *
+	 * @return array{after: DateTimeImmutable, before: DateTimeImmutable}|null The period, or null.
+	 */
+	private static function readDates(string $after, string $before): ?array {
 		try {
 			$start = new DateTimeImmutable($after);
 			$end = new DateTimeImmutable($before);
@@ -284,5 +317,28 @@ final class HistoryPredicate implements JsonSerializable {
 		}
 
 		return ['after' => $start, 'before' => $end];
-	}//end readPeriod()
+	}//end readDates()
+	/**
+	 * The two raw bounds of a period, before they are read as dates.
+	 *
+	 * @param mixed $raw The raw value: "a,b" or ['after' => a, 'before' => b].
+	 *
+	 * @return array{0: mixed, 1: mixed} The after and before bounds, null where absent.
+	 */
+	private static function periodBounds(mixed $raw): array {
+		if (is_array($raw) === true) {
+			return [($raw['after'] ?? null), ($raw['before'] ?? null)];
+		}
+
+		if (is_string($raw) === false) {
+			return [null, null];
+		}
+
+		$parts = array_map('trim', explode(',', $raw));
+		if (count($parts) !== 2) {
+			return [null, null];
+		}
+
+		return $parts;
+	}//end periodBounds()
 }//end class
