@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -242,9 +242,9 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	/**
 	 * The party link mapper.
 	 *
-	 * @return ContactLinkMapper
+	 * @return ContactLinkMapperInterface
 	 */
-	private function links(): ContactLinkMapper {
-		return $this->container->get(ContactLinkMapper::class);
+	private function links(): ContactLinkMapperInterface {
+		return $this->container->get(ContactLinkMapperInterface::class);
 	}//end links()
 }//end class

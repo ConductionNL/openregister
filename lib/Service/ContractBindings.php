@@ -40,6 +40,8 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryInterface;
+use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryService;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
@@ -60,6 +62,8 @@ use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
+use OCA\OpenRegister\Service\Capability\ToolReachLevels;
+use OCA\OpenRegister\Service\Capability\ToolReachResolver;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
 use OCA\OpenRegister\Service\Case\CasePlanService;
@@ -90,6 +94,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
+use OCA\OpenRegister\Service\Federation\ShareGrantor;
+use OCA\OpenRegister\Service\Federation\ShareGrantorInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeCatalogueInterface;
@@ -251,6 +257,8 @@ use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Service\Rbac\MatrixRowKeys;
+use OCA\OpenRegister\Service\Rbac\MatrixRowWhere;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
@@ -314,6 +322,8 @@ use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
 use OCA\OpenRegister\Service\Task\TaskSubjectLocatorInterface;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
+use OCA\OpenRegister\Service\TenantKeyRotationInterface;
+use OCA\OpenRegister\Service\TenantKeyService;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -347,6 +357,11 @@ final class ContractBindings {
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		ApplicationServiceInterface::class => ApplicationService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
+		DeclaredGroupInventoryInterface::class => DeclaredGroupInventoryService::class,
+		ToolReachLevels::class => ToolReachResolver::class,
+		ShareGrantorInterface::class => ShareGrantor::class,
+		MatrixRowKeys::class => MatrixRowWhere::class,
+		TenantKeyRotationInterface::class => TenantKeyService::class,
 		AppSettingsInterface::class => SettingsService::class,
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		\OCA\OpenRegister\Service\AvgComplianceServiceInterface::class => \OCA\OpenRegister\Service\AvgComplianceService::class,
@@ -583,6 +598,12 @@ final class ContractBindings {
 		ZaaktypeCaseSkeletonMapperInterface::class => ZaaktypeCaseSkeletonMapper::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
 		SettingsServiceInterface::class => SettingsService::class,
+		\OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefreshInterface::class => \OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh::class,
+		\OCA\OpenRegister\Service\History\StateHistoryRebuildInterface::class => \OCA\OpenRegister\Service\History\StateHistoryRebuild::class,
+		\OCA\OpenRegister\Service\Merge\MasterRecomputeInterface::class => \OCA\OpenRegister\Service\Merge\MasterRecomputeService::class,
+		\OCA\OpenRegister\Service\Schema\SchemaBatchMigratorInterface::class => \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
+		\OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface::class => \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
+		\OCA\OpenRegister\Service\Sync\SyncScheduleInterface::class => \OCA\OpenRegister\Service\Sync\SyncScheduleService::class,
 		ExternalIntegrationRouterInterface::class => ExternalIntegrationRouter::class,
 		OrganisationServiceInterface::class => OrganisationService::class,
 		TaskServiceInterface::class => TaskService::class,

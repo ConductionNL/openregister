@@ -46,7 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
+use OCA\OpenRegister\Service\Merge\MasterRecomputeInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IUserManager;
@@ -67,7 +67,7 @@ class SourceRecordRecomputeJob extends ActorForwardedJob {
 	 * @param IUserManager $userManager Resolver for the captured user id.
 	 * @param OrganisationServiceInterface $organisation Active-organisation resolver.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param MasterRecomputeService $recompute Shared golden-record recompute.
+	 * @param MasterRecomputeInterface $recompute Shared golden-record recompute.
 	 *
 	 * @return void
 	 */
@@ -77,7 +77,7 @@ class SourceRecordRecomputeJob extends ActorForwardedJob {
 		IUserManager $userManager,
 		OrganisationServiceInterface $organisation,
 		LoggerInterface $logger,
-		private readonly MasterRecomputeService $recompute,
+		private readonly MasterRecomputeInterface $recompute,
 	) {
 		parent::__construct(
 			time: $time,

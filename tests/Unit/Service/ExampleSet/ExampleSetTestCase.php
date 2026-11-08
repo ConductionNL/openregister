@@ -67,6 +67,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
@@ -81,6 +82,7 @@ use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
@@ -315,7 +317,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			WatcherMapperInterface::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
-			ContactLinkMapper::class  => $this->contactLinks(),
+			ContactLinkMapperInterface::class => $this->contactLinks(),
 			ICommentsManager::class   => $this->commentsManager(),
 			ObjectReadStateMapper::class => $this->readStateMapper(),
 			FlowMapper::class         => $this->flowMapper(),
@@ -331,7 +333,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			TimelineEntryMapper::class => $this->timelineEntryMapper(),
 			TimelineKindService::class => $this->timelineKindService(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
-			EmailLinkMapper::class    => $this->emailLinkMapper(),
+			EmailLinkMapperInterface::class => $this->emailLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
 			CalendarLinkMapper::class => $this->calendarLinkMapper(),
 			CasePlanService::class    => $this->casePlans(),

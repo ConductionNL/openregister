@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetActingAs;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefreshInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -45,14 +45,14 @@ class ExampleSetDailyRefreshJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory           $time   The clock.
-	 * @param ExampleSetDailyRefresh $daily  The marked sets and their refresh.
+	 * @param ExampleSetDailyRefreshInterface $daily  The marked sets and their refresh.
 	 * @param LoggerInterface        $logger Logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ExampleSetDailyRefresh $daily,
+		private readonly ExampleSetDailyRefreshInterface $daily,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

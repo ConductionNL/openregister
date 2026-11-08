@@ -26,7 +26,7 @@ use DateTime;
 use Exception;
 use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -56,9 +56,9 @@ class ContactService implements ContactServiceInterface {
 	/**
 	 * Contact link mapper.
 	 *
-	 * @var ContactLinkMapper
+	 * @var ContactLinkMapperInterface
 	 */
-	private readonly ContactLinkMapper $contactLinkMapper;
+	private readonly ContactLinkMapperInterface $contactLinkMapper;
 
 	/**
 	 * CardDAV backend.
@@ -91,7 +91,7 @@ class ContactService implements ContactServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $contactLinkMapper Contact link mapper
+	 * @param ContactLinkMapperInterface $contactLinkMapper Contact link mapper
 	 * @param CardDavBackend $cardDavBackend CardDAV backend
 	 * @param IUserSession $userSession User session
 	 * @param LoggerInterface $logger Logger
@@ -100,7 +100,7 @@ class ContactService implements ContactServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		ContactLinkMapper $contactLinkMapper,
+		ContactLinkMapperInterface $contactLinkMapper,
 		CardDavBackend $cardDavBackend,
 		IUserSession $userSession,
 		LoggerInterface $logger,

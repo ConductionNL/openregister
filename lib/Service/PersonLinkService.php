@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Throwable;
 
@@ -40,14 +40,14 @@ use Throwable;
 class PersonLinkService implements PersonLinkServiceInterface {
 
 	/**
-	 * @param ContactLinkMapper $links The link rows.
+	 * @param ContactLinkMapperInterface $links The link rows.
 	 * @param ContactService $contacts The CardDAV side of a contact link.
 	 * @param UserLinkWriter $userLinks The account side of a user link.
 	 * @param SchemaMapperInterface $schemas The schemas, for the role vocabulary.
 	 * @param PersonLinkEvents $events Announces what happened to a link.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
+		private readonly ContactLinkMapperInterface $links,
 		private readonly ContactService $contacts,
 		private readonly UserLinkWriter $userLinks,
 		private readonly SchemaMapperInterface $schemas,
