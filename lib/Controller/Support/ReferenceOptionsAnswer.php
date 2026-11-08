@@ -27,7 +27,8 @@ use Closure;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
-use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
+use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReaderInterface;
+use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReaders;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -42,9 +43,9 @@ final class ReferenceOptionsAnswer {
 	/**
 	 * The plan reader.
 	 *
-	 * @var ReferenceOptionsReader
+	 * @var ReferenceOptionsReaderInterface
 	 */
-	private readonly ReferenceOptionsReader $reader;
+	private readonly ReferenceOptionsReaderInterface $reader;
 
 	/**
 	 * Hold the request and the services.
@@ -64,7 +65,7 @@ final class ReferenceOptionsAnswer {
 		private readonly Closure $lookup,
 		private readonly ObjectOperationsInterface $search,
 	) {
-		$this->reader = new ReferenceOptionsReader();
+		$this->reader = ReferenceOptionsReaders::create();
 	}//end __construct()
 
 	/**

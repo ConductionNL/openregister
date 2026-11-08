@@ -54,6 +54,8 @@ use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolver;
 use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolverInterface;
 use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryInterface;
 use OCA\OpenRegister\Service\Authorization\DeclaredGroupInventoryService;
+use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
+use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
@@ -292,6 +294,8 @@ use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
+use OCA\OpenRegister\Service\Object\ConflictReport;
+use OCA\OpenRegister\Service\Object\ConflictReportInterface;
 use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
@@ -396,6 +400,8 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
+use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
+use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReaderInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
@@ -536,6 +542,9 @@ final class ContractBindings {
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ConditionTracerInterface::class => ConditionTracer::class,
+		ConflictReportInterface::class => ConflictReport::class,
+		GrantableRightsIndexInterface::class => GrantableRightsIndex::class,
+		ReferenceOptionsReaderInterface::class => ReferenceOptionsReader::class,
 		ConsistencyCheckServiceInterface::class => ConsistencyCheckService::class,
 		ConsistencyRepairServiceInterface::class => ConsistencyRepairService::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
