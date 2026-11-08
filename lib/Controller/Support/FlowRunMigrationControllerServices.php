@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCP\IUserSession;
 
 /**
@@ -38,7 +38,7 @@ final class FlowRunMigrationControllerServices {
 	 *
 	 * @param FlowRunMapperInterface $mapper The run store.
 	 * @param IUserSession $userSession Who is asking.
-	 * @param FlowRunnableGuard $guard Whether the caller may run this flow at all.
+	 * @param FlowRunnableGuardInterface $guard Whether the caller may run this flow at all.
 	 * @param ?FlowRunMigrationServiceInterface $migrations Moves runs onto another version. Nullable;
 	 *                                                     absent, the endpoints report the surface unavailable rather than migrating unvalidated.
 	 *
@@ -47,7 +47,7 @@ final class FlowRunMigrationControllerServices {
 	public function __construct(
 		public readonly FlowRunMapperInterface $mapper,
 		public readonly IUserSession $userSession,
-		public readonly FlowRunnableGuard $guard,
+		public readonly FlowRunnableGuardInterface $guard,
 		public readonly ?FlowRunMigrationServiceInterface $migrations = null,
 	) {
 	}//end __construct()

@@ -39,23 +39,20 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\FlowControllerServices;
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 use OCA\OpenRegister\Exception\FlowRunRefused;
-use OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator;
-use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
-use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter;
-use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter;
-use OCA\OpenRegister\Service\Flow\EventCatalogService;
+use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface;
+use OCA\OpenRegister\Service\Flow\EventCatalogServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
-use OCA\OpenRegister\Service\Flow\FlowRunVersionPin;
+use OCA\OpenRegister\Service\Flow\FlowRunAuthorizationInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunVersionPinInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCP\AppFramework\Controller;
@@ -123,9 +120,9 @@ class FlowController extends Controller {
 	/**
 	 * The flow trigger catalog.
 	 *
-	 * @var EventCatalogService
+	 * @var EventCatalogServiceInterface
 	 */
-	private readonly EventCatalogService $eventCatalog;
+	private readonly EventCatalogServiceInterface $eventCatalog;
 
 	/**
 	 * The registered flow-step types.
@@ -137,9 +134,9 @@ class FlowController extends Controller {
 	/**
 	 * Reads state a flow keeps between runs.
 	 *
-	 * @var FlowStateMapper
+	 * @var FlowStateMapperInterface
 	 */
-	private readonly FlowStateMapper $flowState;
+	private readonly FlowStateMapperInterface $flowState;
 
 	/**
 	 * Resolves a document's step types.
@@ -170,6 +167,13 @@ class FlowController extends Controller {
 	private readonly FlowVersionServiceInterface $flowVersionService;
 
 	/**
+	 * BPMN 2.0 export and import.
+	 *
+	 * @var FlowBpmnInterchangeInterface
+	 */
+	private readonly FlowBpmnInterchangeInterface $bpmn;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
@@ -189,6 +193,7 @@ class FlowController extends Controller {
 		$this->flows = $services->definitions->flows;
 		$this->access = $services->definitions->access;
 		$this->flowVersionService = $services->definitions->flowVersionService;
+		$this->bpmn = $services->catalogue->bpmn;
 	}//end __construct()
 
 	/**
@@ -681,9 +686,8 @@ class FlowController extends Controller {
 	 * @return DataDownloadResponse|JSONResponse The download, or 500 when our own output fails the schema
 	 */
 	private function bpmnDownload(Flow $flow, string $id): DataDownloadResponse|JSONResponse {
-		$exporter = new FlowBpmnExporter(vocabulary: new BpmnVocabulary(), validator: new BpmnSchemaValidator());
 		try {
-			$xml = $exporter->export(flow: $flow);
+			$xml = $this->bpmn->export(flow: $flow);
 		} catch (BpmnSchemaInvalid $invalid) {
 			// Our own output failed the standard's schema, which is a bug in
 			// the serializer rather than anything the caller did — so it is
@@ -783,11 +787,10 @@ class FlowController extends Controller {
 	 * @return array|JSONResponse The flow and report, or 422 for a malformed or refused document
 	 */
 	private function mapBpmn(string $xml, bool $strict): array|JSONResponse {
-		$importer = new FlowBpmnImporter(vocabulary: new BpmnVocabulary(), validator: new BpmnSchemaValidator());
 		try {
 			return match ($strict) {
-				true => $importer->importStrictly(xml: $xml),
-				false => $importer->import(xml: $xml),
+				true => $this->bpmn->importStrictly(xml: $xml),
+				false => $this->bpmn->import(xml: $xml),
 			};
 		} catch (BpmnSchemaInvalid $invalid) {
 			return $this->malformedBpmn(invalid: $invalid);
@@ -1164,7 +1167,7 @@ class FlowController extends Controller {
 	private function queueTestRun(string $id, array $input): JSONResponse {
 		try {
 			$flowRun = $this->flows->run(uuid: $id, subject: $input['subject'], context: $input['context'],
-				sync: $input['sync'], trigger: FlowRunVersionPin::TRIGGER_TEST);
+				sync: $input['sync'], trigger: FlowRunVersionPinInterface::TRIGGER_TEST);
 		} catch (FlowLifecycleRefused $e) {
 			// Carries `reason` and `lifecycleStatus` so the editor can offer the right button.
 			return $this->refusal(refusal: $e);
@@ -1216,7 +1219,7 @@ class FlowController extends Controller {
 	 */
 	private function runRefusal(FlowRunRefused $refusal): JSONResponse {
 		$status = Http::STATUS_FORBIDDEN;
-		if ($refusal->getVerdict() === FlowRunAuthorization::NO_SESSION) {
+		if ($refusal->getVerdict() === FlowRunAuthorizationInterface::NO_SESSION) {
 			$status = Http::STATUS_UNAUTHORIZED;
 		}
 

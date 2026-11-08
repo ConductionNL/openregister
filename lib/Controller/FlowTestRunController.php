@@ -27,7 +27,7 @@ use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
+use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -73,9 +73,9 @@ class FlowTestRunController extends Controller {
 	/**
 	 * Whether the caller may run and edit this flow.
 	 *
-	 * @var FlowRunnableGuard
+	 * @var FlowRunnableGuardInterface
 	 */
-	private readonly FlowRunnableGuard $guard;
+	private readonly FlowRunnableGuardInterface $guard;
 
 	/**
 	 * Constructor.
