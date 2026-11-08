@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Notifications\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
-use OCA\OpenRegister\Service\Party\TrustedPartyReaderInterface;
+use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -161,7 +161,7 @@ class ExampleSetTimelineEntries extends ExampleSetEngineRows {
 	 */
 	public function write(string $app, string $key, array $data): array {
 		$objectUuid = (string) $data['object'];
-		$object     = $this->container->get(TrustedPartyReaderInterface::class)->findUnscoped(uuid: $objectUuid);
+		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {
 			return ['error' => 'no object "'.$objectUuid.'" to give the entry', 'entry' => null];
 		}

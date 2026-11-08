@@ -27,8 +27,6 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembership;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembershipInterface;
-use OCA\OpenRegister\Service\Party\PartyService;
-use OCA\OpenRegister\Service\Party\TrustedPartyReaderInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -56,7 +54,6 @@ final class C10AccessInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		AccessLinkSubject::class => [AccessLinkSubjectInterface::class, ContractBindings::class],
 		FlowTenantMembership::class => [FlowTenantMembershipInterface::class, ContractBindings::class],
-		PartyService::class => [TrustedPartyReaderInterface::class, ContractBindings::class],
 	];
 
 	/**
