@@ -124,56 +124,20 @@ class ObjectSlugBackfillWriter {
 	 * @throws Throwable When a write fails (the chunk is rolled back first).
 	 */
 	private function writeChunk(array $chunk, Register $register, Schema $schema, array &$tally): void {
-		// The plan was made against the slugs held when the run started; a save
-		// during a long run may have taken one since. Re-check the chunk's slugs
-		// (one query) right before writing it, so the window is one chunk, not the run.
-		$holders = $this->magicMapper->findSlugState(
-			register: $register,
-			schema: $schema,
-			slugs: array_values(array_filter(array_column($chunk, 'new'), static fn ($slug): bool => is_string($slug) && $slug !== '')),
-			uuids: []
-		)['holders'] ?? [];
+		$holders = $this->chunkHolders(chunk: $chunk, register: $register, schema: $schema);
 
 		$written = [];
 		$this->db->beginTransaction();
 		try {
 			foreach ($chunk as $step) {
-				if ($this->takenMeanwhile(step: $step, holders: $holders) === true) {
-					$tally['skipped']++;
-					$this->logger->warning(
-						sprintf(
-							'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: slug "%s" was taken by another object while the backfill ran',
-							$step['uuid'],
-							(string)$register->getSlug(),
-							(string)$schema->getSlug(),
-							(string)$step['new']
-						),
-						['app' => 'openregister', 'path' => 'backfill', 'objectUuid' => $step['uuid']]
-					);
-					continue;
-				}
-
-				$updated = $this->magicMapper->updateSlugColumn(
-					register: $register,
-					schema: $schema,
-					uuid: $step['uuid'],
-					slug: (string)$step['new']
-				);
-				if ($updated > 0) {
+				$skipped = $this->writeStep(step: $step, holders: $holders, register: $register, schema: $schema);
+				if ($skipped === null) {
 					$written[] = $step;
 					continue;
 				}
 
 				$tally['skipped']++;
-				$this->logger->warning(
-					sprintf(
-						'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: its slug changed while the backfill ran',
-						$step['uuid'],
-						(string)$register->getSlug(),
-						(string)$schema->getSlug()
-					),
-					['app' => 'openregister', 'path' => 'backfill', 'objectUuid' => $step['uuid']]
-				);
+				$this->logger->warning($skipped, ['app' => 'openregister', 'path' => 'backfill', 'objectUuid' => $step['uuid']]);
 			}
 
 			$this->db->commit();
@@ -184,6 +148,74 @@ class ObjectSlugBackfillWriter {
 
 		array_push($tally['applied'], ...$written);
 	}//end writeChunk()
+
+	/**
+	 * Who holds each of a chunk's new slugs right now.
+	 *
+	 * The plan was made against the slugs held when the run started; a save
+	 * during a long run may have taken one since. Re-check the chunk's slugs
+	 * (one query) right before writing it, so the window is one chunk, not the run.
+	 *
+	 * @param array    $chunk    The chunk's steps.
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array<string, list<string>> Holder uuids per slug
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	private function chunkHolders(array $chunk, Register $register, Schema $schema): array {
+		return $this->magicMapper->findSlugState(
+			register: $register,
+			schema: $schema,
+			slugs: array_values(array_filter(array_column($chunk, 'new'), static fn ($slug): bool => is_string($slug) && $slug !== '')),
+			uuids: []
+		)['holders'] ?? [];
+	}//end chunkHolders()
+
+	/**
+	 * Write one step, or say why it was skipped.
+	 *
+	 * A slug taken by another object meanwhile is not written; a row whose slug
+	 * changed meanwhile is not overwritten (the update touches no row).
+	 *
+	 * @param array    $step     The step: uuid, old and new slug.
+	 * @param array    $holders  Holder uuids per slug.
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return string|null The skip warning, or null when the slug was written
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	private function writeStep(array $step, array $holders, Register $register, Schema $schema): ?string {
+		if ($this->takenMeanwhile(step: $step, holders: $holders) === true) {
+			return sprintf(
+				'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: slug "%s" was taken by another object while the backfill ran',
+				$step['uuid'],
+				(string)$register->getSlug(),
+				(string)$schema->getSlug(),
+				(string)$step['new']
+			);
+		}
+
+		$updated = $this->magicMapper->updateSlugColumn(
+			register: $register,
+			schema: $schema,
+			uuid: $step['uuid'],
+			slug: (string)$step['new']
+		);
+		if ($updated > 0) {
+			return null;
+		}
+
+		return sprintf(
+			'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: its slug changed while the backfill ran',
+			$step['uuid'],
+			(string)$register->getSlug(),
+			(string)$schema->getSlug()
+		);
+	}//end writeStep()
 
 	/**
 	 * Whether another live object took the planned slug after the plan was made.
