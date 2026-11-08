@@ -23,9 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Service\OrganisationUsageService;
+use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
-use OCA\OpenRegister\Service\TenantLifecycleService;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 
 /**
  * The domain services of the organisation API.
@@ -37,8 +37,8 @@ final class OrganisationDomain {
 	 * Bundle the services.
 	 *
 	 * @param OrganisationServiceInterface      $organisationService Organisation service
-	 * @param TenantLifecycleService   $tenantLifecycle     Lifecycle service
-	 * @param OrganisationUsageService $usageService        Measures an organisation's usage
+	 * @param TenantLifecycleServiceInterface   $tenantLifecycle     Lifecycle service
+	 * @param OrganisationUsageServiceInterface $usageService        Measures an organisation's usage
 	 * @param ?GrantChangeAuditor      $grantAuditor        Records a change of who holds the special right
 	 *                                                      `grant_manage`. Null only in legacy fixtures.
 	 *
@@ -46,8 +46,8 @@ final class OrganisationDomain {
 	 */
 	public function __construct(
 		public readonly OrganisationServiceInterface $organisationService,
-		public readonly TenantLifecycleService $tenantLifecycle,
-		public readonly OrganisationUsageService $usageService,
+		public readonly TenantLifecycleServiceInterface $tenantLifecycle,
+		public readonly OrganisationUsageServiceInterface $usageService,
 		public readonly ?GrantChangeAuditor $grantAuditor = null,
 	) {
 	}//end __construct()
