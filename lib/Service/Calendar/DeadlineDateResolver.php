@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Calendar;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -104,21 +105,30 @@ class DeadlineDateResolver {
 		?DateTimeImmutable $rawDate,
 		?string $organisation,
 	): ?DateTimeImmutable {
-		$fromEngine = $this->fromTimer(objectUuid: $objectUuid, declaration: $declaration);
-		if ($fromEngine !== null) {
-			return $fromEngine;
-		}
+		return ($this->fromTimer(objectUuid: $objectUuid, declaration: $declaration)
+			?? $this->rollRawDate(date: $rawDate, declaration: $declaration, organisation: $organisation));
+	}//end resolve()
 
-		if ($rawDate === null) {
+	/**
+	 * The working day a raw date rolls to, or null when there is no raw date.
+	 *
+	 * @param DateTimeImmutable|null $date The property's own value, when it has one.
+	 * @param ObjectDateDeclaration $declaration The declaration.
+	 * @param string|null $organisation The object's organisation.
+	 *
+	 * @return DateTimeImmutable|null The working day, or null.
+	 */
+	private function rollRawDate(
+		?DateTimeImmutable $date,
+		ObjectDateDeclaration $declaration,
+		?string $organisation,
+	): ?DateTimeImmutable {
+		if ($date === null) {
 			return null;
 		}
 
-		return $this->rollToWorkingDay(
-			date: $rawDate,
-			declaration: $declaration,
-			organisation: $organisation
-		);
-	}//end resolve()
+		return $this->rollToWorkingDay(date: $date, declaration: $declaration, organisation: $organisation);
+	}//end rollRawDate()
 
 	/**
 	 * The fire moment of the open timer this declaration binds to, when any.
@@ -129,16 +139,30 @@ class DeadlineDateResolver {
 	 * @return DateTimeImmutable|null The engine's date, or null when unbound or unarmed.
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface is the PHP conversion; there is no DI alternative.
 	 */
 	private function fromTimer(string $objectUuid, ObjectDateDeclaration $declaration): ?DateTimeImmutable {
 		if ($declaration->timerPurpose === null) {
 			return null;
 		}
 
+		$timers = $this->openTimers(objectUuid: $objectUuid);
+		if ($timers === null) {
+			return null;
+		}
+
+		return $this->fireMoment(timers: $timers, purpose: $declaration->timerPurpose);
+	}//end fromTimer()
+
+	/**
+	 * The object's armed and suspended timers, or null when they cannot be read.
+	 *
+	 * @param string $objectUuid The object.
+	 *
+	 * @return array<int, FlowTimer>|null The open timers, or null on a read failure.
+	 */
+	private function openTimers(string $objectUuid): ?array {
 		try {
-			$timers = $this->timers->findBySubject(
+			return $this->timers->findBySubject(
 				subjectType: 'object',
 				subjectUuid: $objectUuid,
 				states: self::OPEN_STATES
@@ -149,9 +173,21 @@ class DeadlineDateResolver {
 			);
 			return null;
 		}
+	}//end openTimers()
 
+	/**
+	 * The fire moment of the first timer of a purpose that has one.
+	 *
+	 * @param array<int, FlowTimer> $timers The open timers.
+	 * @param string $purpose The timer purpose the declaration binds to.
+	 *
+	 * @return DateTimeImmutable|null The fire moment, or null when no such timer is set.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface is the PHP conversion; there is no DI alternative.
+	 */
+	private function fireMoment(array $timers, string $purpose): ?DateTimeImmutable {
 		foreach ($timers as $timer) {
-			if ($timer->getPurpose() !== $declaration->timerPurpose) {
+			if ($timer->getPurpose() !== $purpose) {
 				continue;
 			}
 
@@ -164,7 +200,7 @@ class DeadlineDateResolver {
 		}
 
 		return null;
-	}//end fromTimer()
+	}//end fireMoment()
 
 	/**
 	 * Roll a date forward onto the first working day of the resolved calendar.
@@ -196,13 +232,9 @@ class DeadlineDateResolver {
 			return null;
 		}
 
-		$candidate = $date;
-		for ($step = 0; $step < self::MAX_ROLL_DAYS; $step++) {
-			if ($calendar->isWorkingDay(moment: $candidate) === true) {
-				return $candidate;
-			}
-
-			$candidate = $candidate->modify('+1 day');
+		$workingDay = $this->firstWorkingDay(calendar: $calendar, date: $date);
+		if ($workingDay !== null) {
+			return $workingDay;
 		}
 
 		$this->logger->warning(
@@ -212,4 +244,25 @@ class DeadlineDateResolver {
 
 		return null;
 	}//end rollToWorkingDay()
+
+	/**
+	 * The first working day on or after a date, within MAX_ROLL_DAYS.
+	 *
+	 * @param WorkingCalendar $calendar The resolved calendar.
+	 * @param DateTimeImmutable $date The raw date.
+	 *
+	 * @return DateTimeImmutable|null The working day, or null when none is in reach.
+	 */
+	private function firstWorkingDay(WorkingCalendar $calendar, DateTimeImmutable $date): ?DateTimeImmutable {
+		$candidate = $date;
+		for ($step = 0; $step < self::MAX_ROLL_DAYS; $step++) {
+			if ($calendar->isWorkingDay(moment: $candidate) === true) {
+				return $candidate;
+			}
+
+			$candidate = $candidate->modify('+1 day');
+		}
+
+		return null;
+	}//end firstWorkingDay()
 }//end class

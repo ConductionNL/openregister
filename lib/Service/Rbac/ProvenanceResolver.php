@@ -133,83 +133,11 @@ class ProvenanceResolver {
 	}//end __construct()
 
 	/**
-	 * The provenance of one action for one caller.
+	 * The provenance of every action in one vocabulary.
 	 *
 	 * The levels are read most specific first, because that is the order the
 	 * cascade resolves in and an answer that named a broader rule than the one
 	 * that actually decided would send an administrator to the wrong screen.
-	 *
-	 * @param string             $action                 The verb.
-	 * @param array<int, string> $principals             The caller's principal names.
-	 * @param array|null         $objectAuthorization    The object's own block.
-	 * @param array|null         $schemaAuthorization    The schema's block.
-	 * @param array|null         $registerAuth  The register's block.
-	 * @param mixed              $roleDefinitions        The register's role definitions.
-	 * @param array|null         $denial                 The denial the resolver found, or null.
-	 * @param bool               $denyEnforced           Whether a denial changes the answer yet.
-	 *
-	 * @return array<string, mixed> The provenance record.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	public function forAction(
-		string $action,
-		array $principals,
-		?array $objectAuthorization = null,
-		?array $schemaAuthorization = null,
-		?array $registerAuth = null,
-		mixed $roleDefinitions = null,
-		?array $denial = null,
-		bool $denyEnforced = true,
-	): array {
-		$grant = $this->grantFor(
-			action: $action,
-			principals: $principals,
-			levels: [
-				self::SOURCE_OBJECT => $objectAuthorization,
-				self::SOURCE_SCHEMA => $schemaAuthorization,
-				self::SOURCE_REGISTER => $registerAuth,
-			],
-			roleDefinitions: $roleDefinitions
-		);
-
-		// An enforced denial is the answer, whatever the grant said. Reporting
-		// the grant as the source with a deny attached would describe the rule
-		// that LOST, and an administrator reading it would go and edit that one.
-		if ($denial !== null && $denyEnforced === true) {
-			// The rule the deny beat, named rather than dropped: two rules in
-			// tension is what an administrator has to see to resolve it, and a
-			// deny reported alone reads as "nobody ever granted you this".
-			$beatenBy = null;
-			if ($grant['granted'] === true) {
-				$beatenBy = $grant['source'];
-			}
-
-			return [
-				'action' => $action,
-				'granted' => false,
-				'source' => self::SOURCE_DENY,
-				'rule' => ($denial['rule'] ?? null),
-				'principal' => ($denial['principal'] ?? null),
-				'role' => null,
-				'deny' => $denial,
-				'stagedDeny' => null,
-				'wouldHaveBeenGrantedBy' => $beatenBy,
-			];
-		}
-
-		// A staged denial rides beside the grant that still stands. This is the
-		// dry run made readable: the verb is there today and this is the rule
-		// that takes it away the day the switch moves (D15).
-		$grant['deny'] = null;
-		$grant['stagedDeny'] = $denial;
-		$grant['wouldHaveBeenGrantedBy'] = null;
-
-		return $grant;
-	}//end forAction()
-
-	/**
-	 * The provenance of every action in one vocabulary.
 	 *
 	 * @param array<int, string>              $actions    The verbs to report on.
 	 * @param array<int, string>              $principals The caller's principal names.
@@ -230,13 +158,19 @@ class ProvenanceResolver {
 	): array {
 		$provenance = [];
 		foreach ($actions as $action) {
-			$provenance[$action] = $this->forAction(
+			$grant = $this->grantFor(
 				action: $action,
 				principals: $principals,
-				objectAuthorization: ($blocks['object'] ?? null),
-				schemaAuthorization: ($blocks['schema'] ?? null),
-				registerAuth: ($blocks['register'] ?? null),
-				roleDefinitions: ($blocks['roleDefinitions'] ?? null),
+				levels: $this->levelsOf(
+					objectAuthorization: ($blocks['object'] ?? null),
+					schemaAuthorization: ($blocks['schema'] ?? null),
+					registerAuth: ($blocks['register'] ?? null)
+				),
+				roleDefinitions: ($blocks['roleDefinitions'] ?? null)
+			);
+
+			$provenance[$action] = $this->withDenial(
+				grant: $grant,
 				denial: ($denials[$action] ?? null),
 				denyEnforced: $enforced
 			);
@@ -244,6 +178,83 @@ class ProvenanceResolver {
 
 		return $provenance;
 	}//end forActions()
+
+	/**
+	 * The cascade's levels, most specific first.
+	 *
+	 * Typed, so a block that is neither an array nor null is refused here
+	 * rather than read as "not configured".
+	 *
+	 * @param array|null $objectAuthorization The object's own block.
+	 * @param array|null $schemaAuthorization The schema's block.
+	 * @param array|null $registerAuth        The register's block.
+	 *
+	 * @return array<string, array|null> Level name to block.
+	 */
+	private function levelsOf(?array $objectAuthorization, ?array $schemaAuthorization, ?array $registerAuth): array {
+		return [
+			self::SOURCE_OBJECT => $objectAuthorization,
+			self::SOURCE_SCHEMA => $schemaAuthorization,
+			self::SOURCE_REGISTER => $registerAuth,
+		];
+	}//end levelsOf()
+
+	/**
+	 * Attach a denial to a grant record: the answer when enforced, staged beside it when not.
+	 *
+	 * @param array<string, mixed> $grant        The grant half of the record.
+	 * @param array|null           $denial       The denial the resolver found, or null.
+	 * @param bool                 $denyEnforced Whether a denial changes the answer yet.
+	 *
+	 * @return array<string, mixed> The provenance record.
+	 */
+	private function withDenial(array $grant, ?array $denial, bool $denyEnforced): array {
+		// An enforced denial is the answer, whatever the grant said. Reporting
+		// the grant as the source with a deny attached would describe the rule
+		// that LOST, and an administrator reading it would go and edit that one.
+		if ($denial !== null && $denyEnforced === true) {
+			return $this->deniedRecord(grant: $grant, denial: $denial);
+		}
+
+		// A staged denial rides beside the grant that still stands. This is the
+		// dry run made readable: the verb is there today and this is the rule
+		// that takes it away the day the switch moves (D15).
+		$grant['deny'] = null;
+		$grant['stagedDeny'] = $denial;
+		$grant['wouldHaveBeenGrantedBy'] = null;
+
+		return $grant;
+	}//end withDenial()
+
+	/**
+	 * The record of an action an enforced denial removed.
+	 *
+	 * @param array<string, mixed> $grant  The grant half the deny beat.
+	 * @param array                $denial The denial.
+	 *
+	 * @return array<string, mixed> The provenance record.
+	 */
+	private function deniedRecord(array $grant, array $denial): array {
+		// The rule the deny beat, named rather than dropped: two rules in
+		// tension is what an administrator has to see to resolve it, and a
+		// deny reported alone reads as "nobody ever granted you this".
+		$beatenBy = null;
+		if ($grant['granted'] === true) {
+			$beatenBy = $grant['source'];
+		}
+
+		return [
+			'action' => $grant['action'],
+			'granted' => false,
+			'source' => self::SOURCE_DENY,
+			'rule' => ($denial['rule'] ?? null),
+			'principal' => ($denial['principal'] ?? null),
+			'role' => null,
+			'deny' => $denial,
+			'stagedDeny' => null,
+			'wouldHaveBeenGrantedBy' => $beatenBy,
+		];
+	}//end deniedRecord()
 
 	/**
 	 * The first level whose rules name this caller for this action.
@@ -256,15 +267,9 @@ class ProvenanceResolver {
 	 * @return array<string, mixed> The grant half of the record.
 	 */
 	private function grantFor(string $action, array $principals, array $levels, mixed $roleDefinitions): array {
-		$anyBlock = false;
+		$configured = $this->configuredLevels(levels: $levels);
 
-		foreach ($levels as $source => $block) {
-			if (is_array($block) === false || $block === []) {
-				continue;
-			}
-
-			$anyBlock = true;
-
+		foreach ($configured as $source => $block) {
 			$direct = $this->directGrantIn(block: $block, action: $action, principals: $principals);
 			if ($direct !== null) {
 				return [
@@ -296,6 +301,36 @@ class ProvenanceResolver {
 			}
 		}//end foreach
 
+		return $this->ungranted(action: $action, anyBlock: ($configured !== []));
+	}//end grantFor()
+
+	/**
+	 * The levels that carry a non-empty block, in order.
+	 *
+	 * @param array<string, array|null> $levels Level name to block.
+	 *
+	 * @return array<string, array> The configured levels.
+	 */
+	private function configuredLevels(array $levels): array {
+		$configured = [];
+		foreach ($levels as $source => $block) {
+			if (is_array($block) === true && $block !== []) {
+				$configured[$source] = $block;
+			}
+		}
+
+		return $configured;
+	}//end configuredLevels()
+
+	/**
+	 * The grant half of an action no level grants.
+	 *
+	 * @param string $action   The verb.
+	 * @param bool   $anyBlock Whether any level carried a block.
+	 *
+	 * @return array<string, mixed> The grant half of the record.
+	 */
+	private function ungranted(string $action, bool $anyBlock): array {
 		// No block anywhere is not the same as a block that refuses. The first
 		// is a schema nobody has configured, and the difference is the whole of
 		// what an administrator needs to know.
@@ -312,7 +347,7 @@ class ProvenanceResolver {
 			'principal' => null,
 			'role' => null,
 		];
-	}//end grantFor()
+	}//end ungranted()
 
 	/**
 	 * A rule written directly under the action key that names this caller.
