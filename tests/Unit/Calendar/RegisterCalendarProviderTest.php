@@ -18,6 +18,7 @@ namespace Unit\Calendar;
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
 use OCA\OpenRegister\Calendar\RegisterCalendar;
 use OCA\OpenRegister\Calendar\RegisterCalendarProvider;
+use OCA\OpenRegister\Calendar\RegisterCalendarSources;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -45,11 +46,8 @@ class RegisterCalendarProviderTest extends TestCase {
 
 		$this->provider = new RegisterCalendarProvider(
 			$this->schemaMapper,
-			$this->registerMapper,
-			$this->magicMapper,
 			$this->userSession,
-			$this->logger,
-			$this->transformer
+			new RegisterCalendarSources($this->magicMapper, $this->registerMapper, $this->transformer, $this->logger)
 		);
 	}
 
