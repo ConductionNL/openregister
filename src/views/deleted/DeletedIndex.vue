@@ -213,13 +213,13 @@ import {
 import Delete from 'vue-material-design-icons/Delete.vue'
 import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import eventBus from '../../eventBus.js'
 import { refreshAction } from '../../services/menuActions.js'
+import { storePaging } from '../storePaging.js'
 
 export default {
 	name: 'DeletedIndex',
@@ -238,6 +238,15 @@ export default {
 		FormatListChecks,
 		PaginationComponent,
 	},
+
+	mixins: [
+		storePaging({
+			fetch: (options) => deletedStore.fetchDeleted(options),
+			limit: () => deletedStore.deletedPagination.limit,
+			selection: 'selectedItems',
+			logPageError: false,
+		}),
+	],
 
 	data() {
 		return {
@@ -671,16 +680,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async handleObjectsDeleted(objectIds) {
-			// Remove from selection if they were selected
-			objectIds.forEach((id) => {
-				const index = this.selectedItems.indexOf(id)
-				if (index > -1) {
-					this.selectedItems.splice(index, 1)
-				}
-			})
-
-			// Refresh the list
-			await this.loadItems()
+			await this.deselectAndReload(objectIds)
 		},
 
 		/**
@@ -691,6 +691,17 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async handleObjectsRestored(objectIds) {
+			await this.deselectAndReload(objectIds)
+		},
+
+		/**
+		 * Drop these objects from the selection, then reload the list.
+		 *
+		 * @spec exclude list-view event handler; clears selection and reloads after a bulk modal action
+		 * @param {Array<string>} objectIds - IDs of the objects the modal handled
+		 * @return {Promise<void>}
+		 */
+		async deselectAndReload(objectIds) {
 			// Remove from selection if they were selected
 			objectIds.forEach((id) => {
 				const index = this.selectedItems.indexOf(id)
@@ -713,46 +724,6 @@ export default {
 		 */
 		exportFilteredItems(_options) {
 			// TODO: Implement export functionality for deleted items
-		},
-
-		/**
-		 * Handle page change from pagination component
-		 *
-		 * @spec exclude list-view pagination page-change handler
-		 * @param {number} page - The page number to change to
-		 * @return {Promise<void>}
-		 */
-		async onPageChanged(page) {
-			try {
-				await deletedStore.fetchDeleted({
-					page,
-					limit: deletedStore.deletedPagination.limit,
-				})
-				// Clear selection when page changes
-				this.selectedItems = []
-			} catch {
-				// Handle error silently
-			}
-		},
-
-		/**
-		 * Handle page size change from pagination component
-		 *
-		 * @spec exclude list-view pagination page-size-change handler
-		 * @param {number} pageSize - The new page size
-		 * @return {Promise<void>}
-		 */
-		async onPageSizeChanged(pageSize) {
-			try {
-				await deletedStore.fetchDeleted({
-					page: 1,
-					limit: pageSize,
-				})
-				// Clear selection when page size changes
-				this.selectedItems = []
-			} catch (error) {
-				console.error('Error changing page size:', error)
-			}
 		},
 
 		/**

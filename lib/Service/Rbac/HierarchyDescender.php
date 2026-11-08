@@ -138,66 +138,107 @@ class HierarchyDescender {
 		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 
 		foreach ($schemas as $schema) {
-			$declaration = $reader->declarationFor(schema: $schema);
-			if ($declaration === null) {
-				continue;
-			}
-
-			$schemaId = (int)$schema->getId();
-			$parentColumn = $this->columnFor(property: $declaration['parent']);
-
-			foreach ($registers as $register) {
-				// 🔴 THE TABLE IS THE AUTHORITY, NOT THE REGISTER'S `schemas`
-				// LIST. That list is only filled by the paths that attach a
-				// schema to a register explicitly; a register created over the
-				// API and written to directly keeps an EMPTY list while its
-				// magic table fills with objects. Gating on the list therefore
-				// answered "no register holds this schema" for every schema on
-				// such a register, `hierarchicalTables()` returned nothing, and
-				// inheritance was inert with no error and no warning — measured
-				// on a live instance 2026-09-19, where register 34 held four
-				// objects of schema 987 and its `schemas` column was empty.
-				//
-				// The existence of `openregister_table_<register>_<schema>`
-				// carrying the parent column says the same thing the list was
-				// being asked to say, and says it from the storage rather than
-				// from bookkeeping beside it.
-				$table = MagicMapperInterface::TABLE_PREFIX . (int)$register->getId() . '_' . $schemaId;
-				if ($this->tableHasColumn(table: $table, column: $parentColumn) === false) {
-					// Only worth saying when the register DOES claim the
-					// schema: a table that is simply not there is the ordinary
-					// case for every other register on the instance.
-					if ($this->registerHolds(register: $register, schemaId: $schemaId) === true) {
-						$this->logger->warning(
-							message: '[HierarchyDescender] A schema declares a parent property its table does not carry; nothing is inherited for it',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'schemaId' => $schemaId,
-								'property' => $declaration['parent'],
-								'column' => $parentColumn,
-								'table' => $table,
-							]
-						);
-					}
-
-					continue;
-				}
-
-				$resolved[] = [
-					'table' => $table,
-					'parentColumn' => $parentColumn,
-					'maxDepth' => $declaration['maxDepth'],
-					'verbs' => $declaration['verbs'],
-					'schemaId' => $schemaId,
-				];
-			}//end foreach
-		}//end foreach
+			$resolved = array_merge(
+				$resolved,
+				$this->tablesFor(reader: $reader, schema: $schema, registers: $registers)
+			);
+		}
 
 		$this->memoised = $resolved;
 
 		return $resolved;
 	}//end hierarchicalTables()
+
+	/**
+	 * The tables one schema's declared hierarchy is descended in, register by register.
+	 *
+	 * @param HierarchyGrantExpander $reader    Reads the schema's declaration.
+	 * @param object                 $schema    The schema.
+	 * @param array                  $registers Every register.
+	 *
+	 * @return array<int, array> Entries in register order; none when the schema declares no hierarchy.
+	 */
+	private function tablesFor(HierarchyGrantExpander $reader, object $schema, array $registers): array {
+		$declaration = $reader->declarationFor(schema: $schema);
+		if ($declaration === null) {
+			return [];
+		}
+
+		$schemaId = (int)$schema->getId();
+		$parentColumn = $this->columnFor(property: $declaration['parent']);
+
+		$resolved = [];
+		foreach ($registers as $register) {
+			$entry = $this->tableIn(
+				register: $register,
+				schemaId: $schemaId,
+				declaration: $declaration,
+				parentColumn: $parentColumn
+			);
+			if ($entry !== null) {
+				$resolved[] = $entry;
+			}
+		}
+
+		return $resolved;
+	}//end tablesFor()
+
+	/**
+	 * The hierarchy entry for one register's table, or null when the table lacks the parent column.
+	 *
+	 * @param object               $register     The register.
+	 * @param integer              $schemaId     The schema's id.
+	 * @param array<string, mixed> $declaration  The schema's hierarchy declaration.
+	 * @param string               $parentColumn The parent property's column.
+	 *
+	 * @return array<string, mixed>|null The entry, or null.
+	 */
+	private function tableIn(object $register, int $schemaId, array $declaration, string $parentColumn): array|null {
+			// 🔴 THE TABLE IS THE AUTHORITY, NOT THE REGISTER'S `schemas`
+			// LIST. That list is only filled by the paths that attach a
+			// schema to a register explicitly; a register created over the
+			// API and written to directly keeps an EMPTY list while its
+			// magic table fills with objects. Gating on the list therefore
+			// answered "no register holds this schema" for every schema on
+			// such a register, `hierarchicalTables()` returned nothing, and
+			// inheritance was inert with no error and no warning — measured
+			// on a live instance 2026-09-19, where register 34 held four
+			// objects of schema 987 and its `schemas` column was empty.
+			//
+			// The existence of `openregister_table_<register>_<schema>`
+			// carrying the parent column says the same thing the list was
+			// being asked to say, and says it from the storage rather than
+			// from bookkeeping beside it.
+		$table = MagicMapperInterface::TABLE_PREFIX . (int)$register->getId() . '_' . $schemaId;
+		if ($this->tableHasColumn(table: $table, column: $parentColumn) === false) {
+			// Only worth saying when the register DOES claim the
+			// schema: a table that is simply not there is the ordinary
+			// case for every other register on the instance.
+			if ($this->registerHolds(register: $register, schemaId: $schemaId) === true) {
+				$this->logger->warning(
+					message: '[HierarchyDescender] A schema declares a parent property its table does not carry; nothing is inherited for it',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'schemaId' => $schemaId,
+						'property' => $declaration['parent'],
+						'column' => $parentColumn,
+						'table' => $table,
+					]
+				);
+			}
+
+			return null;
+		}
+
+		return [
+			'table' => $table,
+			'parentColumn' => $parentColumn,
+			'maxDepth' => $declaration['maxDepth'],
+			'verbs' => $declaration['verbs'],
+			'schemaId' => $schemaId,
+		];
+	}//end tableIn()
 
 	/**
 	 * The children of a set of parents, as child uuid => parent uuid.
@@ -218,29 +259,69 @@ class HierarchyDescender {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function childrenOf(string $table, string $parentColumn, array $parentUuids, ?int $limit = null): array {
-		if (empty($parentUuids) === true || ($limit !== null && $limit < 1)) {
+		if ($this->nothingToRead(parentUuids: $parentUuids, limit: $limit) === true) {
 			return [];
 		}
 
 		$children = [];
 		foreach (array_chunk($parentUuids, self::CHUNK) as $chunk) {
-			$remaining = null;
-			if ($limit !== null) {
-				$remaining = ($limit - count($children));
-			}
-
 			$children = array_replace(
 				$children,
-				$this->childrenInChunk(table: $table, parentColumn: $parentColumn, parents: $chunk, limit: $remaining)
+				$this->childrenInChunk(
+					table: $table,
+					parentColumn: $parentColumn,
+					parents: $chunk,
+					limit: $this->remainingOf(limit: $limit, found: count($children))
+				)
 			);
 
-			if ($limit !== null && count($children) >= $limit) {
+			if ($this->limitMet(limit: $limit, found: count($children)) === true) {
 				break;
 			}
 		}
 
 		return $children;
 	}//end childrenOf()
+
+	/**
+	 * Whether a children read can be answered without a query: no parents, or a limit below one.
+	 *
+	 * @param array        $parentUuids The parents.
+	 * @param integer|null $limit       The limit, or null for none.
+	 *
+	 * @return bool True when the answer is no children.
+	 */
+	private function nothingToRead(array $parentUuids, int|null $limit): bool {
+		return (empty($parentUuids) === true || ($limit !== null && $limit < 1));
+	}//end nothingToRead()
+
+	/**
+	 * How many more children a limited read may return, or null when unlimited.
+	 *
+	 * @param integer|null $limit The limit, or null for none.
+	 * @param integer      $found How many are already found.
+	 *
+	 * @return integer|null The remainder, or null.
+	 */
+	private function remainingOf(int|null $limit, int $found): int|null {
+		if ($limit === null) {
+			return null;
+		}
+
+		return ($limit - $found);
+	}//end remainingOf()
+
+	/**
+	 * Whether a limited read has found enough.
+	 *
+	 * @param integer|null $limit The limit, or null for none.
+	 * @param integer      $found How many are found.
+	 *
+	 * @return bool True when the limit is met.
+	 */
+	private function limitMet(int|null $limit, int $found): bool {
+		return ($limit !== null && $found >= $limit);
+	}//end limitMet()
 
 	/**
 	 * The children of one chunk of parents, as child uuid => parent uuid.
@@ -268,12 +349,28 @@ class HierarchyDescender {
 			$qb->setMaxResults($limit);
 		}
 
-		$children = [];
 		$result = $qb->executeQuery();
-		foreach ($result->fetchAll() as $row) {
+		$children = $this->childrenFromRows(rows: $result->fetchAll(), parentColumn: $parentColumn);
+
+		$result->closeCursor();
+
+		return $children;
+	}//end childrenInChunk()
+
+	/**
+	 * Child uuid => parent uuid from fetched rows, dropping blanks and self-parents.
+	 *
+	 * @param array<int, array<string, mixed>> $rows         The rows.
+	 * @param string                           $parentColumn The parent column.
+	 *
+	 * @return array<string, string> Child uuid => parent uuid.
+	 */
+	private function childrenFromRows(array $rows, string $parentColumn): array {
+		$children = [];
+		foreach ($rows as $row) {
 			$childUuid = (string)($row['_uuid'] ?? '');
 			$parentUuid = (string)($row[$parentColumn] ?? '');
-			if ($childUuid === '' || $parentUuid === '' || $childUuid === $parentUuid) {
+			if ($this->isChildRow(childUuid: $childUuid, parentUuid: $parentUuid) === false) {
 				// A row naming ITSELF as its parent is the shortest cycle
 				// there is, and it is the one an import writes. Dropping it
 				// here means the expander never has to treat it specially.
@@ -283,10 +380,20 @@ class HierarchyDescender {
 			$children[$childUuid] = $parentUuid;
 		}
 
-		$result->closeCursor();
-
 		return $children;
-	}//end childrenInChunk()
+	}//end childrenFromRows()
+
+	/**
+	 * Whether a row names a child and a different parent.
+	 *
+	 * @param string $childUuid  The child's uuid.
+	 * @param string $parentUuid The parent's uuid.
+	 *
+	 * @return bool True when both are set and differ.
+	 */
+	private function isChildRow(string $childUuid, string $parentUuid): bool {
+		return ($childUuid !== '' && $parentUuid !== '' && $childUuid !== $parentUuid);
+	}//end isChildRow()
 
 	/**
 	 * The ancestors of one object, nearest first.
@@ -319,6 +426,18 @@ class HierarchyDescender {
 			return [];
 		}
 
+		return $this->walkUp(hierarchy: $hierarchy, objectUuid: $objectUuid);
+	}//end ancestorsOf()
+
+	/**
+	 * Follow the parent column up from one object, bounded by depth and stopped by a cycle.
+	 *
+	 * @param array<string, mixed> $hierarchy  The object's hierarchy entry.
+	 * @param string               $objectUuid The object to start from.
+	 *
+	 * @return array<int, string> Ancestor uuids, nearest first.
+	 */
+	private function walkUp(array $hierarchy, string $objectUuid): array {
 		$ancestors = [];
 		$seen = [$objectUuid => true];
 		$current = $objectUuid;
@@ -340,7 +459,7 @@ class HierarchyDescender {
 		}
 
 		return $ancestors;
-	}//end ancestorsOf()
+	}//end walkUp()
 
 	/**
 	 * The hierarchy declaration for one register and schema, or null.
@@ -460,17 +579,28 @@ class HierarchyDescender {
 		}
 
 		foreach ($schemas as $entry) {
-			if (is_array($entry) === true) {
-				$entry = ($entry['id'] ?? ($entry['schema'] ?? ''));
-			}
-
-			if ((string)$entry === (string)$schemaId) {
+			if ((string)$this->schemaIdOf(entry: $entry) === (string)$schemaId) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end registerHolds()
+
+	/**
+	 * The schema id one entry of a register's schemas list names.
+	 *
+	 * @param mixed $entry A bare id, or an object-shaped entry carrying `id` or `schema`.
+	 *
+	 * @return mixed The id as written.
+	 */
+	private function schemaIdOf(mixed $entry): mixed {
+		if (is_array($entry) === true) {
+			return ($entry['id'] ?? ($entry['schema'] ?? ''));
+		}
+
+		return $entry;
+	}//end schemaIdOf()
 
 	/**
 	 * Whether a table carries a column.
