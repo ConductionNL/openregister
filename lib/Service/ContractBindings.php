@@ -1034,6 +1034,8 @@ final class ContractBindings {
 		RevealFlusherInterface::class => RevealFlusher::class,
 		UserPrincipalResolverInterface::class => UserPrincipalResolver::class,
 		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
+		\OCA\OpenRegister\Service\Flow\FlowAccessInterface::class => \OCA\OpenRegister\Service\Flow\FlowAccess::class,
+		\OCA\OpenRegister\Service\View\ViewObjectQueryInterface::class => \OCA\OpenRegister\Service\View\ViewObjectQuery::class,
 	];
 
 	/**
