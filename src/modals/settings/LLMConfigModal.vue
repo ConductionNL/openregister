@@ -85,25 +85,13 @@
 				class="config-section">
 				<h3>{{ t('openregister', 'OpenAI Embedding Configuration') }}</h3>
 
-				<div class="form-group">
-					<label for="openai-api-key">{{
-						t('openregister', 'API Key')
-					}}</label>
-					<input
-						id="openai-api-key"
-						v-model="openaiConfig.apiKey"
-						type="password"
-						placeholder="sk-..."
-						class="input-field" />
-					<small
-						>{{ t('openregister', 'Your OpenAI API key. Get one at') }}
-						<a
-							href="https://platform.openai.com/api-keys"
-							target="_blank"
-							>platform.openai.com</a
-						></small
-					>
-				</div>
+				<LlmApiKeyField
+					id="openai-api-key"
+					v-model="openaiConfig.apiKey"
+					placeholder="sk-..."
+					:hint="t('openregister', 'Your OpenAI API key. Get one at')"
+					href="https://platform.openai.com/api-keys"
+					linkText="platform.openai.com" />
 
 				<div class="form-group">
 					<label for="openai-model">{{
@@ -150,49 +138,16 @@
 				class="config-section">
 				<h3>{{ t('openregister', 'Ollama Embedding Configuration') }}</h3>
 
-				<div class="form-group">
-					<label for="ollama-url">{{
-						t('openregister', 'Ollama URL')
-					}}</label>
-					<input
-						id="ollama-url"
-						v-model="ollamaConfig.url"
-						type="text"
-						placeholder="http://localhost:11434"
-						class="input-field" />
-					<small>{{
-						t('openregister', 'URL where Ollama is running')
-					}}</small>
-				</div>
+				<LlmOllamaUrlField
+					id="ollama-url"
+					v-model="ollamaConfig.url" />
 
-				<div class="form-group">
-					<label for="ollama-model">{{
-						t('openregister', 'Model Name')
-					}}</label>
-					<NcSelect
-						id="ollama-model"
-						v-model="ollamaConfig.model"
-						inputLabel="Ollama Config Model"
-						:options="ollamaModelOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select model')"
-						:labelOutside="true"
-						:taggable="true"
-						:createOption="(option) => ({ id: option, name: option })">
-						<template #option="{ name, description }">
-							<div class="model-option">
-								<strong>{{ name }}</strong>
-								<small v-if="description">{{ description }}</small>
-							</div>
-						</template>
-					</NcSelect>
-					<small>{{
-						t(
-							'openregister',
-							'Select a model or type a custom model name',
-						)
-					}}</small>
-				</div>
+				<LlmOllamaModelSelect
+					id="ollama-model"
+					v-model="ollamaConfig.model"
+					:label="t('openregister', 'Model Name')"
+					inputLabel="Ollama Config Model"
+					:options="ollamaModelOptions" />
 			</div>
 
 			<!-- Fireworks Embedding Configuration -->
@@ -206,28 +161,13 @@
 					{{ t('openregister', 'Fireworks AI Embedding Configuration') }}
 				</h3>
 
-				<div class="form-group">
-					<label for="fireworks-api-key">{{
-						t('openregister', 'API Key')
-					}}</label>
-					<input
-						id="fireworks-api-key"
-						v-model="fireworksConfig.apiKey"
-						type="password"
-						placeholder="fw_..."
-						class="input-field" />
-					<small
-						>{{
-							t(
-								'openregister',
-								'Your Fireworks AI API key. Get one at',
-							)
-						}}
-						<a href="https://fireworks.ai" target="_blank"
-							>fireworks.ai</a
-						></small
-					>
-				</div>
+				<LlmApiKeyField
+					id="fireworks-api-key"
+					v-model="fireworksConfig.apiKey"
+					placeholder="fw_..."
+					:hint="t('openregister', 'Your Fireworks AI API key. Get one at')"
+					href="https://fireworks.ai"
+					linkText="fireworks.ai" />
 
 				<div class="form-group">
 					<label for="fireworks-embedding-model">{{
@@ -277,27 +217,14 @@
 				class="config-section">
 				<h3>{{ t('openregister', 'OpenAI Chat Settings') }}</h3>
 
-				<div
+				<LlmApiKeyField
 					v-if="selectedEmbeddingProvider?.id !== 'openai'"
-					class="form-group">
-					<label for="openai-chat-api-key">{{
-						t('openregister', 'API Key')
-					}}</label>
-					<input
-						id="openai-chat-api-key"
-						v-model="openaiConfig.apiKey"
-						type="password"
-						placeholder="sk-..."
-						class="input-field" />
-					<small
-						>{{ t('openregister', 'Your OpenAI API key. Get one at') }}
-						<a
-							href="https://platform.openai.com/api-keys"
-							target="_blank"
-							>platform.openai.com</a
-						></small
-					>
-				</div>
+					id="openai-chat-api-key"
+					v-model="openaiConfig.apiKey"
+					placeholder="sk-..."
+					:hint="t('openregister', 'Your OpenAI API key. Get one at')"
+					href="https://platform.openai.com/api-keys"
+					linkText="platform.openai.com" />
 
 				<div class="form-group">
 					<label for="openai-chat-model">{{
@@ -331,30 +258,14 @@
 				class="config-section">
 				<h3>{{ t('openregister', 'Fireworks AI Chat Settings') }}</h3>
 
-				<div
+				<LlmApiKeyField
 					v-if="selectedEmbeddingProvider?.id !== 'fireworks'"
-					class="form-group">
-					<label for="fireworks-chat-api-key">{{
-						t('openregister', 'API Key')
-					}}</label>
-					<input
-						id="fireworks-chat-api-key"
-						v-model="fireworksConfig.apiKey"
-						type="password"
-						placeholder="fw_..."
-						class="input-field" />
-					<small
-						>{{
-							t(
-								'openregister',
-								'Your Fireworks AI API key. Get one at',
-							)
-						}}
-						<a href="https://fireworks.ai" target="_blank"
-							>fireworks.ai</a
-						></small
-					>
-				</div>
+					id="fireworks-chat-api-key"
+					v-model="fireworksConfig.apiKey"
+					placeholder="fw_..."
+					:hint="t('openregister', 'Your Fireworks AI API key. Get one at')"
+					href="https://fireworks.ai"
+					linkText="fireworks.ai" />
 
 				<div class="form-group">
 					<label for="fireworks-chat-model">{{
@@ -385,51 +296,17 @@
 				class="config-section">
 				<h3>{{ t('openregister', 'Ollama Chat Settings') }}</h3>
 
-				<div
+				<LlmOllamaUrlField
 					v-if="selectedEmbeddingProvider?.id !== 'ollama'"
-					class="form-group">
-					<label for="ollama-chat-url">{{
-						t('openregister', 'Ollama URL')
-					}}</label>
-					<input
-						id="ollama-chat-url"
-						v-model="ollamaConfig.url"
-						type="text"
-						placeholder="http://localhost:11434"
-						class="input-field" />
-					<small>{{
-						t('openregister', 'URL where Ollama is running')
-					}}</small>
-				</div>
+					id="ollama-chat-url"
+					v-model="ollamaConfig.url" />
 
-				<div class="form-group">
-					<label for="ollama-chat-model">{{
-						t('openregister', 'Chat Model')
-					}}</label>
-					<NcSelect
-						id="ollama-chat-model"
-						v-model="ollamaConfig.chatModel"
-						inputLabel="Ollama Config Chat Model"
-						:options="ollamaModelOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select model')"
-						:labelOutside="true"
-						:taggable="true"
-						:createOption="(option) => ({ id: option, name: option })">
-						<template #option="{ name, description }">
-							<div class="model-option">
-								<strong>{{ name }}</strong>
-								<small v-if="description">{{ description }}</small>
-							</div>
-						</template>
-					</NcSelect>
-					<small>{{
-						t(
-							'openregister',
-							'Select a model or type a custom model name',
-						)
-					}}</small>
-				</div>
+				<LlmOllamaModelSelect
+					id="ollama-chat-model"
+					v-model="ollamaConfig.chatModel"
+					:label="t('openregister', 'Chat Model')"
+					inputLabel="Ollama Config Chat Model"
+					:options="ollamaModelOptions" />
 			</div>
 
 			<!-- Vector Search Backend -->
@@ -527,7 +404,7 @@
 					</template>
 					{{
 						testingEmbedding
-							? t('openregister', 'Testing...')
+							? t('openregister', 'Testing…')
 							: t('openregister', 'Test Embedding')
 					}}
 				</NcButton>
@@ -544,7 +421,7 @@
 					</template>
 					{{
 						testingChat
-							? t('openregister', 'Testing...')
+							? t('openregister', 'Testing…')
 							: t('openregister', 'Test Chat')
 					}}
 				</NcButton>
@@ -560,7 +437,7 @@
 					</template>
 					{{
 						clearingEmbeddings
-							? t('openregister', 'Clearing...')
+							? t('openregister', 'Clearing…')
 							: t('openregister', 'Clear All Embeddings')
 					}}
 				</NcButton>
@@ -606,7 +483,11 @@ import {
 import Delete from 'vue-material-design-icons/Delete.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
+import LlmApiKeyField from './llm/LlmApiKeyField.vue'
+import LlmOllamaModelSelect from './llm/LlmOllamaModelSelect.vue'
+import LlmOllamaUrlField from './llm/LlmOllamaUrlField.vue'
 import SettingsSaveActions from './SettingsSaveActions.vue'
+import { freshState } from '../../services/initialState.js'
 import {
 	AI_FEATURES,
 	CHAT_PROVIDERS,
@@ -628,7 +509,6 @@ import {
 	usesOllama,
 	vectorBackends,
 } from './llmSettings.js'
-import { freshState } from '../../services/initialState.js'
 
 /**
  * The state every instance of this component starts from.
@@ -696,6 +576,9 @@ export default {
 		InformationOutline,
 		TestTube,
 		Delete,
+		LlmApiKeyField,
+		LlmOllamaModelSelect,
+		LlmOllamaUrlField,
 		SettingsSaveActions,
 	},
 
@@ -1135,29 +1018,9 @@ export default {
 
 @include form-group;
 
-.form-group small a {
-	color: var(--color-primary-element);
-	text-decoration: none;
-
-	&:hover {
-		text-decoration: underline;
-	}
-}
-
 .provider-option,
 .model-option {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-
-	strong {
-		font-size: 14px;
-	}
-
-	small {
-		color: var(--color-text-maxcontrast);
-		font-size: 12px;
-	}
+	@include stacked-select-option;
 }
 
 .backend-option {
