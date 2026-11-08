@@ -182,6 +182,8 @@ use OCA\OpenRegister\Service\Import\SourceRowReader;
 use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
+use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProviderInterface;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
@@ -243,6 +245,8 @@ use OCA\OpenRegister\Service\Party\PartySchemaCatalogueInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use OCA\OpenRegister\Service\Party\TrustedPartyReaderInterface;
+use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
+use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryServiceInterface;
 use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
@@ -345,6 +349,7 @@ final class ContractBindings {
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
+		BrpPersonProviderInterface::class => BrpPersonProvider::class,
 		FlowStateNodeInterface::class => FlowStateNode::class,
 		IterateNodeInterface::class => IterateNode::class,
 		LinkObjectNodeInterface::class => LinkObjectNode::class,
@@ -352,8 +357,11 @@ final class ContractBindings {
 		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
+		\OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface::class => \OCA\OpenRegister\Service\Portal\PortalSubjectAssertion::class,
+		PortalTaskDeliveryServiceInterface::class => PortalTaskDeliveryService::class,
 		RouterNodeInterface::class => RouterNode::class,
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
+		\OCA\OpenRegister\Service\ShareLinkServiceInterface::class => \OCA\OpenRegister\Service\ShareLinkService::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
 		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,

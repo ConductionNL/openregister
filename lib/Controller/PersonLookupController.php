@@ -43,7 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
+use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProviderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -60,12 +60,12 @@ class PersonLookupController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param BrpPersonProvider $brpProvider BRP person lookup leaf.
+	 * @param BrpPersonProviderInterface $brpProvider BRP person lookup leaf.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly BrpPersonProvider $brpProvider,
+		private readonly BrpPersonProviderInterface $brpProvider,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

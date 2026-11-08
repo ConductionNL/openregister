@@ -52,7 +52,7 @@ use OCP\IRequest;
  *
  * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
  */
-class PortalSubjectAssertion {
+class PortalSubjectAssertion implements PortalSubjectAssertionInterface {
 
 	/**
 	 * The header the assertion travels in.
