@@ -105,8 +105,7 @@ class DeckCardService implements DeckCardServiceInterface {
 	 * @param DeckLinkMapperInterface $deckLinkMapper Deck link mapper
 	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger
 	 * @param IURLGenerator $urlGenerator URL generator
-	 * @param IUserManager $userManager User manager for assignee display names
-	 * @param ContainerInterface $container App container Deck's services are resolved from
+	 * @param DeckPlatform $deck User manager for assignee display names and the container Deck's services are resolved from
 	 *
 	 * @return void
 	 */
@@ -114,16 +113,15 @@ class DeckCardService implements DeckCardServiceInterface {
 		DeckLinkMapperInterface $deckLinkMapper,
 		LinkServiceRuntime $runtime,
 		IURLGenerator $urlGenerator,
-		IUserManager $userManager,
-		ContainerInterface $container,
+		DeckPlatform $deck,
 	) {
 		$this->deckLinkMapper = $deckLinkMapper;
 		$this->appManager = $runtime->appManager();
 		$this->userSession = $runtime->userSession();
 		$this->urlGenerator = $urlGenerator;
 		$this->logger = $runtime->logger();
-		$this->userManager = $userManager;
-		$this->container = $container;
+		$this->userManager = $deck->userManager;
+		$this->container = $deck->container;
 	}//end __construct()
 
 	/**

@@ -149,8 +149,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 	 * Constructor for ContactMatchingService.
 	 *
 	 * @param ObjectOperationsInterface $objectService The object service
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper
-	 * @param RegisterMapperInterface $registerMapper The register mapper
+	 * @param ContactMatchingMappers $mappers The schema and register mappers
 	 * @param ICacheFactory $cacheFactory The cache factory
 	 * @param LoggerInterface $logger The logger
 	 *
@@ -158,14 +157,13 @@ class ContactMatchingService implements ContactMatcherInterface {
 	 */
 	public function __construct(
 		ObjectOperationsInterface $objectService,
-		SchemaMapperInterface $schemaMapper,
-		RegisterMapperInterface $registerMapper,
+		ContactMatchingMappers $mappers,
 		ICacheFactory $cacheFactory,
 		LoggerInterface $logger,
 	) {
 		$this->objectService = $objectService;
-		$this->schemaMapper = $schemaMapper;
-		$this->registerMapper = $registerMapper;
+		$this->schemaMapper = $mappers->schemaMapper;
+		$this->registerMapper = $mappers->registerMapper;
 		$this->logger = $logger;
 
 		try {

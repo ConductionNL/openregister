@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\DeckPlatform;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
@@ -392,7 +393,7 @@ class DeckServicesGoldenTest extends TestCase {
 		$links->method('delete')->willReturnCallback(fn ($e) => $this->record('delete(' . json_encode($this->normalise($e)) . ')') ?? $e);
 		$links->method('insert')->willReturnCallback(fn ($e) => $this->record('insert(' . json_encode($this->normalise($e)) . ')') ?? $e);
 		if ($kind === 'link') {
-			return new DeckLinkService($links, $appManager, $session, $users, $logger, $container);
+			return new DeckLinkService($links, new LinkServiceRuntime($appManager, $session, $logger), $users, $container);
 		}
 
 		$urls = $this->createMock(IURLGenerator::class);
@@ -406,6 +407,6 @@ class DeckServicesGoldenTest extends TestCase {
 				return $w['route'];
 			}
 		);
-		return new DeckCardService($links, new LinkServiceRuntime($appManager, $session, $logger), $urls, $users, $container);
+		return new DeckCardService($links, new LinkServiceRuntime($appManager, $session, $logger), $urls, new DeckPlatform($users, $container));
 	}//end makeService()
 }//end class
