@@ -69,24 +69,57 @@ use Throwable;
 class DraftActivation implements DraftActivationInterface {
 
 	/**
+	 * The schema's full validator.
+	 *
+	 * @var ObjectValidatorInterface
+	 */
+	private readonly ObjectValidatorInterface $validator;
+
+	/**
+	 * Turns a refusal into per-property findings.
+	 *
+	 * @var FormPayloadFindings
+	 */
+	private readonly FormPayloadFindings $findings;
+
+	/**
+	 * Announces the object that left draft.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $events;
+
+	/**
+	 * The clock, for the moment of receipt.
+	 *
+	 * @var ITimeFactory
+	 */
+	private readonly ITimeFactory $time;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface       $objects   Reads and saves objects.
-	 * @param ObjectValidatorInterface      $validator The schema's full validator.
-	 * @param FormPayloadFindings $findings  Turns a refusal into per-property findings.
-	 * @param IEventDispatcher    $events    Announces the object that left draft.
-	 * @param ITimeFactory        $time      The clock, for the moment of receipt.
-	 * @param IL10N               $l10n      Translations.
+	 * @param ObjectOperationsInterface $objects Reads and saves objects.
+	 * @param DraftActivationChecks     $checks  The validator, its findings and the words of a refusal.
+	 * @param DraftActivationSignals    $signals The event dispatcher and the clock.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly ObjectValidatorInterface $validator,
-		private readonly FormPayloadFindings $findings,
-		private readonly IEventDispatcher $events,
-		private readonly ITimeFactory $time,
-		private readonly IL10N $l10n,
+		DraftActivationChecks $checks,
+		DraftActivationSignals $signals,
 	) {
-
+		$this->validator = $checks->validator;
+		$this->findings = $checks->findings;
+		$this->l10n = $checks->l10n;
+		$this->events = $signals->events;
+		$this->time = $signals->time;
 	}//end __construct()
 
 	/**
