@@ -90,10 +90,6 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		AuditHashService::class => [
-			'Command/RechainAuditTrailCommand.php',
-			'Repair/RechainAuditTrailForFlowAttribution.php',
-		],
 		AuditSink::class => ['Db/AuditTrailMapper.php'],
 		ContentReportService::class => ['Listener/ContentReportRemovalListener.php'],
 		ContentReportMapper::class => ['Service/Audit/ContentReportService.php'],
