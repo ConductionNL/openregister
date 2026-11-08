@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
@@ -71,11 +71,11 @@ class ImportDsarRegisters implements IRepairStep {
 	 */
 	private const REGISTERS = [
 		'/lib/Settings/data_subject_request_register.json' => [
-			'appId' => DescriptorConfigIds::DSAR_CASES,
+			'appId' => DescriptorConfigIdsInterface::DSAR_CASES,
 			'version' => '1.2.0',
 		],
 		'/lib/Settings/dsar_policy_pack_register.json' => [
-			'appId' => DescriptorConfigIds::DSAR_POLICY_PACKS,
+			'appId' => DescriptorConfigIdsInterface::DSAR_POLICY_PACKS,
 			'version' => '1.1.0',
 		],
 	];
