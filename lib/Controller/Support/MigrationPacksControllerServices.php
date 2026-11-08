@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\MigrationPackServiceInterface;
-use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder;
-use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponderInterface;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReaderInterface;
 
 /**
  * The collaborators of MigrationPacksController, wired by DI autowiring.
@@ -37,16 +37,16 @@ final class MigrationPacksControllerServices {
 	 *
 	 * @param MigrationPackServiceInterface $service Business logic.
 	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param MigrationPackRequestReader $requestReader Reads definitions, uploads and preview input.
-	 * @param MigrationPackErrorResponder $errors Builds every error response.
+	 * @param MigrationPackRequestReaderInterface $requestReader Reads definitions, uploads and preview input.
+	 * @param MigrationPackErrorResponderInterface $errors Builds every error response.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
 	public function __construct(
 		public readonly MigrationPackServiceInterface $service,
 		public readonly ControllerSession $session,
-		public readonly MigrationPackRequestReader $requestReader,
-		public readonly MigrationPackErrorResponder $errors,
+		public readonly MigrationPackRequestReaderInterface $requestReader,
+		public readonly MigrationPackErrorResponderInterface $errors,
 	) {
 	}//end __construct()
 }//end class
