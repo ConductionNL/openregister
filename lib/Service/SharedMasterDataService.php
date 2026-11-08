@@ -185,19 +185,31 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 			return null;
 		}
 
-		$title = ($row['title'] ?? null);
-		if (is_string($title) === false) {
-			$title = null;
-		}
-
 		return [
 			'id' => (int)($row['id'] ?? 0),
 			'holder' => $holder,
 			'consumers' => $consumers,
-			'title' => $title,
+			'title' => $this->titleOf(row: $row),
 		];
 
 	}//end parseRow()
+
+	/**
+	 * The row's title, when it is a string.
+	 *
+	 * @param array<string, mixed> $row The raw row.
+	 *
+	 * @return string|null The title.
+	 */
+	private function titleOf(array $row): ?string {
+		$title = ($row['title'] ?? null);
+		if (is_string($title) === false) {
+			return null;
+		}
+
+		return $title;
+
+	}//end titleOf()
 
 	/**
 	 * Read the consumer list out of one raw `shared_with` value.
@@ -225,6 +237,19 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 			return [];
 		}
 
+		return array_values(array_unique($this->consumerUuids(decoded: $decoded, holder: $holder)));
+
+	}//end parseConsumers()
+
+	/**
+	 * The non-empty string entries of a decoded consumer list, other than the holder.
+	 *
+	 * @param array  $decoded The decoded `shared_with` value.
+	 * @param string $holder  The holding organisation UUID.
+	 *
+	 * @return array<int, string> The consumer UUIDs, in order, duplicates kept.
+	 */
+	private function consumerUuids(array $decoded, string $holder): array {
 		$consumers = [];
 		foreach ($decoded as $consumer) {
 			if (is_string($consumer) === true && $consumer !== '' && $consumer !== $holder) {
@@ -232,9 +257,9 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 			}
 		}
 
-		return array_values(array_unique($consumers));
+		return $consumers;
 
-	}//end parseConsumers()
+	}//end consumerUuids()
 
 	/**
 	 * The ids in one table that the given organisations may read through a share.
@@ -293,29 +318,40 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 */
 	public function holdersForResource(?int $registerId, ?int $schemaId, array $consumerOrgUuids): array {
-		if ($consumerOrgUuids === [] || ($registerId === null && $schemaId === null)) {
+		if ($consumerOrgUuids === []) {
 			return [];
 		}
 
+		// The register first, then the schema; an unknown one asks nothing.
+		return $this->holdersAcross(
+			idsByTable: [self::REGISTERS => $registerId, self::SCHEMAS => $schemaId],
+			consumerOrgUuids: $consumerOrgUuids
+		);
+
+	}//end holdersForResource()
+
+	/**
+	 * The holders the reader consumes across the given rows, deduplicated in order.
+	 *
+	 * @param array<string, integer|null> $idsByTable       The row id per table; null when not known.
+	 * @param array<int, string>          $consumerOrgUuids The reading organisation and its parents.
+	 *
+	 * @return array<int, string> The holder organisation UUIDs.
+	 */
+	private function holdersAcross(array $idsByTable, array $consumerOrgUuids): array {
 		$holders = [];
-
-		if ($registerId !== null) {
-			$holders = array_merge(
-				$holders,
-				$this->holdersOf(table: self::REGISTERS, id: $registerId, consumerOrgUuids: $consumerOrgUuids)
-			);
-		}
-
-		if ($schemaId !== null) {
-			$holders = array_merge(
-				$holders,
-				$this->holdersOf(table: self::SCHEMAS, id: $schemaId, consumerOrgUuids: $consumerOrgUuids)
-			);
+		foreach ($idsByTable as $table => $id) {
+			if ($id !== null) {
+				$holders = array_merge(
+					$holders,
+					$this->holdersOf(table: $table, id: $id, consumerOrgUuids: $consumerOrgUuids)
+				);
+			}
 		}
 
 		return array_values(array_unique($holders));
 
-	}//end holdersForResource()
+	}//end holdersAcross()
 
 	/**
 	 * The holder of one row, when the given organisations consume it.
@@ -364,11 +400,7 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 				continue;
 			}
 
-			if (in_array($declaration['holder'], $orgUuids, true) === true) {
-				return null;
-			}
-
-			if (array_intersect($declaration['consumers'], $orgUuids) === []) {
+			if ($this->isConsumedBy(declaration: $declaration, orgUuids: $orgUuids) === false) {
 				return null;
 			}
 
@@ -378,6 +410,23 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 		return null;
 
 	}//end consumedDeclaration()
+
+	/**
+	 * Whether the organisations consume, rather than hold, a declaration.
+	 *
+	 * @param array{id: int, holder: string, consumers: array<int, string>, title: ?string} $declaration The declaration.
+	 * @param array<int, string>                                                           $orgUuids    The organisations.
+	 *
+	 * @return bool False when they hold it or were never named a consumer.
+	 */
+	private function isConsumedBy(array $declaration, array $orgUuids): bool {
+		if (in_array($declaration['holder'], $orgUuids, true) === true) {
+			return false;
+		}
+
+		return array_intersect($declaration['consumers'], $orgUuids) !== [];
+
+	}//end isConsumedBy()
 
 	/**
 	 * Refuse a write to shared master data the acting organisation only consumes.
@@ -407,19 +456,30 @@ class SharedMasterDataService implements SharedMasterDataServiceInterface {
 			return;
 		}
 
-		$resourceType = 'register';
-		if ($table === self::SCHEMAS) {
-			$resourceType = 'schema';
-		}
-
 		throw new SharedMasterDataWriteException(
 			holderUuid: $declaration['holder'],
 			holderName: $this->holderName(uuid: $declaration['holder']),
-			resourceType: $resourceType,
+			resourceType: $this->resourceTypeOf(table: $table),
 			resourceTitle: $declaration['title']
 		);
 
 	}//end assertWritable()
+
+	/**
+	 * The resource type a refusal names for a table.
+	 *
+	 * @param string $table Either {@see REGISTERS} or {@see SCHEMAS}.
+	 *
+	 * @return string `schema` for the schemas table, `register` otherwise.
+	 */
+	private function resourceTypeOf(string $table): string {
+		if ($table === self::SCHEMAS) {
+			return 'schema';
+		}
+
+		return 'register';
+
+	}//end resourceTypeOf()
 
 	/**
 	 * The name of a holding organisation, for a refusal message only.
