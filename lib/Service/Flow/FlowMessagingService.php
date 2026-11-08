@@ -159,7 +159,11 @@ class FlowMessagingService {
 		$logger          = $platform->logger;
 		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipients->recipientResolver);
 		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $events, logger: $logger, runContext: $overrides->runContext);
-		$this->optOut    = ($overrides->optOut ?? OptOutAuthorityFactory::create(eventDispatcher: $events, appConfig: $platform->appConfig, logger: $logger));
+		$this->optOut    = ($overrides->optOut ?? OptOutAuthorityFactory::create(
+			eventDispatcher: $events,
+			appConfig: $platform->appConfig,
+			logger: $logger
+		));
 
 	}//end __construct()
 
