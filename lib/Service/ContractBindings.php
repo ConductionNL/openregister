@@ -603,6 +603,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
 		\OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface::class => \OCA\OpenRegister\Service\Archival\DestructionListCreator::class,
 		\OCA\OpenRegister\Service\Archival\DestructionServiceInterface::class => \OCA\OpenRegister\Service\Archival\DestructionService::class,
+		\OCA\OpenRegister\Service\Archival\DependantRetentionIndexInterface::class => \OCA\OpenRegister\Service\Archival\DependantRetentionIndex::class,
+		\OCA\OpenRegister\Service\Archival\RetentionEvaluatorInterface::class => \OCA\OpenRegister\Service\Archival\RetentionEvaluator::class,
 		\OCA\OpenRegister\Service\Audit\ContentReportServiceInterface::class => \OCA\OpenRegister\Service\Audit\ContentReportService::class,
 		\OCA\OpenRegister\Service\Connection\ConnectionReporterInterface::class => \OCA\OpenRegister\Service\Connection\ConnectionReporter::class,
 		\OCA\OpenRegister\Service\Delegation\DelegationNotifierInterface::class => \OCA\OpenRegister\Service\Delegation\DelegationNotifier::class,
