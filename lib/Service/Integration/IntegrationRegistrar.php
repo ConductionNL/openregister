@@ -20,12 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
-use OCA\OpenRegister\Controller\IntegrationsController;
-use OCA\OpenRegister\Controller\ObjectIntegrationsController;
-use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
-use OCA\OpenRegister\Controller\Support\IntegrationsControllerServices;
-use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
-use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
+use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
@@ -162,8 +157,7 @@ final class IntegrationRegistrar {
 		self::registerRepairStep(context: $context);
 		self::registerLeafRegistry(context: $context);
 		self::registerBuiltinIntegrationProviders(context: $context);
-		self::registerIntegrationsController(context: $context);
-		self::registerObjectIntegrationsController(context: $context);
+		IntegrationControllersRegistrar::register(context: $context);
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
@@ -265,70 +259,6 @@ final class IntegrationRegistrar {
 			)
 		);
 	}//end registerLeafRegistry()
-
-	/**
-	 * Register the IntegrationsController, the read-only API over the registry.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private static function registerIntegrationsController(IRegistrationContext $context): void {
-		$context->registerService(
-			IntegrationsController::class,
-			static fn (ContainerInterface $container) => new IntegrationsController(
-				appName: 'openregister',
-				request: $container->get('OCP\IRequest'),
-				services: new IntegrationsControllerServices(
-					registry: $container->get(IntegrationRegistry::class),
-					userSession: $container->get('OCP\IUserSession'),
-					groupManager: $container->get('OCP\IGroupManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				)
-			)
-		);
-	}//end registerIntegrationsController()
-
-	/**
-	 * Register the ObjectIntegrationsController, the object-scoped
-	 * sub-resource dispatch through the registry.
-	 *
-	 * @param IRegistrationContext $context The registration context.
-	 *
-	 * @return void
-	 */
-	private static function registerObjectIntegrationsController(IRegistrationContext $context): void {
-		$context->registerService(
-			ObjectIntegrationsController::class,
-			static fn (ContainerInterface $container) => new ObjectIntegrationsController(
-				appName: 'openregister',
-				request: $container->get('OCP\IRequest'),
-				services: self::buildObjectIntegrationsServices(container: $container)
-			)
-		);
-	}//end registerObjectIntegrationsController()
-
-	/**
-	 * Build the service bundle of the ObjectIntegrationsController.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return ObjectIntegrationsControllerServices
-	 */
-	private static function buildObjectIntegrationsServices(ContainerInterface $container): ObjectIntegrationsControllerServices {
-		return new ObjectIntegrationsControllerServices(
-			domain: new ObjectIntegrationsDomain(
-				registry: $container->get(IntegrationRegistry::class),
-				objectService: $container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class),
-				schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapperInterface::class)
-			),
-			access: new ObjectIntegrationsAccess(
-				visibility: $container->get(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface::class),
-				permissions: $container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class)
-			),
-			logger: $container->get('Psr\Log\LoggerInterface')
-		);
-	}//end buildObjectIntegrationsServices()
 
 	/**
 	 * Register the integration providers and link services listed in
