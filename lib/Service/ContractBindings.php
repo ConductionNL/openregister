@@ -810,6 +810,8 @@ final class ContractBindings {
 			=> \OCA\OpenRegister\Service\Configuration\RateLimiterService::class,
 		GitLabHandlerInterface::class => GitLabHandler::class,
 		\OCA\OpenRegister\Service\Hardening\ElevationServiceInterface::class => \OCA\OpenRegister\Service\Hardening\ElevationService::class,
+		\OCA\OpenRegister\Service\Hardening\AllowedOriginsInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningPolicy::class,
+		\OCA\OpenRegister\Service\Hardening\HardeningFloorsInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningPolicy::class,
 		\OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningReportService::class,
 		\OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningSettingsService::class,
 		\OCA\OpenRegister\Service\Hardening\StatementServiceInterface::class => \OCA\OpenRegister\Service\Hardening\StatementService::class,
