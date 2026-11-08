@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Oas;
 /**
  * Compute and verify ETags for OAS documents.
  */
-class OasETagComputer {
+class OasETagComputer implements OasETagComputerInterface {
 	/**
 	 * Compute the strong ETag for an OAS document.
 	 *
