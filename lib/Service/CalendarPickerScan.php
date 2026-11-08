@@ -72,7 +72,7 @@ final class CalendarPickerScan {
 			return null;
 		}
 
-		return $this->row(vevent: $vevent, start: $start, objectUri: $objectUri);
+		return $this->row(vevent: $vevent, objectUri: $objectUri);
 	}//end pickerRow()
 
 	/**
@@ -105,31 +105,50 @@ final class CalendarPickerScan {
 	 * The picker row of a VEVENT.
 	 *
 	 * @param mixed  $vevent    The VEVENT component.
-	 * @param mixed  $start     Its DTSTART, or null.
 	 * @param string $objectUri The calendar object URI.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function row(mixed $vevent, mixed $start, string $objectUri): array {
-		$dtend = null;
-		if (isset($vevent->DTEND) === true) {
-			$dtend = $vevent->DTEND->getDateTime()->format('c');
-		}
-
-		$location = null;
-		if (isset($vevent->LOCATION) === true) {
-			$location = (string)$vevent->LOCATION;
-		}
-
+	private function row(mixed $vevent, string $objectUri): array {
 		return [
 			'uid' => (string)$vevent->UID,
 			'uri' => $objectUri,
 			'summary' => (string)($vevent->SUMMARY ?? ''),
-			'dtstart' => $start?->format('c'),
-			'dtend' => $dtend,
-			'location' => $location,
+			'dtstart' => $this->startOf(vevent: $vevent)?->format('c'),
+			'dtend' => $this->endOf(vevent: $vevent),
+			'location' => $this->locationOf(vevent: $vevent),
 			'calendarId' => $this->calendarId,
 			'calendarUri' => $this->calendarUri,
 		];
 	}//end row()
+
+	/**
+	 * The DTEND of a VEVENT in ISO-8601, or null when it has none.
+	 *
+	 * @param mixed $vevent The VEVENT component.
+	 *
+	 * @return string|null
+	 */
+	private function endOf(mixed $vevent): ?string {
+		if (isset($vevent->DTEND) === true) {
+			return $vevent->DTEND->getDateTime()->format('c');
+		}
+
+		return null;
+	}//end endOf()
+
+	/**
+	 * The LOCATION of a VEVENT, or null when it has none.
+	 *
+	 * @param mixed $vevent The VEVENT component.
+	 *
+	 * @return string|null
+	 */
+	private function locationOf(mixed $vevent): ?string {
+		if (isset($vevent->LOCATION) === true) {
+			return (string)$vevent->LOCATION;
+		}
+
+		return null;
+	}//end locationOf()
 }//end class
