@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -102,17 +105,22 @@ class MagicMapperRecentLensTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$schemas,
-					$registers,
-					$this->createMock(IConfig::class),
-					$this->createMock(IEventDispatcher::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
-					$this->createMock(IUserManager::class),
-					$this->createMock(IAppConfig::class),
-					$this->createMock(LoggerInterface::class),
-					$this->createMock(SettingsService::class),
-					$container,
+					new MagicMapperLookups(
+						$schemas,
+						$registers,
+						$container
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$this->createMock(IConfig::class),
+						$this->createMock(IAppConfig::class),
+						$this->createMock(IEventDispatcher::class),
+						$this->createMock(LoggerInterface::class)
+					),
 				]
 			)
 			->onlyMethods(['searchObjectsInRegisterSchemaTable', 'countObjectsInRegisterSchemaTable', 'findMultipleAcrossAllMagicTables'])

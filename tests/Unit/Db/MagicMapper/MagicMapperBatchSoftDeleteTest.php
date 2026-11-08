@@ -24,6 +24,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -110,17 +113,22 @@ class MagicMapperBatchSoftDeleteTest extends TestCase {
 
 		return new MagicMapper(
 			$this->db,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IConfig::class),
-			$this->eventDispatcher,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(RegisterMapper::class),
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->createMock(IConfig::class),
+				$this->createMock(IAppConfig::class),
+				$this->eventDispatcher,
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end makeMapper()
 

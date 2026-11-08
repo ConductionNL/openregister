@@ -16,6 +16,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -204,19 +207,24 @@ class MagicMapperRefusedCreateComposedTest extends TestCase {
 
 		$mapper = $this->getMockBuilder(MagicMapper::class)
 			->setConstructorArgs([
-				$db,
-				$this->createMock(SchemaMapper::class),
-				$this->createMock(RegisterMapper::class),
-				$this->createMock(IConfig::class),
-				$events,
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class),
-				$this->createMock(IUserManager::class),
-				$this->createMock(IAppConfig::class),
-				$this->createMock(LoggerInterface::class),
-				$this->createMock(AppSettingsInterface::class),
-				$container,
-			])
+					$db,
+					new MagicMapperLookups(
+						$this->createMock(SchemaMapper::class),
+						$this->createMock(RegisterMapper::class),
+						$container
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$this->createMock(IConfig::class),
+						$this->createMock(IAppConfig::class),
+						$events,
+						$this->createMock(LoggerInterface::class)
+					),
+				])
 			->onlyMethods(['ensureTableForRegisterSchema', 'getTableNameForRegisterSchema', 'findObjectInRegisterSchemaTable', 'convertRowToObjectEntity'])
 			->getMock();
 		$mapper->method('ensureTableForRegisterSchema')->willReturn(true);
