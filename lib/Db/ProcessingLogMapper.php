@@ -236,9 +236,9 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 */
 	public function findFiltered(
 		array $filters = [],
-		?DateTime $from = null,
-		?DateTime $to = null,
-		?string $organisationId = null,
+		DateTime|null $from = null,
+		DateTime|null $to = null,
+		string|null $organisationId = null,
 		bool $includeConfidential = false,
 		int $limit = 100,
 		int $offset = 0,
@@ -246,18 +246,8 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName());
 
-		foreach (['register_id', 'schema_id', 'activity_id', 'actor', 'action'] as $column) {
-			$value = ($filters[$column] ?? null);
-			if ($value !== null && $value !== '') {
-				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter((string)$value)));
-			}
-		}
-
-		$idType = $this->subjectFilter(value: ($filters['subject_id_type'] ?? null));
-		$idValue = $this->subjectFilter(value: ($filters['subject_id_value'] ?? null));
-		if ($idType !== null || $idValue !== null) {
-			$qb->andWhere($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
+		$this->applySubjectFilter(qb: $qb, filters: $filters);
 
 		$this->applyPeriod(qb: $qb, from: $from, to: $to);
 		$this->applyScope(qb: $qb, organisationId: $organisationId, includeConfidential: $includeConfidential);
@@ -268,6 +258,53 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 
 		return $this->findEntities(query: $qb);
 	}//end findFiltered()
+
+	/**
+	 * One equality per filled column filter, compared as a string.
+	 *
+	 * A null or empty-string value leaves the column unfiltered.
+	 *
+	 * @param IQueryBuilder        $qb      The query.
+	 * @param array<string, mixed> $filters The inquiry filters.
+	 *
+	 * @return void
+	 */
+	private function applyColumnFilters(IQueryBuilder $qb, array $filters): void {
+		foreach (['register_id', 'schema_id', 'activity_id', 'actor', 'action'] as $column) {
+			$this->applyEqualsWhenSet(qb: $qb, column: $column, value: ($filters[$column] ?? null));
+		}
+	}//end applyColumnFilters()
+
+	/**
+	 * Restrict to a subject when the filters name its id type, its id value, or both.
+	 *
+	 * @param IQueryBuilder        $qb      The query.
+	 * @param array<string, mixed> $filters The inquiry filters.
+	 *
+	 * @return void
+	 */
+	private function applySubjectFilter(IQueryBuilder $qb, array $filters): void {
+		$idType = $this->subjectFilter(value: ($filters['subject_id_type'] ?? null));
+		$idValue = $this->subjectFilter(value: ($filters['subject_id_value'] ?? null));
+		if ($idType !== null || $idValue !== null) {
+			$qb->andWhere($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
+		}
+	}//end applySubjectFilter()
+
+	/**
+	 * An equality on a column, as a string, unless the value is null or the empty string.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param string        $column The column.
+	 * @param mixed         $value  The value, or null / '' for no condition.
+	 *
+	 * @return void
+	 */
+	private function applyEqualsWhenSet(IQueryBuilder $qb, string $column, mixed $value): void {
+		if ($value !== null && $value !== '') {
+			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter((string)$value)));
+		}
+	}//end applyEqualsWhenSet()
 
 	/**
 	 * A subject filter as a string, or null when it filters nothing.
@@ -294,20 +331,15 @@ class ProcessingLogMapper extends QBMapper implements ProcessingLogMapperInterfa
 	 *
 	 * @return array<string, int> Map of activity uuid => entry count.
 	 */
-	public function countByActivity(?string $organisationId = null, ?string $registerId = null): array {
+	public function countByActivity(string|null $organisationId = null, string|null $registerId = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('activity_id')
 			->selectAlias($qb->func()->count('*'), 'cnt')
 			->from($this->getTableName())
 			->groupBy('activity_id');
 
-		if ($organisationId !== null && $organisationId !== '') {
-			$qb->andWhere($qb->expr()->eq('organisation_id', $qb->createNamedParameter($organisationId)));
-		}
-
-		if ($registerId !== null && $registerId !== '') {
-			$qb->andWhere($qb->expr()->eq('register_id', $qb->createNamedParameter($registerId)));
-		}
+		$this->applyEqualsWhenSet(qb: $qb, column: 'organisation_id', value: $organisationId);
+		$this->applyEqualsWhenSet(qb: $qb, column: 'register_id', value: $registerId);
 
 		$result = $qb->executeQuery();
 		$counts = [];
