@@ -29,11 +29,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
-use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 
 /**
@@ -52,12 +52,12 @@ class SubjectExportController extends Controller {
 	 *
 	 * @param string               $appName The app name.
 	 * @param IRequest             $request The request.
-	 * @param SubjectExportService $exports The export service.
+	 * @param SubjectExportServiceInterface $exports The export service.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SubjectExportService $exports,
+		private readonly SubjectExportServiceInterface $exports,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -108,7 +108,7 @@ class SubjectExportController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
-	 * @no-admin-idor-exempt Guarded in-body: SubjectExportService::load refuses an export the caller did not
+	 * @no-admin-idor-exempt Guarded in-body: SubjectExportServiceInterface::load refuses an export the caller did not
 	 *   request unless they are an administrator, and answers absent rather than forbidden so the existence of
 	 *   a request about a data subject is not disclosed.
 	 *
