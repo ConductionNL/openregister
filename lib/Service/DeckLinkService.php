@@ -66,23 +66,43 @@ use Throwable;
  */
 class DeckLinkService implements DeckLinkServiceInterface {
 	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Active session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param DeckLinkMapperInterface $deckLinkMapper Persistence for link rows.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param IUserManager $userManager User lookup for assignee displayName.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ContainerInterface $container App container Deck's services are resolved from.
+	 * @param LinkServiceRuntime      $runtime        App manager, active session and logger.
+	 * @param IUserManager            $userManager    User lookup for assignee displayName.
+	 * @param ContainerInterface      $container      App container Deck's services are resolved from.
 	 */
 	public function __construct(
 		private readonly DeckLinkMapperInterface $deckLinkMapper,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
+		LinkServiceRuntime $runtime,
 		private readonly IUserManager $userManager,
-		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
 	) {
+		$this->appManager = $runtime->appManager();
+		$this->userSession = $runtime->userSession();
+		$this->logger = $runtime->logger();
 	}//end __construct()
 
 	/**
