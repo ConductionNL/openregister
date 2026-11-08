@@ -331,24 +331,58 @@ class ContactMatchingService implements ContactMatcherInterface {
 		?string $name = null,
 		?string $organization = null,
 	): array {
-		// Email matching (highest confidence).
+		// Email matching (highest confidence), then name (medium), then organization (lowest).
 		$allMatches = $this->byUuid(matches: $this->matchByEmail(email: $email));
+		$allMatches = $this->withNameMatches(allMatches: $allMatches, name: $name);
+		$allMatches = $this->withOrganizationMatches(allMatches: $allMatches, organization: $organization);
 
-		// Name matching (medium confidence).
-		if (($name ?? '') !== '') {
-			$allMatches = $this->keepStrongest(allMatches: $allMatches, matches: $this->matchByName(name: $name));
+		return $this->byConfidence(matches: $allMatches);
+	}//end matchContact()
+
+	/**
+	 * Merge in the name matches, when a name is given.
+	 *
+	 * @param array<string,array<string,mixed>> $allMatches The matches so far, keyed by uuid.
+	 * @param string|null                       $name       The display name.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 */
+	private function withNameMatches(array $allMatches, ?string $name): array {
+		if (($name ?? '') === '') {
+			return $allMatches;
 		}
 
-		// Organization matching (lowest confidence).
-		if (($organization ?? '') !== '') {
-			$allMatches = $this->keepStrongest(
-				allMatches: $allMatches,
-				matches: $this->matchByOrganization(organization: $organization)
-			);
+		return $this->keepStrongest(allMatches: $allMatches, matches: $this->matchByName(name: $name));
+	}//end withNameMatches()
+
+	/**
+	 * Merge in the organization matches, when an organization is given.
+	 *
+	 * @param array<string,array<string,mixed>> $allMatches   The matches so far, keyed by uuid.
+	 * @param string|null                       $organization The organization name.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 */
+	private function withOrganizationMatches(array $allMatches, ?string $organization): array {
+		if (($organization ?? '') === '') {
+			return $allMatches;
 		}
 
-		// Sort by confidence descending.
-		$results = array_values($allMatches);
+		return $this->keepStrongest(
+			allMatches: $allMatches,
+			matches: $this->matchByOrganization(organization: $organization)
+		);
+	}//end withOrganizationMatches()
+
+	/**
+	 * The matches as a list, sorted by confidence descending.
+	 *
+	 * @param array<string,array<string,mixed>> $matches The matches keyed by uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function byConfidence(array $matches): array {
+		$results = array_values($matches);
 		usort(
 			$results,
 			static function (array $a, array $b): int {
@@ -357,7 +391,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 		);
 
 		return $results;
-	}//end matchContact()
+	}//end byConfidence()
 
 	/**
 	 * Key matches by their uuid, dropping those without one; a later match with the same uuid wins.
