@@ -47,7 +47,7 @@ use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
 use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
-use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
@@ -1438,7 +1438,7 @@ class SchemasController extends Controller {
 			return null;
 		}
 
-		$externalRefusal = (new ExternalGrantGuard())->refusalFor($data['authorization']);
+		$externalRefusal = RbacChecks::externalGrants()->refusalFor($data['authorization']);
 		if ($externalRefusal === null) {
 			return null;
 		}

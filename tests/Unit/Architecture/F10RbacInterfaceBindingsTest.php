@@ -4,11 +4,13 @@
  * The F10 Rbac services are reached through their interfaces from outside lib/Service.
  *
  * Each class listed here was named directly by a lib file in another component.
- * Outside callers now type against and resolve its interface, and the registrar
- * of the class's own component aliases the interface to the class, so every
- * caller still gets the same shared instance. A missing alias is a runtime 500
- * that no other unit test sees, so this test pins the binding as well as the
- * implementation and the callers.
+ * Outside callers of the shared services now type against and resolve an
+ * interface, and ContractBindings aliases it to the class, so every caller still
+ * gets the same shared instance. A missing alias is a runtime 500 that no other
+ * unit test sees, so this test pins the binding as well as the implementation
+ * and the callers. The checks the callers built with `new` are built by
+ * RbacChecks instead: a fresh instance with the same arguments, typed as the
+ * interface.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Architecture
@@ -25,11 +27,21 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
+use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\ExternalGrantGuardInterface;
+use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
+use OCA\OpenRegister\Service\Rbac\MetadataConditionFindingsInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachServiceInterface;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
+use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
+use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindingsInterface;
+use OCA\OpenRegister\Service\Rbac\ViewShareResolver;
+use OCA\OpenRegister\Service\Rbac\ViewShareResolverInterface;
+use OCP\IDBConnection;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -59,6 +71,18 @@ final class F10RbacInterfaceBindingsTest extends TestCase {
 	];
 
 	/**
+	 * Class => the interface it is returned as, for the checks RbacChecks builds.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	private const BUILT = [
+		ExternalGrantGuard::class => ExternalGrantGuardInterface::class,
+		MetadataConditionFindings::class => MetadataConditionFindingsInterface::class,
+		UnknownRuleKeyFindings::class => UnknownRuleKeyFindingsInterface::class,
+		ViewShareResolver::class => ViewShareResolverInterface::class,
+	];
+
+	/**
 	 * One case per class.
 	 *
 	 * @return array<string, array{class-string}>
@@ -71,6 +95,44 @@ final class F10RbacInterfaceBindingsTest extends TestCase {
 
 		return $cases;
 	}//end classes()
+
+	/**
+	 * Every class, bound or built.
+	 *
+	 * @return array<string, array{class-string}>
+	 */
+	public static function allClasses(): array {
+		$cases = self::classes();
+		foreach (array_keys(self::BUILT) as $class) {
+			$cases[$class] = [$class];
+		}
+
+		return $cases;
+	}//end allClasses()
+
+	/**
+	 * RbacChecks builds a fresh instance of each check, of the class the callers built.
+	 *
+	 * @return void
+	 */
+	public function testTheFactoryBuildsWhatTheCallersBuilt(): void {
+		$db    = $this->createMock(originalClassName: IDBConnection::class);
+		$built = [
+			MetadataConditionFindings::class => static fn (): object => RbacChecks::metadataConditions(db: $db),
+			UnknownRuleKeyFindings::class => static fn (): object => RbacChecks::unknownRuleKeys(db: $db),
+			ExternalGrantGuard::class => static fn (): object => RbacChecks::externalGrants(),
+			ViewShareResolver::class => static fn (): object => RbacChecks::viewShares(),
+		];
+		foreach ($built as $class => $build) {
+			$first = $build();
+			$this->assertSame(expected: $class, actual: get_class($first));
+			$this->assertInstanceOf(expected: self::BUILT[$class], actual: $first);
+			$this->assertNotSame(expected: $first, actual: $build());
+		}
+
+		$this->assertSame(expected: get_class(RbacChecks::metadataConditions()), actual: MetadataConditionFindings::class);
+		$this->assertSame(expected: get_class(RbacChecks::unknownRuleKeys()), actual: UnknownRuleKeyFindings::class);
+	}//end testTheFactoryBuildsWhatTheCallersBuilt()
 
 	/**
 	 * The class implements its interface, and its registrar is in its own component.
@@ -109,7 +171,7 @@ final class F10RbacInterfaceBindingsTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	#[DataProvider('classes')]
+	#[DataProvider('allClasses')]
 	public function testNoOutsideFileNamesTheClass(string $class): void {
 		$naming = [];
 		foreach ($this->outsideFiles(class: $class) as $relative => $path) {
@@ -118,7 +180,7 @@ final class F10RbacInterfaceBindingsTest extends TestCase {
 			}
 		}
 
-		$this->assertSame(expected: [], actual: $naming, message: 'Type against ' . self::CLASSES[$class][0] . ' instead.');
+		$this->assertSame(expected: [], actual: $naming, message: 'Type against ' . (self::CLASSES[$class][0] ?? self::BUILT[$class]) . ' instead.');
 	}//end testNoOutsideFileNamesTheClass()
 
 	/**
