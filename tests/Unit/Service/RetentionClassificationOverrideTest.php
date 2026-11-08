@@ -216,7 +216,9 @@ class RetentionClassificationOverrideTest extends TestCase {
 		$plain->setArchive(['enabled' => true, 'classification' => '1.1']);
 		$this->service->guardClassificationOverride(schema: $plain, data: ['selectielijstCategorie' => '9.9']);
 
-		$this->addToAssertionCount(1);
+		// The same value is refused once the schema does name the property.
+		$this->expectException(ValidationException::class);
+		$this->service->guardClassificationOverride(schema: $this->schema(), data: ['selectielijstCategorie' => '9.9']);
 	}
 
 	public function testAnArchivalAnnotationNamesItsOverridePropertyToo(): void {
