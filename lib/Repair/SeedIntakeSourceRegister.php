@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Imports the intake-sources register descriptor idempotently on upgrade/install.
  */
-class SeedIntakeSourceRegister implements IRepairStep {
+class SeedIntakeSourceRegister implements IRepairStep, IntakeSourceRegisterSlugsInterface {
 
 	/**
 	 * App-relative path to the register descriptor imported by this step.
@@ -50,20 +50,6 @@ class SeedIntakeSourceRegister implements IRepairStep {
 	 * @var string
 	 */
 	public const REGISTER_PATH = '/lib/Settings/intake_source_register.json';
-
-	/**
-	 * The register slug this step materialises.
-	 *
-	 * @var string
-	 */
-	public const REGISTER_SLUG = 'intake-sources';
-
-	/**
-	 * The schema slug an intake source is an object of.
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_SLUG = 'intake-source';
 
 	/**
 	 * Descriptor version passed to the importer's version_compare gate.
