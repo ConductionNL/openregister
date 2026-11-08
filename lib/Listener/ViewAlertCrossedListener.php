@@ -40,7 +40,7 @@ use DateTime;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
-use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -133,9 +133,9 @@ class ViewAlertCrossedListener implements IEventListener {
 	/**
 	 * Re-checks at send time that a recipient may still read the view.
 	 *
-	 * @var ViewerReachResolverInterface
+	 * @var ViewerReachResolver
 	 */
-	private readonly ViewerReachResolverInterface $viewers;
+	private readonly ViewerReachResolver $viewers;
 
 	/**
 	 * Constructor.

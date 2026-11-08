@@ -106,6 +106,7 @@ final class C01ArchivalDelegationInterfaceBindingsTest extends TestCase {
 			'Service/Rbac/ReachRevocationService.php',
 			'Service/Rbac/ReachSources.php',
 		],
+		DerivedGrantStore::class => ['Listener/IdentityClaimsLoginListener.php'],
 		AnonymisationBackendService::class => [
 			'Files/Controller/Settings/FileSettingsController.php',
 			'Files/Service/TextExtraction/EntityRecognitionBackends.php',

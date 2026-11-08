@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
-use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 
 /**
  * Who a view alert reaches: the resolved recipients, re-checked against who may still read the view.
@@ -33,11 +33,11 @@ final readonly class ViewAlertAudience {
 	 * Bundle the services.
 	 *
 	 * @param NotificationRecipientResolverInterface $recipients The engine's recipient resolver.
-	 * @param ViewerReachResolverInterface $viewers Re-checks at send time that a recipient may still read the view.
+	 * @param ViewerReachResolver $viewers Re-checks at send time that a recipient may still read the view.
 	 */
 	public function __construct(
 		public NotificationRecipientResolverInterface $recipients,
-		public ViewerReachResolverInterface $viewers,
+		public ViewerReachResolver $viewers,
 	) {
 	}//end __construct()
 }//end class

@@ -24,16 +24,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
-use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
-use OCA\OpenRegister\Service\Rbac\DerivedGrantStoreInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
 use OCA\OpenRegister\Service\Rbac\PrincipalReachServiceInterface;
-use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
-use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -57,8 +53,6 @@ final class F10RbacInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		ViewerReachResolver::class => [ViewerReachResolverInterface::class, ContractBindings::class],
-		DerivedGrantStore::class => [DerivedGrantStoreInterface::class, ContractBindings::class],
 		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, ContractBindings::class],
 		PrincipalReachService::class => [PrincipalReachServiceInterface::class, ContractBindings::class],
 		OrganisationSpecialRights::class => [OrganisationSpecialRightsInterface::class, ContractBindings::class],

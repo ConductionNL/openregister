@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Search\Controller\Support;
 
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
 use OCA\OpenRegister\Search\Service\ViewService;
-use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -36,10 +36,10 @@ final class ViewsControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ViewService                  $viewService             The view service
-	 * @param ViewPresentationService      $viewPresentationService The view presentation service
-	 * @param LoggerInterface              $logger                  Logger for error tracking
-	 * @param ViewerReachResolverInterface $viewers                 Resolves the caller and their reach
+	 * @param ViewService             $viewService             The view service
+	 * @param ViewPresentationService $viewPresentationService The view presentation service
+	 * @param LoggerInterface         $logger                  Logger for error tracking
+	 * @param ViewerReachResolver     $viewers                 Resolves the caller and their reach
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
@@ -47,7 +47,7 @@ final class ViewsControllerServices {
 		public readonly ViewService $viewService,
 		public readonly ViewPresentationService $viewPresentationService,
 		public readonly LoggerInterface $logger,
-		public readonly ViewerReachResolverInterface $viewers,
+		public readonly ViewerReachResolver $viewers,
 	) {
 	}//end __construct()
 }//end class
