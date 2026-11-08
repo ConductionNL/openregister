@@ -53,29 +53,69 @@ use Throwable;
 class ExportProfileService implements ExportProfileServiceInterface {
 
 	/**
+	 * Profile persistence.
+	 *
+	 * @var ExportProfileMapperInterface
+	 */
+	private readonly ExportProfileMapperInterface $mapper;
+
+	/**
+	 * Register lookups.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookups.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * The selection every export shares.
+	 *
+	 * @var ExportService
+	 */
+	private readonly ExportService $exportService;
+
+	/**
+	 * Projection and file writing.
+	 *
+	 * @var ExportProfileWriter
+	 */
+	private readonly ExportProfileWriter $writer;
+
+	/**
+	 * Judges a submitted profile.
+	 *
+	 * @var ExportProfileValidator
+	 */
+	private readonly ExportProfileValidator $validator;
+
+	/**
 	 * Wire the collaborators.
 	 *
-	 * @param ExportProfileMapperInterface  $mapper        Profile persistence.
-	 * @param RegisterMapperInterface       $registerMapper Register lookups.
-	 * @param SchemaMapperInterface         $schemaMapper  Schema lookups.
-	 * @param ExportService        $exportService The selection every export shares.
-	 * @param ExportProfileWriter  $writer        Projection and file writing.
-	 * @param ExportRightService    $rightService  The export verb.
-	 * @param ExportAuditRecorder   $recorder      The audit trail.
-	 * @param ExportProfileValidator $validator    Judges a submitted profile.
+	 * @param ExportProfileStores $stores       Profile, register and schema lookups.
+	 * @param ExportProfileSteps  $steps        Selection, projection and file writing, and profile validation.
+	 * @param ExportRightService  $rightService The export verb.
+	 * @param ExportAuditRecorder $recorder     The audit trail.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExportProfileMapperInterface $mapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ExportService $exportService,
-		private readonly ExportProfileWriter $writer,
+		ExportProfileStores $stores,
+		ExportProfileSteps $steps,
 		private readonly ExportRightService $rightService,
 		private readonly ExportAuditRecorder $recorder,
-		private readonly ExportProfileValidator $validator,
 	) {
+		$this->mapper = $stores->mapper;
+		$this->registerMapper = $stores->registerMapper;
+		$this->schemaMapper = $stores->schemaMapper;
+		$this->exportService = $steps->exportService;
+		$this->writer = $steps->writer;
+		$this->validator = $steps->validator;
 	}//end __construct()
 
 	/**
