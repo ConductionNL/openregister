@@ -51,7 +51,7 @@ use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
  *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class ErasureRunner {
+class ErasureRunner implements ErasureRunnerInterface {
 	/**
 	 * The rule a recorded destruction from an AVG erasure runs under.
 	 *

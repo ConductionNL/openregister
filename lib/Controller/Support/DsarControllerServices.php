@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\AvgComplianceService;
-use OCA\OpenRegister\Service\DsarService;
+use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
+use OCA\OpenRegister\Service\DsarServiceInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -36,16 +36,16 @@ final class DsarControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param DsarService $dsarService DSAR composition service.
-	 * @param AvgComplianceService $complianceService AVG compliance auditor.
+	 * @param DsarServiceInterface $dsarService DSAR composition service.
+	 * @param AvgComplianceServiceInterface $complianceService AVG compliance auditor.
 	 * @param IUserSession $userSession Current user (admin gate).
 	 * @param IGroupManager $groupManager Group manager (admin gate).
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function __construct(
-		public readonly DsarService $dsarService,
-		public readonly AvgComplianceService $complianceService,
+		public readonly DsarServiceInterface $dsarService,
+		public readonly AvgComplianceServiceInterface $complianceService,
 		public readonly IUserSession $userSession,
 		public readonly IGroupManager $groupManager,
 	) {

@@ -37,8 +37,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\DsarControllerServices;
-use OCA\OpenRegister\Service\AvgComplianceService;
-use OCA\OpenRegister\Service\DsarService;
+use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
+use OCA\OpenRegister\Service\DsarServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -53,16 +53,16 @@ class DsarController extends Controller {
 	/**
 	 * DSAR composition service.
 	 *
-	 * @var DsarService
+	 * @var DsarServiceInterface
 	 */
-	private readonly DsarService $dsarService;
+	private readonly DsarServiceInterface $dsarService;
 
 	/**
 	 * AVG compliance auditor.
 	 *
-	 * @var AvgComplianceService
+	 * @var AvgComplianceServiceInterface
 	 */
-	private readonly AvgComplianceService $complianceService;
+	private readonly AvgComplianceServiceInterface $complianceService;
 
 	/**
 	 * Current user (admin gate).

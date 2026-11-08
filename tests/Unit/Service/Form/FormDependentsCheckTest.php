@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\FormDestinationDependentsEvent;
 use OCA\OpenRegister\Service\Form\FormDependent;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Form\FormDependentsSignals;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormFieldRules;
 use OCP\EventDispatcher\Event;
@@ -130,11 +131,13 @@ class FormDependentsCheckTest extends TestCase {
 		);
 
 		$this->check = new FormDependentsCheck(
-			dispatcher: $dispatcher,
-			validator: new FormDestinationValidator(l10n: $l10n, rules: new FormFieldRules()),
-			appConfig: $this->appConfig,
-			notifications: $this->notifications,
-			logger: $this->createMock(LoggerInterface::class)
+			new FormDependentsSignals(
+				$dispatcher,
+				$this->notifications
+			),
+			new FormDestinationValidator(l10n: $l10n, rules: new FormFieldRules()),
+			$this->appConfig,
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 

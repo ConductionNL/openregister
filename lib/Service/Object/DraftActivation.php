@@ -72,7 +72,7 @@ class DraftActivation implements DraftActivationInterface {
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface       $objects   Reads and saves objects.
-	 * @param ValidateObjectInterface      $validator The schema's full validator.
+	 * @param ObjectValidatorInterface      $validator The schema's full validator.
 	 * @param FormPayloadFindings $findings  Turns a refusal into per-property findings.
 	 * @param IEventDispatcher    $events    Announces the object that left draft.
 	 * @param ITimeFactory        $time      The clock, for the moment of receipt.
@@ -80,7 +80,7 @@ class DraftActivation implements DraftActivationInterface {
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly ValidateObjectInterface $validator,
+		private readonly ObjectValidatorInterface $validator,
 		private readonly FormPayloadFindings $findings,
 		private readonly IEventDispatcher $events,
 		private readonly ITimeFactory $time,

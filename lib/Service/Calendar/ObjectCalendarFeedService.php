@@ -73,28 +73,73 @@ class ObjectCalendarFeedService {
 	private array $declarationCache = [];
 
 	/**
+	 * The object search path, RBAC included.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * The schema store.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * The saved-view store.
+	 *
+	 * @var ViewMapperInterface
+	 */
+	private readonly ViewMapperInterface $views;
+
+	/**
+	 * Resolves the principal a token names.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * The tenant time zone.
+	 *
+	 * @var IDateTimeZone
+	 */
+	private readonly IDateTimeZone $dateTimeZone;
+
+	/**
+	 * Builds one VEVENT per declared date.
+	 *
+	 * @var ObjectDateEventBuilder
+	 */
+	private readonly ObjectDateEventBuilder $eventBuilder;
+
+	/**
+	 * Folds and assembles the body.
+	 *
+	 * @var IcalendarWriter
+	 */
+	private readonly IcalendarWriter $writer;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objects The object search path, RBAC included.
-	 * @param SchemaMapperInterface $schemas The schema store.
-	 * @param ViewMapperInterface $views The saved-view store.
-	 * @param IUserManager $userManager Resolves the principal a token names.
-	 * @param IDateTimeZone $dateTimeZone The tenant time zone.
-	 * @param ObjectDateEventBuilder $eventBuilder Builds one VEVENT per declared date.
-	 * @param IcalendarWriter $writer Folds and assembles the body.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ObjectCalendarFeedSources   $sources   The stores the object calendar feed reads from.
+	 * @param ObjectCalendarFeedRendering $rendering The collaborators that turn object dates into an iCalendar body.
+	 * @param LoggerInterface             $logger    PSR logger.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly ViewMapperInterface $views,
-		private readonly IUserManager $userManager,
-		private readonly IDateTimeZone $dateTimeZone,
-		private readonly ObjectDateEventBuilder $eventBuilder,
-		private readonly IcalendarWriter $writer,
+		ObjectCalendarFeedSources $sources,
+		ObjectCalendarFeedRendering $rendering,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->objects = $sources->objects;
+		$this->schemas = $sources->schemas;
+		$this->views = $sources->views;
+		$this->userManager = $sources->userManager;
+		$this->dateTimeZone = $rendering->dateTimeZone;
+		$this->eventBuilder = $rendering->eventBuilder;
+		$this->writer = $rendering->writer;
 	}//end __construct()
 
 	/**
