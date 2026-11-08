@@ -52,7 +52,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  */
-class ChatProxyHandler {
+class ChatProxyHandler implements ChatProxyHandlerInterface {
 
 	/**
 	 * App id whose config holds the proxy target.
