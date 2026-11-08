@@ -52,7 +52,7 @@ use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
  *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class ErasurePreviewService {
+class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	/**
 	 * Wire the authorities the preview asks.
 	 *

@@ -31,11 +31,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ErasurePreviewControllerServices;
-use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
+use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStoreInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunnerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -48,23 +48,23 @@ class ErasurePreviewController extends Controller {
 	/**
 	 * The preview.
 	 *
-	 * @var ErasurePreviewService
+	 * @var ErasurePreviewServiceInterface
 	 */
-	private readonly ErasurePreviewService $previewService;
+	private readonly ErasurePreviewServiceInterface $previewService;
 
 	/**
 	 * The recorded preview and its approval.
 	 *
-	 * @var ErasurePreviewStore
+	 * @var ErasurePreviewStoreInterface
 	 */
-	private readonly ErasurePreviewStore $store;
+	private readonly ErasurePreviewStoreInterface $store;
 
 	/**
 	 * The run.
 	 *
-	 * @var ErasureRunner
+	 * @var ErasureRunnerInterface
 	 */
-	private readonly ErasureRunner $runner;
+	private readonly ErasureRunnerInterface $runner;
 
 	/**
 	 * Constructor.
@@ -119,7 +119,7 @@ class ErasurePreviewController extends Controller {
 			subjectId: $subject,
 			type: $this->optionalType(),
 			eraseMode: (string)($this->request->getParam(key: 'eraseMode')
-				?? DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE)
+				?? DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE)
 		);
 
 		$record = $this->store->record(
