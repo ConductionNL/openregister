@@ -28,6 +28,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RegisterDescriptorControllerFactory;
 
 /**
  * Covers the inventory endpoint, the forced re-import, and who may call them.
@@ -46,7 +47,7 @@ class RegisterDescriptorControllerTest extends TestCase {
 		$this->userSession  = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->controller = new RegisterDescriptorController(
+		$this->controller = RegisterDescriptorControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->descriptors,
