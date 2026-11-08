@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
 use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
 use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
-use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use RuntimeException;
 
 /**
@@ -283,7 +283,7 @@ class SchemasToolProvider extends AbstractBuiltInToolProvider {
 			return $data;
 		}
 
-		if ((new ExternalGrantGuard())->refusalFor($stored) !== null) {
+		if (RbacChecks::externalGrants()->refusalFor($stored) !== null) {
 			throw new RuntimeException('An external grant needs an end date');
 		}
 

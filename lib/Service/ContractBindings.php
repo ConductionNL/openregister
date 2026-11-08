@@ -720,6 +720,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteServiceInterface::class => \OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService::class,
 		\OCA\OpenRegister\Service\Quality\UniqueHintWarningsInterface::class => \OCA\OpenRegister\Service\Quality\UniqueHintWarnings::class,
 		\OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface::class => \OCA\OpenRegister\Service\Rbac\ViewerReachResolver::class,
+		\OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface::class => \OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights::class,
 		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
