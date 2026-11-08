@@ -48,10 +48,10 @@ use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\McpScope;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
@@ -91,7 +91,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
- * @SuppressWarnings(PHPMD.StaticAccess) PermissionHandler::stripMcpScope() is deliberately static and pure so BOTH rule
+ * @SuppressWarnings(PHPMD.StaticAccess) McpScope::strip() is deliberately static and pure so BOTH rule
  *      interpreters apply the byte-identical transform. Injecting it would let this one be constructed without it and
  *      silently diverge from the PHP-layer evaluator on which entries are inert — the exact drift ADR-011 warns about.
  */
@@ -1168,7 +1168,7 @@ class MagicRbacHandler {
 	 * @return array<int, mixed> The rules; none for a schema without its own block or an unresolvable one.
 	 */
 	private function ownReadRules(Schema $schema): array {
-		if (empty(PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization())) === true) {
+		if (empty(McpScope::strip(authorization: $schema->getAuthorization())) === true) {
 			return [];
 		}
 
@@ -2326,7 +2326,7 @@ class MagicRbacHandler {
 
 		if ($this->getCurrentUserId() === null) {
 			return (new ReadRuleTenancy())->readsPublicUnconditionally(
-				readRules: ((PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization()) ?? [])[$action] ?? [])
+				readRules: ((McpScope::strip(authorization: $schema->getAuthorization()) ?? [])[$action] ?? [])
 			);
 		}
 
@@ -2354,7 +2354,7 @@ class MagicRbacHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
 	public function admitsOrganisationlessRowsThroughCascade(Schema $schema, string $action = 'read'): bool {
-		$ownAuthorization = PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
+		$ownAuthorization = McpScope::strip(authorization: $schema->getAuthorization());
 		if (empty($ownAuthorization) === false) {
 			return false;
 		}
@@ -2641,7 +2641,7 @@ class MagicRbacHandler {
 				message: '[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
+			return McpScope::strip(authorization: $schema->getAuthorization());
 		}
 	}//end resolveSchemaAuthorization()
 
