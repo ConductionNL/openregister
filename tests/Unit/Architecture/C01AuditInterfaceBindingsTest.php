@@ -91,7 +91,6 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 	 */
 	private const KEPT_CALLERS = [
 		AuditHashService::class => [
-			'BackgroundJob/AuditSealJob.php',
 			'Command/RechainAuditTrailCommand.php',
 			'Repair/RechainAuditTrailForFlowAttribution.php',
 		],

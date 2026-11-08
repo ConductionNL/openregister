@@ -131,6 +131,7 @@ final class DbRegistrar {
 		\OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class => \OCA\OpenRegister\Db\SchemaChangelogMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
 		\OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
+		SearchTrailCleanupInterface::class => SearchTrailMapper::class,
 		SearchTrailMapperInterface::class => SearchTrailMapper::class,
 		SequenceMapperInterface::class => SequenceMapper::class,
 		SourceMapperInterface::class => SourceMapper::class,

@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\SearchTrailMapperInterface;
+use OCA\OpenRegister\Db\SearchTrailCleanupInterface;
 use OCA\OpenRegister\Db\StateHistoryMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
@@ -79,7 +79,7 @@ class LogCleanUpTask extends TimedJob {
 	 *
 	 * @param ITimeFactory           $time              The time factory for time operations
 	 * @param AuditTrailMapperInterface       $auditTrailMapper  The audit trail mapper for database operations
-	 * @param SearchTrailMapperInterface      $searchTrailMapper The search trail mapper for database operations
+	 * @param SearchTrailCleanupInterface $searchTrailMapper The search trail mapper for database operations
 	 * @param RetentionSettingsReaderInterface $retentionHandler  The retention settings handler
 	 * @param LoggerInterface        $logger            The logger for logging operations
 	 * @param StateHistoryMapperInterface|null $stateHistory     The derived state-history projection, pruned with the trail
@@ -92,7 +92,7 @@ class LogCleanUpTask extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly SearchTrailMapperInterface $searchTrailMapper,
+		private readonly SearchTrailCleanupInterface $searchTrailMapper,
 		private readonly RetentionSettingsReaderInterface $retentionHandler,
 		private readonly LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction of this job keeps

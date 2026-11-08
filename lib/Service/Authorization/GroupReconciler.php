@@ -47,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class GroupReconciler {
+class GroupReconciler implements GroupReconcilerInterface {
 
 	/**
 	 * App-config key prefix under which each app's declared group list is stored
