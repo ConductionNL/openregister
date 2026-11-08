@@ -79,9 +79,6 @@ final class C03EdepotInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		ConnectionReporter::class => [
-			'BackgroundJob/ConnectionSeamReportJob.php',
-		],
 		EdepotTransferService::class => [
 			'BackgroundJob/Support/TransferExecutionRecords.php',
 			'BackgroundJob/TransferExecutionJob.php',

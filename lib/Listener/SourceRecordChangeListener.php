@@ -57,7 +57,7 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
-use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
+use OCA\OpenRegister\Service\Merge\MasterRecomputeInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\ICache;
@@ -134,7 +134,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory for the reverse index.
 	 * @param ListenerDeferralService $deferral Actor-forwarding deferral service (ADR-078).
-	 * @param MasterRecomputeService $recompute Golden-record recompute, used on the inline fallback only.
+	 * @param MasterRecomputeInterface $recompute Golden-record recompute, used on the inline fallback only.
 	 *
 	 * @return void
 	 *
@@ -145,7 +145,7 @@ class SourceRecordChangeListener implements IEventListener {
 		private readonly LoggerInterface $logger,
 		ICacheFactory $cacheFactory,
 		private readonly ListenerDeferralService $deferral,
-		private readonly MasterRecomputeService $recompute,
+		private readonly MasterRecomputeInterface $recompute,
 	) {
 		try {
 			$this->indexCache = $cacheFactory->createDistributed('openregister_reverse_fk');
