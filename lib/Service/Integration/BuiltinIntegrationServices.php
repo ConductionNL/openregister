@@ -209,7 +209,6 @@ final class BuiltinIntegrationServices {
 			'container'    => self::CONTAINER,
 		],
 		\OCA\OpenRegister\Controller\CaseTokenController::class => [
-			'appName'      => self::APP_NAME,
 			'request'      => \OCP\IRequest::class,
 			'tokenService' => \OCA\OpenRegister\Service\CaseTokenService::class,
 			'throttler'    => \OCP\Security\Bruteforce\IThrottler::class,
