@@ -332,6 +332,8 @@ use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProviderInterface;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
@@ -359,7 +361,11 @@ use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
+use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
+use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstallerInterface;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
@@ -983,6 +989,7 @@ final class ContractBindings {
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		WatcherServiceInterface::class => WatcherService::class,
+		ReadStateServiceInterface::class => ReadStateService::class,
 		XwikiLinkServiceInterface::class => XwikiLinkService::class,
 		ZaaktypeCaseSkeletonMapperInterface::class => ZaaktypeCaseSkeletonMapper::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
@@ -1064,6 +1071,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\View\ViewObjectQueryInterface::class => \OCA\OpenRegister\Service\View\ViewObjectQuery::class,
 		CredentialAppTokenServiceInterface::class => CredentialAppTokenService::class,
 		ProviderCatalogueInterface::class => ProviderCatalogue::class,
+		NotificationsAnnotationInstallerInterface::class => NotificationsAnnotationInstaller::class,
+		ReferencedAddressNotifierInterface::class => ReferencedAddressNotifier::class,
 	];
 
 	/**

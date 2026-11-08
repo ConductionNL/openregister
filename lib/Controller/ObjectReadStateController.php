@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -74,7 +74,7 @@ class ObjectReadStateController extends Controller {
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
-	 * @param ReadStateService $readState The read-state primitive.
+	 * @param ReadStateServiceInterface $readState The read-state primitive.
 	 * @param NotificationClearingServiceInterface $clearing Empties the bell when the work is opened.
 	 * @param LoggerInterface $logger Logger.
 	 */
@@ -82,7 +82,7 @@ class ObjectReadStateController extends Controller {
 		string $appName,
 		IRequest $request,
 		ObjectOperationsInterface $objectService,
-		private readonly ReadStateService $readState,
+		private readonly ReadStateServiceInterface $readState,
 		private readonly NotificationClearingServiceInterface $clearing,
 		LoggerInterface $logger,
 	) {

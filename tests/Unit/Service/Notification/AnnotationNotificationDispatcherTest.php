@@ -13,6 +13,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceSe
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
@@ -1182,7 +1183,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 				return [['field' => 'supplierRef.contactEmail', 'outcome' => EmailSender::OUTCOME_DISPATCHED]];
 			}
 		);
-		$this->serverServices[ReferencedAddressNotifier::class] = $notifier;
+		$this->serverServices[ReferencedAddressNotifierInterface::class] = $notifier;
 
 		$recipients = [['kind' => 'email', 'field' => 'supplierRef.contactEmail']];
 		$schema = $this->schemaWithNotification(
@@ -1215,7 +1216,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	public function testAnEmailEntryWithoutTheEmailChannelIsNotSent(): void {
 		$notifier = $this->createMock(ReferencedAddressNotifier::class);
 		$notifier->expects($this->never())->method('notify');
-		$this->serverServices[ReferencedAddressNotifier::class] = $notifier;
+		$this->serverServices[ReferencedAddressNotifierInterface::class] = $notifier;
 
 		$schema = $this->schemaWithNotification(
 			[

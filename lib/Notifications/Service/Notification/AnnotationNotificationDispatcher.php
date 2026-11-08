@@ -55,7 +55,7 @@ use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 
 /**
  * Reads notification annotations and dispatches matching ones.
@@ -2566,7 +2566,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		$hasEntry = false;
 		foreach ($firing->recipientsSpec() as $recipient) {
-			if (is_array($recipient) === true && (string)($recipient['kind'] ?? '') === ReferencedAddressNotifier::KIND) {
+			if (is_array($recipient) === true && (string)($recipient['kind'] ?? '') === ReferencedAddressNotifierInterface::KIND) {
 				$hasEntry = true;
 				break;
 			}
@@ -2576,7 +2576,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return 0;
 		}
 
-		$outcomes = $this->serverContainer->get(ReferencedAddressNotifier::class)->notify(
+		$outcomes = $this->serverContainer->get(ReferencedAddressNotifierInterface::class)->notify(
 			object: $firing->object,
 			data: $firing->data,
 			recipientsSpec: $firing->recipientsSpec(),
