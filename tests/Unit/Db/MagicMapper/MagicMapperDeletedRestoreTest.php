@@ -125,7 +125,7 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
-				if ($id === ObjectSlugHandler::class) {
+				if ($id === \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface::class) {
 					return ($this->slugHandler ?? $this->standInSlugHandler());
 				}
 

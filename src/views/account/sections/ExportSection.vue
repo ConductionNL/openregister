@@ -17,11 +17,7 @@
 				{{ t('openregister', 'Export my data') }}
 			</template>
 		</NcButton>
-		<p
-			v-if="message"
-			:class="{ section__error: isError, section__success: !isError }">
-			{{ message }}
-		</p>
+		<SectionStatus :message="message" :isError="isError" />
 	</div>
 </template>
 
@@ -30,15 +26,18 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
+import SectionStatus from '../../../components/shared/SectionStatus.vue'
+import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 export default {
 	name: 'ExportSection',
-	components: { NcButton },
+	components: { NcButton, SectionStatus },
+
+	mixins: [sectionStatus],
+
 	data() {
 		return {
 			loading: false,
-			message: '',
-			isError: false,
 		}
 	},
 
@@ -70,8 +69,7 @@ export default {
 				link.click()
 				link.remove()
 				window.URL.revokeObjectURL(url)
-				this.message = t('openregister', 'Export downloaded successfully')
-				this.isError = false
+				this.setStatus(t('openregister', 'Export downloaded successfully'))
 			} catch (e) {
 				if (e.response?.status === 429) {
 					this.message = t(

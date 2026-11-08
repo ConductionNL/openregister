@@ -55,12 +55,7 @@ import {
 					<template v-if="type === 'register'">
 						<NcActionButton
 							closeAfterClick
-							@click="
-								() => {
-									registerStore.setRegisterItem(item)
-									navigationStore.setModal('publishRegister')
-								}
-							">
+							@click="openRegisterModal('publishRegister')">
 							<template #icon>
 								<CloudUploadOutline :size="20" />
 							</template>
@@ -68,12 +63,7 @@ import {
 						</NcActionButton>
 						<NcActionButton
 							closeAfterClick
-							@click="
-								() => {
-									registerStore.setRegisterItem(item)
-									navigationStore.setModal('importRegister')
-								}
-							">
+							@click="openRegisterModal('importRegister')">
 							<template #icon>
 								<Upload :size="20" />
 							</template>
@@ -297,13 +287,7 @@ import {
 									<NcActionButton
 										closeAfterClick
 										@click="
-											() => {
-												registerStore.setRegisterItem(item)
-												schemaStore.setSchemaItem(schema)
-												navigationStore.setModal(
-													'exportRegister',
-												)
-											}
+											openSchemaModal(schema, 'exportRegister')
 										">
 										<template #icon>
 											<Export :size="20" />
@@ -313,13 +297,7 @@ import {
 									<NcActionButton
 										closeAfterClick
 										@click="
-											() => {
-												registerStore.setRegisterItem(item)
-												schemaStore.setSchemaItem(schema)
-												navigationStore.setModal(
-													'importRegister',
-												)
-											}
+											openSchemaModal(schema, 'importRegister')
 										">
 										<template #icon>
 											<Upload :size="20" />
@@ -357,18 +335,12 @@ import {
 										{{ t('openregister', 'Delete Objects') }}
 									</NcActionButton>
 									<NcActionButton
-										v-if="
-											(schema.stats?.objects?.deleted || 0) > 0
-										"
+										v-if="deletedCount(schema) > 0"
 										:title="
 											t(
 												'openregister',
 												'Permanently delete all {count} soft-deleted objects. This cannot be undone!',
-												{
-													count:
-														schema.stats?.objects
-															?.deleted || 0,
-												},
+												{ count: deletedCount(schema) },
 											)
 										"
 										closeAfterClick
@@ -380,11 +352,7 @@ import {
 											t(
 												'openregister',
 												'Permanently Delete ({count})',
-												{
-													count:
-														schema.stats?.objects
-															?.deleted || 0,
-												},
+												{ count: deletedCount(schema) },
 											)
 										}}
 									</NcActionButton>
@@ -545,6 +513,17 @@ function apiUrl(path) {
  */
 function errorText(error) {
 	return error.response?.data?.message || error.message || 'Unknown error'
+}
+
+/**
+ * The placeholders of a "failed for {schema}: {error}" message.
+ *
+ * @param {object} schema The schema the request was for
+ * @param {Error} error The error
+ * @return {{schema: string, error: string}} The placeholders
+ */
+function schemaFailure(schema, error) {
+	return { schema: schema.title, error: errorText(error) }
 }
 
 /**
@@ -936,6 +915,41 @@ export default {
 	methods: {
 		// Common methods
 		/**
+		 * Open a register modal for this card's register.
+		 *
+		 * @param {string} modal The modal to open
+		 * @spec exclude store/modal-dispatch UI handler
+		 */
+		openRegisterModal(modal) {
+			registerStore.setRegisterItem(this.item)
+			navigationStore.setModal(modal)
+		},
+
+		/**
+		 * Open a register modal for one schema of this card's register.
+		 *
+		 * @param {object} schema The schema
+		 * @param {string} modal The modal to open
+		 * @spec exclude store/modal-dispatch UI handler
+		 */
+		openSchemaModal(schema, modal) {
+			registerStore.setRegisterItem(this.item)
+			schemaStore.setSchemaItem(schema)
+			navigationStore.setModal(modal)
+		},
+
+		/**
+		 * The number of soft-deleted objects of a schema, 0 when unknown.
+		 *
+		 * @param {object} schema The schema
+		 * @return {number} The count
+		 * @spec exclude UI plumbing: reads the schema statistics
+		 */
+		deletedCount(schema) {
+			return schema.stats?.objects?.deleted || 0
+		},
+
+		/**
 		 * @spec exclude store/modal-dispatch UI handler opening edit, register/schema contract owned by register/schema capability
 		 */
 		openEdit() {
@@ -1047,7 +1061,7 @@ export default {
 					t(
 						'openregister',
 						'Failed to sync magic table for {schema}: {error}',
-						{ schema: schema.title, error: errorText(error) },
+						schemaFailure(schema, error),
 					),
 				)
 			}
@@ -1082,7 +1096,7 @@ export default {
 					t(
 						'openregister',
 						'Failed to update schema configuration for {schema}: {error}',
-						{ schema: schema.title, error: errorText(error) },
+						schemaFailure(schema, error),
 					),
 				)
 			}
@@ -1109,10 +1123,11 @@ export default {
 			} catch (error) {
 				console.error('Error validating schema objects:', error)
 				showError(
-					t('openregister', 'Failed to validate {schema}: {error}', {
-						schema: schema.title,
-						error: errorText(error),
-					}),
+					t(
+						'openregister',
+						'Failed to validate {schema}: {error}',
+						schemaFailure(schema, error),
+					),
 				)
 			}
 		},
@@ -1177,7 +1192,7 @@ export default {
 			const counts = {
 				total: schema.stats?.objects?.total || 0,
 				active: this.getSchemaObjectCount(schema),
-				deleted: schema.stats?.objects?.deleted || 0,
+				deleted: this.deletedCount(schema),
 				schema: schema.title,
 			}
 			if (counts.total === 0) {
@@ -1226,7 +1241,7 @@ export default {
 					t(
 						'openregister',
 						'Failed to delete objects for {schema}: {error}',
-						{ schema: schema.title, error: errorText(error) },
+						schemaFailure(schema, error),
 					),
 				)
 			}
@@ -1257,10 +1272,11 @@ export default {
 			} catch (error) {
 				console.error('Error removing schema:', error)
 				showError(
-					t('openregister', 'Failed to remove schema {schema}: {error}', {
-						schema: schema.title,
-						error: errorText(error),
-					}),
+					t(
+						'openregister',
+						'Failed to remove schema {schema}: {error}',
+						schemaFailure(schema, error),
+					),
 				)
 			}
 		},

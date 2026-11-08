@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
-use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Listener\NotifyPushBatch;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Import\ImportErrorsCsv;
@@ -1100,12 +1100,12 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener batch API is static by design (accessible without DI from import context)
+	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushBatch API is static by design (accessible without DI from import context)
 	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
 	private function flushNotifyPushBatch(): void {
-		if (NotifyPushListener::hasBatchedCollections() === false) {
+		if (NotifyPushBatch::hasBatchedCollections() === false) {
 			return;
 		}
 
@@ -1124,7 +1124,7 @@ class ImportService implements ObjectImporterInterface {
 			return;
 		}
 
-		NotifyPushListener::flushBatch(queue: $queue);
+		NotifyPushBatch::flushBatch(queue: $queue);
 
 	}//end flushNotifyPushBatch()
 
@@ -1144,7 +1144,7 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener batch API is static by design (accessible without DI from import context)
+	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushBatch API is static by design (accessible without DI from import context)
 	 *
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 */
@@ -1152,7 +1152,7 @@ class ImportService implements ObjectImporterInterface {
 		try {
 			$registerSlug = (string)($register->getSlug() ?? '');
 			$schemaSlug = (string)($schema->getSlug() ?? '');
-			NotifyPushListener::addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+			NotifyPushBatch::addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
 		} catch (\Throwable $e) {
 			// Slug not resolvable — skip the hint, never break the import.
 			$this->logger->debug(
@@ -1487,12 +1487,12 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @return array The saveObjects() result: saved, updated, unchanged and invalid
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener::setBatchMode is an NC idiom static call
+	 * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushBatch::setBatchMode is an NC idiom static call
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function bulkSaveWithNotifyPush(array $objects, array $import): array {
-		NotifyPushListener::setBatchMode(true);
+		NotifyPushBatch::setBatchMode(true);
 		$saveResult = null;
 		try {
 			$saveResult = $this->objectService->saveObjects(
@@ -1516,7 +1516,7 @@ class ImportService implements ObjectImporterInterface {
 
 			// Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
 			$this->flushNotifyPushBatch();
-			NotifyPushListener::setBatchMode(false);
+			NotifyPushBatch::setBatchMode(false);
 		}//end try
 
 		return $saveResult;
