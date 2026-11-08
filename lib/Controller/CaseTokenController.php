@@ -55,6 +55,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Public case-token resolve controller.
@@ -71,7 +72,6 @@ class CaseTokenController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
 	 * @param CaseTokenServiceInterface $tokenService Case-token mint/resolve/revoke service.
 	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
@@ -80,13 +80,12 @@ class CaseTokenController extends Controller {
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private CaseTokenServiceInterface $tokenService,
 		private IThrottler $throttler,
 		private LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

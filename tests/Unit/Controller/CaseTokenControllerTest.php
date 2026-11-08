@@ -64,7 +64,6 @@ class CaseTokenControllerTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getRemoteAddress')->willReturn('192.0.2.7');
 		$this->controller = new CaseTokenController(
-			'openregister',
 			$request,
 			$this->tokens,
 			$this->throttler,

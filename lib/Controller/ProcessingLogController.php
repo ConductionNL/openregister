@@ -40,16 +40,16 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Controller\Support\ProcessingLogAccess;
 use OCA\OpenRegister\Controller\Support\ProcessingLogPolicy;
-use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http;
-use OCP\IAppConfig;
 use OCP\IRequest;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * REST endpoints for querying and exporting the AVG processing log.
@@ -82,26 +82,30 @@ class ProcessingLogController extends Controller {
 	private readonly GdprRequestParams $params;
 
 	/**
+	 * The processing log store and the app config the policy reads.
+	 *
+	 * @var ProcessingLogControllerServices
+	 */
+	private readonly ProcessingLogControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                       $appName             App identifier.
 	 * @param IRequest                     $request             Active request.
-	 * @param ProcessingLogMapperInterface          $logMapper           Append-only log mapper.
+	 * @param ProcessingLogControllerServices $services Processing log store and the app config the policy reads.
 	 * @param ControllerSession            $session             Session, group manager and logger.
-	 * @param IAppConfig                   $appConfig           App-config reader.
 	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ProcessingLogMapperInterface $logMapper,
+		ProcessingLogControllerServices $services,
 		private readonly ControllerSession $session,
-		IAppConfig $appConfig,
 		OrganisationServiceInterface $organisationService,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
-		$this->policy = new ProcessingLogPolicy(appConfig: $appConfig);
+		$this->services = $services;
+		$this->policy = new ProcessingLogPolicy(appConfig: $services->appConfig);
 		$this->access = new ProcessingLogAccess(session: $this->session, policy: $this->policy, organisationService: $organisationService);
 		$this->params = new GdprRequestParams(request: $request);
 	}//end __construct()
@@ -194,7 +198,7 @@ class ProcessingLogController extends Controller {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	private function filtered(?string $organisationId, bool $includeConfidential): array {
-		return $this->logMapper->findFiltered(
+		return $this->services->logMapper->findFiltered(
 			filters: $this->filters(),
 			from: $this->dateParam(key: 'from'),
 			to: $this->dateParam(key: 'to'),
@@ -244,7 +248,7 @@ class ProcessingLogController extends Controller {
 			return $rangeError;
 		}
 
-		$entries = $this->logMapper->findBySubject(
+		$entries = $this->services->logMapper->findBySubject(
 			idType: $subject['idType'], idValue: $subject['idValue'], from: $from, to: $to,
 			organisationId: $scope['organisationId'], includeConfidential: $scope['includeConfidential']
 		);

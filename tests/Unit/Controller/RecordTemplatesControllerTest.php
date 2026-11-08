@@ -154,7 +154,6 @@ class RecordTemplatesControllerTest extends TestCase {
 		$viewers->method('reachOf')->willReturnCallback(static fn (string $userId): ViewerReach => new ViewerReach(userId: $userId, groups: [], isAdmin: false));
 
 		return new RecordTemplatesController(
-			appName: 'openregister',
 			request: $request,
 			templates: $this->templates,
 			viewers: $viewers,
