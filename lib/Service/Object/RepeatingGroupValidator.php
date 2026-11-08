@@ -160,7 +160,7 @@ class RepeatingGroupValidator {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function rowsOf(mixed $value): ?array {
-		if ($value === null || $value === '') {
+		if (in_array($value, [null, ''], true) === true) {
 			return [];
 		}
 
@@ -342,11 +342,63 @@ class RepeatingGroupValidator {
 		return match ($expected) {
 			'string' => (is_string($value) === true || is_numeric($value) === true),
 			'number' => is_numeric($value),
-			'integer' => (is_int($value) === true || (is_numeric($value) === true && (string)(int)$value === (string)$value)),
-			'boolean' => (is_bool($value) === true || in_array($value, ['true', 'false', 0, 1, '0', '1'], true) === true),
-			'array' => (is_array($value) === true && ($value === [] || array_is_list($value) === true)),
-			'object' => (is_array($value) === true && ($value === [] || array_is_list($value) === false)),
+			'integer' => self::isIntegerLike(value: $value),
+			'boolean' => self::isBooleanLike(value: $value),
+			'array' => self::isListValue(value: $value),
+			'object' => self::isMapValue(value: $value),
 			default => true,
 		};
 	}//end matchesType()
+
+	/**
+	 * Whether a value is an integer or a numeric string that is one.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for an integer
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private static function isIntegerLike(mixed $value): bool {
+		return is_int($value) === true || (is_numeric($value) === true && (string)(int)$value === (string)$value);
+	}//end isIntegerLike()
+
+	/**
+	 * Whether a value is a boolean or one of its accepted spellings.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a boolean
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private static function isBooleanLike(mixed $value): bool {
+		return is_bool($value) === true || in_array($value, ['true', 'false', 0, 1, '0', '1'], true) === true;
+	}//end isBooleanLike()
+
+	/**
+	 * Whether a value is an array that is empty or a list.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a list
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private static function isListValue(mixed $value): bool {
+		return is_array($value) === true && ($value === [] || array_is_list($value) === true);
+	}//end isListValue()
+
+	/**
+	 * Whether a value is an array that is empty or not a list.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a map
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private static function isMapValue(mixed $value): bool {
+		return is_array($value) === true && ($value === [] || array_is_list($value) === false);
+	}//end isMapValue()
 }//end class
