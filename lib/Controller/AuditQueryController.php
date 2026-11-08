@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Controller\Support\AuditQueryControllerServices;
 use OCA\OpenRegister\Service\AuditQueryService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -53,22 +54,42 @@ use OCP\IUserSession;
  */
 class AuditQueryController extends Controller {
 	/**
+	 * Cross-schema audit-entry query service.
+	 *
+	 * @var AuditQueryService
+	 */
+	private readonly AuditQueryService $auditQueryService;
+
+	/**
+	 * Active user session for the admin gate.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for the admin gate.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request object.
-	 * @param AuditQueryService $auditQueryService Cross-schema audit-entry query service.
-	 * @param IUserSession $userSession Active user session for the admin gate.
-	 * @param IGroupManager $groupManager Group manager for the admin gate.
+	 * @param AuditQueryControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly AuditQueryService $auditQueryService,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		AuditQueryControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->auditQueryService = $services->auditQueryService;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 
 	}//end __construct()
 

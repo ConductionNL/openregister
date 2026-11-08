@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ExportProfilesControllerFactory;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -67,7 +68,7 @@ final class ExportProfilesControllerTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn($isAdmin);
 
-		return new ExportProfilesController(
+		return ExportProfilesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,

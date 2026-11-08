@@ -60,8 +60,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
-use OCA\OpenRegister\Service\Rbac\DenyResolver;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionReportScope;
 use OCA\OpenRegister\Service\Rbac\ScopeAudit;
 use OCP\AppFramework\Controller;
@@ -85,9 +85,9 @@ class PermissionsAuditController extends Controller {
 	/**
 	 * The grantable set, for the declared/undeclared split.
 	 *
-	 * @var PermissionCatalogue
+	 * @var PermissionCatalogueInterface
 	 */
-	private readonly PermissionCatalogue $catalogue;
+	private readonly PermissionCatalogueInterface $catalogue;
 
 	/**
 	 * The staging switch, reported beside every rule.
@@ -99,9 +99,9 @@ class PermissionsAuditController extends Controller {
 	/**
 	 * The one reader of the deny grammar.
 	 *
-	 * @var DenyResolver
+	 * @var DenyResolverInterface
 	 */
-	private readonly DenyResolver $denyResolver;
+	private readonly DenyResolverInterface $denyResolver;
 
 	/**
 	 * Resolves which registers and schemas a report covers.

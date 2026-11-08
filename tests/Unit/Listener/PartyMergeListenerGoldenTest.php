@@ -16,6 +16,7 @@ use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Listener\PartyMergeListener;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyMergeRules;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -177,7 +178,12 @@ class PartyMergeListenerGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testMoveAndAbsorbWriteExactlyTheseRows(): void {
-		$this->wireParties(definition: new PartyDefinition(kind: 'person', unionAddresses: false));
+		$this->wireParties(
+			definition: new PartyDefinition(
+				kind: 'person',
+				merge: new PartyMergeRules(survivingProperties: [], unionAddresses: false)
+			)
+		);
 		$held = $this->link(objectUuid: 'case-1', partyUuid: 'party-a', role: 'aanvrager');
 		$held->setMetadata((string)json_encode(['keep' => 'me']));
 		$duplicate = $this->link(objectUuid: 'case-1', partyUuid: 'party-b', role: 'aanvrager');

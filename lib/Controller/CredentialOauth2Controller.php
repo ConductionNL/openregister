@@ -228,14 +228,15 @@ class CredentialOauth2Controller extends Controller {
 			$provider = $this->connect->oauth2Provider(providerId: $providerId);
 			$organisation = $this->connections->gatedOrganisation(uid: $uid, requestedScope: $requestedScope);
 			$host = $this->requestedHost(provider: $provider);
-			$claims = $this->buildClaims(
-				uid: $uid,
-				providerId: $providerId,
-				provider: $provider,
-				requestedScope: $requestedScope,
-				organisation: $organisation,
-				host: $host
-			);
+			// Who, which provider, which scope, organisation and host come
+			// first; the claims the request names follow them.
+			$claims = [
+				'u' => $uid,
+				'p' => $providerId,
+				's' => $requestedScope,
+				'o' => $organisation,
+				'h' => $host,
+			] + $this->buildClaims(uid: $uid, providerId: $providerId, provider: $provider);
 		} catch (CredentialAccessDeniedException $denied) {
 			// A warning, so it reaches a default install's log: this is where an admin
 			// looks when a person cannot connect a shared account. The reason is static.
@@ -542,27 +543,19 @@ class CredentialOauth2Controller extends Controller {
 	}//end refuse()
 
 	/**
-	 * Assemble the claims a state carries.
+	 * Assemble the claims a state carries that the request names: scopes, apps,
+	 * name, client, re-authorised credential and the return and callback URLs.
+	 * The caller puts the user, provider, scope, organisation and host first.
 	 *
 	 * @param string $uid The initiating user.
 	 * @param string $providerId The catalogue provider identifier.
 	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $requestedScope The requested credential scope.
-	 * @param string|null $organisation The gated organisation, for an organisation-scoped connect.
-	 * @param string|null $host The validated per-account host, when the provider has one.
 	 *
-	 * @return array<string, mixed> The claims, plus a `_credential` shape for client resolution.
+	 * @return array<string, mixed> The request-named claims.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	private function buildClaims(
-		string $uid,
-		string $providerId,
-		array $provider,
-		string $requestedScope,
-		?string $organisation,
-		?string $host,
-	): array {
+	private function buildClaims(string $uid, string $providerId, array $provider): array {
 		$clientRef = trim((string)$this->request->getParam('credentialRef', ''));
 		$clientId = trim((string)$this->request->getParam('clientId', ''));
 		$reauthorise = trim((string)$this->request->getParam('credentialId', ''));
@@ -577,11 +570,6 @@ class CredentialOauth2Controller extends Controller {
 		}
 
 		return [
-			'u' => $uid,
-			'p' => $providerId,
-			's' => $requestedScope,
-			'o' => $organisation,
-			'h' => $host,
 			'sc' => array_values(array_map('strval', $scopes)),
 			'a' => $this->requestedAllowedApps(),
 			'nm' => trim((string)$this->request->getParam('name', $providerId)),

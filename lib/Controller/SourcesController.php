@@ -19,25 +19,21 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
+use Doctrine\DBAL\Connection;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\SourcePayload;
 use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
-use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
-use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
-use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
-use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
+use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
-use OCP\Security\ICrypto;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -59,11 +55,11 @@ use Throwable;
  */
 class SourcesController extends Controller {
 	/**
-	 * The app configuration object
+	 * The controller's injected services.
 	 *
-	 * @var IAppConfig
+	 * @var SourcesControllerServices
 	 */
-	private readonly IAppConfig $config;
+	private readonly SourcesControllerServices $services;
 
 	/**
 	 * The source mapper
@@ -87,46 +83,11 @@ class SourcesController extends Controller {
 	private readonly ControllerSession $session;
 
 	/**
-	 * Crypto service for databaseUrl encryption
+	 * Cleans and secures a submitted source before it is persisted.
 	 *
-	 * @var ICrypto
+	 * @var SourcePayload
 	 */
-	private readonly ICrypto $crypto;
-
-	/**
-	 * Resolves the transport for a source type
-	 *
-	 * @var SourceFetcherRegistry
-	 */
-	private readonly SourceFetcherRegistry $fetcherRegistry;
-
-	/**
-	 * Harvest pipeline orchestrator
-	 *
-	 * @var HarvestPipelineServiceInterface
-	 */
-	private readonly HarvestPipelineServiceInterface $pipeline;
-
-	/**
-	 * Opens read-only DBAL connections for database sources
-	 *
-	 * @var DbalConnectionFactory
-	 */
-	private readonly DbalConnectionFactory $connectionFactory;
-
-	/**
-	 * Introspects a database source into a virtual register
-	 *
-	 * @var DatabaseIntrospectionServiceInterface
-	 */
-	private readonly DatabaseIntrospectionServiceInterface $introspectionService;
-
-	/**
-	 * The app logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
+	private readonly SourcePayload $payload;
 
 	/**
 	 * Constructor for the SourcesController
@@ -143,16 +104,11 @@ class SourcesController extends Controller {
 		SourcesControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->config = $services->platform->config;
+		$this->services = $services;
 		$this->sourceMapper = $services->mappers->sourceMapper;
 		$this->l10n = $services->platform->l10n;
 		$this->session = $services->session;
-		$this->crypto = $services->platform->crypto;
-		$this->fetcherRegistry = $services->domain->fetcherRegistry;
-		$this->pipeline = $services->domain->pipeline;
-		$this->connectionFactory = $services->domain->connectionFactory;
-		$this->introspectionService = $services->domain->introspectionService;
-		$this->logger = $services->session->logger;
+		$this->payload = new SourcePayload(crypto: $services->platform->crypto);
 	}//end __construct()
 
 	/**
@@ -175,6 +131,7 @@ class SourcesController extends Controller {
 		$data = $source->jsonSerialize();
 		if ($this->isCurrentUserAdmin() === false) {
 			unset($data['databaseUrl']);
+			return $data;
 		}
 
 		// Database sources: admins get the NON-SECRET connection parts back so
@@ -182,7 +139,7 @@ class SourcesController extends Controller {
 		// `authConfigured` boolean — a custody-era default that made every UI
 		// save silently wipe the connection settings). The password/secret are
 		// never persisted for this type; strip defensively anyway.
-		if ($this->isCurrentUserAdmin() === true && (string)$source->getType() === 'database') {
+		if ((string)$source->getType() === 'database') {
 			$authConfig = ($source->getAuthConfig() ?? []);
 			unset($authConfig['password'], $authConfig['secret']);
 			$data['authConfig'] = $authConfig;
@@ -210,33 +167,39 @@ class SourcesController extends Controller {
 		// Get request parameters for filtering and searching.
 		$params = $this->request->getParams();
 
-		// Extract pagination and search parameters.
-		$limit = $this->getIntParam(params: $params, key: '_limit');
-		$offset = $this->getIntParam(params: $params, key: '_offset');
-		$page = $this->getIntParam(params: $params, key: '_page');
-		// Note: search parameter not currently used in this endpoint
-		// Convert page to offset if provided.
-		if ($page !== null && $limit !== null) {
-			$offset = ($page - 1) * $limit;
-		}
-
 		// Remove special query params from filters.
 		$filters = $params;
 		unset($filters['_limit'], $filters['_offset'], $filters['_page'], $filters['_search'], $filters['_route']);
 
 		// Return all sources that match the filters.
 		// Strip databaseUrl from non-admin responses to prevent credential exposure.
+		$limit = $this->getIntParam(params: $params, key: '_limit');
 		$sources = $this->sourceMapper->findAll(
 			limit: $limit,
-			offset: $offset,
+			offset: $this->pageOffset(params: $params, limit: $limit),
 			filters: $filters
 		);
 		return new JSONResponse(
-			data: [
-				'results' => array_map(fn (Source $src) => $this->serializeSource(source: $src), $sources),
-			]
+			data: ['results' => array_map(fn (Source $src) => $this->serializeSource(source: $src), $sources)]
 		);
 	}//end index()
+
+	/**
+	 * The offset a list request asks for: `_page` (with `_limit`) wins over `_offset`.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 * @param int|null $limit The requested page size.
+	 *
+	 * @return int|null The offset, or null when none was asked for.
+	 */
+	private function pageOffset(array $params, ?int $limit): ?int {
+		$page = $this->getIntParam(params: $params, key: '_page');
+		if ($page !== null && $limit !== null) {
+			return (($page - 1) * $limit);
+		}
+
+		return $this->getIntParam(params: $params, key: '_offset');
+	}//end pageOffset()
 
 	/**
 	 * Retrieves a single source by its ID
@@ -259,7 +222,7 @@ class SourcesController extends Controller {
 			return new JSONResponse(data: $this->serializeSource(source: $source));
 		} catch (DoesNotExistException $exception) {
 			// Return a 404 error if the source doesn't exist.
-			return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
+			return $this->fail(message: $this->l10n->t('Not Found'), status: 404);
 		}
 	}//end show()
 
@@ -279,40 +242,12 @@ class SourcesController extends Controller {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function create(): JSONResponse {
-		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+		$refusal = $this->adminRefusal();
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		// Get request parameters.
-		$data = $this->request->getParams();
-
-		// Remove internal parameters (starting with '_').
-		foreach (array_keys($data) as $key) {
-			if (str_starts_with($key, '_') === true) {
-				unset($data[$key]);
-			}
-		}
-
-		// Remove ID if present to ensure a new record is created.
-		if (($data['id'] ?? null) !== null) {
-			unset($data['id']);
-		}
-
-		// Credential custody split (dbal-virtual-registers D1): LEGACY harvest
-		// sources keep encrypting their full databaseUrl at rest with ICrypto;
-		// `type: database` (virtual register) sources store only NON-SECRET
-		// connection parts in authConfig and custody the password behind the
-		// CredentialStore seam, referenced by a `credential` UUID — a plaintext
-		// password is never persisted on the row.
-		$data = $this->sanitizeDatabaseSourceData(data: $data);
-
-		// Encrypt databaseUrl at rest before persisting (legacy harvest path).
-		if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== '') {
-			$data['databaseUrl'] = $this->crypto->encrypt((string)$data['databaseUrl']);
-		}
-
-		// Create a new source from the data.
-		$source = $this->sourceMapper->createFromArray(object: $data);
+		$source = $this->sourceMapper->createFromArray(object: $this->payload->forCreate(data: $this->request->getParams()));
 		return new JSONResponse(data: $this->serializeSource(source: $source));
 	}//end create()
 
@@ -334,35 +269,12 @@ class SourcesController extends Controller {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function update(int $id): JSONResponse {
-		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+		$refusal = $this->adminRefusal();
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		// Get request parameters.
-		$data = $this->request->getParams();
-
-		// Remove internal parameters (starting with '_').
-		foreach (array_keys($data) as $key) {
-			if (str_starts_with($key, '_') === true) {
-				unset($data[$key]);
-			}
-		}
-
-		// Remove immutable fields to prevent tampering.
-		unset($data['id']);
-		unset($data['organisation']);
-		unset($data['owner']);
-		unset($data['created']);
-
-		// Custody split for database sources — see create() (dbal-virtual-registers D1).
-		$data = $this->sanitizeDatabaseSourceData(data: $data);
-
-		// Encrypt databaseUrl at rest before persisting (legacy harvest path).
-		if (isset($data['databaseUrl']) === true && $data['databaseUrl'] !== '') {
-			$data['databaseUrl'] = $this->crypto->encrypt((string)$data['databaseUrl']);
-		}
-
-		// Update the source with the provided data.
+		$data = $this->payload->forUpdate(data: $this->request->getParams());
 		$source = $this->sourceMapper->updateFromArray(id: $id, object: $data);
 		return new JSONResponse(data: $this->serializeSource(source: $source));
 	}//end update()
@@ -406,14 +318,13 @@ class SourcesController extends Controller {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function destroy(int $id): JSONResponse {
-		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+		$refusal = $this->adminRefusal();
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		// Find the source by ID and delete it.
+		// Find the source by ID and delete it, answering with an empty body.
 		$this->sourceMapper->delete($this->sourceMapper->find($id));
-
-		// Return an empty response.
 		return new JSONResponse(data: []);
 	}//end destroy()
 
@@ -444,50 +355,56 @@ class SourcesController extends Controller {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function syncNow(int $id): JSONResponse {
-		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+		$source = $this->adminSource(id: $id);
+		if ($source instanceof JSONResponse) {
+			return $source;
 		}
 
-		try {
-			$source = $this->sourceMapper->find(id: $id);
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
-		}
-
-		$fetcher = $this->fetcherRegistry->get((string)$source->getType());
+		$fetcher = $this->services->domain->fetcherRegistry->get((string)$source->getType());
 		if ($fetcher === null) {
-			return new JSONResponse(
-				data: ['error' => $this->l10n->t('No sync transport available for this source type')],
-				statusCode: 422
-			);
+			return $this->fail(message: $this->l10n->t('No sync transport available for this source type'), status: 422);
 		}
 
+		return $this->runSync(source: $source, fetcher: $fetcher);
+	}//end syncNow()
+
+	/**
+	 * Run the harvest pipeline inline and record its outcome on the source.
+	 *
+	 * @param Source $source The source to sync.
+	 * @param SourceFetcherInterface $fetcher The transport for its type.
+	 *
+	 * @return JSONResponse The sync summary, or a 500 when the run failed.
+	 */
+	private function runSync(Source $source, SourceFetcherInterface $fetcher): JSONResponse {
 		$executionId = (string)Uuid::v4();
 
 		try {
-			$summary = $this->pipeline->run(
-				source: $source,
-				fetcher: $fetcher,
-				executionId: $executionId,
-				since: null
-			);
-
-			$source->setLastSyncStatus((string)($summary['status'] ?? 'success'));
-			$source->setLastSyncDate(new DateTime());
-			$this->sourceMapper->update($source);
-
+			$summary = $this->services->domain->pipeline->run(source: $source, fetcher: $fetcher, executionId: $executionId, since: null);
+			$this->recordSync(source: $source, status: (string)($summary['status'] ?? 'success'));
 			return new JSONResponse(data: $summary);
 		} catch (Throwable $e) {
-			$source->setLastSyncStatus('failed');
-			$source->setLastSyncDate(new DateTime());
-			$this->sourceMapper->update($source);
-
+			$this->recordSync(source: $source, status: 'failed');
 			return new JSONResponse(
 				data: ['error' => $this->l10n->t('Sync failed'), 'message' => $e->getMessage()],
 				statusCode: 500
 			);
 		}//end try
-	}//end syncNow()
+	}//end runSync()
+
+	/**
+	 * Persist a sync outcome and its moment on the source.
+	 *
+	 * @param Source $source The synced source.
+	 * @param string $status The outcome.
+	 *
+	 * @return void
+	 */
+	private function recordSync(Source $source, string $status): void {
+		$source->setLastSyncStatus($status);
+		$source->setLastSyncDate(new DateTime());
+		$this->sourceMapper->update($source);
+	}//end recordSync()
 
 	/**
 	 * Return the current sync status for a source.
@@ -516,59 +433,29 @@ class SourcesController extends Controller {
 		try {
 			$source = $this->sourceMapper->find(id: $id);
 		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
+			return $this->fail(message: $this->l10n->t('Not Found'), status: 404);
 		}
 
-		$lastSyncDate = $source->getLastSyncDate();
-
-		$formattedLastSyncDate = null;
-		if ($lastSyncDate !== null) {
-			$formattedLastSyncDate = $lastSyncDate->format('c');
-		}
-
-		return new JSONResponse(
-			data: [
-				'id' => $source->getId(),
-				'uuid' => $source->getUuid(),
-				'syncEnabled' => $source->getSyncEnabled(),
-				'status' => ($source->getLastSyncStatus() ?? 'never'),
-				'lastSyncDate' => $formattedLastSyncDate,
-				'syncInterval' => $source->getSyncInterval(),
-			]
-		);
+		return new JSONResponse(data: $this->syncStatusOf(source: $source));
 	}//end syncStatus()
 
 	/**
-	 * Enforce the credential custody split for `type: database` sources.
+	 * The non-sensitive sync status of a source; no credentials are exposed.
 	 *
-	 * A virtual-register database source must never persist a plaintext secret:
-	 * any `password`/`secret` key submitted inside `authConfig` is stripped, and
-	 * `databaseUrl` (the legacy ICrypto-encrypted harvest field) is cleared so
-	 * the two paths cannot mix. The password belongs behind the CredentialStore
-	 * seam, referenced by the `authConfig.credential` UUID (design D1).
+	 * @param Source $source The source.
 	 *
-	 * @param array<string, mixed> $data The submitted source data.
-	 *
-	 * @return array<string, mixed> The sanitised source data.
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 * @return array<string, mixed> The sync status payload.
 	 */
-	private function sanitizeDatabaseSourceData(array $data): array {
-		if ((string)($data['type'] ?? '') !== 'database') {
-			return $data;
-		}
-
-		if (isset($data['authConfig']) === true && is_array($data['authConfig']) === true) {
-			unset($data['authConfig']['password'], $data['authConfig']['secret']);
-		}
-
-		// Clear rather than unset: the sources table declares database_url
-		// NOT NULL, so an absent value fails the INSERT with a 23502. An empty
-		// string satisfies the constraint and carries no secret.
-		$data['databaseUrl'] = '';
-
-		return $data;
-	}//end sanitizeDatabaseSourceData()
+	private function syncStatusOf(Source $source): array {
+		return [
+			'id' => $source->getId(),
+			'uuid' => $source->getUuid(),
+			'syncEnabled' => $source->getSyncEnabled(),
+			'status' => ($source->getLastSyncStatus() ?? 'never'),
+			'lastSyncDate' => $source->getLastSyncDate()?->format('c'),
+			'syncInterval' => $source->getSyncInterval(),
+		];
+	}//end syncStatusOf()
 
 	/**
 	 * Test the connection to a `type: database` source.
@@ -594,44 +481,37 @@ class SourcesController extends Controller {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function testConnection(int $id): JSONResponse {
-		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+		$source = $this->databaseSource(id: $id);
+		if ($source instanceof JSONResponse) {
+			return $source;
 		}
 
 		try {
-			$source = $this->sourceMapper->find(id: $id);
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
-		}
-
-		if ((string)$source->getType() !== 'database') {
-			return new JSONResponse(
-				data: ['error' => $this->l10n->t('Source is not a database source')],
-				statusCode: 422
-			);
-		}
-
-		try {
-			$connection = $this->connectionFactory->getConnection(source: $source);
+			$connection = $this->services->domain->connectionFactory->getConnection(source: $source);
 		} catch (DbalConnectionException $exception) {
 			// Fail closed: credential/driver/config problem — source unreachable.
-			return new JSONResponse(
-				data: ['error' => $this->l10n->t('Could not connect to the database source')],
-				statusCode: 503
-			);
+			return $this->fail(message: $this->l10n->t('Could not connect to the database source'), status: 503);
 		}
 
+		return $this->probe(connection: $connection);
+	}//end testConnection()
+
+	/**
+	 * Run a trivial read over an open connection.
+	 *
+	 * @param Connection $connection The read-only connection.
+	 *
+	 * @return JSONResponse Success, or a 502 when the source answered with an error.
+	 */
+	private function probe(Connection $connection): JSONResponse {
 		try {
 			$connection->executeQuery($connection->getDatabasePlatform()->getDummySelectSQL());
 		} catch (Throwable $exception) {
-			return new JSONResponse(
-				data: ['error' => $this->l10n->t('The database source returned an error')],
-				statusCode: 502
-			);
+			return $this->fail(message: $this->l10n->t('The database source returned an error'), status: 502);
 		}
 
 		return new JSONResponse(data: ['success' => true]);
-	}//end testConnection()
+	}//end probe()
 
 	/**
 	 * Introspect a `type: database` source into a virtual register + schemas.
@@ -655,45 +535,100 @@ class SourcesController extends Controller {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	public function introspect(int $id): JSONResponse {
-		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Admin privileges required')], statusCode: 403);
+		$source = $this->databaseSource(id: $id);
+		if ($source instanceof JSONResponse) {
+			return $source;
 		}
 
 		try {
-			$source = $this->sourceMapper->find(id: $id);
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
-		}
-
-		if ((string)$source->getType() !== 'database') {
-			return new JSONResponse(
-				data: ['error' => $this->l10n->t('Source is not a database source')],
-				statusCode: 422
-			);
-		}
-
-		try {
-			$summary = $this->introspectionService->introspect(source: $source);
+			$summary = $this->services->domain->introspectionService->introspect(source: $source);
 		} catch (DbalConnectionException $exception) {
-			return new JSONResponse(
-				data: ['error' => $this->l10n->t('Could not connect to the database source')],
-				statusCode: 503
-			);
+			return $this->fail(message: $this->l10n->t('Could not connect to the database source'), status: 503);
 		} catch (Throwable $exception) {
-			// Never echo raw exception text to the client (it may carry DSN
-			// fragments or SQL); log it server-side and return a fixed message.
-			$this->logger->error(
-				'[SourcesController] introspection failed: ' . $exception->getMessage(),
-				['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
-			);
-			return new JSONResponse(
-				data: ['error' => $this->l10n->t('Introspection failed')],
-				statusCode: 502
-			);
+			return $this->introspectionFailed(exception: $exception);
 		}
 
 		return new JSONResponse(data: $summary);
 	}//end introspect()
+
+	/**
+	 * Log an unexpected introspection failure and answer a fixed 502.
+	 *
+	 * Never echo raw exception text to the client (it may carry DSN fragments
+	 * or SQL); log it server-side and return a fixed message.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return JSONResponse The 502.
+	 */
+	private function introspectionFailed(Throwable $exception): JSONResponse {
+		$this->session->logger->error(
+			'[SourcesController] introspection failed: ' . $exception->getMessage(),
+			['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
+		);
+		return $this->fail(message: $this->l10n->t('Introspection failed'), status: 502);
+	}//end introspectionFailed()
+
+	/**
+	 * The admin-gated, organisation-scoped `type: database` source, or the refusal.
+	 *
+	 * @param int $id The source id.
+	 *
+	 * @return Source|JSONResponse The source, or a 403/404/422 response.
+	 */
+	private function databaseSource(int $id): Source|JSONResponse {
+		$source = $this->adminSource(id: $id);
+		if ($source instanceof JSONResponse || (string)$source->getType() === 'database') {
+			return $source;
+		}
+
+		return $this->fail(message: $this->l10n->t('Source is not a database source'), status: 422);
+	}//end databaseSource()
+
+	/**
+	 * The source, loaded only for an admin through the organisation-scoped mapper.
+	 *
+	 * @param int $id The source id.
+	 *
+	 * @return Source|JSONResponse The source, or a 403/404 response.
+	 */
+	private function adminSource(int $id): Source|JSONResponse {
+		$refusal = $this->adminRefusal();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		try {
+			return $this->sourceMapper->find(id: $id);
+		} catch (DoesNotExistException $exception) {
+			return $this->fail(message: $this->l10n->t('Not Found'), status: 404);
+		}
+	}//end adminSource()
+
+	/**
+	 * The 403 for a caller who is not a Nextcloud administrator, or null for an admin.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the caller may proceed.
+	 */
+	private function adminRefusal(): ?JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return $this->fail(message: $this->l10n->t('Admin privileges required'), status: 403);
+		}
+
+		return null;
+	}//end adminRefusal()
+
+	/**
+	 * An error response with a translated message.
+	 *
+	 * @param string $message The translated message.
+	 * @param int $status The HTTP status.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function fail(string $message, int $status): JSONResponse {
+		return new JSONResponse(data: ['error' => $message], statusCode: $status);
+	}//end fail()
 
 	/**
 	 * Get integer parameter from params array or return null

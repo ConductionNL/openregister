@@ -55,18 +55,26 @@
             "logger": "Psr\\Log\\LoggerInterface"
         }
     },
+    "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationActingUser": {
+        "asked": [
+            "OCP\\IUserSession",
+            "OCP\\IGroupManager"
+        ],
+        "params": {
+            "userSession": "OCP\\IUserSession",
+            "groupManager": "OCP\\IGroupManager"
+        }
+    },
     "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationObjectSourceProvider": {
         "asked": [
             "OCA\\OpenRegister\\Db\\OrganisationMapper",
-            "OCP\\IUserSession",
-            "OCP\\IGroupManager",
+            "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationActingUser",
             "Psr\\Log\\LoggerInterface",
             "OCA\\OpenRegister\\Service\\OrganisationService"
         ],
         "params": {
             "organisationMapper": "OCA\\OpenRegister\\Db\\OrganisationMapper",
-            "userSession": "OCP\\IUserSession",
-            "groupManager": "OCP\\IGroupManager",
+            "actingUser": "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationActingUser",
             "logger": "Psr\\Log\\LoggerInterface",
             "organisationService": "OCA\\OpenRegister\\Service\\OrganisationService"
         }
@@ -220,20 +228,28 @@
             "logger": "Psr\\Log\\LoggerInterface"
         }
     },
-    "OCA\\OpenRegister\\Service\\ObjectSource\\TablesObjectSourceProvider": {
+    "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts": {
         "asked": [
             "OCA\\OpenRegister\\Service\\ObjectSource\\TablesTableReader",
             "OCA\\OpenRegister\\Service\\ObjectSource\\TablesColumnMapper",
             "OCA\\OpenRegister\\Service\\ObjectSource\\TablesUuidDeriver",
-            "OCA\\OpenRegister\\Service\\ObjectSource\\TablesSchemaSyncService",
-            "OCP\\IUserSession",
-            "Psr\\Log\\LoggerInterface"
+            "OCA\\OpenRegister\\Service\\ObjectSource\\TablesSchemaSyncService"
         ],
         "params": {
             "reader": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesTableReader",
             "columnMapper": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesColumnMapper",
             "uuidDeriver": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesUuidDeriver",
-            "syncService": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesSchemaSyncService",
+            "syncService": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesSchemaSyncService"
+        }
+    },
+    "OCA\\OpenRegister\\Service\\ObjectSource\\TablesObjectSourceProvider": {
+        "asked": [
+            "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts",
+            "OCP\\IUserSession",
+            "Psr\\Log\\LoggerInterface"
+        ],
+        "params": {
+            "parts": "OCA\\OpenRegister\\Service\\ObjectSource\\TablesProviderParts",
             "userSession": "OCP\\IUserSession",
             "logger": "Psr\\Log\\LoggerInterface"
         }

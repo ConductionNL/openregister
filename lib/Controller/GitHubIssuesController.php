@@ -34,6 +34,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\GitHubIssueDraft;
+use OCA\OpenRegister\Controller\Support\GitHubIssueListing;
 use OCA\OpenRegister\Controller\Support\GitHubIssuesControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubGuards;
@@ -172,10 +174,7 @@ class GitHubIssuesController extends Controller {
 		[$owner, $repoName] = explode('/', $repo, 2);
 
 		$cacheKey = $this->buildReadCacheKey(
-			repo: $repo,
-			state: $state,
-			sort: $sort,
-			perPage: $perPage,
+			listing: new GitHubIssueListing(repo: $repo, state: $state, sort: $sort, perPage: $perPage),
 			labels: $labelArray
 		);
 
@@ -249,7 +248,10 @@ class GitHubIssuesController extends Controller {
 		}
 
 		$guardError = $this->guards->runGuards(
-			$this->writeGuardPipeline(repo: $repo, title: $title, body: $body, specRef: $specRef, uid: $uid)
+			$this->writeGuardPipeline(
+				draft: new GitHubIssueDraft(repo: $repo, title: $title, body: $body, specRef: $specRef),
+				uid: $uid
+			)
 		);
 		if ($guardError !== null) {
 			return $guardError;
@@ -308,24 +310,21 @@ class GitHubIssuesController extends Controller {
 	 * inline closures do not inflate that method's cyclomatic / NPath complexity past PHPMD's
 	 * thresholds.
 	 *
-	 * @param string $repo Caller-supplied `<owner>/<repo>` slug.
-	 * @param string $title Caller-supplied issue title.
-	 * @param string $body Caller-supplied issue body.
-	 * @param string|null $specRef Caller-supplied capability slug, or null.
+	 * @param GitHubIssueDraft $draft Caller-supplied repository slug, title, body and capability slug.
 	 * @param string $uid Submitting user's UID (for the per-user rate-limit bucket).
 	 *
 	 * @return array<callable(): ?JSONResponse> Ordered guard closures.
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-6
 	 */
-	private function writeGuardPipeline(string $repo, string $title, string $body, ?string $specRef, string $uid): array {
+	private function writeGuardPipeline(GitHubIssueDraft $draft, string $uid): array {
 		return [
 			fn () => $this->guards->enforceFeatureFlag(),
-			fn () => $this->validator->validateRepoFormat(repo: $repo),
-			fn () => $this->guards->enforceRepoAllowlist(repo: $repo, isRead: false),
-			fn () => $this->validator->validateTitleLength(title: $title),
-			fn () => $this->validator->validateBodyLength(body: $body),
-			fn () => $this->validator->validateSpecRef(specRef: $specRef),
+			fn () => $this->validator->validateRepoFormat(repo: $draft->repo),
+			fn () => $this->guards->enforceRepoAllowlist(repo: $draft->repo, isRead: false),
+			fn () => $this->validator->validateTitleLength(title: $draft->title),
+			fn () => $this->validator->validateBodyLength(body: $draft->body),
+			fn () => $this->validator->validateSpecRef(specRef: $draft->specRef),
 			fn () => $this->enforceRateLimiterOperational(),
 			fn () => $this->enforceSubmitRateLimit(uid: $uid),
 		];
@@ -382,18 +381,15 @@ class GitHubIssuesController extends Controller {
 	 * combinations do not collide on the same cache slot. The cache namespace is already
 	 * scoped to `openregister_github_issues` by the factory.
 	 *
-	 * @param string $repo Validated `<owner>/<repo>` slug
-	 * @param string $state Issue state filter
-	 * @param string $sort Sort key
-	 * @param int $perPage Page size
+	 * @param GitHubIssueListing $listing Validated repository slug, state filter, sort key and page size
 	 * @param array<string>|null $labels Optional label filter
 	 *
 	 * @return string Cache key (no PII, no token, no user identifier)
 	 *
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-5
 	 */
-	private function buildReadCacheKey(string $repo, string $state, string $sort, int $perPage, ?array $labels): string {
-		$key = 'list:' . $repo . ':' . $state . ':' . $sort . ':' . $perPage;
+	private function buildReadCacheKey(GitHubIssueListing $listing, ?array $labels): string {
+		$key = 'list:' . $listing->repo . ':' . $listing->state . ':' . $listing->sort . ':' . $listing->perPage;
 		if (is_array($labels) === true && count($labels) > 0) {
 			$sorted = $labels;
 			sort($sorted);

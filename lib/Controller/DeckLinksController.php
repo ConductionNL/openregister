@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\DeckLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -52,22 +53,42 @@ class DeckLinksController extends Controller {
 	use ObjectLinkActionsTrait;
 
 	/**
+	 * Backing service.
+	 *
+	 * @var DeckLinkServiceInterface
+	 */
+	private readonly DeckLinkServiceInterface $deckLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Settings service for sticky default.
+	 *
+	 * @var AppSettingsInterface
+	 */
+	private readonly AppSettingsInterface $settingsService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param DeckLinkServiceInterface $deckLinkService Backing service.
-	 * @param ObjectOperationsInterface $objectService OR object resolver.
-	 * @param AppSettingsInterface $settingsService Settings service for sticky default.
+	 * @param DeckLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly DeckLinkServiceInterface $deckLinkService,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly AppSettingsInterface $settingsService,
+		DeckLinksControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->deckLinkService = $services->deckLinkService;
+		$this->objectService = $services->objectService;
+		$this->settingsService = $services->settingsService;
 	}//end __construct()
 
 	/**

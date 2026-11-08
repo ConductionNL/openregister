@@ -748,11 +748,11 @@ class CacheSettingsHandler {
 	/**
 	 * The object cache handler: the one injected, else the one the container builds.
 	 *
-	 * @return CacheHandlerInterface The handler.
+	 * @return ObjectCacheMaintenanceInterface The handler.
 	 *
 	 * @throws Exception When neither supplies one.
 	 */
-	private function objectCacheHandler(): CacheHandlerInterface {
+	private function objectCacheHandler(): ObjectCacheMaintenanceInterface {
 		$objectCacheService = $this->objectCacheService;
 		if ($objectCacheService === null && $this->container !== null) {
 			try {

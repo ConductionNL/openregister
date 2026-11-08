@@ -149,7 +149,7 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$appConfig->method('getValueBool')->willReturnCallback(static fn (string $a, string $k, bool $d = false): bool => $d);
 		$container = $this->createMock(ContainerInterface::class);
 		$logger = new NullLogger();
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,

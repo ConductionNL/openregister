@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\EndpointsControllerServices;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapperInterface;
 use OCA\OpenRegister\Db\EndpointMapperInterface;
@@ -118,30 +119,24 @@ class EndpointsController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param EndpointMapperInterface $endpointMapper Endpoint mapper for database operations
-	 * @param EndpointLogMapperInterface $endpointLogMapper Endpoint log mapper for log operations
-	 * @param EndpointServiceInterface $endpointService Endpoint service for business logic
-	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param EndpointsControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		EndpointMapperInterface $endpointMapper,
-		EndpointLogMapperInterface $endpointLogMapper,
-		EndpointServiceInterface $endpointService,
-		ControllerSession $session,
+		EndpointsControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
 
 		// Store dependencies for use in controller methods.
-		$this->endpointMapper = $endpointMapper;
-		$this->endpointLogMapper = $endpointLogMapper;
-		$this->endpointService = $endpointService;
-		$this->logger = $session->logger;
-		$this->session = $session;
+		$this->endpointMapper = $services->endpointMapper;
+		$this->endpointLogMapper = $services->endpointLogMapper;
+		$this->endpointService = $services->endpointService;
+		$this->logger = $services->session->logger;
+		$this->session = $services->session;
 	}//end __construct()
 
 	/**

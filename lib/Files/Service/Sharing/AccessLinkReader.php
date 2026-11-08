@@ -53,7 +53,7 @@ use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use Psr\Log\LoggerInterface;
@@ -121,9 +121,9 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	/**
 	 * Strips write-only and unreadable properties.
 	 *
-	 * @var PropertyRbacHandler
+	 * @var PropertyRbacHandlerInterface
 	 */
-	private readonly PropertyRbacHandler $properties;
+	private readonly PropertyRbacHandlerInterface $properties;
 
 	/**
 	 * Reads and projects the public half of the timeline.

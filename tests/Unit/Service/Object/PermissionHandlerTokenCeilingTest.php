@@ -54,7 +54,7 @@ class PermissionHandlerTokenCeilingTest extends TestCase {
 	 * @return PermissionHandler The handler.
 	 */
 	private function handler(): PermissionHandler {
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->createMock(IUserSession::class),
 			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),

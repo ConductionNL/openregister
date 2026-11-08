@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Support\CalendarEventsControllerServices;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
@@ -69,30 +70,32 @@ class CalendarEventsController extends Controller {
 	private readonly ObjectOperationsInterface $objectService;
 
 	/**
+	 * Answers the object update right
+	 *
+	 * @var PermissionHandlerInterface
+	 */
+	private readonly PermissionHandlerInterface $permissions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service (legacy)
-	 * @param CalendarLinkServiceInterface $calendarLinkService Calendar link service (Tier-2)
-	 * @param ObjectOperationsInterface $objectService Object service
-	 * @param PermissionHandlerInterface $permissions Answers the object update right
+	 * @param CalendarEventsControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ObjectCalendarEventsInterface $calendarEventService,
-		CalendarLinkServiceInterface $calendarLinkService,
-		ObjectOperationsInterface $objectService,
-		private readonly PermissionHandlerInterface $permissions,
+		CalendarEventsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->permissions = $services->permissions;
 
-		$this->calendarEventService = $calendarEventService;
-		$this->calendarLinkService = $calendarLinkService;
-		$this->objectService = $objectService;
+		$this->calendarEventService = $services->calendarEventService;
+		$this->calendarLinkService = $services->calendarLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
