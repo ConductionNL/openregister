@@ -4,9 +4,10 @@
  * The H16 classes named from outside their component are reached through interfaces.
  *
  * McpToolsService was named by the agent scope in lib/Service. It now implements
- * McpToolCatalogueInterface, which FeatureBindings aliases to it. CompanySearch
+ * McpToolCatalogueInterface, which McpWiring::FACTORY_BINDINGS aliases to it. CompanySearch
  * was built with `new` by CompanyLookupController; the controller now builds it
- * through CompanySearchFactoryInterface, bound to CompanySearchFactory. A missing alias
+ * through CompanySearchFactoryInterface, bound in FeatureBindings to
+ * CompanySearchFactory. A missing alias
  * is a runtime 500 that no other unit test sees, so this test pins the binding as
  * well as the implementation and the lib files still naming the class.
  *
@@ -23,17 +24,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Mcp\McpWiring;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\Bindings\FeatureBindings;
-use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactory;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactoryInterface;
+use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionClass;
 
 /**
  * @coversNothing
@@ -48,26 +52,25 @@ final class H16InterfaceBindingsTest extends TestCase {
 	private const LIB = __DIR__ . '/../../../lib';
 
 	/**
-	 * Class => [its component under lib/, the interface outside callers use, the class bound to it].
+	 * Class => [its component under lib/, the interface outside callers use, the class bound to it, the map binding it].
 	 *
-	 * @var array<class-string, array{0: string, 1: class-string, 2: class-string}>
+	 * @var array<class-string, array{0: string, 1: class-string, 2: class-string, 3: string}>
 	 */
 	private const CLASSES = [
-		McpToolsService::class => ['Mcp', McpToolCatalogueInterface::class, McpToolsService::class],
-		CompanySearch::class   => ['Service', CompanySearchFactoryInterface::class, CompanySearchFactory::class],
+		McpToolsService::class => ['Mcp', McpToolCatalogueInterface::class, McpToolsService::class, McpWiring::class . '::FACTORY_BINDINGS'],
+		CompanySearch::class   => ['Service', CompanySearchFactoryInterface::class, CompanySearchFactory::class, FeatureBindings::class . '::BINDINGS'],
 	];
 
 	/**
 	 * Lib files outside the component still allowed to name the class, and why.
 	 *
-	 * FeatureBindings binds the interface to McpToolsService. CompanyLookupController
-	 * builds its search through CompanySearchFactoryInterface, so nothing outside
-	 * lib/Service names CompanySearch.
+	 * None: McpAgentScope types against McpToolCatalogueInterface, and
+	 * CompanyLookupController builds its search through CompanySearchFactoryInterface.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_OUTSIDE = [
-		McpToolsService::class => ['Service/Bindings/FeatureBindings.php'],
+		McpToolsService::class => [],
 		CompanySearch::class   => [],
 	];
 
@@ -94,11 +97,19 @@ final class H16InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('classes')]
 	public function testTheInterfaceIsImplementedAndBound(string $class): void {
-		[, $contract, $bound] = self::CLASSES[$class];
+		[, $contract, $bound, $map] = self::CLASSES[$class];
 		$this->assertTrue(interface_exists($contract), $contract . ' exists');
 		$this->assertContains($contract, class_implements($bound), $bound . ' implements ' . $contract);
-		$this->assertSame($bound, FeatureBindings::BINDINGS[$contract] ?? null, $contract . ' is in FeatureBindings');
-		$this->assertSame($bound, ContractBindings::BINDINGS[$contract] ?? null, $contract . ' is bound');
+		$this->assertSame($bound, constant($map)[$contract] ?? null, $contract . ' is in ' . $map);
+
+		$context = new RecordingRegistrationContext();
+		(new ReflectionClass(Application::class))->newInstanceWithoutConstructor()->register($context);
+		$resolved = [];
+		foreach ($context->aliases as $alias) {
+			$resolved[$alias['alias']] = $alias['target'];
+		}
+
+		$this->assertSame($bound, $resolved[$contract] ?? null, $contract . ' is bound by the bootstrap');
 	}//end testTheInterfaceIsImplementedAndBound()
 
 	/**

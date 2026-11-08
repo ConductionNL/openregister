@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Bindings;
 
-use OCA\OpenRegister\Mcp\Service\Mcp\McpToolCatalogueInterface;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactory;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearchFactoryInterface;
 
@@ -44,6 +42,5 @@ final class FeatureBindings {
 	 */
 	public const BINDINGS = [
 		CompanySearchFactoryInterface::class => CompanySearchFactory::class,
-		McpToolCatalogueInterface::class => McpToolsService::class,
 	];
 }//end class
