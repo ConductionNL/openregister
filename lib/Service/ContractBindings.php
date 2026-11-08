@@ -81,6 +81,8 @@ use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
+use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrarInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
@@ -345,7 +347,7 @@ final class ContractBindings {
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		\OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface::class => \OCA\OpenRegister\Service\AuthenticationService::class,
-		\OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrarInterface::class => \OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar::class,
+		DoriathApplicationRegistrarInterface::class => DoriathApplicationRegistrar::class,
 		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
 		\OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface::class => \OCA\OpenRegister\Service\Task\TaskMetricsProvider::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
