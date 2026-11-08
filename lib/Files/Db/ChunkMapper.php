@@ -51,16 +51,6 @@ use OCA\OpenRegister\Db\Source;
 class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOverviewInterface, ChunkStoreInterface {
 
 	/**
-	 * File-source summary sort fields and the column each one orders by.
-	 */
-	private const FILE_SOURCE_SORTS = [
-		'fileName' => 'fc.name',
-		'fileSize' => 'fc.size',
-		'extractedAt' => 'last_extracted',
-		'chunkCount' => 'chunk_count',
-	];
-
-	/**
 	 * PSR-3 logger.
 	 *
 	 * @var LoggerInterface
@@ -241,8 +231,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 	 * @param int|null $limit Maximum number of results
 	 * @param int|null $offset Offset for pagination
 	 * @param string|null $search Optional search filter on file name
-	 * @param string $sort Sort field (fileName, fileSize, extractedAt, chunkCount)
-	 * @param string $order Sort direction (ASC or DESC)
+	 * @param FileSourceOrder $order The sort field and direction (default: last extracted, descending)
 	 *
 	 * @return array List of file source summaries
 	 */
@@ -250,8 +239,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 		?int $limit = null,
 		?int $offset = null,
 		?string $search = null,
-		string $sort = 'extractedAt',
-		string $order = 'DESC',
+		FileSourceOrder $order = new FileSourceOrder(),
 	): array {
 		$qb = $this->db->getQueryBuilder();
 
@@ -267,7 +255,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
 			->where($qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)))
 			->groupBy('ch.source_id', 'fc.name', 'mt.mimetype', 'fc.size')
-			->orderBy(self::FILE_SOURCE_SORTS[$sort] ?? 'last_extracted', self::sortDirection(order: $order));
+			->orderBy($order->column(), $order->direction());
 
 		$this->applyFileNameSearch(qb: $qb, search: $search);
 
@@ -286,21 +274,6 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 
 		return $rows;
 	}//end getFileSourceSummaries()
-
-	/**
-	 * The SQL sort direction: ASC when asked for (any case), DESC otherwise.
-	 *
-	 * @param string $order Requested direction.
-	 *
-	 * @return string ASC or DESC.
-	 */
-	private static function sortDirection(string $order): string {
-		if (strtoupper($order) === 'ASC') {
-			return 'ASC';
-		}
-
-		return 'DESC';
-	}//end sortDirection()
 
 	/**
 	 * Narrow a file-source query to file names containing the search term.
