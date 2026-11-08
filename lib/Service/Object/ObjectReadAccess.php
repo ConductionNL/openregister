@@ -47,7 +47,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-class ObjectReadAccess {
+class ObjectReadAccess implements ObjectReadAccessInterface {
 
 	/**
 	 * Constructor.

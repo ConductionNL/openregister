@@ -426,6 +426,8 @@ final class ContractBindings {
 		GitLabHandlerInterface::class => GitLabHandler::class,
 		HandoffServiceInterface::class => HandoffService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
+		\OCA\OpenRegister\Service\Object\ObjectReadAccessInterface::class => \OCA\OpenRegister\Service\Object\ObjectReadAccess::class,
+		\OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface::class => \OCA\OpenRegister\Service\Relation\ObjectTreeService::class,
 		ImportPreviewServiceInterface::class => ImportPreviewService::class,
 		JobAlertServiceInterface::class => JobAlertService::class,
 		JobRunRecorderInterface::class => JobRunRecorder::class,

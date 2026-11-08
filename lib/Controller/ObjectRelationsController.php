@@ -39,12 +39,12 @@ use OCA\OpenRegister\Controller\Support\ObjectRelationsRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Service\Export\ExportGate;
-use OCA\OpenRegister\Service\Object\ObjectReadAccess;
+use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Relation\AffectedSet;
 use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
-use OCA\OpenRegister\Service\Relation\ObjectTreeService;
+use OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\AppFramework\Controller;
@@ -72,9 +72,9 @@ class ObjectRelationsController extends Controller {
 	 * @var array<int, string>
 	 */
 	private const TREE_DIRECTIONS = [
-		ObjectTreeService::DIRECTION_DESCENDANTS,
-		ObjectTreeService::DIRECTION_ANCESTORS,
-		ObjectTreeService::DIRECTION_BOTH,
+		ObjectTreeServiceInterface::DIRECTION_DESCENDANTS,
+		ObjectTreeServiceInterface::DIRECTION_ANCESTORS,
+		ObjectTreeServiceInterface::DIRECTION_BOTH,
 	];
 
 	/**
@@ -108,16 +108,16 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * Resolves an object under the caller's own RBAC.
 	 *
-	 * @var ObjectReadAccess
+	 * @var ObjectReadAccessInterface
 	 */
-	private readonly ObjectReadAccess $access;
+	private readonly ObjectReadAccessInterface $access;
 
 	/**
 	 * The bounded walk along a schema's parent property.
 	 *
-	 * @var ObjectTreeService
+	 * @var ObjectTreeServiceInterface
 	 */
-	private readonly ObjectTreeService $trees;
+	private readonly ObjectTreeServiceInterface $trees;
 
 	/**
 	 * The doelbinding guard the object read runs, asked before a tree or a graph is answered.
@@ -779,7 +779,7 @@ class ObjectRelationsController extends Controller {
 			return $object;
 		}
 
-		$direction = (string)$this->request->getParam('direction', ObjectTreeService::DIRECTION_DESCENDANTS);
+		$direction = (string)$this->request->getParam('direction', ObjectTreeServiceInterface::DIRECTION_DESCENDANTS);
 		if (in_array($direction, self::TREE_DIRECTIONS, true) === false) {
 			return new JSONResponse(
 				data: ['error' => 'direction must be one of: '.implode(', ', self::TREE_DIRECTIONS)],
