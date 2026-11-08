@@ -84,17 +84,13 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param SubjectEntityIndex   $index         GdprEntity ⋈ entity_relations discovery.
-	 * @param SubjectObjectLoader  $loader        RBAC/tenant scoped object loads.
-	 * @param SubjectObjectWriter  $writer        DSAR-attributed, audited, scoped writes.
+	 * @param SubjectRecords $records Discovery, scoped loads and audited writes of a subject's objects.
 	 * @param SubjectRetentionGate $retentionGate Archival / legal-hold / immutability refusals.
 	 * @param DataSubjectDeadline  $deadline      EU art-12 deadline maths.
 	 * @param LoggerInterface      $logger        Logger.
 	 */
 	public function __construct(
-		private readonly SubjectEntityIndex $index,
-		private readonly SubjectObjectLoader $loader,
-		private readonly SubjectObjectWriter $writer,
+		private readonly SubjectRecords $records,
 		private readonly SubjectRetentionGate $retentionGate,
 		private readonly DataSubjectDeadline $deadline,
 		private readonly LoggerInterface $logger,
@@ -170,8 +166,8 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		}
 
 		$hits = [];
-		foreach ($this->index->discover(subjectId: $subjectId, type: $type, mode: $mode) as $entry) {
-			$object = $this->loader->loadEntry(entry: $entry, rbac: $rbac, multitenancy: $multitenancy);
+		foreach ($this->records->index->discover(subjectId: $subjectId, type: $type, mode: $mode) as $entry) {
+			$object = $this->records->loader->loadEntry(entry: $entry, rbac: $rbac, multitenancy: $multitenancy);
 			if ($object !== null) {
 				$hits[] = ['object' => $object, 'gdprEntities' => $entry['gdprEntities']];
 			}
@@ -198,9 +194,9 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 */
 	public function pseudonymiseObject(ObjectEntity $object, string $subjectId, array $matched): ?array {
 		$this->pseudonymise(object: $object, subjectId: $subjectId, matched: $matched);
-		$this->writer->attribute(object: $object);
+		$this->records->writer->attribute(object: $object);
 
-		return $this->writer->persist(
+		return $this->records->writer->persist(
 			object: $object,
 			op: 'erase',
 			identifier: (string)($object->getUuid() ?? '')
@@ -245,16 +241,16 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * @return array<string, mixed>|null Updated object envelope, or null on miss/refusal.
 	 */
 	public function rectify(string $objectIdentifier, array $changes): ?array {
-		$object = $this->loader->loadByIdentifier(identifier: $objectIdentifier);
+		$object = $this->records->loader->loadByIdentifier(identifier: $objectIdentifier);
 		if ($object === null || $this->refusesRectify(object: $object, identifier: $objectIdentifier) === true) {
 			return null;
 		}
 
 		$current = ($object->getObject() ?? []);
 		$object->setObject(array_merge($current, $changes));
-		$this->writer->attribute(object: $object);
+		$this->records->writer->attribute(object: $object);
 
-		return $this->writer->persist(object: $object, op: 'rectify', identifier: $objectIdentifier);
+		return $this->records->writer->persist(object: $object, op: 'rectify', identifier: $objectIdentifier);
 	}//end rectify()
 
 	/**
@@ -295,7 +291,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	): array {
 		$eraseMode = $this->normaliseEraseMode(eraseMode: $eraseMode);
 		$subjectId = trim($subjectId);
-		$grouped = $this->index->discover(subjectId: $subjectId, type: $type, mode: 'exact');
+		$grouped = $this->records->index->discover(subjectId: $subjectId, type: $type, mode: 'exact');
 		$summary = $this->openSummary(subjectId: $subjectId, type: $type, eraseMode: $eraseMode, dryRun: $dryRun, matchedCount: count($grouped));
 
 		foreach ($grouped as $entry) {
@@ -470,7 +466,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * @return void
 	 */
 	private function eraseEntry(array $entry, string $subjectId, string $eraseMode, bool $dryRun, array &$summary): void {
-		$object = $this->loader->loadEntry(entry: $entry, rbac: true, multitenancy: true);
+		$object = $this->records->loader->loadEntry(entry: $entry, rbac: true, multitenancy: true);
 		if ($object === null) {
 			$summary['failed'][] = $this->loadFailure(entry: $entry);
 			return;
@@ -537,11 +533,11 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 */
 	private function eraseOne(ObjectEntity $object, string $subjectId, array $matched, string $eraseMode, array &$summary): void {
 		$this->applyEraseMode(object: $object, subjectId: $subjectId, matched: $matched, eraseMode: $eraseMode);
-		$this->writer->attribute(object: $object);
+		$this->records->writer->attribute(object: $object);
 
 		$ref = $this->refOf(entry: [], object: $object);
 		try {
-			$this->writer->save(object: $object);
+			$this->records->writer->save(object: $object);
 			$summary['erased'][] = $ref;
 		} catch (\Throwable $e) {
 			$summary['failed'][] = ['object' => $ref, 'error' => $e->getMessage()];
@@ -581,7 +577,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 */
 	private function erasureStamp(string $subjectId): array {
 		return [
-			'deletedBy' => $this->writer->currentUserId(),
+			'deletedBy' => $this->records->writer->currentUserId(),
 			'deletedReason' => 'gdpr-erasure',
 			'deleted' => (new DateTime())->format(DateTime::ATOM),
 			'subject' => $subjectId,
@@ -673,7 +669,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
 	private function setMarker(string $objectIdentifier, string $key, bool $active, string $reason, string $op): ?array {
-		$object = $this->loader->loadByIdentifier(identifier: $objectIdentifier);
+		$object = $this->records->loader->loadByIdentifier(identifier: $objectIdentifier);
 		if ($object === null || $this->retentionGate->isImmutable(object: $object) === true) {
 			return null;
 		}
@@ -681,9 +677,9 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		$payload = ($object->getObject() ?? []);
 		$payload[$key] = $this->marker(active: $active, reason: $reason);
 		$object->setObject($payload);
-		$this->writer->attribute(object: $object);
+		$this->records->writer->attribute(object: $object);
 
-		return $this->writer->persist(object: $object, op: $op, identifier: $objectIdentifier);
+		return $this->records->writer->persist(object: $object, op: $op, identifier: $objectIdentifier);
 	}//end setMarker()
 
 	/**
@@ -698,7 +694,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 		return [
 			'active' => $active,
 			'reason' => $reason,
-			'setBy' => $this->writer->currentUserId(),
+			'setBy' => $this->records->writer->currentUserId(),
 			'setAt' => (new DateTime())->format(DateTime::ATOM),
 		];
 	}//end marker()

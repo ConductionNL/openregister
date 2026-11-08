@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleService;
+use OCA\OpenRegister\Service\Gdpr\Export\ExportDossierSources;
 use OCA\OpenRegister\Service\Gdpr\Export\OneTimeDownloadTokenStore;
 use OCA\OpenRegister\Service\Gdpr\Export\PadesSigner;
 use OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner;
@@ -91,14 +92,7 @@ class ExportBundleServiceTest extends TestCase {
 		$tokenStore = $this->createMock(OneTimeDownloadTokenStore::class);
 		$tokenStore->expects($this->once())->method('mint')->willReturn('THE_ONE_TIME_TOKEN');
 
-		$service = new ExportBundleService(
-			$dsr,
-			$accessor,
-			new UnsignedPadesSigner(),
-			$tokenStore,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class)
-		);
+		$service = new ExportBundleService(new ExportDossierSources($dsr, $accessor, $this->createMock(AuditTrailMapper::class)), new UnsignedPadesSigner(), $tokenStore, $this->createMock(LoggerInterface::class));
 
 		$result = $service->generate(caseUuid: '00000000-0000-0000-0000-000000000000');
 
@@ -125,14 +119,7 @@ class ExportBundleServiceTest extends TestCase {
 		// First redeem valid, second replay refused.
 		$tokenStore->method('redeem')->willReturnOnConsecutiveCalls(true, false);
 
-		$service = new ExportBundleService(
-			$dsr,
-			$accessor,
-			new UnsignedPadesSigner(),
-			$tokenStore,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class)
-		);
+		$service = new ExportBundleService(new ExportDossierSources($dsr, $accessor, $this->createMock(AuditTrailMapper::class)), new UnsignedPadesSigner(), $tokenStore, $this->createMock(LoggerInterface::class));
 
 		$first = $service->download(caseUuid: 'c1', token: 't1');
 		$this->assertNotNull($first);
@@ -156,14 +143,7 @@ class ExportBundleServiceTest extends TestCase {
 		$audit = $this->createMock(AuditTrailMapper::class);
 		$audit->method('findByObjectUntil')->willReturn([]);
 
-		$service = new ExportBundleService(
-			$this->createMock(DataSubjectRequestService::class),
-			$accessor,
-			new UnsignedPadesSigner(),
-			$this->createMock(OneTimeDownloadTokenStore::class),
-			$audit,
-			$this->createMock(LoggerInterface::class)
-		);
+		$service = new ExportBundleService(new ExportDossierSources($this->createMock(DataSubjectRequestService::class), $accessor, $audit), new UnsignedPadesSigner(), $this->createMock(OneTimeDownloadTokenStore::class), $this->createMock(LoggerInterface::class));
 
 		$file = $service->assembleRegulatorDossier(caseUuid: '00000000-0000-0000-0000-000000000000');
 

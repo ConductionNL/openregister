@@ -27,12 +27,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 
 use OCA\OpenRegister\Db\ErasurePreview;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
-use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -48,21 +45,15 @@ class ErasureDestroyer {
 	/**
 	 * Wire the destruction path.
 	 *
-	 * @param ErasureSchemaResolver   $schemas      Schema resolution for the destruction scope.
+	 * @param ErasureDestructionSteps $steps Schema resolution, destruction scope, the surviving record and the final delete.
 	 * @param ErasureDestroyGuard     $guard        The destroy right and the retention clocks.
-	 * @param DestructionScopeService $scopeService What goes with the object.
-	 * @param DestructionRecorder     $recorder     The record that outlives the object.
-	 * @param MagicMapperInterface    $objectMapper The final delete.
 	 * @param LoggerInterface         $logger       PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ErasureSchemaResolver $schemas,
+		private readonly ErasureDestructionSteps $steps,
 		private readonly ErasureDestroyGuard $guard,
-		private readonly DestructionScopeService $scopeService,
-		private readonly DestructionRecorder $recorder,
-		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -80,7 +71,7 @@ class ErasureDestroyer {
 	 */
 	public function destroy(ObjectEntity $object, ErasurePreview $record, array &$outcome): void {
 		$uuid = (string)($object->getUuid() ?? '');
-		$schema = $this->schemas->schemaOf(object: $object);
+		$schema = $this->steps->schemas->schemaOf(object: $object);
 
 		// THE RIGHT AND THE CLOCKS ARE ASKED AGAIN, PER OBJECT. An approval is
 		// not a permission, and a hold placed after the approval has to win.
@@ -110,12 +101,12 @@ class ErasureDestroyer {
 	 */
 	private function destroyAndRecord(ObjectEntity $object, ?Schema $schema, ErasurePreview $record, array &$outcome): ?array {
 		try {
-			$scopeReport = $this->scopeService->destroy(object: $object, schema: $schema);
+			$scopeReport = $this->steps->scopeService->destroy(object: $object, schema: $schema);
 
 			// THE DESTRUCTION RECORD NAMES THE REQUEST (D-3). Without this the
 			// destruction log and the data subject request are two histories of
 			// the same act that nobody can join.
-			$this->recorder->record(object: $object, scope: $scopeReport, rule: ErasureRunner::RULE, context: $this->recordContext(record: $record));
+			$this->steps->recorder->record(object: $object, scope: $scopeReport, rule: ErasureRunner::RULE, context: $this->recordContext(record: $record));
 		} catch (DestructionRefusedException $e) {
 			$outcome['refused'][] = $this->refused(uuid: (string)($object->getUuid() ?? ''), refusal: $e);
 			return null;
@@ -158,7 +149,7 @@ class ErasureDestroyer {
 	private function deleteRow(ObjectEntity $object, array &$outcome): bool {
 		$uuid = (string)($object->getUuid() ?? '');
 		try {
-			$this->objectMapper->delete($object);
+			$this->steps->objectMapper->delete($object);
 		} catch (Throwable $e) {
 			// The record is already written, so this leaves an over-recorded
 			// destruction rather than an unrecorded one — the same trade the
