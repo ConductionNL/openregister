@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyLinkWriter;
+use OCA\OpenRegister\Service\Party\PartyRoleRecords;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
@@ -127,11 +128,9 @@ class PartyLinkAccessGoldenTest extends TestCase {
 			->getMock();
 
 		return new PartyRoleService(
-			$links,
-			new PartyLinkWriter($links, $parties, $session),
+			new PartyRoleRecords($links, new PartyLinkWriter($links, $parties, $session), $audit),
 			$parties,
 			$schemas,
-			$audit,
 			new PersonLinkEvents($this->createMock(IEventDispatcher::class))
 		);
 	}//end service()
