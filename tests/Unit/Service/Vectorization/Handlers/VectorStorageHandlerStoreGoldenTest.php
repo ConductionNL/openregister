@@ -16,6 +16,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization\Handlers;
 
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use Exception;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
@@ -51,15 +55,12 @@ final class VectorStorageHandlerStoreGoldenTest extends TestCase {
 		$handler = $this->handler(dimension: 3, failInsert: false);
 
 		$id = $handler->storeVector(
-			entityType: 'file',
-			entityId: 'f-1',
-			embedding: [0.5, -1.0, 2.25],
-			model: 'nomic',
-			dimensions: 3,
-			chunkIndex: 4,
-			totalChunks: 9,
-			chunkText: "  héllo\x00\x07  \n wörld  ",
-			metadata: ['page' => 2, 'title' => 'A'],
+			vector: new StoredVector(
+				subject: new VectorSubject(entityType: 'file', entityId: 'f-1'),
+				payload: new VectorPayload(embedding: [0.5, -1.0, 2.25], model: 'nomic', dimensions: 3),
+				position: new VectorChunkPosition(chunkIndex: 4, totalChunks: 9, chunkText: "  héllo\x00\x07  \n wörld  "),
+				metadata: ['page' => 2, 'title' => 'A']
+			)
 		);
 
 		$this->assertSame(41, $id);
@@ -96,7 +97,14 @@ final class VectorStorageHandlerStoreGoldenTest extends TestCase {
 	public function testAnObjectWithDefaultsSkipsTheSidecar(): void {
 		$handler = $this->handler(dimension: 768, failInsert: false);
 
-		$id = $handler->storeVector(entityType: 'object', entityId: 'o-1', embedding: [1.0], model: 'm', dimensions: 1);
+		$id = $handler->storeVector(
+			vector: new StoredVector(
+				subject: new VectorSubject(entityType: 'object', entityId: 'o-1'),
+				payload: new VectorPayload(embedding: [1.0], model: 'm', dimensions: 1),
+				position: new VectorChunkPosition(chunkIndex: 0, totalChunks: 1, chunkText: null),
+				metadata: []
+			)
+		);
 
 		$this->assertSame(41, $id);
 		$this->assertSame(
@@ -124,7 +132,14 @@ final class VectorStorageHandlerStoreGoldenTest extends TestCase {
 		$handler = $this->handler(dimension: null, failInsert: true);
 
 		try {
-			$handler->storeVector(entityType: 'object', entityId: 'o-2', embedding: [], model: 'm', dimensions: 0, metadata: []);
+			$handler->storeVector(
+				vector: new StoredVector(
+					subject: new VectorSubject(entityType: 'object', entityId: 'o-2'),
+					payload: new VectorPayload(embedding: [], model: 'm', dimensions: 0),
+					position: new VectorChunkPosition(chunkIndex: 0, totalChunks: 1, chunkText: null),
+					metadata: []
+				)
+			);
 			$this->fail('The failure should be rethrown.');
 		} catch (Exception $exception) {
 			$this->assertSame(Exception::class, get_class($exception));

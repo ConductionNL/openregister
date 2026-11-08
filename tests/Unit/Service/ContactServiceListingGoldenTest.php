@@ -19,6 +19,7 @@ use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -225,6 +226,6 @@ class ContactServiceListingGoldenTest extends TestCase {
 			}
 		);
 		$mapper->method('insert')->willReturnCallback(fn ($link) => $this->record('insert(' . json_encode($this->normalise($link)) . ')') ?? $link);
-		return new ContactService($mapper, $cardDav, $session, $logger, $urls);
+		return new ContactService($mapper, $cardDav, new LinkSessionRuntime($session, $logger), $urls);
 	}//end makeService()
 }//end class

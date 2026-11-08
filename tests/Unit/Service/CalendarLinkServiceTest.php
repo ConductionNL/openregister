@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -71,8 +72,7 @@ class CalendarLinkServiceTest extends TestCase {
 			$this->linkMapper,
 			$this->calendarEventService,
 			$this->calDavBackend,
-			$this->userSession,
-			$this->logger,
+			new LinkSessionRuntime($this->userSession, $this->logger)
 		);
 	}
 
