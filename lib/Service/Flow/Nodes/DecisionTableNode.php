@@ -265,48 +265,62 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 		// the same belt-and-braces ObjectReadNode wears.
 		$this->validateConfig(config: $config);
 
-		$table = $this->resolveTable(config: $config);
-		$inputMapping = (array)($config['inputMapping'] ?? []);
-		$outputMapping = (array)($config['outputMapping'] ?? []);
-		$resultKey = trim((string)($config['resultKey'] ?? ''));
+		$plan = new DecisionTablePlan(table: $this->resolveTable(config: $config), config: $config);
 
 		$out = [];
 		foreach ($items as $index => $item) {
-			$json = (array)($item[FlowItems::JSON] ?? []);
-
-			$result = $this->decide(table: $table, config: $config, json: $json, inputMapping: $inputMapping);
-
-			foreach ($this->columnNames(columns: (array)($table['outputs'] ?? [])) as $name) {
-				FlowFieldPath::assign(
-					json: $json,
-					path: (string)($outputMapping[$name] ?? $name),
-					value: ($result['outputs'][$name] ?? null)
-				);
-			}
-
-			if ($resultKey !== '') {
-				FlowFieldPath::assign(
-					json: $json,
-					path: $resultKey,
-					value: [
-						'hitPolicy' => $result['hitPolicy'],
-						'matchedRuleIds' => $result['matchedRuleIds'],
-						'defaulted' => $result['defaulted'],
-						'tableName' => (string)($table['name'] ?? ''),
-						'tableKey' => (string)($table['key'] ?? ''),
-					]
-				);
-			}
-
 			$out[] = FlowItems::item(
-				json: $json,
+				json: $this->decidedRecord(plan: $plan, json: (array)($item[FlowItems::JSON] ?? [])),
 				binary: (array)($item[FlowItems::BINARY] ?? []),
 				fromItemIndex: $index
 			);
-		}//end foreach
+		}
 
 		return $out;
 	}//end execute()
+
+	/**
+	 * One item's record with the decision written into it.
+	 *
+	 * @param DecisionTablePlan    $plan The table and the step's mappings.
+	 * @param array<string, mixed> $json The item's record.
+	 *
+	 * @return array<string, mixed> The record carrying the outputs and, when asked, the summary.
+	 *
+	 * @throws DecisionEvaluationException When the item cannot be decided and no default row exists.
+	 *
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-no-match-takes-the-authors-explicit-default-or-fails-loudly
+	 */
+	private function decidedRecord(DecisionTablePlan $plan, array $json): array {
+		$table         = $plan->table;
+		$outputMapping = $plan->outputMapping();
+		$resultKey     = $plan->resultKey();
+		$result        = $this->decide(plan: $plan, json: $json);
+
+		foreach ($this->columnNames(columns: (array)($table['outputs'] ?? [])) as $name) {
+			FlowFieldPath::assign(
+				json: $json,
+				path: (string)($outputMapping[$name] ?? $name),
+				value: ($result['outputs'][$name] ?? null)
+			);
+		}
+
+		if ($resultKey !== '') {
+			FlowFieldPath::assign(
+				json: $json,
+				path: $resultKey,
+				value: [
+					'hitPolicy' => $result['hitPolicy'],
+					'matchedRuleIds' => $result['matchedRuleIds'],
+					'defaulted' => $result['defaulted'],
+					'tableName' => (string)($table['name'] ?? ''),
+					'tableKey' => (string)($table['key'] ?? ''),
+				]
+			);
+		}
+
+		return $json;
+	}//end decidedRecord()
 
 	/**
 	 * The table a step runs: inline, or stored and named by `tableRef`.
@@ -406,10 +420,8 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 * Decide one item: build the inputs, run the evaluator, apply the
 	 * author's no-match choice.
 	 *
-	 * @param array<string, mixed> $table The table definition.
-	 * @param array<string, mixed> $config The step configuration.
+	 * @param DecisionTablePlan    $plan The table, its input mapping and the default row.
 	 * @param array<string, mixed> $json The item's record.
-	 * @param array<string, mixed> $inputMapping Declared input name to field path.
 	 *
 	 * @return array{outputs: array<string, mixed>, matchedRuleIds: array<int, string>, hitPolicy: string, defaulted: bool}
 	 *
@@ -420,8 +432,10 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowValueTemplate::render()` is the
 	 * engine's canonical dotted-path read.
 	 */
-	private function decide(array $table, array $config, array $json, array $inputMapping): array {
-		$inputs = [];
+	private function decide(DecisionTablePlan $plan, array $json): array {
+		$table        = $plan->table;
+		$inputMapping = $plan->inputMapping();
+		$inputs       = [];
 		foreach ($this->columnNames(columns: (array)($table['inputs'] ?? [])) as $name) {
 			$path = (string)($inputMapping[$name] ?? $name);
 			// A value that is exactly one placeholder keeps its type, so a
@@ -439,7 +453,7 @@ class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTabl
 				'defaulted' => false,
 			];
 		} catch (DecisionEvaluationException $e) {
-			$defaults = ($config['defaultOutputs'] ?? null);
+			$defaults = $plan->defaultOutputs();
 			if ($e->getErrorCode() !== 'no_rule_matched' || is_array($defaults) === false) {
 				// Everything else — a missing input, a type mismatch, a hit
 				// policy violation — is a fault, not a no-match, and the
