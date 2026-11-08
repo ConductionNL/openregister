@@ -16,6 +16,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/ai-mcp/spec.md
  */
 
 declare(strict_types=1);
@@ -27,6 +29,8 @@ use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 
 /**
  * A dependency bundle of {@see ToolRegistrationListener}.
+ *
+ * @spec openspec/specs/ai-mcp/spec.md
  */
 final class BuiltinPlatformTools {
 	/**
@@ -34,6 +38,8 @@ final class BuiltinPlatformTools {
 	 *
 	 * @param ApplicationTool $applicationTool The application tool.
 	 * @param AgentTool       $agentTool       The agent tool.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
 	public function __construct(
 		public readonly ApplicationTool $applicationTool,
