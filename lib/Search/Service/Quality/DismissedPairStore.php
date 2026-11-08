@@ -182,10 +182,7 @@ class DismissedPairStore {
 	 * answer, and two rows disagreeing about it is a bug waiting to be found
 	 * by whichever one the scorer happened to read first.
 	 *
-	 * @param string $first One uuid.
-	 * @param string $second The other uuid.
-	 * @param string $registerSlug Register the pair was reviewed in.
-	 * @param string $schemaSlug Schema the pair was reviewed under.
+	 * @param ReviewedPair $pair The two uuids and the register and schema they were reviewed under.
 	 * @param string $fingerprint Opaque hash of the compared values, computed by the scorer.
 	 * @param string $reason Why the reviewer decided the two are not the same.
 	 * @param string $dismissedBy Acting uid.
@@ -195,15 +192,14 @@ class DismissedPairStore {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function dismiss(
-		string $first,
-		string $second,
-		string $registerSlug,
-		string $schemaSlug,
+		ReviewedPair $pair,
 		string $fingerprint,
 		string $reason,
 		string $dismissedBy,
 	): array {
-		[$a, $b] = self::canonical(first: $first, second: $second);
+		[$a, $b] = self::canonical(first: $pair->first, second: $pair->second);
+		$registerSlug = $pair->registerSlug;
+		$schemaSlug = $pair->schemaSlug;
 
 		$row = [
 			'objectA' => $a,
@@ -244,26 +240,17 @@ class DismissedPairStore {
 	 * who changed their mind" — and a deleted row cannot answer the second
 	 * half of it.
 	 *
-	 * @param string $first One uuid.
-	 * @param string $second The other uuid.
-	 * @param string $registerSlug Register the pair was reviewed in.
-	 * @param string $schemaSlug Schema the pair was reviewed under.
+	 * @param ReviewedPair $pair The two uuids and the register and schema they were reviewed under.
 	 * @param string $reversedBy Acting uid.
 	 *
 	 * @return array<string, mixed>|null The updated row, or null when no dismissal existed.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
-	public function undismiss(
-		string $first,
-		string $second,
-		string $registerSlug,
-		string $schemaSlug,
-		string $reversedBy,
-	): ?array {
-		[$a, $b] = self::canonical(first: $first, second: $second);
+	public function undismiss(ReviewedPair $pair, string $reversedBy): ?array {
+		[$a, $b] = self::canonical(first: $pair->first, second: $pair->second);
 
-		$existing = $this->findRow(first: $a, second: $b, registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+		$existing = $this->findRow(first: $a, second: $b, registerSlug: $pair->registerSlug, schemaSlug: $pair->schemaSlug);
 		if ($existing === null) {
 			return null;
 		}
