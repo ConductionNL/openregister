@@ -21,6 +21,8 @@ declare(strict_types=1);
 namespace Unit\Service\Timeline;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryDerivations;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryRecords;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
@@ -84,7 +86,8 @@ class TimelineEntryGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new TimelineEntryService($mapper, $kinds, $languages, $visibility, $session, $this->createMock(LoggerInterface::class));
+		$records = new TimelineEntryRecords(entryMapper: $mapper, kinds: $kinds, languages: $languages);
+		return new TimelineEntryService($records, $visibility, $session, $this->createMock(LoggerInterface::class));
 	}//end entryService()
 
 	public function testARecordCarriesEverythingThePayloadOffers(): void {
@@ -277,7 +280,8 @@ class TimelineEntryGoldenTest extends TestCase {
 			);
 		}
 
-		return new TimelineWriteService($notes, $entries, $references, $mentions, $blocks, $logger);
+		$derived = new TimelineEntryDerivations(references: $references, mentions: $mentions, blocks: $blocks);
+		return new TimelineWriteService($notes, $entries, $derived, $logger);
 	}//end writeService()
 
 	private function recording(?callable $record = null): TimelineEntryService {

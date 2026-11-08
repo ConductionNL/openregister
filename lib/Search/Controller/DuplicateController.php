@@ -36,6 +36,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
+use OCA\OpenRegister\Search\Service\Quality\ReviewedPair;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -293,10 +294,7 @@ class DuplicateController extends Controller {
 		}
 
 		$row = $this->dismissals->dismiss(
-			first: $objectA,
-			second: $objectB,
-			registerSlug: $register,
-			schemaSlug: $schema,
+			pair: new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema),
 			fingerprint: $fingerprint,
 			reason: $reason,
 			dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
@@ -337,10 +335,7 @@ class DuplicateController extends Controller {
 		}
 
 		$row = $this->dismissals->undismiss(
-			first: $objectA,
-			second: $objectB,
-			registerSlug: $register,
-			schemaSlug: $schema,
+			pair: new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema),
 			reversedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
 		);
 

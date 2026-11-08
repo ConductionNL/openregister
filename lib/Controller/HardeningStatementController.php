@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\HardeningStatementControllerServices;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
 use OCA\OpenRegister\Service\Hardening\ElevationService;
 use OCA\OpenRegister\Service\Hardening\StatementService;
@@ -57,22 +58,42 @@ use OCP\IUserSession;
 class HardeningStatementController extends Controller {
 
 	/**
+	 * Publishes the statement, and records an acceptance.
+	 *
+	 * @var StatementService
+	 */
+	private readonly StatementService $statements;
+
+	/**
+	 * Guards the administration writes with a fresh sign-in.
+	 *
+	 * @var ElevationService
+	 */
+	private readonly ElevationService $elevation;
+
+	/**
+	 * Names the account, which is never read from the request.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string           $appName     The app name.
 	 * @param IRequest         $request     The incoming request.
-	 * @param StatementService $statements  Publishes the statement, and records an acceptance.
-	 * @param ElevationService $elevation   Guards the administration writes with a fresh sign-in.
-	 * @param IUserSession     $userSession Names the account, which is never read from the request.
+	 * @param HardeningStatementControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly StatementService $statements,
-		private readonly ElevationService $elevation,
-		private readonly IUserSession $userSession,
+		HardeningStatementControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->statements = $services->statements;
+		$this->elevation = $services->elevation;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**

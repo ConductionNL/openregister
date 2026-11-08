@@ -50,17 +50,7 @@ class ReferenceFilterException extends PropertyVocabularyException {
 		string $code = 'reference-filter-invalid',
 		string $key = 'x-openregister-reference-filter',
 	) {
-		parent::__construct(
-			message: $message,
-			errors: [
-				[
-					'code' => $code,
-					'key' => $key,
-					'path' => $path,
-					'message' => $message,
-				],
-			]
-		);
-
+		$where = ['code' => $code, 'key' => $key, 'path' => $path];
+		parent::__construct(message: $message, errors: self::oneError(message: $message, where: $where));
 	}//end __construct()
 }//end class
