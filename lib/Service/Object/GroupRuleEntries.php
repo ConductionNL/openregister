@@ -144,7 +144,7 @@ final class GroupRuleEntries {
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
 	private function overrideClausePasses(mixed $clause, GroupRuleRequest $request): bool {
-		if ($clause === null || $clause === []) {
+		if (in_array($clause, [null, []], true) === true) {
 			return true;
 		}
 
