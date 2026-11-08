@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectLockInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectWriterInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsInterface;
@@ -38,6 +39,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableLocatorInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableMaintenanceInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
@@ -130,6 +132,7 @@ final class DbRegistrar {
 		ProcessingLogMapperInterface::class => ProcessingLogMapper::class,
 		RegisterMapperInterface::class => RegisterMapper::class,
 		RegistrySubscriptionMapperInterface::class => RegistrySubscriptionMapper::class,
+		RelatedRowRbacInterface::class => MagicRbacHandler::class,
 		RuleRunMapperInterface::class => RuleRunMapper::class,
 		RuleRunSummaryMapperInterface::class => RuleRunSummaryMapper::class,
 		RunObjectLockMapperInterface::class => RunObjectLockMapper::class,
