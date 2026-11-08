@@ -159,6 +159,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistryInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
@@ -357,7 +359,7 @@ final class ContractBindings {
 		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
-		\OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistryInterface::class => \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry::class,
+		PrincipalResolverRegistryInterface::class => PrincipalResolverRegistry::class,
 		RouterNodeInterface::class => RouterNode::class,
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
