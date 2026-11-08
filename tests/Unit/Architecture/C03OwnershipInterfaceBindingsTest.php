@@ -63,7 +63,6 @@ final class C03OwnershipInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		AuditAggregationService::class => ['Db/AuditTrailMapper.php'],
 	];
 
 	/**

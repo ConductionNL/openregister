@@ -71,7 +71,6 @@ final class C01MiscInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		ConsumerMapper::class => ['Service/Audit/TokenResolver.php', 'Service/AuthorizationService.php', 'Service/Consumer/ConsumerMapperSource.php'],
 		AnalyticsSeriesService::class => ['Search/Service/MapsOverviewService.php'],
 	];
 
