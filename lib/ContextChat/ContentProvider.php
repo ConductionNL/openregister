@@ -41,6 +41,8 @@ use OCP\ContextChat\IContentProvider;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\ContextChat\Support\ContentProviderSources;
+use OCA\OpenRegister\ContextChat\Support\ContentProviderLinks;
 
 /**
  * Content provider surfacing OpenRegister objects to Context Chat.
@@ -57,14 +59,46 @@ class ContentProvider implements IContentProvider, ContentProviderInterface {
 	private const BATCH_SIZE = 200;
 
 	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register lookup mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Object lookup/walk mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Deep link registry for `getItemUrl`.
+	 *
+	 * @var DeepLinkResolverInterface
+	 */
+	private readonly DeepLinkResolverInterface $deepLinkRegistry;
+
+	/**
+	 * URL generator for the fallback route.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
+
+	/**
 	 * Wire collaborators.
 	 *
 	 * @param ContextChatSubmissionListenerInterface $submissionListener Shared submission logic (single object).
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
-	 * @param MagicMapperInterface $magicMapper Object lookup/walk mapper.
-	 * @param DeepLinkResolverInterface $deepLinkRegistry Deep link registry for `getItemUrl`.
-	 * @param IURLGenerator $urlGenerator URL generator for the fallback route.
+	 * @param ContentProviderSources $sources Schema, register and magic-table lookups.
+	 * @param ContentProviderLinks $links Deep-link resolver and URL generator.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
@@ -73,13 +107,15 @@ class ContentProvider implements IContentProvider, ContentProviderInterface {
 	 */
 	public function __construct(
 		private readonly ContextChatSubmissionListenerInterface $submissionListener,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly DeepLinkResolverInterface $deepLinkRegistry,
-		private readonly IURLGenerator $urlGenerator,
+		ContentProviderSources $sources,
+		ContentProviderLinks $links,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->registerMapper = $sources->registerMapper;
+		$this->magicMapper = $sources->magicMapper;
+		$this->deepLinkRegistry = $links->deepLinkRegistry;
+		$this->urlGenerator = $links->urlGenerator;
 	}//end __construct()
 
 	/**
