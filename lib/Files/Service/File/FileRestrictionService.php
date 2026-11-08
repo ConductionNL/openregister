@@ -125,10 +125,7 @@ class FileRestrictionService {
 		$setBy = (string)($this->userSession->getUser()?->getUID() ?? '');
 		$this->store->save(
 			fileId: $fileId,
-			users: $users,
-			groups: $groups,
-			reason: $reason,
-			setBy: $setBy,
+			restriction: new FileRestriction(users: $users, groups: $groups, reason: $reason, setBy: $setBy),
 			setAt: new DateTimeImmutable()
 		);
 		$this->guard->forget();

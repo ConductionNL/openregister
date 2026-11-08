@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Files\Service\File\FileRestriction;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -100,13 +101,13 @@ class FileRestrictionStoreSaveTest extends TestCase {
 	}//end columns()
 
 	public function testAnExistingRowIsUpdatedInPlace(): void {
-		$this->store([$this->builder(1)])->save(42, [1 => 'pieter', 3 => '1001'], ['woo-team'], 'Prices', 'pieter', new DateTimeImmutable('2026-01-02 03:04:05'));
+		$this->store([$this->builder(1)])->save(42, new FileRestriction([1 => 'pieter', 3 => '1001'], ['woo-team'], 'Prices', 'pieter'), new DateTimeImmutable('2026-01-02 03:04:05'));
 
 		$this->assertSame([$this->columns()], $this->written);
 	}//end testAnExistingRowIsUpdatedInPlace()
 
 	public function testAFileWithoutARowGetsOneInserted(): void {
-		$this->store([$this->builder(0), $this->builder(1)])->save(42, ['pieter', '1001'], ['woo-team'], 'Prices', 'pieter', new DateTimeImmutable('2026-01-02 03:04:05'));
+		$this->store([$this->builder(0), $this->builder(1)])->save(42, new FileRestriction(['pieter', '1001'], ['woo-team'], 'Prices', 'pieter'), new DateTimeImmutable('2026-01-02 03:04:05'));
 
 		$this->assertSame([$this->columns(), ['file_id' => 42] + $this->columns()], $this->written);
 	}//end testAFileWithoutARowGetsOneInserted()
