@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Integration\ActivityFeedMerge;
+use OCA\OpenRegister\Service\Integration\ActivityFeedObject;
 use OCA\OpenRegister\Service\Integration\ActivityFeedService;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
 use PHPUnit\Framework\TestCase;
@@ -99,7 +100,7 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 	}//end service()
 
 	public function testBothSourcesAreReadInOrderForThisObject(): void {
-		$page = $this->service(false, false)->page('dossiq', 'case', 'obj-1');
+		$page = $this->service(false, false)->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'));
 
 		$this->assertSame(
 			[
@@ -113,7 +114,7 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 	}//end testBothSourcesAreReadInOrderForThisObject()
 
 	public function testAnUnreadableActivitySourceIsNamedAndLogged(): void {
-		$page = $this->service(false, true)->page('dossiq', 'case', 'obj-1');
+		$page = $this->service(false, true)->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'));
 
 		$this->assertSame([], $page['rows']);
 		$this->assertSame(['activity'], $page['degraded']);
@@ -128,7 +129,7 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 	}//end testAnUnreadableActivitySourceIsNamedAndLogged()
 
 	public function testTwoUnreadableSourcesAreNamedAuditFirst(): void {
-		$page = $this->service(true, true)->page('dossiq', 'case', 'obj-1');
+		$page = $this->service(true, true)->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'));
 
 		$this->assertSame(['audit', 'activity'], $page['degraded']);
 		$this->assertSame(
@@ -151,10 +152,7 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 	}//end testTwoUnreadableSourcesAreNamedAuditFirst()
 
 	public function testOnlyArrayRowsOfTheThreeHandedInKindsAreMerged(): void {
-		$page = $this->service(false, true)->page(
-			'dossiq',
-			'case',
-			'obj-1',
+		$page = $this->service(false, true)->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'),
 			[],
 			[
 				'mail' => 'not rows',
@@ -179,7 +177,7 @@ class ActivityFeedServiceSourcesGoldenTest extends TestCase {
 		$provider->method('list')->willReturn([]);
 		$service = new ActivityFeedService(new ActivityFeedMerge(), $history, $provider, $this->createMock(LoggerInterface::class));
 
-		$page = $service->page('dossiq', 'case', 'obj-1');
+		$page = $service->page(new ActivityFeedObject('dossiq', 'case', 'obj-1'));
 
 		$this->assertSame([], $page['rows']);
 		$this->assertSame([], $page['degraded']);
