@@ -48,21 +48,35 @@ use Throwable;
 class RegistrySubscriptionService {
 
 	/**
+	 * Applies inbound updates through the ordinary save path.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Resolves a row's schema and checks owned properties.
+	 *
+	 * @var RegistryUpdateTargetGuard
+	 */
+	private readonly RegistryUpdateTargetGuard $updateTargetGuard;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RegistrySubscriptionMapper $subscriptionMapper Reads/writes the state table.
-	 * @param ObjectOperationsInterface $objectService Applies inbound updates through the ordinary save path.
 	 * @param RegistrySubscriptionNotifier $notifier Dispatches events and writes audit rows.
-	 * @param RegistryUpdateTargetGuard $updateTargetGuard Resolves a row's schema and checks owned properties.
+	 * @param RegistryInboundServices $inbound Checks and writes inbound updates.
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
 		private readonly RegistrySubscriptionMapper $subscriptionMapper,
-		private readonly ObjectOperationsInterface $objectService,
 		private readonly RegistrySubscriptionNotifier $notifier,
-		private readonly RegistryUpdateTargetGuard $updateTargetGuard,
+		RegistryInboundServices $inbound,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectService     = $inbound->objectService;
+		$this->updateTargetGuard = $inbound->updateTargetGuard;
 	}//end __construct()
 
 	/**
@@ -145,8 +159,6 @@ class RegistrySubscriptionService {
 
 		$this->notifier->requested(
 			object: $object,
-			register: (string)$object->getRegister(),
-			schema: (string)$object->getSchema(),
 			registry: $annotation['registry'],
 			identityValue: $identityValue,
 		);

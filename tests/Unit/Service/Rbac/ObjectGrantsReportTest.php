@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\GrantReportSources;
 use OCA\OpenRegister\Service\Rbac\GrantRuleFit;
 use OCA\OpenRegister\Service\Rbac\InheritedGrantLister;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
@@ -40,6 +41,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectGrantsReport;
 use OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectShareReader;
+use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
 use OCP\IAppConfig;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -178,13 +180,9 @@ class ObjectGrantsReportTest extends TestCase {
 		$object->setOrganisation($organisation);
 
 		$report = new ObjectGrantsReport(
-			accessReport: $accessReport,
-			shares: $shareReader,
-			inherited: $lister,
-			rules: new GrantRuleFit($matcher),
+			sources: new GrantReportSources(accessReport: $accessReport, shares: $shareReader, inherited: $lister, rules: new GrantRuleFit($matcher)),
 			scopeResolver: new ObjectScopeResolver(),
-			userManager: $users,
-			groupManager: $groups
+			directory: new PrincipalDirectory(userManager: $users, groupManager: $groups)
 		);
 
 		return $report->rowsFor(object: $object, registerRef: 1, schemaRef: 7, principalTypes: $types);

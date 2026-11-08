@@ -24,7 +24,9 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Exception\BrokenReference;
 use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\ReferenceCycle;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -147,9 +149,11 @@ final class ReferenceExistence {
 		$this->events->logger->warning(message: '[SaveObject] Circular reference detected during validation', context: $context);
 
 		throw new CircularReferenceException(
-			referencedUuid: $check->uuid,
-			targetSchemaSlug: $check->schemaRef,
-			cycle: array_map(self::frameTrace(...), $cycle),
+			referenceCycle: new ReferenceCycle(
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->schemaRef,
+				cycle: array_map(self::frameTrace(...), $cycle)
+			),
 			code: 422
 		);
 	}//end refuseCycle()
@@ -187,10 +191,12 @@ final class ReferenceExistence {
 		}
 
 		throw new ReferenceValidationException(
-			propertyName: $check->propertyName,
-			referencedUuid: $check->uuid,
-			targetSchemaSlug: $check->schemaRef,
-			targetRegister: $check->register,
+			reference: new BrokenReference(
+				propertyName: $check->propertyName,
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->schemaRef,
+				targetRegister: $check->register
+			),
 			code: 422
 		);
 	}//end replay()
@@ -317,10 +323,12 @@ final class ReferenceExistence {
 		$this->events->refused(check: $check);
 
 		throw new ReferenceValidationException(
-			propertyName: $check->propertyName,
-			referencedUuid: $check->uuid,
-			targetSchemaSlug: $check->targetSchemaSlug,
-			targetRegister: $check->register,
+			reference: new BrokenReference(
+				propertyName: $check->propertyName,
+				referencedUuid: $check->uuid,
+				targetSchemaSlug: $check->targetSchemaSlug,
+				targetRegister: $check->register
+			),
 			code: 422,
 			previous: $cause
 		);

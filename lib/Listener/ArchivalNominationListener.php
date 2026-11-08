@@ -32,6 +32,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
@@ -78,24 +80,40 @@ class ArchivalNominationListener implements IEventListener {
 		}
 
 		$object = $event->getObject();
+		$schema = $this->schemaOf(object: $object);
+		if ($schema === null || $this->nominations->isTerminalState(schema: $schema, state: $event->getTo()) === false) {
+			return;
+		}
 
+		$this->nominateAndPersist(object: $object, schema: $schema);
+	}//end handle()
+
+	/**
+	 * The object's schema, or null when it cannot be loaded.
+	 *
+	 * @param ObjectEntity $object The transitioned object.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaOf(ObjectEntity $object): ?Schema {
 		try {
-			$schema = $this->schemaMapper->find(id: (string)$object->getSchema());
+			return $this->schemaMapper->find(id: (string)$object->getSchema());
 		} catch (Throwable $e) {
-			return;
+			return null;
 		}
+	}//end schemaOf()
 
-		if ($this->nominations->isTerminalState(schema: $schema, state: $event->getTo()) === false) {
-			return;
-		}
-
+	/**
+	 * Nominate the closed object for archival and persist the nomination.
+	 *
+	 * @param ObjectEntity $object The object that reached a final state.
+	 * @param Schema       $schema Its schema.
+	 *
+	 * @return void
+	 */
+	private function nominateAndPersist(ObjectEntity $object, Schema $schema): void {
 		try {
-			$nomination = $this->nominations->nominate(
-				object: $object,
-				schema: $schema,
-				trigger: 'closure'
-			);
-
+			$nomination = $this->nominations->nominate(object: $object, schema: $schema, trigger: 'closure');
 			if (($nomination['status'] ?? null) === ArchivalNominationService::STATUS_NOT_APPLICABLE) {
 				return;
 			}
@@ -111,5 +129,5 @@ class ArchivalNominationListener implements IEventListener {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}//end try
-	}//end handle()
+	}//end nominateAndPersist()
 }//end class

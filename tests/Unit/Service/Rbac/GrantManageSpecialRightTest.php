@@ -31,6 +31,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\ObjectLookup;
+use OCA\OpenRegister\Service\Rbac\OwnershipGuards;
+use OCA\OpenRegister\Service\Rbac\OwnershipWriters;
+use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectSharingControllerFactory;
 use OCA\OpenRegister\Controller\ObjectSharingController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -159,20 +163,21 @@ class GrantManageSpecialRightTest extends TestCase {
 		);
 
 		$this->ownership = new ObjectOwnershipService(
-			$this->userSession,
-			$this->createMock(IUserManager::class),
-			$this->groupManager,
-			new GrantManageGuard(new ObjectScopeResolver(), $specialRights),
-			$this->createMock(PermissionHandler::class),
-			$this->createMock(ObjectOwnerWriter::class),
-			$this->authorizationWriter,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(MagicMapper::class),
-			$registers,
-			$schemas,
-			$this->createMock(INotificationManager::class),
-			new NullLogger(),
-			$auditor
+			guards: new OwnershipGuards(
+				userSession: $this->userSession,
+				grantManage: new GrantManageGuard(new ObjectScopeResolver(), $specialRights),
+				permissions: $this->createMock(PermissionHandler::class)
+			),
+			directory: new PrincipalDirectory(userManager: $this->createMock(IUserManager::class), groupManager: $this->groupManager),
+			writers: new OwnershipWriters(
+				ownerWriter: $this->createMock(ObjectOwnerWriter::class),
+				authorizationWriter: $this->authorizationWriter,
+				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+				notificationManager: $this->createMock(INotificationManager::class)
+			),
+			lookup: new ObjectLookup(magicMapper: $this->createMock(MagicMapper::class), registerMapper: $registers, schemaMapper: $schemas),
+			logger: new NullLogger(),
+			grantAuditor: $auditor
 		);
 
 		$this->record = $this->record(schema: '12');

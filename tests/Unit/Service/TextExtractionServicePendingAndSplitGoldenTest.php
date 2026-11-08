@@ -21,6 +21,7 @@ use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor;
 use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
 use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -71,7 +72,7 @@ class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 
 		$service = $this->getMockBuilder(TextExtractionService::class)
 			->setConstructorArgs(
-				[
+				TextExtractionServiceFactory::args(
 					$fileMapper,
 					$this->createMock(ChunkMapper::class),
 					$this->createMock(IRootFolder::class),
@@ -87,7 +88,7 @@ class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 					new SpreadsheetExtractor($logger),
 					new PdfExtractor($logger),
 					new WordExtractor($logger),
-				]
+				)
 			)
 			->onlyMethods(['extractFile'])
 			->getMock();

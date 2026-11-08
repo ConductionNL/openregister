@@ -58,7 +58,7 @@ final class ObjectActionsControllerFactory {
 					history: $history,
 					bulk: $bulk,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\ObjectActionsPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\ConversationPlatform(
 					logger: $logger,
 				),
 			),

@@ -15,6 +15,7 @@ use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -149,7 +150,13 @@ class ObjectsProviderSearchGoldenTest extends TestCase {
 			}
 		);
 
-		$preview = new ObjectPreviewFormatter($urlGenerator, $l10n, $objectService, $deepLinks, $schemaMapper, $registerMapper, $logger);
+		$sources = new ObjectPreviewSources(
+			objectService: $objectService,
+			deepLinkRegistry: $deepLinks,
+			schemaMapper: $schemaMapper,
+			registerMapper: $registerMapper
+		);
+		$preview = new ObjectPreviewFormatter($urlGenerator, $l10n, $sources, $logger);
 		$provider = new ObjectsProvider(
 			$objectService,
 			$schemaMapper,

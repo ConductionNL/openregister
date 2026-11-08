@@ -1,0 +1,97 @@
+[
+    [
+        "saveObject",
+        [
+            {
+                "uuid": "l1",
+                "status": "in_review",
+                "@self": {
+                    "uuid": "l1"
+                }
+            },
+            [],
+            "edepot-transfers",
+            "edepotTransfer",
+            "l1",
+            true,
+            true,
+            false,
+            true,
+            null,
+            null,
+            false,
+            false,
+            false,
+            null
+        ]
+    ],
+    [
+        "result",
+        {
+            "id": "saved-uuid",
+            "stored": true,
+            "uuid": "saved-uuid"
+        }
+    ],
+    [
+        "saveObject",
+        [
+            {
+                "status": "in_review"
+            },
+            [],
+            "edepot-transfers",
+            "edepotTransfer",
+            null,
+            true,
+            true,
+            false,
+            true,
+            null,
+            null,
+            false,
+            false,
+            false,
+            null
+        ]
+    ],
+    [
+        "result",
+        {
+            "id": "saved-uuid",
+            "stored": true,
+            "uuid": "saved-uuid"
+        }
+    ],
+    [
+        "saveObject",
+        [
+            {
+                "uuid": "",
+                "status": "x"
+            },
+            [],
+            "edepot-transfers",
+            "edepotTransfer",
+            null,
+            true,
+            true,
+            false,
+            true,
+            null,
+            null,
+            false,
+            false,
+            false,
+            null
+        ]
+    ],
+    [
+        "result",
+        {
+            "id": "saved-uuid",
+            "stored": true,
+            "uuid": "saved-uuid"
+        }
+    ]
+]

@@ -39,6 +39,9 @@ use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
+use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -98,16 +101,22 @@ final class GraphQLAggregationFilterTest extends TestCase {
 		}
 
 		return new GraphQLResolver(
-			$this->createMock(GetObject::class),
-			$objectService,
-			$permissionHandler,
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(RelationHandler::class),
-			$registerMapper,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(TranslationHandler::class),
-			$runner,
-			new TimeseriesRequestValidator()
+			new GraphQLResolverObjects(
+				$this->createMock(GetObject::class),
+				$objectService,
+				$this->createMock(RelationHandler::class),
+				$registerMapper
+			),
+			new GraphQLResolverRights(
+				$permissionHandler,
+				$this->createMock(PropertyRbacHandler::class)
+			),
+			new GraphQLResolverShaping(
+				$this->createMock(TranslationHandler::class),
+				$runner,
+				new TimeseriesRequestValidator()
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}
 

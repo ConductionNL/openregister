@@ -36,6 +36,7 @@ use OCA\OpenRegister\Search\Service\MapsOverviewSources;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -225,7 +226,17 @@ class SearchAccessWiringGoldenTest extends TestCase {
 		$logger    = $this->createMock(LoggerInterface::class);
 		$urls      = $this->createMock(IURLGenerator::class);
 		$deepLinks = $this->createMock(DeepLinkRegistryService::class);
-		$preview   = new ObjectPreviewFormatter($urls, $l10n, $objects, $deepLinks, $schemas, $registers, $logger);
+		$preview   = new ObjectPreviewFormatter(
+			urlGenerator: $urls,
+			l10n: $l10n,
+			sources: new ObjectPreviewSources(
+				objectService: $objects,
+				deepLinkRegistry: $deepLinks,
+				schemaMapper: $schemas,
+				registerMapper: $registers
+			),
+			logger: $logger
+		);
 
 		return new ObjectsProvider(
 			$objects,

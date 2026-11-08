@@ -38,8 +38,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Search;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -127,16 +125,14 @@ class SearchDictionaryProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicObjectSearchInterface     $objects    Reads the concepts.
-	 * @param RegisterMapperInterface  $registers  Resolves the vocabulary register's id.
-	 * @param SchemaMapperInterface    $schemas    Resolves the concept schemas' ids.
-	 * @param IAppConfig      $appConfig  Holds the administered caps.
-	 * @param LoggerInterface $logger     Diagnostics.
+	 * @param MagicObjectSearchInterface $objects   Reads the concepts.
+	 * @param SearchDictionaryMappers    $mappers   Resolve the vocabulary register's and concept schemas' ids.
+	 * @param IAppConfig                 $appConfig Holds the administered caps.
+	 * @param LoggerInterface            $logger    Diagnostics.
 	 */
 	public function __construct(
 		private readonly MagicObjectSearchInterface $objects,
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
+		private readonly SearchDictionaryMappers $mappers,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
@@ -308,12 +304,12 @@ class SearchDictionaryProvider {
 		// `conceptscheme`, and a slug can legitimately resolve to several ids,
 		// so the value is a list even when there is one.
 		$registerId = self::firstId(
-			map: $this->registers->findIdsBySlugs([self::REGISTER]),
+			map: $this->mappers->registers->findIdsBySlugs([self::REGISTER]),
 			slug: self::REGISTER
 		);
-		$conceptId = self::firstId(map: $this->schemas->findIdsBySlugs([self::SCHEMA]), slug: self::SCHEMA);
+		$conceptId = self::firstId(map: $this->mappers->schemas->findIdsBySlugs([self::SCHEMA]), slug: self::SCHEMA);
 		$schemeSchemaId = self::firstId(
-			map: $this->schemas->findIdsBySlugs([self::SCHEME_SCHEMA]),
+			map: $this->mappers->schemas->findIdsBySlugs([self::SCHEME_SCHEMA]),
 			slug: self::SCHEME_SCHEMA
 		);
 

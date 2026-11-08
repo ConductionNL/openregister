@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
@@ -45,24 +46,52 @@ use Psr\Log\LoggerInterface;
  */
 class FileSearchController extends Controller {
 	/**
+	 * Vectorization service.
+	 *
+	 * @var VectorizationServiceInterface
+	 */
+	private readonly VectorizationServiceInterface $vectorService;
+
+	/**
+	 * Chunk mapper (ranked keyword arm).
+	 *
+	 * @var ChunkMapperInterface
+	 */
+	private readonly ChunkMapperInterface $chunkMapper;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Keeps only the hits on files the caller may open.
+	 *
+	 * @var FileReadScope
+	 */
+	private readonly FileReadScope $readScope;
+
+	/**
 	 * Constructor
 	 *
-	 * @param string $appName App name
-	 * @param IRequest $request Request object
-	 * @param VectorizationServiceInterface $vectorService Vectorization service
-	 * @param ChunkMapperInterface $chunkMapper Chunk mapper (ranked keyword arm)
-	 * @param LoggerInterface $logger Logger
-	 * @param FileReadScope $readScope Keeps only the hits on files the caller may open
+	 * @param string                       $appName  App name
+	 * @param IRequest                     $request  Request object
+	 * @param FileSearchControllerServices $services Vectorization service, chunk mapper and the read scope
+	 * @param LoggerInterface              $logger   Logger
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly VectorizationServiceInterface $vectorService,
-		private readonly ChunkMapperInterface $chunkMapper,
-		private readonly LoggerInterface $logger,
-		private readonly FileReadScope $readScope,
+		FileSearchControllerServices $services,
+		LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->vectorService = $services->vectorService;
+		$this->chunkMapper = $services->chunkMapper;
+		$this->readScope = $services->readScope;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**

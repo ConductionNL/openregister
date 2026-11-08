@@ -81,7 +81,7 @@ class ObjectSlugSource {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 */
-	public function withSuffix(string $slug, ?string $stamp=null): string {
+	public function withSuffix(string $slug, string|null $stamp=null): string {
 		return $this->suffixBase(slug: $slug) . '-' . ($stamp ?? $this->currentStamp());
 	}//end withSuffix()
 
@@ -131,7 +131,7 @@ class ObjectSlugSource {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
-	public function normaliseClient(?string $clientSlug): ?string {
+	public function normaliseClient(string|null $clientSlug): string|null {
 		return $this->clientValue->normalise(clientSlug: $clientSlug);
 	}//end normaliseClient()
 
@@ -145,7 +145,7 @@ class ObjectSlugSource {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
-	public function differsFromStored(?string $clientSlug, string $stored): bool {
+	public function differsFromStored(string|null $clientSlug, string $stored): bool {
 		return $this->clientValue->differsFromStored(clientSlug: $clientSlug, stored: $stored);
 	}//end differsFromStored()
 
@@ -160,43 +160,73 @@ class ObjectSlugSource {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
 	 */
-	public function candidate(array $objectData, Schema $schema, int $maxLength): ?string {
-		$businessData = $objectData;
-		if (isset($objectData['object']) === true && is_array($objectData['object']) === true) {
-			$businessData = $objectData['object'];
-		}
-
+	public function candidate(array $objectData, Schema $schema, int $maxLength): string|null {
 		$path = $this->fieldPathAndPrefix(schema: $schema);
 		if ($path === null) {
 			return null;
 		}
 
 		[$fieldPath, $prefix] = $path;
-		$value = $this->hydrator->extractMetadataValue(
-			data: $businessData,
-			fieldPath: $fieldPath,
-			schemaProperties: $schema->getProperties() ?? []
-		);
-		if ($value === null || trim($value) === '') {
-			return null;
-		}
-
-		// The name is slugified on its own: a name that slugifies to nothing (only
-		// punctuation, only non-Latin letters) is no name, so the schema part alone
-		// never becomes the slug.
-		$name = $this->hydrator->createSlug(text: trim($value));
+		$data = $this->businessData(objectData: $objectData);
+		$value = $this->hydrator->extractMetadataValue(data: $data, fieldPath: $fieldPath, schemaProperties: ($schema->getProperties() ?? []));
+		$name = $this->nameSlug(value: $value);
 		if ($name === '') {
 			return null;
 		}
 
-		$slug = $name;
-		if ($prefix !== '') {
-			$slug = $prefix.'-'.$name;
+		// Cut to the column without leaving a trailing hyphen at the cut.
+		return rtrim(substr($this->prefixed(prefix: $prefix, name: $name), 0, $maxLength), '-');
+	}//end candidate()
+
+	/**
+	 * The business data of an object, unwrapped from an envelope with an `object` key.
+	 *
+	 * @param array $objectData The object's business data, or an envelope.
+	 *
+	 * @return array The business data.
+	 */
+	private function businessData(array $objectData): array {
+		if (isset($objectData['object']) === true && is_array($objectData['object']) === true) {
+			return $objectData['object'];
 		}
 
-		// Cut to the column without leaving a trailing hyphen at the cut.
-		return rtrim(substr($slug, 0, $maxLength), '-');
-	}//end candidate()
+		return $objectData;
+	}//end businessData()
+
+	/**
+	 * The slugified source value, empty when there is none.
+	 *
+	 * The name is slugified on its own: a name that slugifies to nothing (only
+	 * punctuation, only non-Latin letters) is no name, so the schema part alone
+	 * never becomes the slug.
+	 *
+	 * @param string|null $value The value read from the source field.
+	 *
+	 * @return string The slugified value, or '' when there is none.
+	 */
+	private function nameSlug(string|null $value): string {
+		if ($value === null || trim($value) === '') {
+			return '';
+		}
+
+		return $this->hydrator->createSlug(text: trim($value));
+	}//end nameSlug()
+
+	/**
+	 * The slug with the schema part in front, when the source has one.
+	 *
+	 * @param string $prefix The schema part, empty for a property source.
+	 * @param string $name   The slugified value.
+	 *
+	 * @return string The slug.
+	 */
+	private function prefixed(string $prefix, string $name): string {
+		if ($prefix === '') {
+			return $name;
+		}
+
+		return $prefix.'-'.$name;
+	}//end prefixed()
 
 	/**
 	 * Which field to read and what to put in front of it.
@@ -207,14 +237,26 @@ class ObjectSlugSource {
 	 *                                          property source); null when the schema-name
 	 *                                          source has no name field or no schema name.
 	 */
-	private function fieldPathAndPrefix(Schema $schema): ?array {
+	private function fieldPathAndPrefix(Schema $schema): array|null {
 		$configuration = ($schema->getConfiguration() ?? []);
 		$fieldPath = (string)($configuration['objectSlugField'] ?? '');
 		if ($fieldPath !== ObjectSlugHandler::SCHEMA_NAME_SOURCE) {
 			return [$fieldPath, ''];
 		}
 
-		$nameField = ($configuration['objectNameField'] ?? null);
+		return $this->schemaNamePath(schema: $schema, nameField: ($configuration['objectNameField'] ?? null));
+	}//end fieldPathAndPrefix()
+
+	/**
+	 * The name field and the schema part of the schema-name source.
+	 *
+	 * @param Schema $schema    The schema.
+	 * @param mixed  $nameField The schema's `objectNameField`.
+	 *
+	 * @return array{0: string, 1: string}|null The name field and the schema part; null when
+	 *                                          either is missing.
+	 */
+	private function schemaNamePath(Schema $schema, mixed $nameField): array|null {
 		if (is_string($nameField) === false || trim($nameField) === '') {
 			return null;
 		}
@@ -225,7 +267,7 @@ class ObjectSlugSource {
 		}
 
 		return [$nameField, $prefix];
-	}//end fieldPathAndPrefix()
+	}//end schemaNamePath()
 
 	/**
 	 * The schema half of a schema-name slug: the schema slug, or its slugified title

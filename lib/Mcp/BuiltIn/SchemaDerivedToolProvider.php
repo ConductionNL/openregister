@@ -56,7 +56,6 @@ use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * SchemaDerivedToolProvider
@@ -258,45 +257,45 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		$register = $resolved['register'];
 		$verb = $resolved['verb'];
 
-		$paramsDigest = hash('sha256', $this->canonicalArguments(arguments: $arguments));
-
-		try {
-			$result = match ($verb) {
-				'search' => $this->search(schema: $schema, register: $register, arguments: $arguments),
-				'get' => $this->get(schema: $schema, register: $register, arguments: $arguments),
-				'create' => $this->create(schema: $schema, register: $register, arguments: $arguments),
-				'update' => $this->update(schema: $schema, register: $register, arguments: $arguments),
-				'delete' => $this->delete(schema: $schema, register: $register, arguments: $arguments),
-				default => throw new InvalidArgumentException('Unknown verb: ' . $verb),
-			};
-
-			$this->writeAudit(
-				toolId: $toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: $this->resultSummary(verb: $verb, result: $result),
-				schema: $schema,
-				register: $register,
-				result: $result
-			);
-
-			return $result;
-		} catch (Throwable $e) {
-			$this->writeAudit(
-				toolId: $toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: [
-					'isError' => true,
-					'errorClass' => get_class($e),
-					'message' => substr($e->getMessage(), 0, 300),
-				],
-				schema: $schema,
-				register: $register,
-				result: null
-			);
-
-			throw $e;
-		}//end try
+		return $this->audit()->run(
+			target: new ToolAuditTarget(toolId: $toolId, register: $register?->getId(), schema: $schema->getId()),
+			arguments: $arguments,
+			call: fn (): array => $this->runVerb(verb: $verb, schema: $schema, register: $register, arguments: $arguments),
+			summarise: fn (array $result): array => $this->resultSummary(verb: $verb, result: $result)
+		);
 	}//end invokeTool()
+
+	/**
+	 * Run one verb of a schema-derived tool.
+	 *
+	 * @param string               $verb      The verb.
+	 * @param Schema               $schema    The target schema.
+	 * @param Register|null        $register  The schema's owning register, when resolvable.
+	 * @param array<string, mixed> $arguments Tool arguments.
+	 *
+	 * @return array<string, mixed> The verb's result.
+	 *
+	 * @throws InvalidArgumentException On an unknown verb.
+	 */
+	private function runVerb(string $verb, Schema $schema, ?Register $register, array $arguments): array {
+		return match ($verb) {
+			'search' => $this->search(schema: $schema, register: $register, arguments: $arguments),
+			'get' => $this->get(schema: $schema, register: $register, arguments: $arguments),
+			'create' => $this->create(schema: $schema, register: $register, arguments: $arguments),
+			'update' => $this->update(schema: $schema, register: $register, arguments: $arguments),
+			'delete' => $this->delete(schema: $schema, register: $register, arguments: $arguments),
+			default => throw new InvalidArgumentException('Unknown verb: ' . $verb),
+		};
+	}//end runVerb()
+
+	/**
+	 * The audit runner of this provider.
+	 *
+	 * @return ToolInvocationAudit The runner.
+	 */
+	private function audit(): ToolInvocationAudit {
+		return new ToolInvocationAudit(auditTrailMapper: $this->auditTrailMapper, logger: $this->logger, source: 'SchemaDerivedToolProvider');
+	}//end audit()
 
 	/**
 	 * Search verb: declared-filter-only, bounded/clamped pagination,
@@ -957,109 +956,9 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			];
 		}
 
-		$id = null;
-		if (is_string($result['id'] ?? null) === true) {
-			$id = $result['id'];
-		}
-
-		return [
-			'isError' => false,
-			'id' => $id,
-		];
+		return ToolInvocationDigest::idSummary(result: $result);
 	}//end resultSummary()
 
-	/**
-	 * Write exactly one immutable, hash-chained audit record for this
-	 * invocation. Fail-soft: a broken audit write is logged and MUST NOT
-	 * mask (or replace) the invocation's real result/error — losing an
-	 * audit row is bad, losing the invocation outcome to an audit hiccup is
-	 * worse (mirrors {@see \OCA\OpenRegister\Service\ObjectService::logProcessingRead()}).
-	 *
-	 * @param string $toolId Full namespaced tool id.
-	 * @param string $paramsDigest SHA-256 hex digest of the invocation arguments.
-	 * @param array<string, mixed> $resultSummary Structured outcome summary.
-	 * @param Schema $schema The invoked tool's schema.
-	 * @param Register|null $register The schema's owning register, when resolvable.
-	 * @param array<string, mixed>|null $result The verb's return value, or null on failure.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
-	 */
-	private function writeAudit(
-		string $toolId,
-		string $paramsDigest,
-		array $resultSummary,
-		Schema $schema,
-		?Register $register,
-		?array $result,
-	): void {
-		try {
-			$objectUuid = null;
-			if ($result !== null && is_string($result['id'] ?? null) === true) {
-				$objectUuid = $result['id'];
-			}
-
-			$registerId = null;
-			if ($register !== null) {
-				$registerId = $register->getId();
-			}
-
-			$this->auditTrailMapper->createToolInvocationEntry(
-				toolId: $toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: $resultSummary,
-				register: $registerId,
-				schema: $schema->getId(),
-				objectUuid: $objectUuid
-			);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'[SchemaDerivedToolProvider] Failed to write invocation audit record',
-				['toolId' => $toolId, 'error' => $e->getMessage()]
-			);
-		}//end try
-	}//end writeAudit()
-
-	/**
-	 * Deterministically canonicalise arguments (recursive key-sort) so the
-	 * params digest is stable regardless of argument-array key order.
-	 *
-	 * @param array<string, mixed> $arguments Tool arguments.
-	 *
-	 * @return string Canonical JSON representation.
-	 */
-	private function canonicalArguments(array $arguments): string {
-		$encoded = json_encode(
-			$this->deepKsort(value: $arguments),
-			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-		);
-
-		if ($encoded === false) {
-			return '';
-		}
-
-		return $encoded;
-	}//end canonicalArguments()
-
-	/**
-	 * Recursively sort an array by key for deterministic serialisation.
-	 *
-	 * @param array<array-key, mixed> $value The array to sort.
-	 *
-	 * @return array<array-key, mixed> The sorted array.
-	 */
-	private function deepKsort(array $value): array {
-		ksort($value);
-		foreach ($value as $key => $item) {
-			if (is_array($item) === true) {
-				$value[$key] = $this->deepKsort(value: $item);
-			}
-		}
-
-		return $value;
-	}//end deepKsort()
 
 	/**
 	 * Truncate long top-level string values in a serialized object so a

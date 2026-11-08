@@ -27,6 +27,7 @@ use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
@@ -39,6 +40,7 @@ use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
@@ -104,7 +106,7 @@ class CaseFlowNodesTest extends TestCase {
 		$anchor->method('mayRead')->willReturn(true);
 		$writer = $this->createMock(CaseBusinessStateWriter::class);
 		$sentries = new CaseSentryEvaluator(catalog: new EventCatalogService());
-		$machine = new CasePlanStateMachine(items: $this->items, audits: $this->audits, table: new CasePlanTransitions(), realiser: $realiser, writer: $writer, db: $db, logger: new NullLogger());
+		$machine = new CasePlanStateMachine(store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()), table: new CasePlanTransitions(), effects: new CaseTransitionEffects(realiser: $realiser, writer: $writer));
 
 		return new CasePlanService(
 			store: new CasePlanStore(
@@ -115,7 +117,7 @@ class CaseFlowNodesTest extends TestCase {
 			),
 			mechanics: new CasePlanMechanics(
 				machine: $machine,
-				cascade: new CasePlanCascade(items: $this->items, machine: $machine, sentries: $sentries, realiser: $realiser, anchor: $anchor, db: $db, logger: new NullLogger()),
+				cascade: new CasePlanCascade(store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()), machine: $machine, readers: new CaseCascadeReaders(sentries: $sentries, realiser: $realiser, anchor: $anchor)),
 				sentries: $sentries,
 				definitions: new CasePlanDefinition(sentries: $sentries)
 			),

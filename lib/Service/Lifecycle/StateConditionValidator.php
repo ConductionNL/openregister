@@ -217,12 +217,13 @@ final class StateConditionValidator {
 			return null;
 		}
 
-		if (is_string($value) === true) {
-			return $value;
+		$path = $value;
+		if (is_array($value) === true) {
+			$path = ($value[0] ?? null);
 		}
 
-		if (is_array($value) === true && is_string(($value[0] ?? null)) === true) {
-			return $value[0];
+		if (is_string($path) === true) {
+			return $path;
 		}
 
 		return null;

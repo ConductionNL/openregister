@@ -3906,11 +3906,6 @@ parameters:
 			path: lib/Service/ExportService.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\CreateFileHandler\\:\\:\\$rootFolder is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/CreateFileHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\DeleteFileHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/DeleteFileHandler.php
@@ -4046,17 +4041,12 @@ parameters:
 			path: lib/Files/Service/File/Pdf/PdfTextReplacer.php
 
 		-
-			message: "#^Cannot call method getCategory\\(\\) on array\\<string, int\\|string\\|null\\>\\.$#"
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/ReadFileHandler.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:getFile\\(\\) should return OCP\\\\Files\\\\File\\|null but returns OCP\\\\Files\\\\Node\\.$#"
-			count: 2
-			path: lib/Service/File/ReadFileHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:getFile\\(\\) should return OCP\\\\Files\\\\File\\|null but returns OCP\\\\Files\\\\Node\\|null\\.$#"
 			count: 1
 			path: lib/Service/File/ReadFileHandler.php
 
