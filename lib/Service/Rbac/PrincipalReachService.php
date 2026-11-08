@@ -63,7 +63,7 @@ use Throwable;
  *
  * @spec openspec/specs/authorization-rbac/spec.md
  */
-class PrincipalReachService implements PrincipalReachServiceInterface {
+class PrincipalReachService {
 	/**
 	 * The schemas the cascade is asked about.
 	 *

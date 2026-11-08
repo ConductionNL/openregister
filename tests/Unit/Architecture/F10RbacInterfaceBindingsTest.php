@@ -34,8 +34,6 @@ use OCA\OpenRegister\Service\Rbac\MetadataConditionFindingsInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
-use OCA\OpenRegister\Service\Rbac\PrincipalReachService;
-use OCA\OpenRegister\Service\Rbac\PrincipalReachServiceInterface;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
 use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindingsInterface;
@@ -66,7 +64,6 @@ final class F10RbacInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		ExplicitRevealTrailMasker::class => [ExplicitRevealTrailMaskerInterface::class, ContractBindings::class],
-		PrincipalReachService::class => [PrincipalReachServiceInterface::class, ContractBindings::class],
 		OrganisationSpecialRights::class => [OrganisationSpecialRightsInterface::class, ContractBindings::class],
 	];
 
