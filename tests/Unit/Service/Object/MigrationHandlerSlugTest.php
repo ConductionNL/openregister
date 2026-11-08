@@ -88,7 +88,7 @@ class MigrationHandlerSlugTest extends TestCase {
 
 		$handler = $this->migrationHandler(mapper: $mapper, utility: $utility, dataManip: $manip);
 
-		$report = $handler->migrateObjects(1, 10, 2, 20, ['11111111-1111-1111-1111-111111111111'], ['title' => 'title']);
+		$report = $handler->migrateObjects([1, 10], [2, 20], ['11111111-1111-1111-1111-111111111111'], ['title' => 'title']);
 
 		$this->assertSame(1, $report['statistics']['objectsMigrated'], json_encode($report));
 		$this->assertSame('hello-world-20261030120000', $written);
