@@ -26,7 +26,7 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
+use OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCP\AppFramework\IAppContainer;
@@ -147,9 +147,9 @@ class CacheSettingsHandler {
 	/**
 	 * Object cache service (lazy-loaded when needed)
 	 *
-	 * @var CacheHandlerInterface|null
+	 * @var ObjectCacheMaintenanceInterface|null
 	 */
-	private ?CacheHandlerInterface $objectCacheService = null;
+	private ?ObjectCacheMaintenanceInterface $objectCacheService = null;
 
 	/**
 	 * Container for lazy loading services
@@ -180,7 +180,7 @@ class CacheSettingsHandler {
 	 * @param ICacheFactory $cacheFactory Cache factory.
 	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler.
 	 * @param FacetResultCacheClearer $facetResults Clears the facet result caches.
-	 * @param CacheHandlerInterface|null $objectCacheService Object cache service (optional, lazy-loaded).
+	 * @param ObjectCacheMaintenanceInterface|null $objectCacheService Object cache service (optional, lazy-loaded).
 	 * @param IAppContainer|null $container Container for lazy loading (optional).
 	 *
 	 * @return void
@@ -189,7 +189,7 @@ class CacheSettingsHandler {
 		ICacheFactory $cacheFactory,
 		SchemaCacheHandler $schemaCacheService,
 		FacetResultCacheClearer $facetResults,
-		?CacheHandlerInterface $objectCacheService = null,
+		?ObjectCacheMaintenanceInterface $objectCacheService = null,
 		?IAppContainer $container = null,
 	) {
 		$this->cacheFactory = $cacheFactory;
@@ -748,11 +748,11 @@ class CacheSettingsHandler {
 	/**
 	 * The object cache handler: the one injected, else the one the container builds.
 	 *
-	 * @return CacheHandlerInterface The handler.
+	 * @return ObjectCacheMaintenanceInterface The handler.
 	 *
 	 * @throws Exception When neither supplies one.
 	 */
-	private function objectCacheHandler(): CacheHandlerInterface {
+	private function objectCacheHandler(): ObjectCacheMaintenanceInterface {
 		$objectCacheService = $this->objectCacheService;
 		if ($objectCacheService === null && $this->container !== null) {
 			try {

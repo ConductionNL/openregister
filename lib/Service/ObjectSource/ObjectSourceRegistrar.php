@@ -89,7 +89,7 @@ final class ObjectSourceRegistrar {
 			'groupManager' => 'OCP\IGroupManager',
 		],
 		OrganisationObjectSourceProvider::class => [
-			'organisationMapper'  => 'OCA\OpenRegister\Db\OrganisationMapper',
+			'organisationMapper'  => 'OCA\OpenRegister\Db\OrganisationMapperInterface',
 			'actingUser'          => OrganisationActingUser::class,
 			'logger'              => 'Psr\Log\LoggerInterface',
 			'organisationService' => 'OCA\OpenRegister\Service\OrganisationService',

@@ -72,21 +72,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Covers all six data-subject rights behind one surface.
  */
-class DataSubjectRequestService {
-
-	/**
-	 * Erase mode: pseudonymise the subject's matching field values in place.
-	 *
-	 * @var string
-	 */
-	public const ERASE_MODE_PSEUDONYMISE = 'pseudonymise';
-
-	/**
-	 * Erase mode: soft-delete the whole owning object.
-	 *
-	 * @var string
-	 */
-	public const ERASE_MODE_WHOLE_OBJECT = 'whole-object';
+class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 
 	/**
 	 * Replacement token written into a pseudonymised field value.

@@ -45,7 +45,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningSettingsService {
+class HardeningSettingsService implements HardeningSettingsServiceInterface {
 
 	/**
 	 * Constructor.

@@ -47,7 +47,7 @@ class OrphanDeletionGuard {
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface             $objectMapper      Organisation boundary and delete guards.
-	 * @param PermissionHandlerInterface       $permissionHandler The caller's delete right.
+	 * @param PermissionCheckInterface       $permissionHandler The caller's delete right.
 	 * @param IUserSession            $userSession       The caller.
 	 * @param ContainerInterface|null $container         Resolves the shared-data and integrity services lazily.
 	 *
@@ -55,7 +55,7 @@ class OrphanDeletionGuard {
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly PermissionHandlerInterface $permissionHandler,
+		private readonly PermissionCheckInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly ?ContainerInterface $container,
 	) {

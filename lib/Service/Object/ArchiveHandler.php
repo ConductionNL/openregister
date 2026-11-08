@@ -63,7 +63,7 @@ class ArchiveHandler {
 	 *
 	 * @param MagicMapperInterface $magicMapper Object lookup and persistence.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit entries for each transition.
-	 * @param PermissionHandlerInterface $permissionHandler The `update` gate.
+	 * @param PermissionEnforcementInterface $permissionHandler The `update` gate.
 	 * @param IUserSession $userSession The acting user.
 	 * @param LoggerInterface $logger PSR-3 logger.
 	 *
@@ -72,7 +72,7 @@ class ArchiveHandler {
 	public function __construct(
 		private readonly MagicMapperInterface $magicMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly PermissionHandlerInterface $permissionHandler,
+		private readonly PermissionEnforcementInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
