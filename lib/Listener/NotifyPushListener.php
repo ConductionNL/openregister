@@ -53,7 +53,7 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\Support\PushSlugResolver;
 use OCA\OpenRegister\Push\PushEvents;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\ObjectReadersInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IAppConfig;
@@ -122,7 +122,7 @@ class NotifyPushListener implements IEventListener {
 	 *
 	 * @param LoggerInterface $logger PSR-3 logger.
 	 * @param ContainerInterface $container DI container for lazy IQueue resolution.
-	 * @param PermissionHandlerInterface $permissionHandler RBAC handler for reader-list resolution.
+	 * @param ObjectReadersInterface $permissionHandler RBAC handler for reader-list resolution.
 	 * @param IAppConfig $appConfig App config for push_available flag.
 	 * @param PushSlugResolver $slugs Resolves register and schema slugs as the system.
 	 *
@@ -131,7 +131,7 @@ class NotifyPushListener implements IEventListener {
 	public function __construct(
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
-		private readonly PermissionHandlerInterface $permissionHandler,
+		private readonly ObjectReadersInterface $permissionHandler,
 		private readonly IAppConfig $appConfig,
 		private readonly PushSlugResolver $slugs,
 	) {

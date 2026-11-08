@@ -50,7 +50,7 @@ use Throwable;
  *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class ErasurePreviewStore {
+class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 	/**
 	 * Wire the store.
 	 *

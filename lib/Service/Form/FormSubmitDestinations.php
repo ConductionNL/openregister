@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Form;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 
 /**
  * Where a submit lands: the destination's register and schema, its validator and the object write path.
@@ -39,13 +39,13 @@ final readonly class FormSubmitDestinations {
 	 *
 	 * @param RegisterMapperInterface $registers Resolves a destination's register.
 	 * @param SchemaMapperInterface $schemas Resolves a destination's schema.
-	 * @param ValidateObjectInterface $validator The destination schema's full validator.
+	 * @param ObjectValidatorInterface $validator The destination schema's full validator.
 	 * @param ObjectOperationsInterface $objects Creates, re-reads and (to compensate) deletes objects.
 	 */
 	public function __construct(
 		public RegisterMapperInterface $registers,
 		public SchemaMapperInterface $schemas,
-		public ValidateObjectInterface $validator,
+		public ObjectValidatorInterface $validator,
 		public ObjectOperationsInterface $objects,
 	) {
 	}//end __construct()

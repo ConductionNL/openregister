@@ -67,13 +67,13 @@
     },
     "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationObjectSourceProvider": {
         "asked": [
-            "OCA\\OpenRegister\\Db\\OrganisationMapper",
+            "OCA\\OpenRegister\\Db\\OrganisationMapperInterface",
             "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationActingUser",
             "Psr\\Log\\LoggerInterface",
             "OCA\\OpenRegister\\Service\\OrganisationService"
         ],
         "params": {
-            "organisationMapper": "OCA\\OpenRegister\\Db\\OrganisationMapper",
+            "organisationMapper": "OCA\\OpenRegister\\Db\\OrganisationMapperInterface",
             "actingUser": "OCA\\OpenRegister\\Service\\ObjectSource\\OrganisationActingUser",
             "logger": "Psr\\Log\\LoggerInterface",
             "organisationService": "OCA\\OpenRegister\\Service\\OrganisationService"

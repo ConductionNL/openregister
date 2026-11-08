@@ -63,7 +63,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Search trail tracking requires integration with many components
  */
-class SearchTrailMapper extends QBMapper {
+class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface {
 	/**
 	 * The search trail columns a filter may name.
 	 *
