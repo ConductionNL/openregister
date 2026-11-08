@@ -22,7 +22,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\TranslationProjectionService;
+use OCA\OpenRegister\Service\TranslationStores;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -155,7 +157,13 @@ class TranslationProjectionGoldenTest extends TestCase {
 		$object->setRegister($case['register'] ?? '1');
 		$object->setObject($case['data'] ?? []);
 
-		(new TranslationProjectionService($translationMapper, $handler, $schemaMapper, $registerMapper, $session, $logger))->project($object);
+		$service = new TranslationProjectionService(
+			new TranslationStores($translationMapper, $handler),
+			new RegisterSchemaMappers($registerMapper, $schemaMapper),
+			$session,
+			$logger
+		);
+		$service->project($object);
 
 		$name = $this->dataName();
 		$golden = [];

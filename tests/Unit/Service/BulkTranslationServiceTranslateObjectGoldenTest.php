@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
+use OCA\OpenRegister\Service\TranslationStores;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -83,7 +84,7 @@ class BulkTranslationServiceTranslateObjectGoldenTest extends TestCase {
 			$this->calls[] = ['warning', $message];
 		});
 
-		return new BulkTranslationService($provider, $mapper, $handler, $schemaMapper, $logger);
+		return new BulkTranslationService($provider, new TranslationStores($mapper, $handler), $schemaMapper, $logger);
 	}
 
 	/**

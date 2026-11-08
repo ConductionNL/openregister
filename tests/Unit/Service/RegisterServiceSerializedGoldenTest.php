@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceHelpers;
 use OCA\OpenRegister\Service\RegisterServiceStorage;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -76,10 +77,9 @@ class RegisterServiceSerializedGoldenTest extends TestCase {
 
 		$this->service = new RegisterService(
 			storage: new RegisterServiceStorage(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, db: $this->db),
-			fileService: $this->fileService,
+			helpers: new RegisterServiceHelpers($this->fileService, new RegisterSerializer($this->schemaMapper, $this->logger)),
 			organisationService: $this->organisationService,
-			logger: $this->logger,
-			registerSerializer: new RegisterSerializer($this->schemaMapper, $this->logger)
+			logger: $this->logger
 		);
 	}//end setUp()
 

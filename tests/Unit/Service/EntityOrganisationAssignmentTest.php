@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceHelpers;
 use OCA\OpenRegister\Service\RegisterServiceStorage;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -195,10 +196,12 @@ class EntityOrganisationAssignmentTest extends TestCase {
 
 		$this->registerService = new RegisterService(
 			storage: new RegisterServiceStorage(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, db: $this->createMock(IDBConnection::class)),
-			fileService: $this->fileService,
+			helpers: new RegisterServiceHelpers(
+				$this->fileService,
+				new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
+			),
 			organisationService: $this->organisationService,
-			logger: $this->logger,
-			registerSerializer: new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
+			logger: $this->logger
 		);
 	}
 

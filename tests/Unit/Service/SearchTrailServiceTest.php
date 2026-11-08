@@ -12,6 +12,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -30,8 +31,7 @@ class SearchTrailServiceTest extends TestCase {
 
 		$this->service = new SearchTrailService(
 			$this->searchTrailMapper,
-			$this->registerMapper,
-			$this->schemaMapper
+			new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper)
 		);
 	}
 
@@ -65,8 +65,7 @@ class SearchTrailServiceTest extends TestCase {
 	public function testCreateSearchTrailWithSelfClearingEnabled(): void {
 		$service = new SearchTrailService(
 			$this->searchTrailMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
+			new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper),
 			365,
 			true
 		);
@@ -291,8 +290,7 @@ class SearchTrailServiceTest extends TestCase {
 	public function testConstructorWithCustomRetention(): void {
 		$service = new SearchTrailService(
 			$this->searchTrailMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
+			new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper),
 			30,
 			false
 		);
