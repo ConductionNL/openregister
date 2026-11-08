@@ -73,183 +73,120 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					</div>
 				</template>
 				<template v-else>
-					<div class="viewTableContainer">
-						<table class="viewTable">
-							<thead>
-								<tr>
-									<th class="tableColumnCheckbox">
-										<NcCheckboxRadioSwitch
-											:modelValue="allSelected"
-											:indeterminate="someSelected"
-											:aria-label="
-												t('openregister', 'Select All')
-											"
-											@update:modelValue="toggleSelectAll" />
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Title') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Source') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Local Version') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Remote Version') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Status') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Updated') }}
-									</th>
-									<th scope="col" class="tableColumnActions">
-										{{ t('openregister', 'Actions') }}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr
-									v-for="configuration in paginatedConfigurations"
-									:key="configuration.id"
-									class="viewTableRow"
-									:class="{
-										viewTableRowSelected:
-											selectedConfigurations.includes(
-												configuration.id,
-											),
-									}">
-									<td class="tableColumnCheckbox">
-										<NcCheckboxRadioSwitch
-											:modelValue="
-												selectedConfigurations.includes(
-													configuration.id,
-												)
-											"
-											:aria-labelledby="`configuration-row-title-${configuration.id}`"
-											@update:modelValue="
-												(checked) =>
-													toggleConfigurationSelection(
-														configuration.id,
-														checked,
-													)
-											" />
-									</td>
-									<td
-										:id="`configuration-row-title-${configuration.id}`"
-										class="tableColumnTitle">
-										<div class="titleContent">
-											<strong>{{
-												configuration.title
-											}}</strong>
-											<span
-												v-if="configuration.description"
-												class="textDescription textEllipsis"
-												>{{
-													configuration.description
-												}}</span
-											>
-										</div>
-									</td>
-									<td>
-										{{
-											getSourceTypeLabel(
-												configuration.sourceType,
-											)
-										}}
-									</td>
-									<td>{{ configuration.localVersion || '-' }}</td>
-									<td>{{ configuration.remoteVersion || '-' }}</td>
-									<td>
-										<div class="statusPillsContainer">
-											<template v-if="configuration.isLocal">
-												<span
-													class="configBadge configBadge--local">
-													<CheckCircle :size="16" />
-													Local
-												</span>
-												<span
-													v-if="configuration.app"
-													class="configBadge configBadge--app">
-													<ApplicationCog :size="16" />
-													{{ configuration.app }}
-												</span>
-											</template>
-											<span
-												v-else
-												class="configBadge configBadge--external">
-												<Cloud :size="16" />
-												External
-											</span>
-											<span
-												v-if="
-													!configuration.isLocal
-													&& configuration.syncEnabled
-												"
-												class="configBadge"
-												:class="
-													'configBadge--sync-'
-													+ configuration.syncStatus
-												">
-												<Sync
-													v-if="
-														configuration.syncStatus
-														=== 'success'
-													"
-													:size="16" />
-												<AlertCircle
-													v-else-if="
-														configuration.syncStatus
-														=== 'failed'
-													"
-													:size="16" />
-												<ClockOutline v-else :size="16" />
-												{{
-													getSyncStatusText(configuration)
-												}}
-											</span>
-											<span
-												v-if="
-													hasUpdateAvailable(configuration)
-												"
-												class="configBadge configBadge--update">
-												<Update :size="16" />
-												Update Available
-											</span>
-										</div>
-									</td>
-									<td>
-										{{
-											configuration.updated
-												? new Date(
-														configuration.updated,
-													).toLocaleDateString({
-														day: '2-digit',
-														month: '2-digit',
-														year: 'numeric',
-													})
-													+ ', '
-													+ new Date(
-														configuration.updated,
-													).toLocaleTimeString({
-														hour: '2-digit',
-														minute: '2-digit',
-														second: '2-digit',
-													})
-												: '-'
-										}}
-									</td>
-									<td class="tableColumnActions">
-										<ActionMenu
-											:actions="
-												configurationActions(configuration)
-											" />
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
+					<CnDataTable
+						:columns="columns"
+						:rows="paginatedConfigurations"
+						selectable
+						rowClickToView
+						:selectedIds="selectedConfigurations"
+						:selectAllLabel="t('openregister', 'Select All')"
+						@select="selectedConfigurations = $event"
+						@selectAll="toggleSelectAll">
+						<template #column-title="{ row: configuration }">
+							<div class="titleContent">
+								<strong>{{ configuration.title }}</strong>
+								<span
+									v-if="configuration.description"
+									class="textDescription textEllipsis"
+									>{{ configuration.description }}</span
+								>
+							</div>
+						</template>
+						<template #column-sourceType="{ value }">
+							{{ getSourceTypeLabel(value) }}
+						</template>
+						<template #column-localVersion="{ value }">
+							{{ value || '-' }}
+						</template>
+						<template #column-remoteVersion="{ value }">
+							{{ value || '-' }}
+						</template>
+						<template #column-status="{ row: configuration }">
+							<div class="statusPillsContainer">
+								<template v-if="configuration.isLocal">
+									<span
+										class="configBadge configBadge--local">
+										<CheckCircle :size="16" />
+										Local
+									</span>
+									<span
+										v-if="configuration.app"
+										class="configBadge configBadge--app">
+										<ApplicationCog :size="16" />
+										{{ configuration.app }}
+									</span>
+								</template>
+								<span
+									v-else
+									class="configBadge configBadge--external">
+									<Cloud :size="16" />
+									External
+								</span>
+								<span
+									v-if="
+										!configuration.isLocal
+										&& configuration.syncEnabled
+									"
+									class="configBadge"
+									:class="
+										'configBadge--sync-'
+										+ configuration.syncStatus
+									">
+									<Sync
+										v-if="
+											configuration.syncStatus
+											=== 'success'
+										"
+										:size="16" />
+									<AlertCircle
+										v-else-if="
+											configuration.syncStatus
+											=== 'failed'
+										"
+										:size="16" />
+									<ClockOutline v-else :size="16" />
+									{{
+										getSyncStatusText(configuration)
+									}}
+								</span>
+								<span
+									v-if="
+										hasUpdateAvailable(configuration)
+									"
+									class="configBadge configBadge--update">
+									<Update :size="16" />
+									Update Available
+								</span>
+							</div>
+						</template>
+						<template #column-updated="{ row: configuration }">
+							{{
+								configuration.updated
+									? new Date(
+											configuration.updated,
+										).toLocaleDateString({
+											day: '2-digit',
+											month: '2-digit',
+											year: 'numeric',
+										})
+										+ ', '
+										+ new Date(
+											configuration.updated,
+										).toLocaleTimeString({
+											hour: '2-digit',
+											minute: '2-digit',
+											second: '2-digit',
+										})
+									: '-'
+							}}
+						</template>
+						<template #actions-header>
+							{{ t('openregister', 'Actions') }}
+						</template>
+						<template #row-actions="{ row: configuration }">
+							<ActionMenu :actions="configurationActions(configuration)" />
+						</template>
+					</CnDataTable>
 				</template>
 			</div>
 
@@ -273,11 +210,9 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import {
-	NcActionButton,
-	NcActions,
 	NcAppContent,
-	NcCheckboxRadioSwitch,
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
@@ -291,7 +226,6 @@ import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
 import Update from 'vue-material-design-icons/Update.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
@@ -315,13 +249,13 @@ import { localPagination } from '../localPagination.js'
 export default {
 	name: 'ConfigurationsIndex',
 	components: {
+		CnDataTable,
 		ViewModeSwitch,
 		ActionMenu,
 		ListActionsBar,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
-		NcCheckboxRadioSwitch,
 		ConfigurationCard,
 		CogOutline,
 		Update,
@@ -370,6 +304,23 @@ export default {
 		},
 
 		/**
+		 * The table view's columns; the row menu adds the "Actions" column.
+		 *
+		 * @spec exclude UI plumbing — table layout; admin list contract owned by admin-list-views.
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		columns() {
+			return [
+				{ key: 'title', label: t('openregister', 'Title') },
+				{ key: 'sourceType', label: t('openregister', 'Source') },
+				{ key: 'localVersion', label: t('openregister', 'Local Version') },
+				{ key: 'remoteVersion', label: t('openregister', 'Remote Version') },
+				{ key: 'status', label: t('openregister', 'Status') },
+				{ key: 'updated', label: t('openregister', 'Updated') },
+			]
+		},
+
+		/**
 		 * Current page slice of the configuration list.
 		 *
 		 * @spec exclude UI plumbing — client-side pagination computed; admin list contract owned by admin-list-views.
@@ -380,31 +331,6 @@ export default {
 				((this.pagination.page || 1) - 1) * (this.pagination.limit || 20)
 			const end = start + (this.pagination.limit || 20)
 			return configurationStore.configurationList.slice(start, end)
-		},
-
-		/**
-		 * Whether every configuration is selected.
-		 *
-		 * @spec exclude UI plumbing — header-checkbox state derived from selection; admin list contract owned by admin-list-views.
-		 * @return {boolean}
-		 */
-		allSelected() {
-			return (
-				configurationStore.configurationList.length > 0
-				&& configurationStore.configurationList.every((configuration) =>
-					this.selectedConfigurations.includes(configuration.id),
-				)
-			)
-		},
-
-		/**
-		 * Whether a partial selection exists (indeterminate state).
-		 *
-		 * @spec exclude UI plumbing — header-checkbox indeterminate state; admin list contract owned by admin-list-views.
-		 * @return {boolean}
-		 */
-		someSelected() {
-			return this.selectedConfigurations.length > 0 && !this.allSelected
 		},
 
 		/**
@@ -508,24 +434,6 @@ export default {
 					)
 			} else {
 				this.selectedConfigurations = []
-			}
-		},
-
-		/**
-		 * Toggle selection for a single configuration row.
-		 *
-		 * @spec exclude UI plumbing — row-selection state mutation; admin list contract owned by admin-list-views.
-		 * @param {string|number} configurationId - row id
-		 * @param {boolean} checked - selected state
-		 * @return {void}
-		 */
-		toggleConfigurationSelection(configurationId, checked) {
-			if (checked) {
-				this.selectedConfigurations.push(configurationId)
-			} else {
-				this.selectedConfigurations = this.selectedConfigurations.filter(
-					(id) => id !== configurationId,
-				)
 			}
 		},
 

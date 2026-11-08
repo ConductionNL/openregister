@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Flow\FlowTriggerDerivation;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
 use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
+use OCA\OpenRegister\Service\Flow\FlowTriggerSources;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;
@@ -67,10 +68,8 @@ class FlowTriggerIndexPublishedTest extends TestCase {
 
 		return new FlowTriggerIndex(
 			$mapper,
-			new FlowTriggerDerivation(),
-			$slugs,
-			new NullLogger(),
-			$published
+			new FlowTriggerSources(new FlowTriggerDerivation(), $slugs, $published),
+			new NullLogger()
 		);
 	}//end index()
 

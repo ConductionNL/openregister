@@ -40,19 +40,33 @@ use Throwable;
 class PersonLinkService implements PersonLinkServiceInterface {
 
 	/**
+	 * The CardDAV side of a contact link.
+	 *
+	 * @var ContactService
+	 */
+	private readonly ContactService $contacts;
+
+	/**
+	 * The account side of a user link.
+	 *
+	 * @var UserLinkWriter
+	 */
+	private readonly UserLinkWriter $userLinks;
+
+	/**
 	 * @param ContactLinkMapperInterface $links The link rows.
-	 * @param ContactService $contacts The CardDAV side of a contact link.
-	 * @param UserLinkWriter $userLinks The account side of a user link.
+	 * @param PersonLinkTargets $targets The CardDAV side of a contact link and the account side of a user link.
 	 * @param SchemaMapperInterface $schemas The schemas, for the role vocabulary.
 	 * @param PersonLinkEvents $events Announces what happened to a link.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapperInterface $links,
-		private readonly ContactService $contacts,
-		private readonly UserLinkWriter $userLinks,
+		PersonLinkTargets $targets,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly PersonLinkEvents $events,
 	) {
+		$this->contacts = $targets->contacts;
+		$this->userLinks = $targets->userLinks;
 	}//end __construct()
 
 	/**

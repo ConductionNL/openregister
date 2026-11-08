@@ -167,28 +167,24 @@ class FormLinkService implements FormLinkServiceInterface {
 	 * Constructor.
 	 *
 	 * @param FormLinkMapperInterface $formLinkMapper Form-link mapper.
-	 * @param ContainerInterface $container DI container for late-bound NC Forms classes.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IDBConnection $db DB connection.
-	 * @param IUserSession $userSession User session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ContainerInterface      $container      DI container for late-bound NC Forms classes.
+	 * @param IDBConnection           $db             DB connection.
+	 * @param LinkServiceRuntime      $runtime        App manager, user session and logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		FormLinkMapperInterface $formLinkMapper,
 		ContainerInterface $container,
-		IAppManager $appManager,
 		IDBConnection $db,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		LinkServiceRuntime $runtime,
 	) {
 		$this->formLinkMapper = $formLinkMapper;
 		$this->container = $container;
-		$this->appManager = $appManager;
 		$this->db = $db;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
+		$this->appManager = $runtime->appManager();
+		$this->userSession = $runtime->userSession();
+		$this->logger = $runtime->logger();
 
 	}//end __construct()
 

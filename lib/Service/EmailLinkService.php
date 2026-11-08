@@ -118,22 +118,42 @@ class EmailLinkService implements EmailLinkServiceInterface {
 	private readonly MailTableQueries $mailQueries;
 
 	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Active session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param EmailLinkMapperInterface $mapper Persistence for link rows.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IDBConnection $db Database connection (Mail tables).
-	 * @param IUserSession $userSession Active session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param EmailLinkMapperInterface $mapper  Persistence for link rows.
+	 * @param IDBConnection            $db      Database connection (Mail tables).
+	 * @param LinkServiceRuntime       $runtime App manager, active session and logger.
 	 */
 	public function __construct(
 		private readonly EmailLinkMapperInterface $mapper,
-		private readonly IAppManager $appManager,
 		IDBConnection $db,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		LinkServiceRuntime $runtime,
 	) {
 		$this->mailQueries = new MailTableQueries(db: $db);
+		$this->appManager = $runtime->appManager();
+		$this->userSession = $runtime->userSession();
+		$this->logger = $runtime->logger();
 	}//end __construct()
 
 	/**

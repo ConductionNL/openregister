@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -86,7 +87,7 @@ class CalendarLinkServiceWriteGoldenTest extends TestCase {
 			return $link;
 		});
 
-		return new CalendarLinkService($mapper, $events, $dav, $session, $this->createMock(LoggerInterface::class));
+		return new CalendarLinkService($mapper, $events, $dav, new LinkSessionRuntime($session, $this->createMock(LoggerInterface::class)));
 	}
 
 	/**
