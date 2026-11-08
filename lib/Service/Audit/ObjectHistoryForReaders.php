@@ -43,10 +43,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use Throwable;
@@ -82,18 +80,14 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectReadAccess    $access           Decides readability exactly as the object GET does.
-	 * @param AuditTrailMapperInterface    $auditTrailMapper Reads the object's entries.
-	 * @param HistoryEntryRedactor $redactor        Removes what the reader may not see from each entry.
-	 * @param RegisterMapperInterface      $registerMapper   Resolves the register for the doelbinding guard.
-	 * @param PurposeGuard        $purposeGuard     The doelbinding guard the object GET runs.
-	 * @param ReadEventVisibility $readEvents       Whether this reader may see who read the object.
+	 * @param ObjectReadAccess      $access       Decides readability exactly as the object GET does.
+	 * @param ObjectHistoryServices $services     Reads, redacts and resolves the register of the entries.
+	 * @param PurposeGuard          $purposeGuard The doelbinding guard the object GET runs.
+	 * @param ReadEventVisibility   $readEvents   Whether this reader may see who read the object.
 	 */
 	public function __construct(
 		private readonly ObjectReadAccess $access,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly HistoryEntryRedactor $redactor,
-		private readonly RegisterMapperInterface $registerMapper,
+		private readonly ObjectHistoryServices $services,
 		private readonly PurposeGuard $purposeGuard,
 		private readonly ReadEventVisibility $readEvents,
 	) {
@@ -142,9 +136,9 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 			$sort = ['created' => 'DESC'];
 		}
 
-		$rows = $this->auditTrailMapper->findAll(filters: $filters, sort: $sort);
+		$rows = $this->services->auditTrailMapper->findAll(filters: $filters, sort: $sort);
 
-		$entries = $this->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
+		$entries = $this->services->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
 
 		// Who read the object is shown only to the groups named for it, and
 		// dropped before paging so the totals count what the reader is given.
@@ -194,7 +188,7 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 			return null;
 		}
 
-		return $this->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
+		return $this->services->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
 	}//end readerEntries()
 
 	/**
@@ -304,7 +298,7 @@ class ObjectHistoryForReaders implements ObjectHistoryForReadersInterface {
 		}
 
 		try {
-			return $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+			return $this->services->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
@@ -290,9 +291,11 @@ class ExplicitRevealAuditTrailTest extends TestCase {
 			objectMapper: $objects,
 			history: new ObjectHistoryForReaders(
 				$access,
-				$trails,
-				new HistoryEntryRedactor($properties),
-				$registers,
+				new ObjectHistoryServices(
+					$trails,
+					new HistoryEntryRedactor($properties),
+					$registers
+				),
 				$this->createMock(originalClassName: PurposeGuard::class),
 				$reads
 			),
