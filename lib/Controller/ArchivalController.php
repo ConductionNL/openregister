@@ -1249,10 +1249,9 @@ class ArchivalController extends Controller {
 		$schema = $subject->schema;
 
 		try {
-			$nomination = $this->nominations->nominate(
+			$nomination = $this->nominations->recompute(
 				object: $object,
 				schema: $schema,
-				trigger: 'recompute',
 				actor: $this->currentUserId(),
 				reason: $reason
 			);

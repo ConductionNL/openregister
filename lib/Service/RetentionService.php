@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\Archival\HoldStamp;
 use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -603,8 +604,7 @@ class RetentionService implements RetentionServiceInterface {
 				retention: ($object->getRetention() ?? []),
 				reason: $reason,
 				ownerKey: $ownerKey,
-				userId: $userId,
-				now: (new DateTime())->format('c')
+				stamp: new HoldStamp(userId: $userId, now: (new DateTime())->format('c'))
 			)
 		);
 
@@ -640,8 +640,7 @@ class RetentionService implements RetentionServiceInterface {
 				retention: $retention,
 				ownerKey: $ownerKey,
 				releaseReason: $reason,
-				userId: $userId,
-				now: (new DateTime())->format('c')
+				stamp: new HoldStamp(userId: $userId, now: (new DateTime())->format('c'))
 			)
 		);
 
