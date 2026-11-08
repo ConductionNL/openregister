@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Search\Service;
 
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use Exception;
 use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
@@ -99,12 +100,12 @@ final class VectorizationBatchGoldenTest extends TestCase {
 			}
 		);
 		$vectors->method('storeVector')->willReturnCallback(
-			function (string $entityType, string $entityId, array $embedding, string $model, int $dimensions, int $chunkIndex = 0, int $totalChunks = 1, ?string $chunkText = null): int {
-				if ($chunkText === 'd') {
+			function (StoredVector $vector): int {
+				if ($vector->chunkText === 'd') {
 					throw new Exception('disk full');
 				}
 
-				$this->stored[] = [$entityId, $chunkText, $model];
+				$this->stored[] = [$vector->entityId, $vector->chunkText, $vector->model];
 				return 1;
 			}
 		);
