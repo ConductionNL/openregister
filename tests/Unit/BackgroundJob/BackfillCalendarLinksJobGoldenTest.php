@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\BackfillCalendarLinksJob;
+use OCA\OpenRegister\BackgroundJob\Support\BackfillCalendarLinksPlatform;
+use OCA\OpenRegister\BackgroundJob\Support\BackfillCalendarLinksSources;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
@@ -163,12 +165,8 @@ class BackfillCalendarLinksJobGoldenTest extends TestCase {
 
 		$job = new BackfillCalendarLinksJob(
 			$this->createMock(ITimeFactory::class),
-			$mapper,
-			$events,
-			$userManager,
-			$session,
-			$config,
-			$logger
+			new BackfillCalendarLinksSources($mapper, $events, $userManager, $session),
+			new BackfillCalendarLinksPlatform($config, $logger)
 		);
 		(new ReflectionMethod($job, 'run'))->invoke($job, null);
 
