@@ -64,6 +64,7 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Listener\Support\SourceRecordChangeServices;
 
 /**
  * Recompute a reverse-FK master when one of its source objects changes.
@@ -128,25 +129,45 @@ class SourceRecordChangeListener implements IEventListener {
 	private ?ICache $indexCache = null;
 
 	/**
+	 * Schema registry (to build the reverse index).
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Actor-forwarding deferral service (ADR-078).
+	 *
+	 * @var ListenerDeferralInterface
+	 */
+	private readonly ListenerDeferralInterface $deferral;
+
+	/**
+	 * Golden-record recompute, used on the inline fallback only.
+	 *
+	 * @var MasterRecomputeInterface
+	 */
+	private readonly MasterRecomputeInterface $recompute;
+
+	/**
 	 * Wire collaborators.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema registry (to build the reverse index).
+	 * @param SourceRecordChangeServices $services Schemas, the deferral and the master recompute.
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory for the reverse index.
-	 * @param ListenerDeferralInterface $deferral Actor-forwarding deferral service (ADR-078).
-	 * @param MasterRecomputeInterface $recompute Golden-record recompute, used on the inline fallback only.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
+		SourceRecordChangeServices $services,
 		private readonly LoggerInterface $logger,
 		ICacheFactory $cacheFactory,
-		private readonly ListenerDeferralInterface $deferral,
-		private readonly MasterRecomputeInterface $recompute,
 	) {
+		$this->schemaMapper = $services->schemaMapper;
+		$this->deferral = $services->deferral;
+		$this->recompute = $services->recompute;
 		try {
 			$this->indexCache = $cacheFactory->createDistributed('openregister_reverse_fk');
 		} catch (Throwable $e) {

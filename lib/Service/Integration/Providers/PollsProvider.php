@@ -53,13 +53,42 @@ class PollsProvider extends AbstractIntegrationProvider {
 
 	private const REQUIRED_APP = 'polls';
 
+	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param LeafProviderPlatform    $platform       The DB connection, app manager and localisation.
+	 * @param PollLinkMapperInterface $pollLinkMapper Poll-link mapper (Tier-2 link table).
+	 * @param IUserSession            $userSession    The current user's session.
+	 */
 	public function __construct(
+		LeafProviderPlatform $platform,
 		private PollLinkMapperInterface $pollLinkMapper,
-		private IDBConnection $db,
-		private IAppManager $appManager,
 		private IUserSession $userSession,
-		private IL10N $l10n,
 	) {
+		$this->db = $platform->db;
+		$this->appManager = $platform->appManager;
+		$this->l10n = $platform->l10n;
 	}//end __construct()
 
 	public function getId(): string {

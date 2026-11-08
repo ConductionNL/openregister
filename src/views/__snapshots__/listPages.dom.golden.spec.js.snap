@@ -780,27 +780,25 @@ exports[`list page templates renders loading, empty and filled, and its menus re
 </div>
 </div>
 <div class="tableContainer">
-<table class="templatesTable">
-<thead>
-<tr>
-<th scope="col" class="column-name">t:Name</th>
-<th scope="col" class="column-type">t:Type</th>
-<th scope="col" class="column-description">t:Description</th>
-<th scope="col" class="column-updated">t:Updated At</th>
-<th scope="col" class="column-actions">t:Actions</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="column-name">
+<x-cndatatable class="templatesTable">
+<x-thead>
+<x-th>t:Name</x-th>
+<x-th>t:Type</x-th>
+<x-th>t:Description</x-th>
+<x-th>t:Updated At</x-th>
+<x-th>t:Actions</x-th>
+</x-thead>
+<x-tbody>
+<x-tr>
+<x-td>
 <span class="template-name">Letter</span>
-</td>
-<td class="column-type">
+</x-td>
+<x-td>
 <span class="badge badge-type">docx</span>
-</td>
-<td class="column-description">-</td>
-<td class="column-updated">-</td>
-<td class="column-actions">
+</x-td>
+<x-td>-</x-td>
+<x-td>-</x-td>
+<x-td>
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
@@ -812,10 +810,10 @@ exports[`list page templates renders loading, empty and filled, and its menus re
 </x-ncactionbutton>
 </slot-default>
 </x-ncactions>
-</td>
-</tr>
-</tbody>
-</table>
+</x-td>
+</x-tr>
+</x-tbody>
+</x-cndatatable>
 </div>
 </div>",
   "loading": "<div class="viewContainer">
