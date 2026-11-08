@@ -547,11 +547,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $sort = ['created' => 'DESC'],
-		?string $search = null,
+		int|null $limit = null,
+		int|null $offset = null,
+		array|null $filters = [],
+		array|null $sort = ['created' => 'DESC'],
+		string|null $search = null,
 	): array {
 		$qb = $this->db->getQueryBuilder();
 
@@ -559,17 +559,43 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->from('openregister_audit_trails');
 
 		$this->applyFindFilters(qb: $qb, filters: $filters ?? []);
+		$this->applyChangedSearch(qb: $qb, search: $search);
+		$this->applyFindSort(qb: $qb, sort: $sort ?? []);
+		self::applyPage(qb: $qb, limit: $limit, offset: $offset);
 
-		// Add search on changed field if search term provided.
+		return $this->findEntities(query: $qb);
+	}//end findAll()
+
+	/**
+	 * Add the search on the changed field, when a search term is provided.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param string|null   $search The search term, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function applyChangedSearch(IQueryBuilder $qb, string|null $search): void {
 		if ($search !== null && $search !== '') {
 			$qb->andWhere(
 				$qb->expr()->like('changed', $qb->createNamedParameter('%' . $search . '%'))
 			);
 		}
+	}//end applyChangedSearch()
 
-		$this->applyFindSort(qb: $qb, sort: $sort ?? []);
-
-		// Apply pagination.
+	/**
+	 * Apply the limit and offset, each only when given.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param int|null      $limit  The limit, if any.
+	 * @param int|null      $offset The offset, if any.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private static function applyPage(IQueryBuilder $qb, int|null $limit, int|null $offset): void {
 		if ($limit !== null) {
 			$qb->setMaxResults($limit);
 		}
@@ -577,9 +603,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		if ($offset !== null) {
 			$qb->setFirstResult($offset);
 		}
-
-		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end applyPage()
 
 	/**
 	 * Apply the filters of findAll(): system variables (starting with _) and
@@ -648,13 +672,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			return $qb->expr()->like('action', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%'));
 		}
 
+		return self::listOrEqualExpression(qb: $qb, term: $term, valueStr: $valueStr);
+	}//end scalarFilterExpression()
+
+	/**
+	 * The predicate for a comma-separated list (`action=create,update`), or equality.
+	 *
+	 * @param IQueryBuilder        $qb       The query being built.
+	 * @param AuditTrailFilterTerm $term     The column and its value.
+	 * @param string               $valueStr The value cast to string.
+	 *
+	 * @return string The predicate.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private static function listOrEqualExpression(IQueryBuilder $qb, AuditTrailFilterTerm $term, string $valueStr): string {
 		if (strpos($valueStr, ',') !== false) {
 			$values = array_map('trim', explode(',', $valueStr));
-			return $qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY));
+			return $qb->expr()->in($term->field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY));
 		}
 
-		return $qb->expr()->eq($field, $qb->createNamedParameter($term->value));
-	}//end scalarFilterExpression()
+		return $qb->expr()->eq($term->field, $qb->createNamedParameter($term->value));
+	}//end listOrEqualExpression()
 
 	/**
 	 * Apply the sort of findAll(): columns outside QUERY_COLUMNS are ignored,
@@ -1539,66 +1578,131 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return string|null Resolved verwerkingsactiviteit uuid, or null.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	private function resolveProcessingActivityId(ObjectEntity $objectEntity): ?string {
+	private function resolveProcessingActivityId(ObjectEntity $objectEntity): string|null {
+		$vrwMapper = $this->processingActivityMapper();
+		if ($vrwMapper === null) {
+			return null;
+		}
+
+		// Action > schema > register: a later candidate is read only when the
+		// earlier one did not resolve.
+		$activity = $this->overrideActivity(vrwMapper: $vrwMapper, objectEntity: $objectEntity)
+			?? $this->schemaActivity(vrwMapper: $vrwMapper, objectEntity: $objectEntity)
+			?? $this->registerActivity(vrwMapper: $vrwMapper, objectEntity: $objectEntity);
+
+		return $activity?->getUuid();
+	}//end resolveProcessingActivityId()
+
+	/**
+	 * The verwerkingsactiviteit mapper, or null while it is not registered.
+	 *
+	 * Mapper not registered yet (e.g. during migration before service
+	 * registration completes). Fail open — audit-trail tagging is additive,
+	 * not required.
+	 *
+	 * Untyped on purpose: whatever the container answers is used as it was
+	 * before this lookup moved into its own method.
+	 *
+	 * @return VerwerkingsactiviteitMapperInterface|null The mapper, or null.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function processingActivityMapper(): mixed {
 		try {
 			/*
 			 * @var VerwerkingsactiviteitMapper $vrwMapper
 			 */
 
-			$vrwMapper = $this->container->get(VerwerkingsactiviteitMapper::class);
+			return $this->container->get(VerwerkingsactiviteitMapper::class);
 		} catch (\Throwable $e) {
-			// Mapper not registered yet (e.g. during migration before
-			// service registration completes). Fail open — audit-trail
-			// tagging is additive, not required.
+			return null;
+		}
+	}//end processingActivityMapper()
+
+	/**
+	 * 1. The per-action override on the ObjectEntity itself, when it resolves.
+	 *
+	 * A miss is logged at debug level (typo guard).
+	 *
+	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper    The mapper references resolve through.
+	 * @param ObjectEntity                $objectEntity The entity being audited.
+	 *
+	 * @return Verwerkingsactiviteit|null The activity, or null.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function overrideActivity($vrwMapper, ObjectEntity $objectEntity): Verwerkingsactiviteit|null {
+		$override = $objectEntity->getProcessingActivityId();
+		if ($override === null || $override === '') {
 			return null;
 		}
 
-		// 1. Per-action override on the ObjectEntity itself.
-		$override = $objectEntity->getProcessingActivityId();
-		if ($override !== null && $override !== '') {
-			$resolved = $vrwMapper->resolveReference(reference: $override);
-			if ($resolved !== null) {
-				return $resolved->getUuid();
-			}
-
+		$resolved = $vrwMapper->resolveReference(reference: $override);
+		if ($resolved === null) {
 			$this->logger->debug(
 				message: '[AVG] Per-action processing-activity override did not resolve',
 				context: ['reference' => $override]
 			);
 		}
 
-		// 2. Schema-level annotation.
-		$schemaRef = $this->readProcessingActivityFromSchema(schemaId: $objectEntity->getSchema());
-		if ($schemaRef !== null && $schemaRef !== '') {
-			$resolved = $vrwMapper->resolveReference(reference: $schemaRef);
-			if ($resolved !== null) {
-				return $resolved->getUuid();
-			}
+		return $resolved;
+	}//end overrideActivity()
 
+	/**
+	 * 2. The schema-level annotation, when it resolves; a miss is logged as a warning.
+	 *
+	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper    The mapper references resolve through.
+	 * @param ObjectEntity                $objectEntity The entity being audited.
+	 *
+	 * @return Verwerkingsactiviteit|null The activity, or null.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function schemaActivity($vrwMapper, ObjectEntity $objectEntity): Verwerkingsactiviteit|null {
+		$schemaRef = $this->readProcessingActivityFromSchema(schemaId: $objectEntity->getSchema());
+		if ($schemaRef === null || $schemaRef === '') {
+			return null;
+		}
+
+		$resolved = $vrwMapper->resolveReference(reference: $schemaRef);
+		if ($resolved === null) {
 			$this->logger->warning(
 				message: '[AVG] Schema annotation references unknown verwerkingsactiviteit',
 				context: ['reference' => $schemaRef, 'schemaId' => $objectEntity->getSchema()]
 			);
 		}
 
-		// 3. Register-level fallback.
-		$registerRef = $this->readProcessingActivityFromRegister(registerId: $objectEntity->getRegister());
-		if ($registerRef !== null && $registerRef !== '') {
-			$resolved = $vrwMapper->resolveReference(reference: $registerRef);
-			if ($resolved !== null) {
-				return $resolved->getUuid();
-			}
+		return $resolved;
+	}//end schemaActivity()
 
+	/**
+	 * 3. The register-level fallback, when it resolves; a miss is logged as a warning.
+	 *
+	 * @param VerwerkingsactiviteitMapperInterface $vrwMapper    The mapper references resolve through.
+	 * @param ObjectEntity                $objectEntity The entity being audited.
+	 *
+	 * @return Verwerkingsactiviteit|null The activity, or null.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function registerActivity($vrwMapper, ObjectEntity $objectEntity): Verwerkingsactiviteit|null {
+		$registerRef = $this->readProcessingActivityFromRegister(registerId: $objectEntity->getRegister());
+		if ($registerRef === null || $registerRef === '') {
+			return null;
+		}
+
+		$resolved = $vrwMapper->resolveReference(reference: $registerRef);
+		if ($resolved === null) {
 			$this->logger->warning(
 				message: '[AVG] Register annotation references unknown verwerkingsactiviteit',
 				context: ['reference' => $registerRef, 'registerId' => $objectEntity->getRegister()]
 			);
 		}
 
-		return null;
-	}//end resolveProcessingActivityId()
+		return $resolved;
+	}//end registerActivity()
 
 	/**
 	 * Read the `x-openregister-processing-activity` annotation from a
@@ -1609,8 +1713,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return string|null Annotation value (code or uuid), or null.
 	 */
-	private function readProcessingActivityFromSchema($schemaId): ?string {
-		if ($schemaId === null || $schemaId === '' || $schemaId === 0) {
+	private function readProcessingActivityFromSchema($schemaId): string|null {
+		if (self::isUnsetIdentifier(identifier: $schemaId) === true) {
 			return null;
 		}
 
@@ -1629,17 +1733,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			return null;
 		}
 
-		$config = $schema->getConfiguration();
-		if (is_array($config) === false) {
-			return null;
-		}
-
-		$ref = $config['x-openregister-processing-activity'] ?? null;
-		if (is_string($ref) === true && $ref !== '') {
-			return $ref;
-		}
-
-		return null;
+		return self::processingActivityAnnotation(config: $schema->getConfiguration());
 	}//end readProcessingActivityFromSchema()
 
 	/**
@@ -1651,8 +1745,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return string|null Annotation value (code or uuid), or null.
 	 */
-	private function readProcessingActivityFromRegister($registerId): ?string {
-		if ($registerId === null || $registerId === '' || $registerId === 0) {
+	private function readProcessingActivityFromRegister($registerId): string|null {
+		if (self::isUnsetIdentifier(identifier: $registerId) === true) {
 			return null;
 		}
 
@@ -1671,7 +1765,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			return null;
 		}
 
-		$config = $register->getConfiguration();
+		return self::processingActivityAnnotation(config: $register->getConfiguration());
+	}//end readProcessingActivityFromRegister()
+
+	/**
+	 * Whether a schema or register identifier is unset: null, empty, or the integer zero.
+	 *
+	 * @param mixed $identifier The identifier.
+	 *
+	 * @return bool True when there is nothing to look up.
+	 */
+	private static function isUnsetIdentifier(mixed $identifier): bool {
+		return $identifier === null || $identifier === '' || $identifier === 0;
+	}//end isUnsetIdentifier()
+
+	/**
+	 * The non-empty string `x-openregister-processing-activity` value of a configuration, or null.
+	 *
+	 * @param mixed $config The configuration column.
+	 *
+	 * @return string|null The annotation value, or null.
+	 */
+	private static function processingActivityAnnotation(mixed $config): string|null {
 		if (is_array($config) === false) {
 			return null;
 		}
@@ -1682,7 +1797,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		}
 
 		return null;
-	}//end readProcessingActivityFromRegister()
+	}//end processingActivityAnnotation()
 
 	/**
 	 * Get the audit trail entries made after a point in an object's history
@@ -1798,12 +1913,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Controls version handling strategy on revert
 	 */
 	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity {
-		// A caller that already checked the object passes it, so it is not looked up again.
-		$object = $identifier;
-		if ($object instanceof ObjectEntity === false) {
-			// Lazy-resolved to avoid circular DI.
-			$object = $this->container->get(MagicMapperInterface::class)->find($identifier);
-		}
+		$object = $this->objectToRevert(identifier: $identifier);
 
 		// Get audit trail entries until the specified point.
 		$auditTrails = $this->findByObjectUntil(
@@ -1825,13 +1935,42 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		// Handle versioning.
 		if ($overwriteVersion === false) {
-			$version = explode('.', $revertedObject->getVersion() ?? '1.0.0');
-			$version[2] = ((int)$version[2] + 1);
-			$revertedObject->setVersion(implode('.', $version));
+			self::bumpPatchVersion(object: $revertedObject);
 		}
 
 		return $revertedObject;
 	}//end revertObject()
+
+	/**
+	 * The object to revert: the one handed in, or the one the identifier names.
+	 *
+	 * A caller that already checked the object passes it, so it is not looked
+	 * up again. Otherwise it is lazy-resolved to avoid circular DI.
+	 *
+	 * @param mixed $identifier The object, or its id/uuid.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectToRevert(mixed $identifier): ObjectEntity {
+		if ($identifier instanceof ObjectEntity) {
+			return $identifier;
+		}
+
+		return $this->container->get(MagicMapperInterface::class)->find($identifier);
+	}//end objectToRevert()
+
+	/**
+	 * Raise the patch part of an object's version by one (`1.0.0` when it has none).
+	 *
+	 * @param ObjectEntity $object The reverted object.
+	 *
+	 * @return void
+	 */
+	private static function bumpPatchVersion(ObjectEntity $object): void {
+		$version = explode('.', $object->getVersion() ?? '1.0.0');
+		$version[2] = ((int)$version[2] + 1);
+		$object->setVersion(implode('.', $version));
+	}//end bumpPatchVersion()
 
 	/**
 	 * Get statistics for audit trails with optional filtering
@@ -2519,30 +2658,58 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		// Group by action type as processing activities.
 		$activities = [];
 		foreach ($rows as $row) {
-			$action = $row['action'] ?? 'unknown';
-			if (isset($activities[$action]) === false) {
-				$activities[$action] = [
-					'processingActivityId' => $action,
-					'entryCount' => 0,
-					'firstSeen' => $row['created'] ?? null,
-					'lastSeen' => $row['created'] ?? null,
-				];
-			}
-
-			$activities[$action]['entryCount']++;
-			if (($row['created'] ?? null) !== null) {
-				if ($activities[$action]['firstSeen'] === null || $row['created'] < $activities[$action]['firstSeen']) {
-					$activities[$action]['firstSeen'] = $row['created'];
-				}
-
-				if ($activities[$action]['lastSeen'] === null || $row['created'] > $activities[$action]['lastSeen']) {
-					$activities[$action]['lastSeen'] = $row['created'];
-				}
-			}
-		}//end foreach
+			$activities = self::countActivityRow(activities: $activities, row: $row);
+		}
 
 		return array_values($activities);
 	}//end getProcessingActivities()
+
+	/**
+	 * Count one audit row into its action's activity summary.
+	 *
+	 * @param array<string, array<string, mixed>> $activities The summaries so far, keyed by action.
+	 * @param array<string, mixed>                $row        The audit row.
+	 *
+	 * @return array<string, array<string, mixed>> The summaries with the row counted.
+	 */
+	private static function countActivityRow(array $activities, array $row): array {
+		$action = $row['action'] ?? 'unknown';
+		if (isset($activities[$action]) === false) {
+			$activities[$action] = [
+				'processingActivityId' => $action,
+				'entryCount' => 0,
+				'firstSeen' => $row['created'] ?? null,
+				'lastSeen' => $row['created'] ?? null,
+			];
+		}
+
+		$activities[$action]['entryCount']++;
+		if (($row['created'] ?? null) !== null) {
+			$activities[$action] = self::widenSeenSpan(activity: $activities[$action], created: $row['created']);
+		}
+
+		return $activities;
+	}//end countActivityRow()
+
+	/**
+	 * Move an activity's first and last seen moments out to include one more row.
+	 *
+	 * @param array<string, mixed> $activity The activity summary.
+	 * @param mixed                $created  The row's `created` value (not null).
+	 *
+	 * @return array<string, mixed> The summary with its span widened.
+	 */
+	private static function widenSeenSpan(array $activity, mixed $created): array {
+		if ($activity['firstSeen'] === null || $created < $activity['firstSeen']) {
+			$activity['firstSeen'] = $created;
+		}
+
+		if ($activity['lastSeen'] === null || $created > $activity['lastSeen']) {
+			$activity['lastSeen'] = $created;
+		}
+
+		return $activity;
+	}//end widenSeenSpan()
 
 	/**
 	 * Find audit trail entries by identifier.
@@ -2616,17 +2783,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		if ($action !== null && $action !== '') {
-			$qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action)));
-		}
-
-		if ($from !== null && $from !== '') {
-			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from)));
-		}
-
-		if ($to !== null && $to !== '') {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to)));
-		}
+		self::applyActorFilters(qb: $qb, action: $action, from: $from, to: $to);
 
 		$results = $this->findEntities(query: $qb);
 
@@ -2636,17 +2793,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->from($this->getTableName())
 			->where($count->expr()->eq('user', $count->createNamedParameter($userId)));
 
-		if ($action !== null && $action !== '') {
-			$count->andWhere($count->expr()->eq('action', $count->createNamedParameter($action)));
-		}
-
-		if ($from !== null && $from !== '') {
-			$count->andWhere($count->expr()->gte('created', $count->createNamedParameter($from)));
-		}
-
-		if ($to !== null && $to !== '') {
-			$count->andWhere($count->expr()->lte('created', $count->createNamedParameter($to)));
-		}
+		self::applyActorFilters(qb: $count, action: $action, from: $from, to: $to);
 
 		$result = $count->executeQuery();
 		$row = $result->fetch();
@@ -2657,6 +2804,41 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			'total' => (int)($row['total_count'] ?? 0),
 		];
 	}//end findByActor()
+
+	/**
+	 * The optional action and created-window filters of findByActor(), each only when non-empty.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param string|null   $action Action filter.
+	 * @param string|null   $from   Lower bound on `created`.
+	 * @param string|null   $to     Upper bound on `created`.
+	 *
+	 * @return void
+	 */
+	private static function applyActorFilters(IQueryBuilder $qb, string|null $action, string|null $from, string|null $to): void {
+		if (self::isBlank(value: $action) === false) {
+			$qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action)));
+		}
+
+		if (self::isBlank(value: $from) === false) {
+			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from)));
+		}
+
+		if (self::isBlank(value: $to) === false) {
+			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to)));
+		}
+	}//end applyActorFilters()
+
+	/**
+	 * Whether an optional filter value is absent: null or the empty string.
+	 *
+	 * @param string|null $value The value.
+	 *
+	 * @return bool True when the filter does not apply.
+	 */
+	private static function isBlank(string|null $value): bool {
+		return $value === null || $value === '';
+	}//end isBlank()
 
 	/**
 	 * Create one immutable, hash-chained audit record for a write that was
@@ -2881,6 +3063,29 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			->from($this->getTableName())
 			->groupBy('purpose');
 
+		self::applyCreatedWindow(qb: $qb, from: $from, to: $to);
+
+		$result = $qb->executeQuery();
+		$counts = [];
+		while (($row = $result->fetch()) !== false) {
+			$counts[self::purposeKey(purpose: $row['purpose'])] = (int)$row['entry_count'];
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countByPurpose()
+
+	/**
+	 * Bound `created` from below and above, each only when given.
+	 *
+	 * @param IQueryBuilder $qb   The query being built.
+	 * @param DateTime|null $from Inclusive lower bound.
+	 * @param DateTime|null $to   Inclusive upper bound.
+	 *
+	 * @return void
+	 */
+	private static function applyCreatedWindow(IQueryBuilder $qb, DateTime|null $from, DateTime|null $to): void {
 		if ($from !== null) {
 			$qb->andWhere(
 				$qb->expr()->gte('created', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE))
@@ -2892,22 +3097,22 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				$qb->expr()->lte('created', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			);
 		}
+	}//end applyCreatedWindow()
 
-		$result = $qb->executeQuery();
-		$counts = [];
-		while (($row = $result->fetch()) !== false) {
-			$key = 'null';
-			if ($row['purpose'] !== null && $row['purpose'] !== '') {
-				$key = (string)$row['purpose'];
-			}
-
-			$counts[$key] = (int)$row['entry_count'];
+	/**
+	 * The count key of a purpose: the purpose as a string, or `null` for none.
+	 *
+	 * @param mixed $purpose The `purpose` column.
+	 *
+	 * @return string The key.
+	 */
+	private static function purposeKey(mixed $purpose): string {
+		if ($purpose !== null && $purpose !== '') {
+			return (string)$purpose;
 		}
 
-		$result->closeCursor();
-
-		return $counts;
-	}//end countByPurpose()
+		return 'null';
+	}//end purposeKey()
 
 	/**
 	 * Hand freshly written rows to the configured file sink.
