@@ -47,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/changes/aggregate-paths-ask-permission/specs/rbac-scopes/spec.md
  */
-class AggregateVisibility {
+class AggregateVisibility implements AggregateVisibilityInterface {
 
 	/**
 	 * The collaborators.
