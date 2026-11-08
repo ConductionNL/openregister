@@ -39,7 +39,7 @@ use UnexpectedValueException;
 /**
  * Computes the next semantic version.
  */
-class FlowSemanticVersion {
+class FlowSemanticVersion implements FlowSemanticVersionInterface {
 
 	/**
 	 * Constructor.
@@ -63,19 +63,7 @@ class FlowSemanticVersion {
 	 */
 	public const FIRST = '1.0.0';
 
-	/**
-	 * Derived from a graph comparison.
-	 *
-	 * @var string
-	 */
-	public const SOURCE_DERIVED = 'derived';
-
-	/**
-	 * Assigned by the back-fill, which had no graphs to compare.
-	 *
-	 * @var string
-	 */
-	public const SOURCE_BACKFILL = 'backfill';
+	// The provenance values (SOURCE_DERIVED, SOURCE_BACKFILL) are declared on FlowSemanticVersionInterface.
 
 	/**
 	 * The next version, given the last one and what the diff found.

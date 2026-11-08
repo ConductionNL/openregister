@@ -1004,6 +1004,15 @@ final class ContractBindings {
 		RevealFlusherInterface::class => RevealFlusher::class,
 		UserPrincipalResolverInterface::class => UserPrincipalResolver::class,
 		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
+		\OCA\OpenRegister\Service\Flow\FlowTriggerIndexInterface::class => \OCA\OpenRegister\Service\Flow\FlowTriggerIndex::class,
+		\OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface::class => \OCA\OpenRegister\Service\Flow\FlowSemanticVersion::class,
+		\OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface::class => \OCA\OpenRegister\Service\Flow\FlowDefinitionPin::class,
+		\OCA\OpenRegister\Service\Flow\FlowTriggerServiceInterface::class => \OCA\OpenRegister\Service\Flow\FlowTriggerService::class,
+		\OCA\OpenRegister\Service\Flow\FlowTriggerSlugsInterface::class => \OCA\OpenRegister\Service\Flow\FlowTriggerSlugs::class,
+		\OCA\OpenRegister\Service\Flow\FlowRunAdvancerInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunAdvancer::class,
+		\OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode::class,
+		\OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode::class,
+		\OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode::class,
 	];
 
 	/**

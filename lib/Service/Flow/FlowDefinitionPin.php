@@ -48,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowDefinitionPin {
+class FlowDefinitionPin implements FlowDefinitionPinInterface {
 	/**
 	 * The graph keys that are pinned.
 	 *

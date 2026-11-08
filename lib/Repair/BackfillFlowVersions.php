@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
-use OCA\OpenRegister\Service\Flow\FlowDefinitionPin;
+use OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -233,7 +233,7 @@ class BackfillFlowVersions implements IRepairStep {
 			'executionMode' => (string)($flow->getExecutionMode() ?? Flow::MODE_ASYNC),
 		];
 
-		$hash = $this->container->get(FlowDefinitionPin::class)->pin(flow: $graph, flowId: $flowId);
+		$hash = $this->container->get(FlowDefinitionPinInterface::class)->pin(flow: $graph, flowId: $flowId);
 		if ($hash === null) {
 			throw new RuntimeException('the definition could not be stored');
 		}

@@ -79,9 +79,7 @@ final class C01FlowInterfaceBindingsTest extends TestCase {
 	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [
-		PrincipalResolverRegistry::class => ['Repair/TypePerformerReferences.php'],
-	];
+	private const KEPT_CALLERS = [];
 
 	/**
 	 * One case per class.

@@ -317,7 +317,8 @@
                 "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
                 "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
                 "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
-                "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy"
+                "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+                "OCA\\OpenRegister\\Service\\Flow\\Nodes\\UnlockObjectNodeInterface"
             ],
             "id": "openregister.unlock-object",
             "name": "Unlock an object",

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Repair\BackfillFlowSemanticVersions;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
+use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -166,7 +167,7 @@ final class BackfillFlowSemanticVersionsTest extends TestCase {
 			function (string $id) use ($flows, $versions) {
 				return match ($id) {
 					FlowVersionMapper::class => $versions,
-					FlowSemanticVersion::class => new FlowSemanticVersion(),
+					FlowSemanticVersionInterface::class => new FlowSemanticVersion(),
 					default => $flows,
 				};
 			}
@@ -356,7 +357,7 @@ final class BackfillFlowSemanticVersionsTest extends TestCase {
 			function (string $id) use ($flows, $versions) {
 				return match ($id) {
 					FlowVersionMapper::class => $versions,
-					FlowSemanticVersion::class => new FlowSemanticVersion(),
+					FlowSemanticVersionInterface::class => new FlowSemanticVersion(),
 					default => $flows,
 				};
 			}

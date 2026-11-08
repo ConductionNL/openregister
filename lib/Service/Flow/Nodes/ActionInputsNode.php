@@ -46,7 +46,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
  */
-class ActionInputsNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class ActionInputsNode extends LogicNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, ActionInputsNodeInterface {
 
 	/**
 	 * The step type.
