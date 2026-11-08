@@ -189,4 +189,42 @@ final class MapsOverviewServicePointsGoldenTest extends TestCase {
 		);
 		$this->assertCount(1, $this->finds);
 	}//end testRefusals()
+
+	/**
+	 * Label precedence and representative position across geometry depths.
+	 *
+	 * @return void
+	 */
+	public function testLabelsAndPositions(): void {
+		$point = ['type' => 'Point', 'coordinates' => [5, 52]];
+		$rows = [
+			['id' => 1, '@self' => ['name' => 'Self name', 'title' => 'Self title'], 'name' => 'Row', 'g' => $point],
+			['id' => 2, '@self' => ['name' => '', 'title' => 'Self title'], 'name' => 'Row', 'g' => $point],
+			['id' => 3, '@self' => ['name' => ['x']], 'naam' => 'Naam', 'titel' => 'Titel', 'g' => $point],
+			['id' => 4, 'titel' => 0, 'g' => $point],
+			['id' => 5, 'g' => $point],
+			['@self' => ['id' => 'self-id'], 'g' => ['type' => 'LineString', 'coordinates' => [[4.1, 51.1], [4.2, 51.2]]]],
+			['id' => 7, 'g' => ['type' => 'Polygon', 'coordinates' => [[[3.5, 50.5], [3.6, 50.6], [3.5, 50.5]]]]],
+			['id' => 8, 'g' => ['type' => 'MultiPolygon', 'coordinates' => [[[['6', '53'], [6.1, 53.1], [6, 53]]]]]],
+			['id' => 9, 'g' => ['type' => 'Point', 'coordinates' => ['x', 52]]],
+			['id' => 10, 'g' => ['type' => 'Point', 'coordinates' => [5]]],
+			['id' => 11, 'g' => ['type' => 'Point', 'coordinates' => []]],
+			['id' => 12, 'g' => ['type' => 'Point', 'coordinates' => [[[[[[1, 2]]]]]]]],
+		];
+		$points = $this->service('alice', false, $rows)->queryPoints('r', 's', [], 'g');
+
+		$this->assertSame(
+			[
+				['1', 'Self name', 52.0, 5.0],
+				['2', 'Self title', 52.0, 5.0],
+				['3', 'Naam', 52.0, 5.0],
+				['4', '0', 52.0, 5.0],
+				['5', '5', 52.0, 5.0],
+				['self-id', 'self-id', 51.1, 4.1],
+				['7', '7', 50.5, 3.5],
+				['8', '8', 53.0, 6.0],
+			],
+			array_map(static fn (array $p): array => [$p['id'], $p['label'], $p['lat'], $p['lng']], $points)
+		);
+	}//end testLabelsAndPositions()
 }//end class
