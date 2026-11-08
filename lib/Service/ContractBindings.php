@@ -448,6 +448,10 @@ final class ContractBindings {
 		MapLinkServiceInterface::class => MapLinkService::class,
 		MappingServiceInterface::class => MappingService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
+		\OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponderInterface::class
+			=> \OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder::class,
+		\OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReaderInterface::class
+			=> \OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader::class,
 		MigrationPackServiceInterface::class => MigrationPackService::class,
 		MigrationServiceInterface::class => MigrationService::class,
 		NotificationServiceInterface::class => NotificationService::class,
