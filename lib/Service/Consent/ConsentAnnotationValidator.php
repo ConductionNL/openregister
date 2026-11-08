@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Service\Consent;
  * declared `type: array` — see design.md "Decisions" for why the shape is
  * an append-only list of acts rather than one mutable record.
  */
-final class ConsentAnnotationValidator {
+final class ConsentAnnotationValidator implements ConsentAnnotationValidatorInterface {
 
 	/**
 	 * Validate every `x-openregister-consent` annotation declared on a schema's properties.
