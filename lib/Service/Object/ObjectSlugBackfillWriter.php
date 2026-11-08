@@ -26,8 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -71,10 +69,8 @@ class ObjectSlugBackfillWriter {
 	 * logged. A chunk that fails is rolled back, the chunks before it stay
 	 * written and the audit entry lists exactly those.
 	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The planned writes.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param array    $summary  The run's counters (copied into the audit entry).
+	 * @param ObjectSlugChangeSet $planned The planned writes, their table and the run's counters
+	 *                                     (copied into the audit entry).
 	 *
 	 * @return int The number of planned writes skipped because the row changed.
 	 *
@@ -83,24 +79,25 @@ class ObjectSlugBackfillWriter {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function write(array $plan, Register $register, Schema $schema, array $summary): int {
+	public function write(ObjectSlugChangeSet $planned): int {
 		$tally = ['applied' => [], 'skipped' => 0];
 		$failure = null;
 		try {
-			foreach (array_chunk($plan, self::WRITE_CHUNK) as $chunk) {
-				$this->writeChunk(chunk: $chunk, register: $register, schema: $schema, tally: $tally);
+			foreach (array_chunk($planned->changes, self::WRITE_CHUNK) as $chunk) {
+				$this->writeChunk(chunk: $planned->withChanges(changes: $chunk), tally: $tally);
 			}
 		} catch (Throwable $e) {
 			$failure = $e;
 		}
 
-		['applied' => $applied, 'skipped' => $skipped] = $tally;
+		$applied = $tally['applied'];
+		$skipped = $tally['skipped'];
 
 		// Also after a failed chunk: what the earlier chunks wrote is real, so the
 		// entry must list it and the cache must not keep serving the old slugs. A run
 		// that changed nothing leaves no entry (the console summary still says so).
 		if ($applied !== []) {
-			$this->ledger->record(applied: $applied, register: $register, schema: $schema, summary: array_merge($summary, ['skipped' => $skipped]));
+			$this->ledger->record(applied: $planned->withChanges(changes: $applied)->withCounters(counters: ['skipped' => $skipped]));
 		}
 
 		if ($failure !== null) {
@@ -113,24 +110,22 @@ class ObjectSlugBackfillWriter {
 	/**
 	 * Write one chunk of the plan in one transaction.
 	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $chunk    The chunk.
-	 * @param Register                                  $register The register.
-	 * @param Schema                                    $schema   The schema.
-	 * @param array{applied: list<array>, skipped: int} $tally    Steps written, and steps skipped because
-	 *                                                            the row changed, by reference.
+	 * @param ObjectSlugChangeSet                       $chunk The chunk's writes and their table.
+	 * @param array{applied: list<array>, skipped: int} $tally Steps written, and steps skipped because
+	 *                                                         the row changed, by reference.
 	 *
 	 * @return void
 	 *
 	 * @throws Throwable When a write fails (the chunk is rolled back first).
 	 */
-	private function writeChunk(array $chunk, Register $register, Schema $schema, array &$tally): void {
-		$holders = $this->chunkHolders(chunk: $chunk, register: $register, schema: $schema);
+	private function writeChunk(ObjectSlugChangeSet $chunk, array &$tally): void {
+		$holders = $this->chunkHolders(chunk: $chunk);
 
 		$written = [];
 		$this->db->beginTransaction();
 		try {
-			foreach ($chunk as $step) {
-				$skipped = $this->writeStep(step: $step, holders: $holders, register: $register, schema: $schema);
+			foreach ($chunk->changes as $step) {
+				$skipped = $this->takenMeanwhile(step: $step, holders: $holders) === true ? $this->takenWarning(step: $step, chunk: $chunk) : $this->writeStep(step: $step, chunk: $chunk);
 				if ($skipped === null) {
 					$written[] = $step;
 					continue;
@@ -156,52 +151,55 @@ class ObjectSlugBackfillWriter {
 	 * during a long run may have taken one since. Re-check the chunk's slugs
 	 * (one query) right before writing it, so the window is one chunk, not the run.
 	 *
-	 * @param array    $chunk    The chunk's steps.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
+	 * @param ObjectSlugChangeSet $chunk The chunk's writes and their table.
 	 *
 	 * @return array<string, list<string>> Holder uuids per slug
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	private function chunkHolders(array $chunk, Register $register, Schema $schema): array {
+	private function chunkHolders(ObjectSlugChangeSet $chunk): array {
 		return $this->magicMapper->findSlugState(
-			register: $register,
-			schema: $schema,
-			slugs: array_values(array_filter(array_column($chunk, 'new'), static fn ($slug): bool => is_string($slug) && $slug !== '')),
+			register: $chunk->register,
+			schema: $chunk->schema,
+			slugs: array_values(array_filter(array_column($chunk->changes, 'new'), static fn ($slug): bool => is_string($slug) && $slug !== '')),
 			uuids: []
 		)['holders'] ?? [];
 	}//end chunkHolders()
 
 	/**
+	 * The skip warning for a step whose slug another object took meanwhile.
+	 *
+	 * @param array               $step  The step: uuid, old and new slug.
+	 * @param ObjectSlugChangeSet $chunk The chunk's table.
+	 *
+	 * @return string The warning
+	 */
+	private function takenWarning(array $step, ObjectSlugChangeSet $chunk): string {
+		return sprintf(
+			'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: slug "%s" was taken by another object while the backfill ran',
+			$step['uuid'],
+			(string)$chunk->register->getSlug(),
+			(string)$chunk->schema->getSlug(),
+			(string)$step['new']
+		);
+	}//end takenWarning()
+
+	/**
 	 * Write one step, or say why it was skipped.
 	 *
-	 * A slug taken by another object meanwhile is not written; a row whose slug
-	 * changed meanwhile is not overwritten (the update touches no row).
+	 * A row whose slug changed meanwhile is not overwritten (the update touches no row).
 	 *
-	 * @param array    $step     The step: uuid, old and new slug.
-	 * @param array    $holders  Holder uuids per slug.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
+	 * @param array               $step  The step: uuid, old and new slug.
+	 * @param ObjectSlugChangeSet $chunk The chunk's table.
 	 *
 	 * @return string|null The skip warning, or null when the slug was written
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	private function writeStep(array $step, array $holders, Register $register, Schema $schema): ?string {
-		if ($this->takenMeanwhile(step: $step, holders: $holders) === true) {
-			return sprintf(
-				'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: slug "%s" was taken by another object while the backfill ran',
-				$step['uuid'],
-				(string)$register->getSlug(),
-				(string)$schema->getSlug(),
-				(string)$step['new']
-			);
-		}
-
+	private function writeStep(array $step, ObjectSlugChangeSet $chunk): ?string {
 		$updated = $this->magicMapper->updateSlugColumn(
-			register: $register,
-			schema: $schema,
+			register: $chunk->register,
+			schema: $chunk->schema,
 			uuid: $step['uuid'],
 			slug: (string)$step['new']
 		);
@@ -212,8 +210,8 @@ class ObjectSlugBackfillWriter {
 		return sprintf(
 			'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: its slug changed while the backfill ran',
 			$step['uuid'],
-			(string)$register->getSlug(),
-			(string)$schema->getSlug()
+			(string)$chunk->register->getSlug(),
+			(string)$chunk->schema->getSlug()
 		);
 	}//end writeStep()
 

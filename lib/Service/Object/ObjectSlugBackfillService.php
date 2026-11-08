@@ -30,7 +30,6 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
-use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant;
 use Psr\Log\LoggerInterface;
 
@@ -97,7 +96,40 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 			);
 		}
 
+		$request = new ObjectSlugBackfillRequest(register: $register, schema: $schema, dryRun: $dryRun);
 		$duplicates = $this->magicMapper->findDuplicateSlugs(register: $register, schema: $schema);
+		$this->logDuplicates(request: $request, duplicates: $duplicates);
+
+		$rows = $this->loadRows(register: $register, schema: $schema);
+		$fill = $this->planFill(rows: $rows, request: $request);
+		$plan = $fill['plan'];
+		$summary = [
+			'scanned' => count($rows),
+			'assigned' => $fill['assigned'],
+			'collisions' => $fill['collisions'],
+			'unchanged' => $fill['unchanged'],
+			'duplicates' => count($duplicates),
+			'skipped' => 0,
+		];
+
+		if ($dryRun === false) {
+			$summary['skipped'] = $this->writer->write(planned: new ObjectSlugChangeSet(register: $register, schema: $schema, changes: $plan, summary: $summary));
+		}
+
+		return ['duplicates' => $duplicates, 'plan' => $plan, 'summary' => $summary];
+	}//end run()
+
+	/**
+	 * Warn about every slug more than one object holds already; they stay as they are.
+	 *
+	 * @param ObjectSlugBackfillRequest   $request    The run's register and schema.
+	 * @param array<string, list<string>> $duplicates Slug => holder uuids.
+	 *
+	 * @return void
+	 */
+	private function logDuplicates(ObjectSlugBackfillRequest $request, array $duplicates): void {
+		$register = $request->register;
+		$schema = $request->schema;
 		foreach ($duplicates as $slug => $uuids) {
 			$this->logger->warning(
 				message: sprintf(
@@ -119,25 +151,7 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 				]
 			);
 		}
-
-		$rows = $this->loadRows(register: $register, schema: $schema);
-		$summary = [
-			'scanned' => count($rows),
-			'assigned' => 0,
-			'collisions' => 0,
-			'unchanged' => 0,
-			'duplicates' => count($duplicates),
-			'skipped' => 0,
-		];
-
-		$plan = $this->planFill(rows: $rows, scope: new ObjectSlugScope(register: $register, schema: $schema), summary: $summary, log: ($dryRun === false));
-
-		if ($dryRun === false) {
-			$summary['skipped'] = $this->writer->write(plan: $plan, register: $register, schema: $schema, summary: $summary);
-		}
-
-		return ['duplicates' => $duplicates, 'plan' => $plan, 'summary' => $summary];
-	}//end run()
+	}//end logDuplicates()
 
 	/**
 	 * Read every live row without a slug, oldest first (`_created`, then `_id`).
@@ -212,25 +226,21 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 	/**
 	 * Give objects without a slug their candidate when it is free.
 	 *
-	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows Rows without a slug.
-	 * @param ObjectSlugScope $scope   The register and schema.
-	 * @param array           $summary Counters, by reference.
-	 * @param bool            $log     Log collisions (false on a dry run).
+	 * Collisions are logged unless the run is a dry run.
 	 *
-	 * @return list<array{uuid: string, old: ?string, new: ?string}>
+	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows Rows without a slug.
+	 * @param ObjectSlugBackfillRequest $request The run's register, schema and mode.
+	 *
+	 * @return array{plan: list<array{uuid: string, old: ?string, new: ?string}>, assigned: int, collisions: int, unchanged: int}
 	 */
-	private function planFill(array $rows, ObjectSlugScope $scope, array &$summary, bool $log): array {
-		$register = $scope->register;
-		if ($register === null) {
-			return [];
-		}
-
-		$taken = $this->takenSlugs(register: $register, schema: $scope->schema);
-		$plan = [];
+	private function planFill(array $rows, ObjectSlugBackfillRequest $request): array {
+		$scope = $request->scope();
+		$taken = $this->takenSlugs(register: $request->register, schema: $request->schema);
+		$fill = ['plan' => [], 'assigned' => 0, 'collisions' => 0, 'unchanged' => 0];
 		foreach ($rows as $row) {
 			$candidate = $row['candidate'];
 			if ($candidate === null) {
-				$summary['unchanged']++;
+				$fill['unchanged']++;
 				continue;
 			}
 
@@ -238,19 +248,19 @@ class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 			$slug = $this->slugHandler->decide(
 				want: new ObjectSlugWant(slug: $candidate, scope: $scope, objectUuid: $uuid, path: 'backfill'),
 				holderOf: $this->holderOf(taken: $taken, uuid: $uuid),
-				log: $log
+				log: ($request->dryRun === false)
 			);
 			if ($slug === null) {
-				$summary['collisions']++;
+				$fill['collisions']++;
 				continue;
 			}
 
 			$taken[$this->slugHandler->foldKey(slug: $slug)][] = $uuid;
-			$plan[] = ['uuid' => $uuid, 'old' => null, 'new' => $slug];
-			$summary['assigned']++;
+			$fill['plan'][] = ['uuid' => $uuid, 'old' => null, 'new' => $slug];
+			$fill['assigned']++;
 		}//end foreach
 
-		return $plan;
+		return $fill;
 	}//end planFill()
 
 	/**
