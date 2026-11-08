@@ -69,7 +69,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Service\Integration\LeafBundle;
+use OCA\OpenRegister\Service\Integration\LeafBundles;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
 use OCA\OpenRegister\Service\EntryScripts;
 use OCA\OpenRegister\Service\Integration\LeafRegistryInterface;
@@ -342,7 +342,7 @@ class LeafScriptListener implements IEventListener {
 		// Delegated so the loader and the registry give ONE answer. They
 		// disagreeing is the failure this whole change is about: the registry
 		// accepting a leaf the loader never puts on a page.
-		return (new LeafBundle(appManager: $this->appManager))->existsFor(appId: $appId);
+		return LeafBundles::forApps(appManager: $this->appManager)->existsFor(appId: $appId);
 	}//end hasLeafBundle()
 
 	/**
