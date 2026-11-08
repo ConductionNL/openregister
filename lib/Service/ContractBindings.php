@@ -292,6 +292,8 @@ use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
@@ -308,6 +310,12 @@ use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidatorInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
+use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
+use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
+use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
+use OCA\OpenRegister\Service\Hinge\ListPresentationResolverInterface;
+use OCA\OpenRegister\Service\Hinge\ReferencedByService;
+use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Import\ImportPreviewService;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCA\OpenRegister\Service\Import\SourceRowReader;
@@ -1004,6 +1012,10 @@ final class ContractBindings {
 		RevealFlusherInterface::class => RevealFlusher::class,
 		UserPrincipalResolverInterface::class => UserPrincipalResolver::class,
 		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
+		FormDependentsCheckInterface::class => FormDependentsCheck::class,
+		InheritedGeoCollectorInterface::class => InheritedGeoCollector::class,
+		ListPresentationResolverInterface::class => ListPresentationResolver::class,
+		ReferencedByServiceInterface::class => ReferencedByService::class,
 	];
 
 	/**

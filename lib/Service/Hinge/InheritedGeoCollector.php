@@ -39,7 +39,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hinge
  */
-class InheritedGeoCollector {
+class InheritedGeoCollector implements InheritedGeoCollectorInterface {
 
 	/**
 	 * GeoJSON geometry types a feature may carry.
