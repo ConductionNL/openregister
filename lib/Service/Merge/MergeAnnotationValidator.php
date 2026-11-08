@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Merge;
  *
  * @spec openspec/changes/mdm-merge-engine/tasks.md#1.2
  */
-class MergeAnnotationValidator {
+class MergeAnnotationValidator implements MergeAnnotationValidatorInterface {
 	/**
 	 * Validate the `x-openregister-merge` annotation in a schema shape.
 	 *
