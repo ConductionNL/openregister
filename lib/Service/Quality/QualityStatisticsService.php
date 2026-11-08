@@ -210,14 +210,16 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 		QualityListingWindow $window = new QualityListingWindow(),
 	): array {
 		$quality = $this->loadAnnotation(register: $register, schema: $schema);
-		$field = $this->scoreField(quality: $quality);
-		$thresholds = $this->thresholds(quality: $quality);
+		$reading = new QualityScoreReading(
+			field: $this->scoreField(quality: $quality),
+			thresholds: $this->thresholds(quality: $quality)
+		);
 
 		$objects = $this->loadObjects(register: $register, schema: $schema);
 
-		$rows = $this->listingRows(objects: $objects, field: $field, thresholds: $thresholds, qualityStatus: $qualityStatus);
+		$rows = $this->withStatus(rows: $this->listingRows(objects: $objects, reading: $reading), qualityStatus: $qualityStatus);
 
-		$this->sortRows(rows: $rows, sort: $window->sort, order: $window->order);
+		$this->sortRows(rows: $rows, window: $window);
 
 		$total = count($rows);
 		$page = array_slice($rows, max(0, $window->offset), max(0, $window->limit));
@@ -231,43 +233,55 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	}//end lowestQuality()
 
 	/**
-	 * Build the listing rows, keeping only those matching the status filter.
+	 * Build one listing row per object.
 	 *
 	 * @param array<int, ObjectEntity> $objects Objects in the register/schema.
-	 * @param string $field Payload field the score lives at.
-	 * @param array<string, mixed> $thresholds Status cut-offs.
-	 * @param string|null $qualityStatus Optional status filter; null or '' keeps every row.
+	 * @param QualityScoreReading      $reading Where the score lives and its status cut-offs.
 	 *
 	 * @return array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}>
 	 */
-	private function listingRows(array $objects, string $field, array $thresholds, ?string $qualityStatus): array {
+	private function listingRows(array $objects, QualityScoreReading $reading): array {
 		$rows = [];
 		foreach ($objects as $object) {
-			$row = $this->listingRow(object: $object, field: $field, thresholds: $thresholds);
-			if ($this->matchesStatus(status: $row['qualityStatus'], qualityStatus: $qualityStatus) === false) {
-				continue;
-			}
-
-			$rows[] = $row;
+			$rows[] = $this->listingRow(object: $object, reading: $reading);
 		}
 
 		return $rows;
 	}//end listingRows()
 
 	/**
+	 * Keep only the rows matching the status filter, in order.
+	 *
+	 * @param array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}> $rows          The rows.
+	 * @param string|null                                                                          $qualityStatus Optional status filter;
+	 *                                                                                                            null or '' keeps every row.
+	 *
+	 * @return array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}>
+	 */
+	private function withStatus(array $rows, ?string $qualityStatus): array {
+		$kept = [];
+		foreach ($rows as $row) {
+			if ($this->matchesStatus(status: $row['qualityStatus'], qualityStatus: $qualityStatus) === true) {
+				$kept[] = $row;
+			}
+		}
+
+		return $kept;
+	}//end withStatus()
+
+	/**
 	 * One listing row: the object's id, score and status.
 	 *
-	 * @param ObjectEntity $object Object entity.
-	 * @param string $field Payload field the score lives at.
-	 * @param array<string, mixed> $thresholds Status cut-offs.
+	 * @param ObjectEntity        $object  Object entity.
+	 * @param QualityScoreReading $reading Where the score lives and its status cut-offs.
 	 *
 	 * @return array{id: string, qualityScore: float|null, qualityStatus: string|null}
 	 */
-	private function listingRow(ObjectEntity $object, string $field, array $thresholds): array {
-		$score = $this->scoreOf(object: $object, field: $field);
+	private function listingRow(ObjectEntity $object, QualityScoreReading $reading): array {
+		$score = $this->scoreOf(object: $object, field: $reading->field);
 		$status = null;
 		if ($score !== null) {
-			$status = $this->scorer->status(score: $score, thresholds: $thresholds);
+			$status = $this->scorer->status(score: $score, thresholds: $reading->thresholds);
 		}
 
 		return [
@@ -292,27 +306,22 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	/**
 	 * Sort listing rows in place by the requested field/order.
 	 *
-	 * @param array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}> $rows Rows to sort (by reference).
-	 * @param string $sort Sort field.
-	 * @param string $order Sort order.
+	 * @param array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}> $rows   Rows to sort (by reference).
+	 * @param QualityListingWindow                                                                 $window The sort field and order.
 	 *
 	 * @return void
 	 */
-	private function sortRows(array &$rows, string $sort, string $order): void {
-		$direction = $this->sortDirection(order: $order);
-
+	private function sortRows(array &$rows, QualityListingWindow $window): void {
+		$direction = $this->sortDirection(order: $window->order);
 		$key = 'qualityScore';
-		if ($sort === 'qualityStatus') {
+		if ($window->sort === 'qualityStatus') {
 			$key = 'qualityStatus';
 		}
 
 		usort(
 			$rows,
-			static fn (array $left, array $right): int => self::compareNullsLast(
-				leftValue: $left[$key],
-				rightValue: $right[$key],
-				direction: $direction
-			)
+			static fn (array $left, array $right): int => (self::nullsLastOrder(leftValue: $left[$key], rightValue: $right[$key])
+				?? ($direction * self::valueOrder(leftValue: $left[$key], rightValue: $right[$key])))
 		);
 	}//end sortRows()
 
@@ -332,15 +341,15 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	}//end sortDirection()
 
 	/**
-	 * Compare two sort values; nulls (unscored objects) sort last regardless of direction.
+	 * The order of two sort values when they are equal or either is null:
+	 * nulls (unscored objects) sort last regardless of direction.
 	 *
-	 * @param float|string|null $leftValue Left value.
+	 * @param float|string|null $leftValue  Left value.
 	 * @param float|string|null $rightValue Right value.
-	 * @param int $direction 1 ascending, -1 descending.
 	 *
-	 * @return int
+	 * @return int|null The order, or null when both are set and differ.
 	 */
-	private static function compareNullsLast($leftValue, $rightValue, int $direction): int {
+	private static function nullsLastOrder($leftValue, $rightValue): ?int {
 		if ($leftValue === $rightValue) {
 			return 0;
 		}
@@ -353,12 +362,24 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 			return -1;
 		}
 
+		return null;
+	}//end nullsLastOrder()
+
+	/**
+	 * The ascending order of two differing, non-null sort values.
+	 *
+	 * @param float|string $leftValue  Left value.
+	 * @param float|string $rightValue Right value.
+	 *
+	 * @return int -1 when left sorts first, else 1.
+	 */
+	private static function valueOrder($leftValue, $rightValue): int {
 		if ($leftValue < $rightValue) {
-			return -1 * $direction;
+			return -1;
 		}
 
-		return 1 * $direction;
-	}//end compareNullsLast()
+		return 1;
+	}//end valueOrder()
 
 	/**
 	 * Load the RBAC + tenant scoped object set for a register/schema.
