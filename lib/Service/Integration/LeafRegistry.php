@@ -52,7 +52,7 @@ use Throwable;
  * renderMode, data-provider-requires-provider) rejects and skips a bad leaf
  * without breaking the catalogue.
  */
-class LeafRegistry {
+class LeafRegistry implements LeafRegistryInterface {
 
 	/**
 	 * Whether the catalogue has been collected this request.

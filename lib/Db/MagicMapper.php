@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use DateTime;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -10341,7 +10341,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function purposeBoundTables(): PurposeBoundTables {
-		return new PurposeBoundTables(guard: $this->container->get(PurposeGuard::class));
+		return new PurposeBoundTables(guard: $this->container->get(PurposeGuardInterface::class));
 	}//end purposeBoundTables()
 
 	/**

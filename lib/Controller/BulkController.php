@@ -36,7 +36,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Dto\BulkSaveOutcome;
+use OCA\OpenRegister\Dto\BulkSaveOutcomeInterface;
+use OCA\OpenRegister\Dto\BulkSaveOutcomes;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\LockedException;
@@ -657,26 +658,26 @@ class BulkController extends Controller {
 	 * @param BatchOperationStatusInterface|array $result  The streaming status, or the bulk result.
 	 * @param BulkSaveSummary                     $summary The rows submitted and accounted for.
 	 *
-	 * @return BulkSaveOutcome
+	 * @return BulkSaveOutcomeInterface
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) BulkSaveOutcome::from*() are named
+	 * @SuppressWarnings(PHPMD.StaticAccess) BulkSaveOutcomes::from*() are named
 	 *   constructors on a value object, not calls into a collaborator — there is
 	 *   nothing here a test would want to substitute.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function saveOutcome(BatchOperationStatusInterface|array $result, BulkSaveSummary $summary): BulkSaveOutcome {
+	private function saveOutcome(BatchOperationStatusInterface|array $result, BulkSaveSummary $summary): BulkSaveOutcomeInterface {
 		$requestedCount = $summary->requestedCount;
 		$accountedCount = $summary->accountedCount;
 		if ($result instanceof BatchOperationStatusInterface) {
-			return BulkSaveOutcome::fromBatchStatus(
+			return BulkSaveOutcomes::fromBatchStatus(
 				status: $result,
 				requestedCount: $requestedCount,
 				accountedCount: $accountedCount
 			);
 		}
 
-		return BulkSaveOutcome::fromBulkResult(
+		return BulkSaveOutcomes::fromBulkResult(
 			bulkResult: $result,
 			requestedCount: $requestedCount,
 			accountedCount: $accountedCount
@@ -707,16 +708,16 @@ class BulkController extends Controller {
 	 * has never been transactional — which is why `saved_count` stays in the
 	 * body of the failure response: it is what the caller must reconcile against.
 	 *
-	 * @param BulkSaveSummary $summary What the path wrote, and its success message and payload.
-	 * @param BulkSaveOutcome $outcome What the save path lost, and why.
-	 * @param bool            $partial Whether the caller opted into best-effort semantics.
+	 * @param BulkSaveSummary          $summary What the path wrote, and its success message and payload.
+	 * @param BulkSaveOutcomeInterface $outcome What the save path lost, and why.
+	 * @param bool                     $partial Whether the caller opted into best-effort semantics.
 	 *
 	 * @return JSONResponse The batch outcome.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function bulkSaveResponse(BulkSaveSummary $summary, BulkSaveOutcome $outcome, bool $partial): JSONResponse {
-		$failedCount = $outcome->failedCount;
+	private function bulkSaveResponse(BulkSaveSummary $summary, BulkSaveOutcomeInterface $outcome, bool $partial): JSONResponse {
+		$failedCount = $outcome->failedCount();
 		$complete = $outcome->isComplete();
 
 		$message = $summary->successMessage;
@@ -741,7 +742,7 @@ class BulkController extends Controller {
 					'saved_count' => $summary->savedCount,
 					'failed_count' => $failedCount,
 					'requested_count' => $summary->requestedCount,
-					'failures' => $outcome->failures,
+					'failures' => $outcome->failures(),
 					'partial' => $partial,
 				],
 				$summary->extra

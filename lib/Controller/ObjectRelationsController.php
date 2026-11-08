@@ -42,10 +42,10 @@ use OCA\OpenRegister\Controller\Support\ProseReference;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Export\ExportGate;
+use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
-use OCA\OpenRegister\Service\Relation\AffectedSet;
 use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
+use OCA\OpenRegister\Service\Relation\AffectedSets;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
@@ -104,9 +104,9 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * The export verb, checked before the graph leaves.
 	 *
-	 * @var ExportGate
+	 * @var ExportGateInterface
 	 */
-	private readonly ExportGate $exportGate;
+	private readonly ExportGateInterface $exportGate;
 
 	/**
 	 * Resolves an object under the caller's own RBAC.
@@ -694,7 +694,7 @@ class ObjectRelationsController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}
 
-		return new JSONResponse(data: (new AffectedSet())->derive(graph: $this->graphWithinPurpose(object: $object), query: $query));
+		return new JSONResponse(data: AffectedSets::deriver()->derive(graph: $this->graphWithinPurpose(object: $object), query: $query));
 	}//end affected()
 
 	/**

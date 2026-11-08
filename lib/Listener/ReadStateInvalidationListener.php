@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -49,13 +49,13 @@ final class ReadStateInvalidationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ReadStateService                    $readState   The read-state primitive, which owns the write.
+	 * @param ReadStateServiceInterface                    $readState   The read-state primitive, which owns the write.
 	 * @param SubstantiveChangeEvaluatorInterface $evaluator   Decides whether the change was news.
 	 * @param IUserSession                        $userSession Names the actor, whose own read state survives.
 	 * @param LoggerInterface                     $logger      PSR logger.
 	 */
 	public function __construct(
-		private readonly ReadStateService $readState,
+		private readonly ReadStateServiceInterface $readState,
 		private readonly SubstantiveChangeEvaluatorInterface $evaluator,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

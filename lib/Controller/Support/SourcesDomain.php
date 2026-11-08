@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
-use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
+use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
 
 /**
  * The domain services of the sources API.
@@ -36,7 +36,7 @@ final class SourcesDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SourceFetcherRegistry                 $fetcherRegistry      Resolves the transport for a source type
+	 * @param SourceFetcherLookupInterface          $fetcherRegistry      Resolves the transport for a source type
 	 * @param HarvestPipelineServiceInterface       $pipeline             Harvest pipeline orchestrator
 	 * @param DbalConnectionFactory                 $connectionFactory    Opens read-only DBAL connections for database sources
 	 * @param DatabaseIntrospectionServiceInterface $introspectionService Introspects a database source into a virtual register
@@ -44,7 +44,7 @@ final class SourcesDomain {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function __construct(
-		public readonly SourceFetcherRegistry $fetcherRegistry,
+		public readonly SourceFetcherLookupInterface $fetcherRegistry,
 		public readonly HarvestPipelineServiceInterface $pipeline,
 		public readonly DbalConnectionFactory $connectionFactory,
 		public readonly DatabaseIntrospectionServiceInterface $introspectionService,

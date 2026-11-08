@@ -31,7 +31,7 @@ use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolverInterface;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -76,7 +76,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param DeferredEntryObjectResolverInterface $resolver Stale-safe entry re-fetch.
 	 * @param TransitionEngine $engine The one path every automatic move goes through.
-	 * @param AutoTransitionPass $pass The pass, resumed with the entry's carried lineage.
+	 * @param AutoTransitionPassInterface $pass The pass, resumed with the entry's carried lineage.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -88,7 +88,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 		LoggerInterface $logger,
 		private readonly DeferredEntryObjectResolverInterface $resolver,
 		private readonly TransitionEngine $engine,
-		private readonly AutoTransitionPass $pass,
+		private readonly AutoTransitionPassInterface $pass,
 	) {
 		parent::__construct(
 			time: $time,

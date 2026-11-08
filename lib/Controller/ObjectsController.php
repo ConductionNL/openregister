@@ -83,9 +83,9 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
-use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
+use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
@@ -94,7 +94,7 @@ use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
@@ -4731,7 +4731,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$page = $this->container->get(ObjectHistoryForReaders::class)->page(
+			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
 				register: $register,
 				schema: $schema,
 				id: $id,
@@ -5905,11 +5905,11 @@ class ObjectsController extends Controller {
 	 * export: see ExportAuditRecorder's own note on why a ledger hiccup must
 	 * not fail a monthly aanlevering.
 	 *
-	 * @return ExportAuditRecorder|null The recorder.
+	 * @return ExportAuditRecorderInterface|null The recorder.
 	 */
-	private function exportAuditRecorder(): ?ExportAuditRecorder {
+	private function exportAuditRecorder(): ?ExportAuditRecorderInterface {
 		try {
-			return $this->container->get(ExportAuditRecorder::class);
+			return $this->container->get(ExportAuditRecorderInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ObjectsController] Export audit recorder unresolvable, the export is not on the trail',
@@ -6618,12 +6618,12 @@ class ObjectsController extends Controller {
 	 */
 	private function callerRunUuid(): ?string {
 		try {
-			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContext::class);
+			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class);
 		} catch (\Throwable $unavailable) {
 			return null;
 		}
 
-		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContext === false) {
+		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContextInterface === false) {
 			return null;
 		}
 
@@ -6815,7 +6815,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function unreadCounts(ObjectEntity $object): array {
-		$readState = $this->container->get(ReadStateService::class);
+		$readState = $this->container->get(ReadStateServiceInterface::class);
 		if ($readState->callerUid() === null) {
 			return [];
 		}

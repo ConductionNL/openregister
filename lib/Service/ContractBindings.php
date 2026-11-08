@@ -159,12 +159,16 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentServiceInterface;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
+use OCA\OpenRegister\Service\Credential\CredentialAppTokenServiceInterface;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrarInterface;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialKeys;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepositoryInterface;
+use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
+use OCA\OpenRegister\Service\Credential\ProviderCatalogueInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
@@ -186,6 +190,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
+use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
+use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
+use OCA\OpenRegister\Service\Export\ExportGate;
+use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
@@ -330,6 +338,8 @@ use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProviderInterface;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
+use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
@@ -357,7 +367,11 @@ use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
+use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
+use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstallerInterface;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
@@ -523,6 +537,8 @@ use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
+use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Service\Survivorship\TrustTierResolverInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
@@ -616,6 +632,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Audit\AuditSinkInterface::class => \OCA\OpenRegister\Service\Audit\AuditSink::class,
 		DeferredEntryObjectResolverInterface::class => DeferredEntryObjectResolver::class,
 		ListenerDeferralInterface::class => ListenerDeferralService::class,
+		\OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface::class => \OCA\OpenRegister\Service\Audit\AuditSink::class,
 		\OCA\OpenRegister\Service\Audit\AuditSinkStatusInterface::class => \OCA\OpenRegister\Service\Audit\AuditSinkStatus::class,
 		\OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface::class => \OCA\OpenRegister\Service\Audit\AuditTrailPageService::class,
 		\OCA\OpenRegister\Service\AvgComplianceServiceInterface::class => \OCA\OpenRegister\Service\AvgComplianceService::class,
@@ -653,6 +670,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\RunLockReleaseInterface::class => \OCA\OpenRegister\Service\Object\RunLockRegistry::class,
 		\OCA\OpenRegister\Service\Object\FileWriteGuardInterface::class => \OCA\OpenRegister\Service\Object\FileWriteGuard::class,
 		\OCA\OpenRegister\Service\Rbac\DerivedGrantStoreInterface::class => \OCA\OpenRegister\Service\Rbac\DerivedGrantStore::class,
+		\OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface::class => \OCA\OpenRegister\Service\Rbac\DefinitionWriteRights::class,
+		\OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface::class => \OCA\OpenRegister\Service\Rbac\GrantChangeAuditor::class,
 		\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class,
 		BrpPersonProviderInterface::class => BrpPersonProvider::class,
 		CalendarFeedTokenServiceInterface::class => CalendarFeedTokenService::class,
@@ -698,6 +717,7 @@ final class ContractBindings {
 		RecordTemplateStoreInterface::class => RecordTemplateService::class,
 		RegistrySubscriptionLifecycleInterface::class => RegistrySubscriptionService::class,
 		RestApiTransportInterface::class => RestApiTransport::class,
+		\OCA\OpenRegister\Service\Rbac\PrincipalReachListerInterface::class => \OCA\OpenRegister\Service\Rbac\PrincipalReachService::class,
 		RouterNodeInterface::class => RouterNode::class,
 		SelectielijstImportServiceInterface::class => SelectielijstImportService::class,
 		SelectielijstReferenceResolverInterface::class => SelectielijstReferenceResolver::class,
@@ -756,6 +776,9 @@ final class ContractBindings {
 		DateTimeNormalizerInterface::class => DateTimeNormalizer::class,
 		DecisionTableNodeInterface::class => DecisionTableNode::class,
 		\OCA\OpenRegister\Service\Outbound\ProxySettingsInterface::class => \OCA\OpenRegister\Service\Outbound\ProxySettings::class,
+		\OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface::class => \OCA\OpenRegister\Service\Decision\DecisionVisibility::class,
+		\OCA\OpenRegister\Service\Decision\RelationDecisionServiceInterface::class => \OCA\OpenRegister\Service\Decision\RelationDecisionService::class,
+		\OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface::class => \OCA\OpenRegister\Service\SchemaImport\SchemaImportService::class,
 		DeckCardServiceInterface::class => DeckCardService::class,
 		DeckLinkServiceInterface::class => DeckLinkService::class,
 		DeepLinkRegistryServiceInterface::class => DeepLinkRegistryService::class,
@@ -773,6 +796,8 @@ final class ContractBindings {
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
+		ExportAuditRecorderInterface::class => ExportAuditRecorder::class,
+		ExportGateInterface::class => ExportGate::class,
 		ExportProfileServiceInterface::class => ExportProfileService::class,
 		ExportProfileWriterInterface::class => ExportProfileWriter::class,
 		ExplodeNodeInterface::class => ExplodeNode::class,
@@ -844,6 +869,7 @@ final class ContractBindings {
 			=> \OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		\OCA\OpenRegister\Service\Object\ObjectReadAccessInterface::class => \OCA\OpenRegister\Service\Object\ObjectReadAccess::class,
+		\OCA\OpenRegister\Service\Task\TaskInboxServiceInterface::class => \OCA\OpenRegister\Service\Task\TaskInboxService::class,
 		\OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface::class => \OCA\OpenRegister\Service\Relation\ObjectTreeService::class,
 		ImportPreviewServiceInterface::class => ImportPreviewService::class,
 		JobAlertServiceInterface::class => JobAlertService::class,
@@ -987,6 +1013,7 @@ final class ContractBindings {
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		WatcherServiceInterface::class => WatcherService::class,
+		ReadStateServiceInterface::class => ReadStateService::class,
 		XwikiLinkServiceInterface::class => XwikiLinkService::class,
 		ZaaktypeCaseSkeletonMapperInterface::class => ZaaktypeCaseSkeletonMapper::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
@@ -1030,6 +1057,11 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Archival\ArchiveReferenceReaderInterface::class => \OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator::class,
 		\OCA\OpenRegister\Service\AuditSealInterface::class => \OCA\OpenRegister\Service\AuditHashService::class,
 		\OCA\OpenRegister\Service\AuditRechainInterface::class => \OCA\OpenRegister\Service\AuditHashService::class,
+		\OCA\OpenRegister\Service\InboundAuthRateLimitInterface::class => \OCA\OpenRegister\Service\SecurityService::class,
+		\OCA\OpenRegister\Service\LoginSecurityInterface::class => \OCA\OpenRegister\Service\SecurityService::class,
+		\OCA\OpenRegister\Service\RateLimitResetInterface::class => \OCA\OpenRegister\Service\SecurityService::class,
+		\OCA\OpenRegister\Service\SecurityHeadersInterface::class => \OCA\OpenRegister\Service\SecurityService::class,
+		\OCA\OpenRegister\Service\SchemaTeardownInterface::class => \OCA\OpenRegister\Service\SchemaDeletionService::class,
 		\OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface::class => \OCA\OpenRegister\Service\Authorization\GroupReconciler::class,
 		\OCA\OpenRegister\Service\AvgRetentionPassInterface::class => \OCA\OpenRegister\Service\AvgRetentionService::class,
 		\OCA\OpenRegister\Service\Credential\OAuth2CredentialSweepInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2RefreshService::class,
@@ -1068,6 +1100,13 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\View\ViewObjectQueryInterface::class => \OCA\OpenRegister\Service\View\ViewObjectQuery::class,
 		HingeAnnotationValidatorInterface::class => HingeAnnotationValidator::class,
 		SurvivorshipAnnotationValidatorInterface::class => SurvivorshipAnnotationValidator::class,
+		CredentialAppTokenServiceInterface::class => CredentialAppTokenService::class,
+		ProviderCatalogueInterface::class => ProviderCatalogue::class,
+		NotificationsAnnotationInstallerInterface::class => NotificationsAnnotationInstaller::class,
+		ReferencedAddressNotifierInterface::class => ReferencedAddressNotifier::class,
+		\OCA\OpenRegister\Service\Lifecycle\AutoTransitionPassInterface::class => \OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass::class,
+		\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunContext::class,
+		TrustTierResolverInterface::class => TrustTierResolver::class,
 	];
 
 	/**

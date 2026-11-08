@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
-use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\SemanticTypeResolverInterface;
 
@@ -37,7 +37,7 @@ final class SchemaSemantics {
 	 * Bundle the services.
 	 *
 	 * @param ?JsonLdContextServiceInterface $jsonLdContextService The JSON-LD context service.
-	 * @param ?SchemaImportService           $schemaImportService  The schema import service.
+	 * @param ?SchemaImportServiceInterface           $schemaImportService  The schema import service.
 	 * @param ?SemanticTypeResolverInterface $semanticTypeResolver The semantic type resolver.
 	 * @param ?SemanticRoleHandlerInterface           $semanticRoles        The semantic role handler.
 	 *
@@ -45,7 +45,7 @@ final class SchemaSemantics {
 	 */
 	public function __construct(
 		public readonly ?JsonLdContextServiceInterface $jsonLdContextService = null,
-		public readonly ?SchemaImportService $schemaImportService = null,
+		public readonly ?SchemaImportServiceInterface $schemaImportService = null,
 		public readonly ?SemanticTypeResolverInterface $semanticTypeResolver = null,
 		public readonly ?SemanticRoleHandlerInterface $semanticRoles = null,
 	) {

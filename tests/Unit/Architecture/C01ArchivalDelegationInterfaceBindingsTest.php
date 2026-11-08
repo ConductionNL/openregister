@@ -99,13 +99,6 @@ final class C01ArchivalDelegationInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		DelegationGrantMapper::class => [
-			'Service/Delegation/DelegationConsentService.php',
-			'Service/Delegation/DelegationResolver.php',
-			'Service/Rbac/PrincipalReachService.php',
-			'Service/Rbac/ReachRevocationService.php',
-			'Service/Rbac/ReachSources.php',
-		],
 		DerivedGrantStore::class => ['Listener/IdentityClaimsLoginListener.php'],
 		AnonymisationBackendService::class => [
 			'Files/Controller/Settings/FileSettingsController.php',

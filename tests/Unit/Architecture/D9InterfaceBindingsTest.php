@@ -111,9 +111,7 @@ final class D9InterfaceBindingsTest extends TestCase {
 		PlaceholderResolver::class => [
 			PlaceholderResolverInterface::class,
 			SearchRegistrar::class,
-			[
-				'lib/Service/Object/SaveObject.php',
-			],
+			[],
 		],
 		RestorePriorValuesAction::class => [
 			RestorePriorValuesActionInterface::class,

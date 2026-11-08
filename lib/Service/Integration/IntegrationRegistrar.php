@@ -76,6 +76,7 @@ final class IntegrationRegistrar {
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
 		KvkLookupInterface::class => KvkProvider::class,
+		LeafRegistryInterface::class => LeafRegistry::class,
 		MessageDispatcherInterface::class => MessageDispatchProvider::class,
 		OpenCorporatesSearchInterface::class => OpenCorporatesProvider::class,
 		PageWidgetRegistryInterface::class => IntegrationRegistry::class,

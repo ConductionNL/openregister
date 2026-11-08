@@ -58,37 +58,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class MagicOrganizationHandler {
-
-	/**
-	 * Every row is visible — a trusted system context, or an admin with the
-	 * bypass enabled outside SaaS mode.
-	 */
-	public const SCOPE_ALL = 'all';
-
-	/**
-	 * No row is visible — a non-admin with no active organisation.
-	 */
-	public const SCOPE_NONE = 'none';
-
-	/**
-	 * Only rows with NO organisation — an admin with no active organisation.
-	 */
-	public const SCOPE_NULL_ONLY = 'null-only';
-
-	/**
-	 * Rows in the caller's active organisation(s).
-	 */
-	public const SCOPE_IN = 'in';
-
-	/**
-	 * Rows in the caller's active organisation(s), PLUS rows with no
-	 * organisation at all. Admins, or a caller whose register-cascade grant
-	 * admits org-less rows (see admitOrganisationless()). This is the mode the aggregation API
-	 * used to get wrong: it rendered only the `IN` half, and SQL `=` / `IN`
-	 * never match NULL, so org-less rows vanished from every KPI.
-	 */
-	public const SCOPE_IN_OR_NULL = 'in-or-null';
+class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 
 	/**
 	 * Constructor for MagicOrganizationHandler.
@@ -162,20 +132,11 @@ class MagicOrganizationHandler {
 	 * @return array{mode: string, uuids: array<int, string>} The widened scope.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationlessAdmission holds the rule so callers outside lib/Db reach it without naming this class.
 	 */
 	public static function admitOrganisationless(array $scope): array {
-		$mode = ($scope['mode'] ?? null);
-
-		if ($mode === self::SCOPE_IN) {
-			$scope['mode'] = self::SCOPE_IN_OR_NULL;
-		}
-
-		if ($mode === self::SCOPE_NONE) {
-			$scope['mode'] = self::SCOPE_NULL_ONLY;
-			$scope['uuids'] = [];
-		}
-
-		return $scope;
+		return OrganisationlessAdmission::admit(scope: $scope);
 	}//end admitOrganisationless()
 
 	/**
