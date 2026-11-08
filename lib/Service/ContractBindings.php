@@ -164,6 +164,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
+use OCA\OpenRegister\Service\Export\ExportProfileService;
+use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
+use OCA\OpenRegister\Service\Export\ExportProfileWriter;
+use OCA\OpenRegister\Service\Export\ExportProfileWriterInterface;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriterInterface;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
@@ -678,6 +682,8 @@ final class ContractBindings {
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
+		ExportProfileServiceInterface::class => ExportProfileService::class,
+		ExportProfileWriterInterface::class => ExportProfileWriter::class,
 		ExplodeNodeInterface::class => ExplodeNode::class,
 		ExtendingFormDeclarationInterface::class => ExtendingFormDeclaration::class,
 		WidgetAnnotationValidatorInterface::class => WidgetAnnotationValidator::class,
