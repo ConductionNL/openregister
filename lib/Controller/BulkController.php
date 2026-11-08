@@ -316,74 +316,12 @@ class BulkController extends Controller {
 	public function delete(string $register, string $schema): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs.
-			try {
-				$resolved = $this->resolveRegisterSchemaIds(
-					register: $register,
-					schema: $schema,
-					objectService: $this->objectService
-				);
-			} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
-				return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+			$resolved = $this->resolveOrNotFound(register: $register, schema: $schema);
+			if ($resolved instanceof JSONResponse) {
+				return $resolved;
 			}
 
-			// Get request data.
-			$data = $this->request->getParams();
-			$uuids = $data['uuids'] ?? [];
-
-			// Validate input.
-			if (empty($uuids) === true || is_array($uuids) === false) {
-				return new JSONResponse(
-					data: ['error' => 'Invalid input. "uuids" array is required.'],
-					statusCode: Http::STATUS_BAD_REQUEST
-				);
-			}
-
-			// DEDUPLICATE BEFORE COUNTING. Naming the same object twice is one
-			// deletion, and the service resolves each UUID once — so counting the
-			// raw list as `requested_count` would leave `requested = deleted +
-			// skipped` unsatisfiable for a caller that repeated an entry, which is
-			// exactly the arithmetic this endpoint is supposed to make legible.
-			$uuids = array_values(array_unique($uuids));
-
-			// Set register and schema context using resolved IDs.
-			$this->objectService->setRegister((string)$resolved['register']);
-			$this->objectService->setSchema((string)$resolved['schema']);
-
-			// Perform bulk delete operation with referential integrity enforcement per object.
-			$result = $this->objectService->deleteObjects($uuids);
-			$deletedUuids = $result['deleted_uuids'];
-			$skippedUuids = $result['skipped_uuids'];
-			$skippedReasons = ($result['skipped_reasons'] ?? []);
-			$cascadeCount = $result['cascade_count'];
-
-			// `success` REPORTS THE SHORTFALL, as the bulk save path already does
-			// (see writeBatch()). A row this endpoint refused is a row the caller
-			// still believes it deleted, and a constant `true` said exactly that:
-			// the live symptom of the filter bug was a 200 reading `success: true,
-			// requested_count: 1, deleted_count: 0` over an untouched object.
-			$message = 'Bulk delete operation completed successfully';
-			if (empty($skippedUuids) === false) {
-				$message = sprintf(
-					'Bulk delete completed with %d of %d objects refused; see skipped_reasons.',
-					count($skippedUuids),
-					count($uuids)
-				);
-			}
-
-			return new JSONResponse(
-				data: [
-					'success' => empty($skippedUuids),
-					'message' => $message,
-					'deleted_count' => count($deletedUuids),
-					'deleted_uuids' => $deletedUuids,
-					'requested_count' => count($uuids),
-					'skipped_count' => count($skippedUuids),
-					'skipped_uuids' => $skippedUuids,
-					'skipped_reasons' => $skippedReasons,
-					'cascade_count' => $cascadeCount,
-					'total_affected' => count($deletedUuids) + $cascadeCount,
-				]
-			);
+			return $this->deleteResolved(resolved: $resolved);
 		} catch (Exception $e) {
 			return new JSONResponse(
 				data: ['error' => 'Bulk delete operation failed: ' . $e->getMessage()],
@@ -391,6 +329,107 @@ class BulkController extends Controller {
 			);
 		}//end try
 	}//end delete()
+
+	/**
+	 * Resolve a register/schema path pair, answering 404 when either is unknown.
+	 *
+	 * @param string $register Register slug, uuid or numeric id.
+	 * @param string $schema   Schema slug, uuid or numeric id.
+	 *
+	 * @return array|JSONResponse The resolved ids, or the 404 answer.
+	 */
+	private function resolveOrNotFound(string $register, string $schema): array|JSONResponse {
+		try {
+			return $this->resolveRegisterSchemaIds(
+				register: $register,
+				schema: $schema,
+				objectService: $this->objectService
+			);
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+		}
+	}//end resolveOrNotFound()
+
+	/**
+	 * Validate the requested uuids and delete them in the resolved register and schema.
+	 *
+	 * @param array $resolved The resolved register and schema ids.
+	 *
+	 * @return JSONResponse 400 on invalid input, otherwise the delete outcome.
+	 */
+	private function deleteResolved(array $resolved): JSONResponse {
+		// Get request data.
+		$data = $this->request->getParams();
+		$uuids = $data['uuids'] ?? [];
+
+		// Validate input.
+		if (empty($uuids) === true || is_array($uuids) === false) {
+			return new JSONResponse(
+				data: ['error' => 'Invalid input. "uuids" array is required.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		// DEDUPLICATE BEFORE COUNTING. Naming the same object twice is one
+		// deletion, and the service resolves each UUID once — so counting the
+		// raw list as `requested_count` would leave `requested = deleted +
+		// skipped` unsatisfiable for a caller that repeated an entry, which is
+		// exactly the arithmetic this endpoint is supposed to make legible.
+		$uuids = array_values(array_unique($uuids));
+
+		// Set register and schema context using resolved IDs.
+		$this->objectService->setRegister((string)$resolved['register']);
+		$this->objectService->setSchema((string)$resolved['schema']);
+
+		// Perform bulk delete operation with referential integrity enforcement per object.
+		$result = $this->objectService->deleteObjects($uuids);
+
+		return $this->bulkDeleteResponse(uuids: $uuids, result: $result);
+	}//end deleteResolved()
+
+	/**
+	 * Build the bulk-delete answer, reporting any refused rows.
+	 *
+	 * @param array $uuids  The deduplicated uuids the caller asked to delete.
+	 * @param array $result The service's delete outcome.
+	 *
+	 * @return JSONResponse The 200 answer.
+	 */
+	private function bulkDeleteResponse(array $uuids, array $result): JSONResponse {
+		$deletedUuids = $result['deleted_uuids'];
+		$skippedUuids = $result['skipped_uuids'];
+		$skippedReasons = ($result['skipped_reasons'] ?? []);
+		$cascadeCount = $result['cascade_count'];
+
+		// `success` REPORTS THE SHORTFALL, as the bulk save path already does
+		// (see writeBatch()). A row this endpoint refused is a row the caller
+		// still believes it deleted, and a constant `true` said exactly that:
+		// the live symptom of the filter bug was a 200 reading `success: true,
+		// requested_count: 1, deleted_count: 0` over an untouched object.
+		$message = 'Bulk delete operation completed successfully';
+		if (empty($skippedUuids) === false) {
+			$message = sprintf(
+				'Bulk delete completed with %d of %d objects refused; see skipped_reasons.',
+				count($skippedUuids),
+				count($uuids)
+			);
+		}
+
+		return new JSONResponse(
+			data: [
+				'success' => empty($skippedUuids),
+				'message' => $message,
+				'deleted_count' => count($deletedUuids),
+				'deleted_uuids' => $deletedUuids,
+				'requested_count' => count($uuids),
+				'skipped_count' => count($skippedUuids),
+				'skipped_uuids' => $skippedUuids,
+				'skipped_reasons' => $skippedReasons,
+				'cascade_count' => $cascadeCount,
+				'total_affected' => count($deletedUuids) + $cascadeCount,
+			]
+		);
+	}//end bulkDeleteResponse()
 
 	/**
 	 * Write a batch in one transaction: every row, or none (REQ-ATOMIC-001).
@@ -415,19 +454,9 @@ class BulkController extends Controller {
 	 */
 	private function writeAtomicBatch(array $objects, int $register, ?int $schema): JSONResponse {
 		$requestedCount = count($objects);
-		if ($requestedCount > self::ATOMIC_BATCH_LIMIT) {
-			return new JSONResponse(
-				data: [
-					'error' => sprintf(
-						'An atomic batch may carry at most %d rows; this one has %d. Split it, or send it without atomic.',
-						self::ATOMIC_BATCH_LIMIT,
-						$requestedCount
-					),
-					'limit' => self::ATOMIC_BATCH_LIMIT,
-					'requested_count' => $requestedCount,
-				],
-				statusCode: Http::STATUS_REQUEST_ENTITY_TOO_LARGE
-			);
+		$refusal = $this->atomicBatchLimitRefusal(requestedCount: $requestedCount);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		$this->db->beginTransaction();
@@ -438,6 +467,44 @@ class BulkController extends Controller {
 			throw $e;
 		}
 
+		return $this->settleAtomicBatch(response: $response, requestedCount: $requestedCount);
+	}//end writeAtomicBatch()
+
+	/**
+	 * Refuse an atomic batch over ATOMIC_BATCH_LIMIT rows.
+	 *
+	 * @param int $requestedCount The rows the caller sent.
+	 *
+	 * @return JSONResponse|null The 413 answer, or null when the batch fits.
+	 */
+	private function atomicBatchLimitRefusal(int $requestedCount): ?JSONResponse {
+		if ($requestedCount <= self::ATOMIC_BATCH_LIMIT) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => sprintf(
+					'An atomic batch may carry at most %d rows; this one has %d. Split it, or send it without atomic.',
+					self::ATOMIC_BATCH_LIMIT,
+					$requestedCount
+				),
+				'limit' => self::ATOMIC_BATCH_LIMIT,
+				'requested_count' => $requestedCount,
+			],
+			statusCode: Http::STATUS_REQUEST_ENTITY_TOO_LARGE
+		);
+	}//end atomicBatchLimitRefusal()
+
+	/**
+	 * Commit the atomic batch when every row wrote, otherwise roll it back.
+	 *
+	 * @param JSONResponse $response       The batch outcome written inside the transaction.
+	 * @param int          $requestedCount The rows the caller sent.
+	 *
+	 * @return JSONResponse 200 when committed; 422 naming the first refused row.
+	 */
+	private function settleAtomicBatch(JSONResponse $response, int $requestedCount): JSONResponse {
 		$data = $response->getData();
 		if (is_array($data) === false) {
 			$data = [];
@@ -451,6 +518,18 @@ class BulkController extends Controller {
 
 		$this->db->rollBack();
 
+		return $this->atomicRollbackResponse(data: $data, requestedCount: $requestedCount);
+	}//end settleAtomicBatch()
+
+	/**
+	 * The 422 answer of a rolled-back atomic batch.
+	 *
+	 * @param array $data           The batch outcome that was rolled back.
+	 * @param int   $requestedCount The rows the caller sent.
+	 *
+	 * @return JSONResponse The 422 answer.
+	 */
+	private function atomicRollbackResponse(array $data, int $requestedCount): JSONResponse {
 		$failures = ($data['failures'] ?? []);
 		$first = ($failures[0] ?? []);
 		$reason = (string)($first['error'] ?? 'no reason recorded');
@@ -472,7 +551,7 @@ class BulkController extends Controller {
 			],
 			statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
 		);
-	}//end writeAtomicBatch()
+	}//end atomicRollbackResponse()
 
 	/**
 	 * Write a resolved batch through whichever path the caller asked for.
@@ -691,65 +770,12 @@ class BulkController extends Controller {
 	public function save(string $register, string $schema): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs.
-			try {
-				$resolved = $this->resolveRegisterSchemaIds(
-					register: $register,
-					schema: $schema,
-					objectService: $this->objectService
-				);
-			} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
-				return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+			$resolved = $this->resolveOrNotFound(register: $register, schema: $schema);
+			if ($resolved instanceof JSONResponse) {
+				return $resolved;
 			}
 
-			// AUTHORIZATION (wave-11 WF1 / wave-3 C4 pattern): bulk-writing objects is a
-			// potentially high-impact write that any authenticated user could otherwise use
-			// to spray validation work or flood the audit trail.  Gate on manage-permission
-			// for the target schema (default-SECURE: admin-only when no manage rule exists).
-			// Mixed-schema (schema=0) bulk operations name their schema per row, so the
-			// same gate runs for every schema the rows name (firstUnmanageableRowSchema).
-			$isMixedSchema = ($resolved['schema'] === 0);
-			$refused = $this->refusedSchemaGate(schemaId: (int)$resolved['schema']);
-			if ($refused !== null) {
-				return $refused;
-			}
-
-			// Get request data.
-			$data = $this->request->getParams();
-			$objects = $data['objects'] ?? [];
-
-			// Validate input.
-			if (empty($objects) === true || is_array($objects) === false) {
-				return new JSONResponse(
-					data: ['error' => 'Invalid input. "objects" array is required.'],
-					statusCode: Http::STATUS_BAD_REQUEST
-				);
-			}
-
-			$refused = $this->refusedRowSchemas(isMixedSchema: $isMixedSchema, objects: $objects);
-			if ($refused !== null) {
-				return $refused;
-			}
-
-			// Determine schema to use (null for mixed-schema, resolved for single-schema).
-			$schemaToUse = $resolved['schema'];
-			if ($isMixedSchema === true) {
-				$schemaToUse = null;
-			}
-
-			// `atomic` wins over `stream` and `partial`: see writeAtomicBatch().
-			if (filter_var(($data['atomic'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
-				return $this->writeAtomicBatch(objects: $objects, register: $resolved['register'], schema: $schemaToUse);
-			}
-
-			// See writeBatch() for why `stream` is opt-in, and bulkSaveResponse()
-			// for what `partial` does and does not change.
-			return $this->writeBatch(
-				objects: $objects,
-				register: $resolved['register'],
-				schema: $schemaToUse,
-				stream: filter_var(($data['stream'] ?? false), FILTER_VALIDATE_BOOLEAN),
-				partial: filter_var(($data['partial'] ?? false), FILTER_VALIDATE_BOOLEAN)
-			);
+			return $this->saveResolved(resolved: $resolved);
 		} catch (UniqueConstraintViolationException $e) {
 			// WF3 (wave-11): a client-supplied UUID collided with an existing row at a
 			// non-upsert boundary (e.g. unique-slug constraint, or concurrent insert race).
@@ -769,6 +795,78 @@ class BulkController extends Controller {
 			);
 		}//end try
 	}//end save()
+
+	/**
+	 * Gate and validate a bulk save into the resolved register and schema, then write it.
+	 *
+	 * @param array $resolved The resolved register and schema ids.
+	 *
+	 * @return JSONResponse The refusal, the 400 on invalid input, or the batch outcome.
+	 */
+	private function saveResolved(array $resolved): JSONResponse {
+		// AUTHORIZATION (wave-11 WF1 / wave-3 C4 pattern): bulk-writing objects is a
+		// potentially high-impact write that any authenticated user could otherwise use
+		// to spray validation work or flood the audit trail.  Gate on manage-permission
+		// for the target schema (default-SECURE: admin-only when no manage rule exists).
+		// Mixed-schema (schema=0) bulk operations name their schema per row, so the
+		// same gate runs for every schema the rows name (firstUnmanageableRowSchema).
+		$isMixedSchema = ($resolved['schema'] === 0);
+		$refused = $this->refusedSchemaGate(schemaId: (int)$resolved['schema']);
+		if ($refused !== null) {
+			return $refused;
+		}
+
+		// Get request data.
+		$data = $this->request->getParams();
+		$objects = $data['objects'] ?? [];
+
+		// Validate input.
+		if (empty($objects) === true || is_array($objects) === false) {
+			return new JSONResponse(
+				data: ['error' => 'Invalid input. "objects" array is required.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$refused = $this->refusedRowSchemas(isMixedSchema: $isMixedSchema, objects: $objects);
+		if ($refused !== null) {
+			return $refused;
+		}
+
+		return $this->writeRequestedBatch(objects: $objects, data: $data, resolved: $resolved);
+	}//end saveResolved()
+
+	/**
+	 * Write an accepted batch through the path the request asked for.
+	 *
+	 * @param array $objects  The rows.
+	 * @param array $data     The request parameters (atomic, stream, partial).
+	 * @param array $resolved The resolved register and schema ids.
+	 *
+	 * @return JSONResponse The batch outcome.
+	 */
+	private function writeRequestedBatch(array $objects, array $data, array $resolved): JSONResponse {
+		// Determine schema to use (null for mixed-schema, resolved for single-schema).
+		$schemaToUse = $resolved['schema'];
+		if ($resolved['schema'] === 0) {
+			$schemaToUse = null;
+		}
+
+		// `atomic` wins over `stream` and `partial`: see writeAtomicBatch().
+		if (filter_var(($data['atomic'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
+			return $this->writeAtomicBatch(objects: $objects, register: $resolved['register'], schema: $schemaToUse);
+		}
+
+		// See writeBatch() for why `stream` is opt-in, and bulkSaveResponse()
+		// for what `partial` does and does not change.
+		return $this->writeBatch(
+			objects: $objects,
+			register: $resolved['register'],
+			schema: $schemaToUse,
+			stream: filter_var(($data['stream'] ?? false), FILTER_VALIDATE_BOOLEAN),
+			partial: filter_var(($data['partial'] ?? false), FILTER_VALIDATE_BOOLEAN)
+		);
+	}//end writeRequestedBatch()
 
 	/**
 	 * Delete all objects belonging to a specific schema
@@ -800,65 +898,123 @@ class BulkController extends Controller {
 		}
 
 		try {
-			// Validate input.
-			if (is_numeric($schema) === false) {
-				return new JSONResponse(
-					data: ['error' => 'Invalid schema ID. Must be numeric.'],
-					statusCode: Http::STATUS_BAD_REQUEST
-				);
-			}
-
-			try {
-				$this->schemaMapper->find((int)$schema);
-			} catch (\Throwable $e) {
-				return new JSONResponse(
-					data: ['error' => 'Schema not found'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			// Get request data. A JSON body delivers a real bool, but a form/query
-			// request delivers the string "true" — which would be a TypeError against
-			// the bool-typed service parameter, so normalize here.
-			$data = $this->request->getParams();
-			$hardDelete = filter_var(($data['hardDelete'] ?? false), FILTER_VALIDATE_BOOLEAN);
-
-			// Set register and schema context.
-			$this->objectService->setRegister($register);
-			$this->objectService->setSchema($schema);
-
-			// Perform schema deletion operation.
-			$result = $this->objectService->deleteObjectsBySchema(
-				registerId: (int)$register,
-				schemaId: (int)$schema,
-				hardDelete: $hardDelete
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Schema objects deletion completed successfully',
-					'deleted_count' => $result['deleted_count'],
-					'deleted_uuids' => $result['deleted_uuids'],
-					'schema_id' => $result['schema_id'],
-					'hard_delete' => $hardDelete,
-				]
-			);
-		} catch (ObjectStateWriteException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
-		} catch (LockedException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: LockedException::HTTP_STATUS);
-		} catch (ArchivalImmutableException $e) {
-			// The schema holds legally retained records. Caught ahead of the generic
-			// handler below, which would have reported a deliberate refusal as a 500.
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
+			return $this->deleteSchemaById(register: $register, schema: $schema);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Schema objects deletion failed: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
+			return $this->tableDeleteFailure(exception: $e, prefix: 'Schema objects deletion failed: ');
+		}
 	}//end deleteSchema()
+
+	/**
+	 * Delete a schema's objects named by numeric register and schema ids.
+	 *
+	 * @param string $register The register id.
+	 * @param string $schema   The schema id.
+	 *
+	 * @return JSONResponse 400 on a non-numeric id, 404 on an unknown schema, otherwise the outcome.
+	 */
+	private function deleteSchemaById(string $register, string $schema): JSONResponse {
+		// Validate input.
+		if (is_numeric($schema) === false) {
+			return new JSONResponse(
+				data: ['error' => 'Invalid schema ID. Must be numeric.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$missing = $this->schemaNotFound(schemaId: (int)$schema);
+		if ($missing !== null) {
+			return $missing;
+		}
+
+		$hardDelete = $this->hardDeleteRequested();
+
+		// Set register and schema context.
+		$this->objectService->setRegister($register);
+		$this->objectService->setSchema($schema);
+
+		// Perform schema deletion operation.
+		$result = $this->objectService->deleteObjectsBySchema(
+			registerId: (int)$register,
+			schemaId: (int)$schema,
+			hardDelete: $hardDelete
+		);
+
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'message' => 'Schema objects deletion completed successfully',
+				'deleted_count' => $result['deleted_count'],
+				'deleted_uuids' => $result['deleted_uuids'],
+				'schema_id' => $result['schema_id'],
+				'hard_delete' => $hardDelete,
+			]
+		);
+	}//end deleteSchemaById()
+
+	/**
+	 * Answer 404 when the schema does not load.
+	 *
+	 * @param mixed $schemaId The schema id.
+	 *
+	 * @return JSONResponse|null The 404 answer, or null when the schema exists.
+	 */
+	private function schemaNotFound(mixed $schemaId): ?JSONResponse {
+		try {
+			$this->schemaMapper->find($schemaId);
+		} catch (\Throwable $e) {
+			return new JSONResponse(
+				data: ['error' => 'Schema not found'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		return null;
+	}//end schemaNotFound()
+
+	/**
+	 * Whether the request asks for a hard delete.
+	 *
+	 * A JSON body delivers a real bool, but a form/query request delivers the
+	 * string "true" — which would be a TypeError against the bool-typed service
+	 * parameter, so normalize here.
+	 *
+	 * @return bool
+	 */
+	private function hardDeleteRequested(): bool {
+		$data = $this->request->getParams();
+
+		return filter_var(($data['hardDelete'] ?? false), FILTER_VALIDATE_BOOLEAN);
+	}//end hardDeleteRequested()
+
+	/**
+	 * Map a failed table delete to its answer.
+	 *
+	 * A frozen row is a 409, a locked row a 423 and a schema holding legally
+	 * retained records a 403 — deliberate refusals, not left to the generic 500.
+	 *
+	 * @param Exception $exception The failure.
+	 * @param string    $prefix    The message prefix of the generic 500.
+	 *
+	 * @return JSONResponse The answer.
+	 */
+	private function tableDeleteFailure(Exception $exception, string $prefix): JSONResponse {
+		if ($exception instanceof ObjectStateWriteException) {
+			return new JSONResponse(data: $exception->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
+		}
+
+		if ($exception instanceof LockedException) {
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: LockedException::HTTP_STATUS);
+		}
+
+		if ($exception instanceof ArchivalImmutableException) {
+			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
+		}
+
+		return new JSONResponse(
+			data: ['error' => $prefix . $exception->getMessage()],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end tableDeleteFailure()
 
 	/**
 	 * Delete all objects belonging to a specific register and schema combination.
@@ -885,68 +1041,55 @@ class BulkController extends Controller {
 
 		try {
 			// Resolve register and schema slugs/IDs to numeric IDs.
-			try {
-				$resolved = $this->resolveRegisterSchemaIds(
-					register: $register,
-					schema: $schema,
-					objectService: $this->objectService
-				);
-			} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
-				return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+			$resolved = $this->resolveOrNotFound(register: $register, schema: $schema);
+			if ($resolved instanceof JSONResponse) {
+				return $resolved;
 			}
 
-			try {
-				$this->schemaMapper->find($resolved['schema']);
-			} catch (\Throwable $e) {
-				return new JSONResponse(
-					data: ['error' => 'Schema not found'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			// Get request data. A JSON body delivers a real bool, but a form/query
-			// request delivers the string "true" — which would be a TypeError against
-			// the bool-typed service parameter, so normalize here.
-			$data = $this->request->getParams();
-			$hardDelete = filter_var(($data['hardDelete'] ?? false), FILTER_VALIDATE_BOOLEAN);
-
-			// Set register and schema context using resolved IDs.
-			$this->objectService->setRegister((string)$resolved['register']);
-			$this->objectService->setSchema((string)$resolved['schema']);
-
-			// Perform optimized deletion operation for this register/schema combination.
-			$result = $this->objectService->deleteObjectsBySchema(
-				registerId: $resolved['register'],
-				schemaId: $resolved['schema'],
-				hardDelete: $hardDelete
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Objects deletion completed successfully',
-					'deleted_count' => $result['deleted_count'],
-					'deleted_uuids' => $result['deleted_uuids'],
-					'register_id' => $resolved['register'],
-					'schema_id' => $result['schema_id'],
-					'hard_delete' => $hardDelete,
-				]
-			);
-		} catch (ObjectStateWriteException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
-		} catch (LockedException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: LockedException::HTTP_STATUS);
-		} catch (ArchivalImmutableException $e) {
-			// The schema holds legally retained records. Caught ahead of the generic
-			// handler below, which would have reported a deliberate refusal as a 500.
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
+			return $this->deleteResolvedSchemaObjects(resolved: $resolved);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Objects deletion failed: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
+			return $this->tableDeleteFailure(exception: $e, prefix: 'Objects deletion failed: ');
+		}
 	}//end deleteSchemaObjects()
+
+	/**
+	 * Delete every object of the resolved register and schema.
+	 *
+	 * @param array $resolved The resolved register and schema ids.
+	 *
+	 * @return JSONResponse 404 on an unknown schema, otherwise the outcome.
+	 */
+	private function deleteResolvedSchemaObjects(array $resolved): JSONResponse {
+		$missing = $this->schemaNotFound(schemaId: $resolved['schema']);
+		if ($missing !== null) {
+			return $missing;
+		}
+
+		$hardDelete = $this->hardDeleteRequested();
+
+		// Set register and schema context using resolved IDs.
+		$this->objectService->setRegister((string)$resolved['register']);
+		$this->objectService->setSchema((string)$resolved['schema']);
+
+		// Perform optimized deletion operation for this register/schema combination.
+		$result = $this->objectService->deleteObjectsBySchema(
+			registerId: $resolved['register'],
+			schemaId: $resolved['schema'],
+			hardDelete: $hardDelete
+		);
+
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'message' => 'Objects deletion completed successfully',
+				'deleted_count' => $result['deleted_count'],
+				'deleted_uuids' => $result['deleted_uuids'],
+				'register_id' => $resolved['register'],
+				'schema_id' => $result['schema_id'],
+				'hard_delete' => $hardDelete,
+			]
+		);
+	}//end deleteResolvedSchemaObjects()
 
 	/**
 	 * Delete all objects belonging to a specific register
@@ -967,59 +1110,58 @@ class BulkController extends Controller {
 		}
 
 		try {
-			// Validate input.
-			if (is_numeric($register) === false) {
-				return new JSONResponse(
-					data: ['error' => 'Invalid register ID. Must be numeric.'],
-					statusCode: Http::STATUS_BAD_REQUEST
-				);
-			}
-
-			try {
-				$this->registerMapper->find((int)$register);
-			} catch (\Throwable $e) {
-				return new JSONResponse(
-					data: ['error' => 'Register not found'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			// Same normalisation as deleteSchemaObjects(): a form or query request
-			// delivers the string "true".
-			$hardDelete = filter_var(($this->request->getParams()['hardDelete'] ?? false), FILTER_VALIDATE_BOOLEAN);
-
-			// Set register context.
-			$this->objectService->setRegister($register);
-
-			// Perform register deletion operation.
-			$result = $this->objectService->deleteObjectsByRegister(registerId: (int)$register, hardDelete: $hardDelete);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Register objects deletion completed successfully',
-					'deleted_count' => $result['deleted_count'],
-					'deleted_uuids' => $result['deleted_uuids'],
-					'register_id' => $result['register_id'],
-					'hard_delete' => $hardDelete,
-				]
-			);
-		} catch (ObjectStateWriteException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
-		} catch (LockedException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: LockedException::HTTP_STATUS);
-		} catch (ArchivalImmutableException $e) {
-			// A schema of the register holds legally retained records, and the whole
-			// request was refused before any row was touched. A deliberate refusal,
-			// so it is not left to the generic handler below to report as a 500.
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
+			return $this->deleteRegisterById(register: $register);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Register objects deletion failed: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
+			return $this->tableDeleteFailure(exception: $e, prefix: 'Register objects deletion failed: ');
+		}
 	}//end deleteRegister()
+
+	/**
+	 * Delete every object of a register named by numeric id.
+	 *
+	 * @param string $register The register id.
+	 *
+	 * @return JSONResponse 400 on a non-numeric id, 404 on an unknown register, otherwise the outcome.
+	 */
+	private function deleteRegisterById(string $register): JSONResponse {
+		// Validate input.
+		if (is_numeric($register) === false) {
+			return new JSONResponse(
+				data: ['error' => 'Invalid register ID. Must be numeric.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			$this->registerMapper->find((int)$register);
+		} catch (\Throwable $e) {
+			return new JSONResponse(
+				data: ['error' => 'Register not found'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		// Same normalisation as deleteSchemaObjects(): a form or query request
+		// delivers the string "true".
+		$hardDelete = $this->hardDeleteRequested();
+
+		// Set register context.
+		$this->objectService->setRegister($register);
+
+		// Perform register deletion operation.
+		$result = $this->objectService->deleteObjectsByRegister(registerId: (int)$register, hardDelete: $hardDelete);
+
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'message' => 'Register objects deletion completed successfully',
+				'deleted_count' => $result['deleted_count'],
+				'deleted_uuids' => $result['deleted_uuids'],
+				'register_id' => $result['register_id'],
+				'hard_delete' => $hardDelete,
+			]
+		);
+	}//end deleteRegisterById()
 
 	/**
 	 * Run validation for all objects belonging to a specific schema.
