@@ -85,7 +85,7 @@ export default {
 		},
 	},
 
-	emits: ['close', 'confirm'],
+	emits: ['close', 'confirm', 'cache-type-changed'],
 
 	data() {
 		return {
@@ -107,7 +107,7 @@ export default {
 
 	watch: {
 		/**
-		 * @param {string} newValue
+		 * @param {string} newValue The cache type the parent selected
 		 * @spec exclude watcher syncing local cache-type from prop
 		 */
 		cacheType(newValue) {
@@ -115,7 +115,7 @@ export default {
 		},
 
 		/**
-		 * @param {string} newValue
+		 * @param {string} newValue The cache type the user selected
 		 * @spec exclude watcher emitting cache-type change
 		 */
 		localCacheType(newValue) {

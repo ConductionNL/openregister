@@ -1,8 +1,17 @@
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		:name="t('openregister', 'Delete View')"
-		size="normal"
-		noClose>
+		:success="success"
+		:successText="t('openregister', 'View successfully deleted')"
+		:error="error"
+		:loading="loading"
+		:showConfirm="!success"
+		:closeLabel="
+			success ? t('openregister', 'Close') : t('openregister', 'Cancel')
+		"
+		:confirmLabel="t('openregister', 'Delete View')"
+		@cancel="closeDialog"
+		@confirm="deleteView()">
 		<p v-if="!success">
 			{{ t('openregister', 'Are you sure you want to permanently delete') }}
 			<b>{{ view?.name || t('openregister', 'Untitled View') }}</b
@@ -35,57 +44,26 @@
 			</ul>
 		</NcNoteCard>
 
-		<NcNoteCard v-if="success" type="success">
-			<p>{{ t('openregister', 'View successfully deleted') }}</p>
-		</NcNoteCard>
-
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Close :size="20" />
-				</template>
-				{{
-					success
-						? t('openregister', 'Close')
-						: t('openregister', 'Cancel')
-				}}
-			</NcButton>
-			<NcButton
-				v-if="!success"
-				:disabled="loading"
-				variant="error"
-				@click="deleteView()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Delete v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Delete View') }}
-			</NcButton>
+		<template #cancelIcon>
+			<Close :size="20" />
 		</template>
-	</NcDialog>
+		<template #confirmIcon>
+			<Delete :size="20" />
+		</template>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
+import { NcNoteCard } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { viewsStore } from '../../store/store.js'
 
 export default {
 	name: 'DeleteView',
-	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		Close,
-		Delete,
-	},
+	components: { ConfirmDialogFrame, NcNoteCard, Close, Delete },
 
 	props: {
 		view: {
@@ -93,6 +71,8 @@ export default {
 			default: null,
 		},
 	},
+
+	emits: ['close'],
 
 	data() {
 		return {

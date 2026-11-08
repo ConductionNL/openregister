@@ -1216,7 +1216,7 @@ exports[`dialog schemaProperty shows the busy state 1`] = `
 `;
 
 exports[`dialog view asks 1`] = `
-"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+"<x-ncdialog name="t:Delete View" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -1258,7 +1258,7 @@ exports[`dialog view cancels 1`] = `
 `;
 
 exports[`dialog view confirms 1`] = `
-"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+"<x-ncdialog name="t:Delete View" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Close</slot-default>
@@ -1302,7 +1302,7 @@ exports[`dialog view dismisses through the dialog itself 1`] = `
 `;
 
 exports[`dialog view reports a refusal 1`] = `
-"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+"<x-ncdialog name="t:Delete View" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -1338,7 +1338,7 @@ exports[`dialog view reports a refusal 1`] = `
 `;
 
 exports[`dialog view shows the busy state 1`] = `
-"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+"<x-ncdialog name="t:Delete View" size="normal" noclose="true">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
