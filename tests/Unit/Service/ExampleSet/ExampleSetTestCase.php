@@ -129,6 +129,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverObjects;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverSettings;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetAccounts;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetRegisters;
@@ -428,15 +430,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
 		$this->remover   = new ExampleSetRemover(
-			store: $this->store,
+			objects: new ExampleSetRemoverObjects(store: $this->store, record: $this->record, files: $files, changes: $changes),
+			settings: new ExampleSetRemoverSettings(appConfig: $setConfig, userPreferences: $preferences, registers: $this->registers, instance: $instance),
 			accounts: $this->accounts,
-			record: $this->record,
-			changes: $changes,
-			registers: $this->registers,
-			files: $files,
-			appConfig: $setConfig,
-			instance: $instance,
-			userPreferences: $preferences,
 			engineRows: new ExampleSetEngineKinds(
 				work: new ExampleSetWorkRowKinds(
 					tasks: new ExampleSetTasks(container: $container),
