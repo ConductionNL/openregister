@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectDeadline;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectRecords;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectEntityIndex;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectLoader;
 use OCA\OpenRegister\Service\Gdpr\Subject\SubjectObjectWriter;
@@ -212,22 +213,15 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 	private function buildService(): DataSubjectRequestService {
 		$logger = $this->createMock(LoggerInterface::class);
 
-		return new DataSubjectRequestService(
-			index: new SubjectEntityIndex(db: $this->db, logger: $logger),
-			loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $logger),
-			writer: new SubjectObjectWriter(
+		return new DataSubjectRequestService(records: new SubjectRecords(index: new SubjectEntityIndex(db: $this->db, logger: $logger), loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $logger), writer: new SubjectObjectWriter(
 				objectService: $this->objectService,
 				dsarService: $this->dsarService,
 				userSession: $this->userSession,
 				logger: $logger
-			),
-			retentionGate: new SubjectRetentionGate(
+			)), retentionGate: new SubjectRetentionGate(
 				retentionService: $this->retentionService,
 				archivalGuard: new ArchivalRetentionGuard($this->schemaMapper, $logger)
-			),
-			deadline: new DataSubjectDeadline(),
-			logger: $logger
-		);
+			), deadline: new DataSubjectDeadline(), logger: $logger);
 
 	}//end buildService()
 

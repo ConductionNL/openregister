@@ -25,6 +25,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepService;
+use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepSources;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
@@ -118,14 +119,7 @@ class RetentionSweepServiceTest extends TestCase {
 			)
 		);
 
-		$service = new RetentionSweepService(
-			$accessor,
-			$retention,
-			$dsr,
-			$time,
-			$this->createMock(LoggerInterface::class),
-			new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))
-		);
+		$service = new RetentionSweepService(new RetentionSweepSources($accessor, $dsr, $time), $retention, $this->createMock(LoggerInterface::class), new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class)));
 
 		return [$service, $accessor, $dsr];
 	}//end build()
