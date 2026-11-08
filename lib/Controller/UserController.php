@@ -30,7 +30,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\UserControllerServices;
 use OCA\OpenRegister\Controller\Support\UserResponses;
 use OCA\OpenRegister\Service\SecurityService;
-use OCA\OpenRegister\Service\UserService;
+use OCA\OpenRegister\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -73,9 +73,9 @@ class UserController extends Controller {
 	/**
 	 * User service for user operations
 	 *
-	 * @var UserService
+	 * @var UserServiceInterface
 	 */
-	private readonly UserService $userService;
+	private readonly UserServiceInterface $userService;
 
 	/**
 	 * Security service for input sanitization

@@ -456,6 +456,7 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Rbac\AdminGateInterface::class => \OCA\OpenRegister\Service\Rbac\AdminGate::class,
 		AdministeredValidationEnforcerInterface::class => AdministeredValidationEnforcer::class,
 		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
@@ -508,6 +509,10 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Credential\OAuth2RelayGuardInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2RelayGuard::class,
 		\OCA\OpenRegister\Service\Credential\OAuth2StateServiceInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2StateService::class,
 		\OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface::class => \OCA\OpenRegister\Service\Portal\PortalSubjectAssertion::class,
+		\OCA\OpenRegister\Service\Rbac\ObjectSharingServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectSharingService::class,
+		\OCA\OpenRegister\Service\Rbac\PermissionReportScopeInterface::class => \OCA\OpenRegister\Service\Rbac\PermissionReportScope::class,
+		\OCA\OpenRegister\Service\Rbac\ReachRevocationServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ReachRevocationService::class,
+		\OCA\OpenRegister\Service\Rbac\ScopeAuditInterface::class => \OCA\OpenRegister\Service\Rbac\ScopeAudit::class,
 		OAuth2ConnectionRepositoryInterface::class => OAuth2ConnectionRepository::class,
 		PortalTaskDeliveryServiceInterface::class => PortalTaskDeliveryService::class,
 		RouterNodeInterface::class => RouterNode::class,
@@ -517,6 +522,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\ShareLinkServiceInterface::class => \OCA\OpenRegister\Service\ShareLinkService::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
 		\OCA\OpenRegister\Service\TmloServiceInterface::class => \OCA\OpenRegister\Service\TmloService::class,
+		\OCA\OpenRegister\Service\UserServiceInterface::class => \OCA\OpenRegister\Service\UserService::class,
 		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
