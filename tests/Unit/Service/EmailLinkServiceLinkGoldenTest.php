@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailMessageRef;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
@@ -70,10 +71,8 @@ class EmailLinkServiceLinkGoldenTest extends TestCase {
 
 		$this->service = new EmailLinkService(
 			$this->mapper,
-			$this->appManager,
 			$this->db,
-			$this->userSession,
-			$this->createMock(LoggerInterface::class)
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->createMock(LoggerInterface::class))
 		);
 	}//end setUp()
 

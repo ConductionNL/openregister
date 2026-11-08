@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\CardDraft;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IUser;
@@ -72,10 +73,8 @@ class DeckLinkServiceTest extends TestCase {
 
 		$this->service = new DeckLinkService(
 			$this->mapper,
-			$this->appManager,
-			$this->userSession,
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
 			$this->userManager,
-			$this->logger,
 			$this->createMock(ContainerInterface::class)
 		);
 	}

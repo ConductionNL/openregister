@@ -94,8 +94,7 @@ class ContactService implements ContactServiceInterface {
 	 *
 	 * @param ContactLinkMapperInterface $contactLinkMapper Contact link mapper
 	 * @param CardDavBackend $cardDavBackend CardDAV backend
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger
+	 * @param LinkSessionRuntime $runtime User session and logger
 	 * @param IURLGenerator $urlGenerator URL generator
 	 *
 	 * @return void
@@ -103,14 +102,13 @@ class ContactService implements ContactServiceInterface {
 	public function __construct(
 		ContactLinkMapperInterface $contactLinkMapper,
 		CardDavBackend $cardDavBackend,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		LinkSessionRuntime $runtime,
 		IURLGenerator $urlGenerator,
 	) {
 		$this->contactLinkMapper = $contactLinkMapper;
 		$this->cardDavBackend = $cardDavBackend;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
+		$this->userSession = $runtime->userSession;
+		$this->logger = $runtime->logger;
 		$this->urlGenerator = $urlGenerator;
 	}//end __construct()
 
