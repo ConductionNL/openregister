@@ -1,0 +1,12 @@
+1 schema(s) are shared by more than one register:
+
+  schema 10 (s10) — referenced by registers [1, 2, 99]
+      attribution: one-match — owner: register 1 (configuration)
+      - register 2 (b) -> new schema from configuration (openregister_table_b, 3 row(s))
+      - register 99 (z) -> new schema from configuration (openregister_table_z, 3 row(s))
+
+
+  split register 2: schema 10 -> 500 (3 row(s) moved)
+  failed register 99 / schema 10: lock timeout
+
+1 split(s) applied; 1 failure(s).
