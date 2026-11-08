@@ -17,14 +17,7 @@ import {
 		:subname="t('openregister', 'Export, view, or delete audit trails')"
 		:open="navigationStore.sidebarState.auditTrail"
 		@update:open="(e) => navigationStore.setSidebarState('auditTrail', e)">
-		<NcAppSidebarTab
-			id="filters-tab"
-			:name="t('openregister', 'Filters')"
-			:order="1">
-			<template #icon>
-				<FilterOutline :size="20" />
-			</template>
-
+		<FiltersSidebarTab>
 			<!-- Filter Section -->
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Audit Trails') }}</h3>
@@ -75,14 +68,7 @@ import {
 				</div>
 			</div>
 
-			<div class="actionGroup">
-				<NcButton @click="clearFilters">
-					<template #icon>
-						<FilterOffOutline :size="20" />
-					</template>
-					{{ t('openregister', 'Clear filters') }}
-				</NcButton>
-			</div>
+			<ClearFiltersButton @clear="clearFilters" />
 
 			<NcNoteCard type="info" class="filter-hint">
 				{{
@@ -92,98 +78,57 @@ import {
 					)
 				}}
 			</NcNoteCard>
-		</NcAppSidebarTab>
+		</FiltersSidebarTab>
 
-		<NcAppSidebarTab
-			id="stats-tab"
-			:name="t('openregister', 'Statistics')"
-			:order="2">
-			<template #icon>
-				<ChartLine :size="20" />
-			</template>
-
+		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Audit Trail Statistics') }}</h3>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ totalAuditTrails }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Total Audit Trails') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ createCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Create Operations') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ updateCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Update Operations') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ deleteCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Delete Operations') }}
-					</div>
-				</div>
+				<SidebarStatCard
+					:value="totalAuditTrails"
+					:label="t('openregister', 'Total Audit Trails')" />
+				<SidebarStatCard
+					:value="createCount"
+					:label="t('openregister', 'Create Operations')" />
+				<SidebarStatCard
+					:value="updateCount"
+					:label="t('openregister', 'Update Operations')" />
+				<SidebarStatCard
+					:value="deleteCount"
+					:label="t('openregister', 'Delete Operations')" />
 			</div>
 
 			<!-- Action Distribution -->
 			<div class="actionDistribution">
 				<h4>{{ t('openregister', 'Action Distribution') }}</h4>
-				<NcListItem
+				<CountListItem
 					v-for="(action, index) in actionDistribution"
 					:key="index"
 					:name="action.action"
-					:bold="false">
+					:subname="entriesLabel(action.count)">
 					<template #icon>
 						<Pencil v-if="action.action === 'update'" :size="32" />
 						<Plus v-else-if="action.action === 'create'" :size="32" />
 						<Delete v-else-if="action.action === 'delete'" :size="32" />
 						<Eye v-else :size="32" />
 					</template>
-					<template #subname>
-						{{
-							t('openregister', '{count} entries', {
-								count: action.count,
-							})
-						}}
-					</template>
-				</NcListItem>
+				</CountListItem>
 			</div>
 
 			<!-- Top Objects -->
 			<div class="topObjects">
 				<h4>{{ t('openregister', 'Most Active Objects') }}</h4>
-				<NcListItem
+				<CountListItem
 					v-for="(object, index) in topObjects"
 					:key="index"
 					:name="object.name"
-					:bold="false">
+					:subname="entriesLabel(object.count)">
 					<template #icon>
 						<CogOutline :size="32" />
 					</template>
-					<template #subname>
-						{{
-							t('openregister', '{count} entries', {
-								count: object.count,
-							})
-						}}
-					</template>
-				</NcListItem>
+				</CountListItem>
 			</div>
-		</NcAppSidebarTab>
+		</StatisticsSidebarTab>
 	</NcAppSidebar>
 </template>
 
@@ -193,21 +138,20 @@ import {
  */
 import {
 	NcAppSidebar,
-	NcAppSidebarTab,
-	NcButton,
 	NcCheckboxRadioSwitch,
-	NcListItem,
 	NcNoteCard,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
-import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
-import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import ClearFiltersButton from '../../components/shared/ClearFiltersButton.vue'
+import CountListItem from '../../components/shared/CountListItem.vue'
+import FiltersSidebarTab from '../../components/shared/FiltersSidebarTab.vue'
+import SidebarStatCard from '../../components/shared/SidebarStatCard.vue'
+import StatisticsSidebarTab from '../../components/shared/StatisticsSidebarTab.vue'
 import ScopeFilterFields from '../ScopeFilterFields.vue'
 import TrailUserDateFields from './TrailUserDateFields.vue'
 import eventBus from '../../eventBus.js'
@@ -224,7 +168,7 @@ import {
 	addScopeIds,
 	trailUserOptions,
 } from '../../services/trailFilters.js'
-import { routeBoundFilters } from '../routeBoundFilters.js'
+import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
 
 /**
  * The user options a comma-separated route parameter names.
@@ -260,23 +204,22 @@ function actionOption(byValue, value) {
 export default {
 	name: 'AuditTrailSideBar',
 	components: {
+		ClearFiltersButton,
+		CountListItem,
+		FiltersSidebarTab,
+		SidebarStatCard,
+		StatisticsSidebarTab,
 		TrailUserDateFields,
 		ScopeFilterFields,
 		NcAppSidebar,
-		NcAppSidebarTab,
 		NcSelect,
 		NcNoteCard,
-		NcButton,
-		NcListItem,
 		NcTextField,
 		NcCheckboxRadioSwitch,
-		FilterOutline,
-		ChartLine,
 		CogOutline,
 		Plus,
 		Pencil,
 		Eye,
-		FilterOffOutline,
 	},
 
 	mixins: [routeBoundFilters('/audit-trails')],
@@ -367,6 +310,17 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * "{count} entries", translated, for a row of a top list.
+		 *
+		 * @param {number} count How often the row occurs
+		 * @spec exclude Presentational count label.
+		 * @return {string} The label
+		 */
+		entriesLabel(count) {
+			return t('openregister', '{count} entries', { count })
+		},
+
 
 		/**
 		 * Handle object filter change with debouncing
@@ -486,10 +440,7 @@ export default {
 		 */
 		buildQueryFromState() {
 			const query = {}
-			addScope(query, {
-				register: registerStore.registerItem,
-				schema: schemaStore.schemaItem,
-			})
+			addScope(query, selectedScope())
 			addJoinedValues(query, ['action', this.selectedActions])
 			addJoinedValues(query, ['user', this.selectedUsers])
 			addDateRange(query, this)
@@ -545,10 +496,7 @@ export default {
 		applyFiltersToStore() {
 			const filters = {}
 			addJoinedValues(filters, ['action', this.selectedActions])
-			addScopeIds(filters, {
-				register: registerStore.registerItem,
-				schema: schemaStore.schemaItem,
-			})
+			addScopeIds(filters, selectedScope())
 			addJoinedValues(filters, ['user', this.selectedUsers])
 			addPresent(filters, [
 				['dateFrom', this.dateFrom],
@@ -646,8 +594,6 @@ export default {
 .statCard.delete {
 	border-left: 4px solid var(--color-error);
 }
-
-@include stat-number-rules;
 
 .actionDistribution,
 .topObjects {
