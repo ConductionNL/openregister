@@ -299,7 +299,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/dialogs.scss' as *;
+
 .avgEditForm {
 	display: flex;
 	flex-direction: column;
@@ -329,9 +331,6 @@ export default {
 }
 
 .avgEditActions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 8px;
+	@include end-aligned-actions;
 }
 </style>
