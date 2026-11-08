@@ -36,30 +36,51 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\RegisterDescriptorControllerServices;
 
 /**
  * Serves the register-descriptor inventory and the forced re-import.
  */
 class RegisterDescriptorController extends Controller {
 	/**
+	 * The inventory and importer.
+	 *
+	 * @var RegisterDescriptorServiceInterface
+	 */
+	private readonly RegisterDescriptorServiceInterface $descriptors;
+
+	/**
+	 * Resolves the caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Answers whether they are an administrator.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                    $appName     The app id.
 	 * @param IRequest                  $request     The current request.
-	 * @param RegisterDescriptorServiceInterface $descriptors The inventory and importer.
-	 * @param IUserSession              $userSession Resolves the caller.
-	 * @param IGroupManager             $groupManager Answers whether they are an administrator.
+	 * @param RegisterDescriptorControllerServices $services The services, bundled.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RegisterDescriptorServiceInterface $descriptors,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		RegisterDescriptorControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->descriptors = $services->descriptors;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 	}//end __construct()
 
 	/**

@@ -183,25 +183,19 @@ class FlowRecipientAddresses {
 	public function screenAddresses(array $addresses, array $json, string $mode): array {
 		$allowed = [];
 		$refused = [];
-		$onItem = null;
+		// Only the object mode reads the item; collecting its addresses is a
+		// pure read, so doing it once up front changes no outcome.
+		$onItem = [];
+		if ($mode === FlowMessagingService::EXTERNAL_OBJECT) {
+			$onItem = $this->addressesOnItem(value: $json);
+		}
 
 		foreach ($addresses as $candidate) {
 			$address = trim($candidate['address']);
 			$key = strtolower($address);
 
-			$reason = null;
-			if (filter_var($address, FILTER_VALIDATE_EMAIL) === false) {
-				$reason = FlowMessagingService::REFUSED_INVALID_ADDRESS;
-			} else if ($mode === FlowMessagingService::EXTERNAL_NONE) {
-				$reason = FlowMessagingService::REFUSED_EXTERNAL_OFF;
-			} else if ($mode === FlowMessagingService::EXTERNAL_OBJECT) {
-				$onItem ??= $this->addressesOnItem(value: $json);
-				if (isset($onItem[$key]) === false) {
-					$reason = FlowMessagingService::REFUSED_NOT_ON_ITEM;
-				}
-			}
-
-			if ($reason !== null) {
+			$reason = $this->refusalFor(address: $address, mode: $mode, onItem: $onItem);
+			if ($reason !== '') {
 				$refused[$key . '|' . $reason] = ['recipient' => $address, 'reason' => $reason];
 				continue;
 			}
@@ -215,6 +209,37 @@ class FlowRecipientAddresses {
 
 		return ['allowed' => $allowed, 'refused' => $refused];
 	}//end screenAddresses()
+
+	/**
+	 * Why one address may not be mailed, or an empty string when it may.
+	 *
+	 * The checks run in a fixed order — a malformed address is refused as
+	 * malformed whatever the mode; the closed mode refuses everything else;
+	 * the object mode refuses what the item does not carry.
+	 *
+	 * @param string              $address The trimmed address.
+	 * @param string              $mode    The external-recipient mode.
+	 * @param array<string, true> $onItem  The item's addresses (object mode only).
+	 *
+	 * @return string The refusal reason, or '' when the address is allowed.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function refusalFor(string $address, string $mode, array $onItem): string {
+		if (filter_var($address, FILTER_VALIDATE_EMAIL) === false) {
+			return FlowMessagingService::REFUSED_INVALID_ADDRESS;
+		}
+
+		if ($mode === FlowMessagingService::EXTERNAL_NONE) {
+			return FlowMessagingService::REFUSED_EXTERNAL_OFF;
+		}
+
+		if ($mode === FlowMessagingService::EXTERNAL_OBJECT && isset($onItem[strtolower($address)]) === false) {
+			return FlowMessagingService::REFUSED_NOT_ON_ITEM;
+		}
+
+		return '';
+	}//end refusalFor()
 
 	/**
 	 * Every string on the item that could be an address, normalised.
@@ -259,18 +284,29 @@ class FlowRecipientAddresses {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-notification-step-reads-role-fields-on-the-item
 	 */
 	private function normaliseRoleValue(mixed $value): mixed {
-		if (is_array($value) === false || $value === [] || array_is_list($value) === true) {
-			return $value;
-		}
-
-		foreach (['userId', 'uid', 'user_id', 'email', 'emailAddress'] as $key) {
-			if (array_key_exists($key, $value) === true) {
-				return [$value];
-			}
+		if ($this->isRecipientMap(value: $value) === true) {
+			return [$value];
 		}
 
 		return $value;
 	}//end normaliseRoleValue()
+
+	/**
+	 * Whether a value is one recipient written as a map rather than a list of them.
+	 *
+	 * @param mixed $value The field value.
+	 *
+	 * @return bool True for a non-empty map carrying a user or address key.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function isRecipientMap(mixed $value): bool {
+		if (is_array($value) === false || $value === [] || array_is_list($value) === true) {
+			return false;
+		}
+
+		return array_intersect_key($value, array_flip(['userId', 'uid', 'user_id', 'email', 'emailAddress'])) !== [];
+	}//end isRecipientMap()
 
 	/**
 	 * Take the addresses out of a field's value, leaving the user entries.
@@ -298,36 +334,100 @@ class FlowRecipientAddresses {
 			return ['rest' => $value, 'addresses' => []];
 		}
 
+		return $this->partitionEntries(entries: $value);
+	}//end splitAddresses()
+
+	/**
+	 * Partition a list of recipient entries into external addresses and the rest.
+	 *
+	 * @param array<int|string, mixed> $entries The entries.
+	 *
+	 * @return array{rest: array<int, mixed>, addresses: array<int, array{address: string, name: string}>}
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function partitionEntries(array $entries): array {
 		$rest = [];
 		$addresses = [];
-		foreach ($value as $entry) {
+		foreach ($entries as $entry) {
 			if (is_string($entry) === true) {
 				$entry = trim($entry);
-				if (str_contains($entry, '@') === true && $this->recipientResolver->userExists(uid: $entry) === false) {
-					$addresses[] = ['address' => $entry, 'name' => ''];
-					continue;
-				}
+			}
 
-				$rest[] = $entry;
+			$address = $this->externalAddressOf(entry: $entry);
+			if ($address !== null) {
+				$addresses[] = $address;
 				continue;
 			}
 
-			if (is_array($entry) === true && $this->stringOrNull(value: ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null)) === null) {
-				$address = $this->stringOrNull(value: ($entry['email'] ?? $entry['emailAddress'] ?? null));
-				if ($address !== null) {
-					$addresses[] = [
-						'address' => $address,
-						'name' => (string)($this->stringOrNull(value: ($entry['name'] ?? $entry['displayName'] ?? null)) ?? ''),
-					];
-					continue;
-				}
-			}
-
 			$rest[] = $entry;
-		}//end foreach
+		}
 
 		return ['rest' => $rest, 'addresses' => $addresses];
-	}//end splitAddresses()
+	}//end partitionEntries()
+
+	/**
+	 * The external address one entry names, or null when it is a user or nothing.
+	 *
+	 * @param mixed $entry The (trimmed, when a string) entry.
+	 *
+	 * @return array{address: string, name: string}|null The address.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function externalAddressOf(mixed $entry): ?array {
+		if (is_string($entry) === true) {
+			return $this->bareAddressOf(entry: $entry);
+		}
+
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		return $this->mappedAddressOf(entry: $entry);
+	}//end externalAddressOf()
+
+	/**
+	 * A bare string that contains `@` and is not a user id is an external address.
+	 *
+	 * @param string $entry The trimmed entry.
+	 *
+	 * @return array{address: string, name: string}|null The address.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function bareAddressOf(string $entry): ?array {
+		if (str_contains($entry, '@') === true && $this->recipientResolver->userExists(uid: $entry) === false) {
+			return ['address' => $entry, 'name' => ''];
+		}
+
+		return null;
+	}//end bareAddressOf()
+
+	/**
+	 * The address a map entry names, unless the map names a user.
+	 *
+	 * @param array<string, mixed> $entry The entry.
+	 *
+	 * @return array{address: string, name: string}|null The address.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function mappedAddressOf(array $entry): ?array {
+		if ($this->stringOrNull(value: ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null)) !== null) {
+			return null;
+		}
+
+		$address = $this->stringOrNull(value: ($entry['email'] ?? $entry['emailAddress'] ?? null));
+		if ($address === null) {
+			return null;
+		}
+
+		return [
+			'address' => $address,
+			'name' => (string)($this->stringOrNull(value: ($entry['name'] ?? $entry['displayName'] ?? null)) ?? ''),
+		];
+	}//end mappedAddressOf()
 
 	/**
 	 * A scalar as a non-empty string, or null.
@@ -385,22 +485,11 @@ class FlowRecipientAddresses {
 		}
 
 		foreach ((array)$recipients as $entry) {
-			if (is_string($entry) === false || trim($entry) === '') {
+			$resolved = $this->resolveEntry(entry: $entry, json: $json, acceptAddresses: $acceptAddresses);
+			if ($resolved === null) {
 				continue;
 			}
 
-			$entry = trim($entry);
-
-			$matches = [];
-			if (preg_match('/^\{\{\s*(?:item\.)?([a-zA-Z0-9_.-]+)\s*\}\}$/', $entry, $matches) === 1) {
-				$resolved = $this->resolveTemplate(field: $matches[1], json: $json, acceptAddresses: $acceptAddresses);
-				array_push($uids, ...$resolved['uids']);
-				array_push($addresses, ...$resolved['addresses']);
-				array_push($unknown, ...$resolved['unknown']);
-				continue;
-			}
-
-			$resolved = $this->resolveLiteral(entry: $entry, acceptAddresses: $acceptAddresses);
 			array_push($uids, ...$resolved['uids']);
 			array_push($addresses, ...$resolved['addresses']);
 			array_push($unknown, ...$resolved['unknown']);
@@ -412,4 +501,31 @@ class FlowRecipientAddresses {
 			'unknown' => array_values(array_unique($unknown)),
 		];
 	}//end resolveRecipients()
+
+	/**
+	 * Resolve one recipient entry: a `{{ item.field }}` template or a literal.
+	 *
+	 * @param mixed                $entry           The entry.
+	 * @param array<string, mixed> $json            The item's data.
+	 * @param bool                 $acceptAddresses Whether external addresses are accepted.
+	 *
+	 * @return array{uids: array<int, string>, addresses: array<int, array{address: string, name: string}>, unknown: array<int, string>}|null
+	 *         Null for an entry that is not a non-blank string.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function resolveEntry(mixed $entry, array $json, bool $acceptAddresses): ?array {
+		if (is_string($entry) === false || trim($entry) === '') {
+			return null;
+		}
+
+		$entry = trim($entry);
+
+		$matches = [];
+		if (preg_match('/^\{\{\s*(?:item\.)?([a-zA-Z0-9_.-]+)\s*\}\}$/', $entry, $matches) === 1) {
+			return $this->resolveTemplate(field: $matches[1], json: $json, acceptAddresses: $acceptAddresses);
+		}
+
+		return $this->resolveLiteral(entry: $entry, acceptAddresses: $acceptAddresses);
+	}//end resolveEntry()
 }//end class
