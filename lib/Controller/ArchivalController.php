@@ -36,6 +36,7 @@ use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface;
@@ -240,25 +241,10 @@ class ArchivalController extends Controller {
 		}
 
 		$status = $this->request->getParam('status');
-		$statuses = null;
-		if (is_string($status) === true && $status !== '') {
-			$statuses = [$status];
-		}
 
 		$results = [];
-		foreach ($this->lists->findLists(statuses: $statuses) as $list) {
-			$listData = ($list->getObject() ?? []);
-			$unassigned = $this->reviews->unassignedEntries(listData: $listData);
-
-			$results[] = [
-				'uuid' => $list->getUuid(),
-				'status' => ($listData['status'] ?? null),
-				'createdAt' => ($listData['createdAt'] ?? null),
-				'createdBy' => ($listData['createdBy'] ?? null),
-				'entryCount' => count($this->reviews->entries(listData: $listData)),
-				'unassignedCount' => count($unassigned),
-				'decisionCount' => count(($listData['decisions'] ?? [])),
-			];
+		foreach ($this->lists->findLists(statuses: $this->statusFilter(status: $status)) as $list) {
+			$results[] = $this->listSummary(list: $list);
 		}
 
 		return new JSONResponse(
@@ -271,6 +257,43 @@ class ArchivalController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end listDestructionLists()
+
+	/**
+	 * The statuses a `status` query parameter asks for.
+	 *
+	 * @param mixed $status The query parameter.
+	 *
+	 * @return array|null The one status, or null for every status.
+	 */
+	private function statusFilter(mixed $status): array|null {
+		if (is_string($status) === true && $status !== '') {
+			return [$status];
+		}
+
+		return null;
+	}//end statusFilter()
+
+	/**
+	 * One destruction list as the overview lists it.
+	 *
+	 * @param ObjectEntity $list The destruction list object.
+	 *
+	 * @return array The summary row.
+	 */
+	private function listSummary(ObjectEntity $list): array {
+		$listData = ($list->getObject() ?? []);
+		$unassigned = $this->reviews->unassignedEntries(listData: $listData);
+
+		return [
+			'uuid' => $list->getUuid(),
+			'status' => ($listData['status'] ?? null),
+			'createdAt' => ($listData['createdAt'] ?? null),
+			'createdBy' => ($listData['createdBy'] ?? null),
+			'entryCount' => count($this->reviews->entries(listData: $listData)),
+			'unassignedCount' => count($unassigned),
+			'decisionCount' => count(($listData['decisions'] ?? [])),
+		];
+	}//end listSummary()
 
 	/**
 	 * Get a specific destruction list by ID.
@@ -471,8 +494,6 @@ class ArchivalController extends Controller {
 		}
 
 		$params = $this->request->getParams();
-		$objectId = $params['objectId'] ?? null;
-		$schemaId = $params['schemaId'] ?? null;
 		$reason = $params['reason'] ?? null;
 
 		if ($reason === null || trim($reason) === '') {
@@ -483,47 +504,7 @@ class ArchivalController extends Controller {
 		}
 
 		try {
-			// Bulk hold on schema.
-			if ($schemaId !== null) {
-				$registerId = $params['registerId'] ?? null;
-				if ($registerId === null) {
-					return new JSONResponse(
-						data: ['error' => 'registerId is verplicht voor schema-brede bewaarplicht'],
-						statusCode: Http::STATUS_BAD_REQUEST
-					);
-				}
-
-				$this->legalHoldService->bulkPlaceHold(
-					(int)$schemaId,
-					(int)$registerId,
-					$reason
-				);
-
-				return new JSONResponse(
-					data: ['message' => 'Bulk bewaarplicht is ingepland als achtergrondtaak'],
-					statusCode: Http::STATUS_ACCEPTED
-				);
-			}
-
-			// Single object hold.
-			if ($objectId === null) {
-				return new JSONResponse(
-					data: ['error' => 'objectId of schemaId is verplicht'],
-					statusCode: Http::STATUS_BAD_REQUEST
-				);
-			}
-
-			$object = $this->objectMapper->find($objectId);
-			$result = $this->legalHoldService->placeHold($object, $reason, $this->ownerKeyParam(params: $params));
-
-			return new JSONResponse(
-				data: [
-					'message' => 'Bewaarplicht geplaatst',
-					'objectId' => $result->getUuid(),
-					'legalHold' => $result->getRetention()['legalHold'] ?? [],
-				],
-				statusCode: Http::STATUS_OK
-			);
+			return $this->placeLegalHold(params: $params, reason: $reason);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ArchivalController] Failed to create legal hold',
@@ -539,6 +520,71 @@ class ArchivalController extends Controller {
 			);
 		}//end try
 	}//end createLegalHold()
+
+	/**
+	 * Place the hold the request names: schema-wide when it names a schema, else on one object.
+	 *
+	 * @param array $params The request parameters.
+	 * @param mixed $reason The reason for the hold, already checked non-blank.
+	 *
+	 * @return JSONResponse 202 for a queued schema-wide hold, 200 for a placed one, 400 when no target is named.
+	 */
+	private function placeLegalHold(array $params, mixed $reason): JSONResponse {
+		// Bulk hold on schema.
+		if (($params['schemaId'] ?? null) !== null) {
+			return $this->placeSchemaHold(params: $params, reason: $reason);
+		}
+
+		// Single object hold.
+		$objectId = $params['objectId'] ?? null;
+		if ($objectId === null) {
+			return new JSONResponse(
+				data: ['error' => 'objectId of schemaId is verplicht'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$object = $this->objectMapper->find($objectId);
+		$result = $this->legalHoldService->placeHold($object, $reason, $this->ownerKeyParam(params: $params));
+
+		return new JSONResponse(
+			data: [
+				'message' => 'Bewaarplicht geplaatst',
+				'objectId' => $result->getUuid(),
+				'legalHold' => $result->getRetention()['legalHold'] ?? [],
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end placeLegalHold()
+
+	/**
+	 * Queue a hold on every object of a schema in a register.
+	 *
+	 * @param array $params The request parameters, naming the schema.
+	 * @param mixed $reason The reason for the hold.
+	 *
+	 * @return JSONResponse 202 once queued, 400 when no register is named.
+	 */
+	private function placeSchemaHold(array $params, mixed $reason): JSONResponse {
+		$registerId = $params['registerId'] ?? null;
+		if ($registerId === null) {
+			return new JSONResponse(
+				data: ['error' => 'registerId is verplicht voor schema-brede bewaarplicht'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$this->legalHoldService->bulkPlaceHold(
+			(int)$params['schemaId'],
+			(int)$registerId,
+			$reason
+		);
+
+		return new JSONResponse(
+			data: ['message' => 'Bulk bewaarplicht is ingepland als achtergrondtaak'],
+			statusCode: Http::STATUS_ACCEPTED
+		);
+	}//end placeSchemaHold()
 
 	/**
 	 * Release a legal hold on an object.
@@ -696,9 +742,7 @@ class ArchivalController extends Controller {
 		}
 
 		$uuids = $this->request->getParam('objects');
-		if (is_array($uuids) === false || $uuids === [] || count($uuids) > self::CREATE_LIST_LIMIT
-			|| count(array_filter($uuids, static fn ($uuid): bool => is_string($uuid) === false || trim($uuid) === '')) > 0
-		) {
+		if ($this->isCreateListBody(uuids: $uuids) === false) {
 			return new JSONResponse(
 				data: [
 					'error' => sprintf(
@@ -719,6 +763,32 @@ class ArchivalController extends Controller {
 			);
 		}
 
+		return $this->createdListResponse(created: $created);
+	}//end createDestructionList()
+
+	/**
+	 * Whether the posted `objects` is a list of 1 to CREATE_LIST_LIMIT non-blank uuids.
+	 *
+	 * @param mixed $uuids The posted `objects`.
+	 *
+	 * @return bool
+	 */
+	private function isCreateListBody(mixed $uuids): bool {
+		if (is_array($uuids) === false || $uuids === [] || count($uuids) > self::CREATE_LIST_LIMIT) {
+			return false;
+		}
+
+		return count(array_filter($uuids, static fn ($uuid): bool => is_string($uuid) === false || trim($uuid) === '')) === 0;
+	}//end isCreateListBody()
+
+	/**
+	 * The answer to a list creation: 201 with the list, or 422 when nothing was eligible.
+	 *
+	 * @param array $created The creator's outcome: the list (or null) and the refusals.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createdListResponse(array $created): JSONResponse {
 		if ($created['list'] === null) {
 			return new JSONResponse(
 				data: [
@@ -738,7 +808,7 @@ class ArchivalController extends Controller {
 			],
 			statusCode: Http::STATUS_CREATED
 		);
-	}//end createDestructionList()
+	}//end createdListResponse()
 
 	/**
 	 * Make one person accountable for one entry on a destruction list.
@@ -775,6 +845,19 @@ class ArchivalController extends Controller {
 			);
 		}
 
+		return $this->assignReviewerOn(list: $list, entryId: $entryId, reviewer: $reviewer);
+	}//end assignReviewer()
+
+	/**
+	 * Name the reviewer on the entry, save the list and record the act.
+	 *
+	 * @param ObjectEntity $list     The destruction list object.
+	 * @param string       $entryId  The uuid of the record the entry is about.
+	 * @param string|null  $reviewer The reviewer's user id, or null to unassign.
+	 *
+	 * @return JSONResponse 200 with the entry, or 400 when the list holds no such entry.
+	 */
+	private function assignReviewerOn(ObjectEntity $list, string $entryId, string|null $reviewer): JSONResponse {
 		$listData = ($list->getObject() ?? []);
 
 		try {
@@ -808,7 +891,7 @@ class ArchivalController extends Controller {
 			],
 			statusCode: Http::STATUS_OK
 		);
-	}//end assignReviewer()
+	}//end assignReviewerOn()
 
 	/**
 	 * Answer one entry: destroy it, keep it, or hand it to an e-Depot.
@@ -828,10 +911,6 @@ class ArchivalController extends Controller {
 	 *
 	 * @return JSONResponse The recorded decision.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One refusal per rule; collapsing them
-	 *              would hide which rule refused the answer.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      As above.
-	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	#[NoAdminRequired]
@@ -844,6 +923,33 @@ class ArchivalController extends Controller {
 			);
 		}
 
+		$read = $this->readEntry(id: $id, entryId: $entryId);
+		if ($read instanceof JSONResponse) {
+			return $read;
+		}
+
+		$refusal = $this->refuseAnswer(entry: $read['entry'], userId: $userId);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->recordDecision(
+			list: $read['list'],
+			listData: $read['listData'],
+			entryId: $entryId,
+			userId: $userId
+		);
+	}//end decideEntry()
+
+	/**
+	 * Read the list and the entry an answer is about.
+	 *
+	 * @param string $id      The destruction list uuid.
+	 * @param string $entryId The uuid of the record the entry is about.
+	 *
+	 * @return array|JSONResponse `{list, listData, entry}`, or 500 / 404.
+	 */
+	private function readEntry(string $id, string $entryId): array|JSONResponse {
 		try {
 			$list = $this->lists->find(uuid: $id);
 			$listData = (($list?->getObject()) ?? []);
@@ -870,6 +976,20 @@ class ArchivalController extends Controller {
 			);
 		}
 
+		return ['list' => $list, 'listData' => $listData, 'entry' => $entry];
+	}//end readEntry()
+
+	/**
+	 * Refuse an answer from anybody but the entry's named reviewer.
+	 *
+	 * An entry nobody is accountable for is refused rather than thrown open.
+	 *
+	 * @param array  $entry  The entry.
+	 * @param string $userId The user answering.
+	 *
+	 * @return JSONResponse|null 409 / 403, or null when the answer is the reviewer's.
+	 */
+	private function refuseAnswer(array $entry, string $userId): JSONResponse|null {
 		$assigned = ($entry['reviewer'] ?? null);
 		if (is_string($assigned) === false || $assigned === '') {
 			return new JSONResponse(
@@ -885,13 +1005,8 @@ class ArchivalController extends Controller {
 			);
 		}
 
-		return $this->recordDecision(
-			list: $list,
-			listData: $listData,
-			entryId: $entryId,
-			userId: $userId
-		);
-	}//end decideEntry()
+		return null;
+	}//end refuseAnswer()
 
 	/**
 	 * Apply the answer to the record, then write it into the decision history.
@@ -1065,16 +1180,46 @@ class ArchivalController extends Controller {
 			);
 		}
 
-		try {
-			$object = $this->objectMapper->find($id, null, null, false, false, false);
-			$schema = $this->schemaMapper->find(id: (string)$object->getSchema());
-		} catch (Throwable $e) {
+		$subject = $this->nominationSubject(id: $id);
+		if ($subject === null) {
 			return new JSONResponse(
 				data: ['error' => 'Record not found'],
 				statusCode: Http::STATUS_NOT_FOUND
 			);
 		}
 
+		return $this->recompute(id: $id, object: $subject['object'], schema: $subject['schema'], reason: $reason);
+	}//end recomputeNomination()
+
+	/**
+	 * Load the record and its schema, bypassing RBAC as the recompute always has.
+	 *
+	 * @param string $id The record uuid.
+	 *
+	 * @return array|null `{object, schema}`, or null when either does not load.
+	 */
+	private function nominationSubject(string $id): array|null {
+		try {
+			$object = $this->objectMapper->find($id, null, null, false, false, false);
+			$schema = $this->schemaMapper->find(id: (string)$object->getSchema());
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		return ['object' => $object, 'schema' => $schema];
+	}//end nominationSubject()
+
+	/**
+	 * Rederive the nomination, persist the record and record the act.
+	 *
+	 * @param string       $id     The record uuid.
+	 * @param ObjectEntity $object The record.
+	 * @param Schema       $schema Its schema.
+	 * @param string       $reason Why the nomination is recomputed.
+	 *
+	 * @return JSONResponse 200 with the nomination, 409 for a schema that does not archive, 500 on failure.
+	 */
+	private function recompute(string $id, ObjectEntity $object, Schema $schema, string $reason): JSONResponse {
 		try {
 			$nomination = $this->nominations->nominate(
 				object: $object,
@@ -1121,7 +1266,7 @@ class ArchivalController extends Controller {
 			data: ['nomination' => $nomination],
 			statusCode: Http::STATUS_OK
 		);
-	}//end recomputeNomination()
+	}//end recompute()
 
 	/**
 	 * The user id of whoever is asking, or null when nobody is signed in.
