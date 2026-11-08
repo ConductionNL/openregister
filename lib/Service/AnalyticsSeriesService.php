@@ -46,6 +46,7 @@ use OCA\OpenRegister\Db\AnalyticsSeries;
 use OCA\OpenRegister\Db\AnalyticsSeriesMapperInterface;
 use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\IUserSession;
 
 /**
@@ -158,17 +159,7 @@ class AnalyticsSeriesService implements AnalyticsSeriesServiceInterface {
 		?int $registerId = null,
 		?int $schemaId = null,
 	): array {
-		if (trim($seriesKey) === '') {
-			throw new InvalidArgumentException('seriesKey is required to register a series');
-		}
-
-		if (in_array($visibility, self::VISIBILITIES, true) === false) {
-			throw new InvalidArgumentException('Invalid visibility — expected one of: ' . implode(', ', self::VISIBILITIES));
-		}
-
-		if (in_array($chartType, self::CHART_TYPES, true) === false) {
-			throw new InvalidArgumentException('Invalid chartType — expected one of: ' . implode(', ', self::CHART_TYPES));
-		}
+		$this->assertRegistrable(seriesKey: $seriesKey, visibility: $visibility, chartType: $chartType);
 
 		$user = $this->userSession->getUser();
 		if ($user === null) {
@@ -189,13 +180,7 @@ class AnalyticsSeriesService implements AnalyticsSeriesServiceInterface {
 		$entity->setVisibility($visibility);
 		$entity->setUpdatedAt($now);
 
-		if ($existing === null) {
-			$entity->setCreatedBy($user->getUID());
-			$entity->setCreatedAt($now);
-			$saved = $this->mapper->insert($entity);
-		} else {
-			$saved = $this->mapper->update($entity);
-		}
+		$saved = $this->save(entity: $entity, existing: $existing, user: $user, now: $now);
 
 		// (Re)declare the page widget so the render layer can discover it.
 		// First-write-wins inside the registry; harmless on a refresh.
@@ -216,6 +201,51 @@ class AnalyticsSeriesService implements AnalyticsSeriesServiceInterface {
 
 		return $saved->jsonSerialize();
 	}//end register()
+
+	/**
+	 * Refuse a series without a key, or with an unknown visibility or chart type.
+	 *
+	 * @param string $seriesKey  Stable series key.
+	 * @param string $visibility 'private'|'group'|'public'.
+	 * @param string $chartType  Chart type hint.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException On invalid key / visibility / chart type.
+	 */
+	private function assertRegistrable(string $seriesKey, string $visibility, string $chartType): void {
+		if (trim($seriesKey) === '') {
+			throw new InvalidArgumentException('seriesKey is required to register a series');
+		}
+
+		if (in_array($visibility, self::VISIBILITIES, true) === false) {
+			throw new InvalidArgumentException('Invalid visibility — expected one of: ' . implode(', ', self::VISIBILITIES));
+		}
+
+		if (in_array($chartType, self::CHART_TYPES, true) === false) {
+			throw new InvalidArgumentException('Invalid chartType — expected one of: ' . implode(', ', self::CHART_TYPES));
+		}
+	}//end assertRegistrable()
+
+	/**
+	 * Insert a new series stamped with its creator, or update the existing one.
+	 *
+	 * @param AnalyticsSeries      $entity   The filled series.
+	 * @param AnalyticsSeries|null $existing The stored series it was loaded from, or null.
+	 * @param IUser                $user     The registering user.
+	 * @param DateTime             $now      The registration time.
+	 *
+	 * @return AnalyticsSeries
+	 */
+	private function save(AnalyticsSeries $entity, ?AnalyticsSeries $existing, IUser $user, DateTime $now): AnalyticsSeries {
+		if ($existing === null) {
+			$entity->setCreatedBy($user->getUID());
+			$entity->setCreatedAt($now);
+			return $this->mapper->insert($entity);
+		}
+
+		return $this->mapper->update($entity);
+	}//end save()
 
 	/**
 	 * Fetch a registered series by key, RBAC-scoped.
