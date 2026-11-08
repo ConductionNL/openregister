@@ -183,3 +183,770 @@ exports[`LLM configuration modal DOM golden saving 1`] = `
   </slot-default>
 </x-ncdialog>"
 `;
+
+exports[`LLM configuration modal provider sections DOM golden embedding fireworks, chat fireworks 1`] = `
+"<x-ncdialog name="LLM Configuration" size="large" data-on="onClosing">
+  <slot-actions>
+    <div class="actions-left">
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Embedding</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Chat</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="error" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-delete size="20"></x-delete>
+        </slot-icon>
+        <slot-default> Clear All Embeddings</slot-default>
+      </x-ncbutton>
+    </div>
+    <div class="actions-right">
+      <x-ncbutton data-on="onClick">
+        <slot-default>Cancel</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-contentsave size="20"></x-contentsave>
+        </slot-icon>
+        <slot-default> Save Configuration</slot-default>
+      </x-ncbutton>
+    </div>
+  </slot-actions>
+  <slot-default>
+    <div class="llm-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure large language model (LLM) providers for ai-powered features including semantic search, embeddings, and chat.</p>
+      </div>
+      <div class="providers-grid">
+        <div class="provider-column">
+          <h3>Embedding Provider</h3>
+          <p class="section-description">For vector embeddings and semantic search</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Embedding Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+        <div class="provider-column">
+          <h3>Chat Provider (RAG)</h3>
+          <p class="section-description">For chat and retrieval-augmented generation</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Chat Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Fireworks AI Embedding Configuration</h3>
+        <div class="form-group"><label for="fireworks-api-key">API Key</label><input id="fireworks-api-key" type="password" placeholder="fw_..." class="input-field"><small>Your Fireworks AI API key. Get one at <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small></div>
+        <div class="form-group"><label for="fireworks-embedding-model">Embedding Model</label>
+          <x-ncselect inputlabel="Fireworks Config Embedding Model" options="[object Object],[object Object],[object Object],[object Object]" label="name" placeholder="Select model" labeloutside="true" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong><small> dimensions • </small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+        <div class="form-group"><label for="fireworks-base-url">Base URL (Optional)</label><input id="fireworks-base-url" type="text" placeholder="https://api.fireworks.ai/inference/v1" class="input-field"><small>Custom API endpoint if using a different region</small></div>
+      </div>
+      <div class="config-section">
+        <h3>Fireworks AI Chat Settings</h3>
+        <div class="form-group"><label for="fireworks-chat-model">Chat Model</label>
+          <x-ncselect inputlabel="Fireworks Config Chat Model" options="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" label="name" placeholder="Select chat model" labeloutside="true" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong><small> tokens • </small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Vector Search Backend</h3>
+        <p class="section-description">Choose how vector similarity calculations are performed for semantic search</p>
+        <div class="form-group"><label for="vector-backend">Search Method</label>
+          <x-ncselect inputlabel="Selected Vector Backend" options="[object Object]" label="name" placeholder="Select backend" disabled="false" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="backend-option backend-disabled">
+                <div class="backend-header"><strong></strong>
+                </div><small></small><small class="warning-text">⚠️ Not available</small>
+              </div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>✨ AI Features</h3>
+        <div class="features-grid">
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">✍️ Text Generation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">📋 Document Summarization</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🔍 Semantic Search</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🧮 Text Embeddings</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🌍 Translation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🏷️ Content Classification</span></slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`LLM configuration modal provider sections DOM golden embedding fireworks, chat ollama 1`] = `
+"<x-ncdialog name="LLM Configuration" size="large" data-on="onClosing">
+  <slot-actions>
+    <div class="actions-left">
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Embedding</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Chat</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="error" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-delete size="20"></x-delete>
+        </slot-icon>
+        <slot-default> Clear All Embeddings</slot-default>
+      </x-ncbutton>
+    </div>
+    <div class="actions-right">
+      <x-ncbutton data-on="onClick">
+        <slot-default>Cancel</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-contentsave size="20"></x-contentsave>
+        </slot-icon>
+        <slot-default> Save Configuration</slot-default>
+      </x-ncbutton>
+    </div>
+  </slot-actions>
+  <slot-default>
+    <div class="llm-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure large language model (LLM) providers for ai-powered features including semantic search, embeddings, and chat.</p>
+      </div>
+      <div class="providers-grid">
+        <div class="provider-column">
+          <h3>Embedding Provider</h3>
+          <p class="section-description">For vector embeddings and semantic search</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Embedding Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+        <div class="provider-column">
+          <h3>Chat Provider (RAG)</h3>
+          <p class="section-description">For chat and retrieval-augmented generation</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Chat Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Fireworks AI Embedding Configuration</h3>
+        <div class="form-group"><label for="fireworks-api-key">API Key</label><input id="fireworks-api-key" type="password" placeholder="fw_..." class="input-field"><small>Your Fireworks AI API key. Get one at <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small></div>
+        <div class="form-group"><label for="fireworks-embedding-model">Embedding Model</label>
+          <x-ncselect inputlabel="Fireworks Config Embedding Model" options="[object Object],[object Object],[object Object],[object Object]" label="name" placeholder="Select model" labeloutside="true" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong><small> dimensions • </small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+        <div class="form-group"><label for="fireworks-base-url">Base URL (Optional)</label><input id="fireworks-base-url" type="text" placeholder="https://api.fireworks.ai/inference/v1" class="input-field"><small>Custom API endpoint if using a different region</small></div>
+      </div>
+      <div class="config-section">
+        <h3>Ollama Chat Settings</h3>
+        <div class="form-group"><label for="ollama-chat-url">Ollama URL</label><input id="ollama-chat-url" type="text" placeholder="http://localhost:11434" class="input-field"><small>URL where Ollama is running</small></div>
+        <div class="form-group"><label for="ollama-chat-model">Chat Model</label>
+          <x-ncselect id="ollama-chat-model" inputlabel="Ollama Config Chat Model" options="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" label="name" placeholder="Select model" labeloutside="true" taggable="true" createoption="option => ({
+      id: option,
+      name: option
+    })" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong>
+              </div>
+            </slot-option>
+          </x-ncselect><small>Select a model or type a custom model name</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Vector Search Backend</h3>
+        <p class="section-description">Choose how vector similarity calculations are performed for semantic search</p>
+        <div class="form-group"><label for="vector-backend">Search Method</label>
+          <x-ncselect inputlabel="Selected Vector Backend" options="[object Object]" label="name" placeholder="Select backend" disabled="false" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="backend-option backend-disabled">
+                <div class="backend-header"><strong></strong>
+                </div><small></small><small class="warning-text">⚠️ Not available</small>
+              </div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>✨ AI Features</h3>
+        <div class="features-grid">
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">✍️ Text Generation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">📋 Document Summarization</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🔍 Semantic Search</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🧮 Text Embeddings</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🌍 Translation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🏷️ Content Classification</span></slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`LLM configuration modal provider sections DOM golden embedding ollama, chat ollama 1`] = `
+"<x-ncdialog name="LLM Configuration" size="large" data-on="onClosing">
+  <slot-actions>
+    <div class="actions-left">
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Embedding</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Chat</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="error" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-delete size="20"></x-delete>
+        </slot-icon>
+        <slot-default> Clear All Embeddings</slot-default>
+      </x-ncbutton>
+    </div>
+    <div class="actions-right">
+      <x-ncbutton data-on="onClick">
+        <slot-default>Cancel</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-contentsave size="20"></x-contentsave>
+        </slot-icon>
+        <slot-default> Save Configuration</slot-default>
+      </x-ncbutton>
+    </div>
+  </slot-actions>
+  <slot-default>
+    <div class="llm-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure large language model (LLM) providers for ai-powered features including semantic search, embeddings, and chat.</p>
+      </div>
+      <div class="providers-grid">
+        <div class="provider-column">
+          <h3>Embedding Provider</h3>
+          <p class="section-description">For vector embeddings and semantic search</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Embedding Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+        <div class="provider-column">
+          <h3>Chat Provider (RAG)</h3>
+          <p class="section-description">For chat and retrieval-augmented generation</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Chat Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Ollama Embedding Configuration</h3>
+        <div class="form-group"><label for="ollama-url">Ollama URL</label><input id="ollama-url" type="text" placeholder="http://localhost:11434" class="input-field"><small>URL where Ollama is running</small></div>
+        <div class="form-group"><label for="ollama-model">Model Name</label>
+          <x-ncselect id="ollama-model" inputlabel="Ollama Config Model" options="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" label="name" placeholder="Select model" labeloutside="true" taggable="true" createoption="option => ({
+      id: option,
+      name: option
+    })" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong>
+              </div>
+            </slot-option>
+          </x-ncselect><small>Select a model or type a custom model name</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Ollama Chat Settings</h3>
+        <div class="form-group"><label for="ollama-chat-model">Chat Model</label>
+          <x-ncselect id="ollama-chat-model" inputlabel="Ollama Config Chat Model" options="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" label="name" placeholder="Select model" labeloutside="true" taggable="true" createoption="option => ({
+      id: option,
+      name: option
+    })" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong>
+              </div>
+            </slot-option>
+          </x-ncselect><small>Select a model or type a custom model name</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Vector Search Backend</h3>
+        <p class="section-description">Choose how vector similarity calculations are performed for semantic search</p>
+        <div class="form-group"><label for="vector-backend">Search Method</label>
+          <x-ncselect inputlabel="Selected Vector Backend" options="[object Object]" label="name" placeholder="Select backend" disabled="false" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="backend-option backend-disabled">
+                <div class="backend-header"><strong></strong>
+                </div><small></small><small class="warning-text">⚠️ Not available</small>
+              </div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>✨ AI Features</h3>
+        <div class="features-grid">
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">✍️ Text Generation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">📋 Document Summarization</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🔍 Semantic Search</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🧮 Text Embeddings</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🌍 Translation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🏷️ Content Classification</span></slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`LLM configuration modal provider sections DOM golden embedding ollama, chat openai 1`] = `
+"<x-ncdialog name="LLM Configuration" size="large" data-on="onClosing">
+  <slot-actions>
+    <div class="actions-left">
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Embedding</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Chat</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="error" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-delete size="20"></x-delete>
+        </slot-icon>
+        <slot-default> Clear All Embeddings</slot-default>
+      </x-ncbutton>
+    </div>
+    <div class="actions-right">
+      <x-ncbutton data-on="onClick">
+        <slot-default>Cancel</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-contentsave size="20"></x-contentsave>
+        </slot-icon>
+        <slot-default> Save Configuration</slot-default>
+      </x-ncbutton>
+    </div>
+  </slot-actions>
+  <slot-default>
+    <div class="llm-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure large language model (LLM) providers for ai-powered features including semantic search, embeddings, and chat.</p>
+      </div>
+      <div class="providers-grid">
+        <div class="provider-column">
+          <h3>Embedding Provider</h3>
+          <p class="section-description">For vector embeddings and semantic search</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Embedding Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+        <div class="provider-column">
+          <h3>Chat Provider (RAG)</h3>
+          <p class="section-description">For chat and retrieval-augmented generation</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Chat Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Ollama Embedding Configuration</h3>
+        <div class="form-group"><label for="ollama-url">Ollama URL</label><input id="ollama-url" type="text" placeholder="http://localhost:11434" class="input-field"><small>URL where Ollama is running</small></div>
+        <div class="form-group"><label for="ollama-model">Model Name</label>
+          <x-ncselect id="ollama-model" inputlabel="Ollama Config Model" options="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" label="name" placeholder="Select model" labeloutside="true" taggable="true" createoption="option => ({
+      id: option,
+      name: option
+    })" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong>
+              </div>
+            </slot-option>
+          </x-ncselect><small>Select a model or type a custom model name</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>OpenAI Chat Settings</h3>
+        <div class="form-group"><label for="openai-chat-api-key">API Key</label><input id="openai-chat-api-key" type="password" placeholder="sk-..." class="input-field"><small>Your OpenAI API key. Get one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small></div>
+        <div class="form-group"><label for="openai-chat-model">Chat Model</label>
+          <x-ncselect inputlabel="Openai Config Chat Model" options="[object Object],[object Object],[object Object]" label="name" placeholder="Select chat model" labeloutside="true" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong><small> tokens • /1M tokens</small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Vector Search Backend</h3>
+        <p class="section-description">Choose how vector similarity calculations are performed for semantic search</p>
+        <div class="form-group"><label for="vector-backend">Search Method</label>
+          <x-ncselect inputlabel="Selected Vector Backend" options="[object Object]" label="name" placeholder="Select backend" disabled="false" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="backend-option backend-disabled">
+                <div class="backend-header"><strong></strong>
+                </div><small></small><small class="warning-text">⚠️ Not available</small>
+              </div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>✨ AI Features</h3>
+        <div class="features-grid">
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">✍️ Text Generation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">📋 Document Summarization</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🔍 Semantic Search</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🧮 Text Embeddings</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🌍 Translation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🏷️ Content Classification</span></slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`LLM configuration modal provider sections DOM golden embedding openai, chat fireworks 1`] = `
+"<x-ncdialog name="LLM Configuration" size="large" data-on="onClosing">
+  <slot-actions>
+    <div class="actions-left">
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Embedding</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Chat</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="error" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-delete size="20"></x-delete>
+        </slot-icon>
+        <slot-default> Clear All Embeddings</slot-default>
+      </x-ncbutton>
+    </div>
+    <div class="actions-right">
+      <x-ncbutton data-on="onClick">
+        <slot-default>Cancel</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-contentsave size="20"></x-contentsave>
+        </slot-icon>
+        <slot-default> Save Configuration</slot-default>
+      </x-ncbutton>
+    </div>
+  </slot-actions>
+  <slot-default>
+    <div class="llm-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure large language model (LLM) providers for ai-powered features including semantic search, embeddings, and chat.</p>
+      </div>
+      <div class="providers-grid">
+        <div class="provider-column">
+          <h3>Embedding Provider</h3>
+          <p class="section-description">For vector embeddings and semantic search</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Embedding Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+        <div class="provider-column">
+          <h3>Chat Provider (RAG)</h3>
+          <p class="section-description">For chat and retrieval-augmented generation</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Chat Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>OpenAI Embedding Configuration</h3>
+        <div class="form-group"><label for="openai-api-key">API Key</label><input id="openai-api-key" type="password" placeholder="sk-..." class="input-field"><small>Your OpenAI API key. Get one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small></div>
+        <div class="form-group"><label for="openai-model">Embedding Model</label>
+          <x-ncselect inputlabel="Openai Config Model" options="[object Object],[object Object],[object Object]" label="name" placeholder="Select model" labeloutside="true" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong><small> dimensions • </small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+        <div class="form-group"><label for="openai-org">Organization ID (Optional)</label><input id="openai-org" type="text" autocomplete="off" placeholder="org-..." class="input-field"></div>
+      </div>
+      <div class="config-section">
+        <h3>Fireworks AI Chat Settings</h3>
+        <div class="form-group"><label for="fireworks-chat-api-key">API Key</label><input id="fireworks-chat-api-key" type="password" placeholder="fw_..." class="input-field"><small>Your Fireworks AI API key. Get one at <a href="https://fireworks.ai" target="_blank">fireworks.ai</a></small></div>
+        <div class="form-group"><label for="fireworks-chat-model">Chat Model</label>
+          <x-ncselect inputlabel="Fireworks Config Chat Model" options="[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]" label="name" placeholder="Select chat model" labeloutside="true" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong><small> tokens • </small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Vector Search Backend</h3>
+        <p class="section-description">Choose how vector similarity calculations are performed for semantic search</p>
+        <div class="form-group"><label for="vector-backend">Search Method</label>
+          <x-ncselect inputlabel="Selected Vector Backend" options="[object Object]" label="name" placeholder="Select backend" disabled="false" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="backend-option backend-disabled">
+                <div class="backend-header"><strong></strong>
+                </div><small></small><small class="warning-text">⚠️ Not available</small>
+              </div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>✨ AI Features</h3>
+        <div class="features-grid">
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">✍️ Text Generation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">📋 Document Summarization</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🔍 Semantic Search</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🧮 Text Embeddings</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🌍 Translation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🏷️ Content Classification</span></slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`LLM configuration modal provider sections DOM golden embedding openai, chat openai 1`] = `
+"<x-ncdialog name="LLM Configuration" size="large" data-on="onClosing">
+  <slot-actions>
+    <div class="actions-left">
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Embedding</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="secondary" disabled="true" data-on="onClick">
+        <slot-icon>
+          <x-testtube size="20"></x-testtube>
+        </slot-icon>
+        <slot-default> Test Chat</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="error" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-delete size="20"></x-delete>
+        </slot-icon>
+        <slot-default> Clear All Embeddings</slot-default>
+      </x-ncbutton>
+    </div>
+    <div class="actions-right">
+      <x-ncbutton data-on="onClick">
+        <slot-default>Cancel</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+        <slot-icon>
+          <x-contentsave size="20"></x-contentsave>
+        </slot-icon>
+        <slot-default> Save Configuration</slot-default>
+      </x-ncbutton>
+    </div>
+  </slot-actions>
+  <slot-default>
+    <div class="llm-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure large language model (LLM) providers for ai-powered features including semantic search, embeddings, and chat.</p>
+      </div>
+      <div class="providers-grid">
+        <div class="provider-column">
+          <h3>Embedding Provider</h3>
+          <p class="section-description">For vector embeddings and semantic search</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Embedding Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+        <div class="provider-column">
+          <h3>Chat Provider (RAG)</h3>
+          <p class="section-description">For chat and retrieval-augmented generation</p>
+          <x-ncselect options="[object Object],[object Object],[object Object]" label="name" inputlabel="Chat Provider" placeholder="Select provider" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="provider-option"><strong></strong><small></small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>OpenAI Embedding Configuration</h3>
+        <div class="form-group"><label for="openai-api-key">API Key</label><input id="openai-api-key" type="password" placeholder="sk-..." class="input-field"><small>Your OpenAI API key. Get one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></small></div>
+        <div class="form-group"><label for="openai-model">Embedding Model</label>
+          <x-ncselect inputlabel="Openai Config Model" options="[object Object],[object Object],[object Object]" label="name" placeholder="Select model" labeloutside="true" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong><small> dimensions • </small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+        <div class="form-group"><label for="openai-org">Organization ID (Optional)</label><input id="openai-org" type="text" autocomplete="off" placeholder="org-..." class="input-field"></div>
+      </div>
+      <div class="config-section">
+        <h3>OpenAI Chat Settings</h3>
+        <div class="form-group"><label for="openai-chat-model">Chat Model</label>
+          <x-ncselect inputlabel="Openai Config Chat Model" options="[object Object],[object Object],[object Object]" label="name" placeholder="Select chat model" labeloutside="true" data-on="onUpdate:modelValue">
+            <slot-option>
+              <div class="model-option"><strong></strong><small> tokens • /1M tokens</small></div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>Vector Search Backend</h3>
+        <p class="section-description">Choose how vector similarity calculations are performed for semantic search</p>
+        <div class="form-group"><label for="vector-backend">Search Method</label>
+          <x-ncselect inputlabel="Selected Vector Backend" options="[object Object]" label="name" placeholder="Select backend" disabled="false" data-on="onUpdate:modelValue" modelvalue="[object Object]">
+            <slot-option>
+              <div class="backend-option backend-disabled">
+                <div class="backend-header"><strong></strong>
+                </div><small></small><small class="warning-text">⚠️ Not available</small>
+              </div>
+            </slot-option>
+          </x-ncselect>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>✨ AI Features</h3>
+        <div class="features-grid">
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">✍️ Text Generation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">📋 Document Summarization</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🔍 Semantic Search</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="true" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🧮 Text Embeddings</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🌍 Translation</span></slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="false" type="checkbox" data-on="onUpdate:modelValue">
+            <slot-default><span class="feature-label">🏷️ Content Classification</span></slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
