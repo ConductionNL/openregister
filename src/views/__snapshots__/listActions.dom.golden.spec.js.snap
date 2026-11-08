@@ -873,46 +873,38 @@ exports[`list page action menus golden deleted 1`] = `
 </x-ncactions>
 </div>
 </div>
-<div class="viewTableContainer">
-<table class="viewTable itemsTable">
+<div data-stub="CnDataTable" data-loading="false" class="itemsTable" selectalllabel="t:Select All">
+<table>
 <thead>
 <tr>
-<th class="tableColumnCheckbox">
-<x-nccheckboxradioswitch modelvalue="false" indeterminate="false" aria-label="t:Select All">
-</x-nccheckboxradioswitch>
+<th class="stub-checkbox">
 </th>
-<th scope="col">t:Title</th>
-<th scope="col" class="tableColumnConstrained">t:Register</th>
-<th scope="col" class="tableColumnConstrained">t:Schema</th>
-<th scope="col">t:Deleted Date</th>
-<th scope="col">t:Deleted By</th>
-<th scope="col">t:Destroyable from</th>
-<th scope="col" class="tableColumnConstrained">t:Days left</th>
-<th scope="col" class="tableColumnActions">t:Actions</th>
+<th>t:Title</th>
+<th>t:Register</th>
+<th>t:Schema</th>
+<th>t:Deleted Date</th>
+<th>t:Deleted By</th>
+<th>t:Destroyable from</th>
+<th>t:Days left</th>
+<th>t:Actions</th>
 </tr>
 </thead>
 <tbody>
-<tr class="viewTableRow itemRow table-row-selectable">
-<td class="tableColumnCheckbox">
-<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="deleted-row-title-1">
-</x-nccheckboxradioswitch>
+<tr>
+<td class="stub-checkbox">
 </td>
-<td id="deleted-row-title-1" class="tableColumnTitle">
+<td>
 <div class="titleContent">
 <strong>1</strong>
 </div>
 </td>
-<td class="tableColumnConstrained">t:Unknown Register</td>
-<td class="tableColumnConstrained">t:Unknown Schema</td>
-<td>
-<span>t:Unknown</span>
-</td>
+<td>t:Unknown Register</td>
+<td>t:Unknown Schema</td>
+<td>t:Unknown</td>
+<td>t:Unknown</td>
+<td>t:No purge date set</td>
 <td>t:Unknown</td>
 <td>
-<span>t:No purge date set</span>
-</td>
-<td class="tableColumnConstrained">t:Unknown</td>
-<td class="tableColumnActions">
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
