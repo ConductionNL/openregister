@@ -181,13 +181,14 @@ class AnonymisationSweep {
 	 * @throws Throwable When the profile is unsound or the plan would change nothing.
 	 */
 	private function planFor(array $candidate, string $uuid, string $salt): AnonymisationPlan {
-		return $this->run->plan(
+		$subject = new AnonymisationSubject(
 			objectUuid: $uuid,
 			payload: (array)($candidate['payload'] ?? []),
 			annotation: (array)($candidate['annotation'] ?? []),
-			salt: $salt,
 			profileName: (string)($candidate['profileName'] ?? '')
 		);
+
+		return $this->run->plan(subject: $subject, salt: $salt);
 	}//end planFor()
 
 	/**
