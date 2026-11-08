@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Listener\ListenerRegistrar;
+use OCA\OpenRegister\Listener\ListenerBootstrap;
 use OCA\OpenRegister\Middleware\MiddlewareRegistrar;
 use OCA\OpenRegister\Notification\NotifierRegistrar;
 use OCA\OpenRegister\Search\SearchProviderRegistrar;
@@ -204,7 +204,7 @@ class Application extends App implements IBootstrap {
 		IntegrationRegistrar::register(context: $context);
 		CapabilityRegistrar::register(context: $context);
 		ObjectSourceRegistrar::register(context: $context);
-		ListenerRegistrar::register(context: $context);
+		ListenerBootstrap::register(context: $context);
 		ObservabilityRegistrar::register(context: $context, appId: self::APP_ID);
 
 		NotifierRegistrar::register(context: $context);

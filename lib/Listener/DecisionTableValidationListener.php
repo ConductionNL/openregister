@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
  */
-class DecisionTableValidationListener implements IEventListener {
+class DecisionTableValidationListener implements IEventListener, DecisionTableValidationListenerInterface {
 	use ValidatesPreWriteObject;
 
 	/**
