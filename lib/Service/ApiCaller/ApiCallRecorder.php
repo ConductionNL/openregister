@@ -40,7 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ApiCaller;
 
 use DateTime;
-use OCA\OpenRegister\Db\ApiCallKey;
+use OCA\OpenRegister\Db\ApiCallKeys;
 use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -160,7 +160,7 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 		}
 
 		try {
-			$key = new ApiCallKey(
+			$key = ApiCallKeys::of(
 				principal: $this->principal(),
 				route: self::routeOf(path: $path),
 				method: strtoupper(substr($method, 0, 10)),
