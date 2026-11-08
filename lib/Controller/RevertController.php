@@ -31,8 +31,8 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Object\RevertHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -63,14 +63,14 @@ class RevertController extends Controller {
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param RevertHandler $revertService The revert service
+	 * @param RevertHandlerInterface $revertService The revert service
 	 * @param ObjectOperationsInterface|null $objectService Renders the reverted object as every object read does
 	 *                                          (property rules, write-only, explicit reveal); null only in tests
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RevertHandler $revertService,
+		private readonly RevertHandlerInterface $revertService,
 		private readonly ?ObjectOperationsInterface $objectService = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
