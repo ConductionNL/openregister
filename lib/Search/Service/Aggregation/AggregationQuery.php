@@ -54,25 +54,27 @@ class AggregationQuery {
 	public const METRIC_MAX = 'max';
 
 	/**
-	 * Aggregation metric.
+	 * Constructor — use the static factory.
 	 *
-	 * @var string
-	 */
-	public readonly string $metric;
-
-	/**
-	 * Field for sum/avg/min/max; null for count.
+	 * The layout's properties are declared after it so the properties keep their order:
+	 * metric, field, filter, groupBy, dateBucket, metrics, cumulative.
 	 *
-	 * @var string|null
+	 * @param string               $metric Aggregation metric.
+	 * @param ?string              $field  Field for sum/avg/min/max; required when metric != count.
+	 * @param array<string, mixed> $filter Filter conditions (see class docblock for shapes).
+	 * @param AggregationLayout    $layout The grouping, date buckets, metric list and running-total flag.
 	 */
-	public readonly ?string $field;
-
-	/**
-	 * Filter conditions (see class docblock for shapes).
-	 *
-	 * @var array<string, mixed>
-	 */
-	public readonly array $filter;
+	private function __construct(
+		public readonly string $metric,
+		public readonly ?string $field,
+		public readonly array $filter,
+		AggregationLayout $layout,
+	) {
+		$this->groupBy    = $layout->groupBy;
+		$this->dateBucket = $layout->dateBucket;
+		$this->metrics    = $layout->metrics;
+		$this->cumulative = $layout->cumulative;
+	}//end __construct()
 
 	/**
 	 * Optional grouping spec. Accepts a single-field shape (`{field: 'status'}`), a multi-field
@@ -105,24 +107,6 @@ class AggregationQuery {
 	 * @var boolean
 	 */
 	public readonly bool $cumulative;
-
-	/**
-	 * Constructor — use the static factory.
-	 *
-	 * @param string               $metric Aggregation metric.
-	 * @param ?string              $field  Field for sum/avg/min/max; required when metric != count.
-	 * @param array<string, mixed> $filter Filter conditions (see class docblock for shapes).
-	 * @param AggregationLayout    $layout The grouping, date buckets, metric list and running-total flag.
-	 */
-	private function __construct(string $metric, ?string $field, array $filter, AggregationLayout $layout) {
-		$this->metric     = $metric;
-		$this->field      = $field;
-		$this->filter     = $filter;
-		$this->groupBy    = $layout->groupBy;
-		$this->dateBucket = $layout->dateBucket;
-		$this->metrics    = $layout->metrics;
-		$this->cumulative = $layout->cumulative;
-	}//end __construct()
 
 	/**
 	 * Construct an aggregation query — fails fast on bad input.
@@ -194,12 +178,8 @@ class AggregationQuery {
 		AggregationQueryRules::assertValidTimeBucketing(dateBucket: $dateBucket, grouped: $groupBy !== null);
 		AggregationQueryRules::assertCumulativeIsTimeBucketed(cumulative: $cumulative, timeBucketed: $dateBucket !== null);
 
-		return new self(
-			metric: $metric,
-			field: $field,
-			filter: $filter,
-			layout: new AggregationLayout(groupBy: $groupBy, dateBucket: $dateBucket, metrics: $metrics, cumulative: $cumulative)
-		);
+		$layout = new AggregationLayout(groupBy: $groupBy, dateBucket: $dateBucket, metrics: $metrics, cumulative: $cumulative);
+		return new self(metric: $metric, field: $field, filter: $filter, layout: $layout);
 	}//end create()
 
 	/**
@@ -226,12 +206,7 @@ class AggregationQuery {
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public function getGroupByField(): ?string {
-		$fields = $this->getGroupByFields();
-		if (count($fields) === 0) {
-			return null;
-		}
-
-		return $fields[0];
+		return ($this->getGroupByFields()[0] ?? null);
 	}//end getGroupByField()
 
 	/**
