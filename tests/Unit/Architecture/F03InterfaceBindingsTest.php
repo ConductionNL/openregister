@@ -50,9 +50,9 @@ final class F03InterfaceBindingsTest extends TestCase {
 	public function testMagicObjectFinderIsBoundToMagicMapper(): void {
 		$bindings = (new ReflectionClass(DbRegistrar::class))->getConstant('BINDINGS');
 
-		self::assertIsArray($bindings);
-		self::assertSame(MagicMapper::class, $bindings[MagicObjectFinderInterface::class] ?? null);
-		self::assertTrue(is_subclass_of(MagicMapper::class, MagicObjectFinderInterface::class));
+		self::assertIsArray(actual: $bindings);
+		self::assertSame(expected: MagicMapper::class, actual: $bindings[MagicObjectFinderInterface::class] ?? null);
+		self::assertTrue(condition: is_subclass_of(object_or_class: MagicMapper::class, class: MagicObjectFinderInterface::class));
 	}//end testMagicObjectFinderIsBoundToMagicMapper()
 
 	/**
@@ -62,14 +62,14 @@ final class F03InterfaceBindingsTest extends TestCase {
 	 */
 	public function testBuiltinActionMap(): void {
 		self::assertSame(
-			[
+			expected: [
 				'set-fields' => SetFieldsAction::class,
 				'set-field' => SetFieldsAction::class,
 			],
-			BuiltinLifecycleActionsInterface::BUILTINS
+			actual: BuiltinLifecycleActionsInterface::BUILTINS
 		);
 		foreach (BuiltinLifecycleActionsInterface::BUILTINS as $handler) {
-			self::assertTrue(is_subclass_of($handler, LifecycleActionInterface::class));
+			self::assertTrue(condition: is_subclass_of(object_or_class: $handler, class: LifecycleActionInterface::class));
 		}
 	}//end testBuiltinActionMap()
 
@@ -79,12 +79,12 @@ final class F03InterfaceBindingsTest extends TestCase {
 	 * @return void
 	 */
 	public function testCallersNameOnlyContracts(): void {
-		$files = (string) file_get_contents(self::LIB . '/Service/Integration/BuiltinProviders/FilesProvider.php');
-		self::assertStringNotContainsString('Db\\MagicMapper\'', $files);
-		self::assertStringContainsString('MagicObjectFinderInterface::class', $files);
+		$files = (string) file_get_contents(filename: self::LIB . '/Service/Integration/BuiltinProviders/FilesProvider.php');
+		self::assertStringNotContainsString(needle: 'Db\\MagicMapper\'', haystack: $files);
+		self::assertStringContainsString(needle: 'MagicObjectFinderInterface::class', haystack: $files);
 
-		$registry = (string) file_get_contents(self::LIB . '/Service/Lifecycle/LifecycleActionRegistry.php');
-		self::assertStringNotContainsString('SetFieldsAction', $registry);
-		self::assertStringContainsString('BuiltinLifecycleActionsInterface::BUILTINS', $registry);
+		$registry = (string) file_get_contents(filename: self::LIB . '/Service/Lifecycle/LifecycleActionRegistry.php');
+		self::assertStringNotContainsString(needle: 'SetFieldsAction', haystack: $registry);
+		self::assertStringContainsString(needle: 'BuiltinLifecycleActionsInterface::BUILTINS', haystack: $registry);
 	}//end testCallersNameOnlyContracts()
 }//end class
