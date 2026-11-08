@@ -201,7 +201,9 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		}
 
 		// Extract and sanitize the source text payload (includes language metadata).
-		$payload = $this->extractSourceText(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile);
+		$payload = $this->extractSourceText(
+			source: new ExtractionSource(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, method: 'llphant')
+		);
 		$this->indexFilePayload(fileId: $fileId, payload: $payload, sourceTimestamp: $sourceTimestamp, entityTypes: $entityTypes);
 	}//end extractFile()
 
@@ -232,7 +234,10 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			throw new NotFoundException("File with ID {$fileId} not found in Nextcloud");
 		}
 
-		$payload = $this->payloadFromText(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, rawText: $text, method: $method);
+		$payload = $this->payloadFromText(
+			source: new ExtractionSource(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, method: $method),
+			rawText: $text
+		);
 		$this->indexFilePayload(fileId: $fileId, payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time()), entityTypes: $entityTypes);
 	}//end extractFromProvidedText()
 
@@ -659,12 +664,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Extract and sanitize text for a given source.
 	 *
-	 * @param string $sourceType Source type identifier.
-	 * @param int $sourceId Source identifier.
-	 * @param array<string, mixed> $sourceMeta Raw metadata from the source system.
-	 *
-	 * @phpstan-param non-empty-string $sourceType
-	 * @psalm-param   non-empty-string $sourceType
+	 * @param ExtractionSource $source Source type, id, raw metadata and extraction method.
 	 *
 	 * @return array{
 	 *     source_type: string,
@@ -684,29 +684,27 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 *
 	 * @throws Exception When the text cannot be extracted.
 	 */
-	private function extractSourceText(string $sourceType, int $sourceId, array $sourceMeta): array {
-		$rawText = $this->performTextExtraction(fileId: $sourceId, ncFile: $sourceMeta);
+	private function extractSourceText(ExtractionSource $source): array {
+		$rawText = $this->performTextExtraction(fileId: $source->sourceId, ncFile: $source->sourceMeta);
 		if ($rawText === null) {
 			throw new Exception('Text extraction returned no result for source.');
 		}
 
-		return $this->payloadFromText(sourceType: $sourceType, sourceId: $sourceId, sourceMeta: $sourceMeta, rawText: $rawText, method: 'llphant');
+		return $this->payloadFromText(source: $source, rawText: $rawText);
 	}//end extractSourceText()
 
 	/**
 	 * Build the source payload from text, however it was obtained
 	 *
-	 * @param string $sourceType The source type.
-	 * @param int    $sourceId   The source id.
-	 * @param array  $sourceMeta The source metadata (file row).
-	 * @param string $rawText    The text, before sanitising.
-	 * @param string $method     How the text was obtained, recorded on the payload.
+	 * @param ExtractionSource $source  Source type, id, metadata (file row) and how the text was obtained.
+	 * @param string           $rawText The text, before sanitising.
 	 *
 	 * @return array The payload.
 	 *
 	 * @throws Exception When the sanitised text is empty.
 	 */
-	private function payloadFromText(string $sourceType, int $sourceId, array $sourceMeta, string $rawText, string $method): array {
+	private function payloadFromText(ExtractionSource $source, string $rawText): array {
+		$sourceMeta = $source->sourceMeta;
 		$cleanText = $this->sanitizeText(text: $rawText);
 		if ($cleanText === '') {
 			throw new Exception('Text extraction resulted in an empty payload.');
@@ -716,13 +714,13 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$languageSignals = $this->detectLanguageSignals(text: $cleanText);
 
 		return [
-			'source_type' => $sourceType,
-			'source_id' => $sourceId,
+			'source_type' => $source->sourceType,
+			'source_id' => $source->sourceId,
 			'text' => $cleanText,
 			'length' => strlen($cleanText),
 			'checksum' => hash('sha256', $cleanText),
 			// Stable checksum to detect text mutations.
-			'method' => $method,
+			'method' => $source->method,
 			'owner' => $sourceMeta['owner'] ?? null,
 			'organisation' => $sourceMeta['organisation'] ?? null,
 			'language' => $languageSignals['language'],
@@ -857,10 +855,14 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			}
 
 			$this->persistMetadataChunk(
-				sourceType: $source->sourceType,
-				sourceId: $source->sourceId,
-				payload: $payload,
-				sourceTimestamp: $source->sourceTimestamp
+				source: new ChunkSource(
+					sourceType: $source->sourceType,
+					sourceId: $source->sourceId,
+					owner: $payload['owner'] ?? null,
+					organisation: $payload['organisation'] ?? null,
+					sourceTimestamp: $source->sourceTimestamp
+				),
+				payload: $payload
 			);
 
 			$this->storage->db->commit();
@@ -910,17 +912,12 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Persist the metadata chunk that stores provenance details.
 	 *
-	 * @param string $sourceType Source type identifier.
-	 * @param int $sourceId Source identifier.
+	 * @param ChunkSource         $source  The source, owned as the payload says.
 	 * @param array<string,mixed> $payload Extraction payload.
-	 * @param int $sourceTimestamp Source modification timestamp.
-	 *
-	 * @phpstan-param non-empty-string $sourceType
-	 * @psalm-param   non-empty-string $sourceType
 	 *
 	 * @return void
 	 */
-	private function persistMetadataChunk(string $sourceType, int $sourceId, array $payload, int $sourceTimestamp): void {
+	private function persistMetadataChunk(ChunkSource $source, array $payload): void {
 		try {
 			$metadataText = json_encode(
 				$this->summarizeMetadataPayload(payload: $payload),
@@ -930,7 +927,8 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			$this->analysis->logger->warning(
 				message: '[TextExtractionService] Failed to encode metadata chunk payload',
 				context: [
-					'file' => __FILE__, 'line' => __LINE__, 'sourceType' => $sourceType, 'sourceId' => $sourceId, 'error' => $exception->getMessage(),
+					'file' => __FILE__, 'line' => __LINE__, 'sourceType' => $source->sourceType, 'sourceId' => $source->sourceId,
+					'error' => $exception->getMessage(),
 				]
 			);
 			$metadataText = 'metadata_encoding_failed';
@@ -942,16 +940,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			'position_reference' => ['type' => 'metadata'], 'checksum' => $payload['checksum'] ?? null,
 		];
 
-		$chunkEntity = $this->hydrateChunkEntity(
-			source: new ChunkSource(
-				sourceType: $sourceType,
-				sourceId: $sourceId,
-				owner: $payload['owner'] ?? null,
-				organisation: $payload['organisation'] ?? null,
-				sourceTimestamp: $sourceTimestamp
-			),
-			chunkData: $chunkData
-		);
+		$chunkEntity = $this->hydrateChunkEntity(source: $source, chunkData: $chunkData);
 
 		$this->chunkMapper->insert($chunkEntity);
 	}//end persistMetadataChunk()
@@ -1654,7 +1643,11 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$startTime = microtime(true);
 
 		// Clean the text first, then split it with the chosen strategy and respect the max chunks limit.
-		$chunks = $this->splitText(text: $this->cleanText(text: $text), strategy: $strategy, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
+		$chunks = $this->splitText(
+			text: $this->cleanText(text: $text),
+			strategy: $strategy,
+			sizing: new ChunkSizing(size: $chunkSize, overlap: $chunkOverlap)
+		);
 		$chunks = $this->capChunks(chunks: $chunks);
 
 		$this->logChunked(chunks: $chunks, startTime: $startTime);
@@ -1664,19 +1657,18 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Split cleaned text with a chunking strategy; any strategy but FIXED_SIZE splits recursively.
 	 *
-	 * @param string $text         The cleaned text.
-	 * @param mixed  $strategy     The chunking strategy.
-	 * @param mixed  $chunkSize    The target chunk size.
-	 * @param mixed  $chunkOverlap The overlap between chunks.
+	 * @param string      $text     The cleaned text.
+	 * @param mixed       $strategy The chunking strategy.
+	 * @param ChunkSizing $sizing   The target chunk size and the overlap between chunks.
 	 *
 	 * @return array The chunks.
 	 */
-	private function splitText(string $text, mixed $strategy, mixed $chunkSize, mixed $chunkOverlap): array {
+	private function splitText(string $text, mixed $strategy, ChunkSizing $sizing): array {
 		if ($strategy === self::FIXED_SIZE) {
-			return $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
+			return $this->chunkFixedSize(text: $text, sizing: $sizing);
 		}
 
-		return $this->chunkRecursive(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
+		return $this->chunkRecursive(text: $text, sizing: $sizing);
 	}//end splitText()
 
 	/**
@@ -1742,15 +1734,16 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Chunk text using fixed size with overlap
 	 *
-	 * @param string $text Text to chunk
-	 * @param int $chunkSize Target chunk size
-	 * @param int $chunkOverlap Overlap size
+	 * @param string      $text   Text to chunk
+	 * @param ChunkSizing $sizing Target chunk size and overlap size
 	 *
 	 * @return (int|string)[][] Array of chunk objects with text, start_offset, end_offset
 	 *
 	 * @psalm-return array<int<0, max>, array{text: string, start_offset: int<0, max>, end_offset: int<0, max>}>
 	 */
-	private function chunkFixedSize(string $text, int $chunkSize, int $chunkOverlap): array {
+	private function chunkFixedSize(string $text, ChunkSizing $sizing): array {
+		$chunkSize = $sizing->size;
+		$chunkOverlap = $sizing->overlap;
 		if (strlen($text) <= $chunkSize) {
 			return $this->wholeTextChunk(text: $text);
 		}
@@ -1843,17 +1836,16 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * 4. Clauses (; ,)
 	 * 5. Words (spaces)
 	 *
-	 * @param string $text Text to chunk
-	 * @param int $chunkSize Target chunk size
-	 * @param int $chunkOverlap Overlap size
+	 * @param string      $text   Text to chunk
+	 * @param ChunkSizing $sizing Target chunk size and overlap size
 	 *
 	 * @return (int|mixed|string)[][] Array of chunk objects with text, start_offset, end_offset
 	 *
 	 * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
 	 */
-	private function chunkRecursive(string $text, int $chunkSize, int $chunkOverlap): array {
+	private function chunkRecursive(string $text, ChunkSizing $sizing): array {
 		// If text is already small enough, return it.
-		if (strlen($text) <= $chunkSize) {
+		if (strlen($text) <= $sizing->size) {
 			return $this->wholeTextChunk(text: $text);
 		}
 
@@ -1874,62 +1866,65 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			// Words.
 		];
 
-		return $this->recursiveSplit(
-			text: $text,
-			separators: $separators,
-			chunkSize: $chunkSize,
-			chunkOverlap: $chunkOverlap
-		);
+		return $this->recursiveSplit(text: $text, separators: $separators, sizing: $sizing);
 	}//end chunkRecursive()
 
 	/**
 	 * Recursively split text using different separators
 	 *
-	 * @param string $text Text to split
-	 * @param array $separators Array of separators to try
-	 * @param int $chunkSize Target chunk size
-	 * @param int $chunkOverlap Overlap size
+	 * @param string      $text       Text to split
+	 * @param array       $separators Array of separators to try
+	 * @param ChunkSizing $sizing     Target chunk size and overlap size
 	 *
 	 * @return (int|mixed|string)[][] Array of chunk objects with text, start_offset, end_offset
 	 *
 	 * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
 	 *
 	 */
-	private function recursiveSplit(string $text, array $separators, int $chunkSize, int $chunkOverlap): array {
-		if (strlen($text) <= $chunkSize) {
+	private function recursiveSplit(string $text, array $separators, ChunkSizing $sizing): array {
+		if (strlen($text) <= $sizing->size) {
 			return $this->wholeTextChunk(text: $text);
 		}
 
 		if ($separators === []) {
-			return $this->chunkFixedSize(text: $text, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
+			return $this->chunkFixedSize(text: $text, sizing: $sizing);
 		}
 
 		$separator = array_shift($separators);
-		$pass = new TextSplitPass(separator: $separator, chunkSize: $chunkSize, chunkOverlap: $chunkOverlap);
+		$pass = new TextSplitPass(separator: $separator, chunkSize: $sizing->size, chunkOverlap: $sizing->overlap);
 		foreach (explode($separator, $text) as $piece) {
-			if ($pass->append(piece: $piece) === true) {
-				continue;
-			}
-
-			if ($pass->hasCurrent() === true) {
-				$pass->closeWith(piece: $piece);
-				continue;
-			}
-
-			// A single piece larger than a chunk is split on the next separator.
-			$pass->addSplitPiece(
-				piece: $piece,
-				subChunks: $this->recursiveSplit(
-					text: $piece,
-					separators: $separators,
-					chunkSize: $chunkSize,
-					chunkOverlap: $chunkOverlap
-				)
-			);
+			$this->splitPiece(pass: $pass, piece: $piece, deeper: fn (string $text): array => $this->recursiveSplit(
+				text: $text,
+				separators: $separators,
+				sizing: $sizing
+			));
 		}
 
 		return $pass->chunks();
 	}//end recursiveSplit()
+
+	/**
+	 * Add one piece to a split pass: appended, closing the current chunk, or split deeper.
+	 *
+	 * @param TextSplitPass $pass   The pass over one separator.
+	 * @param string        $piece  The piece.
+	 * @param callable      $deeper Splits a piece larger than a chunk on the next separators.
+	 *
+	 * @return void
+	 */
+	private function splitPiece(TextSplitPass $pass, string $piece, callable $deeper): void {
+		if ($pass->append(piece: $piece) === true) {
+			return;
+		}
+
+		if ($pass->hasCurrent() === true) {
+			$pass->closeWith(piece: $piece);
+			return;
+		}
+
+		// A single piece larger than a chunk is split on the next separator.
+		$pass->addSplitPiece(piece: $piece, subChunks: $deeper($piece));
+	}//end splitPiece()
 
 	/**
 	 * Check if MIME type is a Word document

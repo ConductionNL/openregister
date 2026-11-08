@@ -27,6 +27,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\ChunkSizing;
 
 /**
  * Records extractPendingFiles() (windows asked, files extracted, log lines, result) and the
@@ -183,7 +184,7 @@ class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 	public function testRecursiveSplitGolden(string $text, array $separators, int $size, int $overlap): void {
 		$service = $this->service([]);
 		$method = new ReflectionMethod(TextExtractionService::class, 'recursiveSplit');
-		$this->calls[] = ['chunks', $method->invoke($service, $text, $separators, $size, $overlap)];
+		$this->calls[] = ['chunks', $method->invoke($service, $text, $separators, new ChunkSizing($size, $overlap))];
 		$this->assertGolden();
 	}
 
