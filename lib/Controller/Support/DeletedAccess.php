@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizerInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCP\IUserSession;
 
@@ -35,14 +35,14 @@ final class DeletedAccess {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param DeletedObjectAuthorizer $authorizer   Answers the authorization and schema-resolution questions
-	 * @param RenderObject            $renderObject Strips write-only and unreadable properties before a trashed row is served
-	 * @param IUserSession            $userSession  The user session
+	 * @param DeletedObjectAuthorizerInterface $authorizer   Answers the authorization and schema-resolution questions
+	 * @param RenderObject                     $renderObject Strips write-only and unreadable properties before a trashed row is served
+	 * @param IUserSession                     $userSession  The user session
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function __construct(
-		public readonly DeletedObjectAuthorizer $authorizer,
+		public readonly DeletedObjectAuthorizerInterface $authorizer,
 		public readonly RenderObject $renderObject,
 		public readonly IUserSession $userSession,
 	) {

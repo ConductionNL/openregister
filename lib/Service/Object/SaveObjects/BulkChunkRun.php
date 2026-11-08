@@ -52,13 +52,22 @@ final class BulkChunkRun {
 	public readonly float $startTime;
 
 	/**
+	 * The bulk save call the chunk belongs to.
+	 *
+	 * @var BulkSaveRun
+	 */
+	public readonly BulkSaveRun $run;
+
+	/**
 	 * Constructor: the chunk starts now.
 	 *
 	 * @param array<string, mixed> $result The chunk's empty result.
+	 * @param BulkSaveRun          $run    The bulk save call the chunk belongs to.
 	 */
-	public function __construct(array $result) {
+	public function __construct(array $result, BulkSaveRun $run) {
 		$this->startTime = microtime(true);
 		$this->result    = $result;
+		$this->run       = $run;
 	}//end __construct()
 
 	/**

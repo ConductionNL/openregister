@@ -47,9 +47,9 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
+use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;
-use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
+use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -105,7 +105,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 	 * @param ITimeFactory $time Time factory required by parent.
 	 * @param IAppConfig $appConfig App-config reader.
 	 * @param ObjectOperationsInterface $objectService Object read/write path.
-	 * @param DsarPolicyPackResolver $packResolver Active-pack resolution per jurisdiction.
+	 * @param DsarPolicyPackResolverInterface $packResolver Active-pack resolution per jurisdiction.
 	 * @param DpiaPatternDetectorInterface $detectionService Pure grouping/threshold engine.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable detection audit rows.
 	 * @param LoggerInterface $logger Logger.
@@ -114,7 +114,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 		ITimeFactory $time,
 		private readonly IAppConfig $appConfig,
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly DsarPolicyPackResolver $packResolver,
+		private readonly DsarPolicyPackResolverInterface $packResolver,
 		private readonly DpiaPatternDetectorInterface $detectionService,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
@@ -246,8 +246,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 			try {
 				$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 					id: $uuid,
-					register: CaseObjectAccessor::REGISTER_SLUG,
-					schema: CaseObjectAccessor::SCHEMA_SLUG,
+					register: CaseObjectAccessorInterface::REGISTER_SLUG,
+					schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
 					_rbac: false,
 					_multitenancy: false
 				));
@@ -266,8 +266,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 
 				$saved = $this->objectService->saveObject(
 					object: $data,
-					register: CaseObjectAccessor::REGISTER_SLUG,
-					schema: CaseObjectAccessor::SCHEMA_SLUG,
+					register: CaseObjectAccessorInterface::REGISTER_SLUG,
+					schema: CaseObjectAccessorInterface::SCHEMA_SLUG,
 					uuid: $entity->getUuid(),
 					_rbac: false,
 					_multitenancy: false
@@ -308,8 +308,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 			$rows = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => CaseObjectAccessor::REGISTER_SLUG,
-						'schema' => CaseObjectAccessor::SCHEMA_SLUG,
+						'register' => CaseObjectAccessorInterface::REGISTER_SLUG,
+						'schema' => CaseObjectAccessorInterface::SCHEMA_SLUG,
 					],
 				],
 				_rbac: false,

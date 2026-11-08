@@ -92,10 +92,6 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		PartyIndicatorGuard::class => [
-			'Notifications/Service/Party/PartyNotificationService.php',
-			'Notifications/Service/Party/PartyReachGates.php',
-		],
 		ProcessingLogMapper::class => [],
 		ProcessingPurposeMapper::class => [
 			'Service/Audit/PurposeRegistry.php',

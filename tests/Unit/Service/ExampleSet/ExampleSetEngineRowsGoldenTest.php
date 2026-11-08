@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use PHPUnit\Framework\TestCase;
 
@@ -73,13 +74,13 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 				return '';
 			}
 
-			public function write(string $app, string $key, array $data): array {
-				$this->calls[] = 'write '.$app.'/'.$key.' '.json_encode($data);
-				if (($data['name'] ?? '') === 'broken') {
+			public function write(ExampleSetRow $row): array {
+				$this->calls[] = 'write '.$row->app.'/'.$row->key.' '.json_encode($row->data);
+				if (($row->data['name'] ?? '') === 'broken') {
 					return ['error' => 'it broke', 'entry' => null];
 				}
 
-				return ['error' => '', 'entry' => ['uuid' => 'u-'.$key]];
+				return ['error' => '', 'entry' => ['uuid' => 'u-'.$row->key]];
 			}
 
 			public function lost(array $entry): bool {
@@ -95,8 +96,8 @@ class ExampleSetEngineRowsGoldenTest extends TestCase {
 				return $this->inPlace;
 			}
 
-			public function update(array $entry, string $app, string $key, array $data): array {
-				$this->calls[] = 'update '.$entry['uuid'].' '.$app.'/'.$key;
+			public function update(array $entry, ExampleSetRow $row): array {
+				$this->calls[] = 'update '.$entry['uuid'].' '.$row->app.'/'.$row->key;
 				return ['error' => '', 'entry' => ['uuid' => $entry['uuid'], 'updated' => true]];
 			}
 

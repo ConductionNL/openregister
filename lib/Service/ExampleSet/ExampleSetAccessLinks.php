@@ -156,17 +156,14 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	/**
 	 * Mint one link as its declared account, once the mint guard admits that account to the object.
 	 *
-	 * @param string               $app  The app that ships the fragment (unused: the link is the account's).
-	 * @param string               $key  The link's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled link fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{id: int, uuid: string, object: string}|null} The record entry, or why the mint failed.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $app and $key are the contract of every kind.
-	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-access-links-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$object    = (string) $data['object'];
 		$createdBy = (string) $data['createdBy'];
 		try {

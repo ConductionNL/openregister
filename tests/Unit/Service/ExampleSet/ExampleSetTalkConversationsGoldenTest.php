@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
 use OCA\OpenRegister\Db\TalkLinkMapperInterface;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -63,7 +64,7 @@ class ExampleSetTalkConversationsGoldenTest extends TestCase {
 		foreach ($this->writes() as $name => $case) {
 			$this->calls   = [];
 			$this->world   = $case['world'];
-			$answer        = $this->subject()->write('zaak', 'k1', $case['data']);
+			$answer        = $this->subject()->write(new ExampleSetRow('zaak', 'k1', $case['data']));
 			$actual['write '.$name] = ['answer' => $answer, 'calls' => $this->calls];
 		}
 

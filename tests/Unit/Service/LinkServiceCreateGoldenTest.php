@@ -244,7 +244,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->session('alice'),
-				\OCA\OpenRegister\Files\Service\File\FileRestrictionGuard::class => new class {
+				\OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface::class => new class {
 					public function readableNodes(array $nodes): array {
 						return $nodes;
 					}

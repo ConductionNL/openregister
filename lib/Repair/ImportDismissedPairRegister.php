@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIdsInterface;
 
 /**
  * Imports the dismissed-pair register descriptor idempotently.
@@ -84,7 +84,7 @@ class ImportDismissedPairRegister extends AbstractRegisterImportStep {
 	 *
 	 * @var string
 	 */
-	protected const CONFIG_APP_ID = DescriptorConfigIds::DISMISSED_PAIR;
+	protected const CONFIG_APP_ID = DescriptorConfigIdsInterface::DISMISSED_PAIR;
 
 	/**
 	 * Get the name of this repair step.

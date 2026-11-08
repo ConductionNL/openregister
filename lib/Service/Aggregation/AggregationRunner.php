@@ -692,11 +692,6 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 *
 	 * @throws NotAuthorizedException When the caller may not read the schema.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *   RBAC + placeholder-resolve + cache-read + native-or-fallback dispatch +
-	 *   cache-write. Splitting each step into its own helper would obscure
-	 *   the order of operations that matters for the security gate and
-	 *   cache semantics.
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *   `AggregationQuery::create()` is a fail-fast static factory.
 	 *
@@ -708,9 +703,47 @@ class AggregationRunner implements AggregationRunnerInterface {
 		AggregationQuery $query,
 		bool $bypassRbac=false,
 	): array {
-		// RBAC gate — identical predicate to run(), including run()'s
-		// internal-system mode (a materialised aggregate-reference is the
-		// schema author's derived value, resolved whoever saves).
+		$this->gateAdhoc(schema: $schema, bypassRbac: $bypassRbac);
+		$this->assertAdhocRevealsNothing(schema: $schema, query: $query);
+
+		$run = new AdhocAggregationRun(
+			register: $register,
+			schema: $schema,
+			query: $query,
+			resolvedQuery: $this->resolveAdhocQuery(query: $query)
+		);
+
+		$envelope = $this->cachedAdhocEnvelope(run: $run);
+		if ($envelope === null) {
+			$envelope = $this->storeAdhocEnvelope(run: $run, envelope: $this->computeAdhocEnvelope(run: $run));
+		}
+
+		// The cache stores RAW group keys (the cache key is language-
+		// agnostic), so translatable keys must be projected on every
+		// read, including cache hits.
+		return $this->projectTranslatableGroupKeys(
+			envelope: $envelope,
+			schema: $schema,
+			register: $register,
+			groupBy: $query->groupBy
+		);
+	}//end runAdhoc()
+
+	/**
+	 * RBAC gate of runAdhoc() — identical predicate to run().
+	 *
+	 * Including run()'s internal-system mode (a materialised
+	 * aggregate-reference is the schema author's derived value, resolved
+	 * whoever saves).
+	 *
+	 * @param Schema $schema     The schema being aggregated.
+	 * @param bool   $bypassRbac Internal-system mode: skip the read gate.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not read the schema.
+	 */
+	private function gateAdhoc(Schema $schema, bool $bypassRbac): void {
 		$userId = $this->userSession->getUser()?->getUID();
 		if ($bypassRbac === false && $this->mayAggregate(schema: $schema, userId: $userId) === false) {
 			throw new NotAuthorizedException(
@@ -720,12 +753,25 @@ class AggregationRunner implements AggregationRunnerInterface {
 				)
 			);
 		}
+	}//end gateAdhoc()
 
-		// An explicit-reveal value leaves only as its mask, so the ad-hoc path
-		// may neither group on it (a bucket key is the value), take a min or max
-		// of it, nor filter on it. With `$bypassRbac` too: a materialised
-		// aggregate (AggregateReferenceResolver) stores the figure on another
-		// object, in clear.
+	/**
+	 * Refuse an ad-hoc query that would expose an explicit-reveal value.
+	 *
+	 * An explicit-reveal value leaves only as its mask, so the ad-hoc path
+	 * may neither group on it (a bucket key is the value), take a min or max
+	 * of it, nor filter on it. With `$bypassRbac` too: a materialised
+	 * aggregate (AggregateReferenceResolver) stores the figure on another
+	 * object, in clear.
+	 *
+	 * @param Schema           $schema The schema being aggregated.
+	 * @param AggregationQuery $query  The caller's query.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the query reads an explicit-reveal property.
+	 */
+	private function assertAdhocRevealsNothing(Schema $schema, AggregationQuery $query): void {
 		$this->assertNoExplicitValues(
 			schema: $schema,
 			fields: array_merge(
@@ -735,143 +781,159 @@ class AggregationRunner implements AggregationRunnerInterface {
 			)
 		);
 		$this->assertNoExplicitFilter(schema: $schema, filter: $query->filter);
+	}//end assertAdhocRevealsNothing()
 
-		// Resolve placeholders inside the filter (e.g. $now, $startOfMonth)
-		// so the native SQL path can bind concrete values. The resolved
-		// filter feeds both the cache key and the SQL bindings.
-		$resolvedFilter = $this->placeholders->resolveArray($query->filter);
-		$resolvedQuery = AggregationQuery::create(
+	/**
+	 * The query with placeholders inside its filter resolved.
+	 *
+	 * Resolves e.g. $now, $startOfMonth so the native SQL path can bind
+	 * concrete values. The resolved filter feeds both the cache key and the
+	 * SQL bindings.
+	 *
+	 * @param AggregationQuery $query The caller's query.
+	 *
+	 * @return AggregationQuery
+	 */
+	private function resolveAdhocQuery(AggregationQuery $query): AggregationQuery {
+		return AggregationQuery::create(
 			metric: $query->metric,
 			field: $query->field,
-			filter: $resolvedFilter,
+			filter: $this->placeholders->resolveArray($query->filter),
 			groupBy: $query->groupBy,
 			dateBucket: $query->dateBucket,
 			metrics: $query->metrics,
 			cumulative: $query->cumulative
 		);
+	}//end resolveAdhocQuery()
 
-		// Read-through cache. Identical query + filter + RBAC scope →
-		// same cache key → 60 s TTL hit. Cache miss falls through to the
-		// native-or-fallback dispatch below and the result is stored on
-		// the way out. Invalidation is event-driven via
-		// AggregationCacheInvalidationListener which evicts the entire
-		// `openregister_aggregations` cache on every object-write event.
+	/**
+	 * The cached envelope for this query, flagged as cached, or null on a miss.
+	 *
+	 * Read-through cache. Identical query + filter + RBAC scope → same cache
+	 * key → 60 s TTL hit. Invalidation is event-driven via
+	 * AggregationCacheInvalidationListener which evicts the entire
+	 * `openregister_aggregations` cache on every object-write event.
+	 *
+	 * @param AdhocAggregationRun $run The ad-hoc run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function cachedAdhocEnvelope(AdhocAggregationRun $run): ?array {
 		$cached = $this->cache->getAdhoc(
-			registerSlug: (string)$register->getSlug(),
-			schemaSlug: (string)$schema->getSlug(),
-			query: $resolvedQuery
+			registerSlug: (string)$run->register->getSlug(),
+			schemaSlug: (string)$run->schema->getSlug(),
+			query: $run->resolvedQuery
 		);
 		if ($cached !== null) {
 			$cached['cached'] = true;
-			// The cache stores RAW group keys (the cache key is language-
-			// agnostic), so translatable keys must be projected on every
-			// read, including cache hits.
-			return $this->projectTranslatableGroupKeys(
-				envelope: $cached,
-				schema: $schema,
-				register: $register,
-				groupBy: $query->groupBy
-			);
 		}
 
-		// External (DBAL virtual) register: the object rows live in an
-		// external database, not the magic table, so the native + PHP paths
-		// below would aggregate an empty magic table and return 0. Delegate
-		// to the DBAL object-source provider, which computes the metric live
-		// in the external DB with the same table/column resolution the reads
-		// use. Returns null when the schema is not DBAL-sourced (→ fall
-		// through to the magic-table paths) or the query shape is unsupported.
-		$dbal = $this->tryDbalAggregation(
-			register: $register,
-			schema: $schema,
-			query: $resolvedQuery
-		);
-		if ($dbal !== null) {
-			$envelope = [
-				'backend' => 'dbal-source',
-				'cached' => false,
-			] + $dbal;
-			$this->cache->setAdhoc(
-				registerSlug: (string)$register->getSlug(),
-				schemaSlug: (string)$schema->getSlug(),
-				query: $resolvedQuery,
-				result: $envelope
-			);
-			return $this->projectTranslatableGroupKeys(
-				envelope: $envelope,
-				schema: $schema,
-				register: $register,
-				groupBy: $query->groupBy
-			);
-		}
+		return $cached;
+	}//end cachedAdhocEnvelope()
 
-		// Try the Postgres / MySQL / SQLite native fast path. The runner
-		// detects the database platform and emits the matching native
-		// bucketing expression (date_trunc / DATE_FORMAT / strftime).
-		// Returns null on unsupported query shapes or unrecognised
-		// engines, signaling fall-through to the PHP bucketer below.
-		$native = $this->tryNativeAggregation(
-			register: $register,
-			schema: $schema,
-			metric: $query->metric,
-			field: $query->field,
-			filter: $resolvedFilter,
-			groupBy: $query->groupBy,
-			dateBucket: $query->dateBucket,
-			metrics: $query->getMetrics(),
-			cumulative: $query->cumulative
-		);
-
-		if ($native !== null) {
-			$envelope = [
-				'backend' => $this->detectDatabasePlatform(),
-				'cached' => false,
-			] + $native;
-			// Cache the RAW (un-projected) group keys — the cache key does
-			// not encode the negotiated language, so language projection
-			// must happen after the cache boundary on every read.
-			$this->cache->setAdhoc(
-				registerSlug: (string)$register->getSlug(),
-				schemaSlug: (string)$schema->getSlug(),
-				query: $resolvedQuery,
-				result: $envelope
-			);
-			return $this->projectTranslatableGroupKeys(
-				envelope: $envelope,
-				schema: $schema,
-				register: $register,
-				groupBy: $query->groupBy
-			);
-		}//end if
-
-		// PHP fallback path. Pull the RBAC-filtered row set + bucket in
-		// PHP. Correctness path; the native paths above are the
-		// production target.
-		$envelope = $this->bucketInPhp(
-			register: $register,
-			schema: $schema,
-			metric: $query->metric,
-			field: $query->field,
-			filter: $resolvedFilter,
-			groupBy: $query->groupBy,
-			dateBucket: $query->dateBucket,
-			metrics: $query->getMetrics(),
-			cumulative: $query->cumulative
-		);
+	/**
+	 * Store the envelope under this query's cache key and return it.
+	 *
+	 * The RAW (un-projected) group keys are cached — the cache key does not
+	 * encode the negotiated language, so language projection must happen
+	 * after the cache boundary on every read.
+	 *
+	 * @param AdhocAggregationRun  $run      The ad-hoc run.
+	 * @param array<string, mixed> $envelope The computed envelope.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function storeAdhocEnvelope(AdhocAggregationRun $run, array $envelope): array {
 		$this->cache->setAdhoc(
-			registerSlug: (string)$register->getSlug(),
-			schemaSlug: (string)$schema->getSlug(),
-			query: $resolvedQuery,
+			registerSlug: (string)$run->register->getSlug(),
+			schemaSlug: (string)$run->schema->getSlug(),
+			query: $run->resolvedQuery,
 			result: $envelope
 		);
-		return $this->projectTranslatableGroupKeys(
-			envelope: $envelope,
-			schema: $schema,
-			register: $register,
-			groupBy: $query->groupBy
-		);
+		return $envelope;
+	}//end storeAdhocEnvelope()
 
-	}//end runAdhoc()
+	/**
+	 * Compute the envelope: DBAL source, then native SQL, then the PHP bucketer.
+	 *
+	 * @param AdhocAggregationRun $run The ad-hoc run.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function computeAdhocEnvelope(AdhocAggregationRun $run): array {
+		// External (DBAL virtual) register: the object rows live in an
+		// external database, not the magic table, so the native + PHP paths
+		// below would aggregate an empty magic table and return 0.
+		$envelope = $this->dbalAdhocEnvelope(run: $run);
+		if ($envelope === null) {
+			$envelope = $this->nativeAdhocEnvelope(run: $run);
+		}
+
+		// PHP fallback path. Pull the RBAC-filtered row set + bucket in
+		// PHP. Correctness path; the native paths are the production target.
+		if ($envelope === null) {
+			$envelope = $this->bucketInPhp(run: $run);
+		}
+
+		return $envelope;
+	}//end computeAdhocEnvelope()
+
+	/**
+	 * The DBAL object-source envelope, or null when the schema is not DBAL-sourced.
+	 *
+	 * Delegates to the DBAL object-source provider, which computes the metric
+	 * live in the external DB with the same table/column resolution the reads
+	 * use. Null also when the query shape is unsupported.
+	 *
+	 * @param AdhocAggregationRun $run The ad-hoc run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function dbalAdhocEnvelope(AdhocAggregationRun $run): ?array {
+		$dbal = $this->tryDbalAggregation(run: $run);
+		if ($dbal === null) {
+			return null;
+		}
+
+		return [
+			'backend' => 'dbal-source',
+			'cached' => false,
+		] + $dbal;
+	}//end dbalAdhocEnvelope()
+
+	/**
+	 * The native SQL envelope, or null to fall through to the PHP bucketer.
+	 *
+	 * The runner detects the database platform and emits the matching native
+	 * bucketing expression (date_trunc / DATE_FORMAT / strftime). Null on
+	 * unsupported query shapes or unrecognised engines.
+	 *
+	 * @param AdhocAggregationRun $run The ad-hoc run.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function nativeAdhocEnvelope(AdhocAggregationRun $run): ?array {
+		$query  = $run->query;
+		$native = $this->tryNativeAggregation(
+			register: $run->register,
+			schema: $run->schema,
+			metric: $query->metric,
+			field: $query->field,
+			filter: $run->resolvedQuery->filter,
+			groupBy: $query->groupBy,
+			dateBucket: $query->dateBucket,
+			metrics: $query->getMetrics(),
+			cumulative: $query->cumulative
+		);
+		if ($native === null) {
+			return null;
+		}
+
+		return [
+			'backend' => $this->detectDatabasePlatform(),
+			'cached' => false,
+		] + $native;
+	}//end nativeAdhocEnvelope()
 
 	/**
 	 * Delegate an ad-hoc aggregation to the DBAL object-source provider when
@@ -885,19 +947,13 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * null here rather than propagated: the aggregation endpoints should
 	 * degrade to an empty widget, never 500 the dashboard.
 	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The schema being aggregated.
-	 * @param AggregationQuery $query The placeholder-resolved query.
+	 * @param AdhocAggregationRun $run The ad-hoc run; its resolved query is sent.
 	 *
 	 * @return array<string, mixed>|null The result fragment, or null to fall through.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function tryDbalAggregation(
-		Register $register,
-		Schema $schema,
-		AggregationQuery $query,
-	): ?array {
+	private function tryDbalAggregation(AdhocAggregationRun $run): ?array {
 		if ($this->dbalSourceProvider === null) {
 			return null;
 		}
@@ -905,10 +961,45 @@ class AggregationRunner implements AggregationRunnerInterface {
 		// Multi-metric requests aren't supported by the DBAL provider's
 		// single-metric aggregate() signature. Fall through to the
 		// magic-table native / PHP paths below, which do support it.
+		$query = $run->resolvedQuery;
 		if ($query->isMultiMetric() === true) {
 			return null;
 		}
 
+		$config = $this->dbalSourceConfig(schema: $run->schema);
+		if ($config === null) {
+			return null;
+		}
+
+		try {
+			return $this->dbalSourceProvider->aggregate(
+				register: $run->register,
+				schema: $run->schema,
+				metric: $query->metric,
+				field: $query->field,
+				filter: $query->filter,
+				groupBy: $query->groupBy,
+				dateBucket: $query->dateBucket,
+				config: $config
+			);
+		} catch (\Throwable $e) {
+			$this->logger?->warning(
+				'[AggregationRunner] DBAL aggregation failed for schema "' . ((string)$run->schema->getSlug()) . '": ' . $e->getMessage()
+			);
+			return null;
+		}
+	}//end tryDbalAggregation()
+
+	/**
+	 * The `dbal-source` object-source config of a schema, or null when it has none.
+	 *
+	 * @param Schema $schema The schema being aggregated.
+	 *
+	 * @return array<mixed>|null
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function dbalSourceConfig(Schema $schema): ?array {
 		$configuration = $schema->getConfiguration();
 		if (is_array($configuration) === false) {
 			return null;
@@ -926,24 +1017,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return null;
 		}
 
-		try {
-			return $this->dbalSourceProvider->aggregate(
-				register: $register,
-				schema: $schema,
-				metric: $query->metric,
-				field: $query->field,
-				filter: $query->filter,
-				groupBy: $query->groupBy,
-				dateBucket: $query->dateBucket,
-				config: $config
-			);
-		} catch (\Throwable $e) {
-			$this->logger?->warning(
-				'[AggregationRunner] DBAL aggregation failed for schema "' . ((string)$schema->getSlug()) . '": ' . $e->getMessage()
-			);
-			return null;
-		}
-	}//end tryDbalAggregation()
+		return $config;
+	}//end dbalSourceConfig()
 
 	/**
 	 * Project translatable group keys in a grouped-aggregation envelope to
@@ -1229,36 +1304,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * Marked `backend: "php-fallback"` in the response so callers know
 	 * the query did not hit a native engine.
 	 *
-	 * @param Register $register Register.
-	 * @param Schema $schema Schema.
-	 * @param string $metric One of count/sum/avg/min/max.
-	 * @param string|null $field Metric field (null for count).
-	 * @param array<string, mixed> $filter Already placeholder-resolved filter map.
-	 * @param array<string, mixed>|null $groupBy Optional categorical groupBy spec.
-	 * @param array<string, mixed>|null $dateBucket Optional time-bucket spec.
-	 * @param array<int, array{metric: string, field: ?string}>|null $metrics Optional multi-metric list
-	 *                                                                        (REQ-AGG-102);
-	 *                                                                        null/one-element behaves
-	 *                                                                        exactly as the legacy
-	 *                                                                        single `$metric`/`$field`
-	 *                                                                        pair. Not combined with
-	 *                                                                        `$dateBucket` (rejected
-	 *                                                                        upstream by
-	 *                                                                        AggregationQuery::create()).
-	 * @param bool $cumulative Running-total flag
-	 *                         (REQ-AGG-103).
-	 *                         Only consulted
-	 *                         when `$dateBucket`
-	 *                         is set; adds a
-	 *                         `cumulative` key
-	 *                         to each ordered
-	 *                         bucket via {@see
-	 *                         addCumulativeColumn()}
-	 *                         — the
-	 *                         PHP-post-pass half
-	 *                         of the SQL-window
-	 *                         / PHP parity pair
-	 *                         (design D3).
+	 * @param AdhocAggregationRun $run The ad-hoc run.
 	 *
 	 * @return array<string, mixed> Either `{value, backend, cached}` or
 	 *                              `{groups, backend, cached}` mirroring the
@@ -1266,28 +1312,39 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 *                              requests carry `values` instead of
 	 *                              `value`/per-group `value`.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *   The branching mirrors the Postgres SQL path: dateBucket vs.
-	 *   groupBy vs. ungrouped, each with the metric / filter pipeline.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function bucketInPhp(
-		Register $register,
-		Schema $schema,
-		string $metric,
-		?string $field,
-		array $filter,
-		?array $groupBy,
-		?array $dateBucket,
-		?array $metrics = null,
-		bool $cumulative = false,
-	): array {
+	private function bucketInPhp(AdhocAggregationRun $run): array {
+		$rows = $this->adhocPhpRows(run: $run);
+
+		if ($run->query->dateBucket !== null) {
+			return [
+				'groups' => $this->dateBucketGroups(query: $run->query, rows: $rows),
+				'backend' => 'php-fallback',
+				'cached' => false,
+			];
+		}
+
+		return $this->adhocPhpFigures(query: $run->query, rows: $rows) + [
+			'backend' => 'php-fallback',
+			'cached' => false,
+		];
+	}//end bucketInPhp()
+
+	/**
+	 * The schema's rows, capped, with the resolved filter applied in PHP.
+	 *
+	 * Same operator vocabulary (in / gt / gte / lt / lte / ne) as the SQL path.
+	 *
+	 * @param AdhocAggregationRun $run The ad-hoc run.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function adhocPhpRows(AdhocAggregationRun $run): array {
 		$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-			register: $register,
-			schema: $schema,
+			register: $run->register,
+			schema: $run->schema,
 			limit: self::PHP_FALLBACK_ROW_CAP
 		);
 
@@ -1298,95 +1355,136 @@ class AggregationRunner implements AggregationRunnerInterface {
 			$rows[] = $entity->getObject();
 		}
 
-		// Apply the filter clauses in PHP — same operator vocabulary
-		// (in / gt / gte / lt / lte / ne) as the SQL path.
-		$rows = $this->applyFilter(rows: $rows, filter: $filter);
+		return $this->applyFilter(rows: $rows, filter: $run->resolvedQuery->filter);
+	}//end adhocPhpRows()
 
-		if ($dateBucket !== null) {
-			// Restrict to rows whose bucket field falls in [start, end).
-			$bucketField = (string)$dateBucket['field'];
-			$start = strtotime((string)$dateBucket['start']);
-			$end = strtotime((string)$dateBucket['end']);
-			$gap = (string)$dateBucket['gap'];
-			$buckets = [];
+	/**
+	 * The metric per date bucket, chronologically ascending, with the running total when asked.
+	 *
+	 * Sorting the ISO-8601-UTC bucket keys with ksort() orders them chronologically
+	 * ascending (string ordering matches time ordering for this key format),
+	 * which is the ordering addCumulativeColumn() assumes.
+	 *
+	 * @param AggregationQuery                 $query The caller's query; it carries a dateBucket.
+	 * @param array<int, array<string, mixed>> $rows  The filtered rows.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function dateBucketGroups(AggregationQuery $query, array $rows): array {
+		$buckets = $this->bucketRowsByDate(rows: $rows, dateBucket: (array)$query->dateBucket);
 
-			foreach ($rows as $row) {
-				$raw = ($row[$bucketField] ?? null);
-				if ($raw === null) {
-					continue;
-				}
-
-				$stamp = strtotime((string)$raw);
-				if (is_numeric($raw) === true) {
-					$stamp = (int)$raw;
-				}
-
-				if ($stamp === false || $stamp < $start || $stamp >= $end) {
-					continue;
-				}
-
-				$key = $this->truncateTimestamp(timestamp: $stamp, gap: $gap);
-				$buckets[$key] ??= [];
-				$buckets[$key][] = $row;
-			}
-
-			// Compute the metric per bucket. ksort() on the ISO-8601-UTC
-			// bucket keys sorts them chronologically ascending (string
-			// ordering matches time ordering for this key format), which
-			// is the ordering addCumulativeColumn() assumes.
-			$groups = [];
-			ksort($buckets);
-			foreach ($buckets as $key => $bucketRows) {
-				$groups[] = [
-					'key' => $key,
-					'value' => $this->computeMetric(rows: $bucketRows, metric: $metric, field: $field),
-				];
-			}
-
-			if ($cumulative === true) {
-				$groups = $this->addCumulativeColumn(groups: $groups);
-			}
-
-			return [
-				'groups' => $groups,
-				'backend' => 'php-fallback',
-				'cached' => false,
-			];
-		}//end if
-
-		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
-		$isMultiMetric = (is_array($metrics) === true && count($metrics) > 1);
-		if (count($groupFields) > 0) {
-			$groups = $this->computeGrouped(
-				rows: $rows,
-				metric: $metric,
-				field: $field,
-				groupFields: $groupFields,
-				metrics: $metrics
-			);
-
-			return [
-				'groups' => $groups,
-				'backend' => 'php-fallback',
-				'cached' => false,
+		$groups = [];
+		ksort($buckets);
+		foreach ($buckets as $key => $bucketRows) {
+			$groups[] = [
+				'key' => $key,
+				'value' => $this->computeMetric(rows: $bucketRows, metric: $query->metric, field: $query->field),
 			];
 		}
 
-		if ($isMultiMetric === true) {
-			return [
-				'values' => $this->computeMetrics(rows: $rows, metrics: $metrics),
-				'backend' => 'php-fallback',
-				'cached' => false,
-			];
+		if ($query->cumulative === true) {
+			$groups = $this->addCumulativeColumn(groups: $groups);
 		}
 
-		return [
-			'value' => $this->computeMetric(rows: $rows, metric: $metric, field: $field),
-			'backend' => 'php-fallback',
-			'cached' => false,
+		return $groups;
+	}//end dateBucketGroups()
+
+	/**
+	 * The rows whose bucket field falls in [start, end), keyed by truncated bucket.
+	 *
+	 * @param array<int, array<string, mixed>> $rows       The filtered rows.
+	 * @param array<string, mixed>             $dateBucket The time-bucket spec: field, start, end, gap.
+	 *
+	 * @return array<string, array<int, array<string, mixed>>>
+	 */
+	private function bucketRowsByDate(array $rows, array $dateBucket): array {
+		$bucketField = (string)$dateBucket['field'];
+		$window = [
+			'start' => strtotime((string)$dateBucket['start']),
+			'end' => strtotime((string)$dateBucket['end']),
 		];
+		$gap = (string)$dateBucket['gap'];
+		$buckets = [];
 
-	}//end bucketInPhp()
+		foreach ($rows as $row) {
+			$stamp = $this->rowBucketStamp(row: $row, field: $bucketField);
+			if ($this->stampInWindow(stamp: $stamp, window: $window) === false) {
+				continue;
+			}
+
+			$key = $this->truncateTimestamp(timestamp: (int)$stamp, gap: $gap);
+			$buckets[$key] ??= [];
+			$buckets[$key][] = $row;
+		}
+
+		return $buckets;
+	}//end bucketRowsByDate()
+
+	/**
+	 * A row's bucket timestamp: null when the field is absent, false when unparseable.
+	 *
+	 * A numeric value is taken as a unix timestamp.
+	 *
+	 * @param array<string, mixed> $row   The row.
+	 * @param string               $field The bucket field.
+	 *
+	 * @return int|false|null
+	 */
+	private function rowBucketStamp(array $row, string $field): int|false|null {
+		$raw = ($row[$field] ?? null);
+		if ($raw === null) {
+			return null;
+		}
+
+		$stamp = strtotime((string)$raw);
+		if (is_numeric($raw) === true) {
+			$stamp = (int)$raw;
+		}
+
+		return $stamp;
+	}//end rowBucketStamp()
+
+	/**
+	 * Whether a bucket timestamp falls in the window [start, end).
+	 *
+	 * @param int|false|null                          $stamp  The row's timestamp.
+	 * @param array{start: int|false, end: int|false} $window The window bounds.
+	 *
+	 * @return bool
+	 */
+	private function stampInWindow(int|false|null $stamp, array $window): bool {
+		return ($stamp === null || $stamp === false || $stamp < $window['start'] || $stamp >= $window['end']) === false;
+	}//end stampInWindow()
+
+	/**
+	 * The figures of an un-bucketed fallback query: `groups`, `values` or `value`.
+	 *
+	 * @param AggregationQuery                 $query The caller's query.
+	 * @param array<int, array<string, mixed>> $rows  The filtered rows.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function adhocPhpFigures(AggregationQuery $query, array $rows): array {
+		$metrics     = $query->getMetrics();
+		$groupFields = $this->resolveGroupFields(groupBy: $query->groupBy);
+		if (count($groupFields) > 0) {
+			return [
+				'groups' => $this->computeGrouped(
+					rows: $rows,
+					metric: $query->metric,
+					field: $query->field,
+					groupFields: $groupFields,
+					metrics: $metrics
+				),
+			];
+		}
+
+		if (count($metrics) > 1) {
+			return ['values' => $this->computeMetrics(rows: $rows, metrics: $metrics)];
+		}
+
+		return ['value' => $this->computeMetric(rows: $rows, metric: $query->metric, field: $query->field)];
+	}//end adhocPhpFigures()
 
 	/**
 	 * Add a `cumulative` (running-total) key to each already-ordered
@@ -2467,90 +2565,66 @@ class AggregationRunner implements AggregationRunnerInterface {
 		bool $rowRbac = true,
 	): ?array {
 		return $this->tryNativeWithSpec(
-			register: $register,
-			schema: $schema,
-			spec: [
-				'metric'     => $metric,
-				'field'      => $field,
-				'filter'     => $filter,
-				'groupBy'    => $groupBy,
-				'dateBucket' => $dateBucket,
-				'metrics'    => $metrics,
-				'cumulative' => $cumulative,
-				'rowRbac'    => $rowRbac,
-			]
+			request: new NativeAggregationRequest(
+				register: $register,
+				schema: $schema,
+				spec: [
+					'metric'     => $metric,
+					'field'      => $field,
+					'filter'     => $filter,
+					'groupBy'    => $groupBy,
+					'dateBucket' => $dateBucket,
+					'metrics'    => $metrics,
+					'cumulative' => $cumulative,
+					'rowRbac'    => $rowRbac,
+				]
+			)
 		);
 	}//end tryNativeAggregation()
 
 	/**
 	 * Dispatch a native aggregation request to the multi-metric or single-metric path.
 	 *
-	 * @param Register $register The register
-	 * @param Schema   $schema   The schema
-	 * @param array    $spec     The aggregation request: metric, field, filter,
-	 *                           groupBy, dateBucket, metrics, cumulative, rowRbac
+	 * @param NativeAggregationRequest $request The register, schema and aggregation asked.
 	 *
 	 * @return array|null Null sends the caller to the PHP path
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function tryNativeWithSpec(Register $register, Schema $schema, array $spec): ?array {
+	private function tryNativeWithSpec(NativeAggregationRequest $request): ?array {
+		$spec = $request->spec;
 		if ($this->nativePathCannotExpress(metrics: $spec['metrics'], groupBy: $spec['groupBy']) === true) {
 			return null;
 		}
 
 		if (is_array($spec['metrics']) === true && count($spec['metrics']) > 1) {
-			return $this->tryNativeMultiMetric(
-				register: $register,
-				schema: $schema,
-				filter: $spec['filter'],
-				groupBy: $spec['groupBy'],
-				metrics: $spec['metrics'],
-				rowRbac: $spec['rowRbac']
-			);
+			return $this->tryNativeMultiMetric(request: $request);
 		}
 
-		return $this->tryNativeSingleMetric(register: $register, schema: $schema, spec: $spec);
+		return $this->tryNativeSingleMetric(request: $request);
 	}//end tryNativeWithSpec()
 
 	/**
 	 * Run one metric natively, or answer null to send the caller to the PHP path.
 	 *
-	 * @param Register $register The register
-	 * @param Schema   $schema   The schema
-	 * @param array    $spec     The aggregation request: metric, field, filter,
-	 *                           groupBy, dateBucket, metrics, cumulative, rowRbac
+	 * @param NativeAggregationRequest $request The register, schema and aggregation asked.
 	 *
 	 * @return array|null
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function tryNativeSingleMetric(Register $register, Schema $schema, array $spec): ?array {
+	private function tryNativeSingleMetric(NativeAggregationRequest $request): ?array {
+		$spec         = $request->spec;
 		$platformName = $this->detectDatabasePlatform();
 		$groupFields  = $this->resolveGroupFields(groupBy: $spec['groupBy']);
-		if (self::nativeShapeSupported(platform: $platformName, dateBucket: $spec['dateBucket'], groupFields: $groupFields) === false
-			|| self::nativeMetricSupported(metric: $spec['metric'], field: $spec['field']) === false
-			|| self::nativeFilterSupported(filter: $spec['filter'], schema: $schema) === false
-		) {
+		if ($this->nativeRequestSupported(request: $request, platform: $platformName) === false) {
 			return null;
 		}
 
-		$tableName = $this->magicMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		if ($tableName === null || $tableName === '') {
+		$query = $this->nativeQueryFor(request: $request, platform: $platformName);
+		if ($query === null) {
 			return null;
 		}
-
-		$query = new NativeAggregationQuery(
-			platform: $platformName,
-			quote: $this->identifierQuote(platform: $platformName),
-			tableName: $tableName,
-			metric: $spec['metric']
-		);
-		if ($this->buildNativeWhere(query: $query, register: $register, schema: $schema, rowRbac: $spec['rowRbac']) === false) {
-			return null;
-		}
-
-		$this->addNativeFilterPredicates(query: $query, filter: $spec['filter']);
 
 		return $this->runNativeQuery(
 			query: $query,
@@ -2559,6 +2633,58 @@ class AggregationRunner implements AggregationRunnerInterface {
 			bucket: ['dateBucket' => $spec['dateBucket'], 'cumulative' => $spec['cumulative']]
 		);
 	}//end tryNativeSingleMetric()
+
+	/**
+	 * The native query over the schema's table with its WHERE built, or null when it cannot run.
+	 *
+	 * Null when the schema has no table, or when the row predicate or
+	 * organisation scope cannot be expressed natively.
+	 *
+	 * @param NativeAggregationRequest $request  The register, schema and aggregation asked.
+	 * @param string                   $platform The detected database platform.
+	 *
+	 * @return NativeAggregationQuery|null
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function nativeQueryFor(NativeAggregationRequest $request, string $platform): ?NativeAggregationQuery {
+		$spec      = $request->spec;
+		$tableName = $this->magicMapper->getTableNameForRegisterSchema(register: $request->register, schema: $request->schema);
+		if ($tableName === null || $tableName === '') {
+			return null;
+		}
+
+		$query = new NativeAggregationQuery(
+			platform: $platform,
+			quote: $this->identifierQuote(platform: $platform),
+			tableName: $tableName,
+			metric: $spec['metric']
+		);
+		if ($this->buildNativeWhere(query: $query, register: $request->register, schema: $request->schema, rowRbac: $spec['rowRbac']) === false) {
+			return null;
+		}
+
+		$this->addNativeFilterPredicates(query: $query, filter: $spec['filter']);
+		return $query;
+	}//end nativeQueryFor()
+
+	/**
+	 * Whether the native SQL supports the request's shape, metric and filter on this platform.
+	 *
+	 * @param NativeAggregationRequest $request  The register, schema and aggregation asked.
+	 * @param string                   $platform The detected database platform.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function nativeRequestSupported(NativeAggregationRequest $request, string $platform): bool {
+		$spec        = $request->spec;
+		$groupFields = $this->resolveGroupFields(groupBy: $spec['groupBy']);
+		return self::nativeShapeSupported(platform: $platform, dateBucket: $spec['dateBucket'], groupFields: $groupFields) === true
+			&& self::nativeMetricSupported(metric: $spec['metric'], field: $spec['field']) === true
+			&& self::nativeFilterSupported(filter: $spec['filter'], schema: $request->schema) === true;
+	}//end nativeRequestSupported()
 
 	/**
 	 * Whether the request holds something the native SQL cannot express.
@@ -3292,12 +3418,10 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * Not used for the time-bucket (`dateBucket`) path — mutually exclusive
 	 * with multi-metric, rejected upstream by AggregationQuery::create().
 	 *
-	 * @param Register $register Register the schema belongs to.
-	 * @param Schema $schema Schema being aggregated.
-	 * @param array<string, mixed> $filter Already placeholder-resolved filter map.
-	 * @param array<string, mixed>|null $groupBy Optional group spec (see {@see tryNativeAggregation()}).
-	 * @param array<int, array{metric: string, field: ?string}> $metrics Requested metric entries (>1).
-	 * @param bool $rowRbac Apply the caller's read-rule row predicate (false only for bypassRbac callers).
+	 * @param NativeAggregationRequest $request The register, schema and aggregation asked: its
+	 *                                          placeholder-resolved filter, optional group spec,
+	 *                                          metric entries (>1) and whether the caller's
+	 *                                          read-rule row predicate applies.
 	 *
 	 * @return array{values: AggValues}
 	 *                                  |array{groups: array<int, array{key?: mixed, keys?: array<string, mixed>, values: AggValues}>}
@@ -3305,47 +3429,80 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	private function tryNativeMultiMetric(
-		Register $register,
-		Schema $schema,
-		array $filter,
-		?array $groupBy,
-		array $metrics,
-		bool $rowRbac = true,
-	): ?array {
-		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
-		$isMulti = (count($groupFields) > 1);
+	private function tryNativeMultiMetric(NativeAggregationRequest $request): ?array {
+		$perMetric = $this->nativePerMetric(request: $request);
+		if ($perMetric === null) {
+			return null;
+		}
 
-		$ungroupedValues = [];
-		$orderedKeys = [];
-		$mergedByKey = [];
+		$groupFields = $this->resolveGroupFields(groupBy: $request->spec['groupBy']);
+		if (count($groupFields) === 0) {
+			$ungroupedValues = [];
+			foreach ($perMetric as [$responseKey, $single]) {
+				$ungroupedValues[$responseKey] = ($single['value'] ?? null);
+			}
 
-		foreach ($metrics as $entry) {
+			return ['values' => $ungroupedValues];
+		}
+
+		return ['groups' => $this->mergeNativeMetricGroups(perMetric: $perMetric, isMulti: count($groupFields) > 1)];
+	}//end tryNativeMultiMetric()
+
+	/**
+	 * Run each metric entry natively, in order; null as soon as one cannot run.
+	 *
+	 * One metric that cannot run natively bails the whole multi-metric
+	 * attempt so the caller falls through to a single, consistent
+	 * PHP-fallback computation.
+	 *
+	 * @param NativeAggregationRequest $request The register, schema and aggregation asked.
+	 *
+	 * @return list<array{0: string, 1: array<string, mixed>}>|null Response key and native result per entry.
+	 */
+	private function nativePerMetric(NativeAggregationRequest $request): ?array {
+		$spec = $request->spec;
+		$perMetric = [];
+		foreach ($spec['metrics'] as $entry) {
 			$single = $this->tryNativeAggregation(
-				register: $register,
-				schema: $schema,
+				register: $request->register,
+				schema: $request->schema,
 				metric: $entry['metric'],
 				field: ($entry['field'] ?? null),
-				filter: $filter,
-				groupBy: $groupBy,
+				filter: $spec['filter'],
+				groupBy: $spec['groupBy'],
 				dateBucket: null,
-				rowRbac: $rowRbac
+				rowRbac: $spec['rowRbac']
 			);
 
 			if ($single === null) {
-				// One metric couldn't run natively — bail the whole
-				// multi-metric attempt so the caller falls through to a
-				// single, consistent PHP-fallback computation.
 				return null;
 			}
 
-			$responseKey = AggregationQuery::metricResponseKey(metric: $entry['metric'], field: ($entry['field'] ?? null));
+			$perMetric[] = [
+				AggregationQuery::metricResponseKey(metric: $entry['metric'], field: ($entry['field'] ?? null)),
+				$single,
+			];
+		}
 
-			if (count($groupFields) === 0) {
-				$ungroupedValues[$responseKey] = ($single['value'] ?? null);
-				continue;
-			}
+		return $perMetric;
+	}//end nativePerMetric()
 
+	/**
+	 * Merge the per-metric groups into one `values` map per group, in first-seen group order.
+	 *
+	 * @param list<array{0: string, 1: array<string, mixed>}> $perMetric Response key and native result per entry.
+	 * @param bool                                            $isMulti   Whether groups carry a `keys` tuple.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private function mergeNativeMetricGroups(array $perMetric, bool $isMulti): array {
+		$keyName = 'key';
+		if ($isMulti === true) {
+			$keyName = 'keys';
+		}
+
+		$mergedByKey = [];
+		foreach ($perMetric as [$responseKey, $single]) {
 			foreach (($single['groups'] ?? []) as $group) {
 				$keyData = ($group['key'] ?? null);
 				if ($isMulti === true) {
@@ -3353,32 +3510,13 @@ class AggregationRunner implements AggregationRunnerInterface {
 				}
 
 				$tupleKey = (string)json_encode($keyData);
-				if (isset($mergedByKey[$tupleKey]) === false) {
-					$mergedByKey[$tupleKey] = ['keyData' => $keyData, 'values' => []];
-					$orderedKeys[] = $tupleKey;
-				}
-
+				$mergedByKey[$tupleKey] ??= [$keyName => $keyData, 'values' => []];
 				$mergedByKey[$tupleKey]['values'][$responseKey] = ($group['value'] ?? null);
 			}
-		}//end foreach
-
-		if (count($groupFields) === 0) {
-			return ['values' => $ungroupedValues];
 		}
 
-		$groups = [];
-		foreach ($orderedKeys as $tupleKey) {
-			$entry = $mergedByKey[$tupleKey];
-			if ($isMulti === true) {
-				$groups[] = ['keys' => $entry['keyData'], 'values' => $entry['values']];
-				continue;
-			}
-
-			$groups[] = ['key' => $entry['keyData'], 'values' => $entry['values']];
-		}
-
-		return ['groups' => $groups];
-	}//end tryNativeMultiMetric()
+		return array_values($mergedByKey);
+	}//end mergeNativeMetricGroups()
 
 	/**
 	 * Coerce a raw native-SQL aggregate column value (`agg` or, for
@@ -3444,7 +3582,10 @@ class AggregationRunner implements AggregationRunnerInterface {
 		// UTC explicitly; only fall back to strtotime for offset-bearing text.
 		$hasTimezone = (preg_match('/(Z|[+-]\d{2}:?\d{2})$/', trim($raw)) === 1);
 		if ($hasTimezone === false) {
-			$formats = ['Y-m-d H:i:s', 'Y-m-d\TH:i:s', 'Y-m-d H:i', 'Y-m-d'];
+			// `!` on the date-only shape: without it createFromFormat() takes
+			// the missing time of day from the wall clock, so a day bucket
+			// would be labelled with the moment of the request.
+			$formats = ['Y-m-d H:i:s', 'Y-m-d\TH:i:s', 'Y-m-d H:i', '!Y-m-d'];
 			foreach ($formats as $format) {
 				$parsed = DateTimeImmutable::createFromFormat($format, trim($raw), new DateTimeZone('UTC'));
 				if ($parsed !== false) {

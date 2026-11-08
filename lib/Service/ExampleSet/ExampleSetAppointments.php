@@ -131,15 +131,15 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	/**
 	 * Write the event to the owner's calendar and link it to the object.
 	 *
-	 * @param string               $app  The app that ships the fragment, recorded as the linker.
-	 * @param string               $key  The appointment's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled appointment fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{object: string, calendar: int, uri: string, uid: string}|null} The entry, or why not.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$objectUuid = (string) $data['object'];
 		$target     = $this->target(uuid: $objectUuid);
 		if ($target === null) {

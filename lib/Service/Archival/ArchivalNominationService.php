@@ -55,7 +55,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  */
-class ArchivalNominationService implements ArchivalNominationServiceInterface {
+class ArchivalNominationService implements ArchivalNominationServiceInterface, ArchivalNominationTriggerInterface {
 
 	/**
 	 * The selectielijst row the schema's classification points at decided it.

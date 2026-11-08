@@ -45,7 +45,7 @@ use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
 use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface;
 use OCA\OpenRegister\Service\Flow\EventCatalogServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowAccess;
+use OCA\OpenRegister\Service\Flow\FlowAccessInterface;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
@@ -155,9 +155,9 @@ class FlowController extends Controller {
 	/**
 	 * Who may do what with a flow.
 	 *
-	 * @var FlowAccess
+	 * @var FlowAccessInterface
 	 */
-	private readonly FlowAccess $access;
+	private readonly FlowAccessInterface $access;
 
 	/**
 	 * Reads, publishes, drafts and deprecates versions.

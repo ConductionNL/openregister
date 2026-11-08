@@ -44,7 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\CaseTokenServiceInterface;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -66,7 +66,7 @@ class CaseTokenController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfaces::CASE_TOKEN;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::CASE_TOKEN;
 
 	/**
 	 * Constructor.

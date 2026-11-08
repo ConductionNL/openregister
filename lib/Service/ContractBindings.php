@@ -426,6 +426,8 @@ use OCA\OpenRegister\Service\Operations\OperationsJobsService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCA\OpenRegister\Service\Operations\SupportBundleService;
 use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
+use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
+use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartySchemaCatalogueInterface;
@@ -456,8 +458,12 @@ use OCA\OpenRegister\Service\Rbac\RevealFlusher;
 use OCA\OpenRegister\Service\Rbac\RevealFlusherInterface;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
+use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
+use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStoreInterface;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionLifecycleInterface;
+use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\LinkExposureInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
@@ -588,6 +594,7 @@ final class ContractBindings {
 		AppointmentAttendeeServiceInterface::class => AppointmentAttendeeService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		DeclaredGroupInventoryInterface::class => DeclaredGroupInventoryService::class,
+		\OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizerInterface::class => \OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer::class,
 		DoriathCredentialKeys::class => DoriathCredentialStore::class,
 		FileVectorizationStrategyInterface::class => FileVectorizationStrategy::class,
 		FlowRunSubjectsInterface::class => FlowRunSubjects::class,
@@ -598,11 +605,13 @@ final class ContractBindings {
 		MovedJobStateInterface::class => MovedJobState::class,
 		ObjectVectorizationStrategyInterface::class => ObjectVectorizationStrategy::class,
 		OdtWriterInterface::class => OdtWriter::class,
+		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		ShareGrantorInterface::class => ShareGrantor::class,
 		TenantKeyRotationInterface::class => TenantKeyService::class,
 		ToolReachLevels::class => ToolReachResolver::class,
 		AppSettingsInterface::class => SettingsService::class,
 		ArchivalNominationServiceInterface::class => ArchivalNominationService::class,
+		\OCA\OpenRegister\Service\Archival\ArchivalNominationTriggerInterface::class => ArchivalNominationService::class,
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		\OCA\OpenRegister\Service\Audit\AuditSinkInterface::class => \OCA\OpenRegister\Service\Audit\AuditSink::class,
 		DeferredEntryObjectResolverInterface::class => DeferredEntryObjectResolver::class,
@@ -629,6 +638,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Delegation\DelegationNotifierInterface::class => \OCA\OpenRegister\Service\Delegation\DelegationNotifier::class,
 		\OCA\OpenRegister\Service\DsarServiceInterface::class => \OCA\OpenRegister\Service\DsarService::class,
 		\OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface::class => \OCA\OpenRegister\Service\Edepot\EdepotTransferService::class,
+		\OCA\OpenRegister\Service\Edepot\EdepotTransferAttemptInterface::class => \OCA\OpenRegister\Service\Edepot\EdepotTransferService::class,
 		\OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface::class => \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchange::class,
 		\OCA\OpenRegister\Service\Flow\EventCatalogServiceInterface::class => \OCA\OpenRegister\Service\Flow\EventCatalogService::class,
 		\OCA\OpenRegister\Service\Flow\FlowRunAuthorizationInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunAuthorization::class,
@@ -649,6 +659,7 @@ final class ContractBindings {
 		DelegationConsentServiceInterface::class => DelegationConsentService::class,
 		DestructionListRepositoryInterface::class => DestructionListRepository::class,
 		DestructionReviewServiceInterface::class => DestructionReviewService::class,
+		\OCA\OpenRegister\Service\Archival\DestructionReviewReminderInterface::class => DestructionReviewService::class,
 		FederationShareServiceInterface::class => FederationShareService::class,
 		ShippedBaselineResetServiceInterface::class => ShippedBaselineResetService::class,
 		FlowStateNodeInterface::class => FlowStateNode::class,
@@ -671,6 +682,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Credential\OAuth2RelayGuardInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2RelayGuard::class,
 		\OCA\OpenRegister\Service\Credential\OAuth2StateServiceInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2StateService::class,
 		\OCA\OpenRegister\Service\Party\PartyIndicatorGuardInterface::class => \OCA\OpenRegister\Service\Party\PartyIndicatorGuard::class,
+		\OCA\OpenRegister\Service\Party\PartySendRefusalInterface::class => \OCA\OpenRegister\Service\Party\PartyIndicatorGuard::class,
 		\OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface::class => \OCA\OpenRegister\Service\Portal\PortalSubjectAssertion::class,
 		\OCA\OpenRegister\Service\Rbac\ObjectSharingServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectSharingService::class,
 		\OCA\OpenRegister\Service\Rbac\PermissionReportScopeInterface::class => \OCA\OpenRegister\Service\Rbac\PermissionReportScope::class,
@@ -679,7 +691,10 @@ final class ContractBindings {
 		OAuth2ConnectionRepositoryInterface::class => OAuth2ConnectionRepository::class,
 		OpenConnectorTransportInterface::class => OpenConnectorTransport::class,
 		PortalTaskDeliveryServiceInterface::class => PortalTaskDeliveryService::class,
+		\OCA\OpenRegister\Service\Portal\PortalTaskReminderInterface::class => PortalTaskDeliveryService::class,
 		PrincipalResolverRegistryInterface::class => PrincipalResolverRegistry::class,
+		RecordTemplateStoreInterface::class => RecordTemplateService::class,
+		RegistrySubscriptionLifecycleInterface::class => RegistrySubscriptionService::class,
 		RestApiTransportInterface::class => RestApiTransport::class,
 		RouterNodeInterface::class => RouterNode::class,
 		SelectielijstImportServiceInterface::class => SelectielijstImportService::class,
@@ -687,6 +702,8 @@ final class ContractBindings {
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
 		\OCA\OpenRegister\Service\Edepot\TransferListServiceInterface::class => \OCA\OpenRegister\Service\Edepot\TransferListService::class,
 		\OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface::class => \OCA\OpenRegister\Service\Edepot\TransferRecordService::class,
+		\OCA\OpenRegister\Service\Edepot\TransferListRunInterface::class => \OCA\OpenRegister\Service\Edepot\TransferListService::class,
+		\OCA\OpenRegister\Service\Edepot\TransferRecordStoreInterface::class => \OCA\OpenRegister\Service\Edepot\TransferRecordService::class,
 		\OCA\OpenRegister\Service\Edepot\Transport\SftpTransportInterface::class => \OCA\OpenRegister\Service\Edepot\Transport\SftpTransport::class,
 		\OCA\OpenRegister\Service\History\StateHistoryProjectorInterface::class => \OCA\OpenRegister\Service\History\StateHistoryProjector::class,
 		\OCA\OpenRegister\Service\ShareLinkServiceInterface::class => \OCA\OpenRegister\Service\ShareLinkService::class,
@@ -694,6 +711,14 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\UserServiceInterface::class => \OCA\OpenRegister\Service\UserService::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
 		SubjectExportServiceInterface::class => SubjectExportService::class,
+		\OCA\OpenRegister\Service\Gdpr\Export\ExportBundleServiceInterface::class => \OCA\OpenRegister\Service\Gdpr\Export\ExportBundleService::class,
+		\OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface::class => \OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver::class,
+		\OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface::class => \OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor::class,
+		\OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestServiceInterface::class => \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService::class,
+		\OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControlInterface::class => \OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl::class,
+		\OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface::class => \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry::class,
+		\OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface::class => \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry::class,
+		\OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteServiceInterface::class => \OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService::class,
 		\OCA\OpenRegister\Service\Quality\UniqueHintWarningsInterface::class => \OCA\OpenRegister\Service\Quality\UniqueHintWarnings::class,
 		\OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface::class => \OCA\OpenRegister\Service\Rbac\ViewerReachResolver::class,
 		WaitNodeInterface::class => WaitNode::class,
@@ -805,6 +830,8 @@ final class ContractBindings {
 			=> \OCA\OpenRegister\Service\Configuration\RateLimiterService::class,
 		GitLabHandlerInterface::class => GitLabHandler::class,
 		\OCA\OpenRegister\Service\Hardening\ElevationServiceInterface::class => \OCA\OpenRegister\Service\Hardening\ElevationService::class,
+		\OCA\OpenRegister\Service\Hardening\AllowedOriginsInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningPolicy::class,
+		\OCA\OpenRegister\Service\Hardening\HardeningFloorsInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningPolicy::class,
 		\OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningReportService::class,
 		\OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningSettingsService::class,
 		\OCA\OpenRegister\Service\Hardening\StatementServiceInterface::class => \OCA\OpenRegister\Service\Hardening\StatementService::class,
@@ -1033,6 +1060,8 @@ final class ContractBindings {
 		RevealFlusherInterface::class => RevealFlusher::class,
 		UserPrincipalResolverInterface::class => UserPrincipalResolver::class,
 		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
+		\OCA\OpenRegister\Service\Flow\FlowAccessInterface::class => \OCA\OpenRegister\Service\Flow\FlowAccess::class,
+		\OCA\OpenRegister\Service\View\ViewObjectQueryInterface::class => \OCA\OpenRegister\Service\View\ViewObjectQuery::class,
 		HingeAnnotationValidatorInterface::class => HingeAnnotationValidator::class,
 		SurvivorshipAnnotationValidatorInterface::class => SurvivorshipAnnotationValidator::class,
 	];

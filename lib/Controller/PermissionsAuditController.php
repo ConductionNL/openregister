@@ -258,19 +258,20 @@ class PermissionsAuditController extends Controller {
 		$definitions = $this->roleActionsOf(register: $found[0]);
 		$wanted = $this->requestedRoles(roles: $roles, available: array_keys($definitions));
 
-		return new JSONResponse($this->comparison(register: $register, wanted: $wanted, definitions: $definitions));
+		return new JSONResponse(['register' => $register] + $this->comparison(wanted: $wanted, definitions: $definitions));
 	}//end compareRoles()
 
 	/**
 	 * The comparison of the wanted roles against what the register declares.
 	 *
-	 * @param string                            $register    The register as asked for.
+	 * The register as asked for leads the body; the caller puts it in front.
+	 *
 	 * @param array<int, string>                $wanted      The role names asked about.
 	 * @param array<string, array<int, string>> $definitions Role name to its declared actions.
 	 *
-	 * @return array<string, mixed> The comparison body.
+	 * @return array<string, mixed> The comparison body, without the register.
 	 */
-	private function comparison(string $register, array $wanted, array $definitions): array {
+	private function comparison(array $wanted, array $definitions): array {
 		$missing = array_values(array_diff($wanted, array_keys($definitions)));
 		$rows = $this->compared(
 			roles: array_values(array_intersect($wanted, array_keys($definitions))),
@@ -278,7 +279,6 @@ class PermissionsAuditController extends Controller {
 		);
 
 		return [
-			'register' => $register,
 			'roles' => $rows,
 			'unknownRoles' => $missing,
 			'shared' => $this->sharedActions(rows: $rows),
@@ -467,8 +467,7 @@ class PermissionsAuditController extends Controller {
 				$rules,
 				$this->rulesIn(
 					authorization: $entity->getAuthorization(),
-					level: $level,
-					subject: (string)($entity->getSlug() ?? $entity->getTitle() ?? '')
+					origin: ['level' => $level, 'subject' => (string)($entity->getSlug() ?? $entity->getTitle() ?? '')]
 				)
 			);
 		}
@@ -479,17 +478,16 @@ class PermissionsAuditController extends Controller {
 	/**
 	 * Flatten one block's deny rules into report entries.
 	 *
-	 * @param array|null $authorization The block as written.
-	 * @param string     $level         Where the block lives.
-	 * @param string     $subject       Which register or schema it belongs to.
+	 * @param array|null                             $authorization The block as written.
+	 * @param array{level: string, subject: string} $origin        Where the block lives, and which register or schema it belongs to.
 	 *
 	 * @return array<int, array<string, mixed>> One entry per verb and principal.
 	 */
-	private function rulesIn(?array $authorization, string $level, string $subject): array {
+	private function rulesIn(?array $authorization, array $origin): array {
 		$entries = [];
 		foreach ($this->actionRules(authorization: $authorization) as $action => $rules) {
 			foreach ($rules as $rule) {
-				$entries[] = $this->entry(rule: $rule, action: $action, level: $level, subject: $subject);
+				$entries[] = $this->entry(rule: $rule, at: $origin + ['action' => $action]);
 			}
 		}
 
@@ -517,22 +515,18 @@ class PermissionsAuditController extends Controller {
 	/**
 	 * One report entry for one deny rule.
 	 *
-	 * @param mixed  $rule    The rule as written.
-	 * @param string $action  The verb it removes.
-	 * @param string $level   Where the block lives.
-	 * @param string $subject Which register or schema it belongs to.
+	 * @param mixed                                                 $rule The rule as written.
+	 * @param array{level: string, subject: string, action: string} $at   Where the block lives, which register or schema it
+	 *                                                                    belongs to, and the verb the rule removes.
 	 *
-	 * @return array<string, mixed> The entry.
+	 * @return array<string, mixed> The entry: the place first, then what the rule says.
 	 */
-	private function entry(mixed $rule, string $action, string $level, string $subject): array {
-		return [
-			'level' => $level,
-			'subject' => $subject,
-			'action' => $action,
+	private function entry(mixed $rule, array $at): array {
+		return $at + [
 			'principal' => $this->principalOf(rule: $rule),
 			'conditional' => (is_array($rule) === true && isset($rule['match']) === true),
 			'match' => $this->matchOf(rule: $rule),
-			'declared' => $this->catalogue->isGrantable($action),
+			'declared' => $this->catalogue->isGrantable($at['action']),
 		];
 	}//end entry()
 

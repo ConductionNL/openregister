@@ -204,10 +204,10 @@ final class ExampleSetRowInstall {
 		}
 
 		if ($mode === 'update') {
-			return $this->rows->update(entry: $row['earlier'], app: $run['fragment']['app'], key: $row['entry']['key'], data: $data);
+			return $this->rows->update(entry: $row['earlier'], row: new ExampleSetRow(app: $run['fragment']['app'], key: $row['entry']['key'], data: $data));
 		}
 
-		return $this->rows->write(app: $run['fragment']['app'], key: $row['entry']['key'], data: $data);
+		return $this->rows->write(row: new ExampleSetRow(app: $run['fragment']['app'], key: $row['entry']['key'], data: $data));
 	}//end made()
 
 	/**

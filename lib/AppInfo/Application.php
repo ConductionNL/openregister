@@ -49,12 +49,11 @@ use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ContractBindingsRegistrar;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
-use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\Rbac\RbacRegistrar;
@@ -189,7 +188,7 @@ class Application extends App implements IBootstrap {
 		ServiceBootstrap::registerGdpr(context: $context);
 
 		// The contracts other components type-hint, bound to their services.
-		ContractBindings::register(context: $context);
+		ContractBindingsRegistrar::register(context: $context);
 		DbRegistrar::register(context: $context);
 
 		MiddlewareRegistrar::register(context: $context);

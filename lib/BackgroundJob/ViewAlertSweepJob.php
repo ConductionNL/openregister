@@ -46,7 +46,7 @@ use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\View\ViewAlert;
-use OCA\OpenRegister\Service\View\ViewObjectQuery;
+use OCA\OpenRegister\Service\View\ViewObjectQueryInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -84,12 +84,13 @@ class ViewAlertSweepJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory      $time       Time factory for TimedJob.
-	 * @param ViewMapperInterface        $views      The saved views.
-	 * @param ObjectOperationsInterface     $objects    Counts a view's query.
-	 * @param IUserManager      $users      Resolves the owner to count as.
-	 * @param IEventDispatcher  $dispatcher Announces a crossing.
-	 * @param LoggerInterface   $logger     Diagnostics.
+	 * @param ITimeFactory              $time       Time factory for TimedJob.
+	 * @param ViewMapperInterface       $views      The saved views.
+	 * @param ObjectOperationsInterface $objects    Counts a view's query.
+	 * @param IUserManager              $users      Resolves the owner to count as.
+	 * @param IEventDispatcher          $dispatcher Announces a crossing.
+	 * @param LoggerInterface           $logger     Diagnostics.
+	 * @param ViewObjectQueryInterface  $viewQuery  Turns a view's stored query into the search query it counts.
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -98,6 +99,7 @@ class ViewAlertSweepJob extends TimedJob {
 		private readonly IUserManager $users,
 		private readonly IEventDispatcher $dispatcher,
 		private readonly LoggerInterface $logger,
+		private readonly ViewObjectQueryInterface $viewQuery,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
@@ -218,7 +220,7 @@ class ViewAlertSweepJob extends TimedJob {
 		// The VIEW's rows: its registers, schemas, filters and search terms.
 		// ObjectService::count() reads none of those, only the service's ambient
 		// register/schema context, which this sweep never sets (O5, 5 Oct).
-		$query = (new ViewObjectQuery())->forView(viewQuery: (array)($view->getQuery() ?? []));
+		$query = $this->viewQuery->forView(viewQuery: (array)($view->getQuery() ?? []));
 		if ($query === null) {
 			return 0;
 		}

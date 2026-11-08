@@ -223,19 +223,16 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	/**
 	 * Share the object's folder with the principal, with the declared account as the active user.
 	 *
-	 * @param string               $app  The app that ships the fragment (unused: the share is the account's).
-	 * @param string               $key  The grant's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled grant fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{id: string, object: string, node: int, sharedBy: string,
 	 *         sharedWith: string, shareType: int}|null}
 	 *         The record entry (the share's id, its object and the fields held() matches), or why the grant failed.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $app and $key are the contract of every kind.
-	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$uuid   = (string) $data['object'];
 		$object = $this->container->get(PartyService::class)->findUnscoped(uuid: $uuid);
 		if ($object === null) {
