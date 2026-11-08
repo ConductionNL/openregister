@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CacheSettingsControllerFactory;
 use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
@@ -35,7 +36,7 @@ class CacheSettingsControllerTest extends TestCase {
 		$this->appDataFactory = $this->createMock(Factory::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 
-		$this->controller = new CacheSettingsController(
+		$this->controller = CacheSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->settingsService,
