@@ -29,6 +29,7 @@ namespace Unit\Service\Operations;
 use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunMapper;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
+use OCA\OpenRegister\Service\Operations\JobRunContext;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -205,8 +206,7 @@ final class JobRunRecorderTest extends TestCase {
 			static function () use ($recorder): void {
 				$recorder->around('Acme\\NightlyJob', static fn (): bool => true);
 			},
-			JobRun::CAUSE_MANUAL,
-			'fatima'
+			new JobRunContext(JobRun::CAUSE_MANUAL, 'fatima')
 		);
 
 		$this->assertCount(1, $this->inserted);

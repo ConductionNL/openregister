@@ -40,11 +40,11 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\HardeningControllerServices;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
-use OCA\OpenRegister\Service\Hardening\ElevationService;
+use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
-use OCA\OpenRegister\Service\Hardening\HardeningReportService;
-use OCA\OpenRegister\Service\Hardening\HardeningSettingsService;
+use OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface;
+use OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -71,16 +71,16 @@ class HardeningController extends Controller {
 	/**
 	 * Builds the report.
 	 *
-	 * @var HardeningReportService
+	 * @var HardeningReportServiceInterface
 	 */
-	private readonly HardeningReportService $reportService;
+	private readonly HardeningReportServiceInterface $reportService;
 
 	/**
 	 * Applies a change, or refuses it.
 	 *
-	 * @var HardeningSettingsService
+	 * @var HardeningSettingsServiceInterface
 	 */
-	private readonly HardeningSettingsService $settingsService;
+	private readonly HardeningSettingsServiceInterface $settingsService;
 
 	/**
 	 * Reads the floors in force.
@@ -92,9 +92,9 @@ class HardeningController extends Controller {
 	/**
 	 * Guards the administration writes with a fresh sign-in.
 	 *
-	 * @var ElevationService
+	 * @var ElevationServiceInterface
 	 */
-	private readonly ElevationService $elevation;
+	private readonly ElevationServiceInterface $elevation;
 
 	/**
 	 * Constructor.

@@ -63,7 +63,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -138,9 +138,9 @@ class ObjectOwnershipService {
 	/**
 	 * The rules, for "may this caller edit this record".
 	 *
-	 * @var PermissionHandlerInterface
+	 * @var PermissionCheckInterface
 	 */
-	private readonly PermissionHandlerInterface $permissions;
+	private readonly PermissionCheckInterface $permissions;
 
 	/**
 	 * Resolves a named new owner, and their display name.

@@ -41,7 +41,6 @@ use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\MultiTenancyTrait;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 
 /**

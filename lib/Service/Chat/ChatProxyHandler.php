@@ -122,21 +122,35 @@ class ChatProxyHandler {
 	private const PROBE_TIMEOUT_SECONDS = 3;
 
 	/**
+	 * Builds absolute same-instance URLs for the forward/redirect targets.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
+
+	/**
+	 * NC's outbound HTTP client factory.
+	 *
+	 * @var IClientService
+	 */
+	private readonly IClientService $clientService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $appConfig Reads the `chat.proxyTo` appconfig value.
-	 * @param IAppManager $appManager Checks whether hermiq is installed/enabled before ever attempting a call.
-	 * @param IURLGenerator $urlGenerator Builds absolute same-instance URLs for the forward/redirect targets.
-	 * @param IClientService $clientService NC's outbound HTTP client factory.
-	 * @param LoggerInterface $logger Logs fallback reasons (never throws past this class).
+	 * @param ChatProxyEndpoint $endpoint   The collaborators that locate and call the chat backend.
+	 * @param IAppConfig        $appConfig  Reads the `chat.proxyTo` appconfig value.
+	 * @param IAppManager       $appManager Checks whether hermiq is installed/enabled before ever attempting a call.
+	 * @param LoggerInterface   $logger     Logs fallback reasons (never throws past this class).
 	 */
 	public function __construct(
+		ChatProxyEndpoint $endpoint,
 		private readonly IAppConfig $appConfig,
 		private readonly IAppManager $appManager,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->urlGenerator = $endpoint->urlGenerator;
+		$this->clientService = $endpoint->clientService;
 	}//end __construct()
 
 	/**

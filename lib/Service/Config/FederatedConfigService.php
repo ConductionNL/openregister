@@ -86,24 +86,43 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	private const GITHUB_API = 'https://api.github.com';
 
 	/**
+	 * Custodies the GitHub token (Doriath's vault where installed, the NC vault otherwise).
+	 *
+	 * @var CredentialBrokerService
+	 */
+	private readonly CredentialBrokerService $broker;
+
+	/**
+	 * Signs published bundles and verifies installed ones.
+	 *
+	 * @var BundleSigner
+	 */
+	private readonly BundleSigner $signer;
+
+	/**
+	 * NC HTTP client factory (anonymous discovery).
+	 *
+	 * @var IClientService
+	 */
+	private readonly IClientService $clientService;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ShareableConfigTypeRegistry $registry The contributed types.
-	 * @param CredentialBrokerService $broker Custodies the GitHub token (Doriath's vault where installed, the NC vault otherwise).
-	 * @param BundleSigner $signer Signs published bundles and verifies installed ones.
-	 * @param IClientService $clientService NC HTTP client factory (anonymous discovery).
-	 * @param IAppConfig $appConfig Reads the org source allowlist.
-	 * @param LoggerInterface $logger The logger.
+	 * @param FederatedConfigTransport    $transport The credential, signing and HTTP collaborators federated config sharing talks through.
+	 * @param ShareableConfigTypeRegistry $registry  The contributed types.
+	 * @param IAppConfig                  $appConfig Reads the org source allowlist.
+	 * @param LoggerInterface             $logger    The logger.
 	 */
 	public function __construct(
+		FederatedConfigTransport $transport,
 		private readonly ShareableConfigTypeRegistry $registry,
-		private readonly CredentialBrokerService $broker,
-		private readonly BundleSigner $signer,
-		private readonly IClientService $clientService,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->broker = $transport->broker;
+		$this->signer = $transport->signer;
+		$this->clientService = $transport->clientService;
 	}//end __construct()
 
 	/**

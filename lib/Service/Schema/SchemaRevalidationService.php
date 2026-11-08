@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
-use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
+use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 
@@ -76,7 +76,7 @@ class SchemaRevalidationService {
 	 * @param SchemaRunEntryMapper $runEntryMapper Per-object run entries.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
 	 * @param ObjectOperationsInterface $objectService Object read/save pipeline.
-	 * @param ValidateObjectInterface $validateObject Single write-path validator.
+	 * @param ObjectValidatorInterface $validateObject Single write-path validator.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -84,7 +84,7 @@ class SchemaRevalidationService {
 		private readonly SchemaRunEntryMapper $runEntryMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly ValidateObjectInterface $validateObject,
+		private readonly ObjectValidatorInterface $validateObject,
 		private readonly LoggerInterface $logger,
 	) {
 

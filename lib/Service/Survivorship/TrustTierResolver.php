@@ -70,15 +70,10 @@ class TrustTierResolver {
 	): ?string {
 		$best = null;
 		$bestFrom = null;
+		$tuple = new TrustTuple(entityType: $entityType, attribute: $attribute, sourceSystem: $sourceSystem);
 
 		foreach ($trustRows as $row) {
-			$candidate = $this->eligibleCandidate(
-				row: $row,
-				entityType: $entityType,
-				attribute: $attribute,
-				sourceSystem: $sourceSystem,
-				asOf: $asOf
-			);
+			$candidate = $this->eligibleCandidate(row: $row, tuple: $tuple, asOf: $asOf);
 			if ($candidate === null) {
 				continue;
 			}
@@ -98,25 +93,17 @@ class TrustTierResolver {
 	 * effective as of `$asOf`, and declares a non-empty tier.
 	 *
 	 * @param mixed $row Candidate row (validated to be an array here).
-	 * @param string $entityType Entity type to match.
-	 * @param string $attribute Attribute name to match.
-	 * @param string $sourceSystem Source system to match.
+	 * @param TrustTuple $tuple The tuple to match.
 	 * @param DateTimeImmutable $asOf Reference instant for effectiveFrom resolution.
 	 *
 	 * @return array{0: string, 1: int}|null [tier, effectiveFrom-rank], or null when ineligible.
 	 */
-	private function eligibleCandidate(
-		mixed $row,
-		string $entityType,
-		string $attribute,
-		string $sourceSystem,
-		DateTimeImmutable $asOf,
-	): ?array {
+	private function eligibleCandidate(mixed $row, TrustTuple $tuple, DateTimeImmutable $asOf): ?array {
 		if (is_array($row) === false) {
 			return null;
 		}
 
-		if ($this->matchesTuple(row: $row, entityType: $entityType, attribute: $attribute, sourceSystem: $sourceSystem) === false) {
+		if ($this->matchesTuple(row: $row, tuple: $tuple) === false) {
 			return null;
 		}
 
@@ -215,17 +202,15 @@ class TrustTierResolver {
 	/**
 	 * Check whether a trust-configuration row matches the given tuple.
 	 *
-	 * @param array<string, mixed> $row Candidate row.
-	 * @param string $entityType Entity type to match.
-	 * @param string $attribute Attribute to match.
-	 * @param string $sourceSystem Source system to match.
+	 * @param array<string, mixed> $row   Candidate row.
+	 * @param TrustTuple           $tuple The tuple to match.
 	 *
 	 * @return bool True when all three fields match.
 	 */
-	private function matchesTuple(array $row, string $entityType, string $attribute, string $sourceSystem): bool {
-		return (string)($row['entityType'] ?? '') === $entityType
-			&& (string)($row['attribute'] ?? '') === $attribute
-			&& (string)($row['sourceSystem'] ?? '') === $sourceSystem;
+	private function matchesTuple(array $row, TrustTuple $tuple): bool {
+		return (string)($row['entityType'] ?? '') === $tuple->entityType
+			&& (string)($row['attribute'] ?? '') === $tuple->attribute
+			&& (string)($row['sourceSystem'] ?? '') === $tuple->sourceSystem;
 	}//end matchesTuple()
 
 	/**
