@@ -27,9 +27,12 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapperAccess;
 use OCA\OpenRegister\Search\ObjectsProvider;
+use OCA\OpenRegister\Search\ObjectsProviderOutput;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\MapsOverviewService;
+use OCA\OpenRegister\Search\Service\MapsOverviewSources;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
@@ -103,9 +106,11 @@ class SearchAccessWiringGoldenTest extends TestCase {
 		);
 
 		return new MapsOverviewService(
-			$objects,
-			$this->createMock(GeoFeatureCollectionBuilder::class),
-			$this->createMock(PageWidgetRegistryInterface::class),
+			new MapsOverviewSources(
+				$objects,
+				$this->createMock(GeoFeatureCollectionBuilder::class),
+				$this->createMock(PageWidgetRegistryInterface::class)
+			),
 			$this->session($uid),
 			$this->groupManager()
 		);
@@ -157,10 +162,12 @@ class SearchAccessWiringGoldenTest extends TestCase {
 
 		return new ViewMapper(
 			$this->createMock(IDBConnection::class),
-			$organisations,
-			$this->createMock(IAppConfig::class),
-			$this->session($uid),
-			$this->groupManager($groups),
+			new ViewMapperAccess(
+				$organisations,
+				$this->createMock(IAppConfig::class),
+				$this->session($uid),
+				$this->groupManager($groups)
+			),
 			$this->createMock(IEventDispatcher::class)
 		);
 	}//end views()
@@ -221,11 +228,9 @@ class SearchAccessWiringGoldenTest extends TestCase {
 		$preview   = new ObjectPreviewFormatter($urls, $l10n, $objects, $deepLinks, $schemas, $registers, $logger);
 
 		return new ObjectsProvider(
-			$l10n,
 			$objects,
-			$logger,
 			$schemas,
-			new ObjectSearchResultFormatter($urls, $deepLinks, $preview),
+			new ObjectsProviderOutput($l10n, new ObjectSearchResultFormatter($urls, $deepLinks, $preview), $logger),
 			$registers
 		);
 	}//end provider()

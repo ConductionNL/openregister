@@ -102,11 +102,9 @@ class ObjectsProviderTest extends TestCase {
 		);
 
 		return new ObjectsProvider(
-			$this->l10n,
 			$objectService ?? $this->objectService,
-			$this->logger,
 			$schemaMapper,
-			$resultFormatter
+			new \OCA\OpenRegister\Search\ObjectsProviderOutput($this->l10n, $resultFormatter, $this->logger)
 		);
 	}
 

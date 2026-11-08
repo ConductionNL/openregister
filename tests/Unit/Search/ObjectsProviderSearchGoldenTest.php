@@ -151,11 +151,9 @@ class ObjectsProviderSearchGoldenTest extends TestCase {
 
 		$preview = new ObjectPreviewFormatter($urlGenerator, $l10n, $objectService, $deepLinks, $schemaMapper, $registerMapper, $logger);
 		$provider = new ObjectsProvider(
-			$l10n,
 			$objectService,
-			$logger,
 			$schemaMapper,
-			new ObjectSearchResultFormatter($urlGenerator, $deepLinks, $preview),
+			new \OCA\OpenRegister\Search\ObjectsProviderOutput($l10n, new ObjectSearchResultFormatter($urlGenerator, $deepLinks, $preview), $logger),
 			$registerMapper
 		);
 
