@@ -40,21 +40,13 @@ interface RuleRunRecorderInterface {
 	/**
 	 * Record one rule evaluation.
 	 *
-	 * @param string        $ruleId       The derived rule id.
-	 * @param string        $schemaSlug   The slug of the schema the rule is declared on.
-	 * @param RuleTrace     $trace        The verdict and the operand that decided it.
-	 * @param string|null   $objectUuid   The object evaluated, when there was one.
-	 * @param string|null   $registerSlug The register the object lives in.
-	 * @param DateTime|null $moment       The moment of evaluation; defaults to now.
+	 * @param RuleRunSubject $subject The rule evaluated and the object it was evaluated on.
+	 * @param RuleTrace      $trace   The verdict and the operand that decided it.
+	 * @param DateTime|null  $moment  The moment of evaluation; defaults to now.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function record(
-		string $ruleId,
-		string $schemaSlug,
-		RuleTrace $trace,
-		?string $objectUuid = null,
-		?string $registerSlug = null,
-		?DateTime $moment = null,
-	): void;
+	public function record(RuleRunSubject $subject, RuleTrace $trace, ?DateTime $moment = null): void;
 }//end interface
