@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Db\Tenancy;
 
 use Exception;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
-use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\IAppConfig;
 use Symfony\Component\HttpFoundation\Response;
@@ -237,7 +237,7 @@ trait OrganisationWriteGuardTrait {
 	/**
 	 * Let the resolver refuse the write, logging the refusal before it propagates.
 	 *
-	 * @param SharedMasterDataService $resolver       The resolver.
+	 * @param SharedMasterDataServiceInterface $resolver       The resolver.
 	 * @param string                  $table          The register or schema table.
 	 * @param int                     $entityId       The row being written.
 	 * @param array                   $activeOrgUuids The caller's organisation and its parents.
@@ -247,7 +247,7 @@ trait OrganisationWriteGuardTrait {
 	 * @throws SharedMasterDataWriteException When the caller is a declared consumer.
 	 */
 	private function assertSharedMasterDataWritable(
-		SharedMasterDataService $resolver,
+		SharedMasterDataServiceInterface $resolver,
 		string $table,
 		int $entityId,
 		array $activeOrgUuids,

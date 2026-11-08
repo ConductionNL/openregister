@@ -40,7 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Service\OrganisationContext;
-use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -441,11 +441,11 @@ class MagicOrganizationHandler {
 	/**
 	 * The shared master data resolver, or null when the container cannot hand one out.
 	 *
-	 * @return SharedMasterDataService|null The resolver.
+	 * @return SharedMasterDataServiceInterface|null The resolver.
 	 */
-	private function sharedMasterDataResolver(): ?SharedMasterDataService {
+	private function sharedMasterDataResolver(): ?SharedMasterDataServiceInterface {
 		try {
-			$resolver = $this->container->get(SharedMasterDataService::class);
+			$resolver = $this->container->get(SharedMasterDataServiceInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[MagicOrganizationHandler] Shared master data resolver unavailable',
@@ -454,7 +454,7 @@ class MagicOrganizationHandler {
 			return null;
 		}
 
-		if (($resolver instanceof SharedMasterDataService) === false) {
+		if (($resolver instanceof SharedMasterDataServiceInterface) === false) {
 			return null;
 		}
 

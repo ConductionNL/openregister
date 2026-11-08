@@ -96,7 +96,7 @@ use Throwable;
  * here with its sign reversed: it used to be the longest an audit row could
  * live, and is now the shortest.
  */
-class AuditRetentionResolver {
+class AuditRetentionResolver implements AuditRetentionResolverInterface {
 
 	/**
 	 * Shortest lifetime any audit row may be given.

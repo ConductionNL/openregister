@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\FieldEncryptionHandlerInterface;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
 
@@ -49,7 +49,7 @@ final class MagicFlaggedEncryption {
 	 * SaveObject encrypts on the single-object path, but the table is the one
 	 * place every write passes through. Encrypting here as well means no path
 	 * (bulk, import, a service writing an entity back) can put plaintext in an
-	 * encrypted column. FieldEncryptionHandler::encryptProperties() skips a value
+	 * encrypted column. FieldEncryptionHandlerInterface::encryptProperties() skips a value
 	 * that is already an envelope, so the second pass never double-encrypts.
 	 *
 	 * Fails closed: if the schema has encrypted properties and the handler
@@ -121,13 +121,13 @@ final class MagicFlaggedEncryption {
 	 *
 	 * @param Schema $schema The schema being written to.
 	 *
-	 * @return FieldEncryptionHandler
+	 * @return FieldEncryptionHandlerInterface
 	 *
 	 * @throws RuntimeException When no handler is available.
 	 */
-	private function handler(Schema $schema): FieldEncryptionHandler {
-		$handler = $this->container->get(FieldEncryptionHandler::class);
-		if ($handler instanceof FieldEncryptionHandler === false) {
+	private function handler(Schema $schema): FieldEncryptionHandlerInterface {
+		$handler = $this->container->get(FieldEncryptionHandlerInterface::class);
+		if ($handler instanceof FieldEncryptionHandlerInterface === false) {
 			throw new RuntimeException(
 				'Schema "' . ($schema->getSlug() ?? (string) $schema->getId())
 				. '" has encrypted properties but no FieldEncryptionHandler is available; refusing to store them in the clear.'

@@ -61,17 +61,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  */
-class SharedMasterDataService {
-
-	/**
-	 * The registers table.
-	 */
-	public const REGISTERS = 'openregister_registers';
-
-	/**
-	 * The schemas table.
-	 */
-	public const SCHEMAS = 'openregister_schemas';
+class SharedMasterDataService implements SharedMasterDataServiceInterface {
 
 	/**
 	 * Every declared share, per table, read once per request.
