@@ -30,8 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\SchemaRun;
-use OCA\OpenRegister\Db\SchemaRunMapper;
-use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
+use OCA\OpenRegister\Db\SchemaRunStoreInterface;
+use OCA\OpenRegister\Service\Schema\SchemaBatchMigratorInterface;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
@@ -46,17 +46,17 @@ class SchemaRunJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory.
-	 * @param SchemaRunMapper $runMapper Run persistence.
+	 * @param SchemaRunStoreInterface $runMapper Run persistence.
 	 * @param SchemaRevalidationService $revalidationService Revalidation engine.
-	 * @param SchemaMigrationService $migrationService Migration engine.
+	 * @param SchemaBatchMigratorInterface $migrationService Migration engine.
 	 * @param IJobList $jobList Job list for re-enqueue.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SchemaRunMapper $runMapper,
+		private readonly SchemaRunStoreInterface $runMapper,
 		private readonly SchemaRevalidationService $revalidationService,
-		private readonly SchemaMigrationService $migrationService,
+		private readonly SchemaBatchMigratorInterface $migrationService,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
 	) {

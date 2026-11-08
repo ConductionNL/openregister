@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
  */
-class StateHistoryRebuild {
+class StateHistoryRebuild implements StateHistoryRebuildInterface {
 
 	/**
 	 * Constructor.

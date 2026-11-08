@@ -69,6 +69,8 @@ final class DbRegistrar {
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
 		FlowRunMapperInterface::class => FlowRunMapper::class,
 		FlowTriggerMapperInterface::class => FlowTriggerMapper::class,
+		ImportPreviewFinderInterface::class => ImportPreviewMapper::class,
+		SchemaRunStoreInterface::class => SchemaRunMapper::class,
 		JobRunMapperInterface::class => JobRunMapper::class,
 		MagicAccessPredicateInterface::class => MagicMapper::class,
 		MagicColumnDriftInterface::class => MagicMapper::class,
