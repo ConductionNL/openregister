@@ -95,6 +95,31 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	private const TRUNCATE_LENGTH = 500;
 
 	/**
+	 * JSON Schema keywords a published property may carry (an allow-list, see jsonSchemaSafe())
+	 *
+	 * @var list<string>
+	 */
+	private const JSON_SCHEMA_KEYWORDS = [
+		'type',
+		'title',
+		'description',
+		'enum',
+		'const',
+		'default',
+		'format',
+		'pattern',
+		'minimum',
+		'maximum',
+		'exclusiveMinimum',
+		'exclusiveMaximum',
+		'minLength',
+		'maxLength',
+		'minItems',
+		'maxItems',
+		'uniqueItems',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * `$schemaEntries` is a `list<array{schema: Schema, register: Register|null}>`
@@ -171,63 +196,118 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		$emittedIds = [];
 
 		foreach ($this->schemaEntries as $entry) {
-			$schema = $entry['schema'];
-			$annotation = $this->mcpAnnotation(schema: $schema);
-			if (($annotation['enabled'] ?? false) !== true) {
-				continue;
-			}
-
-			$slug = $this->schemaSlug(schema: $schema);
-			$toolsConfig = ($annotation['tools'] ?? null);
-			$verbs = McpAnnotationValidator::VERBS;
-			if (is_array($toolsConfig) === true) {
-				$verbs = array_values(array_intersect(McpAnnotationValidator::VERBS, array_keys($toolsConfig)));
-			}
-
-			foreach ($verbs as $verb) {
-				$id = $this->appId . '.' . $slug . '.' . $verb;
-
-				// Self-suppression (REQ-DERIVED-003): a hand-written per-app
-				// provider already claims this id — omit the derived
-				// duplicate entirely rather than merely shadowing it.
-				if (in_array($id, $this->suppressedIds, true) === true) {
-					continue;
-				}
-
-				// A second schema row claiming the same id — see $emittedIds.
-				if (array_key_exists($id, $emittedIds) === true) {
-					$this->logger->warning(
-						message: '[SchemaDerivedToolProvider] duplicate tool id suppressed — two schema rows share one slug',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'toolId' => $id,
-							'keptSchemaId' => $emittedIds[$id],
-							'droppedSchemaId' => $schema->getId(),
-						]
-					);
-					continue;
-				}
-
-				$emittedIds[$id] = $schema->getId();
-
-				$verbConfig = [];
-				if (is_array($toolsConfig) === true && is_array($toolsConfig[$verb] ?? null) === true) {
-					$verbConfig = $toolsConfig[$verb];
-				}
-
-				$descriptors[] = $this->buildDescriptor(
-					schema: $schema,
-					slug: $slug,
-					verb: $verb,
-					verbConfig: $verbConfig,
-					id: $id
-				);
-			}//end foreach
-		}//end foreach
+			$descriptors = array_merge(
+				$descriptors,
+				$this->descriptorsForSchema(schema: $entry['schema'], emittedIds: $emittedIds)
+			);
+		}
 
 		return $descriptors;
 	}//end getTools()
+
+	/**
+	 * The descriptors one MCP-enabled schema contributes.
+	 *
+	 * @param Schema               $schema     The schema being derived.
+	 * @param array<string, mixed> $emittedIds Ids already emitted, mapped to their schema id (updated).
+	 *
+	 * @return list<array<string, mixed>> The schema's descriptors; none when MCP is not enabled.
+	 */
+	private function descriptorsForSchema(Schema $schema, array &$emittedIds): array {
+		$annotation = $this->mcpAnnotation(schema: $schema);
+		if (($annotation['enabled'] ?? false) !== true) {
+			return [];
+		}
+
+		$slug = $this->schemaSlug(schema: $schema);
+		$toolsConfig = ($annotation['tools'] ?? null);
+
+		$descriptors = [];
+		foreach ($this->enabledVerbs(toolsConfig: $toolsConfig) as $verb) {
+			$id = $this->appId . '.' . $slug . '.' . $verb;
+			if ($this->claimToolId(id: $id, schema: $schema, emittedIds: $emittedIds) === false) {
+				continue;
+			}
+
+			$descriptors[] = $this->buildDescriptor(
+				schema: $schema,
+				slug: $slug,
+				verb: $verb,
+				verbConfig: $this->verbConfig(toolsConfig: $toolsConfig, verb: $verb),
+				id: $id
+			);
+		}
+
+		return $descriptors;
+	}//end descriptorsForSchema()
+
+	/**
+	 * The verbs a schema exposes: all of them, or those its `tools` block names.
+	 *
+	 * @param mixed $toolsConfig The annotation's `tools` block.
+	 *
+	 * @return list<string> The verbs, in canonical order.
+	 */
+	private function enabledVerbs(mixed $toolsConfig): array {
+		if (is_array($toolsConfig) === true) {
+			return array_values(array_intersect(McpAnnotationValidator::VERBS, array_keys($toolsConfig)));
+		}
+
+		return McpAnnotationValidator::VERBS;
+	}//end enabledVerbs()
+
+	/**
+	 * One verb's dialect config, or an empty array when it declares none.
+	 *
+	 * @param mixed  $toolsConfig The annotation's `tools` block.
+	 * @param string $verb        The verb.
+	 *
+	 * @return array<string, mixed> The verb config.
+	 */
+	private function verbConfig(mixed $toolsConfig, string $verb): array {
+		if (is_array($toolsConfig) === true && is_array($toolsConfig[$verb] ?? null) === true) {
+			return $toolsConfig[$verb];
+		}
+
+		return [];
+	}//end verbConfig()
+
+	/**
+	 * Claim a tool id for a schema, refusing suppressed and already-emitted ids.
+	 *
+	 * @param string               $id         The tool id.
+	 * @param Schema               $schema     The schema claiming it.
+	 * @param array<string, mixed> $emittedIds Ids already emitted, mapped to their schema id (updated).
+	 *
+	 * @return bool Whether the id may be emitted for this schema.
+	 */
+	private function claimToolId(string $id, Schema $schema, array &$emittedIds): bool {
+		// Self-suppression (REQ-DERIVED-003): a hand-written per-app
+		// provider already claims this id — omit the derived
+		// duplicate entirely rather than merely shadowing it.
+		if (in_array($id, $this->suppressedIds, true) === true) {
+			return false;
+		}
+
+		// A second schema row claiming the same id — see getTools().
+		if (array_key_exists($id, $emittedIds) === true) {
+			$this->logger->warning(
+				message: '[SchemaDerivedToolProvider] duplicate tool id suppressed — two schema rows share one slug',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'toolId' => $id,
+					'keptSchemaId' => $emittedIds[$id],
+					'droppedSchemaId' => $schema->getId(),
+				]
+			);
+			return false;
+		}
+
+		$emittedIds[$id] = $schema->getId();
+
+		return true;
+	}//end claimToolId()
 
 	/**
 	 * Dispatch a tool invocation by its parsed `{appId}.{schema}.{verb}` id.
@@ -313,40 +393,10 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 *   (Requirement: REQ-DERIVED-004 — Search verb: filters, pagination, projection, truncation)
 	 */
 	private function search(Schema $schema, ?Register $register, array $arguments): array {
-		$annotation = $this->mcpAnnotation(schema: $schema);
-		$declaredFilters = ($annotation['tools']['search']['filters'] ?? []);
-		if (is_array($declaredFilters) === false) {
-			$declaredFilters = [];
-		}
+		$filters = $this->declaredFilters(schema: $schema, arguments: $arguments);
 
-		$filters = ($arguments['filters'] ?? []);
-		if (is_array($filters) === false) {
-			throw new InvalidArgumentException('`filters` must be an object.');
-		}
-
-		foreach (array_keys($filters) as $filterKey) {
-			if (in_array($filterKey, $declaredFilters, true) === false) {
-				throw new InvalidArgumentException(
-					sprintf(
-						'Undeclared search filter "%s". Declared filters: [%s].',
-						(string)$filterKey,
-						implode(', ', $declaredFilters)
-					)
-				);
-			}
-		}
-
-		$page = (int)($arguments['page'] ?? 1);
-		if ($page < 1) {
-			$page = 1;
-		}
-
-		$pageSize = (int)($arguments['pageSize'] ?? self::DEFAULT_PAGE_SIZE);
-		if ($pageSize < 1) {
-			$pageSize = self::DEFAULT_PAGE_SIZE;
-		}
-
-		$pageSize = min($pageSize, self::MAX_PAGE_SIZE);
+		$page = $this->pageNumber(arguments: $arguments);
+		$pageSize = $this->pageSize(arguments: $arguments);
 		$offset = (($page - 1) * $pageSize);
 
 		$config = [
@@ -378,6 +428,75 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			'hasMore' => (($offset + count($results)) < $total),
 		];
 	}//end search()
+
+	/**
+	 * The requested search filters, refused when one is not declared by the schema.
+	 *
+	 * @param Schema               $schema    The target schema.
+	 * @param array<string, mixed> $arguments Tool arguments.
+	 *
+	 * @return array<string, mixed> The filters.
+	 *
+	 * @throws InvalidArgumentException If `filters` is not an object or names an undeclared property.
+	 */
+	private function declaredFilters(Schema $schema, array $arguments): array {
+		$annotation = $this->mcpAnnotation(schema: $schema);
+		$declaredFilters = ($annotation['tools']['search']['filters'] ?? []);
+		if (is_array($declaredFilters) === false) {
+			$declaredFilters = [];
+		}
+
+		$filters = ($arguments['filters'] ?? []);
+		if (is_array($filters) === false) {
+			throw new InvalidArgumentException('`filters` must be an object.');
+		}
+
+		foreach (array_keys($filters) as $filterKey) {
+			if (in_array($filterKey, $declaredFilters, true) === false) {
+				throw new InvalidArgumentException(
+					sprintf(
+						'Undeclared search filter "%s". Declared filters: [%s].',
+						(string)$filterKey,
+						implode(', ', $declaredFilters)
+					)
+				);
+			}
+		}
+
+		return $filters;
+	}//end declaredFilters()
+
+	/**
+	 * The requested page, at least 1.
+	 *
+	 * @param array<string, mixed> $arguments Tool arguments.
+	 *
+	 * @return int The page.
+	 */
+	private function pageNumber(array $arguments): int {
+		$page = (int)($arguments['page'] ?? 1);
+		if ($page < 1) {
+			$page = 1;
+		}
+
+		return $page;
+	}//end pageNumber()
+
+	/**
+	 * The requested page size: the default when below 1, clamped to the maximum.
+	 *
+	 * @param array<string, mixed> $arguments Tool arguments.
+	 *
+	 * @return int The page size.
+	 */
+	private function pageSize(array $arguments): int {
+		$pageSize = (int)($arguments['pageSize'] ?? self::DEFAULT_PAGE_SIZE);
+		if ($pageSize < 1) {
+			$pageSize = self::DEFAULT_PAGE_SIZE;
+		}
+
+		return min($pageSize, self::MAX_PAGE_SIZE);
+	}//end pageSize()
 
 	/**
 	 * Get verb: fetch a single object by id/uuid via `ObjectService`.
@@ -780,32 +899,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			return ['type' => 'string'];
 		}
 
-		$allowed = [
-			'type',
-			'title',
-			'description',
-			'enum',
-			'const',
-			'default',
-			'format',
-			'pattern',
-			'minimum',
-			'maximum',
-			'exclusiveMinimum',
-			'exclusiveMaximum',
-			'minLength',
-			'maxLength',
-			'minItems',
-			'maxItems',
-			'uniqueItems',
-		];
-
-		$safe = [];
-		foreach ($allowed as $keyword) {
-			if (array_key_exists($keyword, $property) === true) {
-				$safe[$keyword] = $property[$keyword];
-			}
-		}
+		$safe = $this->allowedKeywords(property: $property);
 
 		$safe = $this->jsonSchemaSafeNested(property: $property, safe: $safe);
 
@@ -816,6 +910,24 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		return $safe;
 	}//end jsonSchemaSafe()
+
+	/**
+	 * The allow-listed JSON Schema keywords of a property, in allow-list order.
+	 *
+	 * @param array<string, mixed> $property The declared property.
+	 *
+	 * @return array<string, mixed> The accepted keywords.
+	 */
+	private function allowedKeywords(array $property): array {
+		$safe = [];
+		foreach (self::JSON_SCHEMA_KEYWORDS as $keyword) {
+			if (array_key_exists($keyword, $property) === true) {
+				$safe[$keyword] = $property[$keyword];
+			}
+		}
+
+		return $safe;
+	}//end allowedKeywords()
 
 	/**
 	 * Sanitise the nested shapes of a property.
@@ -911,6 +1023,31 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @return array{schema: Schema, register: Register|null, verb: string}|null
 	 */
 	private function resolveEntry(string $toolId): ?array {
+		$parsed = $this->parseToolId(toolId: $toolId);
+		if ($parsed === null) {
+			return null;
+		}
+
+		$entry = $this->entryForSlug(slug: $parsed['slug']);
+		if ($entry === null) {
+			return null;
+		}
+
+		return [
+			'schema' => $entry['schema'],
+			'register' => $entry['register'],
+			'verb' => $parsed['verb'],
+		];
+	}//end resolveEntry()
+
+	/**
+	 * Split a tool id of this app into its slug and a known verb.
+	 *
+	 * @param string $toolId Namespaced tool id.
+	 *
+	 * @return array{slug: string, verb: string}|null Null for another app's id or an unknown verb.
+	 */
+	private function parseToolId(string $toolId): ?array {
 		$parts = explode('.', $toolId);
 		if (count($parts) < 3) {
 			return null;
@@ -924,18 +1061,25 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			return null;
 		}
 
+		return ['slug' => $slug, 'verb' => $verb];
+	}//end parseToolId()
+
+	/**
+	 * The first schema entry whose slug matches.
+	 *
+	 * @param string $slug The schema slug.
+	 *
+	 * @return array{schema: Schema, register: Register|null}|null The entry, or null.
+	 */
+	private function entryForSlug(string $slug): ?array {
 		foreach ($this->schemaEntries as $entry) {
 			if ($this->schemaSlug(schema: $entry['schema']) === $slug) {
-				return [
-					'schema' => $entry['schema'],
-					'register' => $entry['register'],
-					'verb' => $verb,
-				];
+				return $entry;
 			}
 		}
 
 		return null;
-	}//end resolveEntry()
+	}//end entryForSlug()
 
 	/**
 	 * Build a small structured outcome summary for a successful invocation
