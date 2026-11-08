@@ -644,6 +644,7 @@ final class ContractBindings {
 		LinkObjectNodeInterface::class => LinkObjectNode::class,
 		LoopNodeInterface::class => LoopNode::class,
 		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
+		\OCA\OpenRegister\Service\Operations\MaintenanceModeHoldInterface::class => MaintenanceModeService::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
 		\OCA\OpenRegister\Service\Archival\ReviewOutcomeServiceInterface::class => \OCA\OpenRegister\Service\Archival\ReviewOutcomeService::class,

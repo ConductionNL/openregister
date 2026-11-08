@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Service\Task\TaskState;
+use OCA\OpenRegister\Service\Task\TaskStateRules;
 use OCP\IDBConnection;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -167,7 +167,7 @@ class RollbackApprovalMigrationCommand extends Command {
 		}
 
 		$status = 'approved';
-		if (TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === true) {
+		if (TaskStateRules::isRejectingOutcome(outcome: $task->getOutcome()) === true) {
 			$status = 'rejected';
 		}
 
