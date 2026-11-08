@@ -60,9 +60,6 @@ use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Support\FleetAppId;
-use OCP\App\IAppManager;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -100,17 +97,13 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * @param OpenProjectLinkMapperInterface $openProjectLinkMapper Persistence for link rows.
 	 * @param OpenProjectProvider $provider Provider exposing the external dispatch.
 	 * @param ExternalIntegrationRouterInterface $router External-call router (OpenConnector).
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IUserSession $userSession Active session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
 	 */
 	public function __construct(
 		private readonly OpenProjectLinkMapperInterface $openProjectLinkMapper,
 		private readonly OpenProjectProvider $provider,
 		private readonly ExternalIntegrationRouterInterface $router,
-		private readonly IAppManager $appManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		private readonly LinkServiceRuntime $runtime,
 	) {
 	}//end __construct()
 
@@ -121,7 +114,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * @return bool
 	 */
 	public function isOpenConnectorAvailable(): bool {
-		return FleetAppId::isEnabledForUser($this->appManager, self::REQUIRED_APP);
+		return FleetAppId::isEnabledForUser($this->runtime->appManager(), self::REQUIRED_APP);
 	}//end isOpenConnectorAvailable()
 
 	/**
@@ -132,7 +125,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession()->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
 		}
@@ -291,7 +284,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 		} catch (ProviderUnavailableException $e) {
 			throw $this->unavailable(exception: $e);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenProjectLinkService::createAndLinkWorkPackage failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('OpenProjectLinkService::createAndLinkWorkPackage failed: ' . $e->getMessage());
 			throw new Exception('Failed to create OpenProject work package', 500);
 		}
 	}//end createWorkPackage()
@@ -455,7 +448,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 		} catch (ProviderUnavailableException $e) {
 			throw $this->unavailable(exception: $e);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenProjectLinkService::getAvailableWorkPackages failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('OpenProjectLinkService::getAvailableWorkPackages failed: ' . $e->getMessage());
 			throw new Exception('OpenProject is currently unavailable', 503);
 		}
 	}//end callPicker()
@@ -513,7 +506,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 		try {
 			return $this->openProjectLinkMapper->update($link);
 		} catch (Throwable $e) {
-			$this->logger->debug('OpenProjectLinkService::refreshLink update failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('OpenProjectLinkService::refreshLink update failed: ' . $e->getMessage());
 			return $link;
 		}
 	}//end saveRefreshed()
@@ -539,7 +532,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 		try {
 			$row = $this->provider->get(register: $register, schema: $schema, objectId: $objectUuid, entityId: (string)$workPackageId);
 		} catch (Throwable $e) {
-			$this->logger->debug('OpenProjectLinkService::fetchWorkPackage failed: ' . $e->getMessage());
+			$this->runtime->logger()->debug('OpenProjectLinkService::fetchWorkPackage failed: ' . $e->getMessage());
 			return null;
 		}
 
@@ -555,7 +548,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * @return Exception
 	 */
 	private function unavailable(ProviderUnavailableException $exception): Exception {
-		$this->logger->info('OpenProjectLinkService: provider unavailable (' . $exception->getCause() . '): ' . $exception->getMessage());
+		$this->runtime->logger()->info('OpenProjectLinkService: provider unavailable (' . $exception->getCause() . '): ' . $exception->getMessage());
 		return new Exception($exception->getMessage(), 503);
 	}//end unavailable()
 

@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\MapLink;
 use OCA\OpenRegister\Db\MapLinkMapper;
@@ -93,10 +94,12 @@ class MapLinkServiceTest extends TestCase {
 		$this->service = new MapLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
 			$this->urlGenerator,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}//end setUp()
 

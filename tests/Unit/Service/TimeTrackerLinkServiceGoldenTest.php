@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use DateTime;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
@@ -252,7 +253,7 @@ class TimeTrackerLinkServiceGoldenTest extends TestCase {
 			);
 		}
 
-		return new TimeTrackerLinkService($mapper, $db, $container, $apps, $session, $logger);
+		return new TimeTrackerLinkService($mapper, $db, $container, new LinkServiceRuntime($apps, $session, $logger));
 	}
 
 	private function storedLink(string $type, string $id, string $name, string $linkedBy, ?DateTime $linkedAt, ?int $duration = null, ?bool $billable = null, ?string $startedAt = null): TimeTrackerLink {

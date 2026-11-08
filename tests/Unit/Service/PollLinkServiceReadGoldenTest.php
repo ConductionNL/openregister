@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCA\OpenRegister\Db\PollLink;
 use OCA\OpenRegister\Db\PollLinkMapper;
 use OCA\OpenRegister\Service\LinkTarget;
@@ -142,7 +143,7 @@ class PollLinkServiceReadGoldenTest extends TestCase {
 			);
 		}
 
-		return new PollLinkService($mapper, $db, $apps, $session, $logger);
+		return new PollLinkService($mapper, $db, new LinkServiceRuntime($apps, $session, $logger));
 	}
 
 	private function storedLink(int $pollId, string $title): PollLink {
