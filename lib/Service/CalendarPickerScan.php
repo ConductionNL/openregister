@@ -67,15 +67,50 @@ final class CalendarPickerScan {
 			return null;
 		}
 
-		$start = null;
-		if (isset($vevent->DTSTART) === true) {
-			$start = $vevent->DTSTART->getDateTime();
-		}
-
-		if ($this->cutoff !== null && $start !== null && $start->getTimestamp() < $this->cutoff) {
+		$start = $this->startOf(vevent: $vevent);
+		if ($this->isBeforeCutoff(start: $start) === true) {
 			return null;
 		}
 
+		return $this->row(vevent: $vevent, start: $start, objectUri: $objectUri);
+	}//end pickerRow()
+
+	/**
+	 * The DTSTART of a VEVENT, or null when it has none.
+	 *
+	 * @param mixed $vevent The VEVENT component.
+	 *
+	 * @return mixed
+	 */
+	private function startOf(mixed $vevent): mixed {
+		if (isset($vevent->DTSTART) === true) {
+			return $vevent->DTSTART->getDateTime();
+		}
+
+		return null;
+	}//end startOf()
+
+	/**
+	 * Whether a start time falls before the scan's cutoff.
+	 *
+	 * @param mixed $start The DTSTART, or null.
+	 *
+	 * @return bool
+	 */
+	private function isBeforeCutoff(mixed $start): bool {
+		return $this->cutoff !== null && $start !== null && $start->getTimestamp() < $this->cutoff;
+	}//end isBeforeCutoff()
+
+	/**
+	 * The picker row of a VEVENT.
+	 *
+	 * @param mixed  $vevent    The VEVENT component.
+	 * @param mixed  $start     Its DTSTART, or null.
+	 * @param string $objectUri The calendar object URI.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function row(mixed $vevent, mixed $start, string $objectUri): array {
 		$dtend = null;
 		if (isset($vevent->DTEND) === true) {
 			$dtend = $vevent->DTEND->getDateTime()->format('c');
@@ -96,5 +131,5 @@ final class CalendarPickerScan {
 			'calendarId' => $this->calendarId,
 			'calendarUri' => $this->calendarUri,
 		];
-	}//end pickerRow()
+	}//end row()
 }//end class
