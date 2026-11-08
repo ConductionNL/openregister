@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 
@@ -58,9 +58,9 @@ class FileBatchHandler {
 	/**
 	 * Reference to FileService for cross-handler coordination.
 	 *
-	 * @var FileService|null
+	 * @var FileHandlerSupportInterface|null
 	 */
-	private ?FileService $fileService = null;
+	private ?FileHandlerSupportInterface $fileService = null;
 
 	/**
 	 * Constructor for FileBatchHandler.
@@ -81,11 +81,11 @@ class FileBatchHandler {
 	/**
 	 * Set the FileService instance for cross-handler coordination.
 	 *
-	 * @param FileService $fileService The file service instance.
+	 * @param FileHandlerSupportInterface $fileService The file service instance.
 	 *
 	 * @return void
 	 */
-	public function setFileService(FileService $fileService): void {
+	public function setFileService(FileHandlerSupportInterface $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
 
@@ -270,11 +270,11 @@ class FileBatchHandler {
 	/**
 	 * The FileService, or an exception when it was never set.
 	 *
-	 * @return FileService
+	 * @return FileHandlerSupportInterface
 	 *
 	 * @throws Exception If setFileService() was not called.
 	 */
-	private function requireFileService(): FileService {
+	private function requireFileService(): FileHandlerSupportInterface {
 		if ($this->fileService === null) {
 			throw new Exception('FileService not initialized in FileBatchHandler');
 		}

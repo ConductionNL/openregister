@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\IL10N;
 use Psr\Container\ContainerInterface;
@@ -48,7 +48,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileService $fileService File service.
+	 * @param FileFolderServiceInterface $fileService File service.
 	 * @param ContainerInterface $container DI container — used to
 	 *                                      resolve an ObjectEntity-
 	 *                                      producing mapper at call
@@ -61,7 +61,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private FileService $fileService,
+		private FileFolderServiceInterface $fileService,
 		private ContainerInterface $container,
 		private IL10N $l10n,
 	) {
