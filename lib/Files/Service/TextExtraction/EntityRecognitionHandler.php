@@ -31,7 +31,7 @@ use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet;
@@ -161,9 +161,9 @@ class EntityRecognitionHandler {
 	/**
 	 * Backend state + ExApp client.
 	 *
-	 * @var AnonymisationBackendService
+	 * @var AnonymiserRequestInterface
 	 */
-	private readonly AnonymisationBackendService $anonymisationBackendService;
+	private readonly AnonymiserRequestInterface $anonymisationBackendService;
 
 	/**
 	 * App container, consulted lazily for the object mapper.

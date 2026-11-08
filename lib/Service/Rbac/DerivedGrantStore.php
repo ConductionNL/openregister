@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class DerivedGrantStore implements DerivedGrantStoreInterface {
+class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLoginInterface {
 
 	/**
 	 * The app every key below belongs to.

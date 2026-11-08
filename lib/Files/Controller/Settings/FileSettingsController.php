@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Controller;
@@ -221,10 +221,10 @@ class FileSettingsController extends Controller {
 	public function testOpenAnonymiserConnection(string $apiEndpoint = ''): JSONResponse {
 		try {
 			/*
-			 * @var AnonymisationBackendService $service
+			 * @var AnonymisationBackendServiceInterface $service
 			 */
 
-			$service = $this->container->get(AnonymisationBackendService::class);
+			$service = $this->container->get(AnonymisationBackendServiceInterface::class);
 			$probe = $service->testConnection(method: BackendState::METHOD_OPENANONYMISER);
 
 			if ($probe->reachable === true) {
