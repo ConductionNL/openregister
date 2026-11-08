@@ -66,17 +66,28 @@ class EffectiveAuthorization {
 		$authorization = $schema->getAuthorization();
 
 		// If schema has its own authorization, expand roles and return.
-		if (is_array($authorization) === true && empty($authorization) === false) {
+		if ($this->isConfigured(block: $authorization) === true) {
 			return $this->expandRoles(authorization: $authorization, schema: $schema);
 		}
 
+		return $this->registerAuthorizationFor(schema: $schema);
+	}//end forSchema()
+
+	/**
+	 * The register's authorization for a schema without its own, with roles expanded.
+	 *
+	 * @param object $schema The schema object.
+	 *
+	 * @return array|null The block, or null when no register holds one or it cannot be read.
+	 */
+	private function registerAuthorizationFor(object $schema): ?array {
 		// Fall back to register authorization.
 		try {
 			$registerId = $this->registerMapper->getFirstRegisterWithSchema(schemaId: $schema->getId());
 			if ($registerId !== null) {
 				$register = $this->registerMapper->find(id: $registerId);
 				$registerAuth = $register->getAuthorization();
-				if (is_array($registerAuth) === true && empty($registerAuth) === false) {
+				if ($this->isConfigured(block: $registerAuth) === true) {
 					return $this->expandRoles(authorization: $registerAuth, schema: $schema, register: $register);
 				}
 			}
@@ -85,7 +96,18 @@ class EffectiveAuthorization {
 		}
 
 		return null;
-	}//end forSchema()
+	}//end registerAuthorizationFor()
+
+	/**
+	 * Whether an authorization value is a non-empty block.
+	 *
+	 * @param mixed $block The value.
+	 *
+	 * @return bool True for a non-empty array.
+	 */
+	private function isConfigured(mixed $block): bool {
+		return (is_array($block) === true && empty($block) === false);
+	}//end isConfigured()
 
 	/**
 	 * Expand role references into the action-level entries they stand for.
@@ -96,49 +118,22 @@ class EffectiveAuthorization {
 	 *
 	 * @return array The authorization with roles expanded.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.StaticAccess) RoleBlockExpander owns the rule enforcement applies, so the OAS describes the schema the way it is enforced.
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function expandRoles(array $authorization, object $schema, ?object $register = null): array {
-		if (isset($authorization['roles']) === false || is_array($authorization['roles']) === false) {
+		if ($this->hasRoleBlock(authorization: $authorization) === false) {
 			return $authorization;
 		}
 
 		$roleAssignments = $authorization['roles'];
 		unset($authorization['roles']);
 
-		// Get register for role definitions.
-		if ($register === null) {
-			try {
-				$registerId = $this->registerMapper->getFirstRegisterWithSchema($schema->getId());
-				if ($registerId !== null) {
-					$register = $this->registerMapper->find($registerId);
-				}
-			} catch (\Throwable $e) {
-				return RoleBlockExpander::grantNothingWhenEmpty(authorization: $authorization);
-			}
-		}
-
-		if ($register === null) {
-			return RoleBlockExpander::grantNothingWhenEmpty(authorization: $authorization);
-		}
-
-		$config = $register->getConfiguration();
-		$roles = $config['roles'] ?? [];
-		if (empty($roles) === true) {
-			return RoleBlockExpander::grantNothingWhenEmpty(authorization: $authorization);
-		}
-
-		// Build role map.
-		$roleMap = [];
-		foreach ($roles as $roleDef) {
-			if (isset($roleDef['name']) === true && isset($roleDef['actions']) === true) {
-				$roleMap[$roleDef['name']] = $roleDef['actions'];
-			}
-		}
+		// No register, an unreadable one, or one without role definitions
+		// leaves an empty map, and the block then grants only what it names
+		// outside its roles.
+		$roleMap = $this->roleMapFor(schema: $schema, register: $register);
 
 		// Expand roles to action-level entries.
 		foreach ($roleAssignments as $roleName => $groups) {
@@ -146,19 +141,109 @@ class EffectiveAuthorization {
 				continue;
 			}
 
-			foreach ($roleMap[$roleName] as $action) {
-				if (isset($authorization[$action]) === false) {
-					$authorization[$action] = [];
-				}
-
-				foreach ((array)$groups as $group) {
-					if (in_array($group, $authorization[$action], true) === false) {
-						$authorization[$action][] = $group;
-					}
-				}
-			}
+			$authorization = $this->grantRole(authorization: $authorization, actions: $roleMap[$roleName], groups: $groups);
 		}
 
 		return RoleBlockExpander::grantNothingWhenEmpty(authorization: $authorization);
 	}//end expandRoles()
+
+	/**
+	 * Whether a block carries a `roles` assignment list.
+	 *
+	 * @param array $authorization The authorization block.
+	 *
+	 * @return bool True when `roles` is set and an array.
+	 */
+	private function hasRoleBlock(array $authorization): bool {
+		return (isset($authorization['roles']) === true && is_array($authorization['roles']) === true);
+	}//end hasRoleBlock()
+
+	/**
+	 * Role name => actions, from the register's role definitions.
+	 *
+	 * @param object $schema The schema object.
+	 * @param object|null $register The register, or null to look it up from the schema.
+	 *
+	 * @return array<string, mixed> The role map, empty when there is no register or no definitions.
+	 */
+	private function roleMapFor(object $schema, ?object $register): array {
+		if ($register === null) {
+			$register = $this->registerOf(schema: $schema);
+		}
+
+		if ($register === null) {
+			return [];
+		}
+
+		$config = $register->getConfiguration();
+		$roles = $config['roles'] ?? [];
+		if (empty($roles) === true) {
+			return [];
+		}
+
+		return $this->roleMapOf(roles: $roles);
+	}//end roleMapFor()
+
+	/**
+	 * The first register holding a schema, or null when there is none or it cannot be read.
+	 *
+	 * @param object $schema The schema object.
+	 *
+	 * @return object|null The register.
+	 */
+	private function registerOf(object $schema): ?object {
+		try {
+			$registerId = $this->registerMapper->getFirstRegisterWithSchema($schema->getId());
+			if ($registerId === null) {
+				return null;
+			}
+
+			return $this->registerMapper->find($registerId);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end registerOf()
+
+	/**
+	 * Build the role map from role definitions, skipping any without a name or actions.
+	 *
+	 * @param mixed $roles The register's role definitions.
+	 *
+	 * @return array<string, mixed> Role name => actions.
+	 */
+	private function roleMapOf(mixed $roles): array {
+		$roleMap = [];
+		foreach ($roles as $roleDef) {
+			if (isset($roleDef['name']) === true && isset($roleDef['actions']) === true) {
+				$roleMap[$roleDef['name']] = $roleDef['actions'];
+			}
+		}
+
+		return $roleMap;
+	}//end roleMapOf()
+
+	/**
+	 * Add a role's groups to every action the role carries, without duplicates.
+	 *
+	 * @param array $authorization The authorization block.
+	 * @param mixed $actions The role's actions.
+	 * @param mixed $groups The groups assigned the role.
+	 *
+	 * @return array The block with the role's grants added.
+	 */
+	private function grantRole(array $authorization, mixed $actions, mixed $groups): array {
+		foreach ($actions as $action) {
+			if (isset($authorization[$action]) === false) {
+				$authorization[$action] = [];
+			}
+
+			foreach ((array)$groups as $group) {
+				if (in_array($group, $authorization[$action], true) === false) {
+					$authorization[$action][] = $group;
+				}
+			}
+		}
+
+		return $authorization;
+	}//end grantRole()
 }//end class
