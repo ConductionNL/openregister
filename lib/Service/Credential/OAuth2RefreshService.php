@@ -92,25 +92,53 @@ class OAuth2RefreshService implements OAuth2CredentialSweepInterface {
 	public const BLOCKING_STATUSES = ['relink_needed', 'disabled'];
 
 	/**
+	 * Holds the token set; the only place it is ever written.
+	 *
+	 * @var CredentialStore
+	 */
+	private readonly CredentialStore $credentialStore;
+
+	/**
+	 * Updates the credential's non-secret metadata.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Spends the refresh token and classifies the answer.
+	 *
+	 * @var OAuth2RefreshExchange
+	 */
+	private readonly OAuth2RefreshExchange $exchange;
+
+	/**
+	 * Announces a lost grant to the instance and its owner.
+	 *
+	 * @var CredentialRelinkNotifier
+	 */
+	private readonly CredentialRelinkNotifier $relinkNotifier;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CredentialStore $credentialStore Holds the token set; the only place it is ever written.
-	 * @param ObjectOperationsInterface $objectService Updates the credential's non-secret metadata.
-	 * @param CredentialLock $lock Excludes a second concurrent rotation of one credential.
-	 * @param OAuth2RefreshExchange $exchange Spends the refresh token and classifies the answer.
-	 * @param CredentialRelinkNotifier $relinkNotifier Announces a lost grant to the instance and its owner.
-	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param OAuth2RefreshStores $stores The token-set store and the credential object store.
+	 * @param CredentialLock      $lock   Excludes a second concurrent rotation of one credential.
+	 * @param OAuth2RefreshSteps  $steps  The refresh exchange and the relink notifier.
+	 * @param LoggerInterface     $logger Secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CredentialStore $credentialStore,
-		private readonly ObjectOperationsInterface $objectService,
+		OAuth2RefreshStores $stores,
 		private readonly CredentialLock $lock,
-		private readonly OAuth2RefreshExchange $exchange,
-		private readonly CredentialRelinkNotifier $relinkNotifier,
+		OAuth2RefreshSteps $steps,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->credentialStore = $stores->credentialStore;
+		$this->objectService = $stores->objectService;
+		$this->exchange = $steps->exchange;
+		$this->relinkNotifier = $steps->relinkNotifier;
 	}//end __construct()
 
 	/**

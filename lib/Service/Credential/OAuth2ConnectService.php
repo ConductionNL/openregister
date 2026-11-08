@@ -57,25 +57,65 @@ class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	public const KIND = 'oauth2-token-set';
 
 	/**
+	 * Declares every provider's endpoints and grants.
+	 *
+	 * @var ProviderCatalogue
+	 */
+	private readonly ProviderCatalogue $catalogue;
+
+	/**
+	 * Resolves the client id and secret for the exchange.
+	 *
+	 * @var OAuth2ClientResolver
+	 */
+	private readonly OAuth2ClientResolver $clients;
+
+	/**
+	 * Registers or reuses a per-instance OAuth2 application.
+	 *
+	 * @var OAuth2InstanceClient
+	 */
+	private readonly OAuth2InstanceClient $instanceClients;
+
+	/**
+	 * Redeems the authorization code at the token endpoint.
+	 *
+	 * @var OAuth2CodeExchange
+	 */
+	private readonly OAuth2CodeExchange $exchange;
+
+	/**
+	 * Repairs the targeted credential in place or mints a new one.
+	 *
+	 * @var OAuth2ConnectionWriter
+	 */
+	private readonly OAuth2ConnectionWriter $writer;
+
+	/**
+	 * Revokes a connection at the provider, best effort.
+	 *
+	 * @var OAuth2UpstreamRevoker
+	 */
+	private readonly OAuth2UpstreamRevoker $revoker;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ProviderCatalogue $catalogue Declares every provider's endpoints and grants.
-	 * @param OAuth2ClientResolver $clients Resolves the client id and secret for the exchange.
-	 * @param OAuth2InstanceClient $instanceClients Registers or reuses a per-instance OAuth2 application.
-	 * @param OAuth2CodeExchange $exchange Redeems the authorization code at the token endpoint.
-	 * @param OAuth2ConnectionWriter $writer Repairs the targeted credential in place or mints a new one.
-	 * @param OAuth2UpstreamRevoker $revoker Revokes a connection at the provider, best effort.
+	 * @param OAuth2ConnectClients $sources The provider catalogue, client resolver and per-instance client registration.
+	 * @param OAuth2ConnectSteps   $steps   The code exchange, connection writer and upstream revoker.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ProviderCatalogue $catalogue,
-		private readonly OAuth2ClientResolver $clients,
-		private readonly OAuth2InstanceClient $instanceClients,
-		private readonly OAuth2CodeExchange $exchange,
-		private readonly OAuth2ConnectionWriter $writer,
-		private readonly OAuth2UpstreamRevoker $revoker,
+		OAuth2ConnectClients $sources,
+		OAuth2ConnectSteps $steps,
 	) {
+		$this->catalogue = $sources->catalogue;
+		$this->clients = $sources->clients;
+		$this->instanceClients = $sources->instanceClients;
+		$this->exchange = $steps->exchange;
+		$this->writer = $steps->writer;
+		$this->revoker = $steps->revoker;
 	}//end __construct()
 
 	/**
