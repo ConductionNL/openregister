@@ -41,7 +41,7 @@ use JsonSerializable;
  *
  * @spec openspec/specs/row-field-level-security/spec.md
  */
-final class StateFieldRules implements JsonSerializable {
+final class StateFieldRules implements JsonSerializable, StateFieldRulesInterface {
 
 	/**
 	 * Constructor.
