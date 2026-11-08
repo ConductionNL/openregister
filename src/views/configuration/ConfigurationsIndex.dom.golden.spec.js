@@ -27,10 +27,26 @@ jest.mock('vue', () => {
 	const names = ['NcActionButton', 'NcActions', 'NcAppContent', 'NcCheckboxRadioSwitch', 'NcEmptyContent', 'NcLoadingIcon']
 	return { ...jest.requireActual('vue'), ...Object.fromEntries(names.map((name) => [name, nc[name]])) }
 })
-jest.mock('@conduction/nextcloud-vue', () => ({
-	__esModule: true,
-	CnDataTable: jest.requireActual('../../../tests/unit/support/tableGolden.js').CnDataTableStub,
-}))
+jest.mock('@conduction/nextcloud-vue', () => {
+	const { CnDataTableStub } = jest.requireActual('../../../tests/unit/support/tableGolden.js')
+	// With rowClickToView a row click navigates (row-click) instead of selecting,
+	// as CnDataTable does; the stand-in's only row-driven emit is that select.
+	return {
+		__esModule: true,
+		CnDataTable: {
+			...CnDataTableStub,
+			props: { ...CnDataTableStub.props, rowClickToView: { type: Boolean, default: false } },
+			render() {
+				const view = new Proxy(this, {
+					get: (target, key) => (key === '$emit' && target.rowClickToView
+						? (event, ...args) => target.$emit(event === 'select' ? 'row-click' : event, ...args)
+						: target[key]),
+				})
+				return CnDataTableStub.render.call(view)
+			},
+		},
+	}
+})
 jest.mock('vue-material-design-icons/AlertCircle.vue', () => ({ __esModule: true, default: { name: 'AlertCircle', render: () => null } }))
 jest.mock('vue-material-design-icons/ApplicationCog.vue', () => ({ __esModule: true, default: { name: 'ApplicationCog', render: () => null } }))
 jest.mock('vue-material-design-icons/CheckCircle.vue', () => ({ __esModule: true, default: { name: 'CheckCircle', render: () => null } }))
