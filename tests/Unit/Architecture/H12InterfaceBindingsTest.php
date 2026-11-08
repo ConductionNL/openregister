@@ -148,7 +148,7 @@ final class H12InterfaceBindingsTest extends TestCase {
 			}
 
 			$code = $this->code(source: (string) file_get_contents($file->getPathname()));
-			if (str_contains($code, $class) === true || preg_match('/\b' . $short . '\b/', $code) === 1) {
+			if (preg_match('/(\b' . preg_quote($class, '/') . '|\b' . $short . ')\b/', $code) === 1) {
 				$naming[] = $relative;
 			}
 		}
