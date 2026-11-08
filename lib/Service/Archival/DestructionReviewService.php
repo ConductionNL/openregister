@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Archival;
 use DateTimeImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;
+use OCP\AppFramework\Utility\ITimeFactory;
 
 /**
  * Assignment, sign-off and the decision history of a destruction list.
@@ -60,6 +61,16 @@ use InvalidArgumentException;
  *              WHICH rule refused them.
  */
 class DestructionReviewService implements DestructionReviewServiceInterface, DestructionReviewReminderInterface {
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ITimeFactory|null $clock Tells the moment a decision is recorded; the system clock when null.
+	 */
+	public function __construct(
+		private readonly ?ITimeFactory $clock = null,
+	) {
+	}//end __construct()
 
 	/**
 	 * The entries of a destruction list, as a list.
@@ -194,40 +205,65 @@ class DestructionReviewService implements DestructionReviewServiceInterface, Des
 	 * transfer list and nowhere else would leave this list saying the entry was
 	 * never decided, which is how a decision history becomes two.
 	 *
+	 * The moment of the decision is now, as the injected clock tells it.
+	 *
 	 * @param array<string, mixed> $listData    The destruction list's own data.
 	 * @param string               $entryUuid   The uuid of the object the entry is about.
-	 * @param string               $answer      One of self::ANSWERS.
-	 * @param string               $reviewer    The user id answering; must be the assigned reviewer.
-	 * @param string               $reason      Why. Required for every answer, not only a retention.
-	 * @param string|null          $newDate     The new archiefactiedatum, required by a retention.
+	 * @param ReviewerAnswer       $given       The answer (one of ANSWERS), its reason (required for every
+	 *                                          answer), the new archiefactiedatum a retention requires, and
+	 *                                          the reviewer, who must be the one assigned.
 	 * @param string|null          $transferRef The transfer list this entry was handed to, if any.
-	 * @param DateTimeInterface|null $decidedAt The moment of the decision; now when omitted.
 	 *
 	 * @return array<string, mixed> The list data, with the entry decided and the history appended.
 	 *
 	 * @throws InvalidArgumentException When the answer, the entry, the reviewer or the reason is wrong.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One decision, and every fact it records.
-	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function recordAnswer(
-		array $listData, string $entryUuid, string $answer, string $reviewer,
-		string $reason, ?string $newDate = null, ?string $transferRef = null, ?DateTimeInterface $decidedAt = null,
-	): array {
-		$given = new ReviewAnswer(answer: $answer, reason: $reason, newDate: $newDate, transferRef: $transferRef);
-		$this->guardAnswer(given: $given);
+	public function recordAnswer(array $listData, string $entryUuid, ReviewerAnswer $given, ?string $transferRef = null): array {
+		$answer = new ReviewAnswer(answer: $given->answer, reason: $given->reason, newDate: $given->newDate, transferRef: $transferRef);
+		$this->guardAnswer(given: $answer);
 
+		$reviewer = (string)$given->reviewer;
 		$index = $this->indexOf(listData: $listData, entryUuid: $entryUuid);
 		$this->guardReviewer(entry: $listData['objects'][$index], reviewer: $reviewer);
 
-		$moment = ($decidedAt ?? new DateTimeImmutable())->format('c');
-		$decision = ['entry' => $entryUuid, 'answer' => $answer, 'reviewer' => $reviewer, 'decidedAt' => $moment, 'reason' => $reason];
+		$moment = $this->now()->format('c');
+		$decision = ['entry' => $entryUuid, 'answer' => $given->answer, 'reviewer' => $reviewer, 'decidedAt' => $moment, 'reason' => $given->reason];
 		$listData['objects'][$index] = $this->decidedEntry(entry: $listData['objects'][$index], decision: $decision);
-		$decision = $this->withAnswerFacts(decision: $decision, given: $given);
+		$decision = $this->withAnswerFacts(decision: $decision, given: $answer);
 
 		return $this->appendDecision(listData: $listData, decision: $decision);
 	}//end recordAnswer()
+
+	/**
+	 * A reviewer's answer, as the reviewer gave it.
+	 *
+	 * @param string      $answer   One of the review answers.
+	 * @param string      $reason   Why the reviewer answered this way.
+	 * @param string|null $newDate  The new archiefactiedatum, for a retention.
+	 * @param string|null $reviewer Who answered.
+	 *
+	 * @return ReviewerAnswer The answer, to carry out and then record.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	public function reviewerAnswer(string $answer, string $reason, ?string $newDate, ?string $reviewer): ReviewerAnswer {
+		return new ReviewerAnswer(answer: $answer, reason: $reason, newDate: $newDate, reviewer: $reviewer);
+	}//end reviewerAnswer()
+
+	/**
+	 * The current moment, from the injected clock when there is one.
+	 *
+	 * @return DateTimeInterface Now.
+	 */
+	private function now(): DateTimeInterface {
+		if ($this->clock === null) {
+			return new DateTimeImmutable();
+		}
+
+		return $this->clock->now();
+	}//end now()
 
 	/**
 	 * An entry, stamped with the answer it was given.
