@@ -81,6 +81,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Lifecycle\TransitionEngine
@@ -186,12 +188,8 @@ class TransitionEngineAsSystemTest extends TestCase {
 			ast: new CalculationEvaluator(placeholders: new PlaceholderResolver(userSession: $this->createMock(IUserSession::class)))
 		);
 		$this->listener = new LifecycleValidationListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new LifecycleTransitionResolver($this->actions), $this->logger),
-			new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger),
-			$this->userSession,
-			$this->permission,
-			new LifecycleConditionEvaluator($this->userSession, $groupManager, $l10n, $this->logger, $dialect),
-			new ConditionTracer(dialect: $dialect),
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new LifecycleTransitionResolver($this->actions), $this->logger), $this->userSession, $this->permission),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guardContainer, $serverContainer, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groupManager, $l10n, $this->logger, $dialect), new ConditionTracer(dialect: $dialect)),
 			$this->createMock(RuleRunRecorder::class)
 		);
 
