@@ -127,14 +127,14 @@ class TranslationController extends Controller {
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
 	public function search(
-		?string $query = null,
-		?string $language = null,
-		?string $status = null,
-		?string $objectUuid = null,
-		?int $limit = 100,
-		?string $sourceLanguage = null,
-		?string $isOutOfDate = null,
-		?string $compareToSource = null,
+		string|null $query = null,
+		string|null $language = null,
+		string|null $status = null,
+		string|null $objectUuid = null,
+		int|null $limit = 100,
+		string|null $sourceLanguage = null,
+		string|null $isOutOfDate = null,
+		string|null $compareToSource = null,
 	): JSONResponse {
 		$isOutOfDateBool = $this->isTruthy(value: $isOutOfDate);
 		$compareToSourceBool = $this->isTruthy(value: $compareToSource);
