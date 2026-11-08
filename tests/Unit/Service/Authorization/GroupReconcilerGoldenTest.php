@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Authorization\GroupDeclarationSources;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\GroupReconciler;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
@@ -86,9 +87,7 @@ class GroupReconcilerGoldenTest extends TestCase {
 		);
 
 		return new GroupReconciler(
-			$registers,
-			$schemas,
-			$appConfig,
+			new GroupDeclarationSources($registers, $schemas, $appConfig),
 			new RbacGroupCollector(),
 			new GroupProvisioner($groups, new NullLogger()),
 			new NullLogger()
