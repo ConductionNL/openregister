@@ -238,6 +238,8 @@ use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
@@ -364,6 +366,8 @@ use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaServiceInterface;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -836,6 +840,7 @@ final class ContractBindings {
 		GroupPrincipalResolverInterface::class => GroupPrincipalResolver::class,
 		KillSwitchCheckInterface::class => KillSwitchCheck::class,
 		OasRequestValidatorInterface::class => OasRequestValidator::class,
+		ObjectQuotaServiceInterface::class => ObjectQuotaService::class,
 		OrganisationHaltCheckInterface::class => OrganisationHaltCheck::class,
 		PermissionHandlerInterface::class => PermissionHandler::class,
 		ProblemDetailsBuilderInterface::class => ProblemDetailsBuilder::class,
@@ -846,6 +851,7 @@ final class ContractBindings {
 		SaveObjectWriterInterface::class => SaveObject::class,
 		UserPrincipalResolverInterface::class => UserPrincipalResolver::class,
 		ValidateObjectInterface::class => ValidateObject::class,
+		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
 	];
 
 	/**
