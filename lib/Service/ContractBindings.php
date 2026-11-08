@@ -159,12 +159,16 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentServiceInterface;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
+use OCA\OpenRegister\Service\Credential\CredentialAppTokenServiceInterface;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrarInterface;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialKeys;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepositoryInterface;
+use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
+use OCA\OpenRegister\Service\Credential\ProviderCatalogueInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
@@ -1058,6 +1062,8 @@ final class ContractBindings {
 		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
 		\OCA\OpenRegister\Service\Flow\FlowAccessInterface::class => \OCA\OpenRegister\Service\Flow\FlowAccess::class,
 		\OCA\OpenRegister\Service\View\ViewObjectQueryInterface::class => \OCA\OpenRegister\Service\View\ViewObjectQuery::class,
+		CredentialAppTokenServiceInterface::class => CredentialAppTokenService::class,
+		ProviderCatalogueInterface::class => ProviderCatalogue::class,
 	];
 
 	/**

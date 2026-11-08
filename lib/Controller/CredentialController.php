@@ -42,13 +42,11 @@ use OCA\OpenRegister\Controller\Support\CredentialControllerServices;
 use OCA\OpenRegister\Controller\Support\CredentialUpdateTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
-use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
-use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
+use OCA\OpenRegister\Service\Credential\CredentialUpdateRequests;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
-use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
@@ -491,7 +489,7 @@ class CredentialController extends Controller {
 		$data  = $existing->getObject();
 		$scope = $this->scopeOf(data: $data);
 
-		$update = new CredentialUpdateRequest(request: $this->request);
+		$update = CredentialUpdateRequests::fromRequest(request: $this->request);
 		$data = $update->applyTo(data: $data);
 
 		if ($this->isInvalidUpdate(update: $update, data: $data) === true) {
