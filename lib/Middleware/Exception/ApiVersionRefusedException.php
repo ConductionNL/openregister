@@ -77,8 +77,10 @@ class ApiVersionRefusedException extends Exception {
 	/**
 	 * Constructor.
 	 *
+	 * The sentence a human reads follows from the status: 410 names the
+	 * successor, anything else lists the versions this instance serves.
+	 *
 	 * @param int $statusCode The HTTP status to answer with.
-	 * @param string $message The sentence a human reads.
 	 * @param string $requestedId The identifier the caller named.
 	 * @param string|null $successor The identifier to move to, or null.
 	 * @param array<int, string> $acceptable The identifiers this instance serves.
@@ -87,16 +89,15 @@ class ApiVersionRefusedException extends Exception {
 	 */
 	public function __construct(
 		int $statusCode,
-		string $message,
 		string $requestedId,
 		?string $successor = null,
 		array $acceptable = [],
 	) {
-		parent::__construct(message: $message, code: $statusCode);
 		$this->statusCode = $statusCode;
 		$this->requestedId = $requestedId;
 		$this->successor = $successor;
 		$this->acceptable = $acceptable;
+		parent::__construct(message: $this->sentence(), code: $statusCode);
 
 	}//end __construct()
 
@@ -113,7 +114,6 @@ class ApiVersionRefusedException extends Exception {
 	public static function withdrawn(ApiVersion $version, array $acceptable): self {
 		return new self(
 			statusCode: Http::STATUS_GONE,
-			message: 'API version ' . $version->id . ' has been withdrawn. Use version ' . (string)$version->successor . '.',
 			requestedId: $version->id,
 			successor: $version->successor,
 			acceptable: $acceptable,
@@ -134,7 +134,6 @@ class ApiVersionRefusedException extends Exception {
 	public static function unknown(string $requestedId, array $acceptable): self {
 		return new self(
 			statusCode: Http::STATUS_BAD_REQUEST,
-			message: 'API version "' . $requestedId . '" is not served by this instance. Served versions: ' . implode(', ', $acceptable) . '.',
 			requestedId: $requestedId,
 			successor: null,
 			acceptable: $acceptable,
@@ -161,6 +160,20 @@ class ApiVersionRefusedException extends Exception {
 		return $response;
 
 	}//end toResponse()
+
+	/**
+	 * The sentence a human reads: the successor for a withdrawn version, the served versions otherwise.
+	 *
+	 * @return string The message.
+	 */
+	private function sentence(): string {
+		if ($this->statusCode === Http::STATUS_GONE) {
+			return 'API version ' . $this->requestedId . ' has been withdrawn. Use version ' . (string)$this->successor . '.';
+		}
+
+		return 'API version "' . $this->requestedId . '" is not served by this instance. Served versions: ' . implode(', ', $this->acceptable) . '.';
+
+	}//end sentence()
 
 	/**
 	 * The refusal's body: the message, the version asked for, the versions served and any successor.
