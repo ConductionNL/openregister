@@ -37,12 +37,6 @@ namespace OCA\OpenRegister\Service\Geo;
 
 /**
  * Validates GeoJSON values against the geo property types of REQ-GEO-001.
- *
- * @SuppressWarnings(PHPMD.CyclomaticComplexity)
- *   One branch per GeoJSON geometry type plus shape guards — the
- *   complexity is inherent to RFC 7946 and clearer kept in one place.
- * @SuppressWarnings(PHPMD.NPathComplexity)
- *   Same rationale: each geometry type is a single validation branch.
  */
 class GeoJsonGeometryValidator {
 
@@ -58,6 +52,18 @@ class GeoJsonGeometryValidator {
 		'geo:linestring',
 		'geo:geometry',
 		'geo:bag',
+	];
+
+	/**
+	 * The GeoJSON geometry type each single-shape property type requires.
+	 *
+	 * @var array<string, string>
+	 */
+	private const GEOMETRY_BY_TYPE = [
+		'geo:point'        => 'Point',
+		'geo:polygon'      => 'Polygon',
+		'geo:multipolygon' => 'MultiPolygon',
+		'geo:linestring'   => 'LineString',
 	];
 
 	/**
@@ -88,14 +94,29 @@ class GeoJsonGeometryValidator {
 		}
 
 		foreach (['format', 'type'] as $key) {
-			$declared = ($property[$key] ?? null);
-			if (is_string($declared) === true && $this->isGeoType(type: $declared) === true) {
-				return strtolower($declared);
+			$declared = $this->geoTypeOf(declared: ($property[$key] ?? null));
+			if ($declared !== null) {
+				return $declared;
 			}
 		}
 
 		return null;
 	}//end declaredGeoType()
+
+	/**
+	 * The lower-cased geo type a single `format` / `type` value names, or null.
+	 *
+	 * @param mixed $declared The declared value.
+	 *
+	 * @return string|null
+	 */
+	private function geoTypeOf(mixed $declared): ?string {
+		if (is_string($declared) === true && $this->isGeoType(type: $declared) === true) {
+			return strtolower($declared);
+		}
+
+		return null;
+	}//end geoTypeOf()
 
 	/**
 	 * Validate every geometry property of an object, keyed by property name.
@@ -154,23 +175,15 @@ class GeoJsonGeometryValidator {
 			return ['geometry MUST be a GeoJSON object'];
 		}
 
-		$geometryType = ($value['type'] ?? null);
-
-		switch ($type) {
-			case 'geo:point':
-				return $this->validatePoint(value: $value);
-			case 'geo:polygon':
-				return $this->validatePolygon(value: $value);
-			case 'geo:multipolygon':
-				return $this->validateMultiPolygon(value: $value);
-			case 'geo:linestring':
-				return $this->validateLineString(value: $value);
-			case 'geo:geometry':
-				return $this->validateAny(geometryType: $geometryType, value: $value);
-			default:
-				return ["unknown geo property type: {$type}"];
+		if ($type === 'geo:geometry') {
+			return $this->validateAny(geometryType: ($value['type'] ?? null), value: $value);
 		}
 
+		if (isset(self::GEOMETRY_BY_TYPE[$type]) === false) {
+			return ["unknown geo property type: {$type}"];
+		}
+
+		return $this->validateShape(geometryType: self::GEOMETRY_BY_TYPE[$type], value: $value);
 	}//end validate()
 
 	/**
@@ -184,20 +197,29 @@ class GeoJsonGeometryValidator {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
 	 */
 	private function validateAny(mixed $geometryType, array $value): array {
-		switch ($geometryType) {
-			case 'Point':
-				return $this->validatePoint(value: $value);
-			case 'Polygon':
-				return $this->validatePolygon(value: $value);
-			case 'MultiPolygon':
-				return $this->validateMultiPolygon(value: $value);
-			case 'LineString':
-				return $this->validateLineString(value: $value);
-			default:
-				return ['geometry type MUST be one of Point, Polygon, MultiPolygon, LineString'];
+		if (in_array($geometryType, self::GEOMETRY_BY_TYPE, true) === false) {
+			return ['geometry type MUST be one of Point, Polygon, MultiPolygon, LineString'];
 		}
 
+		return $this->validateShape(geometryType: $geometryType, value: $value);
 	}//end validateAny()
+
+	/**
+	 * Validate a value against the rules of one GeoJSON geometry type.
+	 *
+	 * @param string $geometryType One of Point, Polygon, MultiPolygon, LineString.
+	 * @param array  $value        The GeoJSON value.
+	 *
+	 * @return string[]
+	 */
+	private function validateShape(string $geometryType, array $value): array {
+		return match ($geometryType) {
+			'Point' => $this->validatePoint(value: $value),
+			'Polygon' => $this->validatePolygon(value: $value),
+			'MultiPolygon' => $this->validateMultiPolygon(value: $value),
+			default => $this->validateLineString(value: $value),
+		};
+	}//end validateShape()
 
 	/**
 	 * Validate a GeoJSON Point.
@@ -235,8 +257,18 @@ class GeoJsonGeometryValidator {
 			return ['coordinates MUST be numeric'];
 		}
 
-		$lon = (float)$position[0];
-		$lat = (float)$position[1];
+		return $this->rangeErrors(lon: (float)$position[0], lat: (float)$position[1]);
+	}//end validatePosition()
+
+	/**
+	 * The RFC 7946 range errors of a numeric (lon, lat) pair.
+	 *
+	 * @param float $lon The longitude (first element).
+	 * @param float $lat The latitude (second element).
+	 *
+	 * @return string[]
+	 */
+	private function rangeErrors(float $lon, float $lat): array {
 		$errors = [];
 		if ($lon < -180.0 || $lon > 180.0) {
 			$errors[] = 'longitude MUST be between -180 and 180 (it is the first element per RFC 7946)';
@@ -247,7 +279,29 @@ class GeoJsonGeometryValidator {
 		}
 
 		return $errors;
-	}//end validatePosition()
+	}//end rangeErrors()
+
+	/**
+	 * Validate every position of a list; a non-array position yields `$nonArrayError`.
+	 *
+	 * @param array  $positions     The positions.
+	 * @param string $nonArrayError The error for a position that is not an array.
+	 *
+	 * @return string[]
+	 */
+	private function validatePositions(array $positions, string $nonArrayError): array {
+		$errors = [];
+		foreach ($positions as $position) {
+			if (is_array($position) === false) {
+				$errors[] = $nonArrayError;
+				continue;
+			}
+
+			$errors = array_merge($errors, $this->validatePosition(position: $position));
+		}
+
+		return $errors;
+	}//end validatePositions()
 
 	/**
 	 * Validate a GeoJSON LineString (>= 2 positions).
@@ -268,17 +322,7 @@ class GeoJsonGeometryValidator {
 			return ['LineString MUST contain at least 2 coordinate positions'];
 		}
 
-		$errors = [];
-		foreach ($coords as $position) {
-			if (is_array($position) === false) {
-				$errors[] = 'each LineString position MUST be a coordinate array';
-				continue;
-			}
-
-			$errors = array_merge($errors, $this->validatePosition(position: $position));
-		}
-
-		return $errors;
+		return $this->validatePositions(positions: $coords, nonArrayError: 'each LineString position MUST be a coordinate array');
 	}//end validateLineString()
 
 	/**
@@ -324,16 +368,27 @@ class GeoJsonGeometryValidator {
 
 		$errors = [];
 		foreach ($polygons as $index => $rings) {
-			if (is_array($rings) === false || count($rings) === 0) {
-				$errors[] = "MultiPolygon polygon #{$index} MUST have at least one ring";
-				continue;
-			}
-
-			$errors = array_merge($errors, $this->validateRings(rings: $rings, label: "MultiPolygon polygon #{$index}"));
+			$errors = array_merge($errors, $this->validateMemberPolygon(index: $index, rings: $rings));
 		}
 
 		return $errors;
 	}//end validateMultiPolygon()
+
+	/**
+	 * Validate one polygon of a MultiPolygon.
+	 *
+	 * @param int|string $index The polygon's index in the MultiPolygon.
+	 * @param mixed      $rings The polygon's rings.
+	 *
+	 * @return string[]
+	 */
+	private function validateMemberPolygon(int|string $index, mixed $rings): array {
+		if (is_array($rings) === false || count($rings) === 0) {
+			return ["MultiPolygon polygon #{$index} MUST have at least one ring"];
+		}
+
+		return $this->validateRings(rings: $rings, label: "MultiPolygon polygon #{$index}");
+	}//end validateMemberPolygon()
 
 	/**
 	 * Validate a set of polygon rings: min 4 positions and closure.
@@ -348,29 +403,32 @@ class GeoJsonGeometryValidator {
 	private function validateRings(array $rings, string $label): array {
 		$errors = [];
 		foreach ($rings as $ringIndex => $ring) {
-			if (is_array($ring) === false || count($ring) < 4) {
-				$errors[] = "{$label} ring #{$ringIndex} MUST contain at least 4 coordinate positions";
-				continue;
-			}
-
-			$first = $ring[0];
-			$last = $ring[(count($ring) - 1)];
-			if ($first !== $last) {
-				$errors[] = "{$label} ring #{$ringIndex} is unclosed: first and last coordinate MUST be identical";
-			}
-
-			foreach ($ring as $position) {
-				if (is_array($position) === false) {
-					$errors[] = "{$label} ring #{$ringIndex} has a non-array position";
-					continue;
-				}
-
-				$errors = array_merge($errors, $this->validatePosition(position: $position));
-			}
-		}//end foreach
+			$errors = array_merge($errors, $this->validateRing(ring: $ring, ringLabel: "{$label} ring #{$ringIndex}"));
+		}
 
 		return $errors;
 	}//end validateRings()
+
+	/**
+	 * Validate one polygon ring: min 4 positions, closure, then each position.
+	 *
+	 * @param mixed  $ring      The ring.
+	 * @param string $ringLabel Context label for error messages (`<label> ring #<n>`).
+	 *
+	 * @return string[]
+	 */
+	private function validateRing(mixed $ring, string $ringLabel): array {
+		if (is_array($ring) === false || count($ring) < 4) {
+			return ["{$ringLabel} MUST contain at least 4 coordinate positions"];
+		}
+
+		$errors = [];
+		if ($ring[0] !== $ring[(count($ring) - 1)]) {
+			$errors[] = "{$ringLabel} is unclosed: first and last coordinate MUST be identical";
+		}
+
+		return array_merge($errors, $this->validatePositions(positions: $ring, nonArrayError: "{$ringLabel} has a non-array position"));
+	}//end validateRing()
 
 	/**
 	 * Validate a BAG nummeraanduiding identifier (REQ-GEO-001).

@@ -786,24 +786,13 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 		unset($options['withholdBodies']);
 
 		$callService = $this->container->get($this->callServiceClass());
-		if ($withholdBodies === true && (new CallSignature())->accepts(service: $callService, method: 'call', name: 'withholdBodies') === false) {
-			$this->logger->info(
-				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
-			);
-			throw new ProviderUnavailableException(
-				message: 'The connector cannot record a call without its bodies, so the call is not made.',
-				cause: ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES
-			);
-		}
+		$this->assertCanWithholdBodies(callService: $callService, withholdBodies: $withholdBodies);
 
 		$options = $this->connectorOptions(options: $options);
 		$path = $this->connectorEndpoint(source: $source, path: $path);
 
 		if (method_exists($callService, 'call') === true) {
-			$named = [];
-			if ($withholdBodies === true) {
-				$named = ['withholdBodies' => true];
-			}
+			$named = self::withholdArguments(withholdBodies: $withholdBodies);
 
 			$response = $callService->call($source, $path, $method, $options, ...$named);
 			$this->assertUpstreamOk(response: $response);
@@ -820,6 +809,43 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 			'The connector CallService does not expose a known call/request method.'
 		);
 	}//end dispatch()
+
+	/**
+	 * Refuse a body-withholding call the connector cannot make, before it is made.
+	 *
+	 * @param mixed $callService    The connector CallService.
+	 * @param bool  $withholdBodies Whether the call must be recorded without its bodies.
+	 *
+	 * @return void
+	 *
+	 * @throws ProviderUnavailableException When bodies are to be withheld and the connector cannot.
+	 */
+	private function assertCanWithholdBodies(mixed $callService, bool $withholdBodies): void {
+		if ($withholdBodies === true && (new CallSignature())->accepts(service: $callService, method: 'call', name: 'withholdBodies') === false) {
+			$this->logger->info(
+				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
+			);
+			throw new ProviderUnavailableException(
+				message: 'The connector cannot record a call without its bodies, so the call is not made.',
+				cause: ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES
+			);
+		}
+	}//end assertCanWithholdBodies()
+
+	/**
+	 * The named arguments that ask the connector to withhold bodies, when asked.
+	 *
+	 * @param bool $withholdBodies Whether the call must be recorded without its bodies.
+	 *
+	 * @return array<string, bool>
+	 */
+	private static function withholdArguments(bool $withholdBodies): array {
+		if ($withholdBodies === true) {
+			return ['withholdBodies' => true];
+		}
+
+		return [];
+	}//end withholdArguments()
 
 	/**
 	 * Treat a >= 400 upstream status (carried on the CallLog OpenConnector
