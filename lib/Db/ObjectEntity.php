@@ -1852,13 +1852,15 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 			// Same holder: extend the lock.
 			$this->setLocked(
-				$this->lockPayload(
-					kind: $kind,
-					runUuid: $runUuid,
-					userId: $userId,
-					process: ($process ?? $lock['process']),
-					created: $lock['created'],
-					duration: $duration,
+				$this->withExpiration(
+					payload: [
+						'kind' => $kind,
+						'runUuid' => $runUuid,
+						'user' => $userId,
+						'process' => ($process ?? $lock['process']),
+						'created' => $lock['created'],
+						'duration' => $duration,
+					],
 					now: $now
 				)
 			);
@@ -1867,13 +1869,15 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		// Create new lock.
 		$this->setLocked(
-			$this->lockPayload(
-				kind: $kind,
-				runUuid: $runUuid,
-				userId: $userId,
-				process: $process,
-				created: $now->format('c'),
-				duration: $duration,
+			$this->withExpiration(
+				payload: [
+					'kind' => $kind,
+					'runUuid' => $runUuid,
+					'user' => $userId,
+					'process' => $process,
+					'created' => $now->format('c'),
+					'duration' => $duration,
+				],
 				now: $now
 			)
 		);
@@ -1901,36 +1905,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * means. The `?? 0` was writing an expiration precisely so that branch
 	 * could never be reached.
 	 *
-	 * @param string      $kind     User lock or run lock.
-	 * @param string|null $runUuid  The holding run, for a run lock.
-	 * @param string      $userId   The holder.
-	 * @param string|null $process  What the lock was taken for.
-	 * @param mixed       $created  When the lock was first taken.
-	 * @param int|null    $duration How long it lasts, or null for "until released".
-	 * @param DateTime    $now      The clock, so a take and an extend agree.
+	 * @param array{kind: string, runUuid: ?string, user: string, process: ?string, created: mixed, duration: ?int} $payload The
+	 *        lock as stored: kind, holding run, holder, process, first taken, and how long it lasts (null for "until released").
+	 * @param DateTime $now The clock, so a take and an extend agree.
 	 *
 	 * @return array<string, mixed> The payload to store.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	private function lockPayload(
-		string $kind,
-		?string $runUuid,
-		string $userId,
-		?string $process,
-		mixed $created,
-		?int $duration,
-		DateTime $now,
-	): array {
-		$payload = [
-			'kind' => $kind,
-			'runUuid' => ($runUuid ?? null),
-			'user' => $userId,
-			'process' => $process,
-			'created' => $created,
-			'duration' => $duration,
-		];
-
+	private function withExpiration(array $payload, DateTime $now): array {
+		$duration = $payload['duration'];
 		if ($duration === null) {
 			// No expiration key at all. See the note above: a zero-second one
 			// is not "no expiry", it is "expired".
@@ -1942,7 +1926,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$payload['expiration'] = $expiration->format('c');
 
 		return $payload;
-	}//end lockPayload()
+	}//end withExpiration()
 
 	/**
 	 * Unlock the object
