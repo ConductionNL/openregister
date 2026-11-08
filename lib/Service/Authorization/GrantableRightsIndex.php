@@ -55,7 +55,7 @@ use Psr\Log\LoggerInterface;
  *      reader of an authorization block agrees on what the mcp scope means. An injected copy could diverge from the
  *      evaluator, and an index that disagrees with the enforcer about which rights exist is worse than no index.
  */
-class GrantableRightsIndex {
+class GrantableRightsIndex implements GrantableRightsIndexInterface {
 
 	/**
 	 * Distributed cache namespace.

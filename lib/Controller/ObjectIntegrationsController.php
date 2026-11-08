@@ -50,7 +50,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
-use OCA\OpenRegister\Service\Integration\PaginatedResult;
+use OCA\OpenRegister\Service\Integration\PaginatedResults;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
@@ -318,7 +318,7 @@ class ObjectIntegrationsController extends Controller {
 		// tabs render cleanly. The result is a constant empty set, so skipping the
 		// per-object RBAC guard leaks nothing.
 		if ($this->isObjectSourcedSchema(register: $register, schema: $schema) === true) {
-			return new JSONResponse(PaginatedResult::fromMixed([])->toArray());
+			return new JSONResponse(PaginatedResults::envelope([]));
 		}
 
 		return $this->dispatchGuarded(
@@ -341,9 +341,9 @@ class ObjectIntegrationsController extends Controller {
 	private function listed($provider, string $register, string $schema, string $integrationId): array {
 		$rows = $provider->list($register, $schema, $this->guardedUuid(), $this->collectFilters());
 
-		return PaginatedResult::fromMixed(
+		return PaginatedResults::envelope(
 			$this->applyTimelineVisibility(integrationId: $integrationId, rows: $rows)
-		)->toArray();
+		);
 	}//end listed()
 
 	/**
