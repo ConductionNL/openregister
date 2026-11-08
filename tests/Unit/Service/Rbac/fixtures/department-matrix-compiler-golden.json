@@ -34,6 +34,28 @@
                     },
                     "status": "open"
                 }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "f",
+                            "h"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "g"
+                        ]
+                    }
+                },
+                "crossOrganisation": true
             }
         ],
         "update": [
@@ -137,6 +159,28 @@
                     },
                     "status": "open"
                 }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "f",
+                            "h"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "g"
+                        ]
+                    }
+                },
+                "crossOrganisation": true
             }
         ],
         "update": [
@@ -239,6 +283,28 @@
                     },
                     "status": "open"
                 }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "f",
+                            "h"
+                        ]
+                    }
+                }
+            },
+            {
+                "group": "marked",
+                "match": {
+                    "department": {
+                        "$in": [
+                            "g"
+                        ]
+                    }
+                },
+                "crossOrganisation": true
             }
         ],
         "update": [

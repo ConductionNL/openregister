@@ -65,6 +65,9 @@ final class DepartmentMatrixCompilerGoldenTest extends TestCase {
 		  ['group' => 'cross', 'values' => ['e'], 'actions' => 'read'],
 		  ['group' => 'cross', 'values' => ['e'], 'actions' => ['delete', 'readFiles'], 'where' => ['_organisation' => 'org-2'], 'crossOrganisation' => true],
 		  ['group' => 'num', 'values' => [5, 5.5], 'actions' => ['share']],
+		  ['group' => 'marked', 'values' => ['f'], 'actions' => ['read']],
+		  ['group' => 'marked', 'values' => ['g'], 'actions' => ['read'], 'crossOrganisation' => true],
+		  ['group' => 'marked', 'values' => ['h'], 'actions' => ['read'], 'crossOrganisation' => false],
 		]];
 		$out = [
 		 'compiled' => $c->compile($m, ['own-1', 'b'], $now),
@@ -125,7 +128,7 @@ final class DepartmentMatrixCompilerGoldenTest extends TestCase {
 		}
 
 		ksort($groups);
-		$this->assertSame(['cross', 'future', 'num', 'staff'], array_keys($groups));
+		$this->assertSame(['cross', 'future', 'marked', 'num', 'staff'], array_keys($groups));
 		$this->assertArrayNotHasKey('bogus', $compiled);
 		$this->assertArrayNotHasKey('handle', $compiled);
 		$this->assertSame([], $this->outputs()['noField']);
