@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewReminderInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
@@ -82,7 +82,7 @@ class ReviewReminderJobTest extends TestCase {
 		$notificationManager = $this->createMock(INotificationManager::class);
 		$notificationManager->method('createNotification')->willReturn($notification);
 
-		$settings = $this->createMock(ObjectRetentionHandler::class);
+		$settings = $this->createMock(ArchivalSettingsReaderInterface::class);
 		$settings->method('getArchivalSettingsOnly')->willReturn(['reviewReminderFrequency' => 'P7D']);
 
 		$this->container = $this->createMock(ContainerInterface::class);
@@ -91,7 +91,7 @@ class ReviewReminderJobTest extends TestCase {
 				DestructionListRepositoryInterface::class => $this->lists,
 				DestructionReviewReminderInterface::class => new DestructionReviewService(),
 				INotificationManager::class => $notificationManager,
-				ObjectRetentionHandler::class => $settings,
+				ArchivalSettingsReaderInterface::class => $settings,
 				default => $this->createMock(LoggerInterface::class),
 			}
 		);

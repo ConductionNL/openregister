@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Notifications\BackgroundJob;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 
 /**
  * Which task rules apply, which tasks they could fire on, and how a task is filtered.
@@ -36,13 +36,13 @@ final readonly class TaskNotificationCandidates {
 	 *
 	 * @param TaskNotificationRules $rules The task rule registry.
 	 * @param TaskMapper $tasks The candidate query.
-	 * @param TaskInboxService $inbox The row the adapter is built from.
+	 * @param TaskInboxServiceInterface $inbox The row the adapter is built from.
 	 * @param ScheduledFilterEvaluator $filters The operator-object filter evaluator.
 	 */
 	public function __construct(
 		public TaskNotificationRules $rules,
 		public TaskMapper $tasks,
-		public TaskInboxService $inbox,
+		public TaskInboxServiceInterface $inbox,
 		public ScheduledFilterEvaluator $filters,
 	) {
 	}//end __construct()

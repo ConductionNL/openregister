@@ -32,7 +32,6 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -44,16 +43,15 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
-use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
-use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
-use OCA\OpenRegister\Service\Form\FormDependentsCheck;
-use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
+use OCA\OpenRegister\Service\Hinge\ListPresentationResolverInterface;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
@@ -61,9 +59,9 @@ use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
-use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
@@ -257,9 +255,9 @@ class SchemasController extends Controller {
 	/**
 	 * The schema import service.
 	 *
-	 * @var ?SchemaImportService
+	 * @var ?SchemaImportServiceInterface
 	 */
-	private readonly ?SchemaImportService $schemaImportService;
+	private readonly ?SchemaImportServiceInterface $schemaImportService;
 
 	/**
 	 * The semantic type resolver.
@@ -1267,11 +1265,11 @@ class SchemasController extends Controller {
 	 * goes ahead without judging the published forms, and that must leave a trace
 	 * (an owning app's `refuse` setting is skipped with it).
 	 *
-	 * @return FormDependentsCheck|null The check, or null when it cannot be built.
+	 * @return FormDependentsCheckInterface|null The check, or null when it cannot be built.
 	 */
-	private function formDependentsCheck(): ?FormDependentsCheck {
+	private function formDependentsCheck(): ?FormDependentsCheckInterface {
 		try {
-			$check = $this->container->get(FormDependentsCheck::class);
+			$check = $this->container->get(FormDependentsCheckInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemasController] The dependent-form check could not be built; the schema save did not re-check the published forms',
@@ -1281,7 +1279,7 @@ class SchemasController extends Controller {
 			return null;
 		}
 
-		if ($check instanceof FormDependentsCheck) {
+		if ($check instanceof FormDependentsCheckInterface) {
 			return $check;
 		}
 
@@ -1956,12 +1954,12 @@ class SchemasController extends Controller {
 	 *
 	 * @throws \RuntimeException If the service cannot be resolved.
 	 *
-	 * @return SchemaDeletionService The service.
+	 * @return SchemaTeardownInterface The service.
 	 */
-	private function getSchemaDeletionService(): SchemaDeletionService {
-		$service = $this->container->get(SchemaDeletionService::class);
+	private function getSchemaDeletionService(): SchemaTeardownInterface {
+		$service = $this->container->get(SchemaTeardownInterface::class);
 
-		if (($service instanceof SchemaDeletionService) === false) {
+		if (($service instanceof SchemaTeardownInterface) === false) {
 			throw new RuntimeException('SchemaDeletionService could not be resolved');
 		}
 
@@ -2091,7 +2089,7 @@ class SchemasController extends Controller {
 	 * @return array<string, mixed> The body with a JSON text block decoded; any other text stays for the write to judge.
 	 */
 	private function withAuthorizationAsStored(array $document): array {
-		$stored = (new CrossOrganisationMarkerChange())->asStored(authorization: ($document['authorization'] ?? null));
+		$stored = RbacRuleChecks::crossOrganisationMarkerChange()->asStored(authorization: ($document['authorization'] ?? null));
 		if (is_array($stored) === true) {
 			$document['authorization'] = $stored;
 		}
@@ -2115,7 +2113,7 @@ class SchemasController extends Controller {
 	 */
 	private function crossOrganisationRefusal(mixed $old, array $document): ?JSONResponse {
 		if (array_key_exists('authorization', $document) === false
-			|| (new CrossOrganisationMarkerChange())->widens(old: $old, new: $document['authorization']) === false
+			|| RbacRuleChecks::crossOrganisationMarkerChange()->widens(old: $old, new: $document['authorization']) === false
 			|| $this->isCurrentUserAdmin() === true
 		) {
 			return null;
@@ -2140,7 +2138,7 @@ class SchemasController extends Controller {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function orphanCleanupRefusal(Schema $schema, array $document): ?JSONResponse {
-		if ((new OrphanCleanupFlag())->changedBy(schema: $schema, document: $document) === false || $this->isCurrentUserAdmin() === true) {
+		if (RbacRuleChecks::orphanCleanupFlag()->changedBy(schema: $schema, document: $document) === false || $this->isCurrentUserAdmin() === true) {
 			return null;
 		}
 
@@ -2826,7 +2824,7 @@ class SchemasController extends Controller {
 	 */
 	private function checkSchemaManagePermission(Schema $schema): bool {
 		try {
-			$rights = new DefinitionWriteRights(
+			$rights = RbacRuleChecks::definitionWriteRights(
 				userSession: $this->container->get(\OCP\IUserSession::class),
 				groupManager: $this->container->get(\OCP\IGroupManager::class)
 			);
@@ -2847,7 +2845,7 @@ class SchemasController extends Controller {
 	 * keep them.
 	 *
 	 * @param int|string                $id       The schema id, uuid or slug.
-	 * @param ListPresentationResolver $resolver The resolver.
+	 * @param ListPresentationResolverInterface $resolver The resolver.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -2863,7 +2861,7 @@ class SchemasController extends Controller {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function listPresentation(int|string $id, ListPresentationResolver $resolver): JSONResponse {
+	public function listPresentation(int|string $id, ListPresentationResolverInterface $resolver): JSONResponse {
 		try {
 			// Metadata read: a schema's own declaration is catalogue data, scoped
 			// the same way the sibling `related` endpoint scopes it.

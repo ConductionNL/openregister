@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunContextInterface;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
@@ -51,14 +51,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
  */
-class AuditFlowAttribution extends QBMapper {
-	/**
-	 * The action of a per-hop audit row. A hop row carries the run's attribution
-	 * but records that the hop ran, not that it wrote anything.
-	 *
-	 * @var string
-	 */
-	public const ACTION_HOP = 'flow.hop';
+class AuditFlowAttribution extends QBMapper implements AuditFlowAttributionInterface {
 
 	/**
 	 * Constructor.
@@ -92,12 +85,12 @@ class AuditFlowAttribution extends QBMapper {
 	 */
 	public function apply(AuditTrail $auditTrail): void {
 		try {
-			$context = $this->container->get(FlowRunContext::class);
+			$context = $this->container->get(FlowRunContextInterface::class);
 		} catch (Throwable $e) {
 			return;
 		}
 
-		if (($context instanceof FlowRunContext) === false) {
+		if (($context instanceof FlowRunContextInterface) === false) {
 			return;
 		}
 

@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\RecordTemplate;
 
 use OCA\OpenRegister\Db\RecordTemplate;
-use OCA\OpenRegister\Db\RecordTemplateMapper;
+use OCA\OpenRegister\Db\RecordTemplateMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
@@ -80,7 +80,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RecordTemplateMapper $mapper      The template store.
+	 * @param RecordTemplateMapperInterface $mapper      The template store.
 	 * @param SchemaMapperInterface         $schemas     Reads the template's schema.
 	 * @param PermissionCheckInterface    $permissions Answers whether a caller may create in a schema.
 	 * @param ViewerReachResolver  $viewers     Validates shares against existing groups.
@@ -89,7 +89,7 @@ class RecordTemplateService implements RecordTemplateStoreInterface {
 	 * @spec openspec/changes/records-saved-templates/specs/record-templates/spec.md#requirement-a-user-can-save-and-share-a-named-record-template
 	 */
 	public function __construct(
-		private readonly RecordTemplateMapper $mapper,
+		private readonly RecordTemplateMapperInterface $mapper,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly PermissionCheckInterface $permissions,
 		private readonly ViewerReachResolver $viewers,

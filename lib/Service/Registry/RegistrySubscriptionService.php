@@ -45,7 +45,7 @@ use Throwable;
  *
  * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md
  */
-class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterface {
+class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterface, RegistrySubscriptionServiceInterface {
 
 	/**
 	 * Applies inbound updates through the ordinary save path.

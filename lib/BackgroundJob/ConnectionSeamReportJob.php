@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
+use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateProvider;
@@ -67,14 +67,14 @@ class ConnectionSeamReportJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory       $time      Time factory for TimedJob.
-	 * @param ContainerInterface $container Resolves each seam on its own, so one broken binding reports only itself.
-	 * @param ConnectionReporter $reporter  Sends the reports to integriq.
+	 * @param ITimeFactory                $time      Time factory for TimedJob.
+	 * @param ContainerInterface          $container Resolves each seam on its own, so one broken binding reports only itself.
+	 * @param ConnectionReporterInterface $reporter  Sends the reports to integriq.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly ContainerInterface $container,
-		private readonly ConnectionReporter $reporter,
+		private readonly ConnectionReporterInterface $reporter,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);

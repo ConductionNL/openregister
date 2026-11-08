@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
-use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
+use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -96,7 +96,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 		try {
 			$flows = $this->everyFlow();
 			$versions = $this->container->get(FlowVersionMapperInterface::class);
-			$semver = $this->container->get(FlowSemanticVersion::class);
+			$semver = $this->container->get(FlowSemanticVersionInterface::class);
 		} catch (Throwable $e) {
 			// The tables may not exist yet on a fresh install. Nothing to
 			// back-fill is not a failure.
@@ -180,13 +180,13 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 	 *
 	 * @param Flow               $flow     The flow.
 	 * @param FlowVersionMapperInterface  $versions The version rows.
-	 * @param FlowSemanticVersion $semver  The numbering.
+	 * @param FlowSemanticVersionInterface $semver  The numbering.
 	 *
 	 * @return int How many rows were stamped.
 	 *
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-existing-published-versions-are-stamped-once-and-honestly
 	 */
-	private function stampOneFlow(Flow $flow, FlowVersionMapperInterface $versions, FlowSemanticVersion $semver): int {
+	private function stampOneFlow(Flow $flow, FlowVersionMapperInterface $versions, FlowSemanticVersionInterface $semver): int {
 		$rows = $versions->findAllForFlow(flowUuid: (string)$flow->getUuid());
 
 		// Oldest first: the sequence is the flow's own history, and
@@ -210,7 +210,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 			}
 
 			$row->setSemver($semver->backfilled(ordinalPosition: $position));
-			$row->setSemverSource(FlowSemanticVersion::SOURCE_BACKFILL);
+			$row->setSemverSource(FlowSemanticVersionInterface::SOURCE_BACKFILL);
 			$versions->update($row);
 			$stamped++;
 		}
@@ -256,7 +256,7 @@ class BackfillFlowSemanticVersions implements IRepairStep {
 		}
 
 		$flow->setSemver($live->getSemver());
-		$flow->setSemverSource(FlowSemanticVersion::SOURCE_BACKFILL);
+		$flow->setSemverSource(FlowSemanticVersionInterface::SOURCE_BACKFILL);
 		$this->container->get(FlowMapper::class)->update($flow);
 
 	}//end mirrorOntoFlow()

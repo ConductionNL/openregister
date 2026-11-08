@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\SchemaImport;
  *
  * @spec openspec/specs/schema-import/spec.md
  */
-final class ImportedSchema {
+final class ImportedSchema implements ImportedSchemaInterface {
 	/**
 	 * Constructor.
 	 *
@@ -53,6 +53,17 @@ final class ImportedSchema {
 		public readonly array $unknownRequested = [],
 	) {
 	}//end __construct()
+
+	/**
+	 * Requested property names not present on the source type.
+	 *
+	 * @return array<int, string> The names.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md
+	 */
+	public function unknownRequested(): array {
+		return $this->unknownRequested;
+	}//end unknownRequested()
 
 	/**
 	 * Render the schema payload ready for SchemaMapper hydration / upload.

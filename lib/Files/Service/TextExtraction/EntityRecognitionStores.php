@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCP\IDBConnection;
@@ -37,7 +37,7 @@ final class EntityRecognitionStores {
 	 * Bundle the stores.
 	 *
 	 * @param ChunkSourceReaderInterface    $chunkMapper          Chunk mapper.
-	 * @param GdprEntityMapper              $entityMapper         Entity mapper.
+	 * @param GdprEntityMapperInterface              $entityMapper         Entity mapper.
 	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper.
 	 * @param IDBConnection                 $db                   Database connection.
 	 *
@@ -45,7 +45,7 @@ final class EntityRecognitionStores {
 	 */
 	public function __construct(
 		public readonly ChunkSourceReaderInterface $chunkMapper,
-		public readonly GdprEntityMapper $entityMapper,
+		public readonly GdprEntityMapperInterface $entityMapper,
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
 		public readonly IDBConnection $db,
 	) {

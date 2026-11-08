@@ -29,10 +29,10 @@ use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
-use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
-use OCA\OpenRegister\Service\Anonymisation\BackendState;
+use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
+use OCA\OpenRegister\Service\Anonymisation\BackendMethodsInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -126,9 +126,9 @@ class EntityRecognitionHandler {
 	/**
 	 * Entity mapper.
 	 *
-	 * @var GdprEntityMapper
+	 * @var GdprEntityMapperInterface
 	 */
-	private readonly GdprEntityMapper $entityMapper;
+	private readonly GdprEntityMapperInterface $entityMapper;
 
 	/**
 	 * Entity relation mapper.
@@ -161,9 +161,9 @@ class EntityRecognitionHandler {
 	/**
 	 * Backend state + ExApp client.
 	 *
-	 * @var AnonymisationBackendService
+	 * @var AnonymiserRequestInterface
 	 */
-	private readonly AnonymisationBackendService $anonymisationBackendService;
+	private readonly AnonymiserRequestInterface $anonymisationBackendService;
 
 	/**
 	 * App container, consulted lazily for the object mapper.
@@ -513,10 +513,10 @@ class EntityRecognitionHandler {
 	 *
 	 * @param string $method The requested method.
 	 *
-	 * @return string A concrete method from BackendState::METHODS.
+	 * @return string A concrete method from BackendMethodsInterface::METHODS.
 	 */
 	private function resolveMethod(string $method): string {
-		if (in_array($method, BackendState::METHODS, true) === true) {
+		if (in_array($method, BackendMethodsInterface::METHODS, true) === true) {
 			return $method;
 		}
 

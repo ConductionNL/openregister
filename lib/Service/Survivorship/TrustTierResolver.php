@@ -40,7 +40,7 @@ use Throwable;
  *
  * @spec openspec/changes/mdm-survivorship-engine/tasks.md#1.1
  */
-class TrustTierResolver {
+class TrustTierResolver implements TrustTierResolverInterface {
 	/**
 	 * Resolve the effective trust tier for a tuple as of a given date.
 	 *

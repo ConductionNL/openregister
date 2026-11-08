@@ -26,7 +26,7 @@ use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
-use OCA\OpenRegister\Service\Rbac\AggregateVisibility;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 
 /**
  * Maps JSON Schema properties to GraphQL types and generates input types.
@@ -818,7 +818,7 @@ class TypeMapperHandler {
 	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
 	 */
 	public function mayCarryField(RegisterSchema $schema, string $property): bool {
-		return (new AggregateVisibility(rbac: $this->propertyRbac))->mayReadOnSomeRow(
+		return RbacRuleChecks::aggregateVisibility(rbac: $this->propertyRbac)->mayReadOnSomeRow(
 			schema: $schema,
 			property: $property
 		);
@@ -839,7 +839,7 @@ class TypeMapperHandler {
 	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
 	 */
 	private function mayDescribe(RegisterSchema $schema, string $property): bool {
-		return (new AggregateVisibility(rbac: $this->propertyRbac))->maySummarise(
+		return RbacRuleChecks::aggregateVisibility(rbac: $this->propertyRbac)->maySummarise(
 			schema: $schema,
 			property: $property
 		);

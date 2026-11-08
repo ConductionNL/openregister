@@ -87,4 +87,17 @@ interface DestructionServiceInterface {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function rejectList(array $destructionList, string $reason): array;
+	/**
+	 * Withhold the entries a reviewer decided against (a recorded retain or transfer).
+	 *
+	 * Idempotent: an entry already moved to `excludedObjects` is no longer in
+	 * `objects`, so a second approval finds nothing left to move.
+	 *
+	 * @param array<string, mixed> $destructionList The destruction list data.
+	 *
+	 * @return array<string, mixed> The list, with decided-against entries withheld.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	public function withholdDecidedEntries(array $destructionList): array;
 }//end interface

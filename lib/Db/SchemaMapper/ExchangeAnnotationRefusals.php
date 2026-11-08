@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidators;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
 
 /**
@@ -107,7 +107,7 @@ final class ExchangeAnnotationRefusals {
 	public function checkMcp(Schema $schema): void {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-mcp');
 		if ($annotation->isBlock() === true) {
-			$annotation->faults()->refuseCoded(errors: (new McpAnnotationValidator())->validate($annotation->shape()));
+			$annotation->faults()->refuseCoded(errors: McpAnnotationValidators::validator()->validate($annotation->shape()));
 		}
 	}//end checkMcp()
 }//end class
