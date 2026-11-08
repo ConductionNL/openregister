@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 // phpcs:disable PEAR.Commenting.FunctionComment.MissingReturn -- PHPUnit fixtures and tests; the signature IS the contract.
 
 use OCA\OpenRegister\Files\Service\File\OfficeSession;
+use OCA\OpenRegister\Files\Service\File\OfficeSessionToken;
 use PHPUnit\Framework\TestCase;
 
 class OfficeSessionGoldenTest extends TestCase {
@@ -42,9 +43,11 @@ class OfficeSessionGoldenTest extends TestCase {
 		return new OfficeSession(
 			urlSrc: 'https://office.test/browser/cool.html?',
 			wopiSrc: 'https://nc.test/index.php/apps/richdocuments/wopi/files/77_oc',
-			token: 'tok',
-			tokenTtl: 100000,
-			readOnly: $readOnly
+			access: new OfficeSessionToken(
+				token: 'tok',
+				tokenTtl: 100000,
+				readOnly: $readOnly
+			)
 		);
 	}//end session()
 
