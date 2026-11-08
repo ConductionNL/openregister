@@ -61,11 +61,16 @@ final class E18ConstantHoldersInterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * None are kept.
+	 * Version1Date20260706100000 is a shipped migration that reads
+	 * PgVectorPlatform::SIDECAR_TABLE. Migrations are outside the measured
+	 * production code and are left exactly as they shipped; the constant still
+	 * resolves through the interface PgVectorPlatform implements.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [];
+	private const KEPT_CALLERS = [
+		PgVectorPlatform::class => ['Migration/Version1Date20260706100000.php'],
+	];
 
 	/**
 	 * The values outside callers read, pinned so the move cannot change them.
