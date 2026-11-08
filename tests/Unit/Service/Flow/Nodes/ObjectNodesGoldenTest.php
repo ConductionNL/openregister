@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
@@ -84,7 +85,12 @@ final class ObjectNodesGoldenTest extends TestCase {
 		$nodes = [
 			new TransitionNode(engine: $this->createMock(TransitionEngine::class), l10n: $l10n, urls: $urls),
 			new LinkObjectNode(objects: $objects, handoffs: $this->createMock(HandoffService::class), l10n: $l10n, urls: $urls),
-			new ObjectReadNode(objects: $objects, registers: $registers, schemas: $schemas, userManager: $users, l10n: $l10n, urls: $urls),
+			new ObjectReadNode(
+				sources: new ObjectNodeSources(objects: $objects, registers: $registers, schemas: $schemas),
+				userManager: $users,
+				l10n: $l10n,
+				urls: $urls
+			),
 			new ObjectWriteNode(
 				objects: $objects,
 				registers: $registers,
