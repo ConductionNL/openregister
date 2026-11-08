@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Mcp\Service\Mcp;
  * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-DIALECT-001, REQ-DIALECT-002, REQ-DIALECT-003)
  */
-class McpAnnotationValidator {
+class McpAnnotationValidator implements McpAnnotationValidatorInterface {
 
 	/**
 	 * The fixed, closed verb set the dialect may declare (REQ-DIALECT-003).
