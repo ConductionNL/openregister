@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\RuleRunMapper;
+use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -52,7 +52,7 @@ class RuleRunRetentionJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time The clock.
-	 * @param RuleRunMapper $runs Deletes expired detail rows.
+	 * @param RuleRunMapperInterface $runs Deletes expired detail rows.
 	 * @param RuleRunRecorderInterface $recorder Reads the configured retention period.
 	 * @param LoggerInterface $logger Records what was swept.
 	 *
@@ -60,7 +60,7 @@ class RuleRunRetentionJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly RuleRunMapper $runs,
+		private readonly RuleRunMapperInterface $runs,
 		private readonly RuleRunRecorderInterface $recorder,
 		private readonly LoggerInterface $logger,
 	) {

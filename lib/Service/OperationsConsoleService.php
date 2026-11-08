@@ -56,7 +56,7 @@ use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
-use OCA\OpenRegister\Db\RuleRunMapper;
+use OCA\OpenRegister\Db\RuleRunMapperInterface;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
@@ -186,9 +186,9 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	/**
 	 * The rules engine's run log.
 	 *
-	 * @var RuleRunMapper
+	 * @var RuleRunMapperInterface
 	 */
-	private readonly RuleRunMapper $ruleRuns;
+	private readonly RuleRunMapperInterface $ruleRuns;
 
 	/**
 	 * One row per rule, with its last error.
