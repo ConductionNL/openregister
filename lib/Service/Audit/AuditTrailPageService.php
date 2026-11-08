@@ -36,7 +36,7 @@ use OCP\BackgroundJob\IJobList;
  *
  * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
  */
-class AuditTrailPageService {
+class AuditTrailPageService implements AuditTrailPageServiceInterface {
 
 	/**
 	 * Constructor.
