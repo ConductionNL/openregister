@@ -34,6 +34,7 @@ use OCA\OpenRegister\Controller\ProcessingLogController;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\ProcessingLogReadScope;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -67,15 +68,15 @@ final class ProcessingLogControllerA24GoldenTest extends TestCase {
 	protected function setUp(): void {
 		$this->logMapper = $this->createMock(ProcessingLogMapper::class);
 		$this->logMapper->method('findFiltered')->willReturnCallback(
-			function (...$args): array {
-				$this->calls[] = $args;
+			function (array $filters, ProcessingLogReadScope $scope, int $limit, int $offset): array {
+				$this->calls[] = [$filters, $scope->from, $scope->to, $scope->organisationId, $scope->includeConfidential, $limit, $offset];
 
 				return [['id' => 1]];
 			}
 		);
 		$this->logMapper->method('findBySubject')->willReturnCallback(
-			function (...$args): array {
-				$this->calls[] = $args;
+			function (string $idType, string $idValue, ProcessingLogReadScope $scope): array {
+				$this->calls[] = [$idType, $idValue, $scope->from, $scope->to, $scope->organisationId, $scope->includeConfidential];
 
 				return [['id' => 2], ['id' => 3]];
 			}

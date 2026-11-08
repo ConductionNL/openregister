@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\ProcessingLogReadScope;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -110,7 +111,7 @@ final class ProcessingAndSearchTrailReadsGoldenTest extends TestCase {
 			foreach ([[null, false], ['org-1', false], [null, true], ['', true]] as [$org, $confidential]) {
 				$label = 'filtered ' . var_export($org, true) . ' confidential ' . var_export($confidential, true) . ': ' . $name;
 				$actual[$label] = $this->recorded(
-					fn () => count($this->processingLog()->findFiltered($filters, null, null, $org, $confidential)),
+					fn () => count($this->processingLog()->findFiltered($filters, new ProcessingLogReadScope(null, null, $org, $confidential))),
 					[]
 				);
 			}
