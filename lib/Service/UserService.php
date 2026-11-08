@@ -30,6 +30,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
+use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\PropertyDoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -173,8 +174,6 @@ class UserService implements UserServiceInterface {
 	 *
 	 * @return array The comprehensive user data array
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
 	 */
 	public function buildUserDataArray(IUser $user): array {
@@ -187,15 +186,9 @@ class UserService implements UserServiceInterface {
 
 		$additionalInfo = $this->getAdditionalProfileInfo(user: $user);
 
-		$emailVerified = null;
-		if (method_exists($user, 'getEmailVerified') === true) {
-			$emailVerified = $user->getEmailVerified();
-		}
+		$emailVerified = $this->callOptionalUserMethod(user: $user, method: 'getEmailVerified', default: null);
 
-		$avatarScope = 'contacts';
-		if (method_exists($user, 'getAvatarScope') === true) {
-			$avatarScope = $user->getAvatarScope();
-		}
+		$avatarScope = $this->callOptionalUserMethod(user: $user, method: 'getAvatarScope', default: 'contacts');
 
 		// OCP\IUser declares getLastLogin(), getBackendClassName(),
 		// canChangeDisplayName(), canChangePassword() and canChangeAvatar(), so
@@ -208,10 +201,7 @@ class UserService implements UserServiceInterface {
 		$backend = $user->getBackendClassName();
 		$canChangeDisplayName = $user->canChangeDisplayName();
 
-		$canChangeEmail = false;
-		if (method_exists($user, 'canChangeMailAddress') === true) {
-			$canChangeEmail = $user->canChangeMailAddress();
-		}
+		$canChangeEmail = $this->callOptionalUserMethod(user: $user, method: 'canChangeMailAddress', default: false);
 
 		$canChangePassword = $user->canChangePassword();
 		$canChangeAvatar = $user->canChangeAvatar();
@@ -249,40 +239,85 @@ class UserService implements UserServiceInterface {
 
 		// Add organization information in the format expected by the frontend.
 		// Frontend expects: { active: { uuid, naam, id, slug }, all: [...] }
-		// Use cached result if available (avoids ~20-30 redundant queries when called twice in updateMe).
-		$organisationStats = $this->cachedOrgStats;
-		if ($this->cachedOrgStats === null) {
-			try {
-				$organisationStats = $this->organisationService->getUserOrganisationStats();
-			} catch (\Exception $e) {
-				$this->logger->warning('Failed to get user organisation stats: ' . $e->getMessage());
-				$organisationStats = ['total' => 0, 'active' => null, 'results' => []];
-			}
-
-			$this->cachedOrgStats = $organisationStats;
-		}
-
-		// Transform organisation data to include 'naam' field (Dutch) alongside 'name'.
-		$transformOrg = function (?array $org): ?array {
-			if ($org === null) {
-				return null;
-			}
-
-			// Add 'naam' field that mirrors 'name' for Dutch frontend compatibility.
-			$org['naam'] = $org['name'] ?? null;
-			return $org;
-		};
-
-		// Build the organisations structure expected by the frontend.
-		$result['organisations'] = [
-			'active' => $transformOrg($organisationStats['active'] ?? null),
-			'all' => array_map($transformOrg, $organisationStats['results'] ?? []),
-			'total' => $organisationStats['total'] ?? 0,
-			'available' => true,
-		];
+		$result['organisations'] = $this->buildOrganisationsBlock(
+			organisationStats: $this->getCachedOrganisationStats()
+		);
 
 		return $result;
 	}//end buildUserDataArray()
+
+	/**
+	 * Call a method that only some IUser implementations carry.
+	 *
+	 * @param IUser  $user    The user object
+	 * @param string $method  The optional method (absent from OCP\IUser)
+	 * @param mixed  $default The value when the implementation lacks the method
+	 *
+	 * @return mixed The method's result, or $default
+	 */
+	private function callOptionalUserMethod(IUser $user, string $method, mixed $default): mixed {
+		if (method_exists($user, $method) === false) {
+			return $default;
+		}
+
+		return $user->$method();
+	}//end callOptionalUserMethod()
+
+	/**
+	 * The organisation stats of the current user, cached for the request.
+	 *
+	 * Use cached result if available (avoids ~20-30 redundant queries when called twice in updateMe).
+	 *
+	 * @return array The organisation stats (total, active, results)
+	 */
+	private function getCachedOrganisationStats(): array {
+		if ($this->cachedOrgStats !== null) {
+			return $this->cachedOrgStats;
+		}
+
+		try {
+			$organisationStats = $this->organisationService->getUserOrganisationStats();
+		} catch (\Exception $e) {
+			$this->logger->warning('Failed to get user organisation stats: ' . $e->getMessage());
+			$organisationStats = ['total' => 0, 'active' => null, 'results' => []];
+		}
+
+		$this->cachedOrgStats = $organisationStats;
+		return $organisationStats;
+	}//end getCachedOrganisationStats()
+
+	/**
+	 * Build the organisations structure expected by the frontend.
+	 *
+	 * @param array $organisationStats The organisation stats (total, active, results)
+	 *
+	 * @return array The active, all, total and available entries
+	 */
+	private function buildOrganisationsBlock(array $organisationStats): array {
+		return [
+			'active' => $this->withDutchOrganisationName(org: $organisationStats['active'] ?? null),
+			'all' => array_map($this->withDutchOrganisationName(...), $organisationStats['results'] ?? []),
+			'total' => $organisationStats['total'] ?? 0,
+			'available' => true,
+		];
+	}//end buildOrganisationsBlock()
+
+	/**
+	 * Transform organisation data to include 'naam' field (Dutch) alongside 'name'.
+	 *
+	 * @param array|null $org The organisation, or null
+	 *
+	 * @return array|null The organisation with 'naam', or null
+	 */
+	private function withDutchOrganisationName(?array $org): ?array {
+		if ($org === null) {
+			return null;
+		}
+
+		// Add 'naam' field that mirrors 'name' for Dutch frontend compatibility.
+		$org['naam'] = $org['name'] ?? null;
+		return $org;
+	}//end withDutchOrganisationName()
 
 	/**
 	 * Update user properties based on provided data
@@ -471,44 +506,16 @@ class UserService implements UserServiceInterface {
 			// OCP\IUser declares getQuota(), so the 'none' default was dead.
 			$userQuota = $user->getQuota();
 
-			$usedSpace = 0;
-
 			$userId = $user->getUID();
 
-			try {
-				// Default to memory-safe method, override if native method exists.
-				$usedSpace = $this->getUsedSpaceMemorySafe(userId: $userId);
-				if (method_exists($user, 'getUsedSpace') === true) {
-					$usedSpace = $user->getUsedSpace();
-				}
-			} catch (\Exception $quotaException) {
-				$this->logger->debug(
-					message: '[UserService] User quota calculation failed for user: ' . $userId,
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'exception' => $quotaException->getMessage(),
-					]
-				);
+			$usedSpace = $this->resolveUsedSpace(user: $user, userId: $userId);
 
-				$usedSpace = $this->getUsedSpaceMemorySafe(userId: $userId);
-			}
-
-			$quota = [
+			return [
 				'free' => $userQuota,
 				'used' => $usedSpace,
 				'total' => $userQuota,
-				'relative' => 0,
+				'relative' => $this->relativeQuotaUsage(userQuota: $userQuota, usedSpace: $usedSpace),
 			];
-
-			if ($userQuota !== 'none' && $userQuota !== 'unlimited' && is_numeric($userQuota) === true) {
-				$totalBytes = (int)$userQuota;
-				if ($totalBytes > 0) {
-					$quota['relative'] = round(($usedSpace / $totalBytes) * 100, 2);
-				}
-			}
-
-			return $quota;
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[UserService] Failed to build quota information for user: ' . $user->getUID(),
@@ -527,6 +534,58 @@ class UserService implements UserServiceInterface {
 			];
 		}//end try
 	}//end buildQuotaInformation()
+
+	/**
+	 * The used space of a user: the native value when the backend has one.
+	 *
+	 * @param IUser  $user   The user object
+	 * @param string $userId The user ID
+	 *
+	 * @return mixed The used space in bytes
+	 */
+	private function resolveUsedSpace(IUser $user, string $userId): mixed {
+		try {
+			// Default to memory-safe method, override if native method exists.
+			$usedSpace = $this->getUsedSpaceMemorySafe(userId: $userId);
+			if (method_exists($user, 'getUsedSpace') === true) {
+				$usedSpace = $user->getUsedSpace();
+			}
+
+			return $usedSpace;
+		} catch (\Exception $quotaException) {
+			$this->logger->debug(
+				message: '[UserService] User quota calculation failed for user: ' . $userId,
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'exception' => $quotaException->getMessage(),
+				]
+			);
+
+			return $this->getUsedSpaceMemorySafe(userId: $userId);
+		}//end try
+	}//end resolveUsedSpace()
+
+	/**
+	 * The used space as a percentage of a numeric, positive quota; 0 otherwise.
+	 *
+	 * @param mixed $userQuota The quota ('none', 'unlimited' or a byte count)
+	 * @param mixed $usedSpace The used space in bytes
+	 *
+	 * @return int|float The percentage, rounded to two decimals, or 0
+	 */
+	private function relativeQuotaUsage(mixed $userQuota, mixed $usedSpace): int|float {
+		if ($userQuota === 'none' || $userQuota === 'unlimited' || is_numeric($userQuota) === false) {
+			return 0;
+		}
+
+		$totalBytes = (int)$userQuota;
+		if ($totalBytes <= 0) {
+			return 0;
+		}
+
+		return round(($usedSpace / $totalBytes) * 100, 2);
+	}//end relativeQuotaUsage()
 
 	/**
 	 * Get used space in a memory-safe way
@@ -552,34 +611,9 @@ class UserService implements UserServiceInterface {
 				return 0;
 			}
 
-			$query = $this->db->getQueryBuilder();
-
-			// Used space lives in oc_filecache.size for the storage root (path = ''),
-			// NOT in oc_storages (which has no size column). Join the file cache to the
-			// user's home mount on the numeric storage id: oc_filecache.storage and
-			// oc_mounts.storage_id are both BIGINT, so this avoids the
-			// "operator does not exist: character varying = bigint" error that a
-			// storages.id (varchar) = mounts.storage_id (bigint) join throws on PostgreSQL.
-			$query->select('f.size')
-				->from('filecache', 'f')
-				->innerJoin('f', 'mounts', 'm', $query->expr()->eq('f.storage', 'm.storage_id'))
-				->where($query->expr()->eq('m.user_id', $query->createNamedParameter($userId)))
-				->andWhere($query->expr()->eq('f.path', $query->createNamedParameter('')))
-				->andWhere($query->expr()->eq('m.mount_point', $query->createNamedParameter('/' . $userId . '/')))
-				->setMaxResults(1);
-
-			// `execute()` was removed from QueryBuilder in Nextcloud 34. It was
-			// the read/write-agnostic entry point; a SELECT now goes through
-			// executeQuery(). Calling the old name threw "Call to undefined
-			// method", which the catch below swallowed into a warning and a 0 —
-			// so used space silently read as empty for every user instead of
-			// failing loudly.
-			$result = $query->executeQuery();
-			$row = $result->fetch();
-			$result->closeCursor();
-
-			if ($row !== false && isset($row['size']) === true && is_numeric($row['size']) === true) {
-				return (int)$row['size'];
+			$size = $this->fetchHomeStorageRootSize(userId: $userId);
+			if ($size !== null) {
+				return $size;
 			}
 
 			$this->logger->info(
@@ -606,6 +640,47 @@ class UserService implements UserServiceInterface {
 	}//end getUsedSpaceMemorySafe()
 
 	/**
+	 * The size of the user's home storage root, from the file cache.
+	 *
+	 * @param string $userId The user ID
+	 *
+	 * @return int|null The size in bytes, or null when no numeric size is stored
+	 */
+	private function fetchHomeStorageRootSize(string $userId): ?int {
+		$query = $this->db->getQueryBuilder();
+
+		// Used space lives in oc_filecache.size for the storage root (path = ''),
+		// NOT in oc_storages (which has no size column). Join the file cache to the
+		// user's home mount on the numeric storage id: oc_filecache.storage and
+		// oc_mounts.storage_id are both BIGINT, so this avoids the
+		// "operator does not exist: character varying = bigint" error that a
+		// storages.id (varchar) = mounts.storage_id (bigint) join throws on PostgreSQL.
+		$query->select('f.size')
+			->from('filecache', 'f')
+			->innerJoin('f', 'mounts', 'm', $query->expr()->eq('f.storage', 'm.storage_id'))
+			->where($query->expr()->eq('m.user_id', $query->createNamedParameter($userId)))
+			->andWhere($query->expr()->eq('f.path', $query->createNamedParameter('')))
+			->andWhere($query->expr()->eq('m.mount_point', $query->createNamedParameter('/' . $userId . '/')))
+			->setMaxResults(1);
+
+		// `execute()` was removed from QueryBuilder in Nextcloud 34. It was
+		// the read/write-agnostic entry point; a SELECT now goes through
+		// executeQuery(). Calling the old name threw "Call to undefined
+		// method", which the caller's catch swallowed into a warning and a 0 —
+		// so used space silently read as empty for every user instead of
+		// failing loudly.
+		$result = $query->executeQuery();
+		$row = $result->fetch();
+		$result->closeCursor();
+
+		if ($row !== false && isset($row['size']) === true && is_numeric($row['size']) === true) {
+			return (int)$row['size'];
+		}
+
+		return null;
+	}//end fetchHomeStorageRootSize()
+
+	/**
 	 * Get language and locale with proper fallbacks
 	 *
 	 * @param IUser $user The user object
@@ -613,29 +688,57 @@ class UserService implements UserServiceInterface {
 	 * @return array Array containing language and locale
 	 */
 	private function getLanguageAndLocale(IUser $user): array {
-		$language = '';
-		$locale = '';
-
-		if (method_exists($user, 'getLanguage') === true) {
-			$language = $user->getLanguage();
-			if (empty($language) === true) {
-				$language = $this->l10nFactory->findLanguage();
-			}
-		}
-
-		if (method_exists($user, 'getLocale') === true) {
-			$locale = $user->getLocale();
-			if (empty($locale) === true && empty($language) === false) {
-				// Default to language_LANGUAGE format, override for English.
-				$locale = $language . '_' . strtoupper($language);
-				if ($language === 'en') {
-					$locale = 'en_US';
-				}
-			}
-		}
+		$language = $this->resolveLanguage(user: $user);
+		$locale = $this->resolveLocale(user: $user, language: $language);
 
 		return [$language, $locale];
 	}//end getLanguageAndLocale()
+
+	/**
+	 * The user's language, or the detected one when the user has none set.
+	 *
+	 * @param IUser $user The user object
+	 *
+	 * @return mixed The language, or '' when the implementation has no getLanguage()
+	 */
+	private function resolveLanguage(IUser $user): mixed {
+		if (method_exists($user, 'getLanguage') === false) {
+			return '';
+		}
+
+		$language = $user->getLanguage();
+		if (empty($language) === true) {
+			$language = $this->l10nFactory->findLanguage();
+		}
+
+		return $language;
+	}//end resolveLanguage()
+
+	/**
+	 * The user's locale, defaulted from the language when the user has none set.
+	 *
+	 * @param IUser $user     The user object
+	 * @param mixed $language The resolved language
+	 *
+	 * @return mixed The locale, or '' when the implementation has no getLocale()
+	 */
+	private function resolveLocale(IUser $user, mixed $language): mixed {
+		if (method_exists($user, 'getLocale') === false) {
+			return '';
+		}
+
+		$locale = $user->getLocale();
+		if (empty($locale) === false || empty($language) === true) {
+			return $locale;
+		}
+
+		// Default to language_LANGUAGE format, override for English.
+		if ($language === 'en') {
+			return 'en_US';
+		}
+
+		return $language . '_' . strtoupper($language);
+	}//end resolveLocale()
 
 	/**
 	 * Get additional profile information from various sources
@@ -645,37 +748,11 @@ class UserService implements UserServiceInterface {
 	 * @return array Additional profile information
 	 */
 	private function getAdditionalProfileInfo(IUser $user): array {
-		$additionalInfo = [];
-
 		try {
 			$additionalInfo = $this->getAccountManagerPropertiesSelectively(user: $user);
 		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[UserService] AccountManager failed for user: ' . $user->getUID(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e->getMessage(),
-				]
-			);
-
-			$userId = $user->getUID();
-
-			$phone = $this->config->getUserValue($userId, 'settings', 'phone', '');
-			if (empty($phone) === false) {
-				$additionalInfo['phone'] = $phone;
-			}
-
-			$website = $this->config->getUserValue($userId, 'settings', 'website', '');
-			if (empty($website) === false) {
-				$additionalInfo['website'] = $website;
-			}
-
-			$twitter = $this->config->getUserValue($userId, 'settings', 'twitter', '');
-			if (empty($twitter) === false) {
-				$additionalInfo['twitter'] = $twitter;
-			}
-		}//end try
+			$additionalInfo = $this->getSettingsProfileInfo(user: $user, exception: $e);
+		}
 
 		$customNameFields = $this->getCustomNameFields(user: $user);
 		$additionalInfo = array_merge($additionalInfo, $customNameFields);
@@ -687,18 +764,8 @@ class UserService implements UserServiceInterface {
 		}
 
 		// Fallback: check user config if AccountManager's 'role' is empty.
-		//
-		// `functie` here is not a variable name, it is a STORED KEY — the preference
-		// row oc_preferences(appid='core', configkey='functie'). Renaming the read
-		// does not rename what is already in the table, so reading only the new key
-		// makes every job title saved before this release disappear, with no error.
-		// Read the new key first, then fall back to the old one.
 		if (empty($additionalInfo['role']) === true) {
-			$role = $this->config->getUserValue($userId, 'core', 'role', '');
-			if (empty($role) === true) {
-				$role = $this->config->getUserValue($userId, 'core', 'functie', '');
-			}
-
+			$role = $this->getStoredRole(userId: $userId);
 			if (empty($role) === false) {
 				$additionalInfo['role'] = $role;
 			}
@@ -706,6 +773,59 @@ class UserService implements UserServiceInterface {
 
 		return $additionalInfo;
 	}//end getAdditionalProfileInfo()
+
+	/**
+	 * Profile information from the legacy settings keys, used when AccountManager fails.
+	 *
+	 * @param IUser      $user      The user object
+	 * @param \Exception $exception Why AccountManager failed
+	 *
+	 * @return array The non-empty phone, website and twitter values
+	 */
+	private function getSettingsProfileInfo(IUser $user, \Exception $exception): array {
+		$this->logger->warning(
+			message: '[UserService] AccountManager failed for user: ' . $user->getUID(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'exception' => $exception->getMessage(),
+			]
+		);
+
+		$userId = $user->getUID();
+
+		$additionalInfo = [];
+		foreach (['phone', 'website', 'twitter'] as $field) {
+			$value = $this->config->getUserValue($userId, 'settings', $field, '');
+			if (empty($value) === false) {
+				$additionalInfo[$field] = $value;
+			}
+		}
+
+		return $additionalInfo;
+	}//end getSettingsProfileInfo()
+
+	/**
+	 * The role stored in user config: the new key first, then the old one.
+	 *
+	 * `functie` here is not a variable name, it is a STORED KEY — the preference
+	 * row oc_preferences(appid='core', configkey='functie'). Renaming the read
+	 * does not rename what is already in the table, so reading only the new key
+	 * makes every job title saved before this release disappear, with no error.
+	 * Read the new key first, then fall back to the old one.
+	 *
+	 * @param string $userId The user ID
+	 *
+	 * @return mixed The stored role, or ''
+	 */
+	private function getStoredRole(string $userId): mixed {
+		$role = $this->config->getUserValue($userId, 'core', 'role', '');
+		if (empty($role) === true) {
+			$role = $this->config->getUserValue($userId, 'core', 'functie', '');
+		}
+
+		return $role;
+	}//end getStoredRole()
 
 	/**
 	 * Get AccountManager properties selectively to reduce memory usage
@@ -766,25 +886,70 @@ class UserService implements UserServiceInterface {
 	 * @return void
 	 */
 	private function updateStandardUserProperties(IUser $user, array $data): void {
+		$this->updateDisplayName(user: $user, data: $data);
+		$this->updateEmailAddress(user: $user, data: $data);
+		$this->updatePassword(user: $user, data: $data);
+		$this->updateLanguageAndLocale(user: $user, data: $data);
+	}//end updateStandardUserProperties()
+
+	/**
+	 * Set the display name when given and the backend allows it.
+	 *
+	 * @param IUser $user The user object to update
+	 * @param array $data The data array containing updates
+	 *
+	 * @return void
+	 */
+	private function updateDisplayName(IUser $user, array $data): void {
 		if (isset($data['displayName']) === true
 			&& $user->canChangeDisplayName() === true
 		) {
 			$user->setDisplayName($data['displayName']);
 		}
+	}//end updateDisplayName()
 
+	/**
+	 * Set the e-mail address when given and the backend allows it.
+	 *
+	 * @param IUser $user The user object to update
+	 * @param array $data The data array containing updates
+	 *
+	 * @return void
+	 */
+	private function updateEmailAddress(IUser $user, array $data): void {
 		if (isset($data['email']) === true
 			&& method_exists($user, 'canChangeMailAddress') === true
 			&& $user->canChangeMailAddress() === true
 		) {
 			$user->setEMailAddress($data['email']);
 		}
+	}//end updateEmailAddress()
 
+	/**
+	 * Set the password when given and the backend allows it.
+	 *
+	 * @param IUser $user The user object to update
+	 * @param array $data The data array containing updates
+	 *
+	 * @return void
+	 */
+	private function updatePassword(IUser $user, array $data): void {
 		if (isset($data['password']) === true
 			&& $user->canChangePassword() === true
 		) {
 			$user->setPassword($data['password']);
 		}
+	}//end updatePassword()
 
+	/**
+	 * Set the language and the locale when given and the implementation supports it.
+	 *
+	 * @param IUser $user The user object to update
+	 * @param array $data The data array containing updates
+	 *
+	 * @return void
+	 */
+	private function updateLanguageAndLocale(IUser $user, array $data): void {
 		if (isset($data['language']) === true && method_exists($user, 'setLanguage') === true) {
 			$user->setLanguage($data['language']);
 		}
@@ -792,7 +957,7 @@ class UserService implements UserServiceInterface {
 		if (isset($data['locale']) === true && method_exists($user, 'setLocale') === true) {
 			$user->setLocale($data['locale']);
 		}
-	}//end updateStandardUserProperties()
+	}//end updateLanguageAndLocale()
 
 	/**
 	 * Update profile properties via AccountManager and custom fields
@@ -801,69 +966,10 @@ class UserService implements UserServiceInterface {
 	 * @param array $data The data array containing updates
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function updateProfileProperties(IUser $user, array $data): void {
 		try {
-			$account = $this->accountManager->getAccount($user);
-			$accountUpdated = false;
-
-			$standardFields = [
-				'phone' => IAccountManager::PROPERTY_PHONE,
-				'address' => IAccountManager::PROPERTY_ADDRESS,
-				'website' => IAccountManager::PROPERTY_WEBSITE,
-				'twitter' => IAccountManager::PROPERTY_TWITTER,
-				'fediverse' => IAccountManager::PROPERTY_FEDIVERSE,
-				'organisation' => IAccountManager::PROPERTY_ORGANISATION,
-				'role' => IAccountManager::PROPERTY_ROLE,
-				'headline' => IAccountManager::PROPERTY_HEADLINE,
-				'biography' => IAccountManager::PROPERTY_BIOGRAPHY,
-			];
-
-			foreach ($standardFields as $apiField => $accountProperty) {
-				if (isset($data[$apiField]) === false) {
-					continue;
-				}
-
-				$value = (string)$data[$apiField];
-
-				// IAccount::getProperty() THROWS PropertyDoesNotExistException when
-				// the property is absent — it never returns null. The `!== null`
-				// test that used to guard this block was therefore always true,
-				// which made the create-it fallback below UNREACHABLE: an unknown
-				// property escaped to the outer catch and abandoned the whole
-				// account update with a warning instead of being created. Catching
-				// the exception here is what actually reaches that fallback.
-				try {
-					$property = $account->getProperty($accountProperty);
-					if ($property->getValue() !== $value) {
-						$property->setValue($value);
-						$accountUpdated = true;
-					}
-
-					continue;
-				} catch (PropertyDoesNotExistException $e) {
-					// Fall through to the create path below.
-				}
-
-				// Property doesn't exist, create it.
-				$scope = $this->getDefaultPropertyScope(propertyName: $accountProperty);
-				$verified = IAccountManager::NOT_VERIFIED;
-
-				$account->setProperty(
-					property: $accountProperty,
-					value: $value,
-					scope: $scope,
-					verified: $verified
-				);
-				$accountUpdated = true;
-			}//end foreach
-
-			if ($accountUpdated === true) {
-				$this->accountManager->updateAccount($account);
-			}
+			$this->updateAccountProperties(user: $user, data: $data);
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[UserService] Failed to update AccountManager properties for user: ' . $user->getUID(),
@@ -875,15 +981,7 @@ class UserService implements UserServiceInterface {
 			);
 		}//end try
 
-		$customFields = ['firstName', 'lastName', 'middleName'];
-		$nameFields = [];
-
-		foreach ($customFields as $field) {
-			if (isset($data[$field]) === true) {
-				$nameFields[$field] = $data[$field];
-			}
-		}
-
+		$nameFields = $this->extractNameFields(data: $data);
 		if (empty($nameFields) === false) {
 			$this->setCustomNameFields(user: $user, nameFields: $nameFields);
 		}
@@ -893,6 +991,106 @@ class UserService implements UserServiceInterface {
 			$this->config->setUserValue($user->getUID(), 'core', 'role', (string)$data['role']);
 		}
 	}//end updateProfileProperties()
+
+	/**
+	 * Write the given profile fields to the user's AccountManager account.
+	 *
+	 * @param IUser $user The user object to update
+	 * @param array $data The data array containing updates
+	 *
+	 * @return void
+	 */
+	private function updateAccountProperties(IUser $user, array $data): void {
+		$account = $this->accountManager->getAccount($user);
+		$accountUpdated = false;
+
+		$standardFields = [
+			'phone' => IAccountManager::PROPERTY_PHONE,
+			'address' => IAccountManager::PROPERTY_ADDRESS,
+			'website' => IAccountManager::PROPERTY_WEBSITE,
+			'twitter' => IAccountManager::PROPERTY_TWITTER,
+			'fediverse' => IAccountManager::PROPERTY_FEDIVERSE,
+			'organisation' => IAccountManager::PROPERTY_ORGANISATION,
+			'role' => IAccountManager::PROPERTY_ROLE,
+			'headline' => IAccountManager::PROPERTY_HEADLINE,
+			'biography' => IAccountManager::PROPERTY_BIOGRAPHY,
+		];
+
+		foreach ($standardFields as $apiField => $accountProperty) {
+			if (isset($data[$apiField]) === false) {
+				continue;
+			}
+
+			$value = (string)$data[$apiField];
+			if ($this->writeAccountProperty(account: $account, accountProperty: $accountProperty, value: $value) === true) {
+				$accountUpdated = true;
+			}
+		}
+
+		if ($accountUpdated === true) {
+			$this->accountManager->updateAccount($account);
+		}
+	}//end updateAccountProperties()
+
+	/**
+	 * Set one account property, creating it when the account lacks it.
+	 *
+	 * @param IAccount $account         The account to update
+	 * @param string   $accountProperty The AccountManager property name
+	 * @param string   $value           The new value
+	 *
+	 * @return bool Whether the account changed
+	 */
+	private function writeAccountProperty(IAccount $account, string $accountProperty, string $value): bool {
+		// IAccount::getProperty() THROWS PropertyDoesNotExistException when
+		// the property is absent — it never returns null. The `!== null`
+		// test that used to guard this block was therefore always true,
+		// which made the create-it fallback below UNREACHABLE: an unknown
+		// property escaped to the outer catch and abandoned the whole
+		// account update with a warning instead of being created. Catching
+		// the exception here is what actually reaches that fallback.
+		try {
+			$property = $account->getProperty($accountProperty);
+			if ($property->getValue() !== $value) {
+				$property->setValue($value);
+				return true;
+			}
+
+			return false;
+		} catch (PropertyDoesNotExistException $e) {
+			// Fall through to the create path below.
+		}
+
+		// Property doesn't exist, create it.
+		$scope = $this->getDefaultPropertyScope(propertyName: $accountProperty);
+		$verified = IAccountManager::NOT_VERIFIED;
+
+		$account->setProperty(
+			property: $accountProperty,
+			value: $value,
+			scope: $scope,
+			verified: $verified
+		);
+		return true;
+	}//end writeAccountProperty()
+
+	/**
+	 * The custom name fields present in the update data.
+	 *
+	 * @param array $data The data array containing updates
+	 *
+	 * @return array The firstName, lastName and middleName values that are set
+	 */
+	private function extractNameFields(array $data): array {
+		$nameFields = [];
+		foreach (['firstName', 'lastName', 'middleName'] as $field) {
+			if (isset($data[$field]) === true) {
+				$nameFields[$field] = $data[$field];
+			}
+		}
+
+		return $nameFields;
+	}//end extractNameFields()
 
 	/**
 	 * Get default property scope for account properties
