@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\ChatControllerServices;
+use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
@@ -69,7 +70,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ChatController extends Controller {
+class ChatController extends Controller implements ChatFamilyControllerInterface {
 
 	/**
 	 * Chat service
