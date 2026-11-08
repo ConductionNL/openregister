@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Calendar;
 use DateTimeImmutable;
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
 use OCA\OpenRegister\Calendar\RegisterCalendar;
+use OCA\OpenRegister\Calendar\RegisterCalendarSources;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -233,6 +234,6 @@ class RegisterCalendarSearchGoldenTest extends TestCase {
 		string $principalUri,
 		LoggerInterface $logger
 	): RegisterCalendar {
-		return new RegisterCalendar($schema, $config, $magicMapper, $registerMapper, $transformer, $principalUri, $logger);
+		return new RegisterCalendar($schema, $config, $principalUri, new RegisterCalendarSources($magicMapper, $registerMapper, $transformer, $logger));
 	}
 }

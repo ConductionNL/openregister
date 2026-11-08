@@ -107,30 +107,24 @@ class RegisterCalendar implements ICalendar {
 	/**
 	 * Constructor
 	 *
-	 * @param Schema $schema The schema entity
-	 * @param array $calendarConfig The calendar configuration
-	 * @param MagicMapperInterface $magicMapper The MagicMapper for queries
-	 * @param RegisterMapperInterface $registerMapper The RegisterMapperInterface
-	 * @param CalendarEventTransformer $transformer The event transformer
-	 * @param string $principalUri The principal URI
-	 * @param LoggerInterface $logger Logger instance
+	 * @param Schema                  $schema         The schema entity
+	 * @param array                   $calendarConfig The calendar configuration
+	 * @param string                  $principalUri   The principal URI
+	 * @param RegisterCalendarSources $sources        Object/register lookup, transformer and logger
 	 */
 	public function __construct(
 		Schema $schema,
 		array $calendarConfig,
-		MagicMapperInterface $magicMapper,
-		RegisterMapperInterface $registerMapper,
-		CalendarEventTransformer $transformer,
 		string $principalUri,
-		LoggerInterface $logger,
+		RegisterCalendarSources $sources,
 	) {
 		$this->schema = $schema;
 		$this->calendarConfig = $calendarConfig;
-		$this->magicMapper = $magicMapper;
-		$this->registerMapper = $registerMapper;
-		$this->transformer = $transformer;
+		$this->magicMapper = $sources->magicMapper;
+		$this->registerMapper = $sources->registerMapper;
+		$this->transformer = $sources->transformer;
 		$this->principalUri = $principalUri;
-		$this->logger = $logger;
+		$this->logger = $sources->logger;
 	}//end __construct()
 
 	/**

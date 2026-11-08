@@ -23,6 +23,8 @@ namespace OCA\OpenRegister\Calendar;
 /**
  * The text pattern, options and paging of one calendar search, carried
  * together through RegisterCalendar's search steps.
+ *
+ * @spec openspec/specs/calendar-integration/spec.md
  */
 final class CalendarSearchQuery {
 
