@@ -230,16 +230,13 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			$preview->setToRefuse(0);
 			$this->store->previewMapper->persist(preview: $preview);
 
-			$destination = new ImportDestination(register: $register, schema: $schema);
+			$run = new ImportRun(
+				preview: $preview,
+				destination: new ImportDestination(register: $register, schema: $schema),
+				pack: $pack
+			);
 			foreach ($rows as $index => $row) {
-				$decision = $this->decideRow(
-					row: $row,
-					preview: $preview,
-					destination: $destination,
-					pack: $pack
-				);
-
-				$this->persistDecision(preview: $preview, row: $row, decision: $decision);
+				$this->persistDecision(run: $run, row: $row);
 				$preview->setProcessed($index + 1);
 
 				if ((($index + 1) % self::PROGRESS_EVERY) === 0) {
@@ -327,13 +324,17 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 		$register = $this->resolveRegister(value: $preview->getRegisterId());
 		$schema = $this->resolveSchema(value: $preview->getSchemaId());
-		$destination = new ImportDestination(register: $register, schema: $schema);
+		$run = new ImportRun(
+			preview: $preview,
+			destination: new ImportDestination(register: $register, schema: $schema),
+			currentUser: $currentUser
+		);
 
 		$preview->setState(ImportPreview::STATE_COMMITTING);
 		$this->store->previewMapper->persist(preview: $preview);
 
 		try {
-			$this->writePendingBatches(preview: $preview, destination: $destination, currentUser: $currentUser);
+			$this->writePendingBatches(run: $run);
 
 			$preview->setState(ImportPreview::STATE_COMMITTED);
 			$preview->setReport($this->buildReport(preview: $preview));
@@ -351,13 +352,12 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	/**
 	 * Write every pending row, one batch at a time, flushing the counts after each.
 	 *
-	 * @param ImportPreview $preview The preview being committed.
-	 * @param ImportDestination $destination The target register and schema.
-	 * @param IUser|null $currentUser The actor.
+	 * @param ImportRun $run The preview being committed, its destination and actor.
 	 *
 	 * @return void
 	 */
-	private function writePendingBatches(ImportPreview $preview, ImportDestination $destination, ?IUser $currentUser): void {
+	private function writePendingBatches(ImportRun $run): void {
+		$preview = $run->preview;
 		while (true) {
 			$batch = $this->store->rowMapper->findPendingWrites(
 				previewId: (int)$preview->getId(),
@@ -368,12 +368,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 				return;
 			}
 
-			$this->writeBatch(
-				preview: $preview,
-				batch: $batch,
-				destination: $destination,
-				currentUser: $currentUser
-			);
+			$this->writeBatch(run: $run, batch: $batch);
 
 			$this->store->previewMapper->persist(preview: $preview);
 		}
@@ -402,44 +397,33 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	/**
 	 * Write one batch of decided rows.
 	 *
-	 * @param ImportPreview $preview The preview being committed.
+	 * @param ImportRun $run The preview being committed, its destination and actor.
 	 * @param array<int, ImportPreviewRow> $batch The rows to write.
-	 * @param ImportDestination $destination The target register and schema.
-	 * @param IUser|null $currentUser The actor.
 	 *
 	 * @return void
 	 */
-	private function writeBatch(
-		ImportPreview $preview,
-		array $batch,
-		ImportDestination $destination,
-		?IUser $currentUser,
-	): void {
-		if ($this->writeBulk(preview: $preview, batch: $batch, destination: $destination) === true) {
+	private function writeBatch(ImportRun $run, array $batch): void {
+		if ($this->writeBulk(run: $run, batch: $batch) === true) {
 			return;
 		}
 
 		foreach ($batch as $row) {
-			$this->writeRow(
-				preview: $preview,
-				row: $row,
-				destination: $destination,
-				currentUser: $currentUser
-			);
+			$this->writeRow(run: $run, row: $row);
 		}
 	}//end writeBatch()
 
 	/**
 	 * Write a batch in one bulk save, and stamp each row's outcome.
 	 *
-	 * @param ImportPreview $preview The preview being committed.
+	 * @param ImportRun $run The preview being committed, its destination and actor.
 	 * @param array<int, ImportPreviewRow> $batch The rows to write.
-	 * @param ImportDestination $destination The target register and schema.
 	 *
 	 * @return bool True when every row got its outcome; false when the batch
 	 *              must be walked row by row instead.
 	 */
-	private function writeBulk(ImportPreview $preview, array $batch, ImportDestination $destination): bool {
+	private function writeBulk(ImportRun $run, array $batch): bool {
+		$preview = $run->preview;
+		$destination = $run->destination;
 		$objects = ImportRowPayload::payloadsOf(batch: $batch);
 
 		try {
@@ -453,7 +437,8 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 			$refused = $this->refusalsIn(batch: $batch, invalid: ($result['invalid'] ?? []));
 			if ($refused !== null) {
-				$this->stampBulkOutcome(preview: $preview, batch: $batch, refused: $refused);
+				$this->stampRefusedRows(preview: $preview, rows: $this->withRefusalReasons(batch: $batch, refused: $refused));
+				$this->stampApplied(preview: $preview, rows: array_diff_key($batch, $refused));
 
 				return true;
 			}
@@ -471,52 +456,59 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	}//end writeBulk()
 
 	/**
-	 * Stamp the refused rows of a bulk save as failed and the rest as written.
+	 * The refused rows of a bulk save, each carrying the reason it was refused.
 	 *
-	 * @param ImportPreview $preview The preview being committed.
 	 * @param array<int, ImportPreviewRow> $batch The rows sent.
 	 * @param array<int, string> $refused The reason per refused row, keyed like the batch.
 	 *
-	 * @return void
+	 * @return array<int, ImportPreviewRow> The refused rows, in refusal order.
 	 */
-	private function stampBulkOutcome(ImportPreview $preview, array $batch, array $refused): void {
+	private function withRefusalReasons(array $batch, array $refused): array {
+		$rows = [];
 		foreach ($refused as $key => $reason) {
 			$batch[$key]->setReason('The write failed: '.$reason);
-			$this->stampFailed(preview: $preview, row: $batch[$key]);
+			$rows[] = $batch[$key];
 		}
 
-		$this->stampApplied(preview: $preview, rows: array_diff_key($batch, $refused));
-	}//end stampBulkOutcome()
+		return $rows;
+	}//end withRefusalReasons()
+
+	/**
+	 * Stamp the refused rows of a bulk save as failed.
+	 *
+	 * @param ImportPreview $preview The preview being committed.
+	 * @param array<int, ImportPreviewRow> $rows The refused rows, reasons set.
+	 *
+	 * @return void
+	 */
+	private function stampRefusedRows(ImportPreview $preview, array $rows): void {
+		foreach ($rows as $row) {
+			$this->stampFailed(preview: $preview, row: $row);
+		}
+	}//end stampRefusedRows()
 
 	/**
 	 * Write one decided row, and record its own outcome.
 	 *
-	 * @param ImportPreview $preview The preview being committed.
+	 * @param ImportRun $run The preview being committed, its destination and actor.
 	 * @param ImportPreviewRow $row The row.
-	 * @param ImportDestination $destination The target register and schema.
-	 * @param IUser|null $currentUser The actor.
 	 *
 	 * @return void
 	 */
-	private function writeRow(
-		ImportPreview $preview,
-		ImportPreviewRow $row,
-		ImportDestination $destination,
-		?IUser $currentUser,
-	): void {
+	private function writeRow(ImportRun $run, ImportPreviewRow $row): void {
 		try {
 			$this->targets->objectService->saveObject(
 				object: ($row->getPayload() ?? []),
-				register: $destination->register,
-				schema: $destination->schema,
+				register: $run->destination->register,
+				schema: $run->destination->schema,
 				_validation: false,
-				currentUser: $currentUser
+				currentUser: $run->currentUser
 			);
 
-			$this->stampApplied(preview: $preview, rows: [$row]);
+			$this->stampApplied(preview: $run->preview, rows: [$row]);
 		} catch (Throwable $exception) {
 			$row->setReason('The write failed: '.$exception->getMessage());
-			$this->stampFailed(preview: $preview, row: $row);
+			$this->stampFailed(preview: $run->preview, row: $row);
 		}//end try
 	}//end writeRow()
 
@@ -582,21 +574,15 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 * the policy. Nothing here writes.
 	 *
 	 * @param array{row: int, data: array<string, mixed>} $row The source row.
-	 * @param ImportPreview $preview The preview.
-	 * @param ImportDestination $destination The target register and schema.
-	 * @param array<string, mixed>|null $pack The saved mapping, if any.
+	 * @param ImportRun $run The preview, its destination and saved mapping, if any.
 	 *
 	 * @return array{decision: string, reason: string|null, targetUuid: string|null,
 	 *               candidates: array<int, string>, payload: array<string, mixed>} The decision.
 	 *
 	 */
-	private function decideRow(
-		array $row,
-		ImportPreview $preview,
-		ImportDestination $destination,
-		?array $pack,
-	): array {
+	private function decideRow(array $row, ImportRun $run): array {
 		$data = $row['data'];
+		$pack = $run->pack;
 
 		if ($pack !== null) {
 			$mapped = $this->matching->mappingEngine->mapRow(pack: $pack, sourceRow: $data, rowNumber: $row['row']);
@@ -608,20 +594,20 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			$data = $mapped['data'];
 		}
 
-		return $this->decideMappedRow(data: $data, preview: $preview, destination: $destination);
+		return $this->decideMappedRow(data: $data, run: $run);
 	}//end decideRow()
 
 	/**
 	 * Decide a row after its column mapping: transform it and validate it.
 	 *
 	 * @param array<string, mixed> $data The (mapped) source row data.
-	 * @param ImportPreview $preview The preview.
-	 * @param ImportDestination $destination The target register and schema.
+	 * @param ImportRun $run The preview and its destination.
 	 *
 	 * @return array{decision: string, reason: string|null, targetUuid: string|null,
 	 *               candidates: array<int, string>, payload: array<string, mixed>} The decision.
 	 */
-	private function decideMappedRow(array $data, ImportPreview $preview, ImportDestination $destination): array {
+	private function decideMappedRow(array $data, ImportRun $run): array {
+		$destination = $run->destination;
 		try {
 			$object = $this->matching->importService->transformCsvRowToObject(
 				rowData: $data,
@@ -643,20 +629,21 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			);
 		}
 
-		return $this->decideValidObject(object: $object, preview: $preview, destination: $destination);
+		return $this->decideValidObject(object: $object, run: $run);
 	}//end decideMappedRow()
 
 	/**
 	 * Decide a valid object: match it, and apply the policy.
 	 *
 	 * @param array<string, mixed> $object The transformed, valid object.
-	 * @param ImportPreview $preview The preview.
-	 * @param ImportDestination $destination The target register and schema.
+	 * @param ImportRun $run The preview and its destination.
 	 *
 	 * @return array{decision: string, reason: string|null, targetUuid: string|null,
 	 *               candidates: array<int, string>, payload: array<string, mixed>} The decision.
 	 */
-	private function decideValidObject(array $object, ImportPreview $preview, ImportDestination $destination): array {
+	private function decideValidObject(array $object, ImportRun $run): array {
+		$preview = $run->preview;
+		$destination = $run->destination;
 		try {
 			$candidates = $this->matching->matchResolver->resolve(
 				object: $object,
@@ -680,15 +667,17 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	}//end decideValidObject()
 
 	/**
-	 * Persist one decision and move the preview's counts.
+	 * Decide one row, persist the decision and move the preview's counts.
 	 *
-	 * @param ImportPreview $preview The preview.
+	 * @param ImportRun $run The preview, its destination and saved mapping, if any.
 	 * @param array{row: int, data: array<string, mixed>} $row The source row.
-	 * @param array<string, mixed> $decision The decision decideRow returned.
 	 *
 	 * @return void
 	 */
-	private function persistDecision(ImportPreview $preview, array $row, array $decision): void {
+	private function persistDecision(ImportRun $run, array $row): void {
+		$decision = $this->decideRow(row: $row, run: $run);
+		$preview = $run->preview;
+
 		$entity = new ImportPreviewRow();
 		$entity->setPreviewId((int)$preview->getId());
 		$entity->setSourceRow((int)$row['row']);
