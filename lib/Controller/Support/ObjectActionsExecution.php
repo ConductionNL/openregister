@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 
 /**
@@ -36,14 +36,14 @@ final class ObjectActionsExecution {
 	 * Bundle the services.
 	 *
 	 * @param ObjectActionRunnerInterface  $runner  Runs one action on one object.
-	 * @param ObjectActionHistoryInterface $history Reads the runs recorded on an object.
+	 * @param ObjectActionHistory $history Reads the runs recorded on an object.
 	 * @param ObjectActionBulkInterface    $bulk    Hands a large selection to a bulk job.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-the-actions-a-user-may-run-on-an-object-are-listed-in-one-place
 	 */
 	public function __construct(
 		public readonly ObjectActionRunnerInterface $runner,
-		public readonly ObjectActionHistoryInterface $history,
+		public readonly ObjectActionHistory $history,
 		public readonly ObjectActionBulkInterface $bulk,
 	) {
 	}//end __construct()

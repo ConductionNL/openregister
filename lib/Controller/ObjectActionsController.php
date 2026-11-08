@@ -44,11 +44,12 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -116,9 +117,9 @@ class ObjectActionsController extends Controller {
 	/**
 	 * Reads the runs recorded on an object.
 	 *
-	 * @var ObjectActionHistoryInterface
+	 * @var ObjectActionHistory
 	 */
-	private readonly ObjectActionHistoryInterface $history;
+	private readonly ObjectActionHistory $history;
 
 	/**
 	 * Hands a large selection to a bulk job.
@@ -333,7 +334,7 @@ class ObjectActionsController extends Controller {
 	 * @param string $action   The action key.
 	 * @param string $register The register as the caller named it.
 	 *
-	 * @return array{schema: Schema, definition: ObjectActionDefinitionInterface}|null The schema and declaration, or null when not offered.
+	 * @return array{schema: Schema, definition: ObjectActionDefinition}|null The schema and declaration, or null when not offered.
 	 */
 	private function offeredOnSelection(string $schema, string $action, string $register): ?array {
 		$selectionSchema = $this->macros->loadSchema(schema: $schema);
@@ -352,11 +353,11 @@ class ObjectActionsController extends Controller {
 	/**
 	 * Whether a declaration can be run on a selection.
 	 *
-	 * @param ObjectActionDefinitionInterface|null $definition The declaration, or null when it cannot be read.
+	 * @param ObjectActionDefinition|null $definition The declaration, or null when it cannot be read.
 	 *
 	 * @return bool True for a runnable action offered on the `bulk` surface.
 	 */
-	private static function offersBulk(?ObjectActionDefinitionInterface $definition): bool {
+	private static function offersBulk(?ObjectActionDefinition $definition): bool {
 		return $definition !== null && $definition->isRunnable() === true && $definition->offersBulk() === true;
 	}//end offersBulk()
 
@@ -364,12 +365,12 @@ class ObjectActionsController extends Controller {
 	 * Run an offered action on a selection: one run per object, or a bulk job above the limit.
 	 *
 	 * @param Schema                 $schema     The selection's schema.
-	 * @param ObjectActionDefinitionInterface $definition The action's declaration.
+	 * @param ObjectActionDefinition $definition The action's declaration.
 	 * @param ObjectActionsSelection $selection  The selection.
 	 *
 	 * @return JSONResponse The summary per object and `next`, or 202 with the job.
 	 */
-	private function runSelection(Schema $schema, ObjectActionDefinitionInterface $definition, ObjectActionsSelection $selection): JSONResponse {
+	private function runSelection(Schema $schema, ObjectActionDefinition $definition, ObjectActionsSelection $selection): JSONResponse {
 		if (count($selection->ids) > self::SELECTION_LIMIT) {
 			return $this->startJob(schema: $schema, selection: $selection);
 		}
@@ -382,7 +383,7 @@ class ObjectActionsController extends Controller {
 				'action' => $selection->action,
 				'summary' => ['succeeded' => $succeeded, 'failed' => (count($results) - $succeeded)],
 				'results' => $results,
-				'next' => $definition->nextAfterSelection(),
+				'next' => ($definition->next ?? FlowNextHint::LIST),
 			]
 		);
 	}//end runSelection()
@@ -528,9 +529,9 @@ class ObjectActionsController extends Controller {
 	 * @param string $action   The action key.
 	 * @param string $register The register as the caller named it.
 	 *
-	 * @return ObjectActionDefinitionInterface|null The declaration.
+	 * @return ObjectActionDefinition|null The declaration.
 	 */
-	private function findDefinition(Schema $schema, string $action, string $register): ?ObjectActionDefinitionInterface {
+	private function findDefinition(Schema $schema, string $action, string $register): ?ObjectActionDefinition {
 		try {
 			return $this->definitions->find(schema: $schema, key: $action, register: $register);
 		} catch (\Throwable $e) {
