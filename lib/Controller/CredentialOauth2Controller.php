@@ -51,14 +51,14 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
-use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
-use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
-use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
-use OCA\OpenRegister\Service\Credential\OAuth2Endpoints;
-use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepositoryInterface;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectServiceInterface;
+use OCA\OpenRegister\Service\Credential\OAuth2EndpointsInterface;
+use OCA\OpenRegister\Service\Credential\OAuth2InstanceClientInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHost;
-use OCA\OpenRegister\Service\Credential\OAuth2RelayGuard;
-use OCA\OpenRegister\Service\Credential\OAuth2StateService;
+use OCA\OpenRegister\Service\Credential\OAuth2RegistrationFailedException;
+use OCA\OpenRegister\Service\Credential\OAuth2RelayGuardInterface;
+use OCA\OpenRegister\Service\Credential\OAuth2StateServiceInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -112,37 +112,37 @@ class CredentialOauth2Controller extends Controller {
 	/**
 	 * Builds authorization URLs and redeems codes.
 	 *
-	 * @var OAuth2ConnectService
+	 * @var OAuth2ConnectServiceInterface
 	 */
-	private readonly OAuth2ConnectService $connect;
+	private readonly OAuth2ConnectServiceInterface $connect;
 
 	/**
 	 * Issues and redeems the signed state.
 	 *
-	 * @var OAuth2StateService
+	 * @var OAuth2StateServiceInterface
 	 */
-	private readonly OAuth2StateService $states;
+	private readonly OAuth2StateServiceInterface $states;
 
 	/**
 	 * Decides where a relay may forward.
 	 *
-	 * @var OAuth2RelayGuard
+	 * @var OAuth2RelayGuardInterface
 	 */
-	private readonly OAuth2RelayGuard $relay;
+	private readonly OAuth2RelayGuardInterface $relay;
 
 	/**
 	 * Loads, gates and disables a stored connection.
 	 *
-	 * @var OAuth2ConnectionRepository
+	 * @var OAuth2ConnectionRepositoryInterface
 	 */
-	private readonly OAuth2ConnectionRepository $connections;
+	private readonly OAuth2ConnectionRepositoryInterface $connections;
 
 	/**
 	 * This instance's own callback, metadata and return URLs.
 	 *
-	 * @var OAuth2Endpoints
+	 * @var OAuth2EndpointsInterface
 	 */
-	private readonly OAuth2Endpoints $endpoints;
+	private readonly OAuth2EndpointsInterface $endpoints;
 
 	/**
 	 * The current session.
@@ -266,8 +266,8 @@ class CredentialOauth2Controller extends Controller {
 				claims: $claims,
 				redirectUri: $this->endpoints->callbackUrl()
 			);
-			$minted = (string)($claims[OAuth2InstanceClient::MINTED_KEY] ?? '');
-			unset($claims[OAuth2InstanceClient::MINTED_KEY]);
+			$minted = (string)($claims[OAuth2InstanceClientInterface::MINTED_KEY] ?? '');
+			unset($claims[OAuth2InstanceClientInterface::MINTED_KEY]);
 
 			$issued = $this->states->issue(claims: $claims);
 			$nonce = $issued['nonce'];
@@ -294,7 +294,7 @@ class CredentialOauth2Controller extends Controller {
 			return $this->startFailed(failure: $failure);
 		}
 
-		return new JSONResponse(['authorizationUrl' => $url, 'expiresIn' => OAuth2StateService::STATE_TTL_SECONDS]);
+		return new JSONResponse(['authorizationUrl' => $url, 'expiresIn' => OAuth2StateServiceInterface::STATE_TTL_SECONDS]);
 	}//end start()
 
 	/**

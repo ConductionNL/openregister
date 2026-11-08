@@ -48,7 +48,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.StaticAccess) One call, to a named constructor
  * ({@see OAuth2TokenSet}); a value object has no instance to call it on.
  */
-class OAuth2ConnectService {
+class OAuth2ConnectService implements OAuth2ConnectServiceInterface {
 	/**
 	 * The credential kind this service mints.
 	 *

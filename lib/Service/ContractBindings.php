@@ -81,6 +81,8 @@ use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepositoryInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
@@ -352,6 +354,12 @@ final class ContractBindings {
 		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
+		OAuth2ConnectionRepositoryInterface::class => OAuth2ConnectionRepository::class,
+		\OCA\OpenRegister\Service\Credential\OAuth2ConnectServiceInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2ConnectService::class,
+		\OCA\OpenRegister\Service\Credential\OAuth2EndpointsInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2Endpoints::class,
+		\OCA\OpenRegister\Service\Credential\OAuth2InstanceClientInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2InstanceClient::class,
+		\OCA\OpenRegister\Service\Credential\OAuth2RelayGuardInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2RelayGuard::class,
+		\OCA\OpenRegister\Service\Credential\OAuth2StateServiceInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2StateService::class,
 		RouterNodeInterface::class => RouterNode::class,
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
