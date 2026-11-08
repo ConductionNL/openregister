@@ -378,9 +378,7 @@ class ArchivalController extends Controller {
 
 			$result = $this->destructionService->approveList(
 				destructionList: $destructionList,
-				action: $action,
-				excludedIds: $excludedIds,
-				exclusionReasons: $exclusionReasons,
+				choice: $this->destructionService->approvalChoice(action: $action, excludedIds: $excludedIds, exclusionReasons: $exclusionReasons),
 				requiresDual: $requiresDual,
 				listUuid: $id
 			);
