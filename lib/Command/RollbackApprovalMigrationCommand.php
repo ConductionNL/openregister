@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Command\Support\ApprovalRollbackRun;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskState;
@@ -101,8 +102,30 @@ class RollbackApprovalMigrationCommand extends Command {
 	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$dryRun = ((bool)$input->getOption('dry-run') === true);
+		$run = new ApprovalRollbackRun(dryRun: ((bool)$input->getOption('dry-run') === true), output: $output);
 
+		$steps = $this->migratedSteps();
+		if ($steps === null) {
+			$output->writeln('<error>The legacy approval tables are gone; there is nothing to roll back onto.</error>');
+
+			return Command::FAILURE;
+		}
+
+		foreach ($steps as $step) {
+			$this->carryBack(step: $step, run: $run);
+		}
+
+		$this->report(run: $run);
+
+		return Command::SUCCESS;
+	}//end execute()
+
+	/**
+	 * The legacy step rows that were migrated onto tasks.
+	 *
+	 * @return array<int, array<string, mixed>>|null Null when the legacy tables are gone.
+	 */
+	private function migratedSteps(): ?array {
 		try {
 			$result = $this->db->executeQuery(
 				'SELECT * FROM `*PREFIX*openregister_approval_steps` WHERE `migrated_task_uuid` IS NOT NULL'
@@ -110,97 +133,141 @@ class RollbackApprovalMigrationCommand extends Command {
 			$steps = $result->fetchAll();
 			$result->closeCursor();
 		} catch (Throwable $absent) {
-			$output->writeln('<error>The legacy approval tables are gone; there is nothing to roll back onto.</error>');
-
-			return Command::FAILURE;
+			return null;
 		}
 
-		$written = 0;
-		$notCarriable = [];
-		foreach ($steps as $step) {
-			$written += $this->carryBack(step: $step, dryRun: $dryRun, output: $output, notCarriable: $notCarriable);
-		}
+		return $steps;
+	}//end migratedSteps()
 
+	/**
+	 * Print the summary of a pass.
+	 *
+	 * @param ApprovalRollbackRun $run The finished pass.
+	 *
+	 * @return void
+	 */
+	private function report(ApprovalRollbackRun $run): void {
 		$mode = 'written back';
-		if ($dryRun === true) {
+		if ($run->dryRun === true) {
 			$mode = 'would be written back';
 		}
 
-		$output->writeln(sprintf('%d decision(s) %s onto legacy step rows.', $written, $mode));
+		$run->output->writeln(sprintf('%d decision(s) %s onto legacy step rows.', $run->written(), $mode));
 
-		if ($notCarriable !== []) {
-			$output->writeln('<comment>The legacy schema cannot hold the following facts; they stay ONLY on the task side:</comment>');
-			foreach ($notCarriable as $line) {
-				$output->writeln('  - ' . $line);
+		if ($run->notCarriable() !== []) {
+			$run->output->writeln('<comment>The legacy schema cannot hold the following facts; they stay ONLY on the task side:</comment>');
+			foreach ($run->notCarriable() as $line) {
+				$run->output->writeln('  - ' . $line);
 			}
 		}
 
-		$output->writeln('The legacy tables were not dropped, and dropping them is not part of any rollback path.');
-
-		return Command::SUCCESS;
-	}//end execute()
+		$run->output->writeln('The legacy tables were not dropped, and dropping them is not part of any rollback path.');
+	}//end report()
 
 	/**
 	 * Carry ONE step's task-side decision back, when there is one.
 	 *
 	 * @param array<string, mixed> $step The legacy step row.
-	 * @param bool $dryRun Whether to report without writing.
-	 * @param OutputInterface $output Command output.
-	 * @param array<int, string> $notCarriable Collects the facts left behind.
+	 * @param ApprovalRollbackRun $run The pass, which collects what was carried and left behind.
 	 *
-	 * @return int One when a decision was carried back, zero otherwise.
+	 * @return void
 	 */
-	private function carryBack(array $step, bool $dryRun, OutputInterface $output, array &$notCarriable): int {
-		$taskUuid = trim((string)$step['migrated_task_uuid']);
+	private function carryBack(array $step, ApprovalRollbackRun $run): void {
+		$task = $this->migratedTask(step: $step, output: $run->output);
+		if ($task === null || $this->hasNewDecision(step: $step, task: $task) === false) {
+			return;
+		}
+
+		if ($run->dryRun === false) {
+			$this->writeDecision(step: $step, task: $task);
+		}
+
+		$run->recordCarried(
+			step: sprintf('step %d (task %s)', (int)$step['id'], $this->taskUuid(step: $step)),
+			lostFacts: $this->lostFacts(task: $task)
+		);
+	}//end carryBack()
+
+	/**
+	 * The trimmed uuid of the task a step was migrated onto.
+	 *
+	 * @param array<string, mixed> $step The legacy step row.
+	 *
+	 * @return string
+	 */
+	private function taskUuid(array $step): string {
+		return trim((string)$step['migrated_task_uuid']);
+	}//end taskUuid()
+
+	/**
+	 * The task a step was migrated onto, reporting it when it is gone.
+	 *
+	 * @param array<string, mixed> $step The legacy step row.
+	 * @param OutputInterface $output Command output.
+	 *
+	 * @return Task|null Null when the task no longer exists.
+	 */
+	private function migratedTask(array $step, OutputInterface $output): ?Task {
+		$taskUuid = $this->taskUuid(step: $step);
 		try {
-			$task = $this->tasks->findByUuid(uuid: $taskUuid);
+			return $this->tasks->findByUuid(uuid: $taskUuid);
 		} catch (Throwable $gone) {
 			$output->writeln(sprintf('<comment>Step %d: migrated task %s no longer exists; row left as it is.</comment>', (int)$step['id'], $taskUuid));
 
-			return 0;
+			return null;
 		}
+	}//end migratedTask()
 
+	/**
+	 * Whether the task side holds a decision the step does not already record.
+	 *
+	 * @param array<string, mixed> $step The legacy step row.
+	 * @param Task $task The migrated task.
+	 *
+	 * @return bool
+	 */
+	private function hasNewDecision(array $step, Task $task): bool {
 		if ($task->isInTerminalState() === false || (string)$task->getState() !== Task::STATE_COMPLETED) {
 			// No decision was taken on the task side; the step keeps
 			// whatever it already recorded.
-			return 0;
+			return false;
 		}
 
-		$status = 'approved';
+		// Already decided identically before migration: nothing new to
+		// carry back.
+		$decidedIdentically = (string)$step['status'] === $this->legacyStatus(task: $task)
+			&& trim((string)($step['decided_by'] ?? '')) !== '';
+
+		return $decidedIdentically === false;
+	}//end hasNewDecision()
+
+	/**
+	 * The legacy status a completed task's outcome maps onto.
+	 *
+	 * @param Task $task The completed task.
+	 *
+	 * @return string Either "approved" or "rejected".
+	 */
+	private function legacyStatus(Task $task): string {
 		if (TaskState::isRejectingOutcome(outcome: $task->getOutcome()) === true) {
-			$status = 'rejected';
+			return 'rejected';
 		}
 
-		if ((string)$step['status'] === $status && trim((string)($step['decided_by'] ?? '')) !== '') {
-			// Already decided identically before migration; nothing new to
-			// carry back.
-			return 0;
-		}
-
-		if ($dryRun === false) {
-			$this->writeDecision(step: $step, task: $task, status: $status);
-		}
-
-		foreach ($this->lostFacts(task: $task) as $lost) {
-			$notCarriable[] = sprintf('step %d (task %s): %s', (int)$step['id'], $taskUuid, $lost);
-		}
-
-		return 1;
-	}//end carryBack()
+		return 'approved';
+	}//end legacyStatus()
 
 	/**
 	 * Write one decision onto its legacy step row.
 	 *
 	 * @param array<string, mixed> $step The legacy step row.
 	 * @param Task $task The decided task.
-	 * @param string $status The legacy status to record.
 	 *
 	 * @return void
 	 */
-	private function writeDecision(array $step, Task $task, string $status): void {
+	private function writeDecision(array $step, Task $task): void {
 		$update = $this->db->getQueryBuilder();
 		$update->update('openregister_approval_steps')
-			->set('status', $update->createNamedParameter($status))
+			->set('status', $update->createNamedParameter($this->legacyStatus(task: $task)))
 			->set('decided_by', $update->createNamedParameter((string)($task->getCompletedBy() ?? '')))
 			->set('comment', $update->createNamedParameter((string)($task->getComment() ?? '')))
 			->set('decided_at', $update->createNamedParameter($task->getCompletedAt()?->format('Y-m-d H:i:s')))
