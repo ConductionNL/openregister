@@ -210,6 +210,10 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
@@ -474,6 +478,8 @@ final class ContractBindings {
 		OasServiceInterface::class => OasService::class,
 		ObjectActionBulkInterface::class => ObjectActionBulk::class,
 		ObjectActionDefinitionsInterface::class => ObjectActionDefinitions::class,
+		ObjectActionDefinitionInterface::class => ObjectActionDefinition::class,
+		ObjectActionHistoryInterface::class => ObjectActionHistory::class,
 		ObjectActionListInterface::class => ObjectActionList::class,
 		ObjectActionRunnerInterface::class => ObjectActionRunner::class,
 		ObjectActionValidatorInterface::class => ObjectActionValidator::class,

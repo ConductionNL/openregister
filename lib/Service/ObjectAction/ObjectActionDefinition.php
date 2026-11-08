@@ -47,6 +47,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectAction;
 
+use OCA\OpenRegister\Service\Flow\FlowNextHint;
+
 /**
  * A declared action: what it is called, where it is offered, what it takes and what it runs.
  *
@@ -55,7 +57,7 @@ namespace OCA\OpenRegister\Service\ObjectAction;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
  */
-final class ObjectActionDefinition {
+final class ObjectActionDefinition implements ObjectActionDefinitionInterface {
 
 	/**
 	 * The configuration key holding declared actions.
@@ -359,6 +361,17 @@ final class ObjectActionDefinition {
 	public function offersBulk(): bool {
 		return in_array('bulk', $this->surfaces, true);
 	}//end offersBulk()
+
+	/**
+	 * Where the host goes after a selection run: the declared `next`, or the list.
+	 *
+	 * @return string One of the FlowNextHint hints.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
+	 */
+	public function nextAfterSelection(): string {
+		return ($this->next ?? FlowNextHint::LIST);
+	}//end nextAfterSelection()
 
 	/**
 	 * The input names declared `writeOnly`, which are never stored.
