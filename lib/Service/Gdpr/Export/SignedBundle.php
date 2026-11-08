@@ -33,13 +33,19 @@ namespace OCA\OpenRegister\Service\Gdpr\Export;
  */
 final class SignedBundle {
 	/**
+	 * MIME type of the bytes: a PAdES signature is a PDF signature, so the bundle is always a PDF.
+	 *
+	 * @var string
+	 */
+	private const MIME_TYPE = 'application/pdf';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $bytes The bundle bytes (the PDF disclosure document).
 	 * @param string $contentHash SHA-256 content hash of the bytes (`sha256:...`).
 	 * @param bool $signed Whether a real PAdES-LTV signature is attached.
 	 * @param string $signatureState Human/machine-readable signature state marker.
-	 * @param string $mimeType MIME type of the bytes.
 	 *
 	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
@@ -48,7 +54,6 @@ final class SignedBundle {
 		private readonly string $contentHash,
 		private readonly bool $signed,
 		private readonly string $signatureState,
-		private readonly string $mimeType = 'application/pdf',
 	) {
 	}//end __construct()
 
@@ -104,6 +109,6 @@ final class SignedBundle {
 	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function getMimeType(): string {
-		return $this->mimeType;
+		return self::MIME_TYPE;
 	}//end getMimeType()
 }//end class
