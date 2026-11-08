@@ -155,13 +155,13 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 	 * @psalm-return list<\OCA\OpenRegister\Db\SearchTrail>
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
+		int|null $limit = null,
+		int|null $offset = null,
 		array $filters = [],
 		array $sort = [],
-		?string $search = null,
-		?DateTime $from = null,
-		?DateTime $to = null,
+		string|null $search = null,
+		DateTime|null $from = null,
+		DateTime|null $to = null,
 	): array {
 		$qb = $this->db->getQueryBuilder();
 
@@ -176,20 +176,46 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 		$this->filterByCreated(qb: $qb, range: [$from, $to]);
 
 		// Apply sorting.
-		if (empty($sort) === true) {
-			$qb->orderBy('created', 'DESC');
-		}
-
-		if (empty($sort) === false) {
-			foreach ($sort as $field => $direction) {
-				// NC 35 types addOrderBy() as (string|..., string|SortDirection|null):
-				// an int key (a list-shaped sort) or a non-string direction is a
-				// TypeError there, so both are normalised here.
-				$qb->addOrderBy((string)$field, $this->normaliseSortDirection(direction: $direction));
-			}
-		}
+		$this->applySort(qb: $qb, sort: $sort);
 
 		// Apply pagination.
+		$this->applyPaging(qb: $qb, limit: $limit, offset: $offset);
+
+		return $this->findEntities(query: $qb);
+	}//end findAll()
+
+	/**
+	 * Order by the requested fields, or newest first when none are requested.
+	 *
+	 * @param IQueryBuilder $qb   The query.
+	 * @param array         $sort Field to direction.
+	 *
+	 * @return void
+	 */
+	private function applySort(IQueryBuilder $qb, array $sort): void {
+		if (empty($sort) === true) {
+			$qb->orderBy('created', 'DESC');
+			return;
+		}
+
+		foreach ($sort as $field => $direction) {
+			// NC 35 types addOrderBy() as (string|..., string|SortDirection|null):
+			// an int key (a list-shaped sort) or a non-string direction is a
+			// TypeError there, so both are normalised here.
+			$qb->addOrderBy((string)$field, $this->normaliseSortDirection(direction: $direction));
+		}
+	}//end applySort()
+
+	/**
+	 * Apply a limit and an offset, each only when given.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param int|null      $limit  Maximum rows, or null for no limit.
+	 * @param int|null      $offset Rows to skip, or null for none.
+	 *
+	 * @return void
+	 */
+	private function applyPaging(IQueryBuilder $qb, int|null $limit, int|null $offset): void {
 		if ($limit !== null) {
 			$qb->setMaxResults($limit);
 		}
@@ -197,9 +223,7 @@ class SearchTrailMapper extends QBMapper implements SearchTrailMapperInterface, 
 		if ($offset !== null) {
 			$qb->setFirstResult($offset);
 		}
-
-		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end applyPaging()
 
 	/**
 	 * Count search trails with optional filters
