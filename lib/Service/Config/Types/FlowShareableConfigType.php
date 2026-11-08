@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Serialises and installs flows through the federated-config engine.
  */
-class FlowShareableConfigType implements IShareableConfigType {
+class FlowShareableConfigType implements IShareableConfigType, FlowShareableConfigTypeInterface {
 
 	/**
 	 * The portable fields a flow carries when shared (never id/uuid/owner/org).
