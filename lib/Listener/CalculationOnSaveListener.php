@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
+use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
@@ -328,11 +329,13 @@ class CalculationOnSaveListener implements IEventListener {
 		}
 
 		$this->ruleRuns->record(
-			ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_CALCULATION, schemaSlug: $run->slug, key: $name),
-			schemaSlug: $run->slug,
-			trace: $trace,
-			objectUuid: ($run->object->getUuid() ?? null),
-			registerSlug: ($run->object->getRegister() ?? null)
+			subject: new RuleRunSubject(
+				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_CALCULATION, schemaSlug: $run->slug, key: $name),
+				schemaSlug: $run->slug,
+				objectUuid: ($run->object->getUuid() ?? null),
+				registerSlug: ($run->object->getRegister() ?? null)
+			),
+			trace: $trace
 		);
 	}//end recordRun()
 

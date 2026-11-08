@@ -44,6 +44,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 
@@ -196,11 +197,12 @@ class OrganisationLifecycleAuditTest extends TestCase {
 
 	public function testAFailingTrailDoesNotFailTheChange(): void {
 		$trail = $this->createMock(AuditTrailMapper::class);
-		$trail->method('insertAuditTrails')->willThrowException(new RuntimeException('down'));
-		$auditor = new OrganisationLifecycleAuditor($trail, $this->createMock(IUserSession::class), new NullLogger());
+		$trail->expects($this->once())->method('insertAuditTrails')->willThrowException(new RuntimeException('down'));
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('error')
+			->with($this->stringContains('Could not record a change'), $this->callback(static fn (array $context): bool => $context['exception'] === 'down'));
+		$auditor = new OrganisationLifecycleAuditor($trail, $this->createMock(IUserSession::class), $logger);
 
 		$auditor->recordStatus($this->organisation('suspended'), 'active');
-
-		$this->addToAssertionCount(1);
 	}//end testAFailingTrailDoesNotFailTheChange()
 }//end class
