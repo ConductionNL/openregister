@@ -38,7 +38,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ConfigurationDeployment>
  */
-class ConfigurationDeploymentMapper extends QBMapper {
+class ConfigurationDeploymentMapper extends QBMapper implements ConfigurationDeploymentMapperInterface {
 
 	use SelectByColumnTrait;
 

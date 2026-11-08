@@ -22,9 +22,9 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
-use OCA\OpenRegister\Db\ConfigurationDraftMapper;
-use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
+use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
+use OCA\OpenRegister\Db\ConfigurationDraftMapperInterface;
+use OCA\OpenRegister\Db\ConfigurationDraftSetMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -452,8 +452,8 @@ final class ConfigurationServiceRegistrar {
 			ConfigurationDraftService::class,
 			function (ContainerInterface $container) {
 				return new ConfigurationDraftService(
-					sets: $container->get(ConfigurationDraftSetMapper::class),
-					drafts: $container->get(ConfigurationDraftMapper::class),
+					sets: $container->get(ConfigurationDraftSetMapperInterface::class),
+					drafts: $container->get(ConfigurationDraftMapperInterface::class),
 					store: $container->get(ConfigurationValueStore::class),
 					registry: $container->get(ConfigurationKeyRegistry::class),
 					session: $container->get('OCP\IUserSession'),
@@ -481,8 +481,8 @@ final class ConfigurationServiceRegistrar {
 					drafts: $container->get(ConfigurationDraftService::class),
 					previews: $container->get(DeploymentPreviewService::class),
 					store: $container->get(ConfigurationValueStore::class),
-					deployments: $container->get(ConfigurationDeploymentMapper::class),
-					sets: $container->get(ConfigurationDraftSetMapper::class),
+					deployments: $container->get(ConfigurationDeploymentMapperInterface::class),
+					sets: $container->get(ConfigurationDraftSetMapperInterface::class),
 					db: $container->get('OCP\IDBConnection'),
 					session: $container->get('OCP\IUserSession'),
 					logger: $container->get('Psr\Log\LoggerInterface')
@@ -495,7 +495,7 @@ final class ConfigurationServiceRegistrar {
 			function (ContainerInterface $container) {
 				return new ConfigurationExplainer(
 					store: $container->get(ConfigurationValueStore::class),
-					deployments: $container->get(ConfigurationDeploymentMapper::class)
+					deployments: $container->get(ConfigurationDeploymentMapperInterface::class)
 				);
 			}
 		);
