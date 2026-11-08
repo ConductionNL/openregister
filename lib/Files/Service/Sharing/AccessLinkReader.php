@@ -58,7 +58,7 @@ use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 
 /**
  * Resolves and renders the subject behind an access link.
@@ -135,9 +135,9 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	/**
 	 * Reads which object a subject names.
 	 *
-	 * @var AccessLinkSubject
+	 * @var AccessLinkSubjectInterface
 	 */
-	private readonly AccessLinkSubject $subjects;
+	private readonly AccessLinkSubjectInterface $subjects;
 
 	/**
 	 * PSR logger.

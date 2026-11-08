@@ -32,7 +32,7 @@ use OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
+use OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -152,10 +152,7 @@ final class ObservabilityRegistrar {
 		$context->registerService(
 			\OCA\OpenRegister\AppHost\IMetricsProvider::class . '::' . $appId,
 			function (ContainerInterface $container) {
-				return new TaskMetricsProvider(
-					mapper: $container->get(\OCA\OpenRegister\Db\TaskMapper::class),
-					temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class)
-				);
+				return $container->get(TaskMetricsProviderInterface::class);
 			}
 		);
 

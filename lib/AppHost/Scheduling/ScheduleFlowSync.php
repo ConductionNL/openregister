@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Service\Flow\FlowTenantMembership;
+use OCA\OpenRegister\Service\Flow\FlowTenantMembershipInterface;
 use Throwable;
 
 /**
@@ -46,13 +46,13 @@ class ScheduleFlowSync {
 	 * Constructor.
 	 *
 	 * @param ScheduleFlowStore $store The compiled flows.
-	 * @param FlowTenantMembership $membership Answers whether the publisher is in the organisation.
+	 * @param FlowTenantMembershipInterface $membership Answers whether the publisher is in the organisation.
 	 * @param ScheduleAuditTrail $audit Records identity changes.
 	 * @param ScheduleRefusals $refusals Logs a refusal and keeps it for the response.
 	 */
 	public function __construct(
 		private readonly ScheduleFlowStore $store,
-		private readonly FlowTenantMembership $membership,
+		private readonly FlowTenantMembershipInterface $membership,
 		private readonly ScheduleAuditTrail $audit,
 		private readonly ScheduleRefusals $refusals,
 	) {

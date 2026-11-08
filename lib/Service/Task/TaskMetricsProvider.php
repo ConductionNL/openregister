@@ -33,7 +33,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use OCA\OpenRegister\AppHost\IMetricsProvider;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\Db\TaskMapper;
 
@@ -42,7 +41,7 @@ use OCA\OpenRegister\Db\TaskMapper;
  *
  * @spec openspec/specs/apphost-observability/spec.md
  */
-final class TaskMetricsProvider implements IMetricsProvider {
+final class TaskMetricsProvider implements TaskMetricsProviderInterface {
 
 	/**
 	 * The sample name, without the engine's `openregister_` prefix.
