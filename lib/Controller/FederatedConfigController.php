@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCP\AppFramework\Controller;
@@ -36,7 +37,6 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
@@ -66,34 +66,52 @@ class FederatedConfigController extends Controller {
 	private readonly IUserSession $userSession;
 
 	/**
-	 * The group manager.
+	 * The federation engine.
 	 *
-	 * @var IGroupManager
+	 * @var FederatedConfigServiceInterface
 	 */
-	private readonly IGroupManager $groupManager;
+	private readonly FederatedConfigServiceInterface $service;
+
+	/**
+	 * Per-org publish/install gating.
+	 *
+	 * @var FederatedConfigAccess
+	 */
+	private readonly FederatedConfigAccess $access;
+
+	/**
+	 * Reads the user's chosen store credential.
+	 *
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
+	 * The session bundle; the user session and the admin check come from it.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param string                          $appName The app id.
 	 * @param IRequest                        $request The request.
-	 * @param FederatedConfigServiceInterface $service The federation engine.
-	 * @param FederatedConfigAccess           $access  Per-org publish/install gating.
-	 * @param ControllerSession               $session Session, group manager and logger.
-	 * @param IConfig                         $config  Reads the user's chosen store credential.
+	 * @param FederatedConfigControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FederatedConfigServiceInterface $service,
-		private readonly FederatedConfigAccess $access,
-		ControllerSession $session,
-		private readonly IConfig $config,
+		FederatedConfigControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->service = $services->service;
+		$this->access = $services->access;
+		$this->config = $services->config;
 
-		$this->userSession = $session->userSession;
-		$this->groupManager = $session->groupManager;
+		$this->session = $services->session;
+		$this->userSession = $services->session->userSession;
 	}//end __construct()
 
 	/**
@@ -334,8 +352,7 @@ class FederatedConfigController extends Controller {
 	 * @return boolean Whether the caller is an admin.
 	 */
 	private function isAdmin(): bool {
-		$user = $this->userSession->getUser();
-		return $user !== null && $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isAdmin()
 
 	/**
