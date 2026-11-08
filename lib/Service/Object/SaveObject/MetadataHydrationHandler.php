@@ -693,11 +693,11 @@ class MetadataHydrationHandler {
 	 * @param mixed  $fieldValue The field's value, as getValueFromPath() reads it.
 	 * @param string $definition The comma-separated pair "valueIfFilled, valueIfEmpty".
 	 *
-	 * @return string|null The selected value.
+	 * @return string The selected value (explode() always yields a first part).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function ifFilledValue(mixed $fieldValue, string $definition): ?string {
+	private function ifFilledValue(mixed $fieldValue, string $definition): string {
 		$parts = array_map('trim', explode(',', $definition, 2));
 		if (count($parts) < 2) {
 			return $parts[0] ?? null;
