@@ -24,6 +24,7 @@
 namespace OCA\OpenRegister\Mcp\Tool;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\RegisterServiceInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -225,28 +226,46 @@ class RegisterTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function createRegister(string $title, string $description = '', ?string $slug = null): array {
-		$data = [
-			'title' => $title,
-			'description' => $description,
-		];
+		return $this->createFrom(data: ['title' => $title, 'description' => $description], slug: $slug);
+	}//end createRegister()
 
+	/**
+	 * Create a register from its title and description, with the slug only when one is given.
+	 *
+	 * @param array<string, string> $data The title and description.
+	 * @param string|null           $slug Register slug
+	 *
+	 * @return (mixed|string|true)[] Result with created register
+	 *
+	 * @psalm-return array{success: true, message: string, data: mixed}
+	 */
+	private function createFrom(array $data, ?string $slug): array {
 		if ($slug !== null) {
 			$data['slug'] = $slug;
 		}
 
 		$register = $this->registerService->createFromArray(data: $data);
 
-		return $this->formatSuccess(
-			data: [
-				'id' => $register->getId(),
-				'uuid' => $register->getUuid(),
-				'title' => $register->getTitle(),
-				'description' => $register->getDescription(),
-				'slug' => $register->getSlug(),
-			],
-			message: 'Register created successfully'
-		);
-	}//end createRegister()
+		return $this->formatSuccess(data: $this->summary(register: $register), message: 'Register created successfully');
+	}//end createFrom()
+
+	/**
+	 * The id, uuid, title, description and slug of a written register.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<string, mixed> The summary.
+	 */
+	private function summary(Register $register): array {
+		return [
+			'id' => $register->getId(),
+			'uuid' => $register->getUuid(),
+			'title' => $register->getTitle(),
+			'description' => $register->getDescription(),
+			'slug' => $register->getSlug(),
+		];
+	}//end summary()
+
 
 	/**
 	 * Update an existing register
@@ -264,32 +283,38 @@ class RegisterTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function updateRegister(string $id, ?string $title = null, ?string $description = null): array {
-		$data = [];
-		if ($title !== null) {
-			$data['title'] = $title;
-		}
+		return $this->updateFrom(
+			id: $id,
+			data: array_filter(
+				['title' => $title, 'description' => $description],
+				static function ($value): bool {
+					return $value !== null;
+				}
+			)
+		);
+	}//end updateRegister()
 
-		if ($description !== null) {
-			$data['description'] = $description;
-		}
-
+	/**
+	 * Update a register with the given fields, refusing an update that changes nothing.
+	 *
+	 * @param string               $id   Register ID
+	 * @param array<string, string> $data The fields to change.
+	 *
+	 * @return (mixed|string|true)[] Result with updated register
+	 *
+	 * @throws InvalidArgumentException If there is nothing to change
+	 *
+	 * @psalm-return array{success: true, message: string, data: mixed}
+	 */
+	private function updateFrom(string $id, array $data): array {
 		if ($data === []) {
 			throw new InvalidArgumentException('No update data provided');
 		}
 
 		$register = $this->registerService->updateFromArray(id: (int)$id, data: $data);
 
-		return $this->formatSuccess(
-			data: [
-				'id' => $register->getId(),
-				'uuid' => $register->getUuid(),
-				'title' => $register->getTitle(),
-				'description' => $register->getDescription(),
-				'slug' => $register->getSlug(),
-			],
-			message: 'Register updated successfully'
-		);
-	}//end updateRegister()
+		return $this->formatSuccess(data: $this->summary(register: $register), message: 'Register updated successfully');
+	}//end updateFrom()
 
 	/**
 	 * Delete a register
