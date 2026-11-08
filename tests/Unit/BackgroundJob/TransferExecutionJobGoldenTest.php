@@ -22,12 +22,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
-use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
-use OCA\OpenRegister\Service\Edepot\TransferListService;
-use OCA\OpenRegister\Service\Edepot\TransferRecordService;
-use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\SftpTransport;
+use OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface;
+use OCA\OpenRegister\Service\Edepot\TransferListServiceInterface;
+use OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\SftpTransportInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
@@ -79,7 +79,7 @@ class TransferExecutionJobGoldenTest extends TestCase {
 	 *
 	 * @var string|null
 	 */
-	private ?string $outcome = TransferListService::STATUS_COMPLETED;
+	private ?string $outcome = TransferListServiceInterface::STATUS_COMPLETED;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -92,7 +92,7 @@ class TransferExecutionJobGoldenTest extends TestCase {
 			fn (string $app, string $key, string $default) => ($this->config[$key] ?? $default)
 		);
 
-		$records = $this->createMock(TransferRecordService::class);
+		$records = $this->createMock(TransferRecordServiceInterface::class);
 		$records->method('loadTransferList')->willReturnCallback(
 			function (string $id): ?array {
 				$this->calls[] = ['load', $id];
@@ -106,7 +106,7 @@ class TransferExecutionJobGoldenTest extends TestCase {
 			}
 		);
 
-		$transfer = $this->createMock(EdepotTransferService::class);
+		$transfer = $this->createMock(EdepotTransferServiceInterface::class);
 		$transfer->method('executeAttempt')->willReturnCallback(
 			function (array $list, TransportInterface $transport, int $attempt): array {
 				$this->calls[] = ['execute', $list['uuid'], $this->transportName(transport: $transport), $attempt];
@@ -118,7 +118,7 @@ class TransferExecutionJobGoldenTest extends TestCase {
 			}
 		);
 
-		$lists = $this->createMock(TransferListService::class);
+		$lists = $this->createMock(TransferListServiceInterface::class);
 		$lists->method('notifyArchivists')->willReturnCallback(
 			function (array $list): void {
 				$this->calls[] = ['notify', $list];
@@ -144,18 +144,18 @@ class TransferExecutionJobGoldenTest extends TestCase {
 
 		$this->deps = [
 			ITimeFactory::class           => $time,
-			EdepotTransferService::class  => $transfer,
-			TransferRecordService::class  => $records,
-			TransferListService::class    => $lists,
-			SftpTransport::class          => $this->createMock(SftpTransport::class),
-			RestApiTransport::class       => $this->createMock(RestApiTransport::class),
-			OpenConnectorTransport::class => $this->createMock(OpenConnectorTransport::class),
+			EdepotTransferServiceInterface::class  => $transfer,
+			TransferRecordServiceInterface::class  => $records,
+			TransferListServiceInterface::class    => $lists,
+			SftpTransportInterface::class          => $this->createMock(SftpTransportInterface::class),
+			RestApiTransportInterface::class       => $this->createMock(RestApiTransportInterface::class),
+			OpenConnectorTransportInterface::class => $this->createMock(OpenConnectorTransportInterface::class),
 			IJobList::class               => $jobList,
 			IAppConfig::class             => $config,
 			LoggerInterface::class        => $logger,
 		];
 
-		$this->list = ['uuid' => 't1', 'status' => TransferListService::STATUS_APPROVED];
+		$this->list = ['uuid' => 't1', 'status' => TransferListServiceInterface::STATUS_APPROVED];
 	}//end setUp()
 
 	/**
@@ -166,7 +166,7 @@ class TransferExecutionJobGoldenTest extends TestCase {
 	 * @return string
 	 */
 	private function transportName(TransportInterface $transport): string {
-		foreach ([SftpTransport::class => 'sftp', RestApiTransport::class => 'rest', OpenConnectorTransport::class => 'oc'] as $class => $name) {
+		foreach ([SftpTransportInterface::class => 'sftp', RestApiTransportInterface::class => 'rest', OpenConnectorTransportInterface::class => 'oc'] as $class => $name) {
 			if ($this->deps[$class] === $transport) {
 				return $name;
 			}
@@ -236,7 +236,7 @@ class TransferExecutionJobGoldenTest extends TestCase {
 			[
 				['load', 't1'],
 				['execute', 't1', 'rest', 1],
-				['save', ['uuid' => 't1', 'status' => TransferListService::STATUS_COMPLETED]],
+				['save', ['uuid' => 't1', 'status' => TransferListServiceInterface::STATUS_COMPLETED]],
 				['info', '[TransferExecutionJob] Transfer completed', ['transferListId' => 't1', 'attempt' => 1]],
 			],
 			$this->calls
@@ -253,13 +253,13 @@ class TransferExecutionJobGoldenTest extends TestCase {
 	}//end testConfiguredTransportIsUsed()
 
 	public function testFailedAttemptIsRescheduledWithBackoff(): void {
-		$this->outcome = TransferListService::STATUS_PARTIALLY_FAILED;
+		$this->outcome = TransferListServiceInterface::STATUS_PARTIALLY_FAILED;
 		$this->runJob(['transferListId' => 't1', 'attempt' => 2]);
 
 		$this->assertCount(5, $this->calls);
 		$this->assertSame(['load', 't1'], $this->calls[0]);
 		$this->assertSame(['execute', 't1', 'rest', 2], $this->calls[1]);
-		$this->assertSame(['save', ['uuid' => 't1', 'status' => TransferListService::STATUS_IN_PROGRESS]], $this->calls[2]);
+		$this->assertSame(['save', ['uuid' => 't1', 'status' => TransferListServiceInterface::STATUS_IN_PROGRESS]], $this->calls[2]);
 
 		// Attempt 2 backs off 120 s with up to 10 % jitter either way.
 		[$verb, $class, $runAfter, $argument] = $this->calls[3];
@@ -276,7 +276,7 @@ class TransferExecutionJobGoldenTest extends TestCase {
 		$this->config['edepot_transfer_max_attempts'] = '1';
 		$this->runJob(['transferListId' => 't1']);
 
-		$failed = ['uuid' => 't1', 'status' => TransferListService::STATUS_FAILED];
+		$failed = ['uuid' => 't1', 'status' => TransferListServiceInterface::STATUS_FAILED];
 		$this->assertSame(
 			[
 				['load', 't1'],
@@ -295,7 +295,7 @@ class TransferExecutionJobGoldenTest extends TestCase {
 	}//end testThrownAttemptCountsAsAFailure()
 
 	public function testAttemptCapFallsBackToTenWhenConfiguredBelowOne(): void {
-		$this->outcome = TransferListService::STATUS_PARTIALLY_FAILED;
+		$this->outcome = TransferListServiceInterface::STATUS_PARTIALLY_FAILED;
 		$this->config['edepot_transfer_max_attempts'] = '0';
 		$this->runJob(['transferListId' => 't1', 'attempt' => 10]);
 

@@ -53,4 +53,16 @@ interface TransferRecordServiceInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function loadTransferList(string $uuid): ?array;
+
+	/**
+	 * Persist (create or update) a transfer-list record, keyed by its own uuid.
+	 *
+	 * @param array<string, mixed> $transferList The transfer-list array.
+	 *
+	 * @return array<string, mixed> The persisted transfer-list data.
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+	 *   (Requirement: Durable transfer-list objects served over the API)
+	 */
+	public function saveTransferList(array $transferList): array;
 }//end interface

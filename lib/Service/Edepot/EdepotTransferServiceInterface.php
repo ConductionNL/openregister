@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot;
 
+use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
+
 /**
  * The methods of EdepotTransferService that callers outside its component use.
  * Callers depend on this interface, not on the class.
@@ -65,4 +67,18 @@ interface EdepotTransferServiceInterface {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
 	 */
 	public function isValidProfile(string $profileName): bool;
+
+	/**
+	 * Run one transport attempt for a transfer list and append it to `attempts[]`.
+	 *
+	 * @param array<string,mixed> $transferList The transfer list data.
+	 * @param TransportInterface  $transport    The transport to use.
+	 * @param int                 $attempt      The 1-based attempt number.
+	 *
+	 * @return array<string,mixed> The updated transfer list (status, attempts[], transferResult).
+	 *
+	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+	 *   (Requirement: One job run performs one transport attempt per package)
+	 */
+	public function executeAttempt(array $transferList, TransportInterface $transport, int $attempt): array;
 }//end interface

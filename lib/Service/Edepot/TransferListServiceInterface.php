@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Edepot;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
  * The methods of TransferListService that callers outside its component use.
@@ -76,4 +77,45 @@ interface TransferListServiceInterface {
 	 * @spec openspec/specs/edepot-transfer/spec.md
 	 */
 	public function rejectTransferList(array $transferList, string $archivistId, string $reason): array;
+
+	/**
+	 * Create a transfer list (status in_review) for the given objects.
+	 *
+	 * @param array<int, ObjectEntity> $objects The objects eligible for transfer.
+	 *
+	 * @return array{
+	 *     uuid: string,
+	 *     status: string,
+	 *     objectReferences: array<int, array{uuid: string, schema: int|null, register: int|null}>,
+	 *     createdAt: string,
+	 *     objectCount: int
+	 * } The transfer list data.
+	 *
+	 * @throws InvalidArgumentException If no objects provided.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+	 */
+	public function createTransferList(array $objects): array;
+
+	/**
+	 * Get UUIDs of objects currently on active (in_review or approved) transfer lists.
+	 *
+	 * @param array<int, array<string,mixed>> $activeTransferLists Active transfer list data.
+	 *
+	 * @return array<int, string> UUIDs of objects on active transfer lists.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+	 */
+	public function getObjectsOnActiveTransferLists(array $activeTransferLists): array;
+
+	/**
+	 * Notify archivist users about a transfer list; a failure is logged, never thrown.
+	 *
+	 * @param array<string,mixed> $transferList The transfer list data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+	 */
+	public function notifyArchivists(array $transferList): void;
 }//end interface

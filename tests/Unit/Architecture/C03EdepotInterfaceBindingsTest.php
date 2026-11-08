@@ -82,32 +82,6 @@ final class C03EdepotInterfaceBindingsTest extends TestCase {
 		ConnectionReporter::class => [
 			'BackgroundJob/ConnectionSeamReportJob.php',
 		],
-		EdepotTransferService::class => [
-			'BackgroundJob/Support/TransferExecutionRecords.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
-		OpenConnectorTransport::class => [
-			'BackgroundJob/Support/TransferExecutionTransports.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
-		RestApiTransport::class => [
-			'BackgroundJob/Support/TransferExecutionTransports.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
-		SftpTransport::class => [
-			'BackgroundJob/Support/TransferExecutionTransports.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
-		TransferListService::class => [
-			'BackgroundJob/Support/TransferExecutionRecords.php',
-			'BackgroundJob/TransferCheckJob.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
-		TransferRecordService::class => [
-			'BackgroundJob/Support/TransferExecutionRecords.php',
-			'BackgroundJob/TransferCheckJob.php',
-			'BackgroundJob/TransferExecutionJob.php',
-		],
 	];
 
 	/**
