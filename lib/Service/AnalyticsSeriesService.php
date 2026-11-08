@@ -46,7 +46,6 @@ use OCA\OpenRegister\Db\AnalyticsSeries;
 use OCA\OpenRegister\Db\AnalyticsSeriesMapperInterface;
 use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
 use OCP\IGroupManager;
-use OCP\IUser;
 use OCP\IUserSession;
 
 /**
@@ -159,7 +158,25 @@ class AnalyticsSeriesService implements AnalyticsSeriesServiceInterface {
 		?int $registerId = null,
 		?int $schemaId = null,
 	): array {
-		$this->assertRegistrable(seriesKey: $seriesKey, visibility: $visibility, chartType: $chartType);
+		$draft = (new AnalyticsSeriesDraft(seriesKey: $seriesKey, title: $title))
+			->withData(labels: $labels, datasets: $datasets)
+			->shownAs(chartType: $chartType, visibility: $visibility)
+			->inScope(registerId: $registerId, schemaId: $schemaId);
+
+		return $this->registerDraft(draft: $draft);
+	}//end register()
+
+	/**
+	 * Store a series under its key (insert or update) and (re)declare its page widget.
+	 *
+	 * @param AnalyticsSeriesDraft $draft The series to register.
+	 *
+	 * @return array<string,mixed> The stored series render contract.
+	 *
+	 * @throws InvalidArgumentException On invalid key / visibility / chart type, or without a logged-in user.
+	 */
+	private function registerDraft(AnalyticsSeriesDraft $draft): array {
+		$this->assertRegistrable(draft: $draft);
 
 		$user = $this->userSession->getUser();
 		if ($user === null) {
@@ -167,85 +184,105 @@ class AnalyticsSeriesService implements AnalyticsSeriesServiceInterface {
 		}
 
 		$now = new DateTime();
-		$existing = $this->mapper->findByKey($seriesKey);
+		$existing = $this->mapper->findByKey($draft->seriesKey);
 
-		$entity = ($existing ?? new AnalyticsSeries());
-		$entity->setSeriesKey($seriesKey);
-		$entity->setRegisterId($registerId);
-		$entity->setSchemaId($schemaId);
-		$entity->setTitle($title);
-		$entity->setChartType($chartType);
-		$entity->setLabels(json_encode(array_values($labels)));
-		$entity->setDatasets(json_encode(array_values($datasets)));
-		$entity->setVisibility($visibility);
+		$entity = $this->filled(entity: ($existing ?? new AnalyticsSeries()), draft: $draft);
 		$entity->setUpdatedAt($now);
 
-		$saved = $this->save(entity: $entity, existing: $existing, user: $user, now: $now);
+		if ($existing === null) {
+			$entity->setCreatedBy($user->getUID());
+			$entity->setCreatedAt($now);
+		}
+
+		$saved = $this->persist(entity: $entity, existing: $existing);
 
 		// (Re)declare the page widget so the render layer can discover it.
 		// First-write-wins inside the registry; harmless on a refresh.
-		$this->registry->registerPageWidget(
-			[
-				'id' => 'analytics-series:' . $seriesKey,
-				'type' => 'chart',
-				'title' => $title,
-				'providerId' => 'analytics-series',
-				'config' => [
-					'seriesKey' => $seriesKey,
-					'chartType' => $chartType,
-					'registerId' => $registerId,
-					'schemaId' => $schemaId,
-				],
-			]
-		);
+		$this->registry->registerPageWidget($this->pageWidget(draft: $draft));
 
 		return $saved->jsonSerialize();
-	}//end register()
+	}//end registerDraft()
 
 	/**
 	 * Refuse a series without a key, or with an unknown visibility or chart type.
 	 *
-	 * @param string $seriesKey  Stable series key.
-	 * @param string $visibility 'private'|'group'|'public'.
-	 * @param string $chartType  Chart type hint.
+	 * @param AnalyticsSeriesDraft $draft The series to register.
 	 *
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException On invalid key / visibility / chart type.
 	 */
-	private function assertRegistrable(string $seriesKey, string $visibility, string $chartType): void {
-		if (trim($seriesKey) === '') {
+	private function assertRegistrable(AnalyticsSeriesDraft $draft): void {
+		if (trim($draft->seriesKey) === '') {
 			throw new InvalidArgumentException('seriesKey is required to register a series');
 		}
 
-		if (in_array($visibility, self::VISIBILITIES, true) === false) {
+		if (in_array($draft->visibility(), self::VISIBILITIES, true) === false) {
 			throw new InvalidArgumentException('Invalid visibility — expected one of: ' . implode(', ', self::VISIBILITIES));
 		}
 
-		if (in_array($chartType, self::CHART_TYPES, true) === false) {
+		if (in_array($draft->chartType(), self::CHART_TYPES, true) === false) {
 			throw new InvalidArgumentException('Invalid chartType — expected one of: ' . implode(', ', self::CHART_TYPES));
 		}
 	}//end assertRegistrable()
 
 	/**
-	 * Insert a new series stamped with its creator, or update the existing one.
+	 * Write a draft's key, scope, title, chart type, data and visibility onto a series row.
+	 *
+	 * @param AnalyticsSeries      $entity The new or stored series.
+	 * @param AnalyticsSeriesDraft $draft  The series to register.
+	 *
+	 * @return AnalyticsSeries The same row.
+	 */
+	private function filled(AnalyticsSeries $entity, AnalyticsSeriesDraft $draft): AnalyticsSeries {
+		$entity->setSeriesKey($draft->seriesKey);
+		$entity->setRegisterId($draft->registerId());
+		$entity->setSchemaId($draft->schemaId());
+		$entity->setTitle($draft->title);
+		$entity->setChartType($draft->chartType());
+		$entity->setLabels(json_encode(array_values($draft->labels())));
+		$entity->setDatasets(json_encode(array_values($draft->datasets())));
+		$entity->setVisibility($draft->visibility());
+		return $entity;
+	}//end filled()
+
+	/**
+	 * Insert a new series, or update the stored one.
 	 *
 	 * @param AnalyticsSeries      $entity   The filled series.
 	 * @param AnalyticsSeries|null $existing The stored series it was loaded from, or null.
-	 * @param IUser                $user     The registering user.
-	 * @param DateTime             $now      The registration time.
 	 *
 	 * @return AnalyticsSeries
 	 */
-	private function save(AnalyticsSeries $entity, ?AnalyticsSeries $existing, IUser $user, DateTime $now): AnalyticsSeries {
+	private function persist(AnalyticsSeries $entity, ?AnalyticsSeries $existing): AnalyticsSeries {
 		if ($existing === null) {
-			$entity->setCreatedBy($user->getUID());
-			$entity->setCreatedAt($now);
 			return $this->mapper->insert($entity);
 		}
 
 		return $this->mapper->update($entity);
-	}//end save()
+	}//end persist()
+
+	/**
+	 * The page widget that renders a series.
+	 *
+	 * @param AnalyticsSeriesDraft $draft The registered series.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function pageWidget(AnalyticsSeriesDraft $draft): array {
+		return [
+			'id' => 'analytics-series:' . $draft->seriesKey,
+			'type' => 'chart',
+			'title' => $draft->title,
+			'providerId' => 'analytics-series',
+			'config' => [
+				'seriesKey' => $draft->seriesKey,
+				'chartType' => $draft->chartType(),
+				'registerId' => $draft->registerId(),
+				'schemaId' => $draft->schemaId(),
+			],
+		];
+	}//end pageWidget()
 
 	/**
 	 * Fetch a registered series by key, RBAC-scoped.

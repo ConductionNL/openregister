@@ -26,7 +26,7 @@ use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
-use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
@@ -51,11 +51,11 @@ class RelatedRowAccess {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicRbacHandler       $rbac   Builds the related schema's row predicate.
-	 * @param LoggerInterface        $logger The logger, for the default guard.
-	 * @param PropertyReadGuard|null $guard  The property read guard; defaults to one without a container, which fails closed on a governed schema.
+	 * @param RelatedRowRbacInterface $rbac   Builds the related schema's row predicate.
+	 * @param LoggerInterface         $logger The logger, for the default guard.
+	 * @param PropertyReadGuard|null  $guard  The property read guard; defaults to one without a container, which fails closed on a governed schema.
 	 */
-	public function __construct(private readonly MagicRbacHandler $rbac, LoggerInterface $logger, ?PropertyReadGuard $guard = null) {
+	public function __construct(private readonly RelatedRowRbacInterface $rbac, LoggerInterface $logger, ?PropertyReadGuard $guard = null) {
 		$this->guard = ($guard ?? new PropertyReadGuard(container: null, logger: $logger));
 	}//end __construct()
 

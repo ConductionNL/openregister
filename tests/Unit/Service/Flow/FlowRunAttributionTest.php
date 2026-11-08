@@ -89,7 +89,7 @@ class FlowRunAttributionTest extends TestCase {
 				// Version 1 is live. These fixtures are about ATTRIBUTION, so
 				// they must reach the attribution code rather than stopping at
 				// the unpublished-flow refusal that now precedes it.
-				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 

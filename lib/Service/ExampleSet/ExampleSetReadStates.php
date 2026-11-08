@@ -117,15 +117,14 @@ class ExampleSetReadStates extends ExampleSetEngineRows {
 	/**
 	 * Record that the account opened the object, at `seenAt` or now.
 	 *
-	 * @param string               $app  The app that ships the fragment (unused: a read state names its user).
-	 * @param string               $key  The read state's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{user: string, objectUuid: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-say-which-objects-the-sets-own-accounts-opened-and-when
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		return $this->userObjectWrite(
 			write: fn () => $this->mapper()->markSeen(
 				userId: (string) $data['user'],

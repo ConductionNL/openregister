@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
-use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
+use OCA\OpenRegister\Service\Hardening\HardeningFloorsInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface;
 
@@ -38,7 +38,7 @@ final class HardeningControllerServices {
 	 *
 	 * @param HardeningReportServiceInterface $reportService Builds the report.
 	 * @param HardeningSettingsServiceInterface $settingsService Applies a change, or refuses it.
-	 * @param HardeningPolicy $policy Reads the floors in force.
+	 * @param HardeningFloorsInterface $policy Reads the floors in force.
 	 * @param ElevationServiceInterface $elevation Guards the administration writes with a fresh sign-in.
 	 *
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md
@@ -46,7 +46,7 @@ final class HardeningControllerServices {
 	public function __construct(
 		public readonly HardeningReportServiceInterface $reportService,
 		public readonly HardeningSettingsServiceInterface $settingsService,
-		public readonly HardeningPolicy $policy,
+		public readonly HardeningFloorsInterface $policy,
 		public readonly ElevationServiceInterface $elevation,
 	) {
 	}//end __construct()

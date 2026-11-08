@@ -25,7 +25,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
-use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -40,13 +40,13 @@ final class RelatedReadFilter {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicRbacHandler      $rbac    The RBAC handler.
-	 * @param SchemaMapperInterface $schemas The schema mapper.
+	 * @param RelatedRowRbacInterface $rbac    The RBAC handler.
+	 * @param SchemaMapperInterface   $schemas The schema mapper.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicRbacHandler $rbac,
+		private readonly RelatedRowRbacInterface $rbac,
 		private readonly SchemaMapperInterface $schemas,
 	) {
 	}//end __construct()

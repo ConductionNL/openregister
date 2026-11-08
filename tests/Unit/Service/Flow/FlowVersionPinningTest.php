@@ -110,7 +110,7 @@ class FlowVersionPinningTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($versionMapper, $pin): object {
-				if ($id === FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versionMapper;
 				}
 
@@ -147,7 +147,7 @@ class FlowVersionPinningTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper): object {
-				if ($id === FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $mapper;
 				}
 

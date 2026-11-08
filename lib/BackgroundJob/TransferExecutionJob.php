@@ -39,12 +39,13 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\BackgroundJob\Support\TransferExecutionPlatform;
 use OCA\OpenRegister\BackgroundJob\Support\TransferExecutionRecords;
 use OCA\OpenRegister\BackgroundJob\Support\TransferExecutionTransports;
-use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
-use OCA\OpenRegister\Service\Edepot\TransferListService;
-use OCA\OpenRegister\Service\Edepot\TransferRecordService;
-use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
-use OCA\OpenRegister\Service\Edepot\Transport\SftpTransport;
+use OCA\OpenRegister\Service\Edepot\EdepotTransferAttemptInterface;
+use OCA\OpenRegister\Service\Edepot\TransferListRunInterface;
+use OCA\OpenRegister\Service\Edepot\TransferListServiceInterface;
+use OCA\OpenRegister\Service\Edepot\TransferRecordStoreInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\SftpTransportInterface;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
@@ -97,44 +98,44 @@ class TransferExecutionJob extends QueuedJob {
 	/**
 	 * The transfer service.
 	 *
-	 * @var EdepotTransferService
+	 * @var EdepotTransferAttemptInterface
 	 */
-	private readonly EdepotTransferService $transferService;
+	private readonly EdepotTransferAttemptInterface $transferService;
 
 	/**
 	 * Durable transfer-record persistence.
 	 *
-	 * @var TransferRecordService
+	 * @var TransferRecordStoreInterface
 	 */
-	private readonly TransferRecordService $transferRecordService;
+	private readonly TransferRecordStoreInterface $transferRecordService;
 
 	/**
 	 * Status machine + archivist escalation.
 	 *
-	 * @var TransferListService
+	 * @var TransferListRunInterface
 	 */
-	private readonly TransferListService $transferListService;
+	private readonly TransferListRunInterface $transferListService;
 
 	/**
 	 * SFTP transport.
 	 *
-	 * @var SftpTransport
+	 * @var SftpTransportInterface
 	 */
-	private readonly SftpTransport $sftpTransport;
+	private readonly SftpTransportInterface $sftpTransport;
 
 	/**
 	 * REST API transport.
 	 *
-	 * @var RestApiTransport
+	 * @var RestApiTransportInterface
 	 */
-	private readonly RestApiTransport $restTransport;
+	private readonly RestApiTransportInterface $restTransport;
 
 	/**
 	 * OpenConnector transport.
 	 *
-	 * @var OpenConnectorTransport
+	 * @var OpenConnectorTransportInterface
 	 */
-	private readonly OpenConnectorTransport $ocTransport;
+	private readonly OpenConnectorTransportInterface $ocTransport;
 
 	/**
 	 * Background-job scheduler (re-enqueue).
@@ -260,7 +261,7 @@ class TransferExecutionJob extends QueuedJob {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'transferListId' => $transferListId, 'attempt' => $attempt]
 			);
 			// Treat an unexpected throw as a failed attempt for retry purposes.
-			$list['status'] = TransferListService::STATUS_PARTIALLY_FAILED;
+			$list['status'] = TransferListServiceInterface::STATUS_PARTIALLY_FAILED;
 		}
 
 		return $list;
@@ -278,9 +279,9 @@ class TransferExecutionJob extends QueuedJob {
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 */
 	private function settle(array $list, string $transferListId, int $attempt): void {
-		$status = (string)($list['status'] ?? TransferListService::STATUS_FAILED);
+		$status = (string)($list['status'] ?? TransferListServiceInterface::STATUS_FAILED);
 
-		if ($status === TransferListService::STATUS_COMPLETED) {
+		if ($status === TransferListServiceInterface::STATUS_COMPLETED) {
 			$this->transferRecordService->saveTransferList($list);
 			$this->logger->info(
 				message: '[TransferExecutionJob] Transfer completed',
@@ -312,7 +313,7 @@ class TransferExecutionJob extends QueuedJob {
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
 	 */
 	private function escalate(array $list, string $transferListId, int $attempt, int $maxAttempts): void {
-		$list['status'] = TransferListService::STATUS_FAILED;
+		$list['status'] = TransferListServiceInterface::STATUS_FAILED;
 		$this->transferRecordService->saveTransferList($list);
 		$this->transferListService->notifyArchivists($list);
 		$this->logger->warning(
@@ -341,7 +342,7 @@ class TransferExecutionJob extends QueuedJob {
 	private function reschedule(array $list, string $transferListId, int $attempt): void {
 		// Keep the list non-terminal (in_progress) between attempts so a
 		// partially-failed run keeps its confirmed objects while retrying.
-		$list['status'] = TransferListService::STATUS_IN_PROGRESS;
+		$list['status'] = TransferListServiceInterface::STATUS_IN_PROGRESS;
 		$this->transferRecordService->saveTransferList($list);
 
 		$delay = $this->backoffSeconds(attempt: $attempt);

@@ -29,7 +29,7 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Archival\DestructionReviewService;
+use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
@@ -59,7 +59,7 @@ final class DestructionListRun {
 	/**
 	 * Review answers that forbid destroying the entry carrying them.
 	 *
-	 * Read from DestructionReviewService's own constants rather than copied as
+	 * Read from DestructionReviewServiceInterface's own constants rather than copied as
 	 * literals: the class that writes the value and the class that refuses to
 	 * act on it must not be able to drift apart. The third answer, `destroy`,
 	 * is the one this job exists to carry out.
@@ -67,8 +67,8 @@ final class DestructionListRun {
 	 * @var string[]
 	 */
 	private const WITHHELD_DECISIONS = [
-		DestructionReviewService::ANSWER_RETAIN,
-		DestructionReviewService::ANSWER_TRANSFER,
+		DestructionReviewServiceInterface::ANSWER_RETAIN,
+		DestructionReviewServiceInterface::ANSWER_TRANSFER,
 	];
 
 	/**

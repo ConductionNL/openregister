@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
-use OCA\OpenRegister\Db\TaskAuditMapper;
+use OCA\OpenRegister\Db\TaskAuditMapperInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -133,6 +133,6 @@ class ExampleSetTaskClaim {
 		$entry->setPerformerType($task->getPerformerType());
 		$entry->setAuthorized(true);
 		$entry->setCreated(($moment ?? new DateTime()));
-		$this->container->get(TaskAuditMapper::class)->insert($entry);
+		$this->container->get(TaskAuditMapperInterface::class)->insert($entry);
 	}//end write()
 }//end class

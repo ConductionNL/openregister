@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use PHPUnit\Framework\TestCase;
 
@@ -74,7 +75,7 @@ class ExampleSetRowInstallTest extends TestCase {
 		$rows = $this->createMock(ExampleSetEngineRows::class);
 		$rows->method('part')->willReturn('notes');
 		$rows->method('noun')->willReturn('note');
-		$rows->expects($this->once())->method('write')->with('demo', 'n', ['text' => 'hi'])->willReturn(['error' => '', 'entry' => ['id' => 9]]);
+		$rows->expects($this->once())->method('write')->with(new ExampleSetRow(app: 'demo', key: 'n', data: ['text' => 'hi']))->willReturn(['error' => '', 'entry' => ['id' => 9]]);
 		$install = new ExampleSetRowInstall(
 			rows: $rows,
 			refusal: static fn (array $data, array $users, array $context): string => '',
