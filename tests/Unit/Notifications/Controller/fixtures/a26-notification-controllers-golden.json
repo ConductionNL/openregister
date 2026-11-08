@@ -1209,7 +1209,7 @@
         },
         "calls": [
             "IGroupManager::isAdmin([\"root\"])",
-            "NotificationBroadcastService::send([\"invalid\",null,\"root\",\"DateTime\",\"DateTime\"])"
+            "NotificationBroadcastService::send([\"OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\BroadcastMessage\",\"root\",\"OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\BroadcastWindow\"])"
         ]
     },
     "broadcast create as anonymous": {
@@ -1253,7 +1253,7 @@
         },
         "calls": [
             "IGroupManager::isAdmin([\"root\"])",
-            "NotificationBroadcastService::send([\"Hi\",\"B\",\"root\",\"DateTime\",\"DateTime\"])"
+            "NotificationBroadcastService::send([\"OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\BroadcastMessage\",\"root\",\"OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\BroadcastWindow\"])"
         ]
     },
     "broadcast destroy unknown as anonymous": {
