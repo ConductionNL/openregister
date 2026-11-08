@@ -230,8 +230,6 @@ use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
-use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
-use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
@@ -482,7 +480,6 @@ final class ContractBindings {
 		FlowRunSubjectsInterface::class => FlowRunSubjects::class,
 		FlowDryRunServiceInterface::class => FlowDryRunService::class,
 		FlowPublishedGraphInterface::class => FlowPublishedGraph::class,
-		TermDiagnosticInterface::class => TermDiagnostic::class,
 		WorkingCalendarInterface::class => WorkingCalendar::class,
 		MatrixRowKeys::class => MatrixRowWhere::class,
 		MovedJobStateInterface::class => MovedJobState::class,

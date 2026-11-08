@@ -5,7 +5,7 @@
  *
  * 🔴 IT WRITES NOTHING (D-2). No timer, no ledger event, no audit row. That is
  * structural rather than promised: this controller holds a session, a group
- * manager and {@see TermDiagnosticInterface}, and the diagnostic in turn holds only the
+ * manager and {@see TermDiagnostic}, and the diagnostic in turn holds only the
  * calculator. There is no mapper and no connection anywhere on the path, so
  * there is nothing here that COULD arm a timer.
  *
@@ -38,7 +38,7 @@ use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
-use OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface;
+use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
@@ -72,9 +72,9 @@ class FlowTimerDiagnosticController extends Controller {
 	/**
 	 * The engine, narrating.
 	 *
-	 * @var TermDiagnosticInterface
+	 * @var TermDiagnostic
 	 */
-	private readonly TermDiagnosticInterface $diagnostic;
+	private readonly TermDiagnostic $diagnostic;
 
 	/**
 	 * Constructor.

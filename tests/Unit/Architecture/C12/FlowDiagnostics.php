@@ -7,6 +7,9 @@
  * calendar through WorkingCalendars; the container resolves each injected
  * interface to the same shared instance.
  *
+ * TermDiagnostic is not listed: FlowTimerDiagnosticControllerTest pins the
+ * diagnostic bundle's parameter types to the class.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
@@ -20,7 +23,6 @@ return [
 	'classes' => [
 		Flow\FlowDryRunService::class => Flow\FlowDryRunServiceInterface::class,
 		Flow\FlowPublishedGraph::class => Flow\FlowPublishedGraphInterface::class,
-		Timer\TermDiagnostic::class => Timer\TermDiagnosticInterface::class,
 		Timer\WorkingCalendar::class => Timer\WorkingCalendarInterface::class,
 	],
 	'kept' => [],
