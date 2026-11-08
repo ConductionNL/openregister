@@ -34,6 +34,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Files\Service\File\FileReadScopeRules;
+use OCA\OpenRegister\Files\Service\File\FileReadScopeTree;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\FileService;
@@ -142,7 +144,18 @@ class FileReadScopeWiringGoldenTest extends TestCase {
 		$guard = $this->createMock(FileRestrictionGuard::class);
 		$guard->method('mayRead')->willReturnCallback(static fn (int $id): bool => $id !== self::RESTRICTED);
 
-		return new FileReadScope($root, $session, new NullLogger(), $fileService, $access, $guard);
+		return new FileReadScope(
+			tree: new FileReadScopeTree(
+				rootFolder: $root,
+				userSession: $session
+			),
+			rules: new FileReadScopeRules(
+				objectFileAccess: $access,
+				restrictions: $guard
+			),
+			logger: new NullLogger(),
+			fileService: $fileService
+		);
 	}//end scope()
 
 	private function hit(int $fileId): array {

@@ -29,6 +29,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Files\Service\File\FileReadScopeRules;
+use OCA\OpenRegister\Files\Service\File\FileReadScopeTree;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
@@ -263,7 +265,18 @@ class FileRestrictionPathsTest extends TestCase {
 		$rootFolder = $this->createMock(IRootFolder::class);
 		$rootFolder->method('getUserFolder')->willReturn($userFolder);
 
-		$scope = new FileReadScope($rootFolder, $session, new NullLogger(), null, null, $this->guard(admitted: false));
+		$scope = new FileReadScope(
+			tree: new FileReadScopeTree(
+				rootFolder: $rootFolder,
+				userSession: $session
+			),
+			rules: new FileReadScopeRules(
+				objectFileAccess: null,
+				restrictions: $this->guard(admitted: false)
+			),
+			logger: new NullLogger(),
+			fileService: null
+		);
 		$hits = [
 			['entity_type' => 'file', 'entity_id' => self::RESTRICTED],
 			['entity_type' => 'file', 'entity_id' => (string)self::OPEN],
