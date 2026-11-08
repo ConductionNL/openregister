@@ -429,6 +429,12 @@ final class ContractBindings {
 		FormSubmitServiceInterface::class => FormSubmitService::class,
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
+		\OCA\OpenRegister\Service\Configuration\GitHubGuardsInterface::class
+			=> \OCA\OpenRegister\Service\Configuration\GitHubGuards::class,
+		\OCA\OpenRegister\Service\Configuration\GitHubRequestValidatorInterface::class
+			=> \OCA\OpenRegister\Service\Configuration\GitHubRequestValidator::class,
+		\OCA\OpenRegister\Service\Configuration\RateLimiterServiceInterface::class
+			=> \OCA\OpenRegister\Service\Configuration\RateLimiterService::class,
 		GitLabHandlerInterface::class => GitLabHandler::class,
 		HandoffServiceInterface::class => HandoffService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
