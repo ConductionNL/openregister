@@ -191,16 +191,14 @@ final class D12InterfaceBindingsTest extends TestCase {
 	 * AuditTrailExportJob is audit code, outside this lane; it hands the
 	 * Both are Db code that constructs the class with `new` (the schema entity
 	 * concrete recorder to its RecordedQueuedJob parent, which now takes the
-	 * interface. MaintenanceModeMiddleware is touched by an open pull request,
+	 * interface.
 	 * left as they are.
-	 * so it is left until that lands.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
 		ExtendingFormDeclaration::class => ['Db/SchemaMapper/PropertyDeclarationRefusals.php'],
 		JobRunRecorder::class => ['BackgroundJob/AuditTrailExportJob.php'],
-		MaintenanceModeService::class => ['Middleware/MaintenanceModeMiddleware.php'],
 		UniqueConstraintEvaluator::class => ['Db/Schema.php'],
 	];
 
