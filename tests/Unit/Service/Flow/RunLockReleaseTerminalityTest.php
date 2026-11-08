@@ -53,6 +53,8 @@ use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
+use OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits;
+use OCA\OpenRegister\Service\Flow\FlowStreamWalkParts;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCA\OpenRegister\Tests\Unit\Db\FluentQueryBuilderTrait;
@@ -311,10 +313,8 @@ class RunLockReleaseTerminalityTest extends TestCase {
 
 		$this->walk = new FlowStreamWalk(
 			run: $this->row,
-			claims: $places,
-			commit: $commit,
-			streamMapper: $streams,
-			owner: 'pass-1'
+			parts: new FlowStreamWalkParts(claims: $places, commit: $commit, streamMapper: $streams),
+			limits: new FlowStreamWalkLimits(owner: 'pass-1')
 		);
 
 		$this->engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger());

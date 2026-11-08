@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\FormLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Service\FormLinkServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -88,26 +89,20 @@ class FormLinksController extends Controller {
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request HTTP request.
-	 * @param FormLinkServiceInterface $formLinkService Form-link service.
-	 * @param ObjectOperationsInterface $objectService Object service.
-	 * @param IL10N $l10n Localisation.
-	 * @param LoggerInterface $logger Logger.
+	 * @param FormLinksControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		FormLinkServiceInterface $formLinkService,
-		ObjectOperationsInterface $objectService,
-		IL10N $l10n,
-		LoggerInterface $logger,
+		FormLinksControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->formLinkService = $formLinkService;
-		$this->objectService = $objectService;
-		$this->l10n = $l10n;
-		$this->logger = $logger;
+		$this->formLinkService = $services->formLinkService;
+		$this->objectService = $services->objectService;
+		$this->l10n = $services->l10n;
+		$this->logger = $services->logger;
 
 	}//end __construct()
 

@@ -29,6 +29,7 @@ use OCA\OpenRegister\Controller\ApplicationsController;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapper;
 use OCA\OpenRegister\Service\ApplicationService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApplicationsControllerFactory;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -58,7 +59,7 @@ class ApplicationsControllerGoldenTest extends TestCase {
 				$this->logged[] = [$message, $context];
 			}
 		);
-		$this->controller = new ApplicationsController(
+		$this->controller = ApplicationsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,

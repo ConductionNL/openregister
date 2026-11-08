@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Notifications\Controller\Support\ScheduledReportsControllerServices;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledReportRunNowJob;
 use OCA\OpenRegister\Notifications\Controller\ScheduledReportsController;
 use OCA\OpenRegister\Notifications\Db\ScheduledReport;
@@ -83,9 +84,16 @@ class ScheduledReportsControllerTest extends TestCase {
 		$this->controller = new ScheduledReportsController(
 			'openregister',
 			$this->request,
-			$this->service,
-			$this->jobList,
-			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(LoggerInterface::class)));
+			new ScheduledReportsControllerServices(
+				service: $this->service,
+				jobList: $this->jobList,
+				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
+					userSession: $this->userSession,
+					groupManager: $this->groupManager,
+					logger: $this->createMock(LoggerInterface::class)
+				)
+			)
+		);
 	}//end setUp()
 
 	private function setupUser(string $uid, bool $isAdmin): void {

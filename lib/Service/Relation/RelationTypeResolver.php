@@ -86,6 +86,20 @@ class RelationTypeResolver {
 	private array $memo = [];
 
 	/**
+	 * Reads labels, titles and keys out of the declarations.
+	 *
+	 * @var RelationValueReader
+	 */
+	private readonly RelationValueReader $values;
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->values = new RelationValueReader();
+	}//end __construct()
+
+	/**
 	 * Every relation descriptor a schema declares, keyed by property name.
 	 *
 	 * Every `$ref` property gets a descriptor, annotated or not, because a
@@ -105,34 +119,50 @@ class RelationTypeResolver {
 			return [];
 		}
 
-		$memoKey = ((string)($schema->getId() ?? $schema->getSlug() ?? spl_object_id($schema))).'|'.$language;
-		if (isset($this->memo[$memoKey]) === true) {
-			return $this->memo[$memoKey];
+		$memoKey = self::memoKey(schema: $schema, language: $language);
+		if (isset($this->memo[$memoKey]) === false) {
+			$this->memo[$memoKey] = $this->describeAll(schema: $schema, language: $language);
 		}
 
+		return $this->memo[$memoKey];
+	}//end descriptors()
+
+	/**
+	 * The key a schema's descriptor set is memoised under, per language.
+	 *
+	 * @param Schema $schema   The schema.
+	 * @param string $language The BCP-47 tag.
+	 *
+	 * @return string The memo key.
+	 */
+	private static function memoKey(Schema $schema, string $language): string {
+		return ((string)($schema->getId() ?? $schema->getSlug() ?? spl_object_id($schema))).'|'.$language;
+	}//end memoKey()
+
+	/**
+	 * Build the descriptor of every reference property a schema declares.
+	 *
+	 * @param Schema $schema   The schema owning the properties.
+	 * @param string $language The BCP-47 tag to resolve labels in.
+	 *
+	 * @return array<string, array<string, mixed>> Descriptors, keyed by property name.
+	 */
+	private function describeAll(Schema $schema, string $language): array {
 		$vocabulary = $this->vocabularyOf(schema: $schema);
 		$properties = ($schema->getProperties() ?? []);
+		if (is_array($properties) === false) {
+			return [];
+		}
+
 		$descriptors = [];
-
-		if (is_array($properties) === true) {
-			foreach ($properties as $name => $property) {
-				if (RelationAnnotationValidator::isReferenceProperty(property: $property) === false) {
-					continue;
-				}
-
-				$descriptors[(string)$name] = $this->describe(
-					name: (string)$name,
-					property: $property,
-					vocabulary: $vocabulary,
-					language: $language
-				);
+		foreach ($properties as $name => $property) {
+			if (RelationAnnotationValidator::isReferenceProperty(property: $property) === true) {
+				$descriptors[(string)$name] = $this->describe(name: (string)$name, property: $property, vocabulary: $vocabulary, language: $language);
 			}
 		}
 
-		$this->memo[$memoKey] = $descriptors;
-
 		return $descriptors;
-	}//end descriptors()
+	}//end describeAll()
 
 	/**
 	 * One property's descriptor, or null when the property holds no reference.
@@ -171,36 +201,56 @@ class RelationTypeResolver {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function row(?array $descriptor, string $direction, ?string $path = null): array {
-		if ($descriptor === null) {
-			$fallbackProperty = null;
-			if ($path !== null) {
-				$fallbackProperty = self::propertyNameOf(path: $path);
-			}
-
-			$descriptor = [
-				'property' => $fallbackProperty,
-				'type' => null,
-				'label' => $fallbackProperty,
-				'inverseLabel' => self::FALLBACK_INVERSE_LABEL,
-				'symmetric' => false,
-				'inherits' => [],
-			];
-		}
-
-		$display = ($descriptor['label'] ?? null);
-		if ($direction === self::DIRECTION_INCOMING) {
-			$display = ($descriptor['inverseLabel'] ?? self::FALLBACK_INVERSE_LABEL);
-		}
+		$descriptor = ($descriptor ?? self::fallbackDescriptor(path: $path));
 
 		return array_merge(
 			$descriptor,
 			[
 				'direction' => $direction,
-				'displayLabel' => $display,
+				'displayLabel' => self::displayLabel(descriptor: $descriptor, direction: $direction),
 				'path' => $path,
 			]
 		);
 	}//end row()
+
+	/**
+	 * The descriptor a row reads under when its property declares nothing resolvable.
+	 *
+	 * @param string|null $path The stored relation path, when known.
+	 *
+	 * @return array<string, mixed> The fallback descriptor.
+	 */
+	private static function fallbackDescriptor(?string $path): array {
+		$fallbackProperty = null;
+		if ($path !== null) {
+			$fallbackProperty = self::propertyNameOf(path: $path);
+		}
+
+		return [
+			'property' => $fallbackProperty,
+			'type' => null,
+			'label' => $fallbackProperty,
+			'inverseLabel' => self::FALLBACK_INVERSE_LABEL,
+			'symmetric' => false,
+			'inherits' => [],
+		];
+	}//end fallbackDescriptor()
+
+	/**
+	 * The label a row shows in one direction.
+	 *
+	 * @param array<string, mixed> $descriptor The descriptor.
+	 * @param string               $direction  One of the DIRECTION_* constants.
+	 *
+	 * @return mixed The forward label outgoing, the inverse label incoming.
+	 */
+	private static function displayLabel(array $descriptor, string $direction): mixed {
+		if ($direction === self::DIRECTION_INCOMING) {
+			return ($descriptor['inverseLabel'] ?? self::FALLBACK_INVERSE_LABEL);
+		}
+
+		return ($descriptor['label'] ?? null);
+	}//end displayLabel()
 
 	/**
 	 * The property name a stored relation path belongs to.
@@ -233,73 +283,138 @@ class RelationTypeResolver {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function describe(string $name, mixed $property, array $vocabulary, string $language): array {
-		$declaration = RelationAnnotationValidator::declarationOf(property: $property);
-		if (is_array($declaration) === false) {
-			$declaration = [];
-		}
+		$declaration = self::declarationArray(property: $property);
 
 		// A `type` resolves only when the vocabulary actually holds it. One
 		// that does not is dropped rather than carried, so a property naming a
 		// key nobody declared reads as the fallback and never as a half-resolved
 		// entry. The save-time refusal keeps that case out of new schemas.
-		$entry = [];
-		$declared = ($declaration['type'] ?? null);
-		$type = null;
-
-		if (is_string($declared) === true && isset($vocabulary[trim($declared)]) === true) {
-			$type = trim($declared);
-			$entry = $vocabulary[$type];
-		}
+		$type = self::vocabularyType(declared: ($declaration['type'] ?? null), vocabulary: $vocabulary);
 
 		// The property's own declaration wins over the vocabulary entry it
 		// points at, so one property can share a vocabulary and still say
 		// something of its own.
-		$merged = array_merge($entry, $declaration);
+		$merged = array_merge(self::entryOf(type: $type, vocabulary: $vocabulary), $declaration);
 
-		$symmetric = ($merged['symmetric'] ?? false);
-		if (is_bool($symmetric) === false) {
-			$symmetric = false;
-		}
-
-		['label' => $label, 'inverse' => $inverse] = $this->labelsFor(
-			name: $name,
-			property: $property,
-			merged: $merged,
-			symmetric: $symmetric,
-			language: $language
+		return self::withExposure(
+			descriptor: ['property' => $name, 'type' => $type] + $this->readingOf(name: $name, property: $property, merged: $merged, language: $language),
+			merged: $merged
 		);
+	}//end describe()
 
-		$descriptor = [
-			'property' => $name,
-			'type' => $type,
-			'label' => $label,
-			'inverseLabel' => $inverse,
+	/**
+	 * How a relation reads: its two labels, whether it is symmetric, and what it inherits.
+	 *
+	 * @param string               $name     The property name.
+	 * @param mixed                $property The property definition.
+	 * @param array<string, mixed> $merged   The vocabulary entry under the property's own declaration.
+	 * @param string               $language The BCP-47 tag.
+	 *
+	 * @return array{label: string, inverseLabel: string, symmetric: bool, inherits: array<string, string>} The reading.
+	 */
+	private function readingOf(string $name, mixed $property, array $merged, string $language): array {
+		$symmetric = self::symmetricOf(merged: $merged);
+		$labels    = $this->labelsFor(name: $name, property: $property, merged: $merged, language: $language);
+
+		return [
+			'label' => $labels['label'],
+			'inverseLabel' => $labels['inverse'],
 			'symmetric' => $symmetric,
 			'inherits' => $this->inheritsOf(declaration: $merged),
 		];
+	}//end readingOf()
 
-		// What the link exposes rides the descriptor rather than being read
-		// from the vocabulary a second time. There is one reader of
-		// `x-openregister-relation-types` and it is this class; a render path
-		// that parsed the annotation for itself would be a second reader of one
-		// vocabulary, which is the thing this resolver exists to prevent.
-		//
-		// The key is added only when it is DECLARED. An absent key means the
-		// link narrows nothing, which is what every relation type does today
-		// and what every existing schema must keep doing; a present-but-empty
-		// list means it exposes nothing, which is a different statement and a
-		// legitimate one. Writing an empty list for "undeclared" would turn
-		// every existing link into one that hands over nothing.
-		if (array_key_exists(LinkExposure::KEY, $merged) === true
-			&& is_array($merged[LinkExposure::KEY]) === true
-		) {
-			$descriptor[LinkExposure::KEY] = array_values(
-				array_map(static fn (mixed $property): string => (string)$property, $merged[LinkExposure::KEY])
-			);
+	/**
+	 * A property's own relation declaration, as an array; empty when it declares none.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return array<string, mixed> The declaration.
+	 */
+	private static function declarationArray(mixed $property): array {
+		$declaration = RelationAnnotationValidator::declarationOf(property: $property);
+		if (is_array($declaration) === false) {
+			return [];
 		}
 
+		return $declaration;
+	}//end declarationArray()
+
+	/**
+	 * The vocabulary key a declared `type` resolves to, or null when the vocabulary does not hold it.
+	 *
+	 * @param mixed                               $declared   The declared type.
+	 * @param array<string, array<string, mixed>> $vocabulary The schema's relation types.
+	 *
+	 * @return string|null The resolved key.
+	 */
+	private static function vocabularyType(mixed $declared, array $vocabulary): ?string {
+		if (is_string($declared) === true && isset($vocabulary[trim($declared)]) === true) {
+			return trim($declared);
+		}
+
+		return null;
+	}//end vocabularyType()
+
+	/**
+	 * The vocabulary entry of a resolved type; empty when there is none.
+	 *
+	 * @param string|null                         $type       The resolved key.
+	 * @param array<string, array<string, mixed>> $vocabulary The schema's relation types.
+	 *
+	 * @return array<string, mixed> The entry.
+	 */
+	private static function entryOf(?string $type, array $vocabulary): array {
+		if ($type === null) {
+			return [];
+		}
+
+		return $vocabulary[$type];
+	}//end entryOf()
+
+	/**
+	 * Whether a merged declaration reads the same from both ends; anything but a boolean reads as no.
+	 *
+	 * @param array<string, mixed> $merged The vocabulary entry under the property's own declaration.
+	 *
+	 * @return bool True when symmetric.
+	 */
+	private static function symmetricOf(array $merged): bool {
+		return (($merged['symmetric'] ?? false) === true);
+	}//end symmetricOf()
+
+	/**
+	 * The descriptor with what the link exposes, when that is declared.
+	 *
+	 * What the link exposes rides the descriptor rather than being read
+	 * from the vocabulary a second time. There is one reader of
+	 * `x-openregister-relation-types` and it is this class; a render path
+	 * that parsed the annotation for itself would be a second reader of one
+	 * vocabulary, which is the thing this resolver exists to prevent.
+	 *
+	 * The key is added only when it is DECLARED. An absent key means the
+	 * link narrows nothing, which is what every relation type does today
+	 * and what every existing schema must keep doing; a present-but-empty
+	 * list means it exposes nothing, which is a different statement and a
+	 * legitimate one. Writing an empty list for "undeclared" would turn
+	 * every existing link into one that hands over nothing.
+	 *
+	 * @param array<string, mixed> $descriptor The descriptor so far.
+	 * @param array<string, mixed> $merged     The merged declaration.
+	 *
+	 * @return array<string, mixed> The descriptor.
+	 */
+	private static function withExposure(array $descriptor, array $merged): array {
+		if (is_array($merged[LinkExposure::KEY] ?? null) === false) {
+			return $descriptor;
+		}
+
+		$descriptor[LinkExposure::KEY] = array_values(
+			array_map(static fn (mixed $property): string => (string)$property, $merged[LinkExposure::KEY])
+		);
+
 		return $descriptor;
-	}//end describe()
+	}//end withExposure()
 
 	/**
 	 * The label and inverse label one relation reads under, in one language.
@@ -308,37 +423,32 @@ class RelationTypeResolver {
 	 * to nothing would render as a blank chip, and an inverse that did would
 	 * render the other end of the same link as a blank one.
 	 *
-	 * @param string               $name      The property name.
-	 * @param mixed                $property  The property definition.
-	 * @param array<string, mixed> $merged    The vocabulary entry under the property's own declaration.
-	 * @param boolean              $symmetric Whether the relation reads the same from both ends.
-	 * @param string               $language  The BCP-47 tag.
+	 * Whether the relation is symmetric is read from `$merged`, the same
+	 * place {@see self::readingOf()} reads it from.
+	 *
+	 * @param string               $name     The property name.
+	 * @param mixed                $property The property definition.
+	 * @param array<string, mixed> $merged   The vocabulary entry under the property's own declaration.
+	 * @param string               $language The BCP-47 tag.
 	 *
 	 * @return array{label: string, inverse: string} The two labels.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	private function labelsFor(string $name, mixed $property, array $merged, bool $symmetric, string $language): array {
-		$label = $this->text(value: ($merged['label'] ?? null), language: $language);
-		if ($label === null) {
-			$label = $this->titleOf(property: $property) ?? $name;
-		}
+	private function labelsFor(string $name, mixed $property, array $merged, string $language): array {
+		$label = ($this->values->text(value: ($merged['label'] ?? null), language: $language) ?? $this->values->titleOf(property: $property) ?? $name);
 
-		$inverse = $this->text(value: ($merged['inverseLabel'] ?? null), language: $language);
-		if ($symmetric === true) {
+		$inverse = $this->values->text(value: ($merged['inverseLabel'] ?? null), language: $language);
+		if (self::symmetricOf(merged: $merged) === true) {
 			// A symmetric relation reads the same from both ends. The save-time
 			// refusal keeps an inverseLabel out of a symmetric declaration, so
 			// this only has to hold for rows written before that refusal.
 			$inverse = $label;
 		}
 
-		if ($inverse === null) {
-			$inverse = self::FALLBACK_INVERSE_LABEL;
-		}
-
 		return [
 			'label' => $label,
-			'inverse' => $inverse,
+			'inverse' => ($inverse ?? self::FALLBACK_INVERSE_LABEL),
 		];
 	}//end labelsFor()
 
@@ -357,38 +467,70 @@ class RelationTypeResolver {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function inheritsOf(array $declaration): array {
-		$inherits = ($declaration['inherits'] ?? null);
-		if (is_object($inherits) === true) {
-			$inherits = (array)$inherits;
-		}
-
+		$inherits = $this->values->asArray(value: ($declaration['inherits'] ?? null));
 		if (is_array($inherits) === false) {
 			return [];
 		}
 
 		$resolved = [];
 		foreach ($inherits as $key => $value) {
-			if (is_int($key) === true) {
-				if (is_string($value) === true
-					&& in_array($value, RelationAnnotationValidator::INHERITABLE, true) === true
-				) {
-					$resolved[$value] = $value;
-				}
-				continue;
-			}
-
-			// $key is a string by elimination: the int branch above continues,
-			// and an array key is int or string.
-			if (is_string($value) === true
-				&& trim($value) !== ''
-				&& in_array($key, RelationAnnotationValidator::INHERITABLE, true) === true
-			) {
-				$resolved[$key] = trim($value);
-			}
+			$resolved = array_merge($resolved, self::inheritedEntry(key: $key, value: $value));
 		}
 
 		return $resolved;
 	}//end inheritsOf()
+
+	/**
+	 * One inheritance entry resolved to role => property, or nothing when it is not valid.
+	 *
+	 * @param int|string $key   The list position, or the role in the map form.
+	 * @param mixed      $value The role in the list form, or the property in the map form.
+	 *
+	 * @return array<string, string> The resolved entry, or an empty array.
+	 */
+	private static function inheritedEntry(int|string $key, mixed $value): array {
+		if (is_int($key) === true) {
+			return self::listedInheritance(value: $value);
+		}
+
+		return self::mappedInheritance(role: $key, value: $value);
+	}//end inheritedEntry()
+
+	/**
+	 * A list-form entry: a role inherited from a property of the same name.
+	 *
+	 * @param mixed $value The role.
+	 *
+	 * @return array<string, string> The resolved entry, or an empty array.
+	 */
+	private static function listedInheritance(mixed $value): array {
+		if (is_string($value) === true
+			&& in_array($value, RelationAnnotationValidator::INHERITABLE, true) === true
+		) {
+			return [$value => $value];
+		}
+
+		return [];
+	}//end listedInheritance()
+
+	/**
+	 * A map-form entry: a role pointed at whatever the schema calls the property.
+	 *
+	 * @param string $role  The role.
+	 * @param mixed  $value The property name.
+	 *
+	 * @return array<string, string> The resolved entry, or an empty array.
+	 */
+	private static function mappedInheritance(string $role, mixed $value): array {
+		if (is_string($value) === true
+			&& trim($value) !== ''
+			&& in_array($role, RelationAnnotationValidator::INHERITABLE, true) === true
+		) {
+			return [$role => trim($value)];
+		}
+
+		return [];
+	}//end mappedInheritance()
 
 	/**
 	 * The schema's relation vocabulary, keyed by key.
@@ -400,106 +542,36 @@ class RelationTypeResolver {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function vocabularyOf(Schema $schema): array {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$raw = ($configuration[RelationAnnotationValidator::VOCABULARY_ANNOTATION] ?? null);
+		$raw = (($schema->getConfiguration() ?? [])[RelationAnnotationValidator::VOCABULARY_ANNOTATION] ?? null);
 		if (is_array($raw) === false) {
 			return [];
 		}
 
 		$entries = [];
 		foreach ($raw as $entry) {
-			if (is_object($entry) === true) {
-				$entry = (array)$entry;
+			$entry = $this->values->asArray(value: $entry);
+			$key   = $this->entryKey(entry: $entry);
+			if ($key !== null) {
+				$entries[$key] = $entry;
 			}
-
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			$key = ($entry['key'] ?? null);
-			if (is_string($key) === false || trim($key) === '') {
-				continue;
-			}
-
-			$entries[trim($key)] = $entry;
 		}
 
 		return $entries;
 	}//end vocabularyOf()
 
 	/**
-	 * Resolve a label to text in one language.
+	 * The trimmed key of a vocabulary entry, or null when it is not an entry with a key.
 	 *
-	 * A plain string is the label in every language, which is what an
-	 * organisation with one language writes. A map is resolved by exact tag,
-	 * then primary subtag, then Dutch, then English, then whatever is there:
-	 * a label in the wrong language beats no label, which is the fallback and
-	 * says nothing at all.
+	 * @param mixed $entry The entry, objects already turned into arrays.
 	 *
-	 * @param mixed $value The declared label.
-	 * @param string $language The BCP-47 tag asked for.
-	 *
-	 * @return string|null The resolved text.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 * @return string|null The key.
 	 */
-	private function text(mixed $value, string $language): ?string {
-		if (is_string($value) === true) {
-			$value = trim($value);
-			if ($value === '') {
-				return null;
-			}
-
-			return $value;
-		}
-
-		if (is_object($value) === true) {
-			$value = (array)$value;
-		}
-
-		if (is_array($value) === false) {
+	private function entryKey(mixed $entry): ?string {
+		if (is_array($entry) === false) {
 			return null;
 		}
 
-		foreach ([$language, substr($language, 0, 2), 'nl', 'en'] as $tag) {
-			$candidate = ($value[$tag] ?? null);
-			if (is_string($candidate) === true && trim($candidate) !== '') {
-				return trim($candidate);
-			}
-		}
+		return $this->values->nonBlank(value: ($entry['key'] ?? null));
+	}//end entryKey()
 
-		foreach ($value as $candidate) {
-			if (is_string($candidate) === true && trim($candidate) !== '') {
-				return trim($candidate);
-			}
-		}
-
-		return null;
-	}//end text()
-
-	/**
-	 * A property's own title, when it has one.
-	 *
-	 * @param mixed $property The property definition.
-	 *
-	 * @return string|null The title.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function titleOf(mixed $property): ?string {
-		if (is_object($property) === true) {
-			$property = (array)$property;
-		}
-
-		if (is_array($property) === false) {
-			return null;
-		}
-
-		$title = ($property['title'] ?? null);
-		if (is_string($title) === true && trim($title) !== '') {
-			return trim($title);
-		}
-
-		return null;
-	}//end titleOf()
 }//end class

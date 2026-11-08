@@ -119,23 +119,34 @@ class ExampleSetDailyRefresh {
 				continue;
 			}
 
-			try {
-				$plan   = ($this->catalogue->gather(set: $set) + ['refresh' => true]);
-				$result = $this->installer->install(plan: $plan, today: $today);
-			} catch (Throwable $e) {
-				$report[$set] = ['ok' => false, 'skipped' => $e->getMessage()];
-				continue;
-			}
-
-			$report[$set] = [
-				'ok'       => $result['ok'],
-				'refusals' => $result['refusals'],
-				'dropped'  => $result['dropped'],
-				'missing'  => $result['missing'],
-				'lost'     => $result['lost'],
-			];
-		}//end foreach
+			$report[$set] = $this->refresh(set: $set, today: $today);
+		}
 
 		return $report;
 	}//end run()
+
+	/**
+	 * Refresh one installed set: what its install reports, or why it was skipped.
+	 *
+	 * @param string                 $set   The set id.
+	 * @param DateTimeImmutable|null $today The install day; null is today.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function refresh(string $set, ?DateTimeImmutable $today): array {
+		try {
+			$plan   = ($this->catalogue->gather(set: $set) + ['refresh' => true]);
+			$result = $this->installer->install(plan: $plan, today: $today);
+		} catch (Throwable $e) {
+			return ['ok' => false, 'skipped' => $e->getMessage()];
+		}
+
+		return [
+			'ok'       => $result['ok'],
+			'refusals' => $result['refusals'],
+			'dropped'  => $result['dropped'],
+			'missing'  => $result['missing'],
+			'lost'     => $result['lost'],
+		];
+	}//end refresh()
 }//end class

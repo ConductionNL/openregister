@@ -27,6 +27,7 @@ use OCA\OpenRegister\Controller\ApiCallersController;
 use OCA\OpenRegister\Db\ApiCallRecord;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiCallersControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -89,7 +90,7 @@ class ApiCallersControllerTest extends TestCase {
 			static fn (string $name, mixed $default = null): mixed => ($params[$name] ?? $default)
 		);
 
-		$controller = new ApiCallersController(
+		$controller = ApiCallersControllerFactory::create(
 			'openregister',
 			$request,
 			$mapper,

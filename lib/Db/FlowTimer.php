@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\FlowTimer\FlowTimerFieldTypes;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerInterface;
 use OCP\AppFramework\Db\Entity;
 
@@ -140,6 +141,7 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedBy(?string $createdBy)
  */
 class FlowTimer extends Entity implements JsonSerializable, FlowTimerInterface {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Lifecycle states. Nothing else is persistable; there is NO overdue state.
@@ -527,49 +529,9 @@ class FlowTimer extends Entity implements JsonSerializable, FlowTimerInterface {
 	 * Constructor: declares the column types.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'title', type: 'string');
-		$this->addType(fieldName: 'metadata', type: 'json');
-		$this->addType(fieldName: 'subjectType', type: 'string');
-		$this->addType(fieldName: 'subjectUuid', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'runUuid', type: 'string');
-		$this->addType(fieldName: 'nodeId', type: 'string');
-		$this->addType(fieldName: 'appId', type: 'string');
-		$this->addType(fieldName: 'purpose', type: 'string');
-		$this->addType(fieldName: 'legalEffect', type: 'string');
-		$this->addType(fieldName: 'onExpiry', type: 'string');
-		$this->addType(fieldName: 'anchorEvent', type: 'string');
-		$this->addType(fieldName: 'anchorOffset', type: 'integer');
-		$this->addType(fieldName: 'anchorOffsetUnit', type: 'string');
-		$this->addType(fieldName: 'anchorAt', type: 'datetime');
-		$this->addType(fieldName: 'budgetValue', type: 'float');
-		$this->addType(fieldName: 'budgetUnit', type: 'string');
-		$this->addType(fieldName: 'rollToWorkingDay', type: 'string');
-		$this->addType(fieldName: 'unrolledAt', type: 'datetime');
-		$this->addType(fieldName: 'rolledBy', type: 'string');
-		$this->addType(fieldName: 'consumedValue', type: 'float');
-		$this->addType(fieldName: 'runningSince', type: 'datetime');
-		$this->addType(fieldName: 'fireAt', type: 'datetime');
-		$this->addType(fieldName: 'nextRungAt', type: 'datetime');
-		$this->addType(fieldName: 'calendarSlug', type: 'string');
-		$this->addType(fieldName: 'ladderSlug', type: 'string');
-		$this->addType(fieldName: 'escalationRules', type: 'json');
-		$this->addType(fieldName: 'suspendedSince', type: 'datetime');
-		$this->addType(fieldName: 'suspendReason', type: 'string');
-		$this->addType(fieldName: 'suspendedTotalSeconds', type: 'integer');
-		$this->addType(fieldName: 'extensionCount', type: 'integer');
-		$this->addType(fieldName: 'extensionMax', type: 'integer');
-		$this->addType(fieldName: 'state', type: 'string');
-		$this->addType(fieldName: 'supersedesUuid', type: 'string');
-		$this->addType(fieldName: 'firedAt', type: 'datetime');
-		$this->addType(fieldName: 'breached', type: 'boolean');
-		$this->addType(fieldName: 'cancelledAt', type: 'datetime');
-		$this->addType(fieldName: 'cancelReason', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'createdBy', type: 'string');
-
+		foreach (FlowTimerFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -595,72 +557,18 @@ class FlowTimer extends Entity implements JsonSerializable, FlowTimerInterface {
 	}//end isEnforcing()
 
 	/**
-	 * Serialise for the API. Carries NO overdue flag: that is derived by the reader.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<string, mixed> The timer.
+	 * The API form carries NO overdue flag: that is derived by the reader.
+	 *
+	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'title' => $this->title,
-			'metadata' => $this->metadata,
-			'subjectType' => $this->subjectType,
-			'subjectUuid' => $this->subjectUuid,
-			'organisation' => $this->organisation,
-			'runUuid' => $this->runUuid,
-			'nodeId' => $this->nodeId,
-			'appId' => $this->appId,
-			'purpose' => $this->purpose,
-			'legalEffect' => $this->legalEffect,
-			'onExpiry' => $this->onExpiry,
-			'anchorEvent' => $this->anchorEvent,
-			'anchorOffset' => $this->anchorOffset,
-			'anchorOffsetUnit' => $this->anchorOffsetUnit,
-			'anchorAt' => $this->format(value: $this->anchorAt),
-			'budgetValue' => $this->budgetValue,
-			'budgetUnit' => $this->budgetUnit,
 			'rollToWorkingDay' => ($this->rollToWorkingDay ?? 'none'),
-			'unrolledAt' => $this->unrolledAt?->format('c'),
-			'rolledBy' => $this->rolledBy,
-			'consumedValue' => $this->consumedValue,
-			'runningSince' => $this->format(value: $this->runningSince),
-			'fireAt' => $this->format(value: $this->fireAt),
-			'nextRungAt' => $this->format(value: $this->nextRungAt),
-			'calendarSlug' => $this->calendarSlug,
-			'ladderSlug' => $this->ladderSlug,
-			'escalationRules' => $this->escalationRules,
-			'suspendedSince' => $this->format(value: $this->suspendedSince),
-			'suspendReason' => $this->suspendReason,
-			'suspendedTotalSeconds' => $this->suspendedTotalSeconds,
-			'extensionCount' => $this->extensionCount,
-			'extensionMax' => $this->extensionMax,
-			'state' => $this->state,
-			'supersedesUuid' => $this->supersedesUuid,
-			'firedAt' => $this->format(value: $this->firedAt),
-			'breached' => $this->breached,
-			'cancelledAt' => $this->format(value: $this->cancelledAt),
-			'cancelReason' => $this->cancelReason,
-			'created' => $this->format(value: $this->created),
-			'updated' => $this->format(value: $this->updated),
-			'createdBy' => $this->createdBy,
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 
-	/**
-	 * ISO-8601 or null.
-	 *
-	 * @param DateTime|null $value The moment.
-	 *
-	 * @return string|null The formatted moment.
-	 */
-	private function format(?DateTime $value): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		return $value->format('c');
-	}//end format()
 }//end class

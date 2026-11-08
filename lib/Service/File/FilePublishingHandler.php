@@ -50,6 +50,38 @@ use ZipArchive;
 class FilePublishingHandler {
 
 	/**
+	 * Human-readable messages for the ZipArchive error codes.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ZIP_ERRORS = [
+		\ZipArchive::ER_OK => 'No error',
+		\ZipArchive::ER_MULTIDISK => 'Multi-disk zip archives not supported',
+		\ZipArchive::ER_RENAME => 'Renaming temporary file failed',
+		\ZipArchive::ER_CLOSE => 'Closing zip archive failed',
+		\ZipArchive::ER_SEEK => 'Seek error',
+		\ZipArchive::ER_READ => 'Read error',
+		\ZipArchive::ER_WRITE => 'Write error',
+		\ZipArchive::ER_CRC => 'CRC error',
+		\ZipArchive::ER_ZIPCLOSED => 'Containing zip archive was closed',
+		\ZipArchive::ER_NOENT => 'No such file',
+		\ZipArchive::ER_EXISTS => 'File already exists',
+		\ZipArchive::ER_OPEN => 'Can\'t open file',
+		\ZipArchive::ER_TMPOPEN => 'Failure to create temporary file',
+		\ZipArchive::ER_ZLIB => 'Zlib error',
+		\ZipArchive::ER_MEMORY => 'Memory allocation failure',
+		\ZipArchive::ER_CHANGED => 'Entry has been changed',
+		\ZipArchive::ER_COMPNOTSUPP => 'Compression method not supported',
+		\ZipArchive::ER_EOF => 'Premature EOF',
+		\ZipArchive::ER_INVAL => 'Invalid argument',
+		\ZipArchive::ER_NOZIP => 'Not a zip archive',
+		\ZipArchive::ER_INTERNAL => 'Internal error',
+		\ZipArchive::ER_INCONS => 'Zip archive inconsistent',
+		\ZipArchive::ER_REMOVE => 'Can\'t remove file',
+		\ZipArchive::ER_DELETED => 'Entry has been deleted',
+	];
+
+	/**
 	 * Reference to FileService for cross-handler coordination (circular dependency break).
 	 *
 	 * @var FileService|null
@@ -118,10 +150,7 @@ class FilePublishingHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function publishFile(ObjectEntity|string $object, string|int $file): File {
-		// If string ID provided, try to find the object entity.
-		if (is_string($object) === true) {
-			$object = $this->objectEntityMapper->find($object);
-		}
+		$object = $this->objectOf(object: $object);
 
 		// AN INDICATOR ON A PARTY IS EVALUATED WHERE THE ACT HAPPENS.
 		//
@@ -136,29 +165,70 @@ class FilePublishingHandler {
 			objectUuid: (string)($object->getUuid() ?? '')
 		);
 
-		$this->logger->debug(
-			message: "[FilePublishingHandler] publishFile: Original file parameter received: '$file'",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->debug(message: "[FilePublishingHandler] publishFile: Original file parameter received: '$file'");
 		$fileNode = $this->fileFinder(operation: 'publishFile')->find(object: $object, file: $file);
+		$this->debug(message: '[FilePublishingHandler] publishFile: Creating share link for file: ' . $fileNode->getPath());
 
-		$this->logger->debug(
-			message: '[FilePublishingHandler] publishFile: Creating share link for file: ' . $fileNode->getPath(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->assertNotRestricted(fileNode: $fileNode);
+		$this->createPublicShare(fileNode: $fileNode);
+		$this->debug(message: '[FilePublishingHandler] publishFile: Successfully published file: ' . $fileNode->getName());
+		return $fileNode;
+	}//end publishFile()
 
-		// A restricted file is never published: a public link is served without asking the restriction.
+	/**
+	 * Refuse to publish a restricted file: a public link is served without
+	 * asking the restriction.
+	 *
+	 * @param File $fileNode The file.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the file is restricted.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function assertNotRestricted(File $fileNode): void {
 		if ($this->container->get(FileRestrictionGuard::class)->isRestricted(fileId: (int)$fileNode->getId()) === true) {
 			throw new Exception('A restricted file cannot be published');
 		}
+	}//end assertNotRestricted()
 
-		$this->createPublicShare(fileNode: $fileNode);
-		$this->logger->debug(
-			message: '[FilePublishingHandler] publishFile: Successfully published file: ' . $fileNode->getName(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		return $fileNode;
-	}//end publishFile()
+	/**
+	 * The object, looked up when given by id.
+	 *
+	 * @param ObjectEntity|string $object The object entity or ID.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectOf(ObjectEntity|string $object): ObjectEntity {
+		if (is_string($object) === true) {
+			return $this->objectEntityMapper->find($object);
+		}
+
+		return $object;
+	}//end objectOf()
+
+	/**
+	 * Log a debug line of this handler.
+	 *
+	 * @param string $message The message.
+	 *
+	 * @return void
+	 */
+	private function debug(string $message): void {
+		$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+	}//end debug()
+
+	/**
+	 * Log an error line of this handler.
+	 *
+	 * @param string $message The message.
+	 *
+	 * @return void
+	 */
+	private function error(string $message): void {
+		$this->logger->error(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+	}//end error()
 
 	/**
 	 * Create the read-only public share of a file directly in the database.
@@ -181,11 +251,9 @@ class FilePublishingHandler {
 			);
 
 			$message = '[FilePublishingHandler] publishFile: Successfully created public share via FileMapper';
-			$message .= " - ID: {$shareInfo['id']}, Token: {$shareInfo['token']}, URL: {$shareInfo['accessUrl']}";
-			$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+			$this->debug(message: $message . " - ID: {$shareInfo['id']}, Token: {$shareInfo['token']}, URL: {$shareInfo['accessUrl']}");
 		} catch (Exception $e) {
-			$errMsg = '[FilePublishingHandler] publishFile: Failed to create share via FileMapper: ' . $e->getMessage();
-			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
+			$this->error(message: '[FilePublishingHandler] publishFile: Failed to create share via FileMapper: ' . $e->getMessage());
 			throw new Exception('Failed to create share link: ' . $e->getMessage());
 		}
 	}//end createPublicShare()
@@ -209,26 +277,14 @@ class FilePublishingHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function unpublishFile(ObjectEntity|string $object, string|int $filePath): File {
-		// If string ID provided, try to find the object entity.
-		if (is_string($object) === true) {
-			$object = $this->objectEntityMapper->find($object);
-		}
+		$object = $this->objectOf(object: $object);
 
-		$this->logger->debug(
-			message: "[FilePublishingHandler] unpublishFile: Original file path received: '$filePath'",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->debug(message: "[FilePublishingHandler] unpublishFile: Original file path received: '$filePath'");
 		$file = $this->fileFinder(operation: 'unpublishFile')->find(object: $object, file: $filePath);
 
-		$this->logger->debug(
-			message: '[FilePublishingHandler] unpublishFile: Removing share links for file: ' . $file->getPath(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->debug(message: '[FilePublishingHandler] unpublishFile: Removing share links for file: ' . $file->getPath());
 		$this->removePublicShares(file: $file);
-		$this->logger->debug(
-			message: '[FilePublishingHandler] unpublishFile: Successfully unpublished file: ' . $file->getName(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->debug(message: '[FilePublishingHandler] unpublishFile: Successfully unpublished file: ' . $file->getName());
 		return $file;
 	}//end unpublishFile()
 
@@ -247,17 +303,14 @@ class FilePublishingHandler {
 		try {
 			$deletionInfo = $this->fileMapper->depublishFile($file->getId());
 			$message = '[FilePublishingHandler] unpublishFile: Successfully removed public shares via FileMapper - ';
-			$message .= "Deleted shares: {$deletionInfo['deleted_shares']}, File ID: {$deletionInfo['file_id']}";
-			$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__]);
+			$this->debug(message: $message . "Deleted shares: {$deletionInfo['deleted_shares']}, File ID: {$deletionInfo['file_id']}");
 
 			if ($deletionInfo['deleted_shares'] === 0) {
 				$noSharesMsg = '[FilePublishingHandler] unpublishFile: No public shares were found to delete for file: ';
-				$noSharesMsg .= $file->getName();
-				$this->logger->debug(message: $noSharesMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
+				$this->debug(message: $noSharesMsg . $file->getName());
 			}
 		} catch (Exception $e) {
-			$errMsg = '[FilePublishingHandler] unpublishFile: Failed to remove shares via FileMapper: ' . $e->getMessage();
-			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
+			$this->error(message: '[FilePublishingHandler] unpublishFile: Failed to remove shares via FileMapper: ' . $e->getMessage());
 			throw new Exception('Failed to remove share links: ' . $e->getMessage());
 		}
 	}//end removePublicShares()
@@ -300,70 +353,95 @@ class FilePublishingHandler {
 	 */
 	public function createObjectFilesZip(ObjectEntity|string $object, ?string $zipName = null): array {
 		$object = $this->zipSubject(object: $object);
-
-		$this->logger->debug(
-			message: '[FilePublishingHandler] Creating ZIP archive for object: ' . $object->getId(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->debug(message: '[FilePublishingHandler] Creating ZIP archive for object: ' . $object->getId());
 
 		if (class_exists('ZipArchive') === false) {
 			throw new Exception('PHP ZipArchive extension is not available');
 		}
 
-		// Only the files the caller is admitted to; restricted ones are left out.
+		$files = $this->zipFiles(object: $object);
+		$zipName = $this->zipNameFor(object: $object, zipName: $zipName);
+		$tempZipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
+		$addedFiles = $this->writeZip(path: $tempZipPath, files: $files);
+
+		$skippedFiles = count($files) - $addedFiles;
+		$this->debug(message: "[FilePublishingHandler] ZIP creation completed. Added: $addedFiles files, Skipped: $skippedFiles files");
+
+		return $this->zipResult(path: $tempZipPath, zipName: $zipName);
+	}//end createObjectFilesZip()
+
+	/**
+	 * The object's files the caller is admitted to; restricted ones are left out.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<int, mixed> The nodes.
+	 *
+	 * @throws Exception When none are left.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function zipFiles(ObjectEntity $object): array {
 		$files = $this->container->get(FileRestrictionGuard::class)->readableNodes(nodes: $this->fileService->getFiles($object));
 		if (empty($files) === true) {
 			throw new Exception('No files found for this object');
 		}
 
-		$this->logger->debug(
-			message: '[FilePublishingHandler] Found ' . count($files) . ' files for object ' . $object->getId(),
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->debug(message: '[FilePublishingHandler] Found ' . count($files) . ' files for object ' . $object->getId());
+		return $files;
+	}//end zipFiles()
 
-		$zipName = $this->zipNameFor(object: $object, zipName: $zipName);
-		$tempZipPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $zipName;
-
+	/**
+	 * Write the nodes into a new archive.
+	 *
+	 * @param string            $path  Where to write it.
+	 * @param array<int, mixed> $files The nodes.
+	 *
+	 * @return int How many files were added.
+	 *
+	 * @throws Exception When the archive cannot be opened or finalised.
+	 */
+	private function writeZip(string $path, array $files): int {
 		$zip = new ZipArchive();
-		$result = $zip->open($tempZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+		$result = $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 		if ($result !== true) {
 			throw new Exception('Cannot create ZIP file: ' . $this->getZipErrorMessage(errorCode: $result));
 		}
 
 		$addedFiles = 0;
 		foreach ($files as $file) {
-			$entry = $this->zipEntryOf(file: $file);
-			if ($entry === null) {
-				continue;
-			}
-
-			if ($zip->addFromString($entry['name'], $entry['content']) === false) {
-				$this->logger->error(
-					message: '[FilePublishingHandler] Failed to add file to ZIP: ' . $entry['name'],
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				continue;
-			}
-
-			$addedFiles++;
-			$this->logger->debug(
-				message: '[FilePublishingHandler] Added file to ZIP: ' . $entry['name'],
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}//end foreach
+			$addedFiles += $this->addToZip(zip: $zip, file: $file);
+		}
 
 		if ($zip->close() === false) {
 			throw new Exception('Failed to finalize ZIP archive');
 		}
 
-		$skippedFiles = count($files) - $addedFiles;
-		$this->logger->debug(
-			message: "[FilePublishingHandler] ZIP creation completed. Added: $addedFiles files, Skipped: $skippedFiles files",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		return $addedFiles;
+	}//end writeZip()
 
-		return $this->zipResult(path: $tempZipPath, zipName: $zipName);
-	}//end createObjectFilesZip()
+	/**
+	 * Add one node to the archive.
+	 *
+	 * @param ZipArchive $zip  The archive.
+	 * @param mixed      $file The node.
+	 *
+	 * @return int 1 when the node was added, 0 when it was skipped.
+	 */
+	private function addToZip(ZipArchive $zip, mixed $file): int {
+		$entry = $this->zipEntryOf(file: $file);
+		if ($entry === null) {
+			return 0;
+		}
+
+		if ($zip->addFromString($entry['name'], $entry['content']) === false) {
+			$this->error(message: '[FilePublishingHandler] Failed to add file to ZIP: ' . $entry['name']);
+			return 0;
+		}
+
+		$this->debug(message: '[FilePublishingHandler] Added file to ZIP: ' . $entry['name']);
+		return 1;
+	}//end addToZip()
 
 	/**
 	 * Describe a finished archive.
@@ -454,10 +532,8 @@ class FilePublishingHandler {
 	 */
 	private function zipEntryOf($file): ?array {
 		if ($file instanceof File === false) {
-			$this->logger->warning(
-				message: '[FilePublishingHandler] Skipping non-file node: ' . $file->getName(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$skipped = '[FilePublishingHandler] Skipping non-file node: ' . $file->getName();
+			$this->logger->warning(message: $skipped, context: ['file' => __FILE__, 'line' => __LINE__]);
 			return null;
 		}
 
@@ -466,10 +542,7 @@ class FilePublishingHandler {
 			$this->fileService->checkOwnership($file);
 			return ['name' => $file->getName(), 'content' => $file->getContent()];
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[FilePublishingHandler] Error processing file ' . $file->getName() . ': ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->error(message: '[FilePublishingHandler] Error processing file ' . $file->getName() . ': ' . $e->getMessage());
 			return null;
 		}
 	}//end zipEntryOf()
@@ -485,32 +558,6 @@ class FilePublishingHandler {
 	 * @phpstan-return string
 	 */
 	private function getZipErrorMessage(int $errorCode): string {
-		return match ($errorCode) {
-			\ZipArchive::ER_OK => 'No error',
-			\ZipArchive::ER_MULTIDISK => 'Multi-disk zip archives not supported',
-			\ZipArchive::ER_RENAME => 'Renaming temporary file failed',
-			\ZipArchive::ER_CLOSE => 'Closing zip archive failed',
-			\ZipArchive::ER_SEEK => 'Seek error',
-			\ZipArchive::ER_READ => 'Read error',
-			\ZipArchive::ER_WRITE => 'Write error',
-			\ZipArchive::ER_CRC => 'CRC error',
-			\ZipArchive::ER_ZIPCLOSED => 'Containing zip archive was closed',
-			\ZipArchive::ER_NOENT => 'No such file',
-			\ZipArchive::ER_EXISTS => 'File already exists',
-			\ZipArchive::ER_OPEN => 'Can\'t open file',
-			\ZipArchive::ER_TMPOPEN => 'Failure to create temporary file',
-			\ZipArchive::ER_ZLIB => 'Zlib error',
-			\ZipArchive::ER_MEMORY => 'Memory allocation failure',
-			\ZipArchive::ER_CHANGED => 'Entry has been changed',
-			\ZipArchive::ER_COMPNOTSUPP => 'Compression method not supported',
-			\ZipArchive::ER_EOF => 'Premature EOF',
-			\ZipArchive::ER_INVAL => 'Invalid argument',
-			\ZipArchive::ER_NOZIP => 'Not a zip archive',
-			\ZipArchive::ER_INTERNAL => 'Internal error',
-			\ZipArchive::ER_INCONS => 'Zip archive inconsistent',
-			\ZipArchive::ER_REMOVE => 'Can\'t remove file',
-			\ZipArchive::ER_DELETED => 'Entry has been deleted',
-			default => "Unknown error code: $errorCode"
-		};//end match
+		return (self::ZIP_ERRORS[$errorCode] ?? "Unknown error code: $errorCode");
 	}//end getZipErrorMessage()
 }//end class

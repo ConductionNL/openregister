@@ -59,29 +59,67 @@ class ObjectGrantsReport {
 	private const SHARE_BIT_VERBS = ['read', 'update', 'create', 'delete'];
 
 	/**
+	 * The rules in play and the deny mode, as `/permissions` reads them.
+	 *
+	 * @var ObjectAccessReport
+	 */
+	private readonly ObjectAccessReport $accessReport;
+
+	/**
+	 * The shares on the object's own folder.
+	 *
+	 * @var ObjectShareReader
+	 */
+	private readonly ObjectShareReader $shares;
+
+	/**
+	 * The shares on its ancestors' folders.
+	 *
+	 * @var InheritedGrantLister
+	 */
+	private readonly InheritedGrantLister $inherited;
+
+	/**
+	 * How a rule entry fits this record, and whom it names.
+	 *
+	 * @var GrantRuleFit
+	 */
+	private readonly GrantRuleFit $rules;
+
+	/**
+	 * User display names.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Group display names.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectAccessReport   $accessReport  The rules in play and the deny mode, as `/permissions` reads them.
-	 * @param ObjectShareReader    $shares        The shares on the object's own folder.
-	 * @param InheritedGrantLister $inherited     The shares on its ancestors' folders.
-	 * @param GrantRuleFit         $rules         How a rule entry fits this record, and whom it names.
+	 * @param GrantReportSources   $sources       The access report, the object's shares, its ancestors' shares and the rule fit.
 	 * @param ObjectScopeResolver  $scopeResolver The owning group.
-	 * @param IUserManager         $userManager   User display names.
-	 * @param IGroupManager        $groupManager  Group display names.
+	 * @param PrincipalDirectory   $directory     User and group display names.
 	 * @param ShareGrantAttributes $attributes    Extension verbs and the inheritable flag of a share.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection, one source per parameter.
 	 */
 	public function __construct(
-		private readonly ObjectAccessReport $accessReport,
-		private readonly ObjectShareReader $shares,
-		private readonly InheritedGrantLister $inherited,
-		private readonly GrantRuleFit $rules,
+		GrantReportSources $sources,
 		private readonly ObjectScopeResolver $scopeResolver,
-		private readonly IUserManager $userManager,
-		private readonly IGroupManager $groupManager,
+		PrincipalDirectory $directory,
 		private readonly ShareGrantAttributes $attributes = new ShareGrantAttributes(),
 	) {
+		$this->accessReport = $sources->accessReport;
+		$this->shares = $sources->shares;
+		$this->inherited = $sources->inherited;
+		$this->rules = $sources->rules;
+		$this->userManager = $directory->userManager;
+		$this->groupManager = $directory->groupManager;
 	}//end __construct()
 
 	/**

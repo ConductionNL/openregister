@@ -24,6 +24,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionService;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionRecords;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -53,11 +54,13 @@ class FileRestrictionServiceTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$this->service = new FileRestrictionService(
-			$this->store,
-			$this->createMock(FileRestrictionGuard::class),
-			$session,
-			new NullLogger(),
-			$this->fileMapper
+			records: new FileRestrictionRecords(
+				store: $this->store,
+				guard: $this->createMock(FileRestrictionGuard::class)
+			),
+			userSession: $session,
+			logger: new NullLogger(),
+			fileMapper: $this->fileMapper
 		);
 	}//end setUp()
 

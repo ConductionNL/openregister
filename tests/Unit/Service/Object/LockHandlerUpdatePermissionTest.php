@@ -32,7 +32,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
+use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -107,15 +109,19 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		return new LockHandler(
-			magicMapper: $this->magic,
-			auditTrailMapper: $this->createMock(originalClassName: AuditTrailMapper::class),
+			stores: new LockStores(
+				magicMapper: $this->magic,
+				auditTrailMapper: $this->createMock(originalClassName: AuditTrailMapper::class),
+				advisory: $this->createMock(originalClassName: AdvisoryLockStore::class),
+				runLocks: null
+			),
 			logger: $this->createMock(originalClassName: LoggerInterface::class),
-			userSession: $this->createMock(originalClassName: IUserSession::class),
-			groupManager: $this->createMock(originalClassName: IGroupManager::class),
-			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
-			advisory: $this->createMock(originalClassName: AdvisoryLockStore::class),
-			runLocks: null,
-			permissionHandler: $this->permissions
+			authorization: new LockAuthorization(
+				userSession: $this->createMock(originalClassName: IUserSession::class),
+				groupManager: $this->createMock(originalClassName: IGroupManager::class),
+				schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
+				permissionHandler: $this->permissions
+			)
 		);
 	}//end handler()
 

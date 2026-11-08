@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Object\SaveObjectInterface;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Controller;
@@ -83,9 +83,9 @@ class RetentionController extends Controller {
 	/**
 	 * Save object service
 	 *
-	 * @var SaveObjectInterface
+	 * @var SaveObjectWriterInterface
 	 */
-	private readonly SaveObjectInterface $saveObject;
+	private readonly SaveObjectWriterInterface $saveObject;
 
 	/**
 	 * Object mapper

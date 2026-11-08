@@ -33,8 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
-use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
+use OCA\OpenRegister\Service\ObjectSource\TablesCatalogueInterface;
+use OCA\OpenRegister\Service\ObjectSource\TablesSchemaReconcilerInterface;
 use OCP\IGroupManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -48,16 +48,16 @@ class SeedTablesVirtualSchemas implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param TablesTableReader $reader Guarded gateway to Tables services.
-	 * @param TablesSchemaSyncService $syncService Schema reconcile logic.
+	 * @param TablesCatalogueInterface $reader Guarded gateway to Tables services.
+	 * @param TablesSchemaReconcilerInterface $syncService Schema reconcile logic.
 	 * @param IGroupManager $groupManager Admin-user enumeration.
 	 * @param LoggerInterface $logger Logger for seed diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly TablesTableReader $reader,
-		private readonly TablesSchemaSyncService $syncService,
+		private readonly TablesCatalogueInterface $reader,
+		private readonly TablesSchemaReconcilerInterface $syncService,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
 	) {

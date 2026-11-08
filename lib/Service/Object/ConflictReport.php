@@ -55,7 +55,7 @@ use DateTimeInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
 /**
  * Build the body of a 409 so it answers the question it raises.
@@ -102,10 +102,10 @@ class ConflictReport {
 	/**
 	 * Constructor.
 	 *
-	 * @param PropertyRbacHandler $properties Field-level security.
+	 * @param PropertyRbacHandlerInterface $properties Field-level security.
 	 */
 	public function __construct(
-		private readonly PropertyRbacHandler $properties,
+		private readonly PropertyRbacHandlerInterface $properties,
 	) {
 	}//end __construct()
 

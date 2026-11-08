@@ -33,21 +33,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
-use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * The "Send a Talk message" step.
  */
-class SendTalkMessageNode implements
+class SendTalkMessageNode extends MessagingNodeBase implements
 	IFlowNode,
 	SendTalkMessageNodeInterface,
 	IFlowNodeConfigKeys,
@@ -60,21 +56,6 @@ class SendTalkMessageNode implements
 	 * The step type this node answers to.
 	 */
 	public const TYPE = 'openregister.send-talk-message';
-
-	/**
-	 * Constructor.
-	 *
-	 * @param FlowMessagingService $messaging The bridge onto the notification subsystem.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly FlowMessagingService $messaging,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
 
 	/**
 	 * The step type.
@@ -113,36 +94,15 @@ class SendTalkMessageNode implements
 	}//end getIcon()
 
 	/**
-	 * Posting requires the acting user to be a participant either way, so
-	 * both scopes get it; every guardrail applies regardless.
+	 * The channel this step previews on (flow dry-run).
 	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
-	 * The messages this step would send, composed and not sent (flow dry-run).
-	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
-	 *
-	 * @return array `summary` and `messages` (`[{channel, to, subject, body}]`).
+	 * @return string The channel.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
-	public function preview(array $items, array $config, array $context): array {
-		$messages = $this->messaging->previewMessages(channel: 'talk', config: $config, items: $items, context: $context);
-
-		return [
-			'summary' => sprintf('%s would send %d message(s)', $this->getDisplayName(), count($messages)),
-			'messages' => $messages,
-		];
-	}//end preview()
+	protected function channel(): string {
+		return 'talk';
+	}//end channel()
 
 	/**
 	 * The config vocabulary of a send-talk-message step.
@@ -185,20 +145,12 @@ class SendTalkMessageNode implements
 	 */
 	public function configForm(): array {
 		return [
-			[
-				'key' => 'conversation',
-				'label' => $this->l10n->t('Conversation'),
-				'type' => 'text',
-				'help' => $this->l10n->t('A conversation token, or a field on the item such as {{ conversationToken }}. The acting user must be a participant.'),
-				'required' => true,
-			],
-			[
-				'key' => 'message',
-				'label' => $this->l10n->t('Message'),
-				'type' => 'textarea',
-				'help' => $this->l10n->t('What the message says. Placeholders such as {{ name }} read fields from the item.'),
-				'required' => true,
-			],
+			$this->requiredField(key: 'conversation', label: $this->l10n->t('Conversation'), type: 'text', help: $this->l10n->t(
+				'A conversation token, or a field on the item such as {{ conversationToken }}. The acting user must be a participant.'
+			)),
+			$this->requiredField(key: 'message', label: $this->l10n->t('Message'), type: 'textarea', help: $this->l10n->t(
+				'What the message says. Placeholders such as {{ name }} read fields from the item.'
+			)),
 		];
 	}//end configForm()
 
@@ -213,42 +165,11 @@ class SendTalkMessageNode implements
 	 * @param array $config The step configuration.
 	 * @param array $context Run-level metadata.
 	 *
-	 * @return array The items, unchanged.
+	 * @return void
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		$this->messaging->sendTalkMessage(
-			config: $config,
-			items: $items,
-			context: $context,
-			stepName: self::TYPE
-		);
-
-		return $items;
-	}//end execute()
-
-	/**
-	 * What kind of step this is. Sends a message out.
-	 *
-	 * @return string The BPMN kind.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SEND_TASK;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_MESSAGING;
-
-	}//end getCategory()
+	protected function send(array $items, array $config, array $context): void {
+		$this->messaging->sendTalkMessage(config: $config, items: $items, context: $context, stepName: self::TYPE);
+	}//end send()
 }//end class

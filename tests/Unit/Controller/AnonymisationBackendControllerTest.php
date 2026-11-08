@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendInfo;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AnonymisationBackendControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -53,7 +54,7 @@ class AnonymisationBackendControllerTest extends TestCase {
 	}
 
 	private function makeController(): AnonymisationBackendController {
-		return new AnonymisationBackendController(
+		return AnonymisationBackendControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->userSession,

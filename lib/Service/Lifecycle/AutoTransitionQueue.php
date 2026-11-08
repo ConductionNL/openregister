@@ -36,6 +36,8 @@ use Psr\Log\LoggerInterface;
  * eligible for and applies the ones that run inline. Everything about the job
  * list lives here: the job class, the entry shape, the dedupe key and the chunk
  * size. The runner therefore needs to know none of it.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class AutoTransitionQueue {
 
@@ -109,31 +111,54 @@ class AutoTransitionQueue {
 	public function queue(AutoTransitionDecision $decision, array $lineage): void {
 		$this->deferral->defer(
 			jobClass: AutoTransitionJob::class,
-			entry: [
-				'uuid' => $decision->uuid,
-				'register' => $decision->register,
-				'schema' => $decision->schema,
-				'action' => $decision->candidate->action,
-				'to' => $decision->candidate->to,
-				'version' => $decision->version,
-				'updated' => $decision->updated,
-				'moves' => (int)($lineage['moves'] ?? 0),
-				'visited' => array_keys(($lineage['visited'] ?? [])),
-			],
+			entry: self::entryFor(decision: $decision, lineage: $lineage),
 			chunkSize: self::CHUNK_SIZE,
 			dedupeKey: $decision->uuid . '|' . ((string)$decision->version)
 		);
 
 		$this->logger->debug(
 			'[AutoTransitionQueue] Automatic transition queued for off-request application.',
-			[
-				'schema' => $decision->schemaSlug,
-				'uuid' => $decision->uuid,
-				'action' => $decision->candidate->action,
-				'mode' => $decision->candidate->mode,
-			]
+			self::logContext(decision: $decision)
 		);
 	}//end queue()
+
+	/**
+	 * What the "queued" log line names about a move.
+	 *
+	 * @param AutoTransitionDecision $decision The queued move.
+	 *
+	 * @return array<string, mixed> The log context.
+	 */
+	private static function logContext(AutoTransitionDecision $decision): array {
+		return [
+			'schema' => $decision->schemaSlug,
+			'uuid' => $decision->uuid,
+			'action' => $decision->candidate->action,
+			'mode' => $decision->candidate->mode,
+		];
+	}//end logContext()
+
+	/**
+	 * The job entry a queued move carries: the object, the move, its version and the pass lineage.
+	 *
+	 * @param AutoTransitionDecision $decision The decided move.
+	 * @param array<string, mixed> $lineage The pass lineage to carry.
+	 *
+	 * @return array<string, mixed> The entry.
+	 */
+	private static function entryFor(AutoTransitionDecision $decision, array $lineage): array {
+		return [
+			'uuid' => $decision->uuid,
+			'register' => $decision->register,
+			'schema' => $decision->schema,
+			'action' => $decision->candidate->action,
+			'to' => $decision->candidate->to,
+			'version' => $decision->version,
+			'updated' => $decision->updated,
+			'moves' => (int)($lineage['moves'] ?? 0),
+			'visited' => array_keys(($lineage['visited'] ?? [])),
+		];
+	}//end entryFor()
 
 	/**
 	 * Flush every queued move to the job list now.

@@ -59,7 +59,6 @@ use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCP\IL10N;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * AttributeToolProvider
@@ -252,45 +251,48 @@ class AttributeToolProvider implements IMcpToolProvider {
 			throw new InvalidArgumentException('Unknown tool: ' . $toolId);
 		}
 
-		$paramsDigest = hash('sha256', $this->canonicalArguments(arguments: $arguments));
 		$callArguments = array_intersect_key($arguments, array_flip($entry['paramNames']));
 
-		try {
-			// In-process call on the owning app's own, already-DI-resolved
-			// service instance — no HTTP, no RPC, no re-implementation
-			// (ADR-041). Named-argument unpacking maps JSON keys straight
-			// onto the method's declared parameters; the method itself is
-			// solely responsible for authorization/IDOR (REQ-ATTR-003).
-			$result = $entry['instance']->{$entry['method']}(...$callArguments);
-
-			$resultArray = $result;
-			if (is_array($resultArray) === false) {
-				$resultArray = ['result' => $resultArray];
-			}
-
-			$this->writeAudit(
-				toolId: $toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: $this->resultSummary(result: $resultArray),
-				result: $resultArray
-			);
-
-			return $resultArray;
-		} catch (Throwable $e) {
-			$this->writeAudit(
-				toolId: $toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: [
-					'isError' => true,
-					'errorClass' => get_class($e),
-					'message' => substr($e->getMessage(), 0, 300),
-				],
-				result: null
-			);
-
-			throw $e;
-		}//end try
+		return $this->audit()->run(
+			target: new ToolAuditTarget(toolId: $toolId),
+			arguments: $arguments,
+			call: fn (): array => $this->callEntry(entry: $entry, callArguments: $callArguments),
+			summarise: static fn (array $result): array => ToolInvocationDigest::idSummary(result: $result)
+		);
 	}//end invokeTool()
+
+	/**
+	 * Call the entry's method on the owning app's own service instance.
+	 *
+	 * In-process call on the owning app's own, already-DI-resolved service
+	 * instance — no HTTP, no RPC, no re-implementation (ADR-041).
+	 * Named-argument unpacking maps JSON keys straight onto the method's
+	 * declared parameters; the method itself is solely responsible for
+	 * authorization/IDOR (REQ-ATTR-003). A scalar return is wrapped as
+	 * `{result: value}`.
+	 *
+	 * @param array<string, mixed> $entry         The tool entry.
+	 * @param array<string, mixed> $callArguments The arguments the method declares.
+	 *
+	 * @return array<string, mixed> The method's result as an array.
+	 */
+	private function callEntry(array $entry, array $callArguments): array {
+		$result = $entry['instance']->{$entry['method']}(...$callArguments);
+		if (is_array($result) === false) {
+			$result = ['result' => $result];
+		}
+
+		return $result;
+	}//end callEntry()
+
+	/**
+	 * The audit runner of this provider.
+	 *
+	 * @return ToolInvocationAudit The runner.
+	 */
+	private function audit(): ToolInvocationAudit {
+		return new ToolInvocationAudit(auditTrailMapper: $this->auditTrailMapper, logger: $this->logger, source: 'AttributeToolProvider');
+	}//end audit()
 
 	/**
 	 * Resolve a namespaced tool id back to its entry.
@@ -310,103 +312,4 @@ class AttributeToolProvider implements IMcpToolProvider {
 		return null;
 	}//end findEntry()
 
-	/**
-	 * Build a small structured outcome summary for a successful invocation
-	 * (never raw method-return payloads — REQ-ATTR-004).
-	 *
-	 * @param array<string, mixed> $result The method's (array-coerced) return value.
-	 *
-	 * @return array<string, mixed> The result summary.
-	 */
-	private function resultSummary(array $result): array {
-		$id = null;
-		if (is_string($result['id'] ?? null) === true) {
-			$id = $result['id'];
-		}
-
-		return [
-			'isError' => false,
-			'id' => $id,
-		];
-	}//end resultSummary()
-
-	/**
-	 * Write exactly one immutable, hash-chained audit record for this
-	 * invocation. Fail-soft: a broken audit write is logged and MUST NOT
-	 * mask (or replace) the invocation's real result/error, mirroring
-	 * {@see SchemaDerivedToolProvider::writeAudit()}.
-	 *
-	 * @param string $toolId Full namespaced tool id.
-	 * @param string $paramsDigest SHA-256 hex digest of the invocation arguments.
-	 * @param array<string, mixed> $resultSummary Structured outcome summary.
-	 * @param array<string, mixed>|null $result The method's return value, or null on failure.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Requirement: REQ-ATTR-004 — Attributed invocation is audited identically to a derived invocation)
-	 */
-	private function writeAudit(string $toolId, string $paramsDigest, array $resultSummary, ?array $result): void {
-		try {
-			$objectUuid = null;
-			if ($result !== null && is_string($result['id'] ?? null) === true) {
-				$objectUuid = $result['id'];
-			}
-
-			$this->auditTrailMapper->createToolInvocationEntry(
-				toolId: $toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: $resultSummary,
-				register: null,
-				schema: null,
-				objectUuid: $objectUuid
-			);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'[AttributeToolProvider] Failed to write invocation audit record',
-				['toolId' => $toolId, 'error' => $e->getMessage()]
-			);
-		}//end try
-	}//end writeAudit()
-
-	/**
-	 * Deterministically canonicalise arguments (recursive key-sort) so the
-	 * params digest is stable regardless of argument-array key order.
-	 * Duplicated from {@see SchemaDerivedToolProvider} — no shared trait
-	 * exists yet for this small helper (see design.md audit-parity note).
-	 *
-	 * @param array<string, mixed> $arguments Tool arguments.
-	 *
-	 * @return string Canonical JSON representation.
-	 */
-	private function canonicalArguments(array $arguments): string {
-		$encoded = json_encode(
-			$this->deepKsort(value: $arguments),
-			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-		);
-
-		if ($encoded === false) {
-			return '';
-		}
-
-		return $encoded;
-	}//end canonicalArguments()
-
-	/**
-	 * Recursively sort an array by key for deterministic serialisation.
-	 *
-	 * @param array<array-key, mixed> $value The array to sort.
-	 *
-	 * @return array<array-key, mixed> The sorted array.
-	 */
-	private function deepKsort(array $value): array {
-		ksort($value);
-		foreach ($value as $key => $item) {
-			if (is_array($item) === true) {
-				$value[$key] = $this->deepKsort(value: $item);
-			}
-		}
-
-		return $value;
-	}//end deepKsort()
 }//end class

@@ -36,7 +36,9 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
+use OCA\OpenRegister\Search\Service\Quality\ReviewedPair;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -46,24 +48,47 @@ use Throwable;
 
 class DuplicateController extends Controller {
 	/**
+	 * Duplicate-candidate detection service.
+	 *
+	 * @var DuplicateDetectionServiceInterface
+	 */
+	private readonly DuplicateDetectionServiceInterface $duplicates;
+
+	/**
+	 * Pairs a person has already ruled out.
+	 *
+	 * @var DismissedPairStore
+	 */
+	private readonly DismissedPairStore $dismissals;
+
+	/**
+	 * Object read path, to fingerprint a pair being dismissed.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Session, group manager and logger.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name.
-	 * @param IRequest $request The current request.
-	 * @param DuplicateDetectionServiceInterface $duplicates Duplicate-candidate detection service.
-	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
-	 * @param ObjectOperationsInterface $objectService Object read path, to fingerprint a pair being dismissed.
-	 * @param ControllerSession $session Session, group manager and logger.
+	 * @param string                      $appName  The application name.
+	 * @param IRequest                    $request  The current request.
+	 * @param DuplicateControllerServices $services The duplicate-detection API services.
 	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		private readonly DuplicateDetectionServiceInterface $duplicates,
-		private readonly DismissedPairStore $dismissals,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly ControllerSession $session,
-	) {
+	public function __construct(string $appName, IRequest $request, DuplicateControllerServices $services) {
 		parent::__construct(appName: $appName, request: $request);
+
+		$this->duplicates    = $services->duplicates;
+		$this->dismissals    = $services->dismissals;
+		$this->objectService = $services->objectService;
+		$this->session       = $services->session;
 	}//end __construct()
 
 	/**
@@ -293,10 +318,7 @@ class DuplicateController extends Controller {
 		}
 
 		$row = $this->dismissals->dismiss(
-			first: $objectA,
-			second: $objectB,
-			registerSlug: $register,
-			schemaSlug: $schema,
+			pair: new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema),
 			fingerprint: $fingerprint,
 			reason: $reason,
 			dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
@@ -337,10 +359,7 @@ class DuplicateController extends Controller {
 		}
 
 		$row = $this->dismissals->undismiss(
-			first: $objectA,
-			second: $objectB,
-			registerSlug: $register,
-			schemaSlug: $schema,
+			pair: new ReviewedPair(first: $objectA, second: $objectB, registerSlug: $register, schemaSlug: $schema),
 			reversedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
 		);
 

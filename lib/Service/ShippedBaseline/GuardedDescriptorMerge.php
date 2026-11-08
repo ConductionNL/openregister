@@ -189,13 +189,14 @@ class GuardedDescriptorMerge {
 				$acc['applied'][] = $path;
 			}
 
-			$this->foldPath(
-				acc: $acc,
-				path: $path,
-				state: (string)$state,
-				decided: $decided,
-				sources: $sources
-			);
+			// UPSTREAM is the one state whose rule reads whether the path was
+			// decided, so it is folded here, where that flag is known.
+			if ((string)$state === DivergenceComparator::UPSTREAM) {
+				$this->foldUpstream(acc: $acc, path: $path, decided: $decided, sources: $sources);
+				continue;
+			}
+
+			$this->foldPath(acc: $acc, path: $path, state: (string)$state, sources: $sources);
 		}//end foreach
 
 		$outcome = $this->blocks->outcome(blocks: $blocks, sources: $sources);
@@ -294,28 +295,25 @@ class GuardedDescriptorMerge {
 	}//end propertyOf()
 
 	/**
-	 * Fold ONE path's divergence state into the running result.
+	 * Fold ONE path's divergence state, other than UPSTREAM, into the running result.
 	 *
 	 * Split out of `merge()` purely so each state's rule is readable on its
-	 * own. The dispatch order and every branch inside it are unchanged, which
-	 * matters because these five rules decide what an upgrade overwrites.
+	 * own. UPSTREAM, the one state whose rule also reads whether the path was
+	 * decided, is folded by `merge()` itself through `foldUpstream()`; every
+	 * other branch is unchanged, which matters because these five rules decide
+	 * what an upgrade overwrites.
 	 *
 	 * @param array<string, mixed> $acc     The running result, mutated in place.
 	 * @param string|integer       $path    The flattened descriptor path.
 	 * @param string               $state   The divergence state for this path.
-	 * @param boolean              $decided Whether an administrator took this path from upstream.
 	 * @param array<string, array<string|int, mixed>> $sources The flattened baseline, live and incoming parts.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	private function foldPath(array &$acc, string|int $path, string $state, bool $decided, array $sources): void {
+	private function foldPath(array &$acc, string|int $path, string $state, array $sources): void {
 		switch ($state) {
-			case DivergenceComparator::UPSTREAM:
-				$this->foldUpstream(acc: $acc, path: $path, decided: $decided, sources: $sources);
-			break;
-
 			case DivergenceComparator::LOCAL:
 				$this->foldLocal(acc: $acc, path: $path, sources: $sources);
 			break;

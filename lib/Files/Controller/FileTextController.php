@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
@@ -113,18 +114,11 @@ class FileTextController extends Controller {
 	private readonly IUserSession $userSession;
 
 	/**
-	 * Root folder for per-user file access checks
+	 * Whether the caller can open a file.
 	 *
-	 * @var IRootFolder
+	 * @var CallerFileAccess
 	 */
-	private readonly IRootFolder $rootFolder;
-
-	/**
-	 * The object read rule for an object's file.
-	 *
-	 * @var ?\OCA\OpenRegister\Files\Service\File\FileReadScope
-	 */
-	private readonly ?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope;
+	private readonly CallerFileAccess $fileAccess;
 
 	/**
 	 * Constructor
@@ -146,8 +140,11 @@ class FileTextController extends Controller {
 		$this->manualEntityService = $services->domain->manualEntityService;
 		$this->userSession = $services->session->userSession;
 		$this->session = $services->session;
-		$this->rootFolder = $services->platform->rootFolder;
-		$this->fileReadScope = $services->domain->fileReadScope;
+		$this->fileAccess = new CallerFileAccess(
+			fileReadScope: $services->domain->fileReadScope,
+			userSession: $services->session->userSession,
+			rootFolder: $services->platform->rootFolder
+		);
 	}//end __construct()
 
 	/**
@@ -163,19 +160,7 @@ class FileTextController extends Controller {
 	 * @return bool True when the file is reachable in the caller's user folder.
 	 */
 	private function hasFileAccess(int $fileId): bool {
-		// An object's file sits in the openregister account's home, never in
-		// the caller's own tree: the object's read rule decides it.
-		if ($this->fileReadScope !== null) {
-			return $this->fileReadScope->mayReadFile(fileId: $fileId);
-		}
-
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		$userFolder = $this->rootFolder->getUserFolder($user->getUID());
-		return empty($userFolder->getById($fileId)) === false;
+		return $this->fileAccess->mayOpen(fileId: $fileId);
 	}//end hasFileAccess()
 
 	/**

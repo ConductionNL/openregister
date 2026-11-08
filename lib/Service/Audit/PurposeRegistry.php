@@ -40,6 +40,15 @@ use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
  * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class PurposeRegistry {
+
+	/**
+	 * What a read that names no purpose is told.
+	 *
+	 * @var string
+	 */
+	private const MISSING_REASON = 'This read needs a declared purpose. Name one in the ' . PurposeContext::HEADER . ' header or the '
+		. PurposeContext::PARAM . ' parameter.';
+
 	/**
 	 * The status an archived processing activity carries.
 	 *
@@ -145,44 +154,13 @@ class PurposeRegistry {
 	 */
 	public function requirePurpose(?string $code): array {
 		$named = trim((string)($code ?? ''));
-		if ($named === '') {
-			throw new PurposeRefusedException(
-				rule: PurposeRefusedException::RULE_MISSING,
-				reason: 'This read needs a declared purpose. Name one in the '
-					. PurposeContext::HEADER . ' header or the '
-					. PurposeContext::PARAM . ' parameter.',
-				purpose: null,
-				context: ['available' => $this->availableCodes()]
-			);
-		}
-
-		$purpose = $this->purposes->resolveReference(reference: $named);
-		if ($purpose === null) {
-			throw new PurposeRefusedException(
-				rule: PurposeRefusedException::RULE_UNKNOWN,
-				reason: sprintf('Purpose "%s" is not in the administered list.', $named),
-				purpose: $named,
-				context: ['available' => $this->availableCodes()]
-			);
-		}
-
-		if ($purpose->getStatus() !== ProcessingPurpose::STATUS_ACTIVE) {
-			throw new PurposeRefusedException(
-				rule: PurposeRefusedException::RULE_RETIRED,
-				reason: sprintf('Purpose "%s" has been withdrawn and cannot carry a query.', $named),
-				purpose: $named,
-				context: ['available' => $this->availableCodes()]
-			);
-		}
+		$purpose = $this->activePurpose(named: $named);
 
 		$activity = $this->boundActivity(purpose: $purpose);
 		if ($activity === null) {
 			throw new PurposeRefusedException(
 				rule: PurposeRefusedException::RULE_UNBOUND,
-				reason: sprintf(
-					'Purpose "%s" names no processing activity, so a query cannot run under it.',
-					$named
-				),
+				reason: sprintf('Purpose "%s" names no processing activity, so a query cannot run under it.', $named),
 				purpose: $named,
 				context: ['activity' => $purpose->getActivity()]
 			);
@@ -190,6 +168,53 @@ class PurposeRegistry {
 
 		return ['purpose' => $purpose, 'activity' => $activity];
 	}//end require()
+
+	/**
+	 * The administered, active purpose a code names.
+	 *
+	 * @param string $named The trimmed code.
+	 *
+	 * @throws PurposeRefusedException When no code is named, the code is unknown, or the purpose is withdrawn.
+	 *
+	 * @return ProcessingPurpose The purpose.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function activePurpose(string $named): ProcessingPurpose {
+		if ($named === '') {
+			$this->refuse(rule: PurposeRefusedException::RULE_MISSING, reason: self::MISSING_REASON, purpose: null);
+		}
+
+		$purpose = $this->purposes->resolveReference(reference: $named);
+		if ($purpose === null) {
+			$reason = sprintf('Purpose "%s" is not in the administered list.', $named);
+			$this->refuse(rule: PurposeRefusedException::RULE_UNKNOWN, reason: $reason, purpose: $named);
+		}
+
+		if ($purpose->getStatus() !== ProcessingPurpose::STATUS_ACTIVE) {
+			$reason = sprintf('Purpose "%s" has been withdrawn and cannot carry a query.', $named);
+			$this->refuse(rule: PurposeRefusedException::RULE_RETIRED, reason: $reason, purpose: $named);
+		}
+
+		return $purpose;
+	}//end activePurpose()
+
+	/**
+	 * Refuse the read, offering the usable codes instead.
+	 *
+	 * @param string      $rule    The refusal rule.
+	 * @param string      $reason  The sentence the caller reads.
+	 * @param string|null $purpose The code named, or null when none was.
+	 *
+	 * @throws PurposeRefusedException Always.
+	 *
+	 * @return never
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function refuse(string $rule, string $reason, ?string $purpose): never {
+		throw new PurposeRefusedException(rule: $rule, reason: $reason, purpose: $purpose, context: ['available' => $this->availableCodes()]);
+	}//end refuse()
 
 	/**
 	 * The codes a refusal offers the caller instead.

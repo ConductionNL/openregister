@@ -27,8 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use DateTimeInterface;
-
 /**
  * The inputs of one option-list or option-tree build.
  */
@@ -40,15 +38,13 @@ final class CodedOptionQuery {
 	 * @param CodedPropertyDeclaration          $declaration   The property's declaration.
 	 * @param array<string,array<string,mixed>> $conceptsByUri The scheme's concepts, keyed by uri.
 	 * @param string|null                       $context       The context value in play, when the subset is bound.
-	 * @param string                            $language      The BCP-47 tag to read labels in.
-	 * @param DateTimeInterface                 $asOf          The instant to judge windows at.
+	 * @param ConceptReading                    $reading       The language to read labels in and the instant to judge windows at.
 	 */
 	public function __construct(
 		public readonly CodedPropertyDeclaration $declaration,
 		public readonly array $conceptsByUri,
 		public readonly ?string $context,
-		public readonly string $language,
-		public readonly DateTimeInterface $asOf,
+		public readonly ConceptReading $reading,
 	) {
 
 	}//end __construct()

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
@@ -71,7 +72,7 @@ final class TextExtractionReadBackTest extends TestCase {
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$this->chunks = $this->createMock(ChunkMapper::class);
-		$this->service = new TextExtractionService(
+		$this->service = TextExtractionServiceFactory::create(
 			$this->createMock(FileMapper::class),
 			$this->chunks,
 			$this->createMock(IRootFolder::class),

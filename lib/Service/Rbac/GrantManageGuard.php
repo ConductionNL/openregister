@@ -58,11 +58,11 @@ class GrantManageGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectScopeResolver $scopeResolver The one definition of who is admitted unconditionally.
+	 * @param ObjectScopeResolverInterface $scopeResolver The one definition of who is admitted unconditionally.
 	 * @param OrganisationSpecialRights $specialRights Reads the special right from the record's organisation.
 	 */
 	public function __construct(
-		private readonly ObjectScopeResolver $scopeResolver,
+		private readonly ObjectScopeResolverInterface $scopeResolver,
 		private readonly OrganisationSpecialRights $specialRights,
 	) {
 	}//end __construct()

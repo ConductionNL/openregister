@@ -43,6 +43,16 @@ final class ObjectSourceRegistrar {
 	private const CONTAINER = '(container)';
 
 	/**
+	 * Contract => the service that implements it, for callers outside the Service component.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	public const BINDINGS = [
+		TablesCatalogueInterface::class => TablesTableReader::class,
+		TablesSchemaReconcilerInterface::class => TablesSchemaSyncService::class,
+	];
+
+	/**
 	 * The services register() adds, in order: per service, its constructor
 	 * arguments by name and the container id each one is resolved from.
 	 *
@@ -74,10 +84,13 @@ final class ObjectSourceRegistrar {
 			'userSession'  => 'OCP\IUserSession',
 			'logger'       => 'Psr\Log\LoggerInterface',
 		],
+		OrganisationActingUser::class => [
+			'userSession'  => 'OCP\IUserSession',
+			'groupManager' => 'OCP\IGroupManager',
+		],
 		OrganisationObjectSourceProvider::class => [
 			'organisationMapper'  => 'OCA\OpenRegister\Db\OrganisationMapper',
-			'userSession'         => 'OCP\IUserSession',
-			'groupManager'        => 'OCP\IGroupManager',
+			'actingUser'          => OrganisationActingUser::class,
 			'logger'              => 'Psr\Log\LoggerInterface',
 			'organisationService' => 'OCA\OpenRegister\Service\OrganisationService',
 		],
@@ -146,13 +159,16 @@ final class ObjectSourceRegistrar {
 			'columnMapper'   => TablesColumnMapper::class,
 			'logger'         => 'Psr\Log\LoggerInterface',
 		],
-		TablesObjectSourceProvider::class => [
+		TablesProviderParts::class => [
 			'reader'       => TablesTableReader::class,
 			'columnMapper' => TablesColumnMapper::class,
 			'uuidDeriver'  => TablesUuidDeriver::class,
 			'syncService'  => TablesSchemaSyncService::class,
-			'userSession'  => 'OCP\IUserSession',
-			'logger'       => 'Psr\Log\LoggerInterface',
+		],
+		TablesObjectSourceProvider::class => [
+			'parts'       => TablesProviderParts::class,
+			'userSession' => 'OCP\IUserSession',
+			'logger'      => 'Psr\Log\LoggerInterface',
 		],
 	];
 
@@ -177,6 +193,10 @@ final class ObjectSourceRegistrar {
 					return self::build(container: $container, class: $class);
 				}
 			);
+		}
+
+		foreach (self::BINDINGS as $contract => $service) {
+			$context->registerServiceAlias($contract, $service);
 		}
 	}//end register()
 

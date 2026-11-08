@@ -32,8 +32,8 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Listener\Support\PushSlugResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -49,11 +49,6 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Test coverage requires many mocks
  */
 class NotifyPushListenerTest extends TestCase {
-
-	/**
-	 * @var IAppManager&MockObject
-	 */
-	private IAppManager $appManager;
 
 	/**
 	 * @var LoggerInterface&MockObject
@@ -103,7 +98,6 @@ class NotifyPushListenerTest extends TestCase {
 		// Reset ALL static state between tests (including $seen and $queueUnavailable).
 		NotifyPushListener::resetStaticState();
 
-		$this->appManager = $this->createMock(IAppManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
@@ -117,13 +111,11 @@ class NotifyPushListenerTest extends TestCase {
 			->getMock();
 
 		$this->listener = new NotifyPushListener(
-			appManager: $this->appManager,
 			logger: $this->logger,
 			container: $this->container,
 			permissionHandler: $this->permissionHandler,
 			appConfig: $this->appConfig,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
+			slugs: new PushSlugResolver($this->registerMapper, $this->schemaMapper),
 		);
 	}//end setUp()
 

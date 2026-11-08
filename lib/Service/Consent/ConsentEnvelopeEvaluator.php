@@ -86,9 +86,7 @@ final class ConsentEnvelopeEvaluator {
 			incoming: $incoming,
 			persistedCount: count($persisted),
 			purpose: $purpose,
-			actingIdentity: $actingIdentity,
-			ipAddress: $ipAddress,
-			userAgent: $userAgent
+			source: new ConsentEvidenceSource(actingIdentity: $actingIdentity, ipAddress: $ipAddress, userAgent: $userAgent)
 		);
 
 		return ['refused' => false, 'value' => $filled, 'message' => null];
@@ -149,9 +147,7 @@ final class ConsentEnvelopeEvaluator {
 	 * @param array<int, mixed> $incoming The normalised, append-only-verified array.
 	 * @param int $persistedCount The number of previously persisted entries (the append boundary).
 	 * @param string $purpose The property's declared purpose.
-	 * @param string|null $actingIdentity The resolved acting identity ("by").
-	 * @param string|null $ipAddress The caller's remote address.
-	 * @param string|null $userAgent The caller's User-Agent header.
+	 * @param ConsentEvidenceSource $source Who wrote the entries and from where.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -159,9 +155,7 @@ final class ConsentEnvelopeEvaluator {
 		array $incoming,
 		int $persistedCount,
 		string $purpose,
-		?string $actingIdentity,
-		?string $ipAddress,
-		?string $userAgent
+		ConsentEvidenceSource $source
 	): array {
 		$incomingCount = count($incoming);
 		for ($index = $persistedCount; $index < $incomingCount; $index++) {
@@ -173,9 +167,7 @@ final class ConsentEnvelopeEvaluator {
 			$incoming[$index] = $this->fillEvidence(
 				entry: $entry,
 				purpose: $purpose,
-				actingIdentity: $actingIdentity,
-				ipAddress: $ipAddress,
-				userAgent: $userAgent
+				source: $source
 			);
 		}
 
@@ -187,13 +179,11 @@ final class ConsentEnvelopeEvaluator {
 	 *
 	 * @param array<string, mixed> $entry The caller-submitted entry.
 	 * @param string $purpose The property's declared purpose.
-	 * @param string|null $actingIdentity The resolved acting identity ("by").
-	 * @param string|null $ipAddress The caller's remote address.
-	 * @param string|null $userAgent The caller's User-Agent header.
+	 * @param ConsentEvidenceSource $source Who wrote the entry and from where.
 	 *
 	 * @return array<string, mixed> The entry with evidence fields filled.
 	 */
-	private function fillEvidence(array $entry, string $purpose, ?string $actingIdentity, ?string $ipAddress, ?string $userAgent): array {
+	private function fillEvidence(array $entry, string $purpose, ConsentEvidenceSource $source): array {
 		foreach (self::EVIDENCE_FIELDS as $field) {
 			unset($entry[$field]);
 		}
@@ -202,10 +192,10 @@ final class ConsentEnvelopeEvaluator {
 		$evidenceOf = (string)($entry['evidenceOf'] ?? '');
 		$timestamp = (new DateTimeImmutable())->format(DATE_ATOM);
 
-		$entry['by'] = $actingIdentity;
+		$entry['by'] = $source->actingIdentity;
 		$entry['timestamp'] = $timestamp;
-		$entry['ip'] = $ipAddress;
-		$entry['userAgent'] = $userAgent;
+		$entry['ip'] = $source->ipAddress;
+		$entry['userAgent'] = $source->userAgent;
 		$entry['contentHash'] = hash('sha256', $purpose . $decision . $evidenceOf);
 
 		$entry['withdrawnAt'] = null;
