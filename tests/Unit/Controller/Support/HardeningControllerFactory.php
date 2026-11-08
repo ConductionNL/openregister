@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\HardeningController;
 
 /**
- * Builds HardeningController from its services as separate arguments.
+ * Builds HardeningController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class HardeningControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class HardeningControllerFactory {
 		return [
 			$appName,
 			$request,
-			$reportService,
-			$settingsService,
-			$policy,
-			$elevation,
+			new \OCA\OpenRegister\Controller\Support\HardeningControllerServices(
+				reportService: $reportService,
+				settingsService: $settingsService,
+				policy: $policy,
+				elevation: $elevation,
+			),
 		];
 	}//end args()
 

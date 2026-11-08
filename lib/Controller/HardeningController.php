@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\HardeningControllerServices;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
 use OCA\OpenRegister\Service\Hardening\ElevationService;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
@@ -68,26 +69,52 @@ use OCP\IRequest;
 class HardeningController extends Controller {
 
 	/**
+	 * Builds the report.
+	 *
+	 * @var HardeningReportService
+	 */
+	private readonly HardeningReportService $reportService;
+
+	/**
+	 * Applies a change, or refuses it.
+	 *
+	 * @var HardeningSettingsService
+	 */
+	private readonly HardeningSettingsService $settingsService;
+
+	/**
+	 * Reads the floors in force.
+	 *
+	 * @var HardeningPolicy
+	 */
+	private readonly HardeningPolicy $policy;
+
+	/**
+	 * Guards the administration writes with a fresh sign-in.
+	 *
+	 * @var ElevationService
+	 */
+	private readonly ElevationService $elevation;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app name.
 	 * @param IRequest $request The incoming request.
-	 * @param HardeningReportService $reportService Builds the report.
-	 * @param HardeningSettingsService $settingsService Applies a change, or refuses it.
-	 * @param HardeningPolicy $policy Reads the floors in force.
-	 * @param ElevationService $elevation Guards the administration writes with a fresh sign-in.
+	 * @param HardeningControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly HardeningReportService $reportService,
-		private readonly HardeningSettingsService $settingsService,
-		private readonly HardeningPolicy $policy,
-		private readonly ElevationService $elevation,
+		HardeningControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->reportService = $services->reportService;
+		$this->settingsService = $services->settingsService;
+		$this->policy = $services->policy;
+		$this->elevation = $services->elevation;
 
 	}//end __construct()
 

@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\ErasurePreviewController;
 
 /**
- * Builds ErasurePreviewController from its services as separate arguments.
+ * Builds ErasurePreviewController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class ErasurePreviewControllerFactory {
 	/**
@@ -36,9 +36,11 @@ final class ErasurePreviewControllerFactory {
 		return [
 			$appName,
 			$request,
-			$previewService,
-			$store,
-			$runner,
+			new \OCA\OpenRegister\Controller\Support\ErasurePreviewControllerServices(
+				previewService: $previewService,
+				store: $store,
+				runner: $runner,
+			),
 		];
 	}//end args()
 

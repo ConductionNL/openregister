@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\FlowTestRunController;
 
 /**
- * Builds FlowTestRunController from its services as separate arguments.
+ * Builds FlowTestRunController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class FlowTestRunControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class FlowTestRunControllerFactory {
 		return [
 			$appName,
 			$request,
-			$runner,
-			$resolvers,
-			$userSession,
-			$guard,
+			new \OCA\OpenRegister\Controller\Support\FlowTestRunControllerServices(
+				runner: $runner,
+				resolvers: $resolvers,
+				userSession: $userSession,
+				guard: $guard,
+			),
 		];
 	}//end args()
 

@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\FlowRunMigrationController;
 
 /**
- * Builds FlowRunMigrationController from its services as separate arguments.
+ * Builds FlowRunMigrationController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class FlowRunMigrationControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class FlowRunMigrationControllerFactory {
 		return [
 			$appName,
 			$request,
-			$mapper,
-			$userSession,
-			$guard,
-			$migrations,
+			new \OCA\OpenRegister\Controller\Support\FlowRunMigrationControllerServices(
+				mapper: $mapper,
+				userSession: $userSession,
+				guard: $guard,
+				migrations: $migrations,
+			),
 		];
 	}//end args()
 

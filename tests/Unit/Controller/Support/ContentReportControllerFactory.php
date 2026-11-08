@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\ContentReportController;
 
 /**
- * Builds ContentReportController from its services as separate arguments.
+ * Builds ContentReportController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class ContentReportControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class ContentReportControllerFactory {
 		return [
 			$appName,
 			$request,
-			$reports,
-			$service,
-			$objects,
-			$userSession,
+			new \OCA\OpenRegister\Controller\Support\ContentReportControllerServices(
+				reports: $reports,
+				service: $service,
+				objects: $objects,
+				userSession: $userSession,
+			),
 		];
 	}//end args()
 
