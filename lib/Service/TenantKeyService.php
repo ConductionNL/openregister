@@ -49,7 +49,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class TenantKeyService {
+class TenantKeyService implements TenantKeyRotationInterface {
 	/**
 	 * Table that stores encrypted tenant keys.
 	 *
