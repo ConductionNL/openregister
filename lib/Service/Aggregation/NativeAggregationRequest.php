@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * Carries a native aggregation request through AggregationRunner.
  *
- * The spec holds metric, field, filter, groupBy, dateBucket, metrics,
+ * The spec holds metric, field, filter, the group spec, dateBucket, metrics,
  * cumulative and rowRbac, exactly as AggregationRunner::tryNativeAggregation()
  * received them.
  *
@@ -44,7 +44,7 @@ final class NativeAggregationRequest {
 	 *
 	 * @param Register             $register The register the schema belongs to.
 	 * @param Schema               $schema   The schema being aggregated.
-	 * @param array<string, mixed> $spec     The aggregation asked: metric, field, filter, groupBy,
+	 * @param array<string, mixed> $spec     The aggregation asked: metric, field, filter, group spec,
 	 *                                       dateBucket, metrics, cumulative, rowRbac.
 	 *
 	 * @return void
