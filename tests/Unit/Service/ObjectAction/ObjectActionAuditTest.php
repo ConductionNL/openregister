@@ -14,6 +14,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunOutcome;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -39,7 +41,13 @@ class ObjectActionAuditTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->never())->method('error');
 
-		(new ObjectActionAudit($trail, $logger))->record($object, 'sign', 'steps', 'run-1', 'sha256:abc', [['step' => 's', 'kind' => 'write']], 'completed', 'anna');
+		(new ObjectActionAudit($trail, $logger))->record(
+			$object,
+			ObjectActionDefinition::fromDeclaration('sign', ['steps' => []]),
+			new ObjectActionRunOutcome('run-1', [['step' => 's', 'kind' => 'write']], 'completed'),
+			'sha256:abc',
+			'anna'
+		);
 	}//end testTheEntryCarriesTheRunAsContextAndTheActingUser()
 
 	public function testATransitionHasNoRunAndMayHaveNoActor(): void {
@@ -59,7 +67,13 @@ class ObjectActionAuditTest extends TestCase {
 			null
 		);
 
-		(new ObjectActionAudit($trail, $this->createMock(LoggerInterface::class)))->record($object, 'finish', 'transition', null, 'sha256:def', [], 'completed', null);
+		(new ObjectActionAudit($trail, $this->createMock(LoggerInterface::class)))->record(
+			$object,
+			ObjectActionDefinition::fromDeclaration('finish', ['transition' => 'finish']),
+			new ObjectActionRunOutcome(null, [], 'completed'),
+			'sha256:def',
+			null
+		);
 	}//end testATransitionHasNoRunAndMayHaveNoActor()
 
 	public function testAFailedWriteIsLoggedAndNeverThrown(): void {
@@ -71,7 +85,13 @@ class ObjectActionAuditTest extends TestCase {
 			['action' => 'sign', 'run' => 'run-1']
 		);
 
-		(new ObjectActionAudit($trail, $logger))->record(new ObjectEntity(), 'sign', 'steps', 'run-1', 'sha256:abc', [], 'failed', 'anna');
+		(new ObjectActionAudit($trail, $logger))->record(
+			new ObjectEntity(),
+			ObjectActionDefinition::fromDeclaration('sign', ['steps' => []]),
+			new ObjectActionRunOutcome('run-1', [], 'failed'),
+			'sha256:abc',
+			'anna'
+		);
 		$this->addToAssertionCount(1);
 	}//end testAFailedWriteIsLoggedAndNeverThrown()
 }//end class
