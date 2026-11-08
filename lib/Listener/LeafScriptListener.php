@@ -71,7 +71,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Integration\LeafBundle;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
-use OCA\OpenRegister\Service\Integration\LeafRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRegistryInterface;
 use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
@@ -100,13 +100,13 @@ class LeafScriptListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param LeafRegistry    $leaves     The collected leaf catalogue.
-	 * @param IAppManager     $appManager App installation + path lookups.
-	 * @param IRequest        $request    The current request, for the app id.
-	 * @param LoggerInterface $logger     PSR-3 logger.
+	 * @param LeafRegistryInterface $leaves     The collected leaf catalogue.
+	 * @param IAppManager           $appManager App installation + path lookups.
+	 * @param IRequest              $request    The current request, for the app id.
+	 * @param LoggerInterface       $logger     PSR-3 logger.
 	 */
 	public function __construct(
-		private readonly LeafRegistry $leaves,
+		private readonly LeafRegistryInterface $leaves,
 		private readonly IAppManager $appManager,
 		private readonly IRequest $request,
 		private readonly LoggerInterface $logger,
