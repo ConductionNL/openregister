@@ -94,8 +94,32 @@ class ActivityFeedService {
 		array $handedIn = [],
 	): array {
 		$bound = $this->merge->boundPerSource(options: $options);
-		$degraded = [];
+		$path = ['register' => $register, 'schema' => $schema, 'id' => $objectId];
 
+		$sources = $this->handedInSources(handedIn: $handedIn);
+		$sources['audit'] = $this->auditSource(path: $path, bound: $bound);
+		$sources['activity'] = $this->activitySource(path: $path);
+
+		$degraded = array_keys(array_filter($sources, static fn (?array $rows): bool => $rows === null));
+		$sources = array_map(static fn (?array $rows): array => ($rows ?? []), $sources);
+
+		$page = $this->merge->page(bySource: $sources, options: $options);
+		$page['degraded'] = $degraded;
+
+		return $page;
+	}//end page()
+
+	/**
+	 * The rows of the sources this service does not own, as handed in.
+	 *
+	 * Only the `file`, `note` and `mail` kinds are taken, and only when their
+	 * rows are a list; anything else contributes nothing.
+	 *
+	 * @param array<string,mixed> $handedIn Rows for sources this service does not own.
+	 *
+	 * @return array<string,array<int,array<string,mixed>>> The rows per handed-in kind.
+	 */
+	private function handedInSources(array $handedIn): array {
 		$sources = [];
 		foreach (['file', 'note', 'mail'] as $kind) {
 			$sources[$kind] = [];
@@ -104,44 +128,58 @@ class ActivityFeedService {
 			}
 		}
 
+		return $sources;
+	}//end handedInSources()
+
+	/**
+	 * The audit source, or null when it could not be read.
+	 *
+	 * A source that could not be read is NAMED rather than merged as
+	 * nothing. An empty audit list and an unreadable one render the same
+	 * way, and only one of them means the object has no history.
+	 *
+	 * @param array{register: string, schema: string, id: string} $path  The object's register, schema and uuid.
+	 * @param int                                                   $bound How many rows this source may contribute.
+	 *
+	 * @return array<int,array<string,mixed>>|null The rows, or null when unreadable.
+	 */
+	private function auditSource(array $path, int $bound): ?array {
 		try {
-			$sources['audit'] = $this->auditRows(
-				path: ['register' => $register, 'schema' => $schema, 'id' => $objectId],
-				bound: $bound
-			);
+			return $this->auditRows(path: $path, bound: $bound);
 		} catch (Throwable $e) {
-			// A source that could not be read is NAMED rather than merged as
-			// nothing. An empty audit list and an unreadable one render the
-			// same way, and only one of them means the object has no history.
-			$degraded[] = 'audit';
-			$sources['audit'] = [];
 			$this->logger->warning(
 				'[ActivityFeedService] the audit trail could not be read for the merged feed',
-				['objectId' => $objectId, 'exception' => $e->getMessage()]
+				['objectId' => $path['id'], 'exception' => $e->getMessage()]
 			);
-		}
 
+			return null;
+		}
+	}//end auditSource()
+
+	/**
+	 * The NC Activity source, or null when it could not be read.
+	 *
+	 * @param array{register: string, schema: string, id: string} $path The object's register, schema and uuid.
+	 *
+	 * @return array<int,array<string,mixed>>|null The rows, or null when unreadable.
+	 */
+	private function activitySource(array $path): ?array {
 		try {
-			$sources['activity'] = $this->activity->list(
-				register: $register,
-				schema: $schema,
-				objectId: $objectId,
+			return $this->activity->list(
+				register: $path['register'],
+				schema: $path['schema'],
+				objectId: $path['id'],
 				filters: []
 			);
 		} catch (Throwable $e) {
-			$degraded[] = 'activity';
-			$sources['activity'] = [];
 			$this->logger->warning(
 				'[ActivityFeedService] the Activity rows could not be read for the merged feed',
-				['objectId' => $objectId, 'exception' => $e->getMessage()]
+				['objectId' => $path['id'], 'exception' => $e->getMessage()]
 			);
+
+			return null;
 		}
-
-		$page = $this->merge->page(bySource: $sources, options: $options);
-		$page['degraded'] = $degraded;
-
-		return $page;
-	}//end page()
+	}//end activitySource()
 
 	/**
 	 * The object's own audit rows, bounded and in the merge's shape.
