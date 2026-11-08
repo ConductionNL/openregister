@@ -58,7 +58,7 @@ use OCP\IDBConnection;
  *
  * @psalm-suppress PossiblyUnusedMethod
  */
-class ObjectReadStateMapper extends QBMapper {
+class ObjectReadStateMapper extends QBMapper implements ObjectReadStateMapperInterface {
 	use DeleteByObjectTrait;
 
 	/**

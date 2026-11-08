@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -171,9 +171,9 @@ class ExampleSetReadStates extends ExampleSetEngineRows {
 	/**
 	 * The read-state mapper.
 	 *
-	 * @return ObjectReadStateMapper
+	 * @return ObjectReadStateMapperInterface
 	 */
-	private function mapper(): ObjectReadStateMapper {
-		return $this->container->get(ObjectReadStateMapper::class);
+	private function mapper(): ObjectReadStateMapperInterface {
+		return $this->container->get(ObjectReadStateMapperInterface::class);
 	}//end mapper()
 }//end class
