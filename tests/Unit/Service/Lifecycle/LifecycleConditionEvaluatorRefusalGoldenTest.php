@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCP\IGroupManager;
 use OCP\IL10N;
@@ -53,8 +54,7 @@ class LifecycleConditionEvaluatorRefusalGoldenTest extends TestCase {
 		return new LifecycleConditionEvaluator(
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
-			$l10n,
-			$this->logger,
+			new LifecycleConditionReporting($l10n, $this->logger),
 			new ConditionDialect(
 				ast: new CalculationEvaluator(
 					placeholders: new PlaceholderResolver(userSession: $this->createMock(IUserSession::class))

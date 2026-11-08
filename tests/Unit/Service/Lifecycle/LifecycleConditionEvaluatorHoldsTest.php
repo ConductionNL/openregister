@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IUser;
@@ -91,8 +92,7 @@ class LifecycleConditionEvaluatorHoldsTest extends TestCase {
 		$this->evaluator = new LifecycleConditionEvaluator(
 			$this->userSession,
 			$groupManager,
-			$l10n,
-			$this->logger,
+			new LifecycleConditionReporting($l10n, $this->logger),
 			$this->realConditionDialect()
 		);
 	}//end setUp()
