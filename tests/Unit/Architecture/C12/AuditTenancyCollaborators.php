@@ -5,8 +5,8 @@
  *
  * The audit-trail mapper and the tenancy traits build them through
  * AuditTrailCollaborators / TenancyCollaborators, or resolve them from the
- * container by their interface; the encryption command and the settings
- * controller type against the interface. ObjectActionElevationScope has no
+ * container under their class id from inside lib/Service; the encryption
+ * command and the settings controller type against the interface. ObjectActionElevationScope has no
  * interface: its request frame is static and only its read is delegated.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -30,7 +30,6 @@ return [
 		ObjectAction\ObjectActionElevationScope::class => null,
 		Service\AuditRetentionResolver::class => Service\AuditRetentionResolverInterface::class,
 		Service\FieldEncryptionHandler::class => Service\FieldEncryptionHandlerInterface::class,
-		Service\PropertyRbacHandler::class => Service\PropertyRbacHandlerInterface::class,
 		Service\SharedMasterDataService::class => Service\SharedMasterDataServiceInterface::class,
 		Service\TenantLogRedactor::class => Service\TenantLogRedactorInterface::class,
 	],

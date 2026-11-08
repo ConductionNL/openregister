@@ -25,27 +25,16 @@ namespace OCA\OpenRegister\Service;
 use Psr\Container\ContainerInterface;
 
 /**
- * Looks up the property read-rule and field-encryption services for the Db layer.
+ * Looks up the field-encryption service for the Db layer.
  *
- * The facet and flagged-encryption handlers resolve these lazily from the
- * container they hold. This class asks the container under the same id as
- * before and hands back what it returns, so the Db layer names neither class
+ * The flagged-encryption handler resolves it lazily from the
+ * container it holds. This class asks the container under the same id as
+ * before and hands back what it returns, so the Db layer does not name the class
  * and the caller's own `instanceof` and failure handling stay as they were.
  *
- * Types only: what is admitted or encrypted stays with the caller.
+ * Types only: what is encrypted stays with the caller.
  */
 final class PropertyAccessCollaborators {
-
-	/**
-	 * The shared property read-rule handler, exactly as the container returns it.
-	 *
-	 * @param ContainerInterface|null $container The container the caller holds.
-	 *
-	 * @return mixed The shared PropertyRbacHandlerInterface instance.
-	 */
-	public static function propertyRbacFrom(?ContainerInterface $container): mixed {
-		return $container->get(PropertyRbacHandler::class);
-	}//end propertyRbacFrom()
 
 	/**
 	 * The shared field-encryption handler, exactly as the container returns it.
