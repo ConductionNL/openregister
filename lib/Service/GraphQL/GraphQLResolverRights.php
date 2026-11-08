@@ -23,7 +23,7 @@
 namespace OCA\OpenRegister\Service\GraphQL;
 
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
 /**
  * The schema-level and property-level RBAC collaborators of the GraphQL resolver.
@@ -36,12 +36,12 @@ final class GraphQLResolverRights {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param PermissionHandlerInterface $permissionHandler Permission handler
-	 * @param PropertyRbacHandler        $propertyRbac      Property RBAC handler
+	 * @param PermissionHandlerInterface   $permissionHandler Permission handler
+	 * @param PropertyRbacHandlerInterface $propertyRbac      Property RBAC handler
 	 */
 	public function __construct(
 		public readonly PermissionHandlerInterface $permissionHandler,
-		public readonly PropertyRbacHandler $propertyRbac,
+		public readonly PropertyRbacHandlerInterface $propertyRbac,
 	) {
 	}//end __construct()
 }//end class

@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Files\Service\Sharing;
 
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
 /**
  * The rules an access link reader applies: schema resolution, property RBAC and the public timeline.
@@ -35,15 +35,15 @@ final class AccessLinkReaderFilters {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param SchemaMapperInterface   $schemas    Resolves the schema whose rules apply.
-	 * @param PropertyRbacHandler     $properties Strips write-only and unreadable properties.
-	 * @param PublicTimelineInterface $timeline   Reads and projects the public half of the timeline.
+	 * @param SchemaMapperInterface        $schemas    Resolves the schema whose rules apply.
+	 * @param PropertyRbacHandlerInterface $properties Strips write-only and unreadable properties.
+	 * @param PublicTimelineInterface      $timeline   Reads and projects the public half of the timeline.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
 	public function __construct(
 		public readonly SchemaMapperInterface $schemas,
-		public readonly PropertyRbacHandler $properties,
+		public readonly PropertyRbacHandlerInterface $properties,
 		public readonly PublicTimelineInterface $timeline,
 	) {
 	}//end __construct()
