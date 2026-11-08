@@ -7,7 +7,7 @@
  * AUTH POSTURE, decided rather than inherited. The subject routes carry
  * `#[PublicPage]`: the caller is portaliq's server-to-server forward, which
  * has no Nextcloud session and MUST NOT need one. The check is the signed
- * `X-Portal-Subject` assertion, verified by {@see PortalSubjectAssertion}
+ * `X-Portal-Subject` assertion, verified by {@see PortalSubjectAssertionInterface}
  * fail-closed, and then the task service's own authorization of the acting
  * party against the task's STORED party reference. A Nextcloud session on the
  * request is ignored entirely: an administrator acting through this seam is
@@ -52,16 +52,16 @@ use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
-use OCA\OpenRegister\Service\Portal\PortalSubjectAssertion;
-use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
+use OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface;
+use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryServiceInterface;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -83,9 +83,9 @@ class PortalTaskController extends Controller {
 	/**
 	 * Verifies the acting subject.
 	 *
-	 * @var PortalSubjectAssertion
+	 * @var PortalSubjectAssertionInterface
 	 */
-	private readonly PortalSubjectAssertion $assertion;
+	private readonly PortalSubjectAssertionInterface $assertion;
 
 	/**
 	 * The subject-scoped read and completion.
@@ -97,9 +97,9 @@ class PortalTaskController extends Controller {
 	/**
 	 * The delivery ledger.
 	 *
-	 * @var PortalTaskDeliveryService
+	 * @var PortalTaskDeliveryServiceInterface
 	 */
-	private readonly PortalTaskDeliveryService $delivery;
+	private readonly PortalTaskDeliveryServiceInterface $delivery;
 
 	/**
 	 * Names the operator on the delivery routes.
