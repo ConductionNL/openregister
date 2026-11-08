@@ -29,6 +29,7 @@ use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionListing;
 use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
+use OCA\OpenRegister\Files\Db\FileSourceOrder;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
@@ -246,7 +247,8 @@ class FileExtractionController extends Controller {
 			$dbOffset = null;
 		}
 
-		$summaries  = $this->chunkMapper->getFileSourceSummaries($dbLimit, $dbOffset, $listing->searchTerm, $listing->databaseSort(), $listing->order);
+		$order      = new FileSourceOrder(sort: $listing->databaseSort(), order: $listing->order);
+		$summaries  = $this->chunkMapper->getFileSourceSummaries($dbLimit, $dbOffset, $listing->searchTerm, $order);
 		$totalCount = $this->chunkMapper->countFileSourceSummaries($listing->searchTerm);
 		if ($listing->isRestricted() === true) {
 			$summaries = array_values(

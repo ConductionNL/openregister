@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\FileSourceOrder;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
@@ -126,7 +127,7 @@ class ChunkMapperFileSourceSummariesTest extends TestCase {
 	 */
 	#[DataProvider('sorts')]
 	public function testSortMapsToColumnAndDirection(string $sort, string $order, string $expectedSort, string $expectedOrder): void {
-		$this->mapper()->getFileSourceSummaries(null, null, null, $sort, $order);
+		$this->mapper()->getFileSourceSummaries(null, null, null, new FileSourceOrder($sort, $order));
 
 		$this->assertSame([[$expectedSort, $expectedOrder]], $this->orderBy);
 		$this->assertSame([], $this->andWhere);
