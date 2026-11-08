@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\PurposeContext;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRegistry;
@@ -317,9 +318,11 @@ class ReadableAuditTrailListerTest extends TestCase {
 
 		return new ObjectHistoryForReaders(
 			$access,
-			$this->createMock(AuditTrailMapper::class),
-			new HistoryEntryRedactor($properties),
-			$registerMapper,
+			new ObjectHistoryServices(
+				$this->createMock(AuditTrailMapper::class),
+				new HistoryEntryRedactor($properties),
+				$registerMapper
+			),
 			$purposeGuard,
 			($reads ?? $this->readsShown())
 		);
@@ -442,9 +445,11 @@ class ReadableAuditTrailListerTest extends TestCase {
 
 		$reader = new ObjectHistoryForReaders(
 			$access,
-			$this->createMock(AuditTrailMapper::class),
-			$redactor,
-			$this->createMock(RegisterMapper::class),
+			new ObjectHistoryServices(
+				$this->createMock(AuditTrailMapper::class),
+				$redactor,
+				$this->createMock(RegisterMapper::class)
+			),
 			$this->createMock(PurposeGuard::class),
 			$this->readsShown()
 		);
@@ -482,9 +487,11 @@ class ReadableAuditTrailListerTest extends TestCase {
 
 		$reader = new ObjectHistoryForReaders(
 			$access,
-			$auditMapper,
-			$redactor,
-			$registerMapper,
+			new ObjectHistoryServices(
+				$auditMapper,
+				$redactor,
+				$registerMapper
+			),
 			$this->createMock(PurposeGuard::class),
 			$this->readsShown()
 		);
@@ -696,9 +703,11 @@ class ReadableAuditTrailListerTest extends TestCase {
 
 		$reader = new ObjectHistoryForReaders(
 			$access,
-			$auditMapper,
-			$this->createMock(HistoryEntryRedactor::class),
-			$this->createMock(RegisterMapper::class),
+			new ObjectHistoryServices(
+				$auditMapper,
+				$this->createMock(HistoryEntryRedactor::class),
+				$this->createMock(RegisterMapper::class)
+			),
 			$this->createMock(PurposeGuard::class),
 			$this->readsShown()
 		);
@@ -1152,17 +1161,19 @@ class ReadableAuditTrailListerTest extends TestCase {
 
 		return new ObjectHistoryForReaders(
 			$access,
-			$this->createMock(AuditTrailMapper::class),
-			new HistoryEntryRedactor(
-				new PropertyRbacHandler(
-					$session,
-					$groupManager,
-					$this->createMock(ConditionMatcher::class),
-					$this->createMock(LoggerInterface::class),
-					self::stateFieldRuleResolver($session, $groupManager)
-				)
+			new ObjectHistoryServices(
+				$this->createMock(AuditTrailMapper::class),
+				new HistoryEntryRedactor(
+					new PropertyRbacHandler(
+						$session,
+						$groupManager,
+						$this->createMock(ConditionMatcher::class),
+						$this->createMock(LoggerInterface::class),
+						self::stateFieldRuleResolver($session, $groupManager)
+					)
+				),
+				$registerMapper
 			),
-			$registerMapper,
 			new PurposeGuard($registry, new PurposeContext($request), $trail, new NullLogger()),
 			$this->readsShown()
 		);

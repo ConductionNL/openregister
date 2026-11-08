@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessHistory;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
+use OCA\OpenRegister\Service\Rbac\ObjectAccessReportSources;
 use OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -173,9 +174,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_STAGING);
 
 		$report = new ObjectAccessReport(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			auditTrailMapper: $auditTrailMapper,
+			sources: new ObjectAccessReportSources(registerMapper: $registerMapper, schemaMapper: $schemaMapper, auditTrailMapper: $auditTrailMapper),
 			holders: new ObjectPermissionsResolver(),
 			history: new ObjectAccessHistory(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())
