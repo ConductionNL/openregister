@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleRunStores;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\IAppConfig;
@@ -98,8 +99,7 @@ class RuleRunRecorderTest extends TestCase {
 		);
 
 		return new RuleRunRecorder(
-			runs: $runs,
-			summaries: $summaryMapper,
+			stores: new RuleRunStores(runs: $runs, summaries: $summaryMapper),
 			userSession: $this->createMock(originalClassName: IUserSession::class),
 			config: $config,
 			logger: $this->createMock(originalClassName: LoggerInterface::class)
@@ -268,8 +268,7 @@ class RuleRunRecorderTest extends TestCase {
 		);
 
 		$recorder = new RuleRunRecorder(
-			runs: $this->createMock(originalClassName: RuleRunMapper::class),
-			summaries: $this->createMock(originalClassName: RuleRunSummaryMapper::class),
+			stores: new RuleRunStores(runs: $this->createMock(originalClassName: RuleRunMapper::class), summaries: $this->createMock(originalClassName: RuleRunSummaryMapper::class)),
 			userSession: $this->createMock(originalClassName: IUserSession::class),
 			config: $config,
 			logger: $this->createMock(originalClassName: LoggerInterface::class)

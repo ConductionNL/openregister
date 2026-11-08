@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
+use OCA\OpenRegister\Service\Dbal\IntrospectionTools;
 use OCA\OpenRegister\Service\Dbal\SqlTypeMapper;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -132,12 +133,10 @@ final class ObjectSourceWiring {
 			'logger' => 'Psr\Log\LoggerInterface',
 		],
 		DatabaseIntrospectionService::class => [
-			'connectionFactory' => DbalConnectionFactory::class,
-			'typeMapper'        => SqlTypeMapper::class,
-			'registerMapper'    => \OCA\OpenRegister\Db\RegisterMapperInterface::class,
-			'schemaMapper'      => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
-			'diffService'       => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
-			'logger'            => 'Psr\Log\LoggerInterface',
+			'tools'          => IntrospectionTools::class,
+			'registerMapper' => \OCA\OpenRegister\Db\RegisterMapperInterface::class,
+			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+			'logger'         => 'Psr\Log\LoggerInterface',
 		],
 		DbalObjectSourceProvider::class => [
 			'sourceMapper'      => \OCA\OpenRegister\Db\SourceMapperInterface::class,
