@@ -162,7 +162,7 @@ final class BackfillFlowPagingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $versions, $pin, $runs) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					FlowDefinitionPin::class => $pin,
 					FlowRunMapper::class => $runs,
 					default => $mapper,
@@ -208,7 +208,7 @@ final class BackfillFlowPagingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $versions) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					default => $mapper,
 				};
 			}
@@ -243,7 +243,7 @@ final class BackfillFlowPagingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $versions) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					default => $mapper,
 				};
 			}
@@ -385,7 +385,7 @@ final class BackfillFlowPagingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $versions, $pin, $runs) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					FlowDefinitionPin::class => $pin,
 					FlowRunMapper::class => $runs,
 					default => $mapper,

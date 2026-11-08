@@ -161,7 +161,7 @@ class FlowRunVersionPinGoldenTest extends TestCase {
 	 */
 	private function container(array $case): ContainerInterface {
 		$services = [
-			FlowVersionMapper::class => fn () => $this->versionMapper(case: $case),
+			\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => fn () => $this->versionMapper(case: $case),
 			FlowDefinitionPin::class => fn () => $this->definitions(case: $case),
 			'OCA\OpenRegister\Db\FlowMapper' => fn () => $this->flows(case: $case),
 			'OCA\OpenRegister\Service\Flow\FlowNodePreflight' => fn () => $this->preflight(case: $case),
