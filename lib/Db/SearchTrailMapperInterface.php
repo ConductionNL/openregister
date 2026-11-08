@@ -49,63 +49,43 @@ interface SearchTrailMapperInterface {
 	/**
 	 * Find all search trails with optional filters
 	 *
+	 * @param SearchTrailCriteria|null $criteria Filters, search term and created window; null for all.
 	 * @param int|null $limit Maximum number of results to return
 	 * @param int|null $offset Number of results to skip
-	 * @param array $filters Filter criteria
 	 * @param array $sort Sort criteria
-	 * @param string|null $search Search term
-	 * @param DateTime|null $from Start date filter
-	 * @param DateTime|null $to End date filter
 	 *
 	 * @return SearchTrail[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\SearchTrail>
 	 */
 	public function findAll(
+		?SearchTrailCriteria $criteria = null,
 		?int $limit = null,
 		?int $offset = null,
-		array $filters = [],
 		array $sort = [],
-		?string $search = null,
-		?DateTime $from = null,
-		?DateTime $to = null,
 	): array;
 
 	/**
 	 * Count search trails with optional filters
 	 *
-	 * @param array $filters Filter criteria
-	 * @param string|null $search Search term
-	 * @param DateTime|null $from Start date filter
-	 * @param DateTime|null $to End date filter
+	 * @param SearchTrailCriteria|null $criteria Filters, search term and created window; null for all.
 	 *
 	 * @return int Number of matching search trails
 	 */
-	public function count(
-		array $filters = [],
-		?string $search = null,
-		?DateTime $from = null,
-		?DateTime $to = null,
-	): int;
+	public function count(?SearchTrailCriteria $criteria = null): int;
 
 	/**
 	 * Create a new search trail entry
 	 *
-	 * @param array $searchQuery The search query parameters
-	 * @param int $resultCount The number of results returned
-	 * @param int $totalResults The total number of matching results
-	 * @param float $responseTime The response time in milliseconds
-	 * @param string $executionType The execution type ('sync' or 'async')
+	 * @param array       $searchQuery   The search query parameters
+	 * @param SearchTrail $outcome       The unsaved trail carrying what the search
+	 *                                   returned: result count and total results.
+	 * @param float       $responseTime  The response time in milliseconds
+	 * @param string      $executionType The execution type ('sync' or 'async')
 	 *
 	 * @return SearchTrail The created search trail entity
 	 */
-	public function createSearchTrail(
-		array $searchQuery,
-		int $resultCount,
-		int $totalResults,
-		float $responseTime,
-		string $executionType = 'sync',
-	): SearchTrail;
+	public function createSearchTrail(array $searchQuery, SearchTrail $outcome, float $responseTime, string $executionType = 'sync'): SearchTrail;
 
 	/**
 	 * Get search statistics for the given time period

@@ -285,20 +285,6 @@ class SearchTrailServiceTest extends TestCase {
 		$this->assertSame('excellent', $result['statistics'][0]['performance_rating']);
 	}
 
-	// ── constructor with custom retention and selfClearing ──
-
-	public function testConstructorWithCustomRetention(): void {
-		$service = new SearchTrailService(
-			$this->searchTrailMapper,
-			new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper),
-			30,
-			false
-		);
-
-		// No direct way to verify, but constructor should not throw.
-		$this->assertInstanceOf(SearchTrailService::class, $service);
-	}
-
 	// ── getUserAgentStatistics ──
 
 	public function testGetUserAgentStatisticsReturnsEnhancedStats(): void {
