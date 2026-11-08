@@ -181,23 +181,7 @@ class RetentionService implements RetentionServiceInterface {
 		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig, classification: $classification);
 		$retentionPeriod = $applied['bewaartermijn'];
 
-		// Build archival metadata.
-		$retention['archiefnominatie'] = $applied['archiefnominatie'];
-		$retention['archiefstatus'] = RecordState::ACTIVE;
-		$retention['classification'] = $classification;
-		$retention['bewaartermijn'] = $retentionPeriod;
-		$retention['selectielijstBron'] = $applied['selectielijstBron'];
-
-		// GAP B1. WHICH list is not WHICH VERSION OF THAT LIST. The same
-		// category carries different retention periods across revisions, so a
-		// decision recorded with only the list's name cannot be justified once
-		// the list moves. These are English keys beside a Dutch one on purpose:
-		// `selectielijstBron` predates the vocabulary decision and existing
-		// consumers read it, while everything new speaks the abstract layer's
-		// language.
-		foreach ($applied['provenance'] as $key => $value) {
-			$retention[$key] = $value;
-		}
+		$retention = $this->withArchivalDefaults(retention: $retention, applied: $applied, classification: $classification);
 
 		// Calculate archiefactiedatum if bewaartermijn is set.
 		if ($retentionPeriod !== null) {
@@ -212,6 +196,37 @@ class RetentionService implements RetentionServiceInterface {
 
 		return $object;
 	}//end applyArchivalMetadata()
+
+	/**
+	 * Write the decided nominatie, period, source and provenance into a retention block.
+	 *
+	 * @param array       $retention      The record's retention block
+	 * @param array       $applied        The decision from resolveArchivalDefaults()
+	 * @param string|null $classification The record's effective category
+	 *
+	 * @return array The retention block with the archival metadata set
+	 */
+	private function withArchivalDefaults(array $retention, array $applied, ?string $classification): array {
+		// Build archival metadata.
+		$retention['archiefnominatie'] = $applied['archiefnominatie'];
+		$retention['archiefstatus'] = RecordState::ACTIVE;
+		$retention['classification'] = $classification;
+		$retention['bewaartermijn'] = $applied['bewaartermijn'];
+		$retention['selectielijstBron'] = $applied['selectielijstBron'];
+
+		// GAP B1. WHICH list is not WHICH VERSION OF THAT LIST. The same
+		// category carries different retention periods across revisions, so a
+		// decision recorded with only the list's name cannot be justified once
+		// the list moves. These are English keys beside a Dutch one on purpose:
+		// `selectielijstBron` predates the vocabulary decision and existing
+		// consumers read it, while everything new speaks the abstract layer's
+		// language.
+		foreach ($applied['provenance'] as $key => $value) {
+			$retention[$key] = $value;
+		}
+
+		return $retention;
+	}//end withArchivalDefaults()
 
 	/**
 	 * Decide the nominatie, the retention period and where they came from.
@@ -325,6 +340,25 @@ class RetentionService implements RetentionServiceInterface {
 			return $object;
 		}
 
+		$this->assertCategoryMayChange(retention: $retention, effective: $effective);
+
+		unset($retention['archiefnominatie'], $retention['archiefactiedatum'], $retention['selectielijstBron']);
+		$object->setRetention($retention);
+
+		return $this->applyArchivalMetadata(object: $object, schema: $schema);
+	}//end applyClassificationOnUpdate()
+
+	/**
+	 * Refuse a category change on a record already nominated at its terminal state.
+	 *
+	 * @param array       $retention The record's retention block
+	 * @param string|null $effective The record's new effective category
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectStateWriteException When the record is not live or already carries a nomination
+	 */
+	private function assertCategoryMayChange(array $retention, ?string $effective): void {
 		$live = in_array(($retention['archiefstatus'] ?? RecordState::ACTIVE), RecordState::ACTIVE_ALIASES, true);
 		if ($live === false || isset($retention['nomination']) === true) {
 			throw new ObjectStateWriteException(
@@ -333,12 +367,7 @@ class RetentionService implements RetentionServiceInterface {
 					. '". Recompute its nomination instead.'
 			);
 		}
-
-		unset($retention['archiefnominatie'], $retention['archiefactiedatum'], $retention['selectielijstBron']);
-		$object->setRetention($retention);
-
-		return $this->applyArchivalMetadata(object: $object, schema: $schema);
-	}//end applyClassificationOnUpdate()
+	}//end assertCategoryMayChange()
 
 	/**
 	 * Calculate archiefactiedatum based on the schema's afleidingswijze.
@@ -607,15 +636,7 @@ class RetentionService implements RetentionServiceInterface {
 		}
 
 		try {
-			$date = new DateTime($retention['archiefactiedatum']);
-			$date->add(new DateInterval($extensionPeriod));
-			$retention['archiefactiedatum'] = $date->format('Y-m-d');
-
-			// Store original date if not already stored.
-			if (empty($retention['originalArchiefactiedatum']) === true) {
-				$retention['originalArchiefactiedatum'] = $retention['archiefactiedatum'];
-			}
-
+			$retention = $this->withExtendedActionDate(retention: $retention, extensionPeriod: $extensionPeriod);
 			$object->setRetention($retention);
 		} catch (Exception $e) {
 			$this->logger->warning(
@@ -625,6 +646,29 @@ class RetentionService implements RetentionServiceInterface {
 
 		return $object;
 	}//end extendArchiveActionDate()
+
+	/**
+	 * Move the archiefactiedatum on by a period, remembering the original once.
+	 *
+	 * @param array $retention       The record's retention block, with an archiefactiedatum
+	 * @param mixed $extensionPeriod ISO 8601 duration
+	 *
+	 * @return array The retention block with the extended date
+	 *
+	 * @throws Exception When the date or the period cannot be parsed
+	 */
+	private function withExtendedActionDate(array $retention, mixed $extensionPeriod): array {
+		$date = new DateTime($retention['archiefactiedatum']);
+		$date->add(new DateInterval($extensionPeriod));
+		$retention['archiefactiedatum'] = $date->format('Y-m-d');
+
+		// Store original date if not already stored.
+		if (empty($retention['originalArchiefactiedatum']) === true) {
+			$retention['originalArchiefactiedatum'] = $retention['archiefactiedatum'];
+		}
+
+		return $retention;
+	}//end withExtendedActionDate()
 
 	/**
 	 * Visit every object carrying a retention decision, wherever it lives.
@@ -702,14 +746,25 @@ class RetentionService implements RetentionServiceInterface {
 	 *
 	 * @return string|null One of the REFUSAL_* reasons, or null when the object may be destroyed.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One rule per branch; collapsing
-	 *              them would hide which rule rejected an object.
-	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function destructionRefusal(ObjectEntity $object, string $today, array $excludeUuids): ?string {
 		$retention = ($object->getRetention() ?? []);
 
+		// The retention rules first, then the rules about this object, in that order.
+		return ($this->retentionDestructionRefusal(retention: $retention, today: $today)
+			?? $this->objectDestructionRefusal(object: $object, retention: $retention, excludeUuids: $excludeUuids));
+	}//end destructionRefusal()
+
+	/**
+	 * The first rule on the retention decision itself that refuses destruction.
+	 *
+	 * @param array  $retention The object's retention block.
+	 * @param string $today     Today, as Y-m-d.
+	 *
+	 * @return string|null REFUSAL_NOT_NOMINATED, REFUSAL_NOT_LIVE, REFUSAL_NOT_DUE, or null.
+	 */
+	private function retentionDestructionRefusal(array $retention, string $today): ?string {
 		// Every spelling that means destroy. Matching only the English one
 		// would make every pre-existing record invisible to this sweep, which
 		// is the direction that keeps personal data past its lawful term.
@@ -721,11 +776,23 @@ class RetentionService implements RetentionServiceInterface {
 			return self::REFUSAL_NOT_LIVE;
 		}
 
-		$actiedatum = ($retention['archiefactiedatum'] ?? null);
-		if ($actiedatum === null || $actiedatum > $today) {
+		if ($this->actionDateHasPassed(retention: $retention, today: $today) === false) {
 			return self::REFUSAL_NOT_DUE;
 		}
 
+		return null;
+	}//end retentionDestructionRefusal()
+
+	/**
+	 * The first rule on the object's state that refuses destruction.
+	 *
+	 * @param ObjectEntity $object       The object to judge.
+	 * @param array        $retention    The object's retention block.
+	 * @param array        $excludeUuids UUIDs already on a pending destruction list.
+	 *
+	 * @return string|null REFUSAL_FROZEN, REFUSAL_LEGAL_HOLD, REFUSAL_ALREADY_LISTED, or null.
+	 */
+	private function objectDestructionRefusal(ObjectEntity $object, array $retention, array $excludeUuids): ?string {
 		// Skip objects in an immutable archival status (destroyed, transferred).
 		//
 		// ⚠️ THIS IS A BELT OVER BRACES AND NO TEST CAN REDDEN ON IT ALONE: every
@@ -748,7 +815,7 @@ class RetentionService implements RetentionServiceInterface {
 		}
 
 		return null;
-	}//end destructionRefusal()
+	}//end objectDestructionRefusal()
 
 	/**
 	 * Is this record still live, for the purposes of a disposal sweep?
@@ -849,17 +916,41 @@ class RetentionService implements RetentionServiceInterface {
 			return false;
 		}
 
-		$actiedatum = ($retention['archiefactiedatum'] ?? null);
-		if ($actiedatum === null || $actiedatum > $today) {
-			return false;
-		}
-
-		if ((($retention['legalHold'] ?? [])['active'] ?? false) === true) {
+		if ($this->isDueAndNotHeld(retention: $retention, today: $today) === false) {
 			return false;
 		}
 
 		return (in_array($object->getUuid(), $excludeUuids, true) === false);
 	}//end isEligibleForTransfer()
+
+	/**
+	 * Whether the action date has passed and no legal hold is active.
+	 *
+	 * @param array  $retention The object's retention block.
+	 * @param string $today     Today, as Y-m-d.
+	 *
+	 * @return bool True when due and not held.
+	 */
+	private function isDueAndNotHeld(array $retention, string $today): bool {
+		if ($this->actionDateHasPassed(retention: $retention, today: $today) === false) {
+			return false;
+		}
+
+		return ((($retention['legalHold'] ?? [])['active'] ?? false) === true) === false;
+	}//end isDueAndNotHeld()
+
+	/**
+	 * Whether the archiefactiedatum is set and not after today.
+	 *
+	 * @param array  $retention The object's retention block.
+	 * @param string $today     Today, as Y-m-d.
+	 *
+	 * @return bool True when the action date has been reached.
+	 */
+	private function actionDateHasPassed(array $retention, string $today): bool {
+		$actiedatum = ($retention['archiefactiedatum'] ?? null);
+		return ($actiedatum === null || $actiedatum > $today) === false;
+	}//end actionDateHasPassed()
 
 	/**
 	 * Get UUIDs of objects already on pending destruction lists.
@@ -897,19 +988,7 @@ class RetentionService implements RetentionServiceInterface {
 				schema: $schema
 			);
 
-			$uuids = [];
-			foreach ($pendingLists as $list) {
-				$listData = $list->getObject();
-				$objects = $listData['objects'] ?? [];
-				foreach ($objects as $obj) {
-					$uuid = $obj['uuid'] ?? null;
-					if ($uuid !== null) {
-						$uuids[] = $uuid;
-					}
-				}
-			}
-
-			return array_unique($uuids);
+			return array_unique($this->listedObjectUuids(lists: $pendingLists));
 		} catch (Exception $e) {
 			$this->logger->warning(
 				'[RetentionService] Failed to get pending destruction list objects: ' . $e->getMessage()
@@ -917,6 +996,29 @@ class RetentionService implements RetentionServiceInterface {
 			return [];
 		}//end try
 	}//end getObjectsOnPendingDestructionLists()
+
+	/**
+	 * The UUIDs of every object entry on the given destruction lists, in list order.
+	 *
+	 * @param ObjectEntity[] $lists The destruction lists
+	 *
+	 * @return string[] The UUIDs, duplicates included
+	 */
+	private function listedObjectUuids(array $lists): array {
+		$uuids = [];
+		foreach ($lists as $list) {
+			$listData = $list->getObject();
+			$objects = $listData['objects'] ?? [];
+			foreach ($objects as $obj) {
+				$uuid = $obj['uuid'] ?? null;
+				if ($uuid !== null) {
+					$uuids[] = $uuid;
+				}
+			}
+		}
+
+		return $uuids;
+	}//end listedObjectUuids()
 
 	/**
 	 * Create a destruction list as a register object.
@@ -940,41 +1042,11 @@ class RetentionService implements RetentionServiceInterface {
 			return null;
 		}
 
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		if ($user !== null) {
-			$userId = $user->getUID();
-		}
+		$userId = $this->currentUserIdOrSystem();
 
 		$objectEntries = [];
 		foreach ($objects as $object) {
-			$retention = $object->getRetention() ?? [];
-			// Detect WOO-published status from object data or metadata.
-			$objectData = $object->getObject() ?? [];
-			$isWooPublished = ($objectData['woo_gepubliceerd'] ?? false) === true
-				|| ($objectData['publicatiestatus'] ?? null) === 'gepubliceerd'
-				|| ($retention['wooPublished'] ?? false) === true;
-
-			$objectEntries[] = [
-				'uuid' => $object->getUuid(),
-				// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title` PROPERTY,
-				// so Entity's magic accessor threw "title is not a valid
-				// attribute" here, uncaught, and took the whole
-				// DestructionCheckJob run down with it. Every sweep that got
-				// this far therefore failed at list creation, which is a second
-				// reason no destruction list was ever produced. `name` is the
-				// property that exists.
-				'title' => $object->getName() ?? $object->getUuid(),
-				'schema' => $object->getSchema(),
-				'register' => $object->getRegister(),
-				'archiefactiedatum' => $retention['archiefactiedatum'] ?? null,
-				'classification' => $retention['classification'] ?? null,
-				'softDeleted' => $object->isSoftDeleted(),
-				'wooGepubliceerd' => $isWooPublished,
-				// Unassigned, said out loud, so a consumer reading a fresh
-				// list can see that nobody is accountable for this entry yet.
-				'reviewer' => null,
-			];
+			$objectEntries[] = $this->destructionListEntry(object: $object);
 		}
 
 		return [
@@ -989,6 +1061,57 @@ class RetentionService implements RetentionServiceInterface {
 			'decisions' => [],
 		];
 	}//end createDestructionList()
+
+	/**
+	 * The current user's ID, or 'system' when no user is logged in.
+	 *
+	 * @return string The user ID
+	 */
+	private function currentUserIdOrSystem(): string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return 'system';
+		}
+
+		return $user->getUID();
+	}//end currentUserIdOrSystem()
+
+	/**
+	 * One object's entry on a new destruction list.
+	 *
+	 * @param ObjectEntity $object The object to list
+	 *
+	 * @return array The entry
+	 */
+	private function destructionListEntry(ObjectEntity $object): array {
+		$retention = $object->getRetention() ?? [];
+		// Detect WOO-published status from object data or metadata.
+		$objectData = $object->getObject() ?? [];
+		$isWooPublished = ($objectData['woo_gepubliceerd'] ?? false) === true
+			|| ($objectData['publicatiestatus'] ?? null) === 'gepubliceerd'
+			|| ($retention['wooPublished'] ?? false) === true;
+
+		return [
+			'uuid' => $object->getUuid(),
+			// 🔴 NOT `getTitle()`. `ObjectEntity` HAS NO `title` PROPERTY,
+			// so Entity's magic accessor threw "title is not a valid
+			// attribute" here, uncaught, and took the whole
+			// DestructionCheckJob run down with it. Every sweep that got
+			// this far therefore failed at list creation, which is a second
+			// reason no destruction list was ever produced. `name` is the
+			// property that exists.
+			'title' => $object->getName() ?? $object->getUuid(),
+			'schema' => $object->getSchema(),
+			'register' => $object->getRegister(),
+			'archiefactiedatum' => $retention['archiefactiedatum'] ?? null,
+			'classification' => $retention['classification'] ?? null,
+			'softDeleted' => $object->isSoftDeleted(),
+			'wooGepubliceerd' => $isWooPublished,
+			// Unassigned, said out loud, so a consumer reading a fresh
+			// list can see that nobody is accountable for this entry yet.
+			'reviewer' => null,
+		];
+	}//end destructionListEntry()
 
 	/**
 	 * Generate a destruction certificate after execution.
