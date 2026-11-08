@@ -98,7 +98,6 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 		ContentReportService::class => ['Listener/ContentReportRemovalListener.php'],
 		ContentReportMapper::class => ['Service/Audit/ContentReportService.php'],
 		ObjectHistoryForReaders::class => ['Controller/ObjectsController.php'],
-		ExplicitRevealTrailMasker::class => ['Controller/ObjectsController.php'],
 	];
 
 	/**
