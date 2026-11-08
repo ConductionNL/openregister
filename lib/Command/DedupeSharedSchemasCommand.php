@@ -120,10 +120,7 @@ class DedupeSharedSchemasCommand extends Command {
 		$write  = (bool)$input->getOption('write');
 		$strict = (bool)$input->getOption('strict');
 
-		$registerId = $input->getOption('register');
-		if ($registerId !== null) {
-			$registerId = (int)$registerId;
-		}
+		$registerId = self::registerIdOption(raw: $input->getOption('register'));
 
 		try {
 			$keep = $this->dedupe->parseKeep(raw: (array)$input->getOption('keep'));
@@ -144,13 +141,7 @@ class DedupeSharedSchemasCommand extends Command {
 		);
 		$output->writeln('');
 
-		$unattributed = 0;
-		foreach ($plan as $entry) {
-			$this->renderSchema(output: $output, entry: $entry);
-			if ($entry['owner'] === null) {
-				$unattributed++;
-			}
-		}
+		$unattributed = $this->renderPlan(output: $output, plan: $plan);
 
 		if ($write === false) {
 			return $this->reportDryRun(output: $output, unattributed: $unattributed);
@@ -170,6 +161,41 @@ class DedupeSharedSchemasCommand extends Command {
 
 		return $this->applyPlan(output: $output, plan: $plan, strict: $strict);
 	}//end execute()
+
+	/**
+	 * The --register option as an id, or null when it was not given.
+	 *
+	 * @param mixed $raw The raw option value.
+	 *
+	 * @return int|null The register id.
+	 */
+	private static function registerIdOption(mixed $raw): ?int {
+		if ($raw === null) {
+			return null;
+		}
+
+		return (int)$raw;
+	}//end registerIdOption()
+
+	/**
+	 * Render every plan entry and count the unattributed ones.
+	 *
+	 * @param OutputInterface                  $output The console.
+	 * @param array<int, array<string, mixed>> $plan   The dedupe plan.
+	 *
+	 * @return int The number of entries without an owner.
+	 */
+	private function renderPlan(OutputInterface $output, array $plan): int {
+		$unattributed = 0;
+		foreach ($plan as $entry) {
+			$this->renderSchema(output: $output, entry: $entry);
+			if ($entry['owner'] === null) {
+				$unattributed++;
+			}
+		}
+
+		return $unattributed;
+	}//end renderPlan()
 
 	/**
 	 * Report the outcome of a dry run.
