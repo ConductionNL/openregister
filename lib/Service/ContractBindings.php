@@ -151,6 +151,8 @@ use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\FlowTaskBridgeInterface;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
@@ -761,6 +763,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\SaveObjectInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectWriterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
+		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\SchemaUriResolverInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\TransitionAuthorizationInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\ValidateObjectInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
@@ -773,6 +776,7 @@ final class ContractBindings {
 		ConfigSetShareableConfigTypeInterface::class => ConfigSetShareableConfigType::class,
 		DecisionTableValidatorInterface::class => DecisionTableValidator::class,
 		FlowShareableConfigTypeInterface::class => FlowShareableConfigType::class,
+		FlowTaskBridgeInterface::class => FlowTaskBridge::class,
 		GroupPrincipalResolverInterface::class => GroupPrincipalResolver::class,
 		KillSwitchCheckInterface::class => KillSwitchCheck::class,
 		OrganisationHaltCheckInterface::class => OrganisationHaltCheck::class,
