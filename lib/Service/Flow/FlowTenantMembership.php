@@ -36,7 +36,7 @@ use Throwable;
  *
  * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
  */
-class FlowTenantMembership {
+class FlowTenantMembership implements FlowTenantMembershipInterface {
 	/**
 	 * Constructor.
 	 *
