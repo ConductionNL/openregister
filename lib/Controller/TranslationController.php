@@ -204,21 +204,34 @@ class TranslationController extends Controller {
 		$rows = $this->translationMapper->findByObject($uuid);
 		$serialised = array_map(fn (Translation $t) => $t->jsonSerialize(), $rows);
 
-		$completeness = [];
-		if ($schema !== null && $schema !== '') {
-			$resolvedSchema = $this->resolveSchema(ref: $schema);
-			if ($resolvedSchema !== null) {
-				$completeness = $this->statusService->completenessForObject($uuid, $resolvedSchema);
-			}
-		}
-
 		return new JSONResponse(
 			[
 				'translations' => $serialised,
-				'completeness' => $completeness,
+				'completeness' => $this->completenessFor(uuid: $uuid, schema: $schema),
 			]
 		);
 	}//end showByObject()
+
+	/**
+	 * Completeness of one object against its schema, or none without a schema.
+	 *
+	 * @param string      $uuid   The object UUID.
+	 * @param string|null $schema Optional schema ref (id/uuid/slug).
+	 *
+	 * @return array Completeness summary, or an empty array.
+	 */
+	private function completenessFor(string $uuid, ?string $schema): array {
+		if ($schema === null || $schema === '') {
+			return [];
+		}
+
+		$resolvedSchema = $this->resolveSchema(ref: $schema);
+		if ($resolvedSchema === null) {
+			return [];
+		}
+
+		return $this->statusService->completenessForObject($uuid, $resolvedSchema);
+	}//end completenessFor()
 
 	/**
 	 * Promote / change the workflow status of one translation slot.
@@ -282,10 +295,24 @@ class TranslationController extends Controller {
 		?string $to = null,
 		?array $properties = null,
 	): JSONResponse {
-		if ($from === null || $from === '' || $to === null || $to === '') {
+		if ($this->languagesMissing(from: $from, to: $to) === true) {
 			return new JSONResponse(['error' => 'from and to are required'], Http::STATUS_BAD_REQUEST);
 		}
 
+		return $this->translateLoaded(uuid: $uuid, from: $from, to: $to, properties: $properties);
+	}//end bulkTranslate()
+
+	/**
+	 * Load the object and translate it, or answer 404.
+	 *
+	 * @param string             $uuid       The object UUID.
+	 * @param string             $from       Source language code.
+	 * @param string             $to         Target language code.
+	 * @param array<string>|null $properties Optional whitelist of property names.
+	 *
+	 * @return JSONResponse The translation result, or 404.
+	 */
+	private function translateLoaded(string $uuid, string $from, string $to, array|null $properties): JSONResponse {
 		$object = $this->loadObject(uuid: $uuid);
 		if ($object === null) {
 			return new JSONResponse(['error' => 'object not found', 'uuid' => $uuid], Http::STATUS_NOT_FOUND);
@@ -299,15 +326,21 @@ class TranslationController extends Controller {
 		);
 
 		return new JSONResponse(
-			[
-				'uuid' => $uuid,
-				'from' => $from,
-				'to' => $to,
-				'translated' => $result['translated'],
-				'skipped' => $result['skipped'],
-			]
+			['uuid' => $uuid, 'from' => $from, 'to' => $to, 'translated' => $result['translated'], 'skipped' => $result['skipped']]
 		);
-	}//end bulkTranslate()
+	}//end translateLoaded()
+
+	/**
+	 * Whether either language code is missing.
+	 *
+	 * @param string|null $from Source language code.
+	 * @param string|null $to   Target language code.
+	 *
+	 * @return bool True when either is null or empty.
+	 */
+	private function languagesMissing(string|null $from, string|null $to): bool {
+		return (in_array($from, [null, ''], true) === true || in_array($to, [null, ''], true) === true);
+	}//end languagesMissing()
 
 	/**
 	 * Load an object by UUID; returns null when not found.

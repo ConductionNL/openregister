@@ -88,33 +88,41 @@ class AutoTransitionRecordListener implements IEventListener {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
-		// Written as one instanceof check per branch so static analysis can
-		// narrow `$event` to the two classes that carry getObject(); a boolean
-		// held in a variable first does not narrow.
-		if (($event instanceof ObjectCreatedEvent) === false
-			&& ($event instanceof ObjectUpdatedEvent) === false
-		) {
+		// One instanceof check per branch so static analysis can narrow
+		// `$event` to the class that carries getObject().
+		if ($event instanceof ObjectUpdatedEvent) {
+			$this->recordWrite(object: $event->getObject(), old: $event->getOldObject());
 			return;
 		}
 
-		$object = $event->getObject();
+		if ($event instanceof ObjectCreatedEvent) {
+			$this->recordWrite(object: $event->getObject(), old: null);
+		}
+	}//end handle()
+
+	/**
+	 * Note a written object whose schema declares `autoWhen` rules.
+	 *
+	 * @param ObjectEntity      $object The object as written.
+	 * @param ObjectEntity|null $old    The object before an update, or null on create.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function recordWrite(ObjectEntity $object, ?ObjectEntity $old): void {
 		$schemaRef = (string)$object->getSchema();
 		if ($this->schemaDeclaresAutoWhen(schemaRef: $schemaRef) === false) {
 			return;
-		}
-
-		$previous = [];
-		if ($event instanceof ObjectUpdatedEvent === true) {
-			$previous = $this->dataOf(object: $event->getOldObject());
 		}
 
 		$this->pass->record(
 			uuid: (string)$object->getUuid(),
 			register: (string)$object->getRegister(),
 			schema: $schemaRef,
-			previous: $previous
+			previous: $this->dataOf(object: $old)
 		);
-	}//end handle()
+	}//end recordWrite()
 
 	/**
 	 * Whether the schema declares at least one automatic transition.

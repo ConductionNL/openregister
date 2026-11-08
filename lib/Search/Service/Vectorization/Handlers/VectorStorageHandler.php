@@ -89,14 +89,9 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 	): int {
 		return $this->storeVectorInDatabase(
 			vector: new StoredVector(
-				entityType: $entityType,
-				entityId: $entityId,
-				embedding: $embedding,
-				model: $model,
-				dimensions: $dimensions,
-				chunkIndex: $chunkIndex,
-				totalChunks: $totalChunks,
-				chunkText: $chunkText,
+				subject: new VectorSubject(entityType: $entityType, entityId: $entityId),
+				payload: new VectorPayload(embedding: $embedding, model: $model, dimensions: $dimensions),
+				position: new VectorChunkPosition(chunkIndex: $chunkIndex, totalChunks: $totalChunks, chunkText: $chunkText),
 				metadata: $metadata
 			)
 		);

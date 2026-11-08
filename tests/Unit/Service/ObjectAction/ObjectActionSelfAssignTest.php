@@ -43,6 +43,10 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionFlowEngines;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionFlowRun;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunRecorder;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerChecks;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
@@ -283,16 +287,14 @@ class ObjectActionSelfAssignTest extends TestCase {
 			}
 		);
 
+		$checks   = new ObjectActionRunnerChecks(new ObjectActionDefinitions($this->createMock(RegisterMapper::class)), new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)), new ObjectActionInputs(new OasRequestValidator()));
+		$recorder = new ObjectActionRunRecorder($checks->inputs, $audit, $checks->gate);
+
 		return new ObjectActionRunner(
-			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
-			new ObjectActionGate($permissions, $session, $l10n, $this->createMock(ObjectActionElevationEntries::class)),
-			new ObjectActionInputs(new OasRequestValidator()),
-			$this->createMock(ObjectActionStepsFlow::class),
-			$audit,
+			$checks,
 			new ObjectActionWriters($this->createMock(TransitionEngine::class), new ObjectActionSelfAssign($objects, $session)),
-			$this->createMock(FlowService::class),
-			$this->createMock(MacroActionResolver::class),
-			new NullLogger()
+			$recorder,
+			new ObjectActionFlowRun(new ObjectActionFlowEngines($this->createMock(ObjectActionStepsFlow::class), $this->createMock(FlowService::class), $this->createMock(MacroActionResolver::class)), $checks->inputs, $recorder, new NullLogger())
 		);
 	}//end runner()
 

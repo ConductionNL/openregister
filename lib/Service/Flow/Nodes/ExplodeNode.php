@@ -44,9 +44,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
@@ -54,19 +51,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
  */
-class ExplodeNode implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-	}//end __construct()
-
+class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * The step type.
 	 *
@@ -110,19 +95,6 @@ class ExplodeNode implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKey
 	public function getIcon(): string {
 		return $this->urls->imagePath('openregister', 'app-dark.svg');
 	}//end getIcon()
-
-	/**
-	 * Available in both scopes.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of an explode step.
@@ -258,16 +230,4 @@ class ExplodeNode implements IFlowNode, ExplodeNodeInterface, IFlowNodeConfigKey
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

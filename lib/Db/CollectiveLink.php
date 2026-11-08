@@ -67,6 +67,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class CollectiveLink extends Entity implements JsonSerializable {
+	use ObjectLinkTypesTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The object uuid.
@@ -163,9 +165,7 @@ class CollectiveLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addObjectLinkTypes();
 		$this->addType(fieldName: 'pageId', type: 'integer');
 		$this->addType(fieldName: 'collectiveId', type: 'integer');
 		$this->addType(fieldName: 'collectiveName', type: 'string');
@@ -177,28 +177,4 @@ class CollectiveLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'linkedBy', type: 'string');
 		$this->addType(fieldName: 'linkedAt', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * JSON serialization.
-	 *
-	 * @return array<string,mixed>
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'pageId' => $this->pageId,
-			'collectiveId' => $this->collectiveId,
-			'collectiveName' => $this->collectiveName,
-			'pageTitle' => $this->pageTitle,
-			'slug' => $this->slug,
-			'emoji' => $this->emoji,
-			'lastModified' => $this->lastModified?->format(DateTime::ATOM),
-			'url' => $this->url,
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
-		];
-	}//end jsonSerialize()
 }//end class

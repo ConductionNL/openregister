@@ -41,10 +41,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
-use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
-use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -52,7 +48,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\IUser;
 use OCP\IUserManager;
 use OCP\WorkflowEngine\IManager;
 use RuntimeException;
@@ -73,6 +68,34 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	public const TYPE = 'openregister.unlock-object';
 
 	/**
+	 * Refusal when the run did not identify itself.
+	 *
+	 * @var string
+	 */
+	private const REFUSE_NO_RUN = 'An unlock step needs the run it belongs to; this run did not identify itself.';
+
+	/**
+	 * Refusal when the run names no acting identity: a unlock must be attributable.
+	 *
+	 * @var string
+	 */
+	private const REFUSE_NO_IDENTITY = 'This flow run has no acting identity (runAs); an unlock must be attributable.';
+
+	/**
+	 * Refusal when an item names no object.
+	 *
+	 * @var string
+	 */
+	private const REFUSE_NO_TARGET = 'An unlock step could not work out which object to release from the item it received.';
+
+	/**
+	 * The run, owner and target checks this step shares with the other lock step.
+	 *
+	 * @var LockStepContext
+	 */
+	private readonly LockStepContext $lockContext;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objects Object lock operations, RBAC-enforcing.
@@ -82,11 +105,11 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly IUserManager $userManager,
+		IUserManager $userManager,
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
 	) {
-
+		$this->lockContext = new LockStepContext(userManager: $userManager, l10n: $l10n);
 	}//end __construct()
 
 	/**
@@ -213,10 +236,10 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 
 		$this->validateConfig(config: $config);
 
-		$runUuid = $this->resolveRunUuid(context: $context);
-		$owner = $this->resolveOwner(context: $context);
+		$runUuid = $this->lockContext->runUuid(context: $context, refusal: $this->l10n->t(self::REFUSE_NO_RUN));
+		$owner = $this->lockContext->owner(context: $context, refusal: $this->l10n->t(self::REFUSE_NO_IDENTITY));
 
-		foreach ($this->resolveTargets(items: $items, config: $config) as $uuid) {
+		foreach ($this->lockContext->targets(items: $items, config: $config, refusal: $this->l10n->t(self::REFUSE_NO_TARGET)) as $uuid) {
 			$this->objects->runAs(
 				$owner,
 				fn (): bool => $this->objects->unlockObject(
@@ -229,99 +252,6 @@ class UnlockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfi
 
 		return $items;
 	}//end execute()
-
-	/**
-	 * Which objects to release.
-	 *
-	 * @param array $items The incoming items.
-	 * @param array $config The step configuration.
-	 *
-	 * @return array<int, string> The distinct target uuids.
-	 *
-	 * @throws RuntimeException When a target cannot be resolved.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate is the engine's
-	 * stateless template renderer and every node calls it this way.
-	 */
-	private function resolveTargets(array $items, array $config): array {
-		$configured = ($config['uuid'] ?? null);
-		$targets = [];
-
-		foreach ($items as $item) {
-			$json = ($item[FlowItems::JSON] ?? []);
-			if (is_array($json) === false) {
-				$json = [];
-			}
-
-			$uuid = trim((string)($json['uuid'] ?? ''));
-			if (is_string($configured) === true && trim($configured) !== '') {
-				$uuid = trim((string)FlowValueTemplate::render($configured, $json));
-			}
-
-			if ($uuid === '') {
-				throw new RuntimeException(
-					$this->l10n->t('An unlock step could not work out which object to release from the item it received.')
-				);
-			}
-
-			$targets[$uuid] = $uuid;
-		}
-
-		return array_values($targets);
-	}//end resolveTargets()
-
-	/**
-	 * The run's uuid, which identifies the lock holder.
-	 *
-	 * @param array $context The run context.
-	 *
-	 * @return string The run uuid.
-	 *
-	 * @throws RuntimeException When the run cannot identify itself.
-	 */
-	private function resolveRunUuid(array $context): string {
-		$runUuid = trim((string)($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? '')));
-		if ($runUuid === '') {
-			throw new RuntimeException(
-				$this->l10n->t('An unlock step needs the run it belongs to; this run did not identify itself.')
-			);
-		}
-
-		return $runUuid;
-	}//end resolveRunUuid()
-
-	/**
-	 * The acting identity the release runs under.
-	 *
-	 * @param array $context The run context.
-	 *
-	 * @return IUser The acting user.
-	 *
-	 * @throws RuntimeException When there is no usable acting identity.
-	 */
-	private function resolveOwner(array $context): IUser {
-		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
-		if (is_string($uid) === false || trim($uid) === '') {
-			throw new RuntimeException(
-				$this->l10n->t('This flow run has no acting identity (runAs); an unlock must be attributable.')
-			);
-		}
-
-		$user = $this->userManager->get(trim($uid));
-		if ($user === null) {
-			throw new RuntimeException(
-				$this->l10n->t('This flow run acts as "%s", which is not a user account.', [trim($uid)])
-			);
-		}
-
-		if ($user->isEnabled() === false) {
-			throw new RuntimeException(
-				$this->l10n->t('This flow run acts as "%s", whose account is disabled.', [trim($uid)])
-			);
-		}
-
-		return $user;
-	}//end resolveOwner()
 
 	/**
 	 * What kind of step this is. Calls the register to unlock.

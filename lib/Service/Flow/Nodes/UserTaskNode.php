@@ -95,6 +95,7 @@ use RuntimeException;
  * to say the same thing.
  */
 class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+	use FormFieldsTrait;
 
 	/**
 	 * The configuration boundary: validation and templating.
@@ -224,43 +225,19 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 */
 	public function configKeys(): array {
 		return [
-			'title',
-			'description',
-			'assignee',
-			// One field expressing what three did, and able to mix types.
-			'candidates',
-			// WHAT an agent performer is asked, in place of a form. A person
-			// gets fields to fill in; an agent gets a prompt. Same step, same
-			// completion verbs, same audit.
-			'prompt',
-			'candidateUsers',
-			'candidateGroups',
-			'candidateRole',
-			'routingStrategy',
-			'routingFallback',
-			'performerType',
-			'priority',
-			'dueAt',
-			'expiresAt',
-			'onTimeout',
-			'onReject',
-			'outcomes',
-			'outcomeKey',
-			'failOnReject',
-			'heartbeatMinutes',
-			'advance',
+			// `candidates` is one field expressing what three did, and able to mix
+			// types. `prompt` is WHAT an agent performer is asked, in place of a
+			// form: a person gets fields to fill in, an agent gets a prompt.
+			'title', 'description', 'assignee', 'candidates', 'prompt',
+			'candidateUsers', 'candidateGroups', 'candidateRole', 'routingStrategy', 'routingFallback', 'performerType',
+			'priority', 'dueAt', 'expiresAt', 'onTimeout', 'onReject',
+			'outcomes', 'outcomeKey', 'failOnReject', 'heartbeatMinutes', 'advance',
 			// The business-timer half. Absent from a node, nothing is armed and
 			// the node behaves exactly as it did before these existed.
-			'sla',
-			'calendar',
-			'ladder',
-			'escalationRules',
-			// WHICH declared subject of the run this task hangs on. Empty leaves
-			// the task anchored to the item it was raised from, as before.
-			'attachTo',
-			'purpose',
-			'legalEffect',
-			'onExpiry',
+			'sla', 'calendar', 'ladder', 'escalationRules',
+			// `attachTo` names WHICH declared subject of the run this task hangs
+			// on. Empty leaves the task anchored to the item it was raised from.
+			'attachTo', 'purpose', 'legalEffect', 'onExpiry',
 			...TaskFormReader::CONFIG_KEYS,
 		];
 	}//end configKeys()
@@ -278,10 +255,17 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	public function configForm(): array {
 		return array_merge(
 			$this->whatFields(),
+			$this->attachFields(),
 			$this->whoFields(),
+			$this->legacyCandidateFields(),
+			$this->routingFields(),
 			$this->whenFields(),
+			$this->timeoutFields(),
 			$this->continuationFields(),
-			$this->formFields()
+			$this->formFields(),
+			$this->formSchemaFields(),
+			$this->formContentFields(),
+			$this->externalFormFields()
 		);
 	}//end configForm()
 
@@ -604,39 +588,34 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 */
 	private function whatFields(): array {
 		return [
-			[
-				'key' => 'title',
-				'label' => $this->l10n->t('What is being asked'),
-				'type' => 'text',
-				'help' => $this->l10n->t('The task title, shown in the inbox. Fields of the item can be used, like {{ name }}.'),
-				'required' => true,
-			],
-			[
-				'key' => 'description',
-				'label' => $this->l10n->t('Details'),
-				'type' => 'textarea',
-				'help' => $this->l10n->t('What the performer needs to know to do it. Templates work here too.'),
-			],
-			[
-				'key' => 'outcomes',
-				'label' => $this->l10n->t('Possible outcomes'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'The answers the flow will route on, comma separated, like "approved, rejected". Recorded on the task for the inbox to offer.'
-				),
-			],
-			[
-				'key' => 'attachTo',
-				'label' => $this->l10n->t('Hang this task on'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'The name an earlier step recorded its object under, such as "case". The task then shows on that object. '
-					.'Leave it empty and the task stays with the item this step received. '
-					.'A name no earlier step recorded fails the step rather than making a task attached to nothing.'
-				),
-			],
+			$this->requiredField(key: 'title', label: $this->l10n->t('What is being asked'), type: 'text', help: $this->l10n->t(
+				'The task title, shown in the inbox. Fields of the item can be used, like {{ name }}.'
+			)),
+			$this->field(key: 'description', label: $this->l10n->t('Details'), type: 'textarea', help: $this->l10n->t(
+				'What the performer needs to know to do it. Templates work here too.'
+			)),
+			$this->field(key: 'outcomes', label: $this->l10n->t('Possible outcomes'), type: 'text', help: $this->l10n->t(
+				'The answers the flow will route on, comma separated, like "approved, rejected". Recorded on the task for the inbox to offer.'
+			)),
 		];
 	}//end whatFields()
+
+	/**
+	 * Where the task is hung: the object it shows on.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function attachFields(): array {
+		return [
+			$this->field(key: 'attachTo', label: $this->l10n->t('Hang this task on'), type: 'text', help: $this->l10n->t(
+				'The name an earlier step recorded its object under, such as "case". The task then shows on that object. '
+				.'Leave it empty and the task stays with the item this step received. '
+				.'A name no earlier step recorded fails the step rather than making a task attached to nothing.'
+			)),
+		];
+	}//end attachFields()
 
 	/**
 	 * Who may perform it.
@@ -645,62 +624,60 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 */
 	private function whoFields(): array {
 		return [
-			[
-				'key' => 'assignee',
-				'label' => $this->l10n->t('Assign directly to'),
-				// 🔑 `principal`, not `text`. The field always accepted a
-				// person OR a group and could only ever say one of them, so
-				// authors typed a committee's name into a box labelled for a
-				// user and nothing recorded which they meant.
-				'type' => 'principal',
-				'help' => $this->l10n->t('A person, a group, or an agent. The task is created active for them; leave empty to offer it to a pool instead.'),
-			],
-			[
-				'key' => 'candidates',
-				'label' => $this->l10n->t('Candidates'),
-				'type' => 'principal',
-				'help' => $this->l10n->t('Anybody who may claim the task. People and groups may be mixed.'),
-			],
-			[
-				'key' => 'prompt',
-				'label' => $this->l10n->t('Prompt for an agent'),
-				'type' => 'textarea',
-				'help' => $this->l10n->t('What an agent performer is asked, in place of a form. Ignored when a person is asked.'),
-			],
-			[
-				'key' => 'candidateUsers',
-				'label' => $this->l10n->t('Candidate users'),
-				'type' => 'principal',
-				'help' => $this->l10n->t('Kept for flows written before Candidates existed. Any of them may claim the task.'),
-			],
-			[
-				'key' => 'candidateGroups',
-				'label' => $this->l10n->t('Candidate groups'),
-				'type' => 'principal',
-				'help' => $this->l10n->t('Kept for flows written before Candidates existed. Any member may claim the task.'),
-			],
-			[
-				'key' => 'candidateRole',
-				'label' => $this->l10n->t('Candidate role'),
-				'type' => 'principal',
-				'help' => $this->l10n->t('A role that resolves to a group of performers.'),
-			],
-			[
-				'key' => 'routingStrategy',
-				'label' => $this->l10n->t('How to pick a performer'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'One of single-role, or-set, hierarchical, round-robin or least-loaded. Leave empty to let the pool claim.'
-				),
-			],
-			[
-				'key' => 'routingFallback',
-				'label' => $this->l10n->t('Fallback performer'),
-				'type' => 'principal',
-				'help' => $this->l10n->t('Who gets the task when the strategy finds nobody.'),
-			],
+			// 🔑 `principal`, not `text`. The field always accepted a
+			// person OR a group and could only ever say one of them, so
+			// authors typed a committee's name into a box labelled for a
+			// user and nothing recorded which they meant.
+			$this->field(key: 'assignee', label: $this->l10n->t('Assign directly to'), type: 'principal', help: $this->l10n->t(
+				'A person, a group, or an agent. The task is created active for them; leave empty to offer it to a pool instead.'
+			)),
+			$this->field(key: 'candidates', label: $this->l10n->t('Candidates'), type: 'principal', help: $this->l10n->t(
+				'Anybody who may claim the task. People and groups may be mixed.'
+			)),
+			$this->field(key: 'prompt', label: $this->l10n->t('Prompt for an agent'), type: 'textarea', help: $this->l10n->t(
+				'What an agent performer is asked, in place of a form. Ignored when a person is asked.'
+			)),
 		];
 	}//end whoFields()
+
+	/**
+	 * The candidate fields kept for flows written before Candidates existed.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function legacyCandidateFields(): array {
+		return [
+			$this->field(key: 'candidateUsers', label: $this->l10n->t('Candidate users'), type: 'principal', help: $this->l10n->t(
+				'Kept for flows written before Candidates existed. Any of them may claim the task.'
+			)),
+			$this->field(key: 'candidateGroups', label: $this->l10n->t('Candidate groups'), type: 'principal', help: $this->l10n->t(
+				'Kept for flows written before Candidates existed. Any member may claim the task.'
+			)),
+			$this->field(key: 'candidateRole', label: $this->l10n->t('Candidate role'), type: 'principal', help: $this->l10n->t(
+				'A role that resolves to a group of performers.'
+			)),
+		];
+	}//end legacyCandidateFields()
+
+	/**
+	 * How a performer is picked from the pool, and who gets it when nobody is.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function routingFields(): array {
+		return [
+			$this->field(key: 'routingStrategy', label: $this->l10n->t('How to pick a performer'), type: 'text', help: $this->l10n->t(
+				'One of single-role, or-set, hierarchical, round-robin or least-loaded. Leave empty to let the pool claim.'
+			)),
+			$this->field(key: 'routingFallback', label: $this->l10n->t('Fallback performer'), type: 'principal', help: $this->l10n->t(
+				'Who gets the task when the strategy finds nobody.'
+			)),
+		];
+	}//end routingFields()
 
 	/**
 	 * How urgent it is, and when.
@@ -709,48 +686,38 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 */
 	private function whenFields(): array {
 		return [
-			[
-				'key' => 'priority',
-				'label' => $this->l10n->t('Priority'),
-				'type' => 'text',
-				'help' => $this->l10n->t('low, normal, high or urgent. Defaults to normal.'),
-			],
-			[
-				'key' => 'dueAt',
-				'label' => $this->l10n->t('Due'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'When the task should be done: a date, a field like {{ deadline }}, or a relative time like "+3 days". Advisory.'
-				),
-			],
-			[
-				'key' => 'expiresAt',
-				'label' => $this->l10n->t('Expires'),
-				'type' => 'text',
-				'help' => $this->l10n->t('When the task stops being doable. Same shapes as "Due". Must not lie before it.'),
-			],
-			[
-				'key' => 'onTimeout',
-				'label' => $this->l10n->t('On timeout'),
-				'type' => 'text',
-				'help' => $this->l10n->t('What happens when the task expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'),
-			],
-			[
-				'key' => 'onReject',
-				'label' => $this->l10n->t('On rejection'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Only dead_letter changes the record; skip and error are read by whatever resumes the flow.'),
-			],
-			[
-				'key' => 'heartbeatMinutes',
-				'label' => $this->l10n->t('Re-check every (minutes)'),
-				'type' => 'number',
-				'help' => $this->l10n->t(
-					'Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way.'
-				),
-			],
+			$this->field(key: 'priority', label: $this->l10n->t('Priority'), type: 'text', help: $this->l10n->t(
+				'low, normal, high or urgent. Defaults to normal.'
+			)),
+			$this->field(key: 'dueAt', label: $this->l10n->t('Due'), type: 'text', help: $this->l10n->t(
+				'When the task should be done: a date, a field like {{ deadline }}, or a relative time like "+3 days". Advisory.'
+			)),
+			$this->field(key: 'expiresAt', label: $this->l10n->t('Expires'), type: 'text', help: $this->l10n->t(
+				'When the task stops being doable. Same shapes as "Due". Must not lie before it.'
+			)),
 		];
 	}//end whenFields()
+
+	/**
+	 * What a deadline or a rejection does, and how often the run re-checks.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function timeoutFields(): array {
+		return [
+			$this->field(key: 'onTimeout', label: $this->l10n->t('On timeout'), type: 'text', help: $this->l10n->t(
+				'What happens when the task expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'
+			)),
+			$this->field(key: 'onReject', label: $this->l10n->t('On rejection'), type: 'text', help: $this->l10n->t(
+				'Only dead_letter changes the record; skip and error are read by whatever resumes the flow.'
+			)),
+			$this->field(key: 'heartbeatMinutes', label: $this->l10n->t('Re-check every (minutes)'), type: 'number', help: $this->l10n->t(
+				'Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way.'
+			)),
+		];
+	}//end timeoutFields()
 
 	/**
 	 * How the flow continues once answered.
@@ -759,29 +726,16 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 */
 	private function continuationFields(): array {
 		return [
-			[
-				'key' => 'outcomeKey',
-				'label' => $this->l10n->t('Field to store the answer in'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'The outcome is written onto every item under this field, so later steps can route on it. Defaults to "task".'
-				),
-			],
-			[
-				'key' => 'failOnReject',
-				'label' => $this->l10n->t('Treat a rejection as a failure'),
-				'type' => 'boolean',
-				'help' => $this->l10n->t('Off by default: being told "no" is usually the flow working, not breaking. Route on the outcome instead.'),
-			],
-			[
-				'key' => 'advance',
-				'label' => $this->l10n->t('Continue after the answer'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'How far the run continues inside the request that completes the task: 0 leaves it to the background worker (default), '
-					. 'a number runs that many steps, "all" runs to the next pause or the end.'
-				),
-			],
+			$this->field(key: 'outcomeKey', label: $this->l10n->t('Field to store the answer in'), type: 'text', help: $this->l10n->t(
+				'The outcome is written onto every item under this field, so later steps can route on it. Defaults to "task".'
+			)),
+			$this->field(key: 'failOnReject', label: $this->l10n->t('Treat a rejection as a failure'), type: 'boolean', help: $this->l10n->t(
+				'Off by default: being told "no" is usually the flow working, not breaking. Route on the outcome instead.'
+			)),
+			$this->field(key: 'advance', label: $this->l10n->t('Continue after the answer'), type: 'text', help: $this->l10n->t(
+				'How far the run continues inside the request that completes the task: 0 leaves it to the background worker (default), '
+				. 'a number runs that many steps, "all" runs to the next pause or the end.'
+			)),
 		];
 	}//end continuationFields()
 
@@ -800,16 +754,23 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 */
 	private function formFields(): array {
 		return [
-			[
-				'key' => 'formKind',
-				'label' => $this->l10n->t('Form'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'What the performer fills in besides the outcome: leave empty for none, "fields" for fields of the subject object, '
-					. '"external" for a Nextcloud Forms form bound to the subject. Fields are validated by the subject schema; '
-					. 'an external form is recorded as evidence and writes nothing to the object.'
-				),
-			],
+			$this->field(key: 'formKind', label: $this->l10n->t('Form'), type: 'text', help: $this->l10n->t(
+				'What the performer fills in besides the outcome: leave empty for none, "fields" for fields of the subject object, '
+				. '"external" for a Nextcloud Forms form bound to the subject. Fields are validated by the subject schema; '
+				. 'an external form is recorded as evidence and writes nothing to the object.'
+			)),
+		];
+	}//end formFields()
+
+	/**
+	 * The schema whose fields a field form asks for.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function formSchemaFields(): array {
+		return [
 			[
 				'key' => 'formSchema',
 				'label' => $this->l10n->t('Subject schema'),
@@ -817,38 +778,51 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 				'optionsFrom' => '/apps/openregister/api/schemas',
 				'help' => $this->l10n->t('The schema the fields belong to. Required for a field form.'),
 			],
-			[
-				'key' => 'formAction',
-				'label' => $this->l10n->t('Lifecycle action'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'Inherit the fields a lifecycle transition of the subject schema declares, and apply that transition on completion. '
-					. 'Leave empty to list fields instead.'
-				),
-			],
-			[
-				'key' => 'formFields',
-				'label' => $this->l10n->t('Fields to ask for'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'Properties of the subject schema the performer supplies, comma separated; add * after a name to make it required, '
-					. 'like "reason*". A name the schema does not have is refused when the step is saved. Not combined with a lifecycle action.'
-				),
-			],
-			[
-				'key' => 'formId',
-				'label' => $this->l10n->t('Nextcloud Forms form'),
-				'type' => 'number',
-				'help' => $this->l10n->t('The id of the Forms form linked to the subject object. Needs the Forms app.'),
-			],
-			[
-				'key' => 'formRequireChecklist',
-				'label' => $this->l10n->t('Require every checklist item checked'),
-				'type' => 'boolean',
-				'help' => $this->l10n->t('Refuse completion while a checklist item is unchecked, naming it. Checklist state is never part of the form values.'),
-			],
 		];
-	}//end formFields()
+	}//end formSchemaFields()
+
+	/**
+	 * Which fields of the subject the performer supplies.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function formContentFields(): array {
+		return [
+			$this->field(key: 'formAction', label: $this->l10n->t('Lifecycle action'), type: 'text', help: $this->l10n->t(
+				'Inherit the fields a lifecycle transition of the subject schema declares, and apply that transition on completion. '
+				. 'Leave empty to list fields instead.'
+			)),
+			$this->field(key: 'formFields', label: $this->l10n->t('Fields to ask for'), type: 'text', help: $this->l10n->t(
+				'Properties of the subject schema the performer supplies, comma separated; add * after a name to make it required, '
+				. 'like "reason*". A name the schema does not have is refused when the step is saved. Not combined with a lifecycle action.'
+			)),
+		];
+	}//end formContentFields()
+
+	/**
+	 * The Nextcloud Forms form and its checklist rule.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function externalFormFields(): array {
+		return [
+			$this->field(key: 'formId', label: $this->l10n->t('Nextcloud Forms form'), type: 'number', help: $this->l10n->t(
+				'The id of the Forms form linked to the subject object. Needs the Forms app.'
+			)),
+			$this->field(
+				key: 'formRequireChecklist',
+				label: $this->l10n->t('Require every checklist item checked'),
+				type: 'boolean',
+				help: $this->l10n->t(
+					'Refuse completion while a checklist item is unchecked, naming it. Checklist state is never part of the form values.'
+				)
+			),
+		];
+	}//end externalFormFields()
 
 	/**
 	 * What kind of step this is. A person is asked, and the run waits.

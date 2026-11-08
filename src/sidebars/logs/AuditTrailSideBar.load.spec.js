@@ -61,6 +61,10 @@ jest.mock('../../store/store.js', () => ({
  */
 function sidebar(query = {}) {
 	return {
+		...Object.assign(
+			{},
+			...AuditTrailSideBar.mixins.map((mixin) => mixin.methods),
+		),
 		...AuditTrailSideBar.methods,
 		...AuditTrailSideBar.data(),
 		$route: { path: '/audit-trails', query },

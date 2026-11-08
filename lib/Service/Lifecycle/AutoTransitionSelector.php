@@ -80,12 +80,7 @@ class AutoTransitionSelector implements AutoTransitionSelectorInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function select(
-		array $annotation,
-		array $objectData,
-		array $previous,
-		string $schemaSlug,
-	): ?AutoTransitionCandidate {
+	public function select(array $annotation, array $objectData, array $previous, string $schemaSlug): ?AutoTransitionCandidate {
 		$write   = ['objectData' => $objectData, 'previous' => $previous, 'schemaSlug' => $schemaSlug];
 		$context = self::contextFor(annotation: $annotation, write: $write);
 		if ($context === null) {
