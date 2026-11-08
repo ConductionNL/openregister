@@ -80,11 +80,7 @@ class UserLinkWriter {
 		$contactUid = ContactLink::USER_UID_PREFIX . $user->getUID();
 		$link = $this->links->findByObjectContactAndRole(objectUuid: $objectUuid, contactUid: $contactUid, role: $role);
 		$isNew = ($link === null);
-		if ($link === null) {
-			$link = new ContactLink();
-			$link->setObjectUuid($objectUuid);
-			$link->setContactUid($contactUid);
-		}
+		$link = ($link ?? $this->newLink(objectUuid: $objectUuid, contactUid: $contactUid));
 
 		$link->setRegisterId($registerId);
 		$link->setSchemaId($schemaId);
@@ -95,10 +91,39 @@ class UserLinkWriter {
 		$link->setRole($role);
 		$link->setLinkedBy($linker->getUID());
 		$link->setLinkedAt(new DateTime());
+
+		return $this->persist(link: $link, isNew: $isNew);
+	}//end write()
+
+	/**
+	 * A new, unsaved link of a contact on an object.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param string $contactUid The contact uid, `user:<uid>`.
+	 *
+	 * @return ContactLink The link.
+	 */
+	private function newLink(string $objectUuid, string $contactUid): ContactLink {
+		$link = new ContactLink();
+		$link->setObjectUuid($objectUuid);
+		$link->setContactUid($contactUid);
+
+		return $link;
+	}//end newLink()
+
+	/**
+	 * Insert a new link, update an existing one.
+	 *
+	 * @param ContactLink $link  The link.
+	 * @param bool        $isNew Whether no row existed for it.
+	 *
+	 * @return ContactLink The stored link.
+	 */
+	private function persist(ContactLink $link, bool $isNew): ContactLink {
 		if ($isNew === true) {
 			return $this->links->insert($link);
 		}
 
 		return $this->links->update($link);
-	}//end write()
+	}//end persist()
 }//end class
