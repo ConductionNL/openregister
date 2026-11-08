@@ -27,7 +27,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 /**
  * The deep-link registration and resolution other components call on DeepLinkRegistryService.
  */
-interface DeepLinkRegistryServiceInterface {
+interface DeepLinkRegistryServiceInterface extends DeepLinkResolverInterface {
 
 	/**
 	 * Register a deep link pattern for a (register, schema) combination.
@@ -70,37 +70,4 @@ interface DeepLinkRegistryServiceInterface {
 	 */
 	public function requestRegistrations(?IEventDispatcher $dispatcher = null): void;
 
-	/**
-	 * Get the icon for a registered deep link, or null if no registration.
-	 *
-	 * @param int $registerId The register database ID
-	 * @param int $schemaId The schema database ID
-	 *
-	 * @return string|null The icon identifier, or null
-	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
-	 * @spec openspec/specs/deep-link-registry/spec.md
-	 */
-	public function resolveIcon(int $registerId, int $schemaId): ?string;
-
-	/**
-	 * Resolve a URL for a search result, falling back to null if no registration exists.
-	 *
-	 * @param int $registerId The register database ID
-	 * @param int $schemaId The schema database ID
-	 * @param array $objectData The object data from search results
-	 * @param array $contactContext Optional contact context for placeholder resolution
-	 *                              Supports: contactId, contactEmail, contactName
-	 *
-	 * @return string|null The resolved URL, or null to use default
-	 *
-	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
-	 * @spec openspec/specs/deep-link-registry/spec.md
-	 */
-	public function resolveUrl(
-		int $registerId,
-		int $schemaId,
-		array $objectData,
-		array $contactContext = [],
-	): ?string;
 }//end interface

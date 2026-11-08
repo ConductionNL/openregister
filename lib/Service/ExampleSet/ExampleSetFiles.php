@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -284,9 +285,9 @@ class ExampleSetFiles {
 	/**
 	 * OpenRegister's FileService.
 	 *
-	 * @return FileService
+	 * @return ObjectFilesInterface
 	 */
-	private function fileService(): FileService {
+	private function fileService(): ObjectFilesInterface {
 		return $this->container->get(FileService::class);
 	}//end fileService()
 }//end class

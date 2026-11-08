@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notification;
 
-use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
@@ -79,12 +79,12 @@ class AnnotationNotifier implements INotifier {
 	 *
 	 * @param IFactory $factory L10N factory for localised subjects.
 	 * @param IURLGenerator $urlGenerator URL generator for the icon and action link.
-	 * @param DeepLinkRegistryServiceInterface|null $deepLinks The owning app's detail route per register and schema.
+	 * @param DeepLinkResolverInterface|null $deepLinks The owning app's detail route per register and schema.
 	 */
 	public function __construct(
 		private readonly IFactory $factory,
 		private readonly IURLGenerator $urlGenerator,
-		private readonly ?DeepLinkRegistryServiceInterface $deepLinks = null,
+		private readonly ?DeepLinkResolverInterface $deepLinks = null,
 	) {
 	}//end __construct()
 
