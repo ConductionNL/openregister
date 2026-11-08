@@ -90,7 +90,11 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		AuditHashService::class => ['BackgroundJob/AuditSealJob.php', 'Command/RechainAuditTrailCommand.php', 'Repair/RechainAuditTrailForFlowAttribution.php'],
+		AuditHashService::class => [
+			'BackgroundJob/AuditSealJob.php',
+			'Command/RechainAuditTrailCommand.php',
+			'Repair/RechainAuditTrailForFlowAttribution.php',
+		],
 		AuditSink::class => ['Db/AuditTrailMapper.php'],
 		ContentReportService::class => ['Listener/ContentReportRemovalListener.php'],
 		ContentReportMapper::class => ['Service/Audit/ContentReportService.php'],
@@ -122,9 +126,9 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 	#[DataProvider('classes')]
 	public function testTheClassImplementsItsInterface(string $class): void {
 		[$contract, $registrar] = self::CLASSES[$class];
-		$this->assertTrue(interface_exists($contract), $contract . ' exists');
-		$this->assertContains($contract, class_implements($class), $class . ' implements ' . $contract);
-		$this->assertSame(explode('\\', $class)[2], explode('\\', $registrar)[2], 'Bound in its own component');
+		$this->assertTrue(condition: interface_exists($contract), message: $contract . ' exists');
+		$this->assertContains(needle: $contract, haystack: class_implements($class), message: $class . ' implements ' . $contract);
+		$this->assertSame(expected: explode('\\', $class)[2], actual: explode('\\', $registrar)[2], message: 'Bound in its own component');
 	}//end testTheClassImplementsItsInterface()
 
 	/**
@@ -138,8 +142,8 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 	public function testTheInterfaceIsBound(string $class): void {
 		[$contract, $registrar] = self::CLASSES[$class];
 		$bindings = constant($registrar . '::BINDINGS');
-		$this->assertArrayHasKey($contract, $bindings);
-		$this->assertSame($class, $bindings[$contract]);
+		$this->assertArrayHasKey(key: $contract, array: $bindings);
+		$this->assertSame(expected: $class, actual: $bindings[$contract]);
 	}//end testTheInterfaceIsBound()
 
 	/**
@@ -158,7 +162,7 @@ final class C01AuditInterfaceBindingsTest extends TestCase {
 			}
 		}
 
-		$this->assertSame(self::KEPT_CALLERS[$class] ?? [], $naming, 'Type against ' . self::CLASSES[$class][0] . ' instead.');
+		$this->assertSame(expected: self::KEPT_CALLERS[$class] ?? [], actual: $naming, message: 'Type against ' . self::CLASSES[$class][0] . ' instead.');
 	}//end testNoOutsideFileNamesTheClass()
 
 	/**
