@@ -147,19 +147,7 @@ class PdfMetadataSanitizer {
 		}
 
 		if ($infoObj !== null) {
-			$infoValue = $infoObj->get_value();
-			foreach (self::INFO_FIELDS_TO_STRIP as $field) {
-				if (isset($infoValue[$field]) === true) {
-					$infoValue[$field] = new PDFValueString(self::SENTINEL);
-					$diagnostic['info_fields_stripped']++;
-				}
-			}
-
-			if ($diagnostic['info_fields_stripped'] > 0) {
-				// Re-register so the mutation lands in the rebuild path
-				// (same write-back contract as content-stream mutations).
-				$doc->add_object(pdf_object: $infoObj);
-			}
+			$diagnostic['info_fields_stripped'] = $this->stripInfoFields(doc: $doc, infoObj: $infoObj);
 		}
 
 		try {
@@ -182,11 +170,76 @@ class PdfMetadataSanitizer {
 	}//end sanitize()
 
 	/**
-	 * Resolve the /Info object reference from the trailer.
+	 * Replace the strip-listed /Info fields with the sentinel.
+	 *
+	 * @param PDFDoc $doc The loaded PDF document.
+	 * @param \ddn\sapp\PDFObject $infoObj The /Info object.
+	 *
+	 * @return int The number of fields stripped.
+	 */
+	private function stripInfoFields(PDFDoc $doc, \ddn\sapp\PDFObject $infoObj): int {
+		$stripped = 0;
+		$infoValue = $infoObj->get_value();
+		foreach (self::INFO_FIELDS_TO_STRIP as $field) {
+			if (isset($infoValue[$field]) === true) {
+				$infoValue[$field] = new PDFValueString(self::SENTINEL);
+				$stripped++;
+			}
+		}
+
+		if ($stripped > 0) {
+			// Re-register so the mutation lands in the rebuild path
+			// (same write-back contract as content-stream mutations).
+			$doc->add_object(pdf_object: $infoObj);
+		}
+
+		return $stripped;
+	}//end stripInfoFields()
+
+	/**
+	 * Read the trailer dictionary.
 	 *
 	 * SAPP holds the trailer on a protected property. Until a public
 	 * accessor lands upstream we use Reflection — contained to this
-	 * method so the rest of the class reads naturally.
+	 * method so the rest of the class reads naturally. Reflection
+	 * setAccessible() is a no-op since PHP 8.1; protected/private property
+	 * access is always allowed by getValue() now without explicit unlocking.
+	 *
+	 * @param PDFDoc $doc The loaded PDF document.
+	 *
+	 * @return mixed The trailer object, or null when there is none.
+	 */
+	private function readTrailer(PDFDoc $doc): mixed {
+		$ref = new ReflectionClass(PDFDoc::class);
+		$property = $ref->getProperty('_pdf_trailer_object');
+		return $property->getValue($doc);
+	}//end readTrailer()
+
+	/**
+	 * Resolve an indirect reference to its object.
+	 *
+	 * @param PDFDoc $doc The loaded PDF document.
+	 * @param mixed $reference The reference value (e.g. trailer /Info).
+	 *
+	 * @return \ddn\sapp\PDFObject|null The object, or null when the
+	 *                                  value references none or it is missing.
+	 */
+	private function referencedObject(PDFDoc $doc, mixed $reference): ?\ddn\sapp\PDFObject {
+		$oid = $reference->get_object_referenced();
+		if ($oid === false || is_array($oid) === true) {
+			return null;
+		}
+
+		$object = $doc->get_object(oid: (int)$oid);
+		if ($object === false) {
+			return null;
+		}
+
+		return $object;
+	}//end referencedObject()
+
+	/**
+	 * Resolve the /Info object reference from the trailer.
 	 *
 	 * @param PDFDoc $doc The loaded PDF document.
 	 *
@@ -194,33 +247,50 @@ class PdfMetadataSanitizer {
 	 *                                  the trailer doesn't reference one.
 	 */
 	private function locateInfoObject(PDFDoc $doc): ?\ddn\sapp\PDFObject {
-		// Reflection setAccessible() is a no-op since PHP 8.1;
-		// protected/private property access is always allowed by
-		// getValue() now without explicit unlocking.
-		$ref = new ReflectionClass(PDFDoc::class);
-		$property = $ref->getProperty('_pdf_trailer_object');
-		$trailer = $property->getValue($doc);
-		if ($trailer === null) {
+		$trailer = $this->readTrailer(doc: $doc);
+		if ($trailer === null || isset($trailer['Info']) === false) {
 			return null;
 		}
 
-		if (isset($trailer['Info']) === false) {
-			return null;
-		}
-
-		$infoRef = $trailer['Info'];
-		$oid = $infoRef->get_object_referenced();
-		if ($oid === false || is_array($oid) === true) {
-			return null;
-		}
-
-		$infoObj = $doc->get_object(oid: (int)$oid);
-		if ($infoObj === false) {
-			return null;
-		}
-
-		return $infoObj;
+		return $this->referencedObject(doc: $doc, reference: $trailer['Info']);
 	}//end locateInfoObject()
+
+	/**
+	 * Resolve the catalog (/Root) object from the trailer.
+	 *
+	 * @param PDFDoc $doc The loaded PDF document.
+	 *
+	 * @return \ddn\sapp\PDFObject|null The catalog object, or null when absent.
+	 */
+	private function locateRootObject(PDFDoc $doc): ?\ddn\sapp\PDFObject {
+		$trailer = $this->readTrailer(doc: $doc);
+		if ($trailer === null || isset($trailer['Root']) === false) {
+			return null;
+		}
+
+		return $this->referencedObject(doc: $doc, reference: $trailer['Root']);
+	}//end locateRootObject()
+
+	/**
+	 * Resolve the catalog's /Metadata stream object.
+	 *
+	 * @param PDFDoc $doc The loaded PDF document.
+	 *
+	 * @return \ddn\sapp\PDFObject|null The metadata object, or null when absent.
+	 */
+	private function locateMetadataObject(PDFDoc $doc): ?\ddn\sapp\PDFObject {
+		$rootObj = $this->locateRootObject(doc: $doc);
+		if ($rootObj === null) {
+			return null;
+		}
+
+		$rootValue = $rootObj->get_value();
+		if (isset($rootValue['Metadata']) === false) {
+			return null;
+		}
+
+		return $this->referencedObject(doc: $doc, reference: $rootValue['Metadata']);
+	}//end locateMetadataObject()
 
 	/**
 	 * Strip dc:* / xmp:* / pdf:* fields from the XMP /Metadata stream.
@@ -234,36 +304,8 @@ class PdfMetadataSanitizer {
 	 * @return bool True when the XMP stream was mutated.
 	 */
 	private function sanitizeXmp(PDFDoc $doc): bool {
-		$ref = new ReflectionClass(PDFDoc::class);
-		$property = $ref->getProperty('_pdf_trailer_object');
-		$trailer = $property->getValue($doc);
-		if ($trailer === null || isset($trailer['Root']) === false) {
-			return false;
-		}
-
-		$rootOid = $trailer['Root']->get_object_referenced();
-		if ($rootOid === false || is_array($rootOid) === true) {
-			return false;
-		}
-
-		$rootObj = $doc->get_object(oid: (int)$rootOid);
-		if ($rootObj === false) {
-			return false;
-		}
-
-		$rootValue = $rootObj->get_value();
-		if (isset($rootValue['Metadata']) === false) {
-			return false;
-		}
-
-		$metaRef = $rootValue['Metadata'];
-		$metaOid = $metaRef->get_object_referenced();
-		if ($metaOid === false || is_array($metaOid) === true) {
-			return false;
-		}
-
-		$metaObj = $doc->get_object(oid: (int)$metaOid);
-		if ($metaObj === false) {
+		$metaObj = $this->locateMetadataObject(doc: $doc);
+		if ($metaObj === null) {
 			return false;
 		}
 
@@ -272,11 +314,29 @@ class PdfMetadataSanitizer {
 			return false;
 		}
 
-		$originalXmp = $xmp;
+		$strippedXmp = $this->stripXmpNamespaces(xmp: $xmp);
+		if ($strippedXmp === $xmp) {
+			return false;
+		}
 
-		// Replace `<dc:Foo>...</dc:Foo>` / `<xmp:Foo>...</xmp:Foo>` /
-		// `<pdf:Foo>...</pdf:Foo>` element bodies with the sentinel.
-		// Custom namespaces (e.g. `<wcm:foo>`) are untouched.
+		$metaObj->set_stream(stream: $strippedXmp, raw: false);
+		$doc->add_object(pdf_object: $metaObj);
+		return true;
+	}//end sanitizeXmp()
+
+	/**
+	 * Replace the element bodies of the stripped XMP namespaces with the sentinel.
+	 *
+	 * `<dc:Foo>...</dc:Foo>` / `<xmp:Foo>...</xmp:Foo>` / `<pdf:Foo>...</pdf:Foo>`
+	 * bodies become the sentinel; custom namespaces (e.g. `<wcm:foo>`) are
+	 * untouched.
+	 *
+	 * @param string $xmp The XMP packet.
+	 *
+	 * @return string The stripped packet, or the original on a PCRE failure.
+	 */
+	private function stripXmpNamespaces(string $xmp): string {
+		$originalXmp = $xmp;
 		foreach (self::XMP_NAMESPACES_TO_STRIP as $ns) {
 			// Self-closing tags: `<dc:foo/>` — leave as-is (no body to strip).
 			// Open-close pair: `<dc:foo>...</dc:foo>` — replace inner text.
@@ -295,17 +355,10 @@ class PdfMetadataSanitizer {
 				// PCRE failure — fall back to the original. The /Info
 				// strip above already removed the bulk of PII; XMP
 				// stripping is a defence-in-depth measure.
-				$xmp = $originalXmp;
-				break;
+				return $originalXmp;
 			}
 		}//end foreach
 
-		if ($xmp === $originalXmp) {
-			return false;
-		}
-
-		$metaObj->set_stream(stream: $xmp, raw: false);
-		$doc->add_object(pdf_object: $metaObj);
-		return true;
-	}//end sanitizeXmp()
+		return $xmp;
+	}//end stripXmpNamespaces()
 }//end class
