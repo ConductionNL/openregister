@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingAccounts;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -101,10 +102,12 @@ class FileSharingHandlerGoldenTest extends TestCase {
 
 		return new FileSharingHandler(
 			shareManager: $this->shares,
-			userManager: $users,
+			accounts: new FileSharingAccounts(
+				userManager: $users,
+				fileOwnershipHandler: $ownership
+			),
 			shareUrls: $this->createMock(ShareUrlBuilder::class),
-			logger: new NullLogger(),
-			fileOwnershipHandler: $ownership
+			logger: new NullLogger()
 		);
 	}//end handler()
 
