@@ -1,0 +1,276 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`quality tables golden golden record: renders noProvenance 1`] = `
+"<div class="goldenRecordPanel">
+  <div class="goldenRecordHeader">
+    <h2>t:Golden record</h2>
+    <div class="goldenRecordHeader__actions">
+      <x-ncbutton variant="secondary" data-testid="mdm-resolve-conflicts">
+        <slot-default>t:Resolve conflicts</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="tertiary">
+        <slot-default>t:Close</slot-default>
+      </x-ncbutton>
+    </div>
+  </div>
+  <div class="goldenRecordMeta"><span><strong>t:Id:</strong> g1</span><span><strong>t:Quality score:</strong> 80</span><span><strong>t:Quality status:</strong> —</span></div>
+  <x-ncemptycontent name="t:No golden-record provenance" description="t:This object has no materialised attribute-provenance map.">
+    <slot-icon>
+      <x-accountboxoutline size="48"></x-accountboxoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+  
+</div>"
+`;
+
+exports[`quality tables golden golden record: renders none 1`] = `
+"<div class="goldenRecordPanel">
+  <div class="goldenRecordHeader">
+    <h2>t:Golden record</h2>
+    <div class="goldenRecordHeader__actions">
+      
+      <x-ncbutton variant="tertiary">
+        <slot-default>t:Close</slot-default>
+      </x-ncbutton>
+    </div>
+  </div>
+  <x-ncemptycontent name="t:No master entity selected">
+    <slot-icon>
+      <x-accountboxoutline size="48"></x-accountboxoutline>
+    </slot-icon>
+  </x-ncemptycontent>
+  
+</div>"
+`;
+
+exports[`quality tables golden golden record: renders provenance 1`] = `
+"<div class="goldenRecordPanel">
+  <div class="goldenRecordHeader">
+    <h2>t:Golden record</h2>
+    <div class="goldenRecordHeader__actions">
+      <x-ncbutton variant="secondary" data-testid="mdm-resolve-conflicts">
+        <slot-default>t:Resolve conflicts</slot-default>
+      </x-ncbutton>
+      <x-ncbutton variant="tertiary">
+        <slot-default>t:Close</slot-default>
+      </x-ncbutton>
+    </div>
+  </div>
+  <div class="goldenRecordMeta"><span><strong>t:Id:</strong> g2</span><span><strong>t:Quality score:</strong> 91</span><span><strong>t:Quality status:</strong> good</span></div>
+  <table class="provenanceTable" data-testid="provenance-table">
+    <thead>
+      <tr>
+        <th scope="col">t:Attribute</th>
+        <th scope="col">t:Winning source</th>
+        <th scope="col">t:Confidence</th>
+        <th scope="col">t:Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>name</td>
+        <td>crm</td>
+        <td>0.9</td>
+        <td>2026-01-01</td>
+      </tr>
+      <tr>
+        <td>email</td>
+        <td>erp</td>
+        <td>—</td>
+        <td>2026-02-02</td>
+      </tr>
+      <tr>
+        <td>phone</td>
+        <td>t:Manual override ({actor}){"actor":"admin"}</td>
+        <td>checked</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>city</td>
+        <td>registry</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>street</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+  
+</div>"
+`;
+
+exports[`quality tables golden queue health: renders empty 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Queue / sync health</h1>
+        <p>t:Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.</p>
+      </div>
+      <x-ncemptycontent name="t:No webhooks configured" description="t:Configure a webhook to see its delivery health here.">
+        <slot-icon>
+          <x-webhook size="64"></x-webhook>
+        </slot-icon>
+      </x-ncemptycontent>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchWebhookHealth",
+    ],
+  ],
+}
+`;
+
+exports[`quality tables golden queue health: renders failures 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Queue / sync health</h1>
+        <p>t:Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.</p>
+      </div>
+      <section class="webhookHealthSection">
+        <h2>t:Per-webhook health</h2>
+        <table class="webhookHealthTable">
+          <thead>
+            <tr>
+              <th scope="col">t:Webhook</th>
+              <th scope="col">t:Delivered</th>
+              <th scope="col">t:Failed</th>
+              <th scope="col">t:Pending retries</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Hook one</td>
+              <td>1</td>
+              <td>3</td>
+              <td>0</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="recentFailuresSection">
+        <h2>t:Recent failures</h2>
+        <table class="recentFailuresTable">
+          <thead>
+            <tr>
+              <th scope="col">t:Webhook</th>
+              <th scope="col">t:Event</th>
+              <th scope="col">t:Status code</th>
+              <th scope="col">t:Error</th>
+              <th scope="col">t:Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>ObjectCreatedEvent</td>
+              <td>500</td>
+              <td>Server error</td>
+              <td>2026-01-02T03:04:05+00:00</td>
+            </tr>
+            <tr>
+              <td>1</td>
+              <td>ObjectUpdatedEvent</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchWebhookHealth",
+    ],
+  ],
+}
+`;
+
+exports[`quality tables golden queue health: renders loading 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Queue / sync health</h1>
+        <p>t:Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.</p>
+      </div>
+      <x-ncloadingicon size="32"></x-ncloadingicon>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchWebhookHealth",
+    ],
+  ],
+}
+`;
+
+exports[`quality tables golden queue health: renders noFailures 1`] = `
+{
+  "markup": "<x-ncappcontent>
+  <slot-default>
+    <div class="viewContainer">
+      <div class="viewHeader">
+        <h1>t:Queue / sync health</h1>
+        <p>t:Read-only webhook delivery telemetry: per-webhook delivered / failed / pending-retry counts and recent failures.</p>
+      </div>
+      <section class="webhookHealthSection">
+        <h2>t:Per-webhook health</h2>
+        <table class="webhookHealthTable">
+          <thead>
+            <tr>
+              <th scope="col">t:Webhook</th>
+              <th scope="col">t:Delivered</th>
+              <th scope="col">t:Failed</th>
+              <th scope="col">t:Pending retries</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Hook one</td>
+              <td>4</td>
+              <td>0</td>
+              <td>2</td>
+            </tr>
+            <tr>
+              <td>https://two.test</td>
+              <td>0</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="recentFailuresSection">
+        <h2>t:Recent failures</h2>
+        <x-ncemptycontent name="t:No recent failures">
+          <slot-icon>
+            <x-webhook size="48"></x-webhook>
+          </slot-icon>
+        </x-ncemptycontent>
+      </section>
+    </div>
+  </slot-default>
+</x-ncappcontent>",
+  "mounted": [
+    [
+      "fetchWebhookHealth",
+    ],
+  ],
+}
+`;
