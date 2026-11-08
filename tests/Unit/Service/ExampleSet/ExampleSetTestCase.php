@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CaseItemMapperInterface;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\DAV\CalDAV\CalDavBackend;
@@ -101,6 +102,7 @@ use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentNotFoundException;
@@ -317,7 +319,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			PartyService::class       => $this->partyService(),
 			ContactLinkMapper::class  => $this->contactLinks(),
 			ICommentsManager::class   => $this->commentsManager(),
-			ObjectReadStateMapper::class => $this->readStateMapper(),
+			ObjectReadStateMapperInterface::class => $this->readStateMapper(),
 			FlowMapper::class         => $this->flowMapper(),
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
@@ -335,7 +337,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			CalDavBackend::class      => $this->caldav(),
 			CalendarLinkMapper::class => $this->calendarLinkMapper(),
 			CasePlanService::class    => $this->casePlans(),
-			CaseItemMapper::class     => $this->caseItemMapper(),
+			CaseItemMapperInterface::class => $this->caseItemMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
 			OrganisationServiceInterface::class => $this->organisationService(),
 			default                   => $this->services[$id],

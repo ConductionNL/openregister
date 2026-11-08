@@ -56,7 +56,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
-class CaseItemMapper extends QBMapper {
+class CaseItemMapper extends QBMapper implements CaseItemMapperInterface {
 	use DeleteByObjectTrait;
 
 	/**
