@@ -85,6 +85,34 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 	private ?array $seenUserIdsCache = null;
 
 	/**
+	 * Container, for the lazy IContentManager resolve.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * User manager, for the broadcast-audience fallback.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Wire collaborators.
 	 *
 	 * ⚠️ `IContentManager` is resolved LAZILY, in {@see self::contentManager()}.
@@ -108,23 +136,21 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 	 * Reproduced under a probe that maps OCP\ContextChat\* to nothing, exactly
 	 * as those servers do; see the fleet note in ContextChatReindexCommand.
 	 *
-	 * @param ContainerInterface $container Container, for the lazy IContentManager resolve.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param PermissionHandlerInterface $permissionHandler RBAC evaluator, used for the publication predicate + audience.
-	 * @param IUserManager $userManager User manager, for the broadcast-audience fallback.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ContextChatSubmissionServices $services          Container, schema lookup, user manager and logger.
+	 * @param PermissionHandlerInterface    $permissionHandler RBAC evaluator, used for the publication predicate + audience.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/context-chat-provider/spec.md
 	 */
 	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly SchemaMapperInterface $schemaMapper,
+		ContextChatSubmissionServices $services,
 		private readonly PermissionHandlerInterface $permissionHandler,
-		private readonly IUserManager $userManager,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->container = $services->container;
+		$this->schemaMapper = $services->schemaMapper;
+		$this->userManager = $services->userManager;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

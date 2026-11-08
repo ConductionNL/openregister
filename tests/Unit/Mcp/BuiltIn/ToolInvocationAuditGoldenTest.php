@@ -21,6 +21,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 
 /**
  * Pins the exact audit record the attribute and schema-derived providers
@@ -93,12 +94,14 @@ class ToolInvocationAuditGoldenTest extends TestCase
         )->willReturn($this->createMock(AuditTrail::class));
 
         $provider = new SchemaDerivedToolProvider(
-            appId: 'pipelinq',
-            schemaEntries: [['schema' => $schema, 'register' => null]],
-            suppressedIds: [],
-            objectService: $objects,
-            auditTrailMapper: $audit,
-            logger: $this->createMock(LoggerInterface::class)
+        	appId: 'pipelinq',
+        	schemaEntries: [['schema' => $schema, 'register' => null]],
+        	suppressedIds: [],
+        	services: new SchemaDerivedToolServices(
+        		objectService: $objects,
+        		auditTrailMapper: $audit,
+        		logger: $this->createMock(LoggerInterface::class),
+        	),
         );
         $provider->invokeTool('pipelinq.lead.search', ['filters' => ['status' => 'open', 'assignee' => 'é/x']]);
     }//end testSchemaDerivedInvocationSortsNestedKeys()

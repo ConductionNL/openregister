@@ -28,6 +28,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 
 /**
  * Pins which attributed-tool providers discovery builds per installed app,
@@ -139,12 +140,14 @@ class McpProviderDiscoveryAttributeCharacterisationTest extends TestCase
         $schema->setSlug($slug);
         $schema->setConfiguration(['x-openregister-mcp' => ['enabled' => true, 'tools' => ['search' => []]]]);
         return new SchemaDerivedToolProvider(
-            appId: $appId,
-            schemaEntries: [['schema' => $schema, 'register' => null]],
-            suppressedIds: [],
-            objectService: $this->createMock(ObjectService::class),
-            auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-            logger: $this->createMock(LoggerInterface::class)
+        	appId: $appId,
+        	schemaEntries: [['schema' => $schema, 'register' => null]],
+        	suppressedIds: [],
+        	services: new SchemaDerivedToolServices(
+        		objectService: $this->createMock(ObjectService::class),
+        		auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+        		logger: $this->createMock(LoggerInterface::class),
+        	),
         );
     }
 

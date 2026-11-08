@@ -20,6 +20,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 
 /**
  * Pins the full derived-tool catalogue (golden), derived-vs-derived duplicate
@@ -66,12 +67,14 @@ class SchemaDerivedToolProviderCharacterisationTest extends TestCase
             }
         );
         return new SchemaDerivedToolProvider(
-            appId: 'app.sub',
-            schemaEntries: array_map(fn (Schema $s) => ['schema' => $s, 'register' => null], $schemas),
-            suppressedIds: $suppressed,
-            objectService: $this->objectService,
-            auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-            logger: $logger
+        	appId: 'app.sub',
+        	schemaEntries: array_map(fn (Schema $s) => ['schema' => $s, 'register' => null], $schemas),
+        	suppressedIds: $suppressed,
+        	services: new SchemaDerivedToolServices(
+        		objectService: $this->objectService,
+        		auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+        		logger: $logger,
+        	),
         );
     }
 
