@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Db\Support\ConfigServices;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
@@ -446,8 +447,7 @@ class OrganisationSlugConflictTest extends TestCase {
 			db: $database->idbConnection(),
 			logger: new NullLogger(),
 			eventDispatcher: $this->createMock(IEventDispatcher::class),
-			appConfig: $this->createMock(IAppConfig::class),
-			config: $this->createMock(IConfig::class)
+			configs: new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 	}//end mapperOn()
 
@@ -461,7 +461,7 @@ class OrganisationSlugConflictTest extends TestCase {
 			private int $lookups = 0;
 
 			public function __construct($db, $dispatcher, $appConfig, $config) {
-				parent::__construct(db: $db, logger: new NullLogger(), eventDispatcher: $dispatcher, appConfig: $appConfig, config: $config);
+				parent::__construct(db: $db, logger: new NullLogger(), eventDispatcher: $dispatcher, configs: new ConfigServices($appConfig, $config));
 			}
 
 			public function findBySlug(string $slug): Organisation {

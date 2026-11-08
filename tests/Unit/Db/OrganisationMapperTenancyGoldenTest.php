@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\Support\ConfigServices;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -500,8 +501,7 @@ final class OrganisationMapperTenancyGoldenTest extends TestCase {
 			$db,
 			$this->recordingLogger(),
 			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(IConfig::class)
+			new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 		$this->queuedRows = [[['configvalue' => self::B]]];
 		$this->assertNull($mapper->getActiveOrganisationUuidForUser('alice'));
@@ -610,8 +610,7 @@ final class OrganisationMapperTenancyGoldenTest extends TestCase {
 			$db,
 			$this->recordingLogger(),
 			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(IConfig::class)
+			new ConfigServices($this->createMock(IAppConfig::class), $this->createMock(IConfig::class))
 		);
 	}//end recordingMapper()
 
@@ -666,7 +665,7 @@ final class OrganisationMapperTenancyGoldenTest extends TestCase {
 			 * @param IConfig $config Config.
 			 */
 			public function __construct(IDBConnection $db, AbstractLogger $logger, IEventDispatcher $dispatcher, IAppConfig $appConfig, IConfig $config) {
-				parent::__construct($db, $logger, $dispatcher, $appConfig, $config);
+				parent::__construct($db, $logger, $dispatcher, new ConfigServices($appConfig, $config));
 				$this->recordingLogger = $logger;
 			}
 
