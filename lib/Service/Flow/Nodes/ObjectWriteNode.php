@@ -129,6 +129,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -505,10 +506,12 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 
 		$this->subjects?->recordOne(
 			context: $plan->context,
-			role: $role,
-			uuids: $this->writtenUuids(written: $written, config: $plan->config),
-			register: (string)$plan->register->getId(),
-			schema: (string)$plan->schema->getId()
+			candidates: new FlowSubjectCandidates(
+				role: $role,
+				uuids: $this->writtenUuids(written: $written, config: $plan->config),
+				register: (string)$plan->register->getId(),
+				schema: (string)$plan->schema->getId()
+			)
 		);
 
 	}//end recordSubject()
