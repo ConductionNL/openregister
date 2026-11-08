@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use DateTime;
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
+use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
+use OCA\OpenRegister\Command\Support\RematerialiseStorage;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -270,7 +272,10 @@ class RematerialiseCalculationsGoldenTest extends TestCase {
 			}
 		);
 
-		return new RematerialiseCalculationsCommand($registers, $schemas, $magic, $objects, $evaluator, $references, $aggregates);
+		return new RematerialiseCalculationsCommand(
+			new RematerialiseStorage($registers, $schemas, $magic, $objects),
+			new RematerialiseEvaluation($evaluator, $references, $aggregates)
+		);
 	}//end command()
 
 	/**
