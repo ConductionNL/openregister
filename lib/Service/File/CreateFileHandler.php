@@ -79,21 +79,41 @@ class CreateFileHandler {
 	private const ACTION_GERUNDS = ['create' => 'creating', 'save' => 'saving'];
 
 	/**
+	 * Folder management handler.
+	 *
+	 * @var FolderManagementHandler
+	 */
+	private readonly FolderManagementHandler $folderMgmtHandler;
+
+	/**
+	 * Object entity mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectEntityMapper;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for CreateFileHandler.
 	 *
-	 * @param FolderManagementHandler       $folderMgmtHandler    Folder management handler.
+	 * @param CreateFileSources             $sources              The object folders, the object mapper and the logger a create works with.
 	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
 	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
-	 * @param MagicMapperInterface          $objectEntityMapper   Object entity mapper.
-	 * @param LoggerInterface               $logger               Logger for logging operations.
 	 */
 	public function __construct(
-		private readonly FolderManagementHandler $folderMgmtHandler,
+		CreateFileSources $sources,
 		private readonly FileValidationHandler $fileValidHandler,
 		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
-		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->folderMgmtHandler = $sources->folderMgmtHandler;
+		$this->objectEntityMapper = $sources->objectEntityMapper;
+		$this->logger = $sources->logger;
 	}//end __construct()
 
 	/**

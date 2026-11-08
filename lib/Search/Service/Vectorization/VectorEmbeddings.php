@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Vectorization;
 
 use Exception;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorEmbeddingHandlers;
@@ -384,15 +385,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	/**
 	 * Store vector embedding in the PostgreSQL database
 	 *
-	 * @param string $entityType Entity type ('object' or 'file')
-	 * @param string $entityId Entity UUID
-	 * @param array $embedding Vector embedding (array of floats)
-	 * @param string $model Model used to generate embedding
-	 * @param int $dimensions Number of dimensions
-	 * @param int $chunkIndex Chunk index (0 for objects, N for file chunks)
-	 * @param int $totalChunks Total number of chunks
-	 * @param string|null $chunkText The text that was embedded
-	 * @param array $metadata Additional metadata as associative array
+	 * @param StoredVector $vector The entity, its embedding and its chunk position
 	 *
 	 * @return int The ID of the inserted vector
 	 *
@@ -400,28 +393,8 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function storeVector(
-		string $entityType,
-		string $entityId,
-		array $embedding,
-		string $model,
-		int $dimensions,
-		int $chunkIndex = 0,
-		int $totalChunks = 1,
-		?string $chunkText = null,
-		array $metadata = [],
-	): int {
-		return $this->handlers->storage->storeVector(
-			entityType: $entityType,
-			entityId: $entityId,
-			embedding: $embedding,
-			model: $model,
-			dimensions: $dimensions,
-			chunkIndex: $chunkIndex,
-			totalChunks: $totalChunks,
-			chunkText: $chunkText,
-			metadata: $metadata
-		);
+	public function storeVector(StoredVector $vector): int {
+		return $this->handlers->storage->storeVector(vector: $vector);
 	}//end storeVector()
 
 	// =============================================================================

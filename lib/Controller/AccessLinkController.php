@@ -55,7 +55,7 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
-use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
@@ -113,9 +113,9 @@ class AccessLinkController extends Controller {
 	/**
 	 * Performs the comment and the upload, as the link.
 	 *
-	 * @var AccessLinkActs
+	 * @var AccessLinkActsInterface
 	 */
-	private readonly AccessLinkActs $acts;
+	private readonly AccessLinkActsInterface $acts;
 
 	/**
 	 * The current session, on the owner endpoints.

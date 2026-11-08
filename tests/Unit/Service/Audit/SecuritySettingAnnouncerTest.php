@@ -27,6 +27,7 @@ namespace Unit\Service\Audit;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
+use OCA\OpenRegister\Service\Audit\AnnouncementRecipients;
 use OCA\OpenRegister\Service\Audit\SecuritySettingRegistry;
 use OCP\IAppConfig;
 use OCP\IGroup;
@@ -112,8 +113,7 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 
 		return new SecuritySettingAnnouncer(
 			$registry ?? new SecuritySettingRegistry($this->appConfig()),
-			$this->notificationManager(),
-			$groups,
+			new AnnouncementRecipients($this->notificationManager(), $groups),
 			$session,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -238,8 +238,7 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 
 		$announcer = new SecuritySettingAnnouncer(
 			new SecuritySettingRegistry($this->appConfig()),
-			$manager,
-			$groups,
+			new AnnouncementRecipients($manager, $groups),
 			$session,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -261,8 +260,7 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 
 		$announcer = new SecuritySettingAnnouncer(
 			new SecuritySettingRegistry($this->appConfig()),
-			$this->notificationManager(),
-			$groups,
+			new AnnouncementRecipients($this->notificationManager(), $groups),
 			$session,
 			$this->createMock(LoggerInterface::class)
 		);

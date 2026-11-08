@@ -146,8 +146,7 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 		return new ConfigurationSettingsHandler(
 			$this->appConfig,
 			new SettingsDirectory($groups, $users, $organisations),
-			new ConfigurationSettingsSupport($this->createMock(LoggerInterface::class), $this->createMock(IAppManager::class), null, $this->recorder()),
-			'openregister'
+			new ConfigurationSettingsSupport($this->createMock(LoggerInterface::class), $this->createMock(IAppManager::class), null, $this->recorder())
 		);
 	}//end configurationHandler()
 
@@ -227,7 +226,7 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 	public function testRetentionDoorRecordsTheChangedKey(): void {
 		$this->store['retention'] = json_encode(['auditTrailsEnabled' => true]);
 
-		$handler = new ObjectRetentionHandler($this->appConfig, 'openregister', $this->recorder());
+		$handler = new ObjectRetentionHandler($this->appConfig, $this->recorder());
 		$handler->updateRetentionSettingsOnly(['auditTrailsEnabled' => false]);
 
 		$this->assertSame([true, false], $this->lastChange('retention.auditTrailsEnabled'));
@@ -239,7 +238,7 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 	 * @return void
 	 */
 	public function testObjectAndArchivalDoorsRecord(): void {
-		$handler = new ObjectRetentionHandler($this->appConfig, 'openregister', $this->recorder());
+		$handler = new ObjectRetentionHandler($this->appConfig, $this->recorder());
 
 		$handler->updateObjectSettingsOnly(['batchSize' => 50]);
 		$this->assertSame([null, 50], $this->lastChange('objectManagement.batchSize'));
@@ -308,7 +307,7 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 	public function testLlmDoorRecordsTheChangedKeyAndMarksTheApiKeySecret(): void {
 		$this->store['llm'] = json_encode(['enabled' => true, 'openaiConfig' => ['apiKey' => 'sk-old', 'model' => 'small']]);
 
-		$handler = new LlmSettingsHandler($this->appConfig, 'openregister', $this->recorder());
+		$handler = new LlmSettingsHandler($this->appConfig, $this->recorder());
 		$handler->updateLLMSettingsOnly(['openaiConfig' => ['apiKey' => 'sk-new', 'model' => 'large']]);
 
 		$this->assertSame(['small', 'large'], $this->lastChange('llm.openaiConfig.model'));

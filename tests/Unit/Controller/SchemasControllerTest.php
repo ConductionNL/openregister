@@ -9,6 +9,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -1791,8 +1792,7 @@ class SchemasControllerTest extends TestCase {
 		$jsonLdContext->method('getImplementedTypes')->willReturn($implementedTypes);
 
 		$resolver = new \OCA\OpenRegister\Service\SemanticTypeResolver(
-			$schemaMapper,
-			$registerMapper,
+			new RegisterSchemaMappers($registerMapper, $schemaMapper),
 			$jsonLdContext,
 			$this->logger,
 			null

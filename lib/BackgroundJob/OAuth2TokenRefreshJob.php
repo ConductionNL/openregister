@@ -43,6 +43,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\BackgroundJob\Support\OAuth2TokenRefreshServices;
 
 /**
  * Daily sweep that rotates active OAuth2 token sets ahead of their expiry.
@@ -68,23 +69,43 @@ class OAuth2TokenRefreshJob extends TimedJob {
 	private const KIND = 'oauth2-token-set';
 
 	/**
+	 * Lists the brokered credentials.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Resolves each credential's provider entry.
+	 *
+	 * @var ProviderCatalogueInterface
+	 */
+	private readonly ProviderCatalogueInterface $catalogue;
+
+	/**
+	 * Performs the rotation, under the shared lock.
+	 *
+	 * @var OAuth2CredentialSweepInterface
+	 */
+	private readonly OAuth2CredentialSweepInterface $refresh;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory for TimedJob.
-	 * @param ObjectOperationsInterface $objectService Lists the brokered credentials.
-	 * @param ProviderCatalogueInterface $catalogue Resolves each credential's provider entry.
-	 * @param OAuth2CredentialSweepInterface $refresh Performs the rotation, under the shared lock.
+	 * @param OAuth2TokenRefreshServices $services Token-set objects, provider catalogue and refresh sweep.
 	 * @param LoggerInterface $logger Reports what was swept and what failed.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly ProviderCatalogueInterface $catalogue,
-		private readonly OAuth2CredentialSweepInterface $refresh,
+		OAuth2TokenRefreshServices $services,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectService = $services->objectService;
+		$this->catalogue = $services->catalogue;
+		$this->refresh = $services->refresh;
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 

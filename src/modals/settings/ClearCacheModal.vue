@@ -1,9 +1,16 @@
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="show"
 		name="Clear Cache"
-		:noClose="clearing"
-		@closing="$emit('close')">
+		size="small"
+		:closable="!clearing"
+		:loading="clearing"
+		:cancelDisabled="clearing"
+		closeLabel="Cancel"
+		:confirmLabel="clearing ? 'Clearing...' : 'Clear Cache'"
+		showConfirm
+		@cancel="$emit('close')"
+		@confirm="confirmClear">
 		<div class="dialog-content">
 			<h3>🗑️ Clear Cache</h3>
 			<p class="warning-text">
@@ -30,28 +37,16 @@
 			</div>
 		</div>
 
-		<template #actions>
-			<CloseCancelButton label="Cancel" :disabled="clearing" @click="$emit('close')" />
-			<NcButton variant="error" :disabled="clearing" @click="confirmClear">
-				<template #icon>
-					<NcLoadingIcon v-if="clearing" :size="20" />
-					<Delete v-else :size="20" />
-				</template>
-				{{ clearing ? 'Clearing...' : 'Clear Cache' }}
-			</NcButton>
+		<template #confirmIcon>
+			<Delete :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcCheckboxRadioSwitch,
-	NcDialog,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 
 /**
  * The cache types to choose from, in rows of radios.
@@ -71,14 +66,7 @@ const CACHE_TYPE_GROUPS = [
 export default {
 	name: 'ClearCacheModal',
 
-	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcCheckboxRadioSwitch,
-		CloseCancelButton,
-		Delete,
-	},
+	components: { ConfirmDialogFrame, NcCheckboxRadioSwitch, Delete },
 
 	props: {
 		show: {
@@ -97,7 +85,7 @@ export default {
 		},
 	},
 
-	emits: ['close', 'confirm'],
+	emits: ['close', 'confirm', 'cache-type-changed'],
 
 	data() {
 		return {
@@ -119,7 +107,7 @@ export default {
 
 	watch: {
 		/**
-		 * @param {string} newValue
+		 * @param {string} newValue The cache type the parent selected
 		 * @spec exclude watcher syncing local cache-type from prop
 		 */
 		cacheType(newValue) {
@@ -127,7 +115,7 @@ export default {
 		},
 
 		/**
-		 * @param {string} newValue
+		 * @param {string} newValue The cache type the user selected
 		 * @spec exclude watcher emitting cache-type change
 		 */
 		localCacheType(newValue) {

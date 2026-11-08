@@ -127,36 +127,46 @@ class ReviewReminderJob extends TimedJob {
 				return;
 			}
 
-			$cutoff = (new DateTimeImmutable())->sub(new DateInterval($this->frequency()));
-
-			$pending = [];
-			foreach ($lists->findLists(statuses: DestructionListRepositoryInterface::OPEN_STATUSES) as $list) {
-				$pending = array_merge(
-					$pending,
-					$reviews->pendingEntries(
-						listData: ($list->getObject() ?? []),
-						listUuid: (string)$list->getUuid(),
-						reviewer: null,
-						waitingSince: $cutoff
-					)
-				);
-			}
-
-			$counts = $reviews->countByReviewer(entries: $pending);
+			$counts = $reviews->countByReviewer(entries: $this->pendingEntries(lists: $lists, reviews: $reviews));
 			if ($counts === []) {
 				$logger->debug('[ReviewReminderJob] No review entries are waiting');
 				return;
 			}
 
-			foreach ($counts as $reviewer => $count) {
-				$this->remind(reviewer: $reviewer, count: $count, logger: $logger);
-			}
+			$this->remindAll(counts: $counts, logger: $logger);
 
 			$logger->info('[ReviewReminderJob] Reminded ' . count($counts) . ' reviewers');
 		} catch (Exception $e) {
 			$logger->error('[ReviewReminderJob] Error: ' . $e->getMessage(), ['exception' => $e]);
 		}//end try
 	}//end run()
+
+	/**
+	 * Every entry on an open list that has waited at least one reminder period.
+	 *
+	 * @param DestructionListRepositoryInterface $lists   The destruction-list register.
+	 * @param DestructionReviewReminderInterface $reviews The review bookkeeping.
+	 *
+	 * @return array<int, array<string, mixed>> The waiting entries.
+	 */
+	private function pendingEntries(DestructionListRepositoryInterface $lists, DestructionReviewReminderInterface $reviews): array {
+		$cutoff = (new DateTimeImmutable())->sub(new DateInterval($this->frequency()));
+
+		$pending = [];
+		foreach ($lists->findLists(statuses: DestructionListRepositoryInterface::OPEN_STATUSES) as $list) {
+			$pending = array_merge(
+				$pending,
+				$reviews->pendingEntries(
+					listData: ($list->getObject() ?? []),
+					listUuid: (string)$list->getUuid(),
+					reviewer: null,
+					waitingSince: $cutoff
+				)
+			);
+		}
+
+		return $pending;
+	}//end pendingEntries()
 
 	/**
 	 * The declared frequency, as an ISO 8601 duration.
@@ -180,31 +190,46 @@ class ReviewReminderJob extends TimedJob {
 	}//end frequency()
 
 	/**
-	 * Tell one reviewer how much is waiting on them.
+	 * Tell every reviewer how much is waiting on them, one notification each.
 	 *
-	 * @param string          $reviewer The reviewer's user id.
-	 * @param int             $count    How many entries are waiting.
-	 * @param LoggerInterface $logger   Logger.
+	 * A reminder that cannot be sent is logged and does not stop the others.
+	 *
+	 * @param array<string, int> $counts Pending entries per reviewer user id.
+	 * @param LoggerInterface    $logger Logger.
 	 *
 	 * @return void
 	 */
-	private function remind(string $reviewer, int $count, LoggerInterface $logger): void {
-		try {
-			$notificationManager = $this->container->get(INotificationManager::class);
-
-			$notification = $notificationManager->createNotification();
-			$notification->setApp('openregister')
-				->setUser($reviewer)
-				->setDateTime(new DateTime())
-				->setObject('destruction_review', $reviewer)
-				->setSubject(
-					'destruction_review_pending',
-					['pendingCount' => $count]
-				);
-
-			$notificationManager->notify($notification);
-		} catch (Exception $e) {
-			$logger->warning('[ReviewReminderJob] Could not remind ' . $reviewer . ': ' . $e->getMessage());
+	private function remindAll(array $counts, LoggerInterface $logger): void {
+		foreach ($counts as $reviewer => $count) {
+			try {
+				$this->remind(reviewer: $reviewer, count: $count);
+			} catch (Exception $e) {
+				$logger->warning('[ReviewReminderJob] Could not remind ' . $reviewer . ': ' . $e->getMessage());
+			}
 		}
+	}//end remindAll()
+
+	/**
+	 * Tell one reviewer how much is waiting on them.
+	 *
+	 * @param string $reviewer The reviewer's user id.
+	 * @param int    $count    How many entries are waiting.
+	 *
+	 * @return void
+	 */
+	private function remind(string $reviewer, int $count): void {
+		$notificationManager = $this->container->get(INotificationManager::class);
+
+		$notification = $notificationManager->createNotification();
+		$notification->setApp('openregister')
+			->setUser($reviewer)
+			->setDateTime(new DateTime())
+			->setObject('destruction_review', $reviewer)
+			->setSubject(
+				'destruction_review_pending',
+				['pendingCount' => $count]
+			);
+
+		$notificationManager->notify($notification);
 	}//end remind()
 }//end class

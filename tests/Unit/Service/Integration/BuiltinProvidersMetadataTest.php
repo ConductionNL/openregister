@@ -49,6 +49,7 @@ use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProviderServices;
 
 /**
  * Unit tests for the built-in providers' contract metadata.
@@ -168,11 +169,13 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			->willReturn(['id' => 'cal/task.ics', 'summary' => 'Do the thing']);
 
 		$provider = new TasksProvider(
-			taskService: $taskService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			objectService: $objectService,
-			l10n: $this->buildL10n()
+			services: new TasksProviderServices(
+				taskService: $taskService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				objectService: $objectService,
+			),
+			l10n: $this->buildL10n(),
 		);
 
 		$result = $provider->create('my-register', 'my-schema', 'obj-uuid-1', [
@@ -214,11 +217,13 @@ class BuiltinProvidersMetadataTest extends TestCase {
 			->willReturn(['id' => 'cal/task.ics']);
 
 		$provider = new TasksProvider(
-			taskService: $taskService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			objectService: $objectService,
-			l10n: $this->buildL10n()
+			services: new TasksProviderServices(
+				taskService: $taskService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				objectService: $objectService,
+			),
+			l10n: $this->buildL10n(),
 		);
 
 		$result = $provider->create('r', 's', 'missing-uuid', ['summary' => 'x']);
@@ -227,11 +232,13 @@ class BuiltinProvidersMetadataTest extends TestCase {
 
 	private function buildTasksProvider(TaskService $taskService): TasksProvider {
 		return new TasksProvider(
-			taskService: $taskService,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			objectService: $this->createMock(ObjectService::class),
-			l10n: $this->buildL10n()
+			services: new TasksProviderServices(
+				taskService: $taskService,
+				registerMapper: $this->createMock(RegisterMapper::class),
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				objectService: $this->createMock(ObjectService::class),
+			),
+			l10n: $this->buildL10n(),
 		);
 	}//end buildTasksProvider()
 

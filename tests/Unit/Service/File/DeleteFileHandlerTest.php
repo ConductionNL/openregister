@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\DeleteFileSources;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
@@ -88,11 +89,9 @@ class DeleteFileHandlerTest extends TestCase {
 		$this->fileLockHandler = $this->createMock(FileLockHandler::class);
 
 		$this->handler = new DeleteFileHandler(
-			$this->rootFolder,
-			$this->readFileHandler,
+			new DeleteFileSources($this->rootFolder, $this->readFileHandler, $this->logger),
 			$this->fileValidHandler,
 			$this->fileOwnershipHandler,
-			$this->logger,
 			$this->fileLockHandler
 		);
 	}//end setUp()

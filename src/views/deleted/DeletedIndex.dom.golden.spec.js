@@ -96,6 +96,14 @@ describe('DeletedIndex table', () => {
 		expect(tableText(wrapper)).toMatchSnapshot()
 	})
 
+	it('lets the title and description cell wrap', () => {
+		const wrapper = mounted(ITEMS)
+		const wrapping = wrapper.findComponent({ name: 'CnDataTable' }).props('columns')
+			.filter((column) => column.cellClass === 'cn-cell--wrap')
+			.map((column) => column.key)
+		expect(wrapping).toEqual(['title'])
+	})
+
 	it('shows the empty state without items', () => {
 		const wrapper = mounted([])
 		expect(wrapper.findAll('table')).toHaveLength(0)

@@ -104,6 +104,9 @@
 						</template>
 					</NcEmptyContent>
 					<CnDataTable v-else :columns="lowQualityColumns" :rows="lowQualityObjects">
+						<template #column-qualityScore="{ value }">
+							{{ value }}
+						</template>
 						<template #column-qualityStatus="{ row }">
 							<span :class="'badge badge-status-' + row.qualityStatus">{{ row.qualityStatus }}</span>
 						</template>

@@ -24,6 +24,9 @@ use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ChatService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 
 /**
  * Records every collaborator call processMessage() makes, in order, and its result,
@@ -80,11 +83,17 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 		});
 
 		$history = $this->createMock(MessageHistoryHandler::class);
-		$history->method('storeMessage')->willReturnCallback(
-			function (int $conversationId, string $role, string $content, ?array $sources = null, ?array $context = null) use ($s) {
-				$this->calls[] = ['history.store', $conversationId, $role, $content, $sources, $context];
+		$history->method('storeUserMessage')->willReturnCallback(
+			function (ChatMessageRequest $request) {
+				$this->calls[] = ['history.store', $request->conversationId, Message::ROLE_USER, $request->userMessage, null, $request->cnAiContext];
+				return new Message();
+			}
+		);
+		$history->method('storeAssistantMessage')->willReturnCallback(
+			function (int $conversationId, string $content, ?array $sources) use ($s) {
+				$this->calls[] = ['history.store', $conversationId, Message::ROLE_ASSISTANT, $content, $sources, null];
 				$message = new Message();
-				if ($role === Message::ROLE_ASSISTANT && $s['storedId'] !== null) {
+				if ($s['storedId'] !== null) {
 					$message->setId($s['storedId']);
 				}
 				return $message;
@@ -123,9 +132,9 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 			}
 		);
 		$response->method('generateResponse')->willReturnCallback(
-			function (string $userMessage, array $context, array $messageHistory, ?Agent $agent, array $selectedTools = [], ?StreamYieldChannel $channel = null, array $cnAiContext = []) {
-				$this->calls[] = ['llm', $userMessage, $context, $messageHistory, $agent?->getName(), $selectedTools, $channel !== null, $cnAiContext];
-				return 'answer to ' . $userMessage;
+			function (ChatMessageRequest $request, array $context, array $messageHistory, ?Agent $agent) {
+				$this->calls[] = ['llm', $request->userMessage, $context, $messageHistory, $agent?->getName(), $request->selectedTools, $request->channel !== null, $request->cnAiContext];
+				return 'answer to ' . $request->userMessage;
 			}
 		);
 
@@ -140,14 +149,18 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 		});
 
 		return new ChatService(
-			$conversationMapper,
-			$messageMapper,
-			$agentMapper,
-			$contextHandler,
-			$response,
-			$conversationHandler,
-			$history,
-			$logger
+			new ChatServiceStores(
+				$conversationMapper,
+				$messageMapper,
+				$agentMapper,
+			),
+			new ChatServiceHandlers(
+				$contextHandler,
+				$response,
+				$conversationHandler,
+				$history,
+			),
+			$logger,
 		);
 	}
 

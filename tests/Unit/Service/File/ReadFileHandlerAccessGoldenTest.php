@@ -112,6 +112,11 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 				continue;
 			}
 
+			if ((new ReflectionClass($type))->isFinal() === true) {
+				$args[] = new $type(...$this->bundleArgs(bundle: $type, byType: $byType));
+				continue;
+			}
+
 			$args[] = $this->createMock($type);
 		}
 
@@ -119,6 +124,24 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 		$handler->setFileService($this->fileService);
 		return $handler;
 	}//end handler()
+
+	/**
+	 * Build the arguments of a constructor bundle from the mocks, matching by type.
+	 *
+	 * @param class-string         $bundle The bundle class.
+	 * @param array<string, mixed> $byType The stand-ins by type.
+	 *
+	 * @return list<mixed> The arguments.
+	 */
+	private function bundleArgs(string $bundle, array $byType): array {
+		$args = [];
+		foreach ((new ReflectionClass($bundle))->getConstructor()->getParameters() as $param) {
+			$type   = ltrim((string)$param->getType(), '?');
+			$args[] = array_key_exists($type, $byType) === true ? $byType[$type] : $this->createMock($type);
+		}
+
+		return $args;
+	}//end bundleArgs()
 
 	private function file(int $id): File&MockObject {
 		$file = $this->createMock(File::class);

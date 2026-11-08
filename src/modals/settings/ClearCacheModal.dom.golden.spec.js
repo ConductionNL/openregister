@@ -16,6 +16,9 @@ jest.mock('vue-material-design-icons/Cancel.vue', () =>
 jest.mock('vue-material-design-icons/Delete.vue', () =>
 	require('../../views/__mocks__/goldenDom.js').stubModule('Delete'),
 )
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () =>
+	require('../../views/__mocks__/goldenDom.js').stubModule('TrashCanOutline'),
+)
 
 const { normalise } = require('../../views/__mocks__/goldenDom.js')
 

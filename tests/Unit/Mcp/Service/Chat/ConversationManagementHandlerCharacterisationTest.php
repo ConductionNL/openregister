@@ -21,6 +21,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ConversationStores;
 
 /**
  * Pins the observable outcomes of title generation, unique-title numbering
@@ -66,11 +67,13 @@ class ConversationManagementHandlerCharacterisationTest extends TestCase
     {
         $this->settings->method('getLLMSettingsOnly')->willReturn($llm);
         return new ConversationManagementHandler(
-            $this->conversationMapper,
-            $this->messageMapper,
-            $this->settings,
-            $this->createMock(ResponseGenerationHandler::class),
-            $this->logger
+        	new ConversationStores(
+        		$this->conversationMapper,
+        		$this->messageMapper,
+        	),
+        	$this->settings,
+        	$this->createMock(ResponseGenerationHandler::class),
+        	$this->logger,
         );
     }
 

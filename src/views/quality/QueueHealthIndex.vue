@@ -35,7 +35,11 @@
 			<template v-else>
 				<section class="webhookHealthSection">
 					<h2>{{ t('openregister', 'Per-webhook health') }}</h2>
-					<CnDataTable :columns="healthColumns" :rows="healthRows" />
+					<CnDataTable :columns="healthColumns" :rows="healthRows">
+						<template #column-name="{ value }">
+							{{ value }}
+						</template>
+					</CnDataTable>
 				</section>
 
 				<section class="recentFailuresSection">
@@ -51,7 +55,17 @@
 						v-else
 						:columns="failureColumns"
 						:rows="failureRows"
-						rowKey="rowKey" />
+						rowKey="rowKey">
+						<template #column-webhook="{ value }">
+							{{ value }}
+						</template>
+						<template #column-eventClass="{ value }">
+							{{ value }}
+						</template>
+						<template #column-errorMessage="{ value }">
+							{{ value }}
+						</template>
+					</CnDataTable>
 				</section>
 			</template>
 		</div>
@@ -104,7 +118,7 @@ export default {
 		 */
 		healthColumns() {
 			return [
-				{ key: 'name', label: t('openregister', 'Webhook') },
+				{ key: 'name', label: t('openregister', 'Webhook'), cellClass: 'cn-cell--wrap' },
 				{ key: 'successful', label: t('openregister', 'Delivered') },
 				{ key: 'failed', label: t('openregister', 'Failed') },
 				{ key: 'pendingRetries', label: t('openregister', 'Pending retries') },
@@ -136,10 +150,10 @@ export default {
 		 */
 		failureColumns() {
 			return [
-				{ key: 'webhook', label: t('openregister', 'Webhook') },
-				{ key: 'eventClass', label: t('openregister', 'Event') },
+				{ key: 'webhook', label: t('openregister', 'Webhook'), cellClass: 'cn-cell--wrap' },
+				{ key: 'eventClass', label: t('openregister', 'Event'), cellClass: 'cn-cell--wrap' },
 				{ key: 'statusCode', label: t('openregister', 'Status code') },
-				{ key: 'errorMessage', label: t('openregister', 'Error') },
+				{ key: 'errorMessage', label: t('openregister', 'Error'), cellClass: 'cn-cell--wrap' },
 				{ key: 'created', label: t('openregister', 'Created') },
 			]
 		},

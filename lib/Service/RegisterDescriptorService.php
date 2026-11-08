@@ -71,25 +71,45 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	private const DESCRIPTOR_DIR = '/lib/Settings';
 
 	/**
+	 * Performs the mock import.
+	 *
+	 * @var AppConfigurationImporterInterface
+	 */
+	private readonly AppConfigurationImporterInterface $configurationService;
+
+	/**
+	 * Runs a re-import under the decision and counts what changed.
+	 *
+	 * @var CountedRegisterImport
+	 */
+	private readonly CountedRegisterImport $counted;
+
+	/**
+	 * Runs the app's real, forced import.
+	 *
+	 * @var AppRegisterImportRunner
+	 */
+	private readonly AppRegisterImportRunner $importRunner;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppManager          $appManager           Enumerates installed apps and resolves their paths.
 	 * @param RegisterMapperInterface       $registerMapper       Reads the registers that actually exist.
-	 * @param AppConfigurationImporterInterface    $configurationService Performs the mock import.
+	 * @param RegisterImporters $importers Performs the mock import, runs a counted re-import and the app's real, forced import.
 	 * @param LoggerInterface         $logger               Records unreadable descriptors.
-	 * @param CountedRegisterImport   $counted              Runs a re-import under the decision and counts what changed.
-	 * @param AppRegisterImportRunner $importRunner         Runs the app's real, forced import.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IAppManager $appManager,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly AppConfigurationImporterInterface $configurationService,
+		RegisterImporters $importers,
 		private readonly LoggerInterface $logger,
-		private readonly CountedRegisterImport $counted,
-		private readonly AppRegisterImportRunner $importRunner,
 	) {
+		$this->configurationService = $importers->configurationService;
+		$this->counted = $importers->counted;
+		$this->importRunner = $importers->importRunner;
 	}//end __construct()
 
 	/**

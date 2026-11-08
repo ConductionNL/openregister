@@ -37,29 +37,50 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\SchemaRunServices;
 
 /**
  * Background executor for schema runs.
  */
 class SchemaRunJob extends QueuedJob {
 	/**
+	 * Run persistence.
+	 *
+	 * @var SchemaRunStoreInterface
+	 */
+	private readonly SchemaRunStoreInterface $runMapper;
+
+	/**
+	 * Revalidation engine.
+	 *
+	 * @var SchemaRevalidationService
+	 */
+	private readonly SchemaRevalidationService $revalidationService;
+
+	/**
+	 * Migration engine.
+	 *
+	 * @var SchemaBatchMigratorInterface
+	 */
+	private readonly SchemaBatchMigratorInterface $migrationService;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory.
-	 * @param SchemaRunStoreInterface $runMapper Run persistence.
-	 * @param SchemaRevalidationService $revalidationService Revalidation engine.
-	 * @param SchemaBatchMigratorInterface $migrationService Migration engine.
+	 * @param SchemaRunServices $services Run store, revalidation and migration passes.
 	 * @param IJobList $jobList Job list for re-enqueue.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SchemaRunStoreInterface $runMapper,
-		private readonly SchemaRevalidationService $revalidationService,
-		private readonly SchemaBatchMigratorInterface $migrationService,
+		SchemaRunServices $services,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->runMapper = $services->runMapper;
+		$this->revalidationService = $services->revalidationService;
+		$this->migrationService = $services->migrationService;
 		parent::__construct(time: $time);
 
 	}//end __construct()

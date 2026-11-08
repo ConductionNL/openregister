@@ -27,6 +27,8 @@ use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Contacts\Support\ContactsMenuSources;
+use OCA\OpenRegister\Contacts\Support\ContactsMenuPlatform;
 
 /**
  * Test class for ContactsMenuProvider.
@@ -63,12 +65,8 @@ class ContactsMenuProviderTest extends TestCase {
 			->willReturn('/apps/openregister/img/app-dark.svg');
 
 		$this->provider = new ContactsMenuProvider(
-			$this->matchingService,
-			$this->deepLinkRegistry,
-			$this->actionFactory,
-			$this->urlGenerator,
-			$this->l10n,
-			$this->logger
+			new ContactsMenuSources($this->matchingService, $this->deepLinkRegistry),
+			new ContactsMenuPlatform($this->actionFactory, $this->urlGenerator, $this->l10n, $this->logger)
 		);
 	}
 

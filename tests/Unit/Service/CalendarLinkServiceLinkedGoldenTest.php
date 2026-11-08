@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapperInterface;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -268,6 +269,6 @@ class CalendarLinkServiceLinkedGoldenTest extends TestCase {
 				return array_map(fn (array $spec) => $this->linkRow($spec), $w['linked']);
 			}
 		);
-		return new CalendarLinkService($mapper, $events, $backend, $session, $logger);
+		return new CalendarLinkService($mapper, $events, $backend, new LinkSessionRuntime($session, $logger));
 	}//end makeService()
 }//end class

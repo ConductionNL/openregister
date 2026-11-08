@@ -41,7 +41,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -89,16 +88,14 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 	 *
 	 * @param PrincipalReachService     $reach       The listing the act runs from.
 	 * @param ReachSources              $sources     Schema authorization blocks, derived grants and delegations held.
-	 * @param AuthorizationAuditService $audit       The record of what was removed.
+	 * @param ReachRevocationLog $log The authorization audit and the PSR log a revocation is written to.
 	 * @param IUserSession              $userSession The acting administrator.
-	 * @param LoggerInterface           $logger      PSR logger.
 	 */
 	public function __construct(
 		private readonly PrincipalReachService $reach,
 		ReachSources $sources,
-		private readonly AuthorizationAuditService $audit,
+		private readonly ReachRevocationLog $log,
 		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
 	) {
 		$this->schemaMapper = $sources->schemaMapper;
 		$this->derived = $sources->derived;
@@ -153,7 +150,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 		// ONE ENTRY NAMES ALL OF THEM. Per-grant lines would let a reader
 		// believe a partial act was a whole one, and the question this answers
 		// is "what did this person still have on the day they left".
-		$this->logger->warning(
+		$this->log->logger->warning(
 			message: '[ReachRevocation] A principal\'s whole reach was revoked in one act',
             context: array_merge(['event_type' => AuthorizationAuditService::EVENT_TYPE], $record)
 		);
@@ -188,7 +185,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 			try {
 				$schema->setAuthorization($after);
 				$this->schemaMapper->update($schema);
-				$this->audit->logSchemaAuthorizationChange(
+				$this->log->audit->logSchemaAuthorizationChange(
 					schemaId: (int)$schema->getId(),
 					schemaTitle: (string)$schema->getTitle(),
 					oldAuthorization: $before,
@@ -357,7 +354,7 @@ class ReachRevocationService implements ReachRevocationServiceInterface {
 		try {
 			return $this->schemaMapper->findAll();
 		} catch (Throwable $e) {
-			$this->logger->error(
+			$this->log->logger->error(
 				message: '[ReachRevocation] Could not list the schemas, so nothing was revoked from them',
 				context: ['error' => $e->getMessage()]
 			);

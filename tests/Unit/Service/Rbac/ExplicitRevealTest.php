@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
+use OCA\OpenRegister\Service\Rbac\RevealRecording;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -138,7 +139,7 @@ class ExplicitRevealTest extends TestCase {
 	private function masker(array $groups, ExplicitReveal $reveal, RevealCollector $reveals): ExplicitRevealMasker {
 		[$handler, $session] = $this->rules(groups: $groups, reveals: $reveals);
 
-		return new ExplicitRevealMasker($reveal, $handler, $session, $this->createMock(LoggerInterface::class), $reveals);
+		return new ExplicitRevealMasker($reveal, $handler, $session, new RevealRecording($this->createMock(LoggerInterface::class), $reveals));
 	}//end masker()
 
 	/**

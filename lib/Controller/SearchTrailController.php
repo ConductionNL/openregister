@@ -360,11 +360,8 @@ class SearchTrailController extends Controller {
 	 * It calculates the number of pages, sets the appropriate offset and page values, and returns the paginated results
 	 * along with metadata such as total items, current page, total pages, limit, and offset.
 	 *
-	 * @param array $results The array of objects to paginate.
-	 * @param int|null $total The total number of items (before pagination). Defaults to 0.
-	 * @param int|null $limit The number of items per page. Defaults to 20.
-	 * @param int|null $offset The offset of items. Defaults to 0.
-	 * @param int|null $page The current page number. Defaults to 1.
+	 * @param array        $results The array of objects to paginate.
+	 * @param ResultWindow $window  The total and the page position of the results.
 	 *
 	 * @return (array|float|int|null|string)[]
 	 *
@@ -388,8 +385,7 @@ class SearchTrailController extends Controller {
 	 * @spec exclude Private helper: shared pagination-envelope builder; the search-trail analytics API is owned by
 	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
 	 */
-	private function paginate(array $results, ?int $total = 0, ?int $limit = 20, ?int $offset = 0, ?int $page = 1): array {
-		$window = new ResultWindow(total: $total, limit: $limit, offset: $offset, page: $page);
+	private function paginate(array $results, ResultWindow $window): array {
 		$envelope = $window->over(results: $results);
 		$links = new SearchTrailPageLinks(currentUrl: $this->request->getRequestUri());
 
@@ -408,10 +404,12 @@ class SearchTrailController extends Controller {
 	private function statsPage(array $items, mixed $total, array $query): array {
 		return $this->paginate(
 			results: $items,
-			total: $total,
-			limit: $query['statsLimit'],
-			offset: $query['offset'] ?? 0,
-			page: $query['page'] ?? 1
+			window: new ResultWindow(
+				total: $total,
+				limit: $query['statsLimit'],
+				offset: $query['offset'] ?? 0,
+				page: $query['page'] ?? 1
+			)
 		);
 	}//end statsPage()
 
@@ -464,10 +462,12 @@ class SearchTrailController extends Controller {
 
 		return $this->paginate(
 			results: $serviceResult['results'] ?? [],
-			total: $serviceResult['total'] ?? 0,
-			limit: $serviceResult['limit'] ?? 20,
-			offset: $serviceResult['offset'] ?? 0,
-			page: (int)($serviceResult['page'] ?? 1)
+			window: new ResultWindow(
+				total: $serviceResult['total'] ?? 0,
+				limit: $serviceResult['limit'] ?? 20,
+				offset: $serviceResult['offset'] ?? 0,
+				page: (int)($serviceResult['page'] ?? 1)
+			)
 		);
 	}//end indexPage()
 

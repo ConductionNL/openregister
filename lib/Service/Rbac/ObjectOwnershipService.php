@@ -206,35 +206,47 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
+	 * Where a transfer is noted.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Writes an audit-trail entry for a change of the owning group. Null only in legacy fixtures.
+	 *
+	 * @var GrantChangeAuditor|null
+	 */
+	private readonly ?GrantChangeAuditor $grantAuditor;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param OwnershipGuards         $guards       The acting user, who may name an owning group, and the permission rules.
-	 * @param PrincipalDirectory      $directory    Resolves a named new owner, their display name, and groups.
-	 * @param OwnershipWriters        $writers      The owner and authorization writes, the sealed trail and the notification.
-	 * @param ObjectLookup            $lookup       Resolves objects, their children, and a child's register and schema.
-	 * @param LoggerInterface         $logger       Where a transfer is noted.
-	 * @param GrantChangeAuditor|null $grantAuditor Writes an audit-trail entry for a change of the owning group. Null only in legacy fixtures.
+	 * @param OwnershipGuards  $guards  The acting user, who may name an owning group, and the permission rules.
+	 * @param OwnershipSources $sources The principal directory and the object lookup.
+	 * @param OwnershipWriters $writers The owner and authorization writes, the sealed trail and the notification.
+	 * @param OwnershipLog     $log     Where a transfer is noted and a change of the owning group audited.
 	 */
 	public function __construct(
 		OwnershipGuards $guards,
-		PrincipalDirectory $directory,
+		OwnershipSources $sources,
 		OwnershipWriters $writers,
-		ObjectLookup $lookup,
-		private readonly LoggerInterface $logger,
-		private readonly ?GrantChangeAuditor $grantAuditor = null,
+		OwnershipLog $log,
 	) {
 		$this->userSession = $guards->userSession;
 		$this->grantManage = $guards->grantManage;
 		$this->permissions = $guards->permissions;
-		$this->userManager = $directory->userManager;
-		$this->groupManager = $directory->groupManager;
+		$this->userManager = $sources->directory->userManager;
+		$this->groupManager = $sources->directory->groupManager;
 		$this->ownerWriter = $writers->ownerWriter;
 		$this->authorizationWriter = $writers->authorizationWriter;
 		$this->auditTrailMapper = $writers->auditTrailMapper;
 		$this->notificationManager = $writers->notificationManager;
-		$this->magicMapper = $lookup->magicMapper;
-		$this->registerMapper = $lookup->registerMapper;
-		$this->schemaMapper = $lookup->schemaMapper;
+		$this->magicMapper = $sources->lookup->magicMapper;
+		$this->registerMapper = $sources->lookup->registerMapper;
+		$this->schemaMapper = $sources->lookup->schemaMapper;
+		$this->logger = $log->logger;
+		$this->grantAuditor = $log->grantAuditor;
 	}//end __construct()
 
 	/**

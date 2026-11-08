@@ -11,6 +11,7 @@ use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -86,7 +87,7 @@ class ContactServiceLinkContactGoldenTest extends TestCase {
 		$urls->method('linkToRoute')->willReturnCallback(fn ($route, $args = []) => $route . '?' . http_build_query($args));
 		$urls->method('getAbsoluteURL')->willReturnCallback(fn ($url) => 'https://cloud' . $url);
 
-		return new ContactService($mapper, $cardDav, $session, $this->createMock(LoggerInterface::class), $urls);
+		return new ContactService($mapper, $cardDav, new LinkSessionRuntime($session, $this->createMock(LoggerInterface::class)), $urls);
 	}
 
 	/**

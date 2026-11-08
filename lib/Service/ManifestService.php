@@ -95,10 +95,23 @@ class ManifestService implements ManifestServiceInterface {
 	private const DEFAULT_SAFE_FIELDS = ['id', 'roles'];
 
 	/**
+	 * OR object retrieval service.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Schema lookup by slug.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objectService OR object retrieval service.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup by slug.
+	 * @param ManifestSources $sources OR object retrieval service and schema lookup by slug.
 	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
 	 * @param IUserSession $userSession Nextcloud user session.
 	 * @param LoggerInterface $logger PSR logger.
@@ -106,12 +119,13 @@ class ManifestService implements ManifestServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly SchemaMapperInterface $schemaMapper,
+		ManifestSources $sources,
 		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectService = $sources->objectService;
+		$this->schemaMapper = $sources->schemaMapper;
 	}//end __construct()
 
 	/**

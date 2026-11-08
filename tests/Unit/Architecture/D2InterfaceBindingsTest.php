@@ -88,10 +88,6 @@ final class D2InterfaceBindingsTest extends TestCase {
 			'BackgroundJob/DeferredObjectEventJob.php' => 'constructs the gate (`new`) around its own dispatcher',
 			'Db/MagicMapper.php' => 'constructs the gate (`new`); the file is also changed by open PR #6108',
 		],
-		ObjectService::class => [
-			'Controller/ObjectsController.php' => 'public action parameter of show(), destroy(), canDelete(); showServices() reads its permission handler',
-			'Controller/TagsController.php' => 'reads its permission handler, which no interface carries',
-		],
 		RenderObject::class => [
 			'Controller/DeletedController.php' => 'deletion-audit-trail surface: out of scope for lane D2',
 			'Controller/Support/DeletedAccess.php' => 'deletion-audit-trail surface, bundles the deleted-object authorizer: out of scope for lane D2',

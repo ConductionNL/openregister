@@ -26,6 +26,7 @@ use Exception;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapper;
 use OCA\OpenRegister\Service\FormLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -136,7 +137,7 @@ final class FormLinkServiceCreateGoldenTest extends TestCase {
 			}
 		);
 
-		return [new FormLinkService($mapper, $container, $appManager, $db, $session, $logger), $mapper];
+		return [new FormLinkService($mapper, $container, $db, new LinkServiceRuntime($appManager, $session, $logger)), $mapper];
 	}//end service()
 
 	/**

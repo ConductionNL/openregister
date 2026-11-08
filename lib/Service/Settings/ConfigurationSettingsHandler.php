@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCP\App\IAppManager;
@@ -135,12 +136,6 @@ class ConfigurationSettingsHandler {
 	 */
 	private LoggerInterface $logger;
 
-	/**
-	 * Application name
-	 *
-	 * @var string
-	 */
-	private string $appName;
 
 	/**
 	 * App manager, read for the app's own version info.
@@ -169,7 +164,6 @@ class ConfigurationSettingsHandler {
 	 * @param IAppConfig                   $appConfig Configuration service.
 	 * @param SettingsDirectory            $directory The group manager, user manager and organisation mapper.
 	 * @param ConfigurationSettingsSupport $support   The logger, app manager, announcer and change recorder.
-	 * @param string                       $appName   Application name.
 	 *
 	 * @return void
 	 */
@@ -177,7 +171,6 @@ class ConfigurationSettingsHandler {
 		IAppConfig $appConfig,
 		SettingsDirectory $directory,
 		ConfigurationSettingsSupport $support,
-		string $appName = 'openregister',
 	) {
 		$this->appConfig = $appConfig;
 		$this->groupManager = $directory->groupManager;
@@ -187,7 +180,6 @@ class ConfigurationSettingsHandler {
 		$this->appManager = $support->appManager;
 		$this->announcer = $support->announcer;
 		$this->changeRecorder = $support->changeRecorder;
-		$this->appName = $appName;
 	}//end __construct()
 
 	/**
@@ -199,7 +191,7 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function isMultiTenancyEnabled(): bool {
-		$multitenancyConfig = $this->appConfig->getValueString($this->appName, 'multitenancy', '');
+		$multitenancyConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'multitenancy', '');
 		if (empty($multitenancyConfig) === true) {
 			return false;
 		}
@@ -290,7 +282,7 @@ class ConfigurationSettingsHandler {
 			'flow' => $this->flowSettings(),
 			'party' => [
 				'queryCap' => $this->appConfig->getValueInt(
-					$this->appName,
+					AppIdentity::APP_ID,
 					PartySearchService::CAP_KEY,
 					PartySearchService::DEFAULT_CAP
 				),
@@ -305,10 +297,10 @@ class ConfigurationSettingsHandler {
 	 */
 	private function blobMigrationStatus(): array {
 		return [
-			'processed' => (int)$this->appConfig->getValueString($this->appName, 'blob_migration_processed', '0'),
-			'remaining' => (int)$this->appConfig->getValueString($this->appName, 'blob_migration_remaining', '0'),
-			'complete' => $this->appConfig->getValueString($this->appName, 'blob_migration_complete', 'false') === 'true',
-			'lastRun' => $this->appConfig->getValueString($this->appName, 'blob_migration_last_run', ''),
+			'processed' => (int)$this->appConfig->getValueString(AppIdentity::APP_ID, 'blob_migration_processed', '0'),
+			'remaining' => (int)$this->appConfig->getValueString(AppIdentity::APP_ID, 'blob_migration_remaining', '0'),
+			'complete' => $this->appConfig->getValueString(AppIdentity::APP_ID, 'blob_migration_complete', 'false') === 'true',
+			'lastRun' => $this->appConfig->getValueString(AppIdentity::APP_ID, 'blob_migration_last_run', ''),
 		];
 	}//end blobMigrationStatus()
 
@@ -319,10 +311,10 @@ class ConfigurationSettingsHandler {
 	 */
 	private function flowSettings(): array {
 		$flow = [
-			'retentionDays' => (int)$this->appConfig->getValueString($this->appName, 'flow_run_retention_days', '31'),
+			'retentionDays' => (int)$this->appConfig->getValueString(AppIdentity::APP_ID, 'flow_run_retention_days', '31'),
 		];
 		foreach (self::FLOW_SWITCHES as $field => [$key, $default]) {
-			$flow[$field] = $this->appConfig->getValueBool($this->appName, $key, $default);
+			$flow[$field] = $this->appConfig->getValueBool(AppIdentity::APP_ID, $key, $default);
 		}
 
 		return $flow;
@@ -336,7 +328,7 @@ class ConfigurationSettingsHandler {
 	 * @return array<string, mixed>
 	 */
 	private function storedSection(string $key): array {
-		$stored = $this->appConfig->getValueString($this->appName, $key, '');
+		$stored = $this->appConfig->getValueString(AppIdentity::APP_ID, $key, '');
 		if (empty($stored) === true) {
 			return self::SECTION_DEFAULTS[$key];
 		}
@@ -354,7 +346,7 @@ class ConfigurationSettingsHandler {
 	 */
 	private function storeSection(string $key, $values): array {
 		$section = $this->overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: $values);
-		$this->appConfig->setValueString($this->appName, $key, json_encode($section));
+		$this->appConfig->setValueString(AppIdentity::APP_ID, $key, json_encode($section));
 
 		return $section;
 	}//end storeSection()
@@ -537,7 +529,7 @@ class ConfigurationSettingsHandler {
 
 		$cap = (int)($party['queryCap'] ?? 0);
 		if ($cap > 0) {
-			$this->appConfig->setValueInt($this->appName, PartySearchService::CAP_KEY, $cap);
+			$this->appConfig->setValueInt(AppIdentity::APP_ID, PartySearchService::CAP_KEY, $cap);
 		}
 	}//end storePartyCap()
 
@@ -561,11 +553,11 @@ class ConfigurationSettingsHandler {
 
 		$days = (int)($flow['retentionDays'] ?? 31);
 		if ($days > 0) {
-			$this->appConfig->setValueString($this->appName, 'flow_run_retention_days', (string)$days);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'flow_run_retention_days', (string)$days);
 		}
 
 		foreach (self::FLOW_SWITCHES as $field => [$key, $default]) {
-			$this->appConfig->setValueBool($this->appName, $key, (bool)($flow[$field] ?? $default));
+			$this->appConfig->setValueBool(AppIdentity::APP_ID, $key, (bool)($flow[$field] ?? $default));
 		}
 	}//end storeFlowSettings()
 
@@ -852,7 +844,7 @@ class ConfigurationSettingsHandler {
 	 */
 	public function getVersionInfoOnly(): array {
 		try {
-			$appInfo = $this->appManager->getAppInfo($this->appName);
+			$appInfo = $this->appManager->getAppInfo(AppIdentity::APP_ID);
 
 			return [
 				'version' => ($appInfo['version'] ?? null) ?? 'unknown',
