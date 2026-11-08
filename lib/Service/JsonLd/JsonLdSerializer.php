@@ -218,7 +218,7 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	public function serialize(array $renderedObject, Schema $schema, Register $register): array {
-		$node = $this->buildNode(renderedObject: $renderedObject, schema: $schema, register: $register);
+		$node = $this->buildNode(renderedObject: $renderedObject, target: new JsonLdTarget(register: $register, schema: $schema));
 
 		// Prepend the @context reference (per-schema context document URL).
 		return array_merge(
@@ -239,7 +239,7 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	public function serializeCollection(array $paginatedResult, Schema $schema, Register $register): array {
-		$graph = $this->buildGraph(paginatedResult: $paginatedResult, schema: $schema, register: $register);
+		$graph = $this->buildGraph(paginatedResult: $paginatedResult, target: new JsonLdTarget(register: $register, schema: $schema));
 
 		$document = [
 			'@context' => $this->contextService->getSchemaContextUrl($register, $schema),
@@ -265,12 +265,11 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	 * Build the `@graph` nodes of a paginated result; non-array rows are skipped.
 	 *
 	 * @param array<string, mixed> $paginatedResult The `index()` result.
-	 * @param Schema               $schema          The collection's schema.
-	 * @param Register             $register        The collection's register.
+	 * @param JsonLdTarget         $target          The collection's register and schema.
 	 *
 	 * @return array<int, array<string, mixed>> The nodes.
 	 */
-	private function buildGraph(array $paginatedResult, Schema $schema, Register $register): array {
+	private function buildGraph(array $paginatedResult, JsonLdTarget $target): array {
 		$results = ($paginatedResult['results'] ?? []);
 		if (is_array($results) === false) {
 			$results = [];
@@ -283,7 +282,7 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 			}
 
 			// Each node carries its own @id/@type but not a repeated @context.
-			$graph[] = $this->buildNode(renderedObject: $rendered, schema: $schema, register: $register);
+			$graph[] = $this->buildNode(renderedObject: $rendered, target: $target);
 		}
 
 		return $graph;
@@ -293,20 +292,19 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	 * Build a single JSON-LD node (no `@context`) from a rendered object array.
 	 *
 	 * @param array<string, mixed> $renderedObject The rendered object.
-	 * @param Schema $schema The object's schema.
-	 * @param Register $register The object's register.
+	 * @param JsonLdTarget         $target         The object's register and schema.
 	 *
 	 * @return array<string, mixed> The JSON-LD node.
 	 */
-	private function buildNode(array $renderedObject, Schema $schema, Register $register): array {
+	private function buildNode(array $renderedObject, JsonLdTarget $target): array {
 		$self = ($renderedObject['@self'] ?? []);
 		if (is_array($self) === false) {
 			$self = [];
 		}
 
 		$node = [
-			'@id' => $this->resolveId(self: $self, register: $register, schema: $schema),
-			'@type' => $this->contextService->getTypeForSchema($schema),
+			'@id' => $this->resolveId(self: $self, target: $target),
+			'@type' => $this->contextService->getTypeForSchema($target->schema),
 		];
 
 		// Lift @self metadata to or: terms (skip null/empty so the node stays lean).
@@ -353,13 +351,12 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	 * Resolve a node's `@id`: the canonical object URI, else the absolute
 	 * `objects#show` route URL.
 	 *
-	 * @param array<string, mixed> $self The object's `@self` envelope.
-	 * @param Register $register The object's register.
-	 * @param Schema $schema The object's schema.
+	 * @param array<string, mixed> $self   The object's `@self` envelope.
+	 * @param JsonLdTarget         $target The object's register and schema.
 	 *
 	 * @return string The dereferenceable `@id`.
 	 */
-	private function resolveId(array $self, Register $register, Schema $schema): string {
+	private function resolveId(array $self, JsonLdTarget $target): string {
 		$uri = ($self['uri'] ?? null);
 		if (is_string($uri) === true && $uri !== '') {
 			return $uri;
@@ -369,8 +366,8 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 		return $this->urlGenerator->linkToRouteAbsolute(
 			'openregister.objects.show',
 			[
-				'register' => $this->slugOf(entity: $register),
-				'schema' => $this->slugOf(entity: $schema),
+				'register' => $this->slugOf(entity: $target->register),
+				'schema' => $this->slugOf(entity: $target->schema),
 				'id' => (string)$uuid,
 			]
 		);

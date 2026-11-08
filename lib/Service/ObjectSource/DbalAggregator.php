@@ -191,13 +191,13 @@ final class DbalAggregator {
 			return null;
 		}
 
-		$bucketExpr = $this->bucketExpression(connection: $query->connection, field: $bucketField, gap: (string)($dateBucket['gap'] ?? ''));
+		$bucketExpr = $this->bucketExpression(query: $query, dateBucket: $dateBucket);
 		if ($bucketExpr === null) {
 			return null;
 		}
 
 		$groups = [];
-		foreach ($this->bucketQuery(query: $query, dateBucket: $dateBucket, bucketExpr: $bucketExpr)->executeQuery()->fetchAllAssociative() as $row) {
+		foreach ($this->bucketQuery(query: $query, dateBucket: $dateBucket)->executeQuery()->fetchAllAssociative() as $row) {
 			$groups[] = ['key' => $this->isoBucketKey(raw: ($row['bucket'] ?? null)), 'value' => $this->numify(query: $query, value: ($row['value'] ?? null))];
 		}
 
@@ -207,14 +207,17 @@ final class DbalAggregator {
 	/**
 	 * The SELECT of a date-bucket series, bounded to [start, end).
 	 *
+	 * Only called once {@see bucketExpression()} answered an expression for
+	 * the same bucket.
+	 *
 	 * @param DbalAggregationQuery $query      The bound aggregation.
 	 * @param array<string, mixed> $dateBucket `{field, gap, start, end}`.
-	 * @param string               $bucketExpr The bucket SQL expression.
 	 *
 	 * @return QueryBuilder The query, ready to execute.
 	 */
-	private function bucketQuery(DbalAggregationQuery $query, array $dateBucket, string $bucketExpr): QueryBuilder {
-		$boundLhs = $this->boundColumn(connection: $query->connection, field: (string)$dateBucket['field']);
+	private function bucketQuery(DbalAggregationQuery $query, array $dateBucket): QueryBuilder {
+		$bucketExpr = (string)$this->bucketExpression(query: $query, dateBucket: $dateBucket);
+		$boundLhs   = $this->boundColumn(connection: $query->connection, field: (string)$dateBucket['field']);
 
 		$qb = $query->connection->createQueryBuilder();
 		$qb->select($bucketExpr . ' AS bucket', $query->aggExpr . ' AS value')->from($query->table);
@@ -248,21 +251,21 @@ final class DbalAggregator {
 	}//end boundColumn()
 
 	/**
-	 * The SQL expression that truncates the column to the gap unit.
+	 * The SQL expression that truncates the bucket column to the gap unit.
 	 *
-	 * @param Connection $connection The DBAL connection.
-	 * @param string     $field      The bucket column.
-	 * @param string     $gap        The gap unit.
+	 * @param DbalAggregationQuery $query      The bound aggregation (its connection's platform decides).
+	 * @param array<string, mixed> $dateBucket `{field, gap, start, end}`.
 	 *
 	 * @return string|null The expression, or null when the platform cannot bucket that gap in SQL.
 	 */
-	private function bucketExpression(Connection $connection, string $field, string $gap): ?string {
+	private function bucketExpression(DbalAggregationQuery $query, array $dateBucket): ?string {
+		$gap = (string)($dateBucket['gap'] ?? '');
 		if (in_array($gap, self::GAPS, true) === false) {
 			return null;
 		}
 
-		$platform = $connection->getDatabasePlatform();
-		$col      = $this->quote(connection: $connection, identifier: $field);
+		$platform = $query->connection->getDatabasePlatform();
+		$col      = $this->quote(connection: $query->connection, identifier: (string)($dateBucket['field'] ?? ''));
 
 		// Postgres date_trunc handles every supported gap unit natively.
 		if ($platform instanceof PostgreSQLPlatform) {
@@ -318,80 +321,9 @@ final class DbalAggregator {
 				continue;
 			}
 
-			$this->applyOperatorCriterion(qb: $qb, quoted: $quoted, criterion: $criterion);
+			(new DbalColumnCriterion(qb: $qb, quoted: $quoted))->apply(criterion: $criterion);
 		}
 	}//end applyFilter()
-
-	/**
-	 * Add one `{op: value}` criterion per operator; unknown operators are ignored.
-	 *
-	 * @param QueryBuilder         $qb        The query being built.
-	 * @param string               $quoted    The quoted column.
-	 * @param array<string, mixed> $criterion Operator => operand.
-	 *
-	 * @return void
-	 */
-	private function applyOperatorCriterion(QueryBuilder $qb, string $quoted, array $criterion): void {
-		foreach ($criterion as $op => $onValue) {
-			if ((string)$op === 'in' || (string)$op === 'notIn') {
-				$this->applyListCriterion(qb: $qb, quoted: $quoted, operator: (string)$op, operand: $onValue);
-				continue;
-			}
-
-			$this->applyComparison(qb: $qb, quoted: $quoted, operator: (string)$op, operand: $onValue);
-		}
-	}//end applyOperatorCriterion()
-
-	/**
-	 * Add a `gt` / `gte` / `lt` / `lte` / `ne` comparison; any other operator adds nothing.
-	 *
-	 * @param QueryBuilder $qb       The query being built.
-	 * @param string       $quoted   The quoted column.
-	 * @param string       $operator The operator.
-	 * @param mixed        $operand  The value to compare with.
-	 *
-	 * @return void
-	 */
-	private function applyComparison(QueryBuilder $qb, string $quoted, string $operator, mixed $operand): void {
-		$sqlOn = match ($operator) {
-			'gt' => '>',
-			'gte' => '>=',
-			'lt' => '<',
-			'lte' => '<=',
-			'ne' => '<>',
-			default => null,
-		};
-		if ($sqlOn !== null) {
-			$qb->andWhere($quoted . ' ' . $sqlOn . ' ' . $qb->createNamedParameter($operand));
-		}
-	}//end applyComparison()
-
-	/**
-	 * Add an `in` / `notIn` criterion. An empty list matches nothing for
-	 * `in` and excludes nothing for `notIn`.
-	 *
-	 * @param QueryBuilder $qb       The query being built.
-	 * @param string       $quoted   The quoted column.
-	 * @param string       $operator `in` or `notIn`.
-	 * @param mixed        $operand  The list of values.
-	 *
-	 * @return void
-	 */
-	private function applyListCriterion(QueryBuilder $qb, string $quoted, string $operator, mixed $operand): void {
-		$list = [];
-		if (is_array($operand) === true) {
-			$list = array_values($operand);
-		}
-
-		if ($list === []) {
-			$qb->andWhere(match ($operator) { 'in' => '1 = 0', default => '1 = 1' });
-			return;
-		}
-
-		$params  = array_map(static fn (mixed $item): string => $qb->createNamedParameter($item), $list);
-		$keyword = match ($operator) { 'in' => ' IN (', default => ' NOT IN (' };
-		$qb->andWhere($quoted . $keyword . implode(', ', $params) . ')');
-	}//end applyListCriterion()
 
 	/**
 	 * Cast a raw aggregate value: count is an int, the other metrics a float or null.
