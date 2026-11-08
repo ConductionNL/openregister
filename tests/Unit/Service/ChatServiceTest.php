@@ -18,6 +18,8 @@ use OCA\OpenRegister\Mcp\Service\ChatService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 
 class ChatServiceTest extends TestCase {
 
@@ -80,14 +82,18 @@ class ChatServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ChatService(
-			$this->conversationMapper,
-			$this->messageMapper,
-			$this->agentMapper,
-			$this->contextHandler,
-			$this->responseHandler,
-			$this->conversationHandler,
-			$this->historyHandler,
-			$this->logger
+			new ChatServiceStores(
+				$this->conversationMapper,
+				$this->messageMapper,
+				$this->agentMapper,
+			),
+			new ChatServiceHandlers(
+				$this->contextHandler,
+				$this->responseHandler,
+				$this->conversationHandler,
+				$this->historyHandler,
+			),
+			$this->logger,
 		);
 	}
 

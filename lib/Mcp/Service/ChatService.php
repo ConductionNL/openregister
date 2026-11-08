@@ -35,6 +35,8 @@ use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
@@ -138,34 +140,24 @@ class ChatService implements ChatServiceInterface {
 	/**
 	 * Constructor
 	 *
-	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param MessageMapperInterface $messageMapper Message mapper.
-	 * @param AgentMapper $agentMapper Agent mapper.
-	 * @param ContextRetrievalHandler $contextHandler Context handler.
-	 * @param ResponseGenerationHandler $responseHandler Response handler.
-	 * @param ConversationManagementHandler $conversationHandler Conversation handler.
-	 * @param MessageHistoryHandler $historyHandler History handler.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ChatServiceStores   $stores   Conversation, message and agent rows.
+	 * @param ChatServiceHandlers $handlers The handlers a chat turn is delegated to.
+	 * @param LoggerInterface     $logger   Logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ConversationMapper $conversationMapper,
-		MessageMapperInterface $messageMapper,
-		AgentMapper $agentMapper,
-		ContextRetrievalHandler $contextHandler,
-		ResponseGenerationHandler $responseHandler,
-		ConversationManagementHandler $conversationHandler,
-		MessageHistoryHandler $historyHandler,
+		ChatServiceStores $stores,
+		ChatServiceHandlers $handlers,
 		LoggerInterface $logger,
 	) {
-		$this->conversationMapper = $conversationMapper;
-		$this->messageMapper = $messageMapper;
-		$this->agentMapper = $agentMapper;
-		$this->contextHandler = $contextHandler;
-		$this->responseHandler = $responseHandler;
-		$this->conversationHandler = $conversationHandler;
-		$this->historyHandler = $historyHandler;
+		$this->conversationMapper = $stores->conversationMapper;
+		$this->messageMapper = $stores->messageMapper;
+		$this->agentMapper = $stores->agentMapper;
+		$this->contextHandler = $handlers->contextHandler;
+		$this->responseHandler = $handlers->responseHandler;
+		$this->conversationHandler = $handlers->conversationHandler;
+		$this->historyHandler = $handlers->historyHandler;
 		$this->logger = $logger;
 	}//end __construct()
 

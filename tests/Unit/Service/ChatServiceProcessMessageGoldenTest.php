@@ -24,6 +24,8 @@ use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Mcp\Service\ChatService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 
 /**
  * Records every collaborator call processMessage() makes, in order, and its result,
@@ -140,14 +142,18 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 		});
 
 		return new ChatService(
-			$conversationMapper,
-			$messageMapper,
-			$agentMapper,
-			$contextHandler,
-			$response,
-			$conversationHandler,
-			$history,
-			$logger
+			new ChatServiceStores(
+				$conversationMapper,
+				$messageMapper,
+				$agentMapper,
+			),
+			new ChatServiceHandlers(
+				$contextHandler,
+				$response,
+				$conversationHandler,
+				$history,
+			),
+			$logger,
 		);
 	}
 
