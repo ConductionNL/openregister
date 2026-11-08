@@ -27,6 +27,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\TranslationFilter;
+use OCA\OpenRegister\Db\TranslationSlot;
+use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
@@ -73,12 +76,8 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 		$translator = $this->userSession->getUser()?->getUID();
 
 		return $this->translationMapper->upsert(
-			objectUuid: $objectUuid,
-			property: $property,
-			language: $language,
-			value: $existing->getValue(),
-			status: $status,
-			translator: $translator
+			slot: new TranslationSlot(objectUuid: $objectUuid, property: $property, language: $language),
+			edit: new TranslationEdit(value: $existing->getValue(), status: $status, translator: $translator)
 		);
 	}//end setStatus()
 
@@ -255,14 +254,21 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	}//end withSourceValues()
 
 	/**
-	 * Run the mapper search with the caller's filters, passed on by name.
+	 * Run the mapper search with the caller's filters.
 	 *
 	 * @param array<string, mixed> $filters The search() parameters by name.
 	 *
 	 * @return Translation[]
 	 */
 	private function findRows(array $filters): array {
-		return $this->translationMapper->search(...$filters);
+		$filter = new TranslationFilter(
+			language: $filters['language'],
+			status: $filters['status'],
+			objectUuid: $filters['objectUuid'],
+			sourceLanguage: $filters['sourceLanguage']
+		);
+
+		return $this->translationMapper->search(filter: $filter, query: $filters['query'], limit: $filters['limit'], isOutOfDate: $filters['isOutOfDate']);
 	}//end findRows()
 
 	/**
