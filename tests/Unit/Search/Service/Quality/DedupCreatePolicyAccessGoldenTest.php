@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
+use OCA\OpenRegister\Search\Service\Quality\DedupOverrideAudit;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -124,6 +125,6 @@ class DedupCreatePolicyAccessGoldenTest extends TestCase {
 			static fn (string $who, string $group): bool => ($who === $uid && in_array($group, $groups, true))
 		);
 
-		return new DedupCreatePolicy($duplicates, $session, $groupManager, $audit, $this->createMock(LoggerInterface::class));
+		return new DedupCreatePolicy($duplicates, $session, $groupManager, new DedupOverrideAudit($audit, $this->createMock(LoggerInterface::class)));
 	}//end policy()
 }//end class
