@@ -139,7 +139,7 @@ class SchemasControllerTest extends TestCase {
 					return $schemaDeletionService;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheck::class) {
+				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheckInterface::class) {
 					return $this->formCheck;
 				}
 

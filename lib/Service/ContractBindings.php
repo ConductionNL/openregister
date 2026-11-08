@@ -302,6 +302,8 @@ use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
@@ -318,6 +320,12 @@ use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidatorInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
+use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
+use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
+use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
+use OCA\OpenRegister\Service\Hinge\ListPresentationResolverInterface;
+use OCA\OpenRegister\Service\Hinge\ReferencedByService;
+use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Import\ImportPreviewService;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCA\OpenRegister\Service\Import\SourceRowReader;
@@ -1070,6 +1078,10 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Flow\FlowTriggerIndexInterface::class => \OCA\OpenRegister\Service\Flow\FlowTriggerIndex::class,
 		\OCA\OpenRegister\Service\Flow\FlowTriggerServiceInterface::class => \OCA\OpenRegister\Service\Flow\FlowTriggerService::class,
 		\OCA\OpenRegister\Service\Flow\FlowTriggerSlugsInterface::class => \OCA\OpenRegister\Service\Flow\FlowTriggerSlugs::class,
+		FormDependentsCheckInterface::class => FormDependentsCheck::class,
+		InheritedGeoCollectorInterface::class => InheritedGeoCollector::class,
+		ListPresentationResolverInterface::class => ListPresentationResolver::class,
+		ReferencedByServiceInterface::class => ReferencedByService::class,
 		\OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode::class,
 		\OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode::class,
 		\OCA\OpenRegister\Service\View\ViewObjectQueryInterface::class => \OCA\OpenRegister\Service\View\ViewObjectQuery::class,

@@ -52,8 +52,8 @@ use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
-use OCA\OpenRegister\Service\Form\FormDependentsCheck;
-use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
+use OCA\OpenRegister\Service\Hinge\ListPresentationResolverInterface;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
@@ -1267,11 +1267,11 @@ class SchemasController extends Controller {
 	 * goes ahead without judging the published forms, and that must leave a trace
 	 * (an owning app's `refuse` setting is skipped with it).
 	 *
-	 * @return FormDependentsCheck|null The check, or null when it cannot be built.
+	 * @return FormDependentsCheckInterface|null The check, or null when it cannot be built.
 	 */
-	private function formDependentsCheck(): ?FormDependentsCheck {
+	private function formDependentsCheck(): ?FormDependentsCheckInterface {
 		try {
-			$check = $this->container->get(FormDependentsCheck::class);
+			$check = $this->container->get(FormDependentsCheckInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemasController] The dependent-form check could not be built; the schema save did not re-check the published forms',
@@ -1281,7 +1281,7 @@ class SchemasController extends Controller {
 			return null;
 		}
 
-		if ($check instanceof FormDependentsCheck) {
+		if ($check instanceof FormDependentsCheckInterface) {
 			return $check;
 		}
 
@@ -2847,7 +2847,7 @@ class SchemasController extends Controller {
 	 * keep them.
 	 *
 	 * @param int|string                $id       The schema id, uuid or slug.
-	 * @param ListPresentationResolver $resolver The resolver.
+	 * @param ListPresentationResolverInterface $resolver The resolver.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -2863,7 +2863,7 @@ class SchemasController extends Controller {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function listPresentation(int|string $id, ListPresentationResolver $resolver): JSONResponse {
+	public function listPresentation(int|string $id, ListPresentationResolverInterface $resolver): JSONResponse {
 		try {
 			// Metadata read: a schema's own declaration is catalogue data, scoped
 			// the same way the sibling `related` endpoint scopes it.
