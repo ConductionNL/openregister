@@ -48,7 +48,7 @@ use Psr\Container\ContainerInterface;
  * lock. Splitting the class to avoid naming one more type would trade a real
  * guard for a metric.
  */
-class RevertHandler {
+class RevertHandler implements RevertHandlerInterface {
 
 	/**
 	 * Audit trail mapper

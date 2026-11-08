@@ -19,7 +19,7 @@
 namespace OCA\OpenRegister\Db\Schema;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
+use OCA\OpenRegister\Service\Calendar\CalendarDateDeclarationCheck;
 
 /**
  * The value rules for the plain configuration keys: strings, booleans, tags,
@@ -95,11 +95,11 @@ final class ConfigurationValueRules {
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 *
-	 * ObjectDateDeclaration::allFromConfig is a named constructor reading a config block; there is no instance to inject.
+	 * CalendarDateDeclarationCheck::assertDeclarable is static: it reads a config block; there is no instance to inject.
 	 */
 	public function validateCalendarProviderConfig(array $config): void {
 		// Declared date kinds are refused on save, enabled or not.
-		ObjectDateDeclaration::allFromConfig(calendarConfig: $config);
+		CalendarDateDeclarationCheck::assertDeclarable(calendarConfig: $config);
 
 		// Only validate required fields when enabled.
 		if (empty($config['enabled']) === true) {

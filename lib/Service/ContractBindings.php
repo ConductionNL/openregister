@@ -411,6 +411,8 @@ use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetServiceInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
@@ -493,6 +495,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface::class => \OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
 		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
+		\OCA\OpenRegister\Service\Object\RevertHandlerInterface::class => \OCA\OpenRegister\Service\Object\RevertHandler::class,
+		ShippedBaselineResetServiceInterface::class => ShippedBaselineResetService::class,
 		\OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface::class => \OCA\OpenRegister\Service\Task\TaskMetricsProvider::class,
 		DoriathApplicationRegistrarInterface::class => DoriathApplicationRegistrar::class,
 		\OCA\OpenRegister\Service\DsarServiceInterface::class => \OCA\OpenRegister\Service\DsarService::class,
@@ -629,6 +633,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface::class => \OCA\OpenRegister\Service\Hardening\HardeningSettingsService::class,
 		\OCA\OpenRegister\Service\Hardening\StatementServiceInterface::class => \OCA\OpenRegister\Service\Hardening\StatementService::class,
 		HandoffServiceInterface::class => HandoffService::class,
+		\OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltServiceInterface::class
+			=> \OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		ImportPreviewServiceInterface::class => ImportPreviewService::class,
 		JobAlertServiceInterface::class => JobAlertService::class,
@@ -656,6 +662,9 @@ final class ContractBindings {
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
 		OasServiceInterface::class => OasService::class,
 		ObjectActionBulkInterface::class => ObjectActionBulk::class,
+		\OCA\OpenRegister\Service\Oas\OasETagComputerInterface::class => \OCA\OpenRegister\Service\Oas\OasETagComputer::class,
+		\OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface::class
+			=> \OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory::class,
 		ObjectActionDefinitionsInterface::class => ObjectActionDefinitions::class,
 		ObjectActionListInterface::class => ObjectActionList::class,
 		ObjectActionRunnerInterface::class => ObjectActionRunner::class,
@@ -775,6 +784,7 @@ final class ContractBindings {
 		FlowRunServiceInterface::class => FlowRunService::class,
 		ConfigurationServiceInterface::class => ConfigurationService::class,
 		ConfigurationTransferInterface::class => ConfigurationService::class,
+		\OCA\OpenRegister\Service\Object\ArchiveHandlerInterface::class => \OCA\OpenRegister\Service\Object\ArchiveHandler::class,
 		RetentionServiceInterface::class => RetentionService::class,
 		\OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectCacheInvalidationInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
