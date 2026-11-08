@@ -8,6 +8,7 @@
  * @copyright 2026 Conduction B.V.
  */
 import { flushPromises, mount } from '@vue/test-utils'
+import FormSelectField from '../components/shared/FormSelectField.vue'
 import EditConfiguration from './configuration/EditConfiguration.vue'
 import EditWebhook from './webhook/EditWebhook.vue'
 
@@ -158,6 +159,7 @@ function configurationModal() {
 		t: (app, text) => text,
 		...stores,
 		...sharedOption(),
+		FormSelectField,
 	}
 	return { ...EditConfiguration, setup: () => bindings }
 }
@@ -180,6 +182,7 @@ async function optionsOf(component) {
 				AppTabs: PASS,
 				AppTab: PASS,
 				SelectOption: false,
+				FormSelectField: false,
 			},
 			mocks: { t: (app, text) => text },
 		},

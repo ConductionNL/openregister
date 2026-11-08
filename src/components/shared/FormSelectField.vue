@@ -1,7 +1,7 @@
 <template>
 	<div class="selectField">
 		<label :for="$attrs.id">{{ title }}</label>
-		<NcSelect v-bind="$attrs" :labelOutside="true">
+		<NcSelect v-bind="selectAttrs">
 			<template #option="option">
 				<slot name="option" v-bind="option">
 					<SelectOption
@@ -41,6 +41,26 @@ export default {
 	props: {
 		title: { type: String, default: '' },
 		hint: { type: String, default: '' },
+	},
+
+	computed: {
+		/**
+		 * The attributes for NcSelect with `labelOutside` set, placed right
+		 * after `trackBy` as the inline selects of the edit modals had it.
+		 *
+		 * @return {object} The attributes
+		 */
+		selectAttrs() {
+			const attrs = {}
+			for (const [key, value] of Object.entries(this.$attrs)) {
+				attrs[key] = value
+				if (key === 'trackBy') {
+					attrs.labelOutside = true
+				}
+			}
+			attrs.labelOutside = true
+			return attrs
+		},
 	},
 }
 </script>
