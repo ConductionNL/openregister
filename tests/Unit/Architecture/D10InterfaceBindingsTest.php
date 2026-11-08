@@ -63,14 +63,12 @@ final class D10InterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * RematerialiseCalculationsCommand constructs the converter as the default
-	 * of its constructor argument; that is an occ command signature, kept as is.
+	 * None: RematerialiseCalculationsCommand now takes SchemaTypeConverterInterface
+	 * from the container instead of constructing the converter as a parameter default.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [
-		SchemaTypeConverter::class => ['Command/RematerialiseCalculationsCommand.php'],
-	];
+	private const KEPT_CALLERS = [];
 
 	/**
 	 * The class and its interface, one case per class.

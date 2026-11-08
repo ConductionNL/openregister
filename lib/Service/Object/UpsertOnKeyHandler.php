@@ -48,7 +48,7 @@ use OCP\Lock\LockedException;
 /**
  * Decides create, update or refuse for an upsert on a declared key.
  */
-class UpsertOnKeyHandler {
+class UpsertOnKeyHandler implements UpsertOnKeyHandlerInterface {
 
 	/**
 	 * How often to try for a key lock another call holds.
