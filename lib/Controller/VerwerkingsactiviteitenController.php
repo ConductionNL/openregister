@@ -45,12 +45,12 @@ use OCA\OpenRegister\Controller\Support\ProcessingActivityAuditCounts;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityHydrator;
 use OCA\OpenRegister\Controller\Support\ProcessingActivityVisibility;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
-use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IDBConnection;
 use OCP\IRequest;
 
@@ -100,7 +100,7 @@ class VerwerkingsactiviteitenController extends Controller {
 	 *
 	 * @param string                       $appName             App identifier.
 	 * @param IRequest                     $request             Active request.
-	 * @param VerwerkingsactiviteitMapper  $vrwMapper           Mapper for the catalog.
+	 * @param VerwerkingsactiviteitMapperInterface  $vrwMapper           Mapper for the catalog.
 	 * @param ControllerSession            $session             Session, group manager and logger.
 	 * @param IDBConnection                $db                  DB for the verantwoording aggregation.
 	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
@@ -108,7 +108,7 @@ class VerwerkingsactiviteitenController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly VerwerkingsactiviteitMapper $vrwMapper,
+		private readonly VerwerkingsactiviteitMapperInterface $vrwMapper,
 		private readonly ControllerSession $session,
 		IDBConnection $db,
 		OrganisationServiceInterface $organisationService,
