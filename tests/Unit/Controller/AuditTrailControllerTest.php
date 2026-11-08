@@ -482,14 +482,6 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertArrayHasKey('error', $result->getData());
 	}
 
-	public function testDestroyMultipleException(): void {
-		$this->markTestSkipped(
-			'Production destroyMultiple() always returns 405 (audit trails '
-			. 'immutable); no exception path remains. Covered by '
-			. 'testDestroyMultipleAlwaysReturns405Immutable.'
-		);
-	}
-
 	public function testStatisticsSuccess(): void {
 		$counts = [
 			'total' => 7,

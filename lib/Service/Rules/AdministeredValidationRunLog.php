@@ -124,11 +124,13 @@ class AdministeredValidationRunLog {
 	 */
 	private function write(ObjectEntity $object, string $slug, array $entry, string $verdict): void {
 		$this->ruleRuns->record(
-			ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_ADMINISTERED_VALIDATION, schemaSlug: $slug, key: (string)$entry['validation']),
-			schemaSlug: $slug,
-			trace: $this->traceOf(entry: $entry, verdict: $verdict),
-			objectUuid: ($object->getUuid() ?? null),
-			registerSlug: ($object->getRegister() ?? null)
+			subject: new RuleRunSubject(
+				ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_ADMINISTERED_VALIDATION, schemaSlug: $slug, key: (string)$entry['validation']),
+				schemaSlug: $slug,
+				objectUuid: ($object->getUuid() ?? null),
+				registerSlug: ($object->getRegister() ?? null)
+			),
+			trace: $this->traceOf(entry: $entry, verdict: $verdict)
 		);
 	}//end write()
 
