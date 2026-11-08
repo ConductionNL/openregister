@@ -164,6 +164,8 @@ use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
@@ -247,6 +249,8 @@ use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaServiceInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -572,6 +576,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectWriterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
+		ObjectQuotaServiceInterface::class => ObjectQuotaService::class,
 	];
 
 	/**

@@ -45,7 +45,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) WorkingCalendar::fromArray() is the
  * value object's validating named constructor, which is the whole point here.
  */
-class WorkingCalendarWriteGuard {
+class WorkingCalendarWriteGuard implements WorkingCalendarWriteGuardInterface {
 
 	/**
 	 * How many blocking timers the refusal names.
