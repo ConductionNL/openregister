@@ -731,11 +731,8 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$fired = 0;
 
 		$due = $this->ladder->dueRungs(
-			rungs: $ladder['rungs'],
-			fireAt: $timer->getFireAt(),
-			now: $now,
-			firedKeys: $firedKeys,
-			calendar: $calendar
+			timeline: new RungTimeline(rungs: $ladder['rungs'], fireAt: $timer->getFireAt(), firedKeys: $firedKeys, calendar: $calendar),
+			now: $now
 		);
 		foreach ($due as $entry) {
 			$rung = $entry['rung'];
