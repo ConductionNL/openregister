@@ -66,12 +66,8 @@ interface FlowMapperInterface {
 	 * @return array<int, Flow> The flows.
 	 */
 	public function findAllFlows(
-		?string $app = null,
-		?string $applicationSlug = null,
-		?string $organisation = null,
-		?bool $enabled = null,
-		int $limit = 100,
-		int $offset = 0,
+		?string $app = null, ?string $applicationSlug = null, ?string $organisation = null,
+		?bool $enabled = null, int $limit = 100, int $offset = 0,
 	): array;
 
 	/**

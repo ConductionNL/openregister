@@ -158,11 +158,7 @@ interface ConfigurationMapperInterface {
 	 * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
-		bool $_multitenancy = true,
+		?int $limit = null, ?int $offset = null, ?array $filters = [],
+		?array $searchConditions = [], ?array $searchParams = [], bool $_multitenancy = true,
 	): array;
 }//end interface
