@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Notifications\Controller\WebPushController;
+use OCA\OpenRegister\Notifications\Controller\Support\WebPushControllerServices;
 use OCA\OpenRegister\Notifications\Db\PushSubscription;
 use OCA\OpenRegister\Notifications\Db\PushSubscriptionMapper;
 use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
@@ -106,10 +107,12 @@ class WebPushControllerTest extends TestCase {
 		$this->controller = new WebPushController(
 			'openregister',
 			$this->request,
-			$this->webPushService,
-			$this->subscriptionMapper,
-			$this->hexIconService,
-			$this->userSession
+			new WebPushControllerServices(
+				webPushService: $this->webPushService,
+				subscriptionMapper: $this->subscriptionMapper,
+				hexIconService: $this->hexIconService,
+				userSession: $this->userSession
+			)
 		);
 	}
 
