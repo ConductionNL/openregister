@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Rules\NamedConditionLibrary;
 use OCA\OpenRegister\Service\Rules\RuleAuditService;
 use OCA\OpenRegister\Service\Rules\RuleCeilingService;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
+use OCA\OpenRegister\Service\Rules\FlowRuleDescriptors;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleReplayService;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
@@ -170,11 +171,10 @@ class RulesServicesGoldenTest extends TestCase {
 			][$flowId] ?? null
 		);
 		return new RuleInventoryService(
-			triggers: $triggers,
 			summaries: $summaries,
 			propertyCalculations: new PropertyCalculations(),
 			vocabulary: new RuleVocabulary(),
-			published: $published
+			flows: new FlowRuleDescriptors(triggers: $triggers, published: $published)
 		);
 	}//end inventory()
 
