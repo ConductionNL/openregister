@@ -148,6 +148,13 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private readonly MetricExpressionEvaluator $expressions;
 
 	/**
+	 * The operator checks of the PHP filter, built on first use.
+	 *
+	 * @var array<string, \Closure(mixed, mixed): bool>|null
+	 */
+	private ?array $operatorChecks = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface $magicMapper Magic-table mapper used for the PHP fallback path.
@@ -1909,26 +1916,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private function computeMetrics(array $rows, array $metrics): array {
 		$values = [];
 		foreach ($metrics as $entry) {
-			// A DERIVED metric reads the figures this aggregation has already
-			// produced, rather than the rows. `vatBalance = totalVATPaid -
-			// totalVATCollected` is arithmetic between two sums just computed;
-			// declaring a second aggregation to subtract them scans the table
-			// again, and the two results can disagree if a row is written
-			// between the calls — which a trial balance must never do.
-			//
-			// It reads only aliases computed BEFORE it, so the order of the
-			// `metrics` list is the dependency order. An alias that is not there
-			// yet raises and names what IS available, because resolving it to 0
-			// would turn a typo into a plausible number.
 			if (($entry['metric'] ?? null) === 'expression') {
-				$derivedAlias = ($entry['as'] ?? null);
-				if (is_string($derivedAlias) === false || $derivedAlias === '') {
-					throw new RuntimeException(
-						'A derived metric must declare `as`: it has no field or metric name to '
-						.'derive a response key from.'
-					);
-				}
-
+				$derivedAlias = $this->derivedMetricAlias(entry: $entry);
 				$values[$derivedAlias] = $this->expressions->evaluate(
 					expression: (string)($entry['expression'] ?? ''),
 					scope: $values
@@ -1936,43 +1925,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 				continue;
 			}
 
-			// `condition` — a per-metric filter, so one grouping can carry
-			// several figures over DIFFERENT row subsets.
-			//
-			// This is what a debit/credit split needs, and without it no
-			// accounting report in a consuming app can be declarative:
-			// `totalDebit` and `totalCredit` are the same SUM over the same
-			// field, separated only by `side`. Declaring two aggregations
-			// instead is not equivalent — it groups and scans the table twice,
-			// and the two results can disagree if a row is written between the
-			// calls, which is exactly what a trial balance must never do.
-			//
-			// It is a FILTER OBJECT, deliberately, not a SQL string. The same
-			// shape as `filter`, run through the same applyFilter(), so there
-			// is one grammar to learn and one implementation to keep correct.
-			// A second, string-shaped grammar is how the consuming app ended up
-			// with 265 declarations the engine could not read.
-			$scoped = $rows;
-			$condition = ($entry['condition'] ?? null);
-			if (is_array($condition) === true && $condition !== []) {
-				$scoped = $this->applyFilter(rows: $rows, filter: $condition);
-			}
-
-			// `as` — an explicit response key.
-			//
-			// Required once `condition` exists: two conditional sums over the
-			// same field both derive `sum_amount` and the second would
-			// overwrite the first, silently returning one figure where the
-			// caller asked for two.
-			$alias = ($entry['as'] ?? null);
-			$key = AggregationQuery::metricResponseKey(
-				metric: $entry['metric'],
-				field: ($entry['field'] ?? null)
-			);
-			if (is_string($alias) === true && $alias !== '') {
-				$key = $alias;
-			}
-
+			$scoped = $this->metricEntryRows(rows: $rows, entry: $entry);
+			$key    = $this->metricEntryKey(entry: $entry);
 			$values[$key] = $this->computeMetric(
 				rows: $scoped,
 				metric: $entry['metric'],
@@ -1982,6 +1936,64 @@ class AggregationRunner implements AggregationRunnerInterface {
 
 		return $values;
 	}//end computeMetrics()
+
+	/**
+	 * The `as` alias of a derived (expression) metric, which it must declare.
+	 *
+	 * @param array<string, mixed> $entry The metric entry.
+	 *
+	 * @return string
+	 *
+	 * @throws RuntimeException When the derived metric has no `as`.
+	 */
+	private function derivedMetricAlias(array $entry): string {
+		$derivedAlias = ($entry['as'] ?? null);
+		if (is_string($derivedAlias) === false || $derivedAlias === '') {
+			throw new RuntimeException(
+				'A derived metric must declare `as`: it has no field or metric name to '
+				.'derive a response key from.'
+			);
+		}
+
+		return $derivedAlias;
+	}//end derivedMetricAlias()
+
+	/**
+	 * The rows a metric entry counts: all of them, or those its `condition` matches.
+	 *
+	 * @param array<int, array<string, mixed>> $rows  The rows.
+	 * @param array<string, mixed>             $entry The metric entry.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function metricEntryRows(array $rows, array $entry): array {
+		$condition = ($entry['condition'] ?? null);
+		if (is_array($condition) === true && $condition !== []) {
+			return $this->applyFilter(rows: $rows, filter: $condition);
+		}
+
+		return $rows;
+	}//end metricEntryRows()
+
+	/**
+	 * The response key of a metric entry: its `as` alias, else the metric/field key.
+	 *
+	 * @param array<string, mixed> $entry The metric entry.
+	 *
+	 * @return string
+	 */
+	private function metricEntryKey(array $entry): string {
+		$alias = ($entry['as'] ?? null);
+		$key = AggregationQuery::metricResponseKey(
+			metric: $entry['metric'],
+			field: ($entry['field'] ?? null)
+		);
+		if (is_string($alias) === true && $alias !== '') {
+			$key = $alias;
+		}
+
+		return $key;
+	}//end metricEntryKey()
 
 	/**
 	 * Resolve a raw groupBy spec to an ordered list of non-empty group field
@@ -2048,6 +2060,30 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private function computeGrouped(array $rows, string $metric, mixed $field, array $groupFields, ?array $metrics = null): array {
 		$isMulti = (count($groupFields) > 1);
 		$isMultiMetric = (is_array($metrics) === true && count($metrics) > 1);
+
+		$out = [];
+		foreach ($this->groupBuckets(rows: $rows, groupFields: $groupFields) as $bucket) {
+			if ($isMultiMetric === true) {
+				$figure = ['values' => $this->computeMetrics(rows: $bucket['rows'], metrics: $metrics)];
+			} else {
+				$figure = ['value' => $this->computeMetric(rows: $bucket['rows'], metric: $metric, field: $field)];
+			}
+
+			$out[] = $this->groupKeyOf(tuple: $bucket['tuple'], isMulti: $isMulti) + $figure;
+		}
+
+		return $out;
+	}//end computeGrouped()
+
+	/**
+	 * The rows bucketed by their group-field tuple, in first-seen order.
+	 *
+	 * @param array<int, array<string, mixed>> $rows        The rows.
+	 * @param array<int, string>               $groupFields The group fields.
+	 *
+	 * @return array<string, array{tuple: array<string, mixed>, rows: array<int, array<string, mixed>>}>
+	 */
+	private function groupBuckets(array $rows, array $groupFields): array {
 		$buckets = [];
 		foreach ($rows as $row) {
 			$tuple = [];
@@ -2055,47 +2091,29 @@ class AggregationRunner implements AggregationRunnerInterface {
 				$tuple[$groupField] = ($row[$groupField] ?? null);
 			}
 
-			// Composite cache key over the whole tuple; json_encode keeps
-			// distinct tuples distinct regardless of scalar/null members.
 			$key = json_encode($tuple);
-			if (isset($buckets[$key]) === false) {
-				$buckets[$key] = ['tuple' => $tuple, 'rows' => []];
-			}
-
+			$buckets[$key] ??= ['tuple' => $tuple, 'rows' => []];
 			$buckets[$key]['rows'][] = $row;
 		}
 
-		$out = [];
-		foreach ($buckets as $bucket) {
-			$valueOrValues = null;
-			if ($isMultiMetric === true) {
-				$valueOrValues = $this->computeMetrics(rows: $bucket['rows'], metrics: $metrics);
-			} else {
-				$valueOrValues = $this->computeMetric(rows: $bucket['rows'], metric: $metric, field: $field);
-			}
+		return $buckets;
+	}//end groupBuckets()
 
-			$valueKey = 'value';
-			if ($isMultiMetric === true) {
-				$valueKey = 'values';
-			}
+	/**
+	 * A group's key: the whole tuple as `keys` for several fields, else its one value as `key`.
+	 *
+	 * @param array<string, mixed> $tuple   The group-field tuple.
+	 * @param bool                 $isMulti Whether there are several group fields.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function groupKeyOf(array $tuple, bool $isMulti): array {
+		if ($isMulti === true) {
+			return ['keys' => $tuple];
+		}
 
-			if ($isMulti === true) {
-				$out[] = [
-					'keys' => $bucket['tuple'],
-					$valueKey => $valueOrValues,
-				];
-				continue;
-			}
-
-			// Single-field: unwrap the tuple to the legacy `{key, value}` shape.
-			$out[] = [
-				'key' => reset($bucket['tuple']),
-				$valueKey => $valueOrValues,
-			];
-		}//end foreach
-
-		return $out;
-	}//end computeGrouped()
+		return ['key' => reset($tuple)];
+	}//end groupKeyOf()
 
 	/**
 	 * Reduce a numeric column using the given binary reducer.
@@ -2268,46 +2286,13 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 *                          spellings. It previously matched every row instead,
 	 *                          silently widening the filter.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	private function checkOn(mixed $value, string $op, mixed $onValue): bool {
-		if ($op === NullFilter::ISNULL_OPERATOR) {
-			return ($value === null) === NullFilter::isNullOperatorAsksForNull(value: $onValue);
-		}
-
-		if ($op === 'eq') {
-			return $this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]);
-		}
-
-		if ($op === 'ne') {
-			return ($this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]) === false);
-		}
-
-		if ($op === 'in') {
-			return (is_array($onValue) === true
-				&& $this->valueMatchesAnyOf(rowValue: $value, candidates: $onValue) === true);
-		}
-
-		if ($op === 'notIn') {
-			return (is_array($onValue) === false
-				|| $this->valueMatchesAnyOf(rowValue: $value, candidates: $onValue) === false);
-		}
-
-		$cmp = $this->normaliseForCompare(v: $value);
-		$rhs = $this->normaliseForCompare(v: $onValue);
-		$known = match ($op) {
-			'gt' => $cmp !== null && $rhs !== null && $cmp > $rhs,
-			'gte' => $cmp !== null && $rhs !== null && $cmp >= $rhs,
-			'lt' => $cmp !== null && $rhs !== null && $cmp < $rhs,
-			'lte' => $cmp !== null && $rhs !== null && $cmp <= $rhs,
-			default => null,
-		};
-
-		if ($known !== null) {
-			return $known;
+		$check = ($this->operatorChecks()[$op] ?? null);
+		if ($check !== null) {
+			return $check($value, $onValue);
 		}
 
 		// AN UNRECOGNISED OPERATOR IS REFUSED, NOT IGNORED.
@@ -2333,7 +2318,80 @@ class AggregationRunner implements AggregationRunnerInterface {
 			. 'eq, ne, gt, gte, lt, lte, in, notIn, isnull. An unknown operator used to match every '
 			. 'row, which silently widened the filter instead of narrowing it.'
 		);
-	}//end checkOp()
+	}//end checkOn()
+
+	/**
+	 * The implemented operators, each as a check of (row value, operand).
+	 *
+	 * @return array<string, \Closure(mixed, mixed): bool>
+	 */
+	private function operatorChecks(): array {
+		return $this->operatorChecks ??= [
+			NullFilter::ISNULL_OPERATOR => static fn (mixed $value, mixed $onValue): bool =>
+				($value === null) === NullFilter::isNullOperatorAsksForNull(value: $onValue),
+			'eq' => fn (mixed $value, mixed $onValue): bool =>
+				$this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]),
+			'ne' => fn (mixed $value, mixed $onValue): bool =>
+				($this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]) === false),
+			'in' => fn (mixed $value, mixed $onValue): bool => $this->valueInList(value: $value, onValue: $onValue),
+			'notIn' => fn (mixed $value, mixed $onValue): bool => $this->valueNotInList(value: $value, onValue: $onValue),
+			'gt' => fn (mixed $value, mixed $onValue): bool =>
+				($pair = $this->normalisedPair(value: $value, onValue: $onValue)) !== null && $pair[0] > $pair[1],
+			'gte' => fn (mixed $value, mixed $onValue): bool =>
+				($pair = $this->normalisedPair(value: $value, onValue: $onValue)) !== null && $pair[0] >= $pair[1],
+			'lt' => fn (mixed $value, mixed $onValue): bool =>
+				($pair = $this->normalisedPair(value: $value, onValue: $onValue)) !== null && $pair[0] < $pair[1],
+			'lte' => fn (mixed $value, mixed $onValue): bool =>
+				($pair = $this->normalisedPair(value: $value, onValue: $onValue)) !== null && $pair[0] <= $pair[1],
+		];
+	}//end operatorChecks()
+
+	/**
+	 * Whether the operand is a list and the row value matches any of it (`in`).
+	 *
+	 * @param mixed $value   The value extracted from the row.
+	 * @param mixed $onValue The operand.
+	 *
+	 * @return bool
+	 */
+	private function valueInList(mixed $value, mixed $onValue): bool {
+		return (is_array($onValue) === true
+			&& $this->valueMatchesAnyOf(rowValue: $value, candidates: $onValue) === true);
+	}//end valueInList()
+
+	/**
+	 * Whether the operand is not a list or the row value matches none of it (`notIn`).
+	 *
+	 * @param mixed $value   The value extracted from the row.
+	 * @param mixed $onValue The operand.
+	 *
+	 * @return bool
+	 */
+	private function valueNotInList(mixed $value, mixed $onValue): bool {
+		return (is_array($onValue) === false
+			|| $this->valueMatchesAnyOf(rowValue: $value, candidates: $onValue) === false);
+	}//end valueNotInList()
+
+	/**
+	 * Both sides normalised for a range check, or null when either side is null.
+	 *
+	 * Dates compare as timestamps (see normaliseForCompare()); a null on
+	 * either side never satisfies a range check.
+	 *
+	 * @param mixed $value   The value extracted from the row.
+	 * @param mixed $onValue The operand.
+	 *
+	 * @return array{0: mixed, 1: mixed}|null
+	 */
+	private function normalisedPair(mixed $value, mixed $onValue): ?array {
+		$cmp = $this->normaliseForCompare(v: $value);
+		$rhs = $this->normaliseForCompare(v: $onValue);
+		if ($cmp === null || $rhs === null) {
+			return null;
+		}
+
+		return [$cmp, $rhs];
+	}//end normalisedPair()
 
 	/**
 	 * The SQL that asks for an empty or a filled column.
