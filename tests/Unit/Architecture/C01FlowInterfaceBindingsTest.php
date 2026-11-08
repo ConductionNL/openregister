@@ -80,7 +80,6 @@ final class C01FlowInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		FlowStateMapper::class => ['Service/Flow/FlowDeletionSweep.php', 'Service/Flow/FlowRunService.php', 'Service/Flow/FlowStateBinding.php'],
 		PrincipalResolverRegistry::class => ['Repair/TypePerformerReferences.php'],
 	];
 
