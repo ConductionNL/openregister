@@ -22,7 +22,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 
 /**
  * Validates the reserved keys of an authorization block, which grant nothing.
@@ -102,7 +102,7 @@ final class AuthorizationControlKeys {
 	private function unvalidatedKeys(): array {
 		return array_values(
 			array_diff(
-				PermissionCatalogue::CONTROL_KEYS,
+				PermissionCatalogueInterface::CONTROL_KEYS,
 				[ObjectScopeResolver::SCOPE_KEY, Schema::ROLES_KEY, ExplicitReveal::KEY]
 			)
 		);
