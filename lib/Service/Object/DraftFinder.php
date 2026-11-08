@@ -77,18 +77,45 @@ class DraftFinder {
 			return null;
 		}
 
+		return $this->ownedBy(draft: $this->findDraft(register: $register, schema: $schema, draftId: $draftId), owner: $owner);
+	}//end own()
+
+	/**
+	 * Read a draft by id with RBAC off; a failed read is no draft.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 * @param string   $draftId  The draft id.
+	 *
+	 * @return ObjectEntity|null The object, or null when it cannot be read
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	private function findDraft(Register $register, Schema $schema, string $draftId): ?ObjectEntity {
 		try {
-			$draft = $this->objects->find(id: $draftId, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _audit: false);
+			return $this->objects->find(id: $draftId, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _audit: false);
 		} catch (Throwable) {
 			return null;
 		}
+	}//end findDraft()
 
+	/**
+	 * The object when the owner owns it, else null.
+	 *
+	 * @param ObjectEntity|null $draft The object read.
+	 * @param DraftOwner        $owner The owner asking.
+	 *
+	 * @return ObjectEntity|null The owned object
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	private function ownedBy(?ObjectEntity $draft, DraftOwner $owner): ?ObjectEntity {
 		if ($draft === null || $owner->owns(object: $draft) === false) {
 			return null;
 		}
 
 		return $draft;
-	}//end own()
+	}//end ownedBy()
 
 	/**
 	 * The owner's most recently changed draft in a destination whose data holds each `$match` value exactly.
@@ -103,6 +130,26 @@ class DraftFinder {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
 	public function newest(Register $register, Schema $schema, DraftOwner $owner, array $match = []): ?ObjectEntity {
+		$found = $this->searchOwnDrafts(register: $register, schema: $schema, owner: $owner);
+		if ($found === null) {
+			return null;
+		}
+
+		return $this->newestOf(found: $found, owner: $owner, match: $match);
+	}//end newest()
+
+	/**
+	 * List the owner's drafts of a schema, or null when the list cannot be read.
+	 *
+	 * @param Register   $register The register.
+	 * @param Schema     $schema   The schema.
+	 * @param DraftOwner $owner    The owner.
+	 *
+	 * @return array|null The listed objects
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	private function searchOwnDrafts(Register $register, Schema $schema, DraftOwner $owner): ?array {
 		try {
 			$found = $this->objects->searchObjects(
 				query: [
@@ -123,19 +170,49 @@ class DraftFinder {
 			return null;
 		}
 
-		$newest = null;
-		foreach ($found as $candidate) {
-			if ($this->qualifies(candidate: $candidate, owner: $owner, match: $match) === false) {
-				continue;
-			}
+		return $found;
+	}//end searchOwnDrafts()
 
-			if ($newest === null || self::changedAt(object: $candidate) > self::changedAt(object: $newest)) {
+	/**
+	 * The most recently changed qualifying draft of a list; the first one wins a tie.
+	 *
+	 * @param array      $found The listed objects.
+	 * @param DraftOwner $owner The owner.
+	 * @param array      $match Property values the draft must carry.
+	 *
+	 * @return ObjectEntity|null The newest draft
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	private function newestOf(array $found, DraftOwner $owner, array $match): ?ObjectEntity {
+		$qualifying = array_filter(
+			$found,
+			fn (mixed $candidate): bool => $this->qualifies(candidate: $candidate, owner: $owner, match: $match)
+		);
+
+		$newest = null;
+		foreach ($qualifying as $candidate) {
+			if (self::isNewer(candidate: $candidate, newest: $newest) === true) {
 				$newest = $candidate;
 			}
 		}
 
 		return $newest;
-	}//end newest()
+	}//end newestOf()
+
+	/**
+	 * Whether a candidate is newer than the newest so far.
+	 *
+	 * @param ObjectEntity      $candidate The candidate.
+	 * @param ObjectEntity|null $newest    The newest so far.
+	 *
+	 * @return bool True when the candidate replaces it
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	private static function isNewer(ObjectEntity $candidate, ?ObjectEntity $newest): bool {
+		return $newest === null || self::changedAt(object: $candidate) > self::changedAt(object: $newest);
+	}//end isNewer()
 
 	/**
 	 * An object's data without its metadata.
@@ -196,7 +273,20 @@ class DraftFinder {
 			return false;
 		}
 
-		$data = $candidate->getObject();
+		return self::carries(data: $candidate->getObject(), match: $match);
+	}//end qualifies()
+
+	/**
+	 * Whether data carries every matched property with exactly the matched value.
+	 *
+	 * @param array $data  The object data.
+	 * @param array $match Property values to carry.
+	 *
+	 * @return bool True when every value matches
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	private static function carries(array $data, array $match): bool {
 		foreach ($match as $property => $value) {
 			if (array_key_exists((string)$property, $data) === false || $data[(string)$property] !== $value) {
 				return false;
@@ -204,7 +294,7 @@ class DraftFinder {
 		}
 
 		return true;
-	}//end qualifies()
+	}//end carries()
 
 	/**
 	 * The object's last change as a timestamp.
