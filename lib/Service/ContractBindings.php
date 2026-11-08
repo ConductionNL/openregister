@@ -243,6 +243,8 @@ use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolverInterface;
 use OCA\OpenRegister\Service\Flow\Principal\GroupPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\GroupPrincipalResolverInterface;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistryInterface;
 use OCA\OpenRegister\Service\Flow\Principal\UserPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\UserPrincipalResolverInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -545,6 +547,11 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Connection\ConnectionReporterInterface::class => \OCA\OpenRegister\Service\Connection\ConnectionReporter::class,
 		\OCA\OpenRegister\Service\DsarServiceInterface::class => \OCA\OpenRegister\Service\DsarService::class,
 		\OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface::class => \OCA\OpenRegister\Service\Edepot\EdepotTransferService::class,
+		\OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchangeInterface::class => \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchange::class,
+		\OCA\OpenRegister\Service\Flow\EventCatalogServiceInterface::class => \OCA\OpenRegister\Service\Flow\EventCatalogService::class,
+		\OCA\OpenRegister\Service\Flow\FlowRunAuthorizationInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunAuthorization::class,
+		\OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunnableGuard::class,
+		\OCA\OpenRegister\Service\Flow\FlowRunVersionPinInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunVersionPin::class,
 		\OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface::class => \OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService::class,
 		\OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewServiceInterface::class => \OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService::class,
 		\OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStoreInterface::class => \OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore::class,
@@ -578,6 +585,7 @@ final class ContractBindings {
 		OAuth2ConnectionRepositoryInterface::class => OAuth2ConnectionRepository::class,
 		OpenConnectorTransportInterface::class => OpenConnectorTransport::class,
 		PortalTaskDeliveryServiceInterface::class => PortalTaskDeliveryService::class,
+		PrincipalResolverRegistryInterface::class => PrincipalResolverRegistry::class,
 		RestApiTransportInterface::class => RestApiTransport::class,
 		RouterNodeInterface::class => RouterNode::class,
 		SelectielijstImportServiceInterface::class => SelectielijstImportService::class,
