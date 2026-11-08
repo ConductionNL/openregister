@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Form\FormSubmitPlatform;
  * @covers \OCA\OpenRegister\Service\Form\FormSubmitService
  * @uses \OCA\OpenRegister\Service\Form\FormPayloadFindings
  * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Service\Form\FormFileStorage
  * @uses \OCA\OpenRegister\Service\Form\FormPayloadMapper
  * @uses \OCA\OpenRegister\Service\Form\FormSubmission
  * @uses \OCA\OpenRegister\Service\Form\FormSubmitDestinations

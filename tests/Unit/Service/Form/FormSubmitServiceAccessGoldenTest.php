@@ -28,6 +28,7 @@ use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\File\FilePropertyRules;
+use OCA\OpenRegister\Service\Form\FormFileStorage;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Service\Form\FormSubmitDestinations;
@@ -147,14 +148,14 @@ class FormSubmitServiceAccessGoldenTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 		$temp = $this->createMock(ITempManager::class);
-		$appData = new MemoryAppData();
+		$storage = new FormFileStorage(appData: new MemoryAppData(), time: $time);
 
 		$this->service = new FormSubmitService(
 			destinations: new FormSubmitDestinations(registers: $registers, schemas: $schemas, validator: $validator, objects: $objects),
 			keeping: new FormSubmitKeeping(
 				findings: new FormPayloadFindings(),
-				keys: new FormIdempotencyStore(appData: $appData, time: $time, locks: new MemoryLockingProvider(), l10n: $l10n),
-				uploads: new FormUploadStore(appData: $appData, time: $time, temp: $temp, rules: new FilePropertyRules(), l10n: $l10n)
+				keys: new FormIdempotencyStore(storage: $storage, locks: new MemoryLockingProvider(), l10n: $l10n),
+				uploads: new FormUploadStore(storage: $storage, temp: $temp, rules: new FilePropertyRules(), l10n: $l10n)
 			),
 			platform: new FormSubmitPlatform(
 				l10n: $l10n,
