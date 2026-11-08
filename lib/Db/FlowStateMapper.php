@@ -43,7 +43,7 @@ use OCP\IDBConnection;
  *
  * @link https://OpenRegister.app
  */
-class FlowStateMapper extends QBMapper {
+class FlowStateMapper extends QBMapper implements FlowStateMapperInterface {
 	/**
 	 * Constructor.
 	 *

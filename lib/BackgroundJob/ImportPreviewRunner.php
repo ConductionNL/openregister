@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\ImportPreview;
-use OCA\OpenRegister\Db\ImportPreviewMapper;
+use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -64,13 +64,13 @@ class ImportPreviewRunner extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory                  $time          Time factory.
-	 * @param ImportPreviewMapper           $previewMapper Preview persistence.
+	 * @param ImportPreviewMapperInterface           $previewMapper Preview persistence.
 	 * @param ImportPreviewServiceInterface $service       The preview lifecycle.
 	 * @param LoggerInterface               $logger        Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ImportPreviewMapper $previewMapper,
+		private readonly ImportPreviewMapperInterface $previewMapper,
 		private readonly ImportPreviewServiceInterface $service,
 		private readonly LoggerInterface $logger,
 	) {

@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
-use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowStateMapperInterface;
 
 /**
  * What deleting a flow sweeps with it: its runs, those runs' step rows and its carried state.
@@ -38,12 +38,12 @@ final readonly class FlowDeletionSweep {
 	 *
 	 * @param FlowRunMapperInterface $runs Sweeps a deleted flow's runs.
 	 * @param FlowRunStepMapper $steps Sweeps those runs' step rows.
-	 * @param FlowStateMapper $state Sweeps a deleted flow's carried state.
+	 * @param FlowStateMapperInterface $state Sweeps a deleted flow's carried state.
 	 */
 	public function __construct(
 		public FlowRunMapperInterface $runs,
 		public FlowRunStepMapper $steps,
-		public FlowStateMapper $state,
+		public FlowStateMapperInterface $state,
 	) {
 	}//end __construct()
 }//end class

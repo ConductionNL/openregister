@@ -39,7 +39,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<TaskSequence>
  */
-class TaskSequenceMapper extends QBMapper {
+class TaskSequenceMapper extends QBMapper implements TaskSequenceMapperInterface {
 
 	use SelectByColumnTrait;
 

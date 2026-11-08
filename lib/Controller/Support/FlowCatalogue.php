@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
@@ -36,7 +36,7 @@ final class FlowCatalogue {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param FlowStateMapper            $flowState    Reads state a flow keeps between runs.
+	 * @param FlowStateMapperInterface            $flowState    Reads state a flow keeps between runs.
 	 * @param EventCatalogService        $eventCatalog The flow trigger catalog.
 	 * @param FlowNodeRegistryInterface           $nodes        The registered flow-step types.
 	 * @param FlowNodePreflightInterface $preflight    Resolves a document's step types.
@@ -44,7 +44,7 @@ final class FlowCatalogue {
 	 * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
 	 */
 	public function __construct(
-		public readonly FlowStateMapper $flowState,
+		public readonly FlowStateMapperInterface $flowState,
 		public readonly EventCatalogService $eventCatalog,
 		public readonly FlowNodeRegistryInterface $nodes,
 		public readonly FlowNodePreflightInterface $preflight,
