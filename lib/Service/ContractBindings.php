@@ -50,6 +50,8 @@ use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
 use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
 use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
+use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
@@ -477,6 +479,9 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Rbac\ObjectAccessReportInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectAccessReport::class,
 		\OCA\OpenRegister\Service\Rbac\ObjectGrantsReportInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectGrantsReport::class,
 		AnalyticsLinkServiceInterface::class => AnalyticsLinkService::class,
+		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,
+		\OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface::class => \OCA\OpenRegister\Service\ApiVersion\ApiContractService::class,
+		\OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface::class => \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue::class,
 		AppConfigurationImporterInterface::class => ConfigurationService::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		ApplicationServiceInterface::class => ApplicationService::class,

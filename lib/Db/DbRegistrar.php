@@ -60,6 +60,7 @@ final class DbRegistrar {
 	 */
 	public const BINDINGS = [
 		AnalyticsLinkMapperInterface::class => AnalyticsLinkMapper::class,
+		ApiCallRecordMapperInterface::class => ApiCallRecordMapper::class,
 		ApplicationMapperInterface::class => ApplicationMapper::class,
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		BookmarkLinkMapperInterface::class => BookmarkLinkMapper::class,

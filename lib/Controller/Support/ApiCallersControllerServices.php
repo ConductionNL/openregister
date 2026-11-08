@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\ApiCallRecordMapper;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
 use OCP\IAppConfig;
 
 /**
@@ -35,16 +35,16 @@ final class ApiCallersControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ApiCallRecordMapper $records Reads the caller record.
-	 * @param ApiVersionCatalogue $catalogue The declared contract versions.
+	 * @param ApiCallRecordMapperInterface $records Reads the caller record.
+	 * @param ApiVersionCatalogueInterface $catalogue The declared contract versions.
 	 * @param IAppConfig $appConfig Reads and writes the declaration.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function __construct(
-		public readonly ApiCallRecordMapper $records,
-		public readonly ApiVersionCatalogue $catalogue,
+		public readonly ApiCallRecordMapperInterface $records,
+		public readonly ApiVersionCatalogueInterface $catalogue,
 		public readonly IAppConfig $appConfig,
 		public readonly ControllerSession $session,
 	) {
