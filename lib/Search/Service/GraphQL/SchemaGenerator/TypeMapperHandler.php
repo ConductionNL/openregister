@@ -130,56 +130,36 @@ class TypeMapperHandler {
 	private AggregationTypes $aggregationTypes;
 
 	/**
-	 * Callback to resolve a $ref string to a RegisterSchema.
+	 * Callback to resolve a $ref string to the ObjectType of the schema it names.
 	 *
-	 * @var callable(string): ?RegisterSchema
+	 * @var callable(string): ?ObjectType
 	 */
-	private $refResolver;
+	private $refTypeResolver;
 
 	/**
-	 * Callback to get/create an ObjectType for a schema.
+	 * Converts a slug to a GraphQL field name and a PascalCase type name.
 	 *
-	 * @var callable(RegisterSchema): ObjectType
+	 * @var GraphQLNames
 	 */
-	private $objectTypeFactory;
-
-	/**
-	 * Callback to convert a slug to a valid GraphQL field name.
-	 *
-	 * @var callable(string): string
-	 */
-	private $fieldNameConverter;
-
-	/**
-	 * Callback to convert a slug to a PascalCase type name.
-	 *
-	 * @var callable(string, ?int): string
-	 */
-	private $typeNameConverter;
+	private GraphQLNames $names;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param array<string, Type> $scalars Custom scalar type instances
-	 * @param callable $refResolver Resolves a $ref to a RegisterSchema
-	 * @param callable $objectTypeFactory Gets/creates an ObjectType for a schema
-	 * @param callable $fieldNameConverter Converts a slug to a GraphQL field name
-	 * @param callable $typeNameConverter Converts a slug to a PascalCase type name
-	 * @param PropertyRbacHandlerInterface $propertyRbac Withholds a property the caller may not read
+	 * @param array<string, Type>          $scalars         Custom scalar type instances
+	 * @param callable                     $refTypeResolver Resolves a $ref to the ObjectType of its schema, or null
+	 * @param GraphQLNames                 $names           Converts a slug to a GraphQL field or type name
+	 * @param PropertyRbacHandlerInterface $propertyRbac    Withholds a property the caller may not read
 	 */
 	public function __construct(
 		array $scalars,
-		callable $refResolver,
-		callable $objectTypeFactory,
-		callable $fieldNameConverter,
-		callable $typeNameConverter,
+		callable $refTypeResolver,
+		GraphQLNames $names,
 		private readonly PropertyRbacHandlerInterface $propertyRbac,
 	) {
 		$this->scalars = $scalars;
-		$this->refResolver = $refResolver;
-		$this->objectTypeFactory = $objectTypeFactory;
-		$this->fieldNameConverter = $fieldNameConverter;
-		$this->typeNameConverter = $typeNameConverter;
+		$this->refTypeResolver = $refTypeResolver;
+		$this->names = $names;
 		$this->aggregationTypes = new AggregationTypes();
 		$this->aggregationTypes->setScalars(scalars: $scalars);
 
@@ -217,9 +197,9 @@ class TypeMapperHandler {
 
 		// Handle object references.
 		if ($type === 'object' && isset($property['$ref']) === true) {
-			$refSchema = ($this->refResolver)($property['$ref']);
-			if ($refSchema !== null) {
-				return ($this->objectTypeFactory)($refSchema);
+			$refType = ($this->refTypeResolver)($property['$ref']);
+			if ($refType !== null) {
+				return $refType;
 			}
 
 			return $this->scalars['JSON'];
@@ -328,7 +308,7 @@ class TypeMapperHandler {
 			$filterSlug = 'Schema' . $schema->getId();
 		}
 
-		$typeName = ($this->typeNameConverter)($filterSlug, $schema->getId());
+		$typeName = $this->names->toTypeName($filterSlug, $schema->getId());
 		$fields = $this->filterFieldsFor(schema: $schema);
 
 		if (empty($fields) === true) {
@@ -402,13 +382,13 @@ class TypeMapperHandler {
 			$createSlug = 'Schema' . $schema->getId();
 		}
 
-		$typeName = ($this->typeNameConverter)($createSlug, $schema->getId());
+		$typeName = $this->names->toTypeName($createSlug, $schema->getId());
 		$fields = $this->buildInputFields(schema: $schema);
 		$required = $schema->getRequired() ?? [];
 
 		// Mark required fields (sanitize names to match field keys).
 		foreach ($required as $reqField) {
-			$reqField = ($this->fieldNameConverter)($reqField);
+			$reqField = $this->names->toFieldName($reqField);
 			if (isset($fields[$reqField]) === true) {
 				$fieldType = $fields[$reqField];
 				if ($fieldType instanceof Type) {
@@ -456,7 +436,7 @@ class TypeMapperHandler {
 			$updateSlug = 'Schema' . $schema->getId();
 		}
 
-		$typeName = ($this->typeNameConverter)($updateSlug, $schema->getId());
+		$typeName = $this->names->toTypeName($updateSlug, $schema->getId());
 		$fields = $this->buildInputFields(schema: $schema);
 
 		if (empty($fields) === true) {
@@ -518,7 +498,7 @@ class TypeMapperHandler {
 				continue;
 			}
 
-			$described[($this->fieldNameConverter)($name)] = $property;
+			$described[$this->names->toFieldName($name)] = $property;
 		}
 
 		return $described;

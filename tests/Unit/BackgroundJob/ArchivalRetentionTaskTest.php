@@ -38,6 +38,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionSources;
+use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionPlatform;
 
 class ArchivalRetentionTaskTest extends TestCase {
 	private ArchivalRetentionTask $task;
@@ -79,14 +81,8 @@ class ArchivalRetentionTaskTest extends TestCase {
 
 		$this->task = new ArchivalRetentionTask(
 			$timeFactory,
-			$this->db,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->magicMapper,
-			$this->objectService,
-			$this->retentionService,
-			$this->container,
-			$this->logger,
+			new ArchivalRetentionSources($this->db, $this->registerMapper, $this->schemaMapper, $this->magicMapper),
+			new ArchivalRetentionPlatform($this->objectService, $this->retentionService, $this->container, $this->logger)
 		);
 	}
 

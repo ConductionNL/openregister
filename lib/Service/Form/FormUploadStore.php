@@ -45,6 +45,20 @@ use OCP\ITempManager;
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
  */
 class FormUploadStore implements FormUploadStoreInterface {
+	/**
+	 * The app's data store.
+	 *
+	 * @var IAppData
+	 */
+	private readonly IAppData $appData;
+
+	/**
+	 * The clock.
+	 *
+	 * @var ITimeFactory
+	 */
+	private readonly ITimeFactory $time;
+
 
 	use AppDataFolder;
 
@@ -76,19 +90,19 @@ class FormUploadStore implements FormUploadStoreInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppData          $appData The app's data store.
-	 * @param ITimeFactory      $time    The clock.
+	 * @param FormFileStorage   $storage The app's data store and the clock.
 	 * @param ITempManager      $temp    Temporary files the save path reads a claimed upload from.
 	 * @param FilePropertyRules $rules   The file property's size and type rules.
 	 * @param IL10N             $l10n    Translations, for refusals a resident reads.
 	 */
 	public function __construct(
-		private readonly IAppData $appData,
-		private readonly ITimeFactory $time,
+		FormFileStorage $storage,
 		private readonly ITempManager $temp,
 		private readonly FilePropertyRules $rules,
 		private readonly IL10N $l10n,
 	) {
+		$this->appData = $storage->appData;
+		$this->time    = $storage->time;
 
 	}//end __construct()
 

@@ -33,7 +33,9 @@ use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Task\TaskForm;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
@@ -83,7 +85,7 @@ class UserTaskDeadlineGoldenTest extends TestCase {
 			}
 		);
 
-		$node  = new UserTaskNode($bridge, $l10n, $this->createMock(IURLGenerator::class), $forms, $timers);
+		$node  = new UserTaskNode(new UserTaskServices($bridge, $forms, $timers), new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)));
 		$state = new FlowResumeState();
 		try {
 			$node->execute(

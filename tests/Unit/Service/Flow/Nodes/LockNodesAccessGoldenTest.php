@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode;
 use OCP\IUser;
@@ -196,7 +197,7 @@ final class LockNodesAccessGoldenTest extends TestCase {
 		$l10n = $this->snapshotL10n();
 		$urls = $this->snapshotUrls();
 		$nodes = [
-			'lock' => new LockObjectNode(objects: $this->objects(), userManager: $this->users(), l10n: $l10n, urls: $urls),
+			'lock' => new LockObjectNode(objects: $this->objects(), userManager: $this->users(), presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls)),
 			'unlock' => new UnlockObjectNode(objects: $this->objects(), userManager: $this->users(), l10n: $l10n, urls: $urls),
 		];
 

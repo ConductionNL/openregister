@@ -18,6 +18,7 @@ namespace OCA\OpenRegister\Tests\Unit\Search\Service\GraphQL;
 
 use GraphQL\Type\Definition\CustomScalarType;
 use GraphQL\Type\Definition\Type;
+use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\GraphQLNames;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\TypeMapperHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use PHPUnit\Framework\TestCase;
@@ -40,12 +41,14 @@ final class TypeMappingGoldenTest extends TestCase {
 			$scalars[$name] = new CustomScalarType(['name' => $name, 'serialize' => static fn ($v) => $v]);
 		}
 
+		$names = $this->createMock(GraphQLNames::class);
+		$names->method('toFieldName')->willReturnArgument(0);
+		$names->method('toTypeName')->willReturnArgument(0);
+
 		return new TypeMapperHandler(
 			$scalars,
 			static fn () => null,
-			static fn () => null,
-			static fn (string $name): string => $name,
-			static fn (string $name): string => $name,
+			$names,
 			$this->createMock(PropertyRbacHandler::class)
 		);
 	}//end handler()

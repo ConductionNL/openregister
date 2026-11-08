@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Mcp\Tool\StreamingToolInstanceWrapper;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 
 /**
  * ResponseGenerationHandler
@@ -140,19 +141,16 @@ class ResponseGenerationHandler {
 	 * blocking call so providers that advertise streaming but fail at
 	 * runtime degrade gracefully (contract's non-streaming-provider clause).
 	 *
-	 * @param string $userMessage User's message text.
-	 * @param array $context RAG context with 'text' and 'sources' keys.
-	 * @param array $messageHistory Array of LLPhantMessage objects.
-	 * @param Agent|null $agent Agent configuration (optional).
-	 * @param array $selectedTools Tools selected for this request (optional).
-	 * @param ChatStreamChannelInterface|null $channel Streaming channel; when supplied the handler
-	 *                                         attempts the LLPhant streaming surface and
-	 *                                         forwards token / tool-call / tool-result
-	 *                                         events to the channel. When null the handler
-	 *                                         runs in legacy blocking mode (load-bearing
-	 *                                         for `POST /api/chat/send`).
-	 * @param array $cnAiContext Optional Conduction AI context overrides
-	 *                           (provider/model hints, defaults to empty array).
+	 * @param ChatMessageRequest $request        The turn: the user's message, the selected tools,
+	 *                                           the streaming channel (when supplied the handler
+	 *                                           attempts the LLPhant streaming surface and forwards
+	 *                                           token / tool-call / tool-result events to it; when
+	 *                                           null it runs in legacy blocking mode, load-bearing
+	 *                                           for `POST /api/chat/send`) and the Conduction AI
+	 *                                           context overrides (provider/model hints).
+	 * @param array              $context        RAG context with 'text' and 'sources' keys.
+	 * @param array              $messageHistory Array of LLPhantMessage objects.
+	 * @param Agent|null         $agent          Agent configuration (optional).
 	 *
 	 * @return string Generated response text
 	 *
@@ -164,22 +162,19 @@ class ResponseGenerationHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function generateResponse(
-		string $userMessage,
+		ChatMessageRequest $request,
 		array $context,
 		array $messageHistory,
 		?Agent $agent,
-		array $selectedTools = [],
-		?ChatStreamChannelInterface $channel = null,
-		array $cnAiContext = [],
 	): string {
 		return $this->respond(
 			turn: [
-				'userMessage' => $userMessage,
+				'userMessage' => $request->userMessage,
 				'context' => $context,
 				'agent' => $agent,
-				'selectedTools' => $selectedTools,
-				'channel' => $channel,
-				'cnAiContext' => $cnAiContext,
+				'selectedTools' => $request->selectedTools,
+				'channel' => $request->channel,
+				'cnAiContext' => $request->cnAiContext,
 			],
 			messageHistory: $messageHistory
 		);

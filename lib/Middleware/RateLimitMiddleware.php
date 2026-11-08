@@ -51,6 +51,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Throwable;
+use OCA\OpenRegister\Middleware\Support\RateLimitPlatform;
 
 /**
  * Middleware that rate-limits failed inbound-API authentication attempts.
@@ -66,21 +67,41 @@ use Throwable;
  */
 class RateLimitMiddleware extends Middleware {
 	/**
+	 * The user session
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Reflector for controller annotations
+	 *
+	 * @var IControllerMethodReflector
+	 */
+	private readonly IControllerMethodReflector $reflector;
+
+	/**
+	 * Logger for security events
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current request
-	 * @param IUserSession $userSession The user session
-	 * @param IControllerMethodReflector $reflector Reflector for controller annotations
+	 * @param RateLimitPlatform $platform Session, method reflector and logger.
 	 * @param InboundAuthRateLimitInterface $securityService The security service
-	 * @param LoggerInterface $logger Logger for security events
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly IUserSession $userSession,
-		private readonly IControllerMethodReflector $reflector,
+		RateLimitPlatform $platform,
 		private readonly InboundAuthRateLimitInterface $securityService,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->userSession = $platform->userSession;
+		$this->reflector = $platform->reflector;
+		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**

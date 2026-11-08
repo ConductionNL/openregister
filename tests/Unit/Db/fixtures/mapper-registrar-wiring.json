@@ -43,7 +43,7 @@
         "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface",
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Service\\LanguageServiceInterface",
-        "OCA\\OpenRegister\\Service\\Rbac\\ExplicitReveal",
+        "OCA\\OpenRegister\\Service\\Rbac\\ExplicitRevealInterface",
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface"

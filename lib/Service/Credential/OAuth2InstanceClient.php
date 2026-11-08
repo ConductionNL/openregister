@@ -96,13 +96,12 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	/**
 	 * Register an application at an account's own server.
 	 *
-	 * @param array<string, mixed> $provider The catalogue provider entry.
-	 * @param string $instanceBaseUrl The pinned, already-validated host.
-	 * @param string $redirectUri The callback to register.
-	 * @param array<int, string> $scopes The scopes to register for.
-	 * @param string $owner The user the client-secret credential is minted for.
-	 * @param string $scope The credential scope for the client-secret credential.
-	 * @param string|null $organisation The owning organisation, for an organisation-scoped connection.
+	 * The account's host, the scopes, and the owner, credential scope and
+	 * organisation the client secret is minted for all come from the flow.
+	 *
+	 * @param array<string, mixed> $provider    The catalogue provider entry.
+	 * @param OAuth2FlowClaims     $flow        The claims assembled so far.
+	 * @param string               $redirectUri The callback to register.
 	 *
 	 * @return array{clientId: string, clientCredentialRef: string} The client id and the secret's credentialRef.
 	 *
@@ -110,19 +109,12 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
-	public function register(
-		array $provider,
-		string $instanceBaseUrl,
-		string $redirectUri,
-		array $scopes,
-		string $owner,
-		string $scope,
-		?string $organisation = null,
-	): array {
-		$decoded = $this->registeredClient(provider: $provider, instanceBaseUrl: $instanceBaseUrl, redirectUri: $redirectUri, scopes: $scopes);
-		$clientRef = $this->mintClientSecret(
-			instanceBaseUrl: $instanceBaseUrl, decoded: $decoded, owner: $owner, scope: $scope, organisation: $organisation
+	public function register(array $provider, OAuth2FlowClaims $flow, string $redirectUri): array {
+		$instanceBaseUrl = OAuth2InstanceHost::normalise(candidate: $flow->string(key: 'h'));
+		$decoded = $this->registeredClient(
+			provider: $provider, instanceBaseUrl: $instanceBaseUrl, redirectUri: $redirectUri, scopes: $flow->scopes(provider: $provider)
 		);
+		$clientRef = $this->mintClientSecret(instanceBaseUrl: $instanceBaseUrl, decoded: $decoded, flow: $flow);
 
 		return ['clientId' => (string)$decoded['client_id'], 'clientCredentialRef' => $clientRef];
 	}//end register()
@@ -130,11 +122,13 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	/**
 	 * Store an issued client secret as its own brokered credential.
 	 *
-	 * @param string $instanceBaseUrl The pinned, already-validated host.
-	 * @param array<string, mixed> $decoded The registration answer, carrying the client secret.
-	 * @param string $owner The user the client-secret credential is minted for.
-	 * @param string $scope The credential scope for the client-secret credential.
-	 * @param string|null $organisation The owning organisation, for an organisation-scoped connection.
+	 * It is minted for the flow's user, in the flow's credential scope (personal
+	 * when the flow names none) and, for an organisation-scoped connection, its
+	 * owning organisation.
+	 *
+	 * @param string               $instanceBaseUrl The pinned, already-validated host.
+	 * @param array<string, mixed> $decoded         The registration answer, carrying the client secret.
+	 * @param OAuth2FlowClaims     $flow            The claims assembled so far.
 	 *
 	 * @return string The client-secret credential's UUID.
 	 *
@@ -143,13 +137,11 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	private function mintClientSecret(
 		string $instanceBaseUrl,
 		#[\SensitiveParameter] array $decoded,
-		string $owner,
-		string $scope,
-		?string $organisation,
+		OAuth2FlowClaims $flow,
 	): string {
 		$minted = $this->broker->mint(
-			name: 'OAuth2 client for ' . $instanceBaseUrl, provider: 'generic-oauth2', owner: $owner, allowedApps: ['openregister'],
-			secret: (string)($decoded['client_secret'] ?? ''), scope: $scope, organisation: $organisation
+			name: 'OAuth2 client for ' . $instanceBaseUrl, provider: 'generic-oauth2', owner: $flow->string(key: 'u'), allowedApps: ['openregister'],
+			secret: (string)($decoded['client_secret'] ?? ''), scope: $flow->string(key: 's', default: 'personal'), organisation: $flow->organisation()
 		);
 
 		return (string)$minted->getUuid();
@@ -191,15 +183,7 @@ class OAuth2InstanceClient implements OAuth2InstanceClientInterface {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	private function registerFor(array $provider, OAuth2FlowClaims $flow, string $redirectUri): array {
-		$registered = $this->register(
-			provider: $provider,
-			instanceBaseUrl: OAuth2InstanceHost::normalise(candidate: $flow->string(key: 'h')),
-			redirectUri: $redirectUri,
-			scopes: $flow->scopes(provider: $provider),
-			owner: $flow->string(key: 'u'),
-			scope: $flow->string(key: 's', default: 'personal'),
-			organisation: $flow->organisation()
-		);
+		$registered = $this->register(provider: $provider, flow: $flow, redirectUri: $redirectUri);
 		$clientRef = $registered['clientCredentialRef'];
 
 		return ['cl' => $registered['clientId'], 'cr' => $clientRef, self::MINTED_KEY => $clientRef];

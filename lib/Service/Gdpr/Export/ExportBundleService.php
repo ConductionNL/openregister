@@ -33,7 +33,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Gdpr\Export;
 
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
@@ -51,16 +50,13 @@ class ExportBundleService implements ExportBundleServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param DataSubjectRequestService $dsrService Reused access-export assembler (ADR-011).
-	 * @param CaseObjectAccessor $accessor RBAC-scoped, audited case load/save.
+	 * @param ExportDossierSources $sources The access-export assembler, the scoped case accessor and the trail reader.
 	 * @param PadesSigner $signer Swappable signing seam.
 	 * @param OneTimeDownloadTokenStore $tokenStore Single-use download-token store.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable trail reader for the dossier history.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly DataSubjectRequestService $dsrService,
-		private readonly CaseObjectAccessor $accessor,
+		private readonly ExportDossierSources $sources,
 		// TODO(ADR-047 Phase-1b, DEFERRED): PAdES-LTV signing deferred — the
 		// 2026-07-04 tc-lib-pdf spike was No-Go (8.65 stubs the B-T
 		// timestamp). Interim = SHA-256 hash-only (UnsignedPadesSigner).
@@ -69,7 +65,6 @@ class ExportBundleService implements ExportBundleServiceInterface {
 		// RFC-3161 TSA URL.
 		private readonly PadesSigner $signer,
 		private readonly OneTimeDownloadTokenStore $tokenStore,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -99,7 +94,7 @@ class ExportBundleService implements ExportBundleServiceInterface {
 		// processing-activity pin). A monotonically-growing marker on the case
 		// records the last bundle's hash + signature state.
 		$data['lastBundle'] = $this->bundleMarker(signed: $signed);
-		$this->accessor->save(case: $case, data: $data);
+		$this->sources->accessor->save(case: $case, data: $data);
 
 		$token = $this->tokenStore->mint(caseUuid: $caseUuid);
 
@@ -126,7 +121,7 @@ class ExportBundleService implements ExportBundleServiceInterface {
 		// Case scope is enforced twice: the token is bound to the case, and the
 		// case is loaded under the caller's RBAC. Both must pass, and the case
 		// is asked first so a refused case does not burn the token.
-		$case = $this->accessor->load(caseUuid: $caseUuid);
+		$case = $this->sources->accessor->load(caseUuid: $caseUuid);
 		if ($case === null || $this->tokenStore->redeem(token: $token, caseUuid: $caseUuid) === false) {
 			return null;
 		}
@@ -176,7 +171,7 @@ class ExportBundleService implements ExportBundleServiceInterface {
 	 * @throws RuntimeException When the case is absent or not authorised.
 	 */
 	private function requireCase(string $caseUuid): ObjectEntity {
-		$case = $this->accessor->load(caseUuid: $caseUuid);
+		$case = $this->sources->accessor->load(caseUuid: $caseUuid);
 		if ($case !== null) {
 			return $case;
 		}
@@ -196,7 +191,7 @@ class ExportBundleService implements ExportBundleServiceInterface {
 	 * @return SignedBundle The signed (or stub-signed) bundle.
 	 */
 	private function signedBundleFor(string $caseUuid, array $data): SignedBundle {
-		$assembled = $this->dsrService->assembleAccessExport(
+		$assembled = $this->sources->dsrService->assembleAccessExport(
 			subjectId: (string)($data['subjectId'] ?? ''),
 			type: $this->subjectTypeOf(data: $data)
 		);
@@ -261,7 +256,7 @@ class ExportBundleService implements ExportBundleServiceInterface {
 	private function historyOf(ObjectEntity $case, string $caseUuid): array {
 		$history = [];
 		try {
-			foreach ($this->auditTrailMapper->findByObjectUntil(objectUuid: (string)$case->getUuid()) as $entry) {
+			foreach ($this->sources->auditTrailMapper->findByObjectUntil(objectUuid: (string)$case->getUuid()) as $entry) {
 				$history[] = $entry->jsonSerialize();
 			}
 		} catch (Throwable $e) {

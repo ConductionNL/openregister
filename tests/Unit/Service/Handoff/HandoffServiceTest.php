@@ -56,6 +56,7 @@ use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -124,11 +125,10 @@ class HandoffServiceTest extends TestCase {
 		$appManager->method('isInstalled')->willReturn(true);
 
 		$resolver = new SemanticTypeResolver(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
+			mappers: new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper),
 			jsonLdContextService: new JsonLdContextService($this->createMock(IURLGenerator::class)),
 			logger: $this->createMock(LoggerInterface::class),
-			appManager: $appManager,
+			appManager: $appManager
 		);
 
 		$user = $this->createMock(IUser::class);

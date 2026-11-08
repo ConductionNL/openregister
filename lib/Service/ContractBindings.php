@@ -545,6 +545,10 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
+use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriverInterface;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetServiceInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
@@ -695,6 +699,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface::class => \OCA\OpenRegister\Service\Rbac\DefinitionWriteRights::class,
 		\OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface::class => \OCA\OpenRegister\Service\Rbac\GrantChangeAuditor::class,
 		\OCA\OpenRegister\Service\Rbac\DerivedGrantLoginInterface::class => \OCA\OpenRegister\Service\Rbac\DerivedGrantStore::class,
+		\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitReveal::class,
 		\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface::class => \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class,
 		BrpPersonProviderInterface::class => BrpPersonProvider::class,
 		CalendarFeedTokenServiceInterface::class => CalendarFeedTokenService::class,
@@ -946,6 +951,7 @@ final class ContractBindings {
 		ObjectRelationServiceInterface::class => ObjectRelationService::class,
 		ObjectScopeResolverInterface::class => ObjectScopeResolver::class,
 		ObjectStreamingSaveInterface::class => ObjectService::class,
+		ObjectHandlerAccessInterface::class => ObjectService::class,
 		ObjectWriteNodeInterface::class => ObjectWriteNode::class,
 		OpenProjectLinkServiceInterface::class => OpenProjectLinkService::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
@@ -984,6 +990,8 @@ final class ContractBindings {
 		RuleTrialServiceInterface::class => RuleTrialService::class,
 		\OCA\OpenRegister\Service\Flow\FlowTenantMembershipInterface::class => \OCA\OpenRegister\Service\Flow\FlowTenantMembership::class,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkSubject::class,
+		SharePrincipalDeriverInterface::class => SharePrincipalDeriver::class,
+		AccessLinkActsInterface::class => AccessLinkActs::class,
 		RegisterDescriptorServiceInterface::class => RegisterDescriptorService::class,
 		RegisterResolverServiceInterface::class => RegisterResolverService::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,

@@ -683,7 +683,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			relatedRows: $relatedRowApplier,
 			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageServiceInterface::class),
 			metadataColumns: $this->metadataColumnHealer,
-			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class)
+			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class)
 		);
 	}//end initializeSearchHandler()
 

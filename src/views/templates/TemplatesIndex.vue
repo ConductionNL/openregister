@@ -134,9 +134,9 @@ export default {
 		 */
 		columns() {
 			return [
-				{ key: 'name', label: t('openregister', 'Name') },
+				{ key: 'name', label: t('openregister', 'Name'), cellClass: 'cn-cell--wrap' },
 				{ key: 'type', label: t('openregister', 'Type') },
-				{ key: 'description', label: t('openregister', 'Description') },
+				{ key: 'description', label: t('openregister', 'Description'), cellClass: 'cn-cell--wrap' },
 				{ key: 'updatedAt', label: t('openregister', 'Updated At') },
 			]
 		},

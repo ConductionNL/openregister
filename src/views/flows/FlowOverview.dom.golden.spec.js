@@ -91,6 +91,14 @@ describe('FlowOverview tables', () => {
 		expect(runs.find('.mono').attributes('title')).toBe(RUNS[0].subjectUuid)
 	})
 
+	it('lets the published and stopped-at cells wrap', async () => {
+		const wrapper = await mounted({ versions: VERSIONS, runs: RUNS })
+		const wrapping = wrapper.findAllComponents({ name: 'CnDataTable' }).map((table) => table.props('columns')
+			.filter((column) => column.cellClass === 'cn-cell--wrap')
+			.map((column) => column.key))
+		expect(wrapping).toEqual([['publishedAt'], ['stoppedAt']])
+	})
+
 	it('shows the notes without versions or runs', async () => {
 		const wrapper = await mounted({ versions: [], runs: [] })
 		expect(wrapper.findAll('table')).toHaveLength(0)

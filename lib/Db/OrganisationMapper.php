@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\Support\ConfigServices;
 use OCA\OpenRegister\Event\OrganisationCreatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
@@ -94,22 +95,36 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	private array $activeOrgUuidCache = [];
 
 	/**
+	 * App configuration, read for the default organisation and RBAC enforcement.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * System configuration, read for the DB table prefix.
+	 *
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
 	 * OrganisationMapper constructor
 	 *
 	 * @param IDBConnection $db Database connection
 	 * @param LoggerInterface $logger Logger interface
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher
-	 * @param IAppConfig $appConfig App configuration for reading default org
-	 * @param IConfig $config System configuration (used for the DB table prefix)
+	 * @param ConfigServices $configs App configuration (default org) and system configuration (DB table prefix)
 	 */
 	public function __construct(
 		IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly IEventDispatcher $eventDispatcher,
-		private readonly IAppConfig $appConfig,
-		private readonly IConfig $config,
+		ConfigServices $configs,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_organisations', entityClass: Organisation::class);
+		$this->appConfig = $configs->appConfig;
+		$this->config = $configs->config;
 	}//end __construct()
 
 	/**

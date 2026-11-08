@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\OasSources;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
@@ -36,9 +37,11 @@ class OasServiceExtendedPathsGoldenTest extends TestCase {
 
 	public function testExtendedPathItemsMatchGolden(): void {
 		$service = new OasService(
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IURLGenerator::class)
+			new OasSources(
+				$this->createMock(RegisterMapper::class),
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(IURLGenerator::class)
+			)
 		);
 		$method = new ReflectionMethod($service, 'extendedPathItem');
 

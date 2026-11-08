@@ -56,6 +56,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\DsarDpiaDetectionServices;
 
 /**
  * Daily DPIA pattern-detection sweep over DSAR cases.
@@ -100,25 +101,51 @@ class DsarDpiaDetectionJob extends TimedJob {
 	public const AUDIT_ACTION = 'dpia.detected';
 
 	/**
+	 * Object read/write path.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Active-pack resolution per jurisdiction.
+	 *
+	 * @var DsarPolicyPackResolverInterface
+	 */
+	private readonly DsarPolicyPackResolverInterface $packResolver;
+
+	/**
+	 * Pure grouping/threshold engine.
+	 *
+	 * @var DpiaPatternDetectorInterface
+	 */
+	private readonly DpiaPatternDetectorInterface $detectionService;
+
+	/**
+	 * Immutable detection audit rows.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory required by parent.
 	 * @param IAppConfig $appConfig App-config reader.
-	 * @param ObjectOperationsInterface $objectService Object read/write path.
-	 * @param DsarPolicyPackResolverInterface $packResolver Active-pack resolution per jurisdiction.
-	 * @param DpiaPatternDetectorInterface $detectionService Pure grouping/threshold engine.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable detection audit rows.
+	 * @param DsarDpiaDetectionServices $services Object path, policy packs, pattern detector and audit trail.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly IAppConfig $appConfig,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly DsarPolicyPackResolverInterface $packResolver,
-		private readonly DpiaPatternDetectorInterface $detectionService,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		DsarDpiaDetectionServices $services,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectService = $services->objectService;
+		$this->packResolver = $services->packResolver;
+		$this->detectionService = $services->detectionService;
+		$this->auditTrailMapper = $services->auditTrailMapper;
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
 

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListCreator;
+use OCA\OpenRegister\Service\Archival\DestructionListWriter;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
@@ -490,8 +491,7 @@ class DestructionGoldenTest extends TestCase {
 
 		return new DestructionListCreator(
 			retention: $retention,
-			objectMapper: $this->mapper(),
-			saveObject: $save,
+			writer: new DestructionListWriter(objectMapper: $this->mapper(), saveObject: $save),
 			settingsHandler: $handler,
 			logger: $this->createMock(LoggerInterface::class)
 		);

@@ -23,9 +23,7 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
@@ -51,15 +49,13 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 	 * Constructor.
 	 *
 	 * @param RetentionServiceInterface       $retention       Judges each object and builds the list.
-	 * @param MagicMapperInterface            $objectMapper    Loads the named objects.
-	 * @param SaveObjectWriterInterface             $saveObject      Stores the list as the sweep does.
+	 * @param DestructionListWriter $writer Reads the eligible objects and saves the new list.
 	 * @param ArchivalSettingsReaderInterface $settingsHandler Names the destruction-list register and schema.
 	 * @param LoggerInterface        $logger          Records who asked for a list.
 	 */
 	public function __construct(
 		private readonly RetentionServiceInterface $retention,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly SaveObjectWriterInterface $saveObject,
+		private readonly DestructionListWriter $writer,
 		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
@@ -106,7 +102,7 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 	private function store(array $location, array $listData, array $judged): ObjectEntity {
 		// The sweep's own save call (DestructionCheckJob::run()): no RBAC or
 		// multitenancy on the list, persisted, silent.
-		$saved = $this->saveObject->saveObject($location['register'], $location['schema'], $listData, null, false, false, true, true);
+		$saved = $this->writer->saveObject->saveObject($location['register'], $location['schema'], $listData, null, false, false, true, true);
 
 		$this->logger->info(
 			'[DestructionListCreator] Created destruction list ' . (string)$saved->getUuid()
@@ -194,7 +190,7 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 		}
 
 		try {
-			return $this->objectMapper->find($uuid, null, null, false, false, false);
+			return $this->writer->objectMapper->find($uuid, null, null, false, false, false);
 		} catch (Throwable $e) {
 			return null;
 		}

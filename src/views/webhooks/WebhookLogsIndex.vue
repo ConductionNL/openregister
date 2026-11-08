@@ -197,13 +197,13 @@ export default {
 		 */
 		logColumns() {
 			return [
-				{ key: 'webhookId', label: t('openregister', 'Webhook') },
+				{ key: 'webhookId', label: t('openregister', 'Webhook'), cellClass: 'cn-cell--wrap' },
 				{ key: 'eventClass', label: t('openregister', 'Event') },
 				{ key: 'success', label: t('openregister', 'Status') },
 				{ key: 'statusCode', label: t('openregister', 'Status Code') },
 				{ key: 'attempt', label: t('openregister', 'Attempt') },
 				{ key: 'created', label: t('openregister', 'Created') },
-				{ key: 'errorMessage', label: t('openregister', 'Error') },
+				{ key: 'errorMessage', label: t('openregister', 'Error'), cellClass: 'cn-cell--wrap' },
 			]
 		},
 

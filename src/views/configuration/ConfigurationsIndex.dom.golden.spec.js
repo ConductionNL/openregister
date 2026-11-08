@@ -120,6 +120,14 @@ describe('ConfigurationsIndex table', () => {
 		expect(tableText(wrapper)).toMatchSnapshot()
 	})
 
+	it('lets the title and status cells wrap', async () => {
+		const wrapper = await mounted(CONFIGURATIONS)
+		const wrapping = wrapper.findComponent({ name: 'CnDataTable' }).props('columns')
+			.filter((column) => column.cellClass === 'cn-cell--wrap')
+			.map((column) => column.key)
+		expect(wrapping).toEqual(['title', 'status'])
+	})
+
 	it('shows the empty state without configurations', async () => {
 		const wrapper = await mounted([])
 		expect(wrapper.findAll('table')).toHaveLength(0)

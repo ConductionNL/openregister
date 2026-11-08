@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
+use OCA\OpenRegister\Service\Task\TaskFormSources;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 
@@ -112,8 +113,7 @@ final class TaskConfigsGoldenTest extends TestCase {
 	public function testTaskConfigsMatchTheirRecording(): void {
 		$l10n = $this->snapshotL10n();
 		$forms = new TaskFormReader(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(TransitionEngine::class),
+			new TaskFormSources($this->createMock(SchemaMapper::class), $this->createMock(TransitionEngine::class)),
 			$this->createMock(IAppManager::class),
 			$l10n
 		);

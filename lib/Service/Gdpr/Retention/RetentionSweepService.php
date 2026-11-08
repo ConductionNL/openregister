@@ -45,7 +45,6 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -56,18 +55,14 @@ class RetentionSweepService implements RetentionSweepInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CaseObjectAccessor $accessor RBAC-scoped case query + audited delete.
+	 * @param RetentionSweepSources $sources The scoped case accessor, the evidence scrubber and the clock.
 	 * @param RetentionServiceInterface $retentionService Legal-hold / immutability awareness.
-	 * @param DataSubjectRequestService $dsrService Reused evidence-PII scrub (erase pseudonymise).
-	 * @param ITimeFactory $time Time source for the `retainUntil` cut-off.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ArchivalRetentionGuard $archivalGuard Refuses destruction of a legally retained case.
 	 */
 	public function __construct(
-		private readonly CaseObjectAccessor $accessor,
+		private readonly RetentionSweepSources $sources,
 		private readonly RetentionServiceInterface $retentionService,
-		private readonly DataSubjectRequestService $dsrService,
-		private readonly ITimeFactory $time,
 		private readonly LoggerInterface $logger,
 		private readonly ArchivalRetentionGuard $archivalGuard,
 	) {
@@ -103,10 +98,10 @@ class RetentionSweepService implements RetentionSweepInterface {
 	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
 	public function runSweep(bool $dryRun = false): array {
-		$now = $this->time->getTime();
+		$now = $this->sources->time->getTime();
 		$summary = $this->openSummary(dryRun: $dryRun);
 
-		foreach ($this->accessor->findAllCaseEntities() as $case) {
+		foreach ($this->sources->accessor->findAllCaseEntities() as $case) {
 			$summary['evaluated']++;
 			$this->sweepCase(case: $case, now: $now, dryRun: $dryRun, summary: $summary);
 		}
@@ -310,7 +305,7 @@ class RetentionSweepService implements RetentionSweepInterface {
 	 */
 	private function scrubEvidence(string $uuid, string $subjectId): void {
 		try {
-			$this->dsrService->erase(
+			$this->sources->dsrService->erase(
 				subjectId: $subjectId,
 				eraseMode: DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE
 			);
@@ -355,7 +350,7 @@ class RetentionSweepService implements RetentionSweepInterface {
 	 */
 	private function tryDelete(string $uuid): bool|null {
 		try {
-			return $this->accessor->deleteForSweep(caseUuid: $uuid);
+			return $this->sources->accessor->deleteForSweep(caseUuid: $uuid);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: sprintf('[RetentionSweep] dossier delete failed for case "%s": %s', $uuid, $e->getMessage())

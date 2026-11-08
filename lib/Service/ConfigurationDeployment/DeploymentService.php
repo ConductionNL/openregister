@@ -369,7 +369,8 @@ class DeploymentService implements DeploymentServiceInterface {
 
 		$value = ($change['value'] ?? null);
 		return $this->store->write(
-			layer: $layer, layerRef: $layerRef, configKey: $configKey, value: $value, deploymentUuid: $deploymentUuid, actor: $actor
+			address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
+			write: new ConfigurationWrite(value: $value, deploymentUuid: $deploymentUuid, actor: $actor)
 		);
 
 	}//end writeOne()

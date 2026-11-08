@@ -39,6 +39,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
 
 /**
  * Purges archived organisations after retention period.
@@ -52,21 +53,35 @@ class TenantPurgeJob extends TimedJob {
 	private const DEFAULT_RETENTION_DAYS = 90;
 
 	/**
+	 * Organisation mapper
+	 *
+	 * @var OrganisationMapperInterface
+	 */
+	private readonly OrganisationMapperInterface $organisationMapper;
+
+	/**
+	 * Usage mapper
+	 *
+	 * @var TenantUsageMapper
+	 */
+	private readonly TenantUsageMapper $tenantUsageMapper;
+
+	/**
 	 * Constructor
 	 *
 	 * @param ITimeFactory $time Time factory
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
+	 * @param TenantPurgeStores $stores Organisations and their usage rows.
 	 * @param IAppConfig $appConfig App config
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly TenantUsageMapper $tenantUsageMapper,
+		TenantPurgeStores $stores,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->organisationMapper = $stores->organisationMapper;
+		$this->tenantUsageMapper = $stores->tenantUsageMapper;
 		parent::__construct(time: $time);
 		// Run daily.
 		$this->setInterval(seconds: 86400);

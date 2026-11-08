@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
@@ -120,7 +121,7 @@ class TaskScheduledNotificationJobTest extends TestCase {
 		$this->tasks->expects($this->never())->method('updateIfOpen');
 		$this->dedupe->method('findOne')->willReturn(null);
 		$this->dedupe->expects($this->once())->method('upsert')
-			->with(TaskScheduledNotificationJob::DEDUPE_SCHEMA_ID, 'taskOverdue', 't-late', $this->anything(), $this->anything(), true);
+			->with($this->equalTo(new NotificationDedupeKey(TaskScheduledNotificationJob::DEDUPE_SCHEMA_ID, 'taskOverdue', 't-late')), $this->anything(), $this->anything(), true);
 		$this->dispatcher->expects($this->once())->method('dispatchWithSchema')
 			->with(
 				$this->callback(static fn (TaskObjectAdapter $adapter): bool => $adapter->getUuid() === 't-late'),

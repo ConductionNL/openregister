@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\BackgroundJob\Support\LogCleanUpTrails;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\LogCleanUpTask
@@ -76,12 +77,9 @@ class LogCleanUpTaskGoldenTest extends TestCase {
 	private function runTask(bool $optional = true): void {
 		$task = new LogCleanUpTask(
 			$this->createMock(ITimeFactory::class),
-			$this->audit,
-			$this->search,
+			new LogCleanUpTrails($this->audit, $this->search, $optional === true ? $this->history : null, $optional === true ? $this->metrics : null),
 			$this->retention,
-			$this->logger,
-			$optional === true ? $this->history : null,
-			$optional === true ? $this->metrics : null
+			$this->logger
 		);
 		(new ReflectionMethod($task, 'run'))->invoke($task, null);
 	}//end runTask()

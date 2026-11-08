@@ -34,6 +34,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\BackgroundJob\Support\BulkJobServices;
 
 final class BulkJobRunnerTest extends TestCase {
 
@@ -85,8 +86,7 @@ final class BulkJobRunnerTest extends TestCase {
 	private function runner(): BulkJobRunner {
 		return new BulkJobRunner(
 			$this->createMock(ITimeFactory::class),
-			$this->jobMapper,
-			$this->service,
+			new BulkJobServices($this->jobMapper, $this->service),
 			$this->jobList,
 			new NullLogger()
 		);

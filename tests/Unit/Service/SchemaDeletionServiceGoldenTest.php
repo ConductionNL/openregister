@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IFunctionBuilder;
@@ -200,7 +201,7 @@ final class SchemaDeletionServiceGoldenTest extends TestCase {
 			});
 		}
 
-		return new SchemaDeletionService($db, $magic, $registers, $schemas, $audit, $logger);
+		return new SchemaDeletionService($db, new SchemaDeletionStores($magic, $registers, $schemas, $audit), $logger);
 	}//end service()
 
 	/**

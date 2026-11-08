@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\AuditTrail\AuditActionStatistics;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailStatistics;
 use DateTime;
@@ -107,24 +108,44 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	private ?string $requestImportJobId = null;
 
 	/**
+	 * DI container for lazy collaborator resolution.
+	 *
+	 * @var \Psr\Container\ContainerInterface
+	 */
+	private readonly \Psr\Container\ContainerInterface $container;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Dependency-free payload conversion/reversion helpers.
+	 *
+	 * @var AuditTrailPayloadHelper
+	 */
+	private readonly AuditTrailPayloadHelper $payloadHelper;
+
+	/**
 	 * Constructor for the AuditTrailMapper
 	 *
 	 * @param IDBConnection $db The database connection
-	 * @param \Psr\Container\ContainerInterface $container DI container for lazy mapper resolution
 	 * @param IUserSession $userSession User session service
 	 * @param IRequest $request Current request
-	 * @param LoggerInterface $logger Logger
-	 * @param AuditTrailPayloadHelper $payloadHelper Dependency-free payload conversion/reversion helpers
+	 * @param AuditTrailMapperServices $services DI container for lazy collaborator resolution, and the logger
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly \Psr\Container\ContainerInterface $container,
 		private readonly IUserSession $userSession,
 		private readonly IRequest $request,
-		private readonly LoggerInterface $logger,
-		private readonly AuditTrailPayloadHelper $payloadHelper = new AuditTrailPayloadHelper(),
+		AuditTrailMapperServices $services,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
+		$this->container = $services->container;
+		$this->logger = $services->logger;
+		$this->payloadHelper = new AuditTrailPayloadHelper();
 	}//end __construct()
 
 

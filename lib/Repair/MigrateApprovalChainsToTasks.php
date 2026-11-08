@@ -62,6 +62,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
+use OCA\OpenRegister\Repair\Support\RepairPlatform;
+use OCA\OpenRegister\Repair\Support\ApprovalTaskStores;
 
 /**
  * Converts chains to templates, step sets to sequences and steps to tasks.
@@ -100,27 +102,73 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	private const TEMPLATE_ID_NS = 'or-approval-template';
 
 	/**
+	 * Reads the legacy tables and writes the reconciliation column.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Inserts tasks (insert dispatches nothing).
+	 *
+	 * @var TaskMapper
+	 */
+	private readonly TaskMapper $tasks;
+
+	/**
+	 * Maintains the candidate index.
+	 *
+	 * @var TaskCandidateMapperInterface
+	 */
+	private readonly TaskCandidateMapperInterface $candidates;
+
+	/**
+	 * Appends the migrated decision history.
+	 *
+	 * @var TaskAuditMapperInterface
+	 */
+	private readonly TaskAuditMapperInterface $audits;
+
+	/**
+	 * Inserts one sequence per (chain, object).
+	 *
+	 * @var TaskSequenceMapperInterface
+	 */
+	private readonly TaskSequenceMapperInterface $sequences;
+
+	/**
+	 * Records the cutover timestamp.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $config;
+
+	/**
+	 * Diagnostics.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db Reads the legacy tables and writes the reconciliation column.
+	 * @param RepairPlatform $platform Database connection, app config and logger.
 	 * @param TaskBuilder $builder Validates and builds each migrated task.
-	 * @param TaskMapper $tasks Inserts tasks (insert dispatches nothing).
-	 * @param TaskCandidateMapperInterface $candidates Maintains the candidate index.
-	 * @param TaskAuditMapperInterface $audits Appends the migrated decision history.
-	 * @param TaskSequenceMapperInterface $sequences Inserts one sequence per (chain, object).
-	 * @param IAppConfig $config Records the cutover timestamp.
-	 * @param LoggerInterface $logger Diagnostics.
+	 * @param ApprovalTaskStores $stores Task, candidate, audit and sequence stores.
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
+		RepairPlatform $platform,
 		private readonly TaskBuilder $builder,
-		private readonly TaskMapper $tasks,
-		private readonly TaskCandidateMapperInterface $candidates,
-		private readonly TaskAuditMapperInterface $audits,
-		private readonly TaskSequenceMapperInterface $sequences,
-		private readonly IAppConfig $config,
-		private readonly LoggerInterface $logger,
+		ApprovalTaskStores $stores,
 	) {
+		$this->db = $platform->db;
+		$this->tasks = $stores->tasks;
+		$this->candidates = $stores->candidates;
+		$this->audits = $stores->audits;
+		$this->sequences = $stores->sequences;
+		$this->config = $platform->config;
+		$this->logger = $platform->logger;
 
 	}//end __construct()
 

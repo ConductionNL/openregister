@@ -530,10 +530,8 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function newObjectHandler(): ObjectHandler {
 		return new ObjectHandler(
-			objectMapper: $this->objects->objectEntityMapper,
+			objects: $this->objects,
 			chunkMapper: $this->chunkMapper,
-			schemaMapper: $this->objects->schemaMapper,
-			registerMapper: $this->objects->registerMapper,
 			logger: $this->analysis->logger
 		);
 	}//end newObjectHandler()

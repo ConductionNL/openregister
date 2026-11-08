@@ -48,6 +48,7 @@ use OCP\User\Events\UserLoggedInEvent;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Listener\Support\StateFieldRulePlatform;
 
 /**
  * Pins what each guard allows, refuses, grants and queues, written against the
@@ -251,7 +252,7 @@ final class A29SaveGuardsGoldenTest extends TestCase {
 		);
 		$conditions = $this->createStub(StateConditionEvaluatorInterface::class);
 		$conditions->method('refusal')->willReturn($condition);
-		$listener = new StateFieldRuleListener($schemas, $resolver, $conditions, $this->createStub(RuleRunRecorderInterface::class), new NullLogger());
+		$listener = new StateFieldRuleListener(new StateFieldRulePlatform($schemas, $this->createStub(RuleRunRecorderInterface::class), new NullLogger()), $resolver, $conditions);
 
 		$newObject = new ObjectEntity();
 		$newObject->setSchema('7');

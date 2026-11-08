@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -53,8 +54,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 	private function service(?int $retentionDays = null, ?bool $selfClearing = null): SearchTrailService {
 		return new SearchTrailService(
 			$this->trailMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
+			new RegisterSchemaMappers($this->registerMapper, $this->schemaMapper),
 			$retentionDays,
 			$selfClearing
 		);

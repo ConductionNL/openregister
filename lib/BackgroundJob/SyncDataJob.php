@@ -38,6 +38,7 @@ use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
+use OCA\OpenRegister\BackgroundJob\Support\SyncDataServices;
 
 /**
  * Scheduled harvest driver.
@@ -50,23 +51,49 @@ use Throwable;
  */
 class SyncDataJob extends TimedJob {
 	/**
+	 * Source persistence
+	 *
+	 * @var SourceMapperInterface
+	 */
+	private readonly SourceMapperInterface $sourceMapper;
+
+	/**
+	 * Due-source selection
+	 *
+	 * @var SyncScheduleInterface
+	 */
+	private readonly SyncScheduleInterface $scheduleService;
+
+	/**
+	 * Resolves transport per source type
+	 *
+	 * @var SourceFetcherLookupInterface
+	 */
+	private readonly SourceFetcherLookupInterface $fetcherRegistry;
+
+	/**
+	 * Pipeline orchestrator
+	 *
+	 * @var HarvestPipelineServiceInterface
+	 */
+	private readonly HarvestPipelineServiceInterface $pipeline;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory                    $time            Time factory for scheduling
-	 * @param SourceMapperInterface                    $sourceMapper    Source persistence
-	 * @param SyncScheduleInterface           $scheduleService Due-source selection
-	 * @param SourceFetcherLookupInterface    $fetcherRegistry Resolves transport per source type
-	 * @param HarvestPipelineServiceInterface $pipeline        Pipeline orchestrator
+	 * @param SyncDataServices $services Sources, schedule, fetchers and harvest pipeline.
 	 * @param LoggerInterface                 $logger          Logger
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SourceMapperInterface $sourceMapper,
-		private readonly SyncScheduleInterface $scheduleService,
-		private readonly SourceFetcherLookupInterface $fetcherRegistry,
-		private readonly HarvestPipelineServiceInterface $pipeline,
+		SyncDataServices $services,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->sourceMapper = $services->sourceMapper;
+		$this->scheduleService = $services->scheduleService;
+		$this->fetcherRegistry = $services->fetcherRegistry;
+		$this->pipeline = $services->pipeline;
 		parent::__construct(time: $time);
 
 		// Run every hour; each source is gated by its own interval.

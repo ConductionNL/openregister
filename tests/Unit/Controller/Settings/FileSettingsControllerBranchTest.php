@@ -49,7 +49,6 @@ class FileSettingsControllerBranchTest extends TestCase {
 		// and therefore must run against the real controller, not the legacy
 		// double.
 		$this->controller = new FileSettingsController(
-			'openregister',
 			$this->request,
 			$this->container,
 			$this->settingsService,

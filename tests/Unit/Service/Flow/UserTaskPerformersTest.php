@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCA\OpenRegister\Service\Task\TaskFormSources;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -157,8 +158,7 @@ final class UserTaskPerformersTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		return new TaskFormReader(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(TransitionEngine::class),
+			new TaskFormSources($this->createMock(SchemaMapper::class), $this->createMock(TransitionEngine::class)),
 			$this->createMock(IAppManager::class),
 			$l10n
 		);

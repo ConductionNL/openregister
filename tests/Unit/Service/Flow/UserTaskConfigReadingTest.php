@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
+use OCA\OpenRegister\Service\Task\TaskFormSources;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -87,8 +88,7 @@ final class UserTaskConfigReadingTest extends TestCase {
 	 */
 	private function formReader(): TaskFormReader {
 		return new TaskFormReader(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(TransitionEngine::class),
+			new TaskFormSources($this->createMock(SchemaMapper::class), $this->createMock(TransitionEngine::class)),
 			$this->createMock(IAppManager::class),
 			$this->l10n()
 		);

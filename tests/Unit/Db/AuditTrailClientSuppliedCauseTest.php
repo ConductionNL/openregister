@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IDBConnection;
@@ -78,10 +79,9 @@ final class AuditTrailClientSuppliedCauseTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$this->createMock(IDBConnection::class),
-			$container,
 			$this->createMock(IUserSession::class),
 			$this->createMock(IRequest::class),
-			$this->createMock(LoggerInterface::class)
+			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class))
 		);
 	}//end mapper()
 

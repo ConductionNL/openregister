@@ -241,27 +241,77 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	private const MAX_WRITES_KEY = 'flowObjectWriteMaxWrites';
 
 	/**
+	 * Performs every write, with all its ordinary semantics.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * Resolves the configured register (id, uuid or slug).
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registers;
+
+	/**
+	 * Resolves the configured schema (id, uuid or slug).
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * Resolves the run owner to an account.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Holds the instance-wide write-cap default.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Resolves the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objects Performs every write, with all its ordinary semantics.
-	 * @param RegisterMapperInterface $registers Resolves the configured register (id, uuid or slug).
-	 * @param SchemaMapperInterface $schemas Resolves the configured schema (id, uuid or slug).
-	 * @param IUserManager $userManager Resolves the run owner to an account.
-	 * @param IAppConfig $appConfig Holds the instance-wide write-cap default.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param ObjectWriteStores    $stores       Performs every write, and resolves the configured
+	 *                                          register and schema (id, uuid or slug).
+	 * @param ObjectWritePlatform  $platform     Resolves the run owner to an account, and holds
+	 *                                          the instance-wide write-cap default.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 * @param FlowRunSubjectRecorder|null $subjects Records a written object under the declared role.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly IUserManager $userManager,
-		private readonly IAppConfig $appConfig,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		ObjectWriteStores $stores,
+		ObjectWritePlatform $platform,
+		FlowNodePresentation $presentation,
 		private readonly ?FlowRunSubjectRecorder $subjects = null,
 	) {
+		$this->objects     = $stores->objects;
+		$this->registers   = $stores->registers;
+		$this->schemas     = $stores->schemas;
+		$this->userManager = $platform->userManager;
+		$this->appConfig   = $platform->appConfig;
+		$this->l10n        = $presentation->l10n;
+		$this->urls        = $presentation->urls;
 
 	}//end __construct()
 
