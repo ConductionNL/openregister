@@ -159,13 +159,11 @@ class WatcherService implements WatcherServiceInterface {
 
 		$this->forgetMemos();
 
-		return $this->store->mapper->subscribe(
-			userId: $uid,
-			objectUuid: $uuid,
-			register: $register,
-			schema: $schema,
-			notify: $notify
-		);
+		$follow = self::follow(userId: $uid, objectUuid: $uuid);
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+
+		return $this->store->mapper->subscribe(watcher: $follow, notify: $notify);
 	}//end watch()
 
 	/**
@@ -197,13 +195,11 @@ class WatcherService implements WatcherServiceInterface {
 
 		$this->forgetMemos();
 
-		return $this->store->mapper->subscribe(
-			userId: $uid,
-			objectUuid: $uuid,
-			register: $register,
-			schema: $schema,
-			notify: false
-		);
+		$follow = self::follow(userId: $uid, objectUuid: $uuid);
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+
+		return $this->store->mapper->subscribe(watcher: $follow, notify: false);
 	}//end followQuietly()
 
 	/**
@@ -262,12 +258,11 @@ class WatcherService implements WatcherServiceInterface {
 
 		$this->forgetMemos();
 
-		return $this->store->mapper->subscribe(
-			userId: $userId,
-			objectUuid: $this->requireUuid(object: $object),
-			register: $register,
-			schema: $schema
-		);
+		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+
+		return $this->store->mapper->subscribe(watcher: $follow);
 	}//end addWatcher()
 
 	/**
@@ -305,12 +300,11 @@ class WatcherService implements WatcherServiceInterface {
 	): Watcher {
 		$this->forgetMemos();
 
-		return $this->store->mapper->subscribe(
-			userId: $userId,
-			objectUuid: $this->requireUuid(object: $object),
-			register: $register,
-			schema: $schema
-		);
+		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+
+		return $this->store->mapper->subscribe(watcher: $follow);
 	}//end subscribeMentioned()
 
 	/**
@@ -343,13 +337,11 @@ class WatcherService implements WatcherServiceInterface {
 	): Watcher {
 		$this->forgetMemos();
 
-		return $this->store->mapper->subscribe(
-			userId: $userId,
-			objectUuid: $this->requireUuid(object: $object),
-			register: $register,
-			schema: $schema,
-			notify: true
-		);
+		$follow = self::follow(userId: $userId, objectUuid: $this->requireUuid(object: $object));
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+
+		return $this->store->mapper->subscribe(watcher: $follow, notify: true);
 	}//end followAssigned()
 
 	/**
@@ -669,6 +661,21 @@ class WatcherService implements WatcherServiceInterface {
 
 		return $uid;
 	}//end requireCaller()
+
+	/**
+	 * An unsaved follow of one user on one object, for the mapper to subscribe.
+	 *
+	 * @param string $userId The following user.
+	 * @param string $objectUuid The followed object's uuid.
+	 *
+	 * @return Watcher The follow, without register, schema or notify switch.
+	 */
+	private static function follow(string $userId, string $objectUuid): Watcher {
+		$follow = new Watcher();
+		$follow->setUserId($userId);
+		$follow->setObjectUuid($objectUuid);
+		return $follow;
+	}//end follow()
 
 	/**
 	 * The object's uuid, or a refusal.

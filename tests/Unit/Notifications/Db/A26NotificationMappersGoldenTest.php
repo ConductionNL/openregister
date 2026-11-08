@@ -39,6 +39,7 @@ use OCA\OpenRegister\Notifications\Db\ReferencePatternMapper;
 use OCA\OpenRegister\Notifications\Db\TextBlockMapper;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Db\TimelineKindMapper;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\AppFramework\Db\Entity;
@@ -289,11 +290,11 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'watcher countsByObject'         => [$watchers, 'countsByObject', [10], [self::ROWS_TWO], false],
 			'watcher countForObject'         => [$watchers, 'countForObject', ['o-1'], [[self::COUNT_ROW]], false],
 			'watcher countForObject none'    => [$watchers, 'countForObject', ['o-1'], [[]], false],
-			'watcher subscribe existing'     => [$watchers, 'subscribe', ['alice', 'o-1'], [[self::ROW]], false],
-			'watcher subscribe mute'         => [$watchers, 'subscribe', ['alice', 'o-1', null, null, false], [[self::ROW]], false],
-			'watcher subscribe insert'       => [$watchers, 'subscribe', ['alice', 'o-1', 'reg', 'sch', null], [[]], false],
-			'watcher subscribe race'         => [$racing, 'subscribe', ['alice', 'o-1', null, null, false], [[], [self::ROW]], false],
-			'watcher subscribe race lost'    => [$racing, 'subscribe', ['alice', 'o-1'], [[], []], false],
+			'watcher subscribe existing'     => [$watchers, 'subscribe', [self::follow('alice', 'o-1')], [[self::ROW]], false],
+			'watcher subscribe mute'         => [$watchers, 'subscribe', [self::follow('alice', 'o-1'), false], [[self::ROW]], false],
+			'watcher subscribe insert'       => [$watchers, 'subscribe', [self::follow('alice', 'o-1', 'reg', 'sch'), null], [[]], false],
+			'watcher subscribe race'         => [$racing, 'subscribe', [self::follow('alice', 'o-1'), false], [[], [self::ROW]], false],
+			'watcher subscribe race lost'    => [$racing, 'subscribe', [self::follow('alice', 'o-1')], [[], []], false],
 			'watcher unsubscribe'            => [$watchers, 'unsubscribe', ['alice', 'o-1'], [], false],
 			'watcher deleteByObject'         => [$watchers, 'deleteByObject', ['o-1'], [], false],
 			'presence findOne found'         => [$presence, 'findOne', ['alice', 'o-1'], [[self::ROW]], false],
@@ -358,4 +359,16 @@ class A26NotificationMappersGoldenTest extends TestCase {
 
 		return $value;
 	}//end render()
+
+	/**
+	 * An unsaved follow, built the way the mapper's callers build one.
+	 */
+	private static function follow(string $userId, string $objectUuid, ?string $register = null, ?string $schema = null): Watcher {
+		$follow = new Watcher();
+		$follow->setUserId($userId);
+		$follow->setObjectUuid($objectUuid);
+		$follow->setRegister($register);
+		$follow->setSchema($schema);
+		return $follow;
+	}//end follow()
 }//end class
