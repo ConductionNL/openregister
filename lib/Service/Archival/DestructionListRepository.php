@@ -109,7 +109,11 @@ class DestructionListRepository implements DestructionListRepositoryInterface {
 				return [];
 			}
 
-			return $this->mappers->objectMapper->findAll(filters: $this->statusFilter(statuses: $statuses), register: $scope['register'], schema: $scope['schema']);
+			return $this->mappers->objectMapper->findAll(
+				filters: $this->statusFilter(statuses: $statuses),
+				register: $scope['register'],
+				schema: $scope['schema']
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('[DestructionListRepository] Could not read destruction lists: ' . $e->getMessage());
 			return [];
