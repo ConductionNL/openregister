@@ -51,7 +51,7 @@ use OCA\OpenRegister\Controller\ChatHealthController;
 use OCA\OpenRegister\Controller\ChatStreamController;
 use OCA\OpenRegister\Controller\ConversationController;
 use OCA\OpenRegister\Middleware\Exception\ChatProxiedResponseException;
-use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
+use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
@@ -94,7 +94,7 @@ class ChatCompatMiddleware extends Middleware {
 
 	/**
 	 * Controllers proxied via a redirect rather than a body relay — see
-	 * ChatProxyHandler::buildRedirectResponse()'s docblock for why.
+	 * ChatProxyHandlerInterface::buildRedirectResponse()'s docblock for why.
 	 *
 	 * @var array<int, class-string>
 	 */
@@ -131,11 +131,11 @@ class ChatCompatMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param ChatProxyHandler $proxyHandler Resolves config, rewrites paths, performs the outbound calls.
+	 * @param ChatProxyHandlerInterface $proxyHandler Resolves config, rewrites paths, performs the outbound calls.
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly ChatProxyHandler $proxyHandler,
+		private readonly ChatProxyHandlerInterface $proxyHandler,
 	) {
 	}//end __construct()
 

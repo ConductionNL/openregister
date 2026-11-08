@@ -104,6 +104,8 @@ use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
+use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
+use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
@@ -362,6 +364,8 @@ use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
+use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
+use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\MatrixRowKeys;
@@ -370,6 +374,8 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\RevealFlusher;
+use OCA\OpenRegister\Service\Rbac\RevealFlusherInterface;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
@@ -807,17 +813,20 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\SaveObjectInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectWriterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
+		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\SchemaUriResolverInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\TransitionAuthorizationInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\ValidateObjectInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\ValidationErrorResponseInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\WriteConstraintValidatorInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		AgentPrincipalResolverInterface::class => AgentPrincipalResolver::class,
+		AnonymousEnvelopeInterface::class => AnonymousEnvelope::class,
 		ApiCallRecorderInterface::class => ApiCallRecorder::class,
 		ApiVersionNegotiatorInterface::class => ApiVersionNegotiator::class,
 		CacheHandlerInterface::class => CacheHandler::class,
 		CallerPolicyInterface::class => CallerPolicy::class,
 		CallerRateLimiterInterface::class => CallerRateLimiter::class,
+		ChatProxyHandlerInterface::class => ChatProxyHandler::class,
 		CodedValueGuardInterface::class => CodedValueGuard::class,
 		ConceptShapeGuardInterface::class => ConceptShapeGuard::class,
 		ConfigSetShareableConfigTypeInterface::class => ConfigSetShareableConfigType::class,
@@ -831,6 +840,7 @@ final class ContractBindings {
 		PermissionHandlerInterface::class => PermissionHandler::class,
 		ProblemDetailsBuilderInterface::class => ProblemDetailsBuilder::class,
 		RegisterSchemaShareableConfigTypeInterface::class => RegisterSchemaShareableConfigType::class,
+		RevealFlusherInterface::class => RevealFlusher::class,
 		SaveObjectInterface::class => SaveObject::class,
 		SaveObjectRelationScannerInterface::class => SaveObject::class,
 		SaveObjectWriterInterface::class => SaveObject::class,
