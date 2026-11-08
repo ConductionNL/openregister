@@ -36,7 +36,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
-use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
+use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
+use OCA\OpenRegister\Service\Archival\ArchivalNominationTriggerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -52,13 +53,13 @@ class ArchivalNominationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ArchivalNominationService $nominations  Derives and writes the nomination.
+	 * @param ArchivalNominationTriggerInterface $nominations  Derives and writes the nomination.
 	 * @param SchemaMapperInterface              $schemaMapper Loads the transitioned object's schema.
 	 * @param MagicMapperInterface               $objectMapper Persists the nominated record.
 	 * @param LoggerInterface           $logger       Where a failure is reported.
 	 */
 	public function __construct(
-		private readonly ArchivalNominationService $nominations,
+		private readonly ArchivalNominationTriggerInterface $nominations,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
@@ -114,7 +115,7 @@ class ArchivalNominationListener implements IEventListener {
 	private function nominateAndPersist(ObjectEntity $object, Schema $schema): void {
 		try {
 			$nomination = $this->nominations->nominate(object: $object, schema: $schema, trigger: 'closure');
-			if (($nomination['status'] ?? null) === ArchivalNominationService::STATUS_NOT_APPLICABLE) {
+			if (($nomination['status'] ?? null) === ArchivalNominationServiceInterface::STATUS_NOT_APPLICABLE) {
 				return;
 			}
 

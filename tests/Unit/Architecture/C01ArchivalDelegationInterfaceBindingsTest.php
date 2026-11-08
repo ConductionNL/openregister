@@ -113,9 +113,6 @@ final class C01ArchivalDelegationInterfaceBindingsTest extends TestCase {
 			'Files/Service/TextExtraction/EntityRecognitionHandler.php',
 		],
 		DestructionService::class => ['Controller/RetentionController.php', 'Controller/Support/RetentionDomain.php'],
-		ArchivalNominationService::class => ['Listener/ArchivalNominationListener.php'],
-		DestructionReviewService::class => ['BackgroundJob/DestructionListRun.php', 'BackgroundJob/ReviewReminderJob.php'],
-		DestructionListRepository::class => ['BackgroundJob/ReviewReminderJob.php'],
 	];
 
 	/**
