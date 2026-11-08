@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\IL10N;
+use OCP\SystemTag\ISystemTag;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 
@@ -142,24 +143,34 @@ class TagsProvider extends AbstractIntegrationProvider {
 				return [];
 			}
 
-			$tags = $this->tagManager->getTagsByIds($ids);
-			$rows = [];
-			foreach ($tags as $tag) {
-				$rows[] = [
-					'id' => (string)$tag->getId(),
-					'name' => $tag->getName(),
-					'visibility' => $tag->isUserVisible(),
-					'assignable' => $tag->isUserAssignable(),
-				];
-			}
-
-			return $rows;
+			return self::tagRows(tags: $this->tagManager->getTagsByIds($ids));
 		} catch (\Throwable $e) {
 			// The object may simply have no tags or the mapping might
 			// not yet exist. Surface an empty list rather than 500.
 			return [];
 		}//end try
 	}//end list()
+
+	/**
+	 * The leaf rows of the object's tags, in the manager's order.
+	 *
+	 * @param iterable<ISystemTag> $tags The tags.
+	 *
+	 * @return array<int,array<string,mixed>> One row per tag.
+	 */
+	private static function tagRows(iterable $tags): array {
+		$rows = [];
+		foreach ($tags as $tag) {
+			$rows[] = [
+				'id' => (string)$tag->getId(),
+				'name' => $tag->getName(),
+				'visibility' => $tag->isUserVisible(),
+				'assignable' => $tag->isUserAssignable(),
+			];
+		}
+
+		return $rows;
+	}//end tagRows()
 
 	/**
 	 * Mutation methods routed through the existing TagsController for

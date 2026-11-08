@@ -198,6 +198,29 @@ class TasksProvider extends AbstractIntegrationProvider {
 		));
 		$objectTitle = $objectEntity?->getName() ?? $objectId;
 
+		$task = $this->taskService->createTask(
+			registerId: $registerEntity->getId(),
+			schemaId: $schemaEntity->getId(),
+			objectUuid: $objectId,
+			objectTitle: $objectTitle,
+			data: self::taskData(payload: $payload)
+		);
+
+		if ($task === null) {
+			throw new RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
+		}
+
+		return $task;
+	}//end create()
+
+	/**
+	 * The VTODO fields of a create payload, with their defaults; `due` only when given.
+	 *
+	 * @param array<string, mixed> $payload The create payload.
+	 *
+	 * @return array<string, mixed> The task data.
+	 */
+	private static function taskData(array $payload): array {
 		$data = [
 			'summary' => (string)($payload['summary'] ?? ''),
 			'description' => (string)($payload['description'] ?? ''),
@@ -208,20 +231,8 @@ class TasksProvider extends AbstractIntegrationProvider {
 			$data['due'] = (string)$payload['due'];
 		}
 
-		$task = $this->taskService->createTask(
-			registerId: $registerEntity->getId(),
-			schemaId: $schemaEntity->getId(),
-			objectUuid: $objectId,
-			objectTitle: $objectTitle,
-			data: $data
-		);
-
-		if ($task === null) {
-			throw new RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
-		}
-
-		return $task;
-	}//end create()
+		return $data;
+	}//end taskData()
 
 	/**
 	 * Update a VTODO task linked to the OR object.

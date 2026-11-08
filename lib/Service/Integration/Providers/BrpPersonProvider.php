@@ -447,19 +447,8 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function extractPersonen(array $response): array {
-		$list = [];
-		if (isset($response['personen']) === true && is_array($response['personen']) === true) {
-			$list = $response['personen'];
-		} elseif (isset($response['_embedded']['personen']) === true
-			&& is_array($response['_embedded']['personen']) === true
-		) {
-			$list = $response['_embedded']['personen'];
-		} elseif (array_is_list($response) === true) {
-			$list = $response;
-		}
-
 		$out = [];
-		foreach ($list as $row) {
+		foreach ($this->personenList(response: $response) as $row) {
 			if (is_array($row) === true) {
 				$out[] = $row;
 			}
@@ -467,4 +456,26 @@ class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPerson
 
 		return $out;
 	}//end extractPersonen()
+
+	/**
+	 * The persons list of a response: `personen`, else `_embedded.personen`,
+	 * else the response itself when it is a bare list, else nothing.
+	 *
+	 * @param array<string,mixed> $response Decoded source response (HAL+JSON).
+	 *
+	 * @return array<int|string,mixed> The list, rows not yet checked.
+	 */
+	private function personenList(array $response): array {
+		foreach ([($response['personen'] ?? null), ($response['_embedded']['personen'] ?? null)] as $candidate) {
+			if (is_array($candidate) === true) {
+				return $candidate;
+			}
+		}
+
+		if (array_is_list($response) === true) {
+			return $response;
+		}
+
+		return [];
+	}//end personenList()
 }//end class
