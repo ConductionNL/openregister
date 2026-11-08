@@ -108,6 +108,20 @@ interface SearchTrailMapperInterface {
 	): SearchTrail;
 
 	/**
+	 * Get search statistics for the given time period
+	 *
+	 * @param DateTime|null $from Start date filter
+	 * @param DateTime|null $to End date filter
+	 *
+	 * @return (float|int)[] Array of search statistics
+	 *
+	 * @psalm-return array{total_searches: int, total_results: int,
+	 *     avg_results_per_search: float, avg_response_time: float,
+	 *     non_empty_searches: int}
+	 */
+	public function getSearchStatistics(?DateTime $from = null, ?DateTime $to = null): array;
+
+	/**
 	 * Get most popular search terms
 	 *
 	 * @param int $limit Maximum number of terms to return
@@ -162,6 +176,52 @@ interface SearchTrailMapperInterface {
 	 *     avg_results: float, avg_response_time: float}>
 	 */
 	public function getUserAgentStatistics(int $limit = 10, ?DateTime $from = null, ?DateTime $to = null): array;
+
+	/**
+	 * Get count of unique search terms for the given time period
+	 *
+	 * @param DateTime|null $from Start date filter
+	 * @param DateTime|null $to End date filter
+	 *
+	 * @return int Number of unique search terms
+	 *
+	 * @psalm-return int<0, max>
+	 */
+	public function getUniqueSearchTermsCount(?DateTime $from = null, ?DateTime $to = null): int;
+
+	/**
+	 * Get count of unique users for the given time period
+	 *
+	 * @param DateTime|null $from Start date filter
+	 * @param DateTime|null $to End date filter
+	 *
+	 * @return int Number of unique users
+	 *
+	 * @psalm-return int<0, max>
+	 */
+	public function getUniqueUsersCount(?DateTime $from = null, ?DateTime $to = null): int;
+
+	/**
+	 * Get average searches per session for the given time period
+	 *
+	 * @param DateTime|null $from Start date filter
+	 * @param DateTime|null $to End date filter
+	 *
+	 * @return float Average searches per session
+	 */
+	public function getAverageSearchesPerSession(?DateTime $from = null, ?DateTime $to = null): float;
+
+	/**
+	 * Get average object views per session for the given time period
+	 *
+	 * This method queries the audit trail table to count 'read' actions per session
+	 *
+	 * @param DateTime|null $from Start date filter
+	 * @param DateTime|null $to End date filter
+	 *
+	 * @return float Average object views per session
+	 */
+	public function getAverageObjectViewsPerSession(?DateTime $from = null, ?DateTime $to = null): float;
 
 	/**
 	 * Clear expired search trail logs from the database

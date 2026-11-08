@@ -50,7 +50,12 @@ final class C04InterfaceBindingsTest extends TestCase {
 	 */
 	public static function guardedInterfaces(): array {
 		$rows = [];
-		foreach (glob(self::LIB . '/Db/*Interface.php') ?: [] as $path) {
+		$paths = glob(pattern: self::LIB . '/Db/*Interface.php');
+		if ($paths === false) {
+			$paths = [];
+		}
+
+		foreach ($paths as $path) {
 			if (str_contains((string)file_get_contents($path), self::MARKER) === false) {
 				continue;
 			}
@@ -69,7 +74,7 @@ final class C04InterfaceBindingsTest extends TestCase {
 	 * @return void
 	 */
 	public function testSomeInterfaceIsGuarded(): void {
-		$this->assertNotSame([], self::guardedInterfaces());
+		$this->assertNotSame(expected: [], actual: self::guardedInterfaces());
 	}//end testSomeInterfaceIsGuarded()
 
 	/**
@@ -82,10 +87,10 @@ final class C04InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('guardedInterfaces')]
 	public function testDbRegistrarBindsTheInterfaceToItsMapper(string $interface, ?string $class): void {
-		$this->assertTrue(interface_exists($interface), $interface . ' exists');
-		$this->assertNotNull($class, $interface . ' is bound in DbRegistrar');
-		$this->assertStringStartsWith('OCA\\OpenRegister\\Db\\', (string)$class);
-		$this->assertTrue(is_subclass_of((string)$class, $interface), $class . ' implements ' . $interface);
+		$this->assertTrue(condition: interface_exists(interface: $interface), message: $interface . ' exists');
+		$this->assertNotNull(actual: $class, message: $interface . ' is bound in DbRegistrar');
+		$this->assertStringStartsWith(prefix: 'OCA\\OpenRegister\\Db\\', string: (string)$class);
+		$this->assertTrue(condition: is_subclass_of(object_or_class: (string)$class, class: $interface), message: $class . ' implements ' . $interface);
 	}//end testDbRegistrarBindsTheInterfaceToItsMapper()
 
 	/**
@@ -112,7 +117,7 @@ final class C04InterfaceBindingsTest extends TestCase {
 		}
 
 		sort($naming);
-		$this->assertSame([], $naming, $class . ' is named outside lib/Db; type the caller against ' . $interface);
+		$this->assertSame(expected: [], actual: $naming, message: $class . ' is named outside lib/Db; type the caller against ' . $interface);
 	}//end testNoFileOutsideDbNamesTheMapper()
 
 	/**
@@ -140,7 +145,7 @@ final class C04InterfaceBindingsTest extends TestCase {
 
 			$names[] = match ($token[0]) {
 				T_NAME_FULLY_QUALIFIED => ltrim($token[1], '\\'),
-				T_NAME_QUALIFIED => str_starts_with($token[1], 'OCA\\') === true ? $token[1] : $namespace . '\\' . $token[1],
+				T_NAME_QUALIFIED => $this->qualified(name: $token[1], namespace: $namespace),
 				T_STRING => $namespace . '\\' . $token[1],
 				T_CONSTANT_ENCAPSED_STRING => ltrim(str_replace('\\\\', '\\', trim($token[1], '\'"')), '\\'),
 				default => null,
@@ -149,4 +154,20 @@ final class C04InterfaceBindingsTest extends TestCase {
 
 		return array_values(array_filter($names));
 	}//end namesIn()
+
+	/**
+	 * A qualified name as written when it starts at OCA, else resolved against the namespace.
+	 *
+	 * @param string $name      The qualified name.
+	 * @param string $namespace The file's namespace.
+	 *
+	 * @return string
+	 */
+	private function qualified(string $name, string $namespace): string {
+		if (str_starts_with($name, 'OCA\\') === true) {
+			return $name;
+		}
+
+		return $namespace . '\\' . $name;
+	}//end qualified()
 }//end class
