@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\BackgroundJob;
 
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
@@ -193,8 +194,8 @@ class TaskScheduledNotificationJobCharacterisationTest extends TestCase
         );
         $upserts = [];
         $this->dedupe->method('upsert')->willReturnCallback(
-            function (int $schemaId, string $ruleKey, string $uuid, string $fingerprint, DateTime $now, bool $dispatched) use (&$upserts) {
-                $upserts[] = [$schemaId, $ruleKey, $uuid, $fingerprint, $now->format('c'), $dispatched];
+            function (NotificationDedupeKey $key, string $fingerprint, DateTime $now, bool $dispatched) use (&$upserts) {
+                $upserts[] = [$key->schemaId, $key->ruleKey, $key->objectUuid, $fingerprint, $now->format('c'), $dispatched];
                 return new NotificationDedupeState();
             }
         );

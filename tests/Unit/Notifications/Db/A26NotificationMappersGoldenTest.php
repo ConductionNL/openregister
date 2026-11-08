@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeKey;
 use DateTime;
 use OCA\OpenRegister\Notifications\Db\BroadcastMessage;
 use OCA\OpenRegister\Notifications\Db\BroadcastWindow;
@@ -134,12 +135,12 @@ class A26NotificationMappersGoldenTest extends TestCase {
 			'dedupe findOne found'          => [$dedupe, 'findOne', [2, 'r', 'o-1'], [[self::ROW]], false],
 			'dedupe findOne missing'        => [$dedupe, 'findOne', [2, 'r', 'o-1'], [[]], false],
 			'dedupe findOne failure'        => [$dedupe, 'findOne', [2, 'r', 'o-1'], [], true],
-			'dedupe upsert existing'        => [$dedupe, 'upsert', [2, 'r', 'o-1', 'fp', $at, false], [[self::ROW]], false],
-			'dedupe upsert existing sent'   => [$dedupe, 'upsert', [2, 'r', 'o-1', 'fp', $at, true], [[self::ROW]], false],
-			'dedupe upsert insert'          => [$dedupe, 'upsert', [2, 'r', 'o-1', 'fp', $at, false], [[]], false],
-			'dedupe upsert race reread'     => [$racing(true), 'upsert', [2, 'r', 'o-1', 'fp', $at, true], [[], [self::ROW]], false],
-			'dedupe upsert race no row'     => [$racing(true), 'upsert', [2, 'r', 'o-1', 'fp', $at, true], [[], []], false],
-			'dedupe upsert other failure'   => [$racing(false), 'upsert', [2, 'r', 'o-1', 'fp', $at, true], [[]], false],
+			'dedupe upsert existing'        => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, false], [[self::ROW]], false],
+			'dedupe upsert existing sent'   => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[self::ROW]], false],
+			'dedupe upsert insert'          => [$dedupe, 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, false], [[]], false],
+			'dedupe upsert race reread'     => [$racing(true), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[], [self::ROW]], false],
+			'dedupe upsert race no row'     => [$racing(true), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[], []], false],
+			'dedupe upsert other failure'   => [$racing(false), 'upsert', [new NotificationDedupeKey(2, 'r', 'o-1'), 'fp', $at, true], [[]], false],
 			'dedupe deleteByObject'         => [$dedupe, 'deleteByObject', ['o-1'], [], false],
 			'dedupe deleteByObject failure' => [$dedupe, 'deleteByObject', ['o-1'], [], true],
 			'dedupe deleteByRule'           => [$dedupe, 'deleteByRule', [2, 'r'], [], false],
