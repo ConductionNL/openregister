@@ -510,6 +510,8 @@ final class ContractBindings {
 		RuleReplayServiceInterface::class => RuleReplayService::class,
 		RuleRunRecorderInterface::class => RuleRunRecorder::class,
 		RuleTrialServiceInterface::class => RuleTrialService::class,
+		\OCA\OpenRegister\Service\Flow\FlowTenantMembershipInterface::class => \OCA\OpenRegister\Service\Flow\FlowTenantMembership::class,
+		\OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkSubject::class,
 		RegisterDescriptorServiceInterface::class => RegisterDescriptorService::class,
 		RegisterResolverServiceInterface::class => RegisterResolverService::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
