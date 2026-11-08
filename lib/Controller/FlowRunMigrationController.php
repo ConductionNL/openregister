@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FlowRunMigrationControllerServices;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
@@ -48,27 +49,51 @@ use OCP\IUserSession;
 class FlowRunMigrationController extends Controller {
 
 	/**
+	 * The run store.
+	 *
+	 * @var FlowRunMapperInterface
+	 */
+	private readonly FlowRunMapperInterface $mapper;
+
+	/**
+	 * Who is asking.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Whether the caller may run this flow at all.
+	 *
+	 * @var FlowRunnableGuard
+	 */
+	private readonly FlowRunnableGuard $guard;
+
+	/**
+	 * Moves runs onto another version. Nullable; absent, the endpoints report
+	 * the surface unavailable rather than migrating unvalidated.
+	 *
+	 * @var ?FlowRunMigrationServiceInterface
+	 */
+	private readonly ?FlowRunMigrationServiceInterface $migrations;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                       $appName     The app id.
 	 * @param IRequest                     $request     The request.
-	 * @param FlowRunMapperInterface                $mapper      The run store.
-	 * @param IUserSession                 $userSession Who is asking.
-	 * @param FlowRunnableGuard            $guard       Whether the caller may run this flow at all.
-	 * @param FlowRunMigrationServiceInterface|null $migrations  Moves runs onto another version. Nullable and
-	 *                                                  appended last; absent, the endpoints report the
-	 *                                                  surface unavailable rather than migrating
-	 *                                                  unvalidated.
+	 * @param FlowRunMigrationControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FlowRunMapperInterface $mapper,
-		private readonly IUserSession $userSession,
-		private readonly FlowRunnableGuard $guard,
-		private readonly ?FlowRunMigrationServiceInterface $migrations = null,
+		FlowRunMigrationControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->mapper = $services->mapper;
+		$this->userSession = $services->userSession;
+		$this->guard = $services->guard;
+		$this->migrations = $services->migrations;
 	}//end __construct()
 
 	/**
