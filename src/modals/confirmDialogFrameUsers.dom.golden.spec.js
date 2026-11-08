@@ -14,6 +14,8 @@ import DeleteApplication from './application/DeleteApplication.vue'
 import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
 import DeleteEndpoint from './endpoint/DeleteEndpoint.vue'
 import RemoveUserDialog from './organisation/RemoveUserDialog.vue'
+import ClearCacheModal from './settings/ClearCacheModal.vue'
+import RebaseConfirmationModal from './settings/RebaseConfirmationModal.vue'
 import DeleteSchemaObjects from './schema/DeleteSchemaObjects.vue'
 import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
 import DeleteView from './view/DeleteView.vue'
@@ -31,6 +33,7 @@ jest.mock('vue-material-design-icons/Close.vue', () => mockIcon('Close'))
 jest.mock('vue-material-design-icons/Delete.vue', () => mockIcon('Delete'))
 jest.mock('vue-material-design-icons/DeleteSweep.vue', () => mockIcon('DeleteSweep'))
 jest.mock('vue-material-design-icons/LinkVariantOff.vue', () => mockIcon('LinkVariantOff'))
+jest.mock('vue-material-design-icons/Refresh.vue', () => mockIcon('Refresh'))
 jest.mock('vue-material-design-icons/TrashCanOutline.vue', () =>
 	mockIcon('TrashCanOutline'),
 )
@@ -215,6 +218,18 @@ const DIALOGS = {
 		component: RemoveConnectionDialog,
 		props: { show: true, name: 'Dune' },
 		busyProps: { removing: true },
+		fields: {},
+	},
+	rebaseModal: {
+		component: RebaseConfirmationModal,
+		props: { show: true },
+		busyProps: { rebasing: true },
+		fields: {},
+	},
+	clearCacheModal: {
+		component: ClearCacheModal,
+		props: { show: true, cacheType: 'facet' },
+		busyProps: { clearing: true },
 		fields: {},
 	},
 	schemaProperty: {
