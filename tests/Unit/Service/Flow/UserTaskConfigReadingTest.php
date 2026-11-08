@@ -29,6 +29,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
@@ -188,14 +189,16 @@ final class UserTaskConfigReadingTest extends TestCase {
 	 */
 	public function testACommaSeparatedStringIsAList(): void {
 		$data = $this->config()->taskData(
-			config: [
-				'title' => 'Approve it',
-				'assignee' => 'alice',
-				'outcomes' => 'approved, rejected',
-				'candidateUsers' => 'alice, bob',
-			],
-			items: [['json' => []]],
-			nodeId: 'ask',
+			step: new UserTaskStep(
+				items: [['json' => []]],
+				config: [
+					'title' => 'Approve it',
+					'assignee' => 'alice',
+					'outcomes' => 'approved, rejected',
+					'candidateUsers' => 'alice, bob',
+				],
+				nodeId: 'ask'
+			),
 			nodeType: 'openregister.user-task'
 		);
 
@@ -213,13 +216,15 @@ final class UserTaskConfigReadingTest extends TestCase {
 	 */
 	public function testEmptyAndNonScalarEntriesAreDropped(): void {
 		$data = $this->config()->taskData(
-			config: [
-				'title' => 'Approve it',
-				'assignee' => 'alice',
-				'candidateUsers' => ['alice', '  ', ['nested'], 'bob'],
-			],
-			items: [['json' => []]],
-			nodeId: 'ask',
+			step: new UserTaskStep(
+				items: [['json' => []]],
+				config: [
+					'title' => 'Approve it',
+					'assignee' => 'alice',
+					'candidateUsers' => ['alice', '  ', ['nested'], 'bob'],
+				],
+				nodeId: 'ask'
+			),
 			nodeType: 'openregister.user-task'
 		);
 
@@ -233,9 +238,11 @@ final class UserTaskConfigReadingTest extends TestCase {
 	 */
 	public function testAnEmptyListIsStoredAsNull(): void {
 		$data = $this->config()->taskData(
-			config: ['title' => 'Approve it', 'assignee' => 'alice', 'candidateGroups' => '  ,  '],
-			items: [['json' => []]],
-			nodeId: 'ask',
+			step: new UserTaskStep(
+				items: [['json' => []]],
+				config: ['title' => 'Approve it', 'assignee' => 'alice', 'candidateGroups' => '  ,  '],
+				nodeId: 'ask'
+			),
 			nodeType: 'openregister.user-task'
 		);
 
@@ -253,13 +260,15 @@ final class UserTaskConfigReadingTest extends TestCase {
 	 */
 	public function testTemplatesRenderAgainstTheFirstRecord(): void {
 		$data = $this->config()->taskData(
-			config: [
-				'title' => 'Approve {{ subject }}',
-				'assignee' => 'alice',
-				'description' => 'About {{ subject }}',
-			],
-			items: [['json' => ['subject' => 'the objection']]],
-			nodeId: 'ask',
+			step: new UserTaskStep(
+				items: [['json' => ['subject' => 'the objection']]],
+				config: [
+					'title' => 'Approve {{ subject }}',
+					'assignee' => 'alice',
+					'description' => 'About {{ subject }}',
+				],
+				nodeId: 'ask'
+			),
 			nodeType: 'openregister.user-task'
 		);
 
@@ -277,9 +286,11 @@ final class UserTaskConfigReadingTest extends TestCase {
 	 */
 	public function testAnUnconfiguredFieldStaysNull(): void {
 		$data = $this->config()->taskData(
-			config: ['title' => 'Approve it', 'assignee' => 'alice', 'description' => '   '],
-			items: [['json' => []]],
-			nodeId: 'ask',
+			step: new UserTaskStep(
+				items: [['json' => []]],
+				config: ['title' => 'Approve it', 'assignee' => 'alice', 'description' => '   '],
+				nodeId: 'ask'
+			),
 			nodeType: 'openregister.user-task'
 		);
 
