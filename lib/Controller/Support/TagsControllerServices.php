@@ -29,6 +29,8 @@ use OCA\OpenRegister\Service\ObjectService;
 /**
  * The services of TagsController, bundled so its constructor stays small.
  *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-4
+ *
  */
 final class TagsControllerServices {
 	/**

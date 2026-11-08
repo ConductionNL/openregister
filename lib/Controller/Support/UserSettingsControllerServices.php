@@ -28,6 +28,8 @@ use Psr\Log\LoggerInterface;
 /**
  * The services of UserSettingsController, bundled so its constructor stays small.
  *
+ * @spec openspec/specs/auth-system/spec.md
+ *
  */
 final class UserSettingsControllerServices {
 	/**
