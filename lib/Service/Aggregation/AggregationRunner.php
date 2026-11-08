@@ -1057,11 +1057,9 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 *
 	 * @return array<string, mixed> The envelope with translatable group keys projected.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *   The method is a chain of cheap short-circuit guards (no groups /
-	 *   no groupBy field / nothing translatable / _translations=all) before
-	 *   the projection loop; each guard adds a branch but keeps the hot
-	 *   path a single early return.
+	 * The method is a chain of cheap short-circuit guards (no groups /
+	 * no groupBy field / nothing translatable / _translations=all) before
+	 * the projection, which TranslatableGroupKeyProjection carries out.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/specs/aggregation-api/spec.md
@@ -1076,21 +1074,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return $envelope;
 		}
 
-		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
-		if (count($groupFields) === 0) {
-			return $envelope;
-		}
-
-		// Only project when at least one grouped field is actually
-		// translatable. getTranslatableProperties() is cheap and this keeps
-		// NON-translatable grouped fields byte-for-byte unchanged.
-		$translatableProps = $this->translationHandler->getTranslatableProperties(schema: $schema);
-		$translatableGroups = array_values(
-			array_filter(
-				$groupFields,
-				static fn (string $groupField): bool => in_array($groupField, $translatableProps, true)
-			)
-		);
+		$translatableGroups = $this->translatableGroupFields(schema: $schema, groupBy: $groupBy);
 		if (count($translatableGroups) === 0) {
 			return $envelope;
 		}
@@ -1100,126 +1084,43 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return $envelope;
 		}
 
-		foreach ($envelope['groups'] as $index => $group) {
-			if (is_array($group) === false) {
-				continue;
-			}
-
-			$envelope['groups'][$index] = $this->projectGroupRowKeys(
-				group: $group,
-				translatableGroups: $translatableGroups,
-				schema: $schema,
-				register: $register
-			);
-		}
-
+		$projection = new TranslatableGroupKeyProjection(
+			translations: $this->translationHandler,
+			schema: $schema,
+			register: $register,
+			translatableFields: $translatableGroups
+		);
+		$envelope['groups'] = $projection->projectGroups(groups: $envelope['groups']);
 		return $envelope;
 	}//end projectTranslatableGroupKeys()
 
 	/**
-	 * Project the translatable key(s) of ONE grouped row.
+	 * The grouped fields that are translatable on the schema, in group order.
 	 *
-	 * Handles both row shapes: the composite `keys` map (every translatable
-	 * member projected against its own field name) and the legacy scalar
-	 * `key`. A row carrying neither is returned untouched.
+	 * Only project when at least one grouped field is actually translatable.
+	 * getTranslatableProperties() is cheap, is not asked when nothing is
+	 * grouped, and this keeps NON-translatable grouped fields byte-for-byte
+	 * unchanged.
 	 *
-	 * @param array<string, mixed> $group The grouped row.
-	 * @param array<int, string> $translatableGroups Group fields that ARE translatable.
-	 * @param Schema $schema The schema being aggregated.
-	 * @param Register $register The owning register (language config).
+	 * @param Schema                    $schema  The schema being aggregated.
+	 * @param array<string, mixed>|null $groupBy The group spec, in any accepted spelling.
 	 *
-	 * @return array<string, mixed> The row with its translatable key(s) projected.
-	 *
-	 * @spec openspec/specs/aggregation-api/spec.md
+	 * @return array<int, string>
 	 */
-	private function projectGroupRowKeys(
-		array $group,
-		array $translatableGroups,
-		Schema $schema,
-		Register $register,
-	): array {
-		// Composite groupBy: project every translatable member of the
-		// `keys` map against its OWN field name.
-		if (isset($group['keys']) === true && is_array($group['keys']) === true) {
-			foreach ($translatableGroups as $groupField) {
-				if (array_key_exists($groupField, $group['keys']) === false) {
-					continue;
-				}
-
-				$group['keys'][$groupField] = $this->projectSingleTranslatableKey(
-					rawKey: $group['keys'][$groupField],
-					groupField: $groupField,
-					schema: $schema,
-					register: $register
-				);
-			}
-
-			return $group;
+	private function translatableGroupFields(Schema $schema, ?array $groupBy): array {
+		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
+		if (count($groupFields) === 0) {
+			return [];
 		}
 
-		// Single-field groupBy: the legacy scalar `key` shape.
-		if (array_key_exists('key', $group) === false) {
-			return $group;
-		}
-
-		$group['key'] = $this->projectSingleTranslatableKey(
-			rawKey: $group['key'],
-			groupField: $translatableGroups[0],
-			schema: $schema,
-			register: $register
+		$translatableProps = $this->translationHandler->getTranslatableProperties(schema: $schema);
+		return array_values(
+			array_filter(
+				$groupFields,
+				static fn (string $groupField): bool => in_array($groupField, $translatableProps, true)
+			)
 		);
-
-		return $group;
-	}//end projectGroupRowKeys()
-
-	/**
-	 * Project a single grouped key value to the negotiated language.
-	 *
-	 * Normalizes the raw key to a language-keyed map (native path yields a
-	 * JSON string, PHP path an array), then delegates to
-	 * {@see TranslationHandler::resolveTranslationsForRender()} by wrapping
-	 * the map under the grouped field name and reading the resolved value
-	 * back. Non-map keys (already scalar, e.g. legacy untranslated rows) are
-	 * returned unchanged.
-	 *
-	 * @param mixed $rawKey The raw group key (JSON string or array).
-	 * @param string $groupField The grouped field name.
-	 * @param Schema $schema The schema being aggregated.
-	 * @param Register $register The owning register (language config).
-	 *
-	 * @return mixed The projected scalar value, or the original key when not a map.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function projectSingleTranslatableKey(
-		mixed $rawKey,
-		string $groupField,
-		Schema $schema,
-		Register $register,
-	): mixed {
-		$map = $rawKey;
-
-		// Native SQL returns the JSON column value as a string; decode it.
-		if (is_string($rawKey) === true) {
-			$decoded = json_decode($rawKey, true);
-			if (is_array($decoded) === true) {
-				$map = $decoded;
-			}
-		}
-
-		// Not a language-keyed map (scalar / legacy untranslated) — leave it.
-		if (is_array($map) === false) {
-			return $rawKey;
-		}
-
-		$resolved = $this->translationHandler->resolveTranslationsForRender(
-			objectData: [$groupField => $map],
-			schema: $schema,
-			register: $register
-		);
-
-		return $resolved[$groupField] ?? $rawKey;
-	}//end projectSingleTranslatableKey()
+	}//end translatableGroupFields()
 
 	/**
 	 * Convenience: run an ad-hoc aggregation by register/schema ref.
