@@ -44,6 +44,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 
 /**
  * Dual-surface + precedence tests for the schema-derived provider.
@@ -120,9 +121,11 @@ class SchemaDerivedDualSurfaceTest extends TestCase {
 			appId: 'pipelinq',
 			schemaEntries: [['schema' => $this->leadSchema(), 'register' => null]],
 			suppressedIds: $suppressedIds,
-			objectService: $this->objectService,
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->logger
+			services: new SchemaDerivedToolServices(
+				objectService: $this->objectService,
+				auditTrailMapper: $this->auditTrailMapper,
+				logger: $this->logger,
+			),
 		);
 
 	}//end derivedProvider()

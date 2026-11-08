@@ -37,6 +37,7 @@ use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 
 /**
  * Registers McpToolsService with every MCP tool provider it can find: the
@@ -175,9 +176,11 @@ class McpProviderDiscovery {
 					appId: $appId,
 					schemaEntries: $schemaEntries,
 					suppressedIds: $suppressedIds,
-					objectService: $container->get(ObjectOperationsInterface::class),
-					auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
-					logger: $logger
+					services: new SchemaDerivedToolServices(
+						objectService: $container->get(ObjectOperationsInterface::class),
+						auditTrailMapper: $container->get(AuditTrailMapperInterface::class),
+						logger: $logger,
+					),
 				);
 			}
 		} catch (\Throwable $e) {
