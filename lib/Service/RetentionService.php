@@ -110,18 +110,68 @@ class RetentionService implements RetentionServiceInterface {
 	private const IMMUTABLE_STATUSES = RecordState::IMMUTABLE_ALIASES;
 
 	/**
+	 * Object mapper for queries
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Schema mapper for lookups
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register mapper for lookups
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Audit trail mapper
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditMapper;
+
+	/**
+	 * Retention settings handler
+	 *
+	 * @var ArchivalSettingsReaderInterface
+	 */
+	private readonly ArchivalSettingsReaderInterface $settingsHandler;
+
+	/**
+	 * Walks every table a retention decision can live in
+	 *
+	 * @var RetentionRowScanner
+	 */
+	private readonly RetentionRowScanner $rowScanner;
+
+	/**
+	 * Calculates the archiefactiedatum
+	 *
+	 * @var ArchiveActionDateCalculator
+	 */
+	private readonly ArchiveActionDateCalculator $actionDateCalculator;
+
+	/**
+	 * Decides which revision of a category applies
+	 *
+	 * @var SelectielijstResolver
+	 */
+	private readonly SelectielijstResolver $listResolver;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface $objectMapper Object mapper for queries
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for lookups
-	 * @param RegisterMapperInterface $registerMapper Register mapper for lookups
-	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper
-	 * @param ArchivalSettingsReaderInterface $settingsHandler Retention settings handler
+	 * @param RetentionStores $stores The object, schema, register and audit trail mappers.
+	 * @param RetentionRules $rules Archival settings, row scanner, action date calculator and selectielijst resolver.
 	 * @param IUserSession $userSession Current user session
 	 * @param LoggerInterface $logger Logger
-	 * @param RetentionRowScanner $rowScanner Walks every table a retention decision can live in
-	 * @param ArchiveActionDateCalculator $actionDateCalculator Calculates the archiefactiedatum
-	 * @param SelectielijstResolver $listResolver Decides which revision of a category applies
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor for an aggregate service.
 	 *              Every parameter is a distinct collaborator this class genuinely uses, and the tenth
@@ -129,17 +179,19 @@ class RetentionService implements RetentionServiceInterface {
 	 *              behind a parameter object would hide the dependency graph without reducing it.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly AuditTrailMapperInterface $auditMapper,
-		private readonly ArchivalSettingsReaderInterface $settingsHandler,
+		RetentionStores $stores,
+		RetentionRules $rules,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly RetentionRowScanner $rowScanner,
-		private readonly ArchiveActionDateCalculator $actionDateCalculator,
-		private readonly SelectielijstResolver $listResolver,
 	) {
+		$this->objectMapper = $stores->objectMapper;
+		$this->schemaMapper = $stores->schemaMapper;
+		$this->registerMapper = $stores->registerMapper;
+		$this->auditMapper = $stores->auditMapper;
+		$this->settingsHandler = $rules->settingsHandler;
+		$this->rowScanner = $rules->rowScanner;
+		$this->actionDateCalculator = $rules->actionDateCalculator;
+		$this->listResolver = $rules->listResolver;
 	}//end __construct()
 
 	/**

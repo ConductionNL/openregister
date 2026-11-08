@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Service\TenantDirectory;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -124,7 +125,7 @@ final class TenantLifecycleServiceGoldenTest extends TestCase {
 			});
 		}
 
-		return new TenantLifecycleService($mapper, $groups, $users, $logger);
+		return new TenantLifecycleService($mapper, new TenantDirectory($groups, $users), $logger);
 	}//end service()
 
 	/**

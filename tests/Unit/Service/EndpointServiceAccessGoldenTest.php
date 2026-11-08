@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Service\EndpointMappers;
 use OCA\OpenRegister\Service\EndpointService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -121,11 +122,10 @@ final class EndpointServiceAccessGoldenTest extends TestCase {
 		}
 
 		return new EndpointService(
-			$mapper ?? $this->createMock(EndpointLogMapper::class),
+			new EndpointMappers($mapper ?? $this->createMock(EndpointLogMapper::class), $this->createMock(AgentMapper::class)),
 			$this->createMock(LoggerInterface::class),
 			$session,
-			$groups,
-			$this->createMock(AgentMapper::class)
+			$groups
 		);
 	}//end service()
 

@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaDeletionStores;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -127,10 +128,7 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 
 		$this->service = new SchemaDeletionService(
 			$this->db,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->auditTrailMapper,
+			new SchemaDeletionStores($this->magicMapper, $this->registerMapper, $this->schemaMapper, $this->auditTrailMapper),
 			$this->logger
 		);
 

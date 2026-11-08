@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\TenantDirectory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -107,8 +108,7 @@ class OrganisationLifecycleAuditTest extends TestCase {
 	private function lifecycle(): TenantLifecycleService {
 		return new TenantLifecycleService(
 			$this->organisations,
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
+			new TenantDirectory($this->createMock(IGroupManager::class), $this->createMock(IUserManager::class)),
 			new NullLogger(),
 			$this->auditor
 		);

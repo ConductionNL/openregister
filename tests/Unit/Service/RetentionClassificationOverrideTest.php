@@ -34,7 +34,9 @@ use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
+use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionStores;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -87,22 +89,26 @@ class RetentionClassificationOverrideTest extends TestCase {
 		);
 
 		$this->service = new RetentionService(
-			$objectMapper,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(AuditTrailMapper::class),
-			$settings,
-			$this->createMock(IUserSession::class),
-			$logger,
-			$this->createMock(RetentionRowScanner::class),
-			new ArchiveActionDateCalculator($objectMapper, $logger),
-			new SelectielijstResolver(
+			new RetentionStores(
+				$objectMapper,
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(RegisterMapper::class),
+				$this->createMock(AuditTrailMapper::class)
+			),
+			new RetentionRules(
+				$settings,
+				$this->createMock(RetentionRowScanner::class),
+				new ArchiveActionDateCalculator($objectMapper, $logger),
+				new SelectielijstResolver(
 				$objectMapper,
 				$this->createMock(SchemaMapper::class),
 				$this->createMock(RegisterMapper::class),
 				$settings,
 				$logger
+			)
 			),
+			$this->createMock(IUserSession::class),
+			$logger
 		);
 	}//end setUp()
 
