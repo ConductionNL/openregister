@@ -49,7 +49,7 @@ use OCP\Security\ISecureRandom;
  *
  * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
-class CalendarFeedTokenService {
+class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 
 	/**
 	 * The length of the opaque token, in characters.

@@ -41,7 +41,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<FederatedShare>
  */
-class FederatedShareMapper extends QBMapper {
+class FederatedShareMapper extends QBMapper implements FederatedShareMapperInterface {
 	use MultiTenancyTrait;
 
 	/**

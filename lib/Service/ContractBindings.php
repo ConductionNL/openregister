@@ -60,6 +60,10 @@ use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
+use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
+use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeServiceInterface;
+use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
+use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
 use OCA\OpenRegister\Service\Case\CasePlanService;
@@ -333,6 +337,8 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard::class,
+		\OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface::class => \OCA\OpenRegister\Service\Sharing\AccessLinkService::class,
 		AdministeredValidationEnforcerInterface::class => AdministeredValidationEnforcer::class,
 		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
@@ -340,11 +346,15 @@ final class ContractBindings {
 		AnalyticsLinkServiceInterface::class => AnalyticsLinkService::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		ApplicationServiceInterface::class => ApplicationService::class,
+		AppointmentAttendeeServiceInterface::class => AppointmentAttendeeService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		AppSettingsInterface::class => SettingsService::class,
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
+		CalendarFeedTokenServiceInterface::class => CalendarFeedTokenService::class,
+		CaseTokenServiceInterface::class => CaseTokenService::class,
+		FederationShareServiceInterface::class => FederationShareService::class,
 		FlowStateNodeInterface::class => FlowStateNode::class,
 		IterateNodeInterface::class => IterateNode::class,
 		LinkObjectNodeInterface::class => LinkObjectNode::class,
