@@ -53,19 +53,6 @@ final class BuiltinIntegrationServices {
 	private const OWN_APP_ID = 'openregister';
 
 	/**
-	 * The arguments every link service takes after its own link mapper.
-	 *
-	 * @var array<string, string>
-	 */
-	private const LINK_SERVICE_ARGUMENTS = [
-		'container'    => self::CONTAINER,
-		'appManager'   => \OCP\App\IAppManager::class,
-		'userSession'  => \OCP\IUserSession::class,
-		'urlGenerator' => \OCP\IURLGenerator::class,
-		'logger'       => \Psr\Log\LoggerInterface::class,
-	];
-
-	/**
 	 * Named constructor arguments per service class.
 	 *
 	 * @var array<class-string, array<string, string>>
@@ -333,21 +320,20 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\CospendLinkService::class => [
 			'cospendLinkMapper' => \OCA\OpenRegister\Db\CospendLinkMapperInterface::class,
 			'container'         => self::CONTAINER,
-			'appManager'        => \OCP\App\IAppManager::class,
-			'userSession'       => \OCP\IUserSession::class,
+			'runtime'           => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 			'db'                => \OCP\IDBConnection::class,
-			'logger'            => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-collectives/spec.md
 		\OCA\OpenRegister\Service\CollectiveLinkService::class => [
 			'collectiveLinkMapper' => \OCA\OpenRegister\Db\CollectiveLinkMapperInterface::class,
-		] + self::LINK_SERVICE_ARGUMENTS,
+			'container'            => self::CONTAINER,
+			'runtime'              => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
+			'urlGenerator'         => \OCP\IURLGenerator::class,
+		],
 		// @spec openspec/specs/integration-analytics/spec.md
 		\OCA\OpenRegister\Service\AnalyticsLinkService::class => [
 			'analyticsLinkMapper' => \OCA\OpenRegister\Db\AnalyticsLinkMapperInterface::class,
-			'appManager'          => \OCP\App\IAppManager::class,
-			'userSession'         => \OCP\IUserSession::class,
-			'logger'              => \Psr\Log\LoggerInterface::class,
+			'runtime'             => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
 			'container'           => self::CONTAINER,
 		],
 		// @spec openspec/specs/integration-time-tracker/spec.md

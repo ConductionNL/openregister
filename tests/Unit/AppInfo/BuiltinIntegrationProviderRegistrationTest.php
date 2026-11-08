@@ -260,23 +260,17 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		],
 		'OCA\OpenRegister\Service\CospendLinkService' => [
 			'OCA\OpenRegister\Db\CospendLinkMapperInterface',
-			'OCP\App\IAppManager',
-			'OCP\IUserSession',
+			'OCA\OpenRegister\Service\LinkServiceRuntime',
 			'OCP\IDBConnection',
-			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\CollectiveLinkService' => [
 			'OCA\OpenRegister\Db\CollectiveLinkMapperInterface',
-			'OCP\App\IAppManager',
-			'OCP\IUserSession',
+			'OCA\OpenRegister\Service\LinkServiceRuntime',
 			'OCP\IURLGenerator',
-			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\AnalyticsLinkService' => [
 			'OCA\OpenRegister\Db\AnalyticsLinkMapperInterface',
-			'OCP\App\IAppManager',
-			'OCP\IUserSession',
-			'Psr\Log\LoggerInterface',
+			'OCA\OpenRegister\Service\LinkServiceRuntime',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\TimeProvider' => [
 			'OCP\IDBConnection',
