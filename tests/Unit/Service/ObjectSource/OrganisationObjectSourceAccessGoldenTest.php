@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\IGroupManager;
@@ -94,8 +95,7 @@ class OrganisationObjectSourceAccessGoldenTest extends TestCase {
 	private function provider(): OrganisationObjectSourceProvider {
 		return new OrganisationObjectSourceProvider(
 			organisationMapper: $this->organisationMapper,
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			actingUser: new OrganisationActingUser(userSession: $this->userSession, groupManager: $this->groupManager),
 			logger: $this->createMock(LoggerInterface::class),
 			organisationService: $this->organisationService
 		);
