@@ -5276,7 +5276,7 @@ class ObjectsController extends Controller {
 		// is the whole of D-2 and the reason `heartbeat()` reports which it was
 		// rather than leaving the caller to work it out.
 		if ($beat['arrived'] === true) {
-			$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
+			$this->container->get(\OCA\OpenRegister\Listener\PresencePushInterface::class)
 				->pushPresence(object: $object, present: $service->present(objectUuid: $id));
 		}
 
@@ -5322,7 +5322,7 @@ class ObjectsController extends Controller {
 			}
 
 			if ($object !== null) {
-				$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
+				$this->container->get(\OCA\OpenRegister\Listener\PresencePushInterface::class)
 					->pushPresence(object: $object, present: $service->present(objectUuid: $id));
 			}
 		}
