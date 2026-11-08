@@ -64,14 +64,9 @@ final class C01ApiVersionInterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * ApiCallRecorder writes the records the mapper stores; it is in Service and
-	 * is left for the pass that owns that component.
-	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [
-		ApiCallRecordMapper::class => ['Service/ApiCaller/ApiCallRecorder.php'],
-	];
+	private const KEPT_CALLERS = [];
 
 	/**
 	 * One case per class.
