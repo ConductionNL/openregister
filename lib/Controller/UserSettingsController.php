@@ -28,6 +28,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Controller\Support\UserSettingsControllerServices;
 
 /**
  * Class UserSettingsController
@@ -66,22 +67,20 @@ class UserSettingsController extends Controller {
 	 *
 	 * @param string $appName The app name
 	 * @param IRequest $request The request object
-	 * @param GitHubClientInterface $gitHubService GitHub service
+	 * @param UserSettingsControllerServices $services The services, bundled.
 	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		GitHubClientInterface $gitHubService,
+		UserSettingsControllerServices $services,
 		IUserSession $userSession,
-		LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
-		$this->gitHubService = $gitHubService;
+		$this->gitHubService = $services->gitHubService;
 		$this->userSession = $userSession;
-		$this->logger = $logger;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
