@@ -42,6 +42,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExternalLink;
 
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidatorInterface;
+
 /**
  * Pure validation of the `x-openregister-external-links` annotation.
  *
@@ -55,7 +57,7 @@ namespace OCA\OpenRegister\Service\ExternalLink;
  *         reach one stateless parse would add a dependency with nothing behind
  *         it, and duplicating the regex is precisely how the two would drift.
  */
-final class ExternalLinkAnnotationValidator {
+final class ExternalLinkAnnotationValidator implements SchemaAnnotationValidatorInterface {
 
 	/**
 	 * Schemes a rendered link may use.

@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidatorInterface;
+
 /**
  * Validates `x-openregister-calculations` annotation shape and references.
  *
@@ -47,7 +49,7 @@ namespace OCA\OpenRegister\Service\Calculation;
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
  * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
  */
-final class CalculationAnnotationValidator {
+final class CalculationAnnotationValidator implements SchemaAnnotationValidatorInterface {
 	use PropNameReading;
 
 	/**

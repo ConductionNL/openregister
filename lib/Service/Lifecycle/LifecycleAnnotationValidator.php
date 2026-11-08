@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Lifecycle;
 
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidatorInterface;
+
 
 /**
  * Pure validation logic for the `x-openregister-lifecycle` annotation.
@@ -35,7 +37,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * Hooked into the schema-save path in SchemaService (or its caller). Errors
  * map to HTTP 422 responses as schema-save failures.
  */
-final class LifecycleAnnotationValidator {
+final class LifecycleAnnotationValidator implements SchemaAnnotationValidatorInterface {
 
 	use LifecycleFieldCheck;
 	use LifecycleErrorBuilding;

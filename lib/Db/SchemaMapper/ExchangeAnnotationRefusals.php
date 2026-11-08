@@ -21,9 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
-use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators;
 
 /**
  * Save-time checks of the handoff and MCP declarations, whose faults refuse the save with their codes.
@@ -53,7 +52,7 @@ final class ExchangeAnnotationRefusals {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-handoff');
 		if ($annotation->isBlock() === true) {
 			$lifecycle = ['x-openregister-lifecycle' => $annotation->configured(key: 'x-openregister-lifecycle')];
-			$annotation->faults()->refuseCoded(errors: (new HandoffAnnotationValidator())->validate($annotation->shape() + $lifecycle));
+			$annotation->faults()->refuseCoded(errors: SchemaAnnotationValidators::handoff()->validate($annotation->shape() + $lifecycle));
 		}
 	}//end checkHandoff()
 
@@ -86,7 +85,7 @@ final class ExchangeAnnotationRefusals {
 			$shape[$key] = $annotation->configured(key: $key);
 		}
 
-		$annotation->faults()->refuseCoded(errors: (new HandoffContractBindingValidator())->validate($shape));
+		$annotation->faults()->refuseCoded(errors: SchemaAnnotationValidators::handoffContractBinding()->validate($shape));
 	}//end checkHandoffContract()
 
 	/**

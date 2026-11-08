@@ -23,12 +23,8 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
-use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
-use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
-use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -71,9 +67,9 @@ final class RecordAnnotationRefusals {
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function checkMdtoMapping(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: ElementMappingValidator::ANNOTATION_KEY);
+		$annotation = new SchemaAnnotation(schema: $schema, key: SchemaAnnotationValidators::ELEMENT_MAPPING_ANNOTATION);
 		if ($annotation->isBlock() === true) {
-			$validator = new ElementMappingValidator(catalogue: new MdtoElementCatalogue());
+			$validator = SchemaAnnotationValidators::elementMapping();
 			$annotation->faults()->refuseInvalid(
 				errors: $validator->validate(mapping: $annotation->value(), properties: $schema->getProperties())
 			);
@@ -135,7 +131,7 @@ final class RecordAnnotationRefusals {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-widgets');
 		if ($annotation->isBlock() === true) {
 			$annotation->faults()->refuse(
-				errors: (new WidgetAnnotationValidator())->validate(['x-openregister-widgets' => $annotation->value()])
+				errors: SchemaAnnotationValidators::widget()->validate(['x-openregister-widgets' => $annotation->value()])
 			);
 		}
 	}//end checkWidgets()
@@ -198,9 +194,9 @@ final class RecordAnnotationRefusals {
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	public function checkExternalLinks(Schema $schema): void {
-		$annotation = new SchemaAnnotation(schema: $schema, key: ExternalLinkResolver::ANNOTATION);
+		$annotation = new SchemaAnnotation(schema: $schema, key: SchemaAnnotationValidators::EXTERNAL_LINK_ANNOTATION);
 		if ($annotation->hasValue() === true) {
-			$annotation->faults()->refuseWith(messages: (new ExternalLinkAnnotationValidator())->validate($annotation->shape()));
+			$annotation->faults()->refuseWith(messages: SchemaAnnotationValidators::externalLink()->validate($annotation->shape()));
 		}
 	}//end checkExternalLinks()
 }//end class

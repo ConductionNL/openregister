@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Decision;
 
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidatorInterface;
+
 /**
  * Shape checks for `x-openregister-review`.
  *
@@ -36,7 +38,7 @@ namespace OCA\OpenRegister\Service\Decision;
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
  */
-final class ReviewAnnotationValidator {
+final class ReviewAnnotationValidator implements SchemaAnnotationValidatorInterface {
 
 	/**
 	 * The refusals for a schema configuration; empty when it is sound or absent.

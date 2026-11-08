@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Registry;
 
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidatorInterface;
+
 /**
  * Validates the `x-openregister-registry` schema annotation shape.
  *
@@ -43,7 +45,7 @@ namespace OCA\OpenRegister\Service\Registry;
  *
  * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md
  */
-final class RegistryAnnotationValidator {
+final class RegistryAnnotationValidator implements SchemaAnnotationValidatorInterface {
 
 	/**
 	 * Validate the registry annotation.

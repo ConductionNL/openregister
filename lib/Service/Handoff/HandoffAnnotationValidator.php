@@ -36,13 +36,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Handoff;
 
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidatorInterface;
+
 /**
  * Validate the `x-openregister-handoff` annotation on a source schema.
  *
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Requirement: `x-openregister-handoff` declarative dialect)
  */
-class HandoffAnnotationValidator {
+class HandoffAnnotationValidator implements SchemaAnnotationValidatorInterface {
 
 	/**
 	 * The five mapping expression kinds the v1 dialect permits.

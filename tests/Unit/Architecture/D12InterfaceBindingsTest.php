@@ -198,7 +198,6 @@ final class D12InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		ExtendingFormDeclaration::class => ['Db/SchemaMapper/PropertyDeclarationRefusals.php'],
 		JobRunRecorder::class => ['BackgroundJob/AuditTrailExportJob.php'],
 		MaintenanceModeService::class => ['Middleware/MaintenanceModeMiddleware.php'],
 		UniqueConstraintEvaluator::class => ['Db/Schema.php'],

@@ -46,7 +46,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  */
-class ElementMappingValidator {
+class ElementMappingValidator implements ElementMappingValidatorInterface {
 
 	/**
 	 * The schema configuration key the mapping lives under.

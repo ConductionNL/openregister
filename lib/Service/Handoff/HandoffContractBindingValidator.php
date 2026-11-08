@@ -38,13 +38,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Handoff;
 
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidatorInterface;
+
 /**
  * Validate the `handoffContract` binding block on an implementing schema.
  *
  * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
  *   (Requirement: Kind contract binding on the implementing schema)
  */
-class HandoffContractBindingValidator {
+class HandoffContractBindingValidator implements SchemaAnnotationValidatorInterface {
 
 	/**
 	 * The error code every binding problem is reported under.

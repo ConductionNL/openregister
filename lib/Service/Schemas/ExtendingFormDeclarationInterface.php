@@ -83,4 +83,13 @@ interface ExtendingFormDeclarationInterface {
 	 * @return array<string, mixed> The app, the form, what it forwards, what it leaves out and the counts.
 	 */
 	public function describe(mixed $annotation, string $path = self::ANNOTATION): array;
+	/**
+	 * Validate one declaration.
+	 *
+	 * @param mixed  $annotation The declaration as stored.
+	 * @param string $path       Where the declaration sits, for the error message.
+	 *
+	 * @return array<int, array{code: string, key: string, path: string, message: string}> The refusals, empty when valid.
+	 */
+	public function validate(mixed $annotation, string $path = self::ANNOTATION): array;
 }//end interface

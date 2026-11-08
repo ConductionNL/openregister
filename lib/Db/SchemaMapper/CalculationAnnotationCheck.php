@@ -21,9 +21,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -111,7 +111,7 @@ final class CalculationAnnotationCheck {
 			array_values($forwarding->duplicates(annotation: $annotation->block(), properties: $properties))
 		);
 
-		return array_merge($duplicates, (new CalculationAnnotationValidator())->validate($this->shape(annotation: $annotation, merged: $merged)));
+		return array_merge($duplicates, SchemaAnnotationValidators::calculation()->validate($this->shape(annotation: $annotation, merged: $merged)));
 	}//end errors()
 
 	/**

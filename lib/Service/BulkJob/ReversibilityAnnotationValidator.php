@@ -39,10 +39,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\BulkJob;
 
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidatorInterface;
+
 /**
  * Class ReversibilityAnnotationValidator
  */
-final class ReversibilityAnnotationValidator {
+final class ReversibilityAnnotationValidator implements SchemaAnnotationValidatorInterface {
 
 	/**
 	 * The configuration key holding a schema's declared actions.

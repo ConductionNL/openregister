@@ -21,11 +21,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
-use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
-use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators;
 
 /**
  * Save-time checks of declarations about consent, ownership of a review and inbound writes.
@@ -61,7 +59,7 @@ final class SubjectDeclarationRefusals {
 			return;
 		}
 
-		$errors = (new ConsentAnnotationValidator())->validate(['properties' => $properties]);
+		$errors = SchemaAnnotationValidators::consent()->validate(['properties' => $properties]);
 		if ($errors !== []) {
 			throw new ConsentDeclarationException(errors: $errors);
 		}
@@ -82,7 +80,7 @@ final class SubjectDeclarationRefusals {
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
 	public function checkReview(Schema $schema): void {
-		$errors = (new ReviewAnnotationValidator())->validate(configuration: ($schema->getConfiguration() ?? []));
+		$errors = SchemaAnnotationValidators::review()->validate(($schema->getConfiguration() ?? []));
 		if ($errors !== []) {
 			throw new ReviewDeclarationException(errors: $errors);
 		}
@@ -108,7 +106,7 @@ final class SubjectDeclarationRefusals {
 	public function checkRegistry(Schema $schema): void {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-registry');
 		if ($annotation->isBlock() === true) {
-			$annotation->faults()->refuseCoded(errors: (new RegistryAnnotationValidator())->validate($annotation->shape()));
+			$annotation->faults()->refuseCoded(errors: SchemaAnnotationValidators::registry()->validate($annotation->shape()));
 		}
 	}//end checkRegistry()
 }//end class

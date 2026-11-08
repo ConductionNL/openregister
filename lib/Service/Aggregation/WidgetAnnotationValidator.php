@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Aggregation;
 
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidatorInterface;
+
 /**
  * Validates the `x-openregister-widgets` schema annotation shape.
  *
@@ -49,7 +51,7 @@ namespace OCA\OpenRegister\Service\Aggregation;
  * a target is missing; this validator only catches local shape bugs
  * the operator can fix on the spot.
  */
-final class WidgetAnnotationValidator {
+final class WidgetAnnotationValidator implements SchemaAnnotationValidatorInterface {
 
 	/**
 	 * Widget types supported by the Vue renderer (kept in sync with

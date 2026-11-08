@@ -37,6 +37,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Relation;
 
+use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidatorInterface;
+
 /**
  * Reads and refuses relation declarations on a schema.
  *
@@ -51,7 +53,7 @@ namespace OCA\OpenRegister\Service\Relation;
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-final class RelationAnnotationValidator {
+final class RelationAnnotationValidator implements SchemaAnnotationValidatorInterface {
 	/**
 	 * The per-property annotation naming both ends of a link.
 	 *
