@@ -208,13 +208,13 @@ class FlowRunService implements FlowRunServiceInterface {
 
 		return new FlowStreamWalk(
 			run: $run,
-			claims: $this->claims,
-			commit: $this->commit,
-			streamMapper: $this->streamMapper,
-			owner: FlowPlaceClaims::newOwner(),
-			runCap: $cap,
-			onlyStream: $onlyStream,
-			budget: $budget
+			parts: new FlowStreamWalkParts(claims: $this->claims, commit: $this->commit, streamMapper: $this->streamMapper),
+			limits: new FlowStreamWalkLimits(
+				owner: FlowPlaceClaims::newOwner(),
+				runCap: $cap,
+				onlyStream: $onlyStream,
+				budget: $budget
+			)
 		);
 	}//end streamWalkFor()
 
