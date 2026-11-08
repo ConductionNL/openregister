@@ -304,15 +304,13 @@ class HandoffService implements HandoffServiceInterface {
 			schema: $provider
 		);
 
+		$created = new HandoffTarget(object: $target, register: $targetRegister, schema: $provider);
+
 		$sourceSnapshot = $source->getObject();
 		try {
 			$this->applyOnSuccess(entry: $entry, source: $source, register: $register, schema: $schema);
 		} catch (\Throwable $e) {
-			$this->compensate(
-				target: $target,
-				targetRegister: $targetRegister,
-				targetSchema: $provider
-			);
+			$this->compensate(target: $created);
 			throw $e;
 		}
 
@@ -320,33 +318,32 @@ class HandoffService implements HandoffServiceInterface {
 		try {
 			$this->writeProvenanceRelations(
 				source: $source,
-				target: $target,
+				target: $created,
 				handoffId: $handoffId,
-				sourceSchema: $sourceSchema,
-				targetRegister: $targetRegister,
-				targetSchema: $provider
+				sourceSchema: $sourceSchema
 			);
 			$this->writeAuditRows(
 				source: $source,
-				target: $target,
-				provider: $provider,
-				kindUri: $kindUri,
-				handoffId: $handoffId,
-				correlationId: $correlationId,
-				deferred: $deferred
+				target: $created,
+				facts: new HandoffAuditFacts(
+					kindUri: $kindUri,
+					handoffId: $handoffId,
+					correlationId: $correlationId,
+					deferred: $deferred
+				)
 			);
 
 			$this->ledger->db->commit();
 		} catch (\Throwable $e) {
 			$this->ledger->db->rollBack();
 			$this->compensate(
-				target: $target,
-				targetRegister: $targetRegister,
-				targetSchema: $provider,
-				source: $source,
-				sourceSnapshot: $sourceSnapshot,
-				sourceRegisterRef: $register,
-				sourceSchemaRef: $schema
+				target: $created,
+				restore: new HandoffSourceRestore(
+					source: $source,
+					snapshot: $sourceSnapshot,
+					registerRef: $register,
+					schemaRef: $schema
+				)
 			);
 			throw $e;
 		}//end try
@@ -661,13 +658,8 @@ class HandoffService implements HandoffServiceInterface {
 	 * normal write path. Compensation is best-effort — a compensation
 	 * failure is logged loudly but never masks the original error.
 	 *
-	 * @param ObjectEntity $target The created target object to remove.
-	 * @param Register $targetRegister The target register (magic-table context).
-	 * @param Schema $targetSchema The target schema (magic-table context).
-	 * @param ObjectEntity|null $source The source object (when it was already mutated).
-	 * @param array<string, mixed> $sourceSnapshot The source data before `onSuccess.set`.
-	 * @param string|null $sourceRegisterRef The source register reference for the revert write.
-	 * @param string|null $sourceSchemaRef The source schema reference for the revert write.
+	 * @param HandoffTarget $target The created target object to remove, in its magic-table context.
+	 * @param HandoffSourceRestore|null $restore The source to restore, when it was already mutated.
 	 *
 	 * @return void
 	 *
@@ -675,19 +667,14 @@ class HandoffService implements HandoffServiceInterface {
 	 *   (Scenario: Target create fails mid-handoff)
 	 */
 	private function compensate(
-		ObjectEntity $target,
-		Register $targetRegister,
-		Schema $targetSchema,
-		?ObjectEntity $source = null,
-		array $sourceSnapshot = [],
-		?string $sourceRegisterRef = null,
-		?string $sourceSchemaRef = null,
+		HandoffTarget $target,
+		?HandoffSourceRestore $restore = null,
 	): void {
 		try {
 			$rawTarget = $this->objects->objectMapper->find(
-				identifier: (string)$target->getUuid(),
-				register: $targetRegister,
-				schema: $targetSchema,
+				identifier: (string)$target->object->getUuid(),
+				register: $target->register,
+				schema: $target->schema,
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -698,22 +685,22 @@ class HandoffService implements HandoffServiceInterface {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'target' => (string)$target->getUuid(),
+					'target' => (string)$target->object->getUuid(),
 					'error' => $e->getMessage(),
 				]
 			);
 		}//end try
 
-		if ($source === null || $sourceRegisterRef === null || $sourceSchemaRef === null) {
+		if ($restore === null) {
 			return;
 		}
 
 		try {
 			$this->objects->objectService->saveObject(
-				object: $sourceSnapshot,
-				register: $sourceRegisterRef,
-				schema: $sourceSchemaRef,
-				uuid: (string)$source->getUuid()
+				object: $restore->snapshot,
+				register: $restore->registerRef,
+				schema: $restore->schemaRef,
+				uuid: (string)$restore->source->getUuid()
 			);
 		} catch (\Throwable $e) {
 			$this->ledger->logger->error(
@@ -721,7 +708,7 @@ class HandoffService implements HandoffServiceInterface {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'source' => (string)$source->getUuid(),
+					'source' => (string)$restore->source->getUuid(),
 					'error' => $e->getMessage(),
 				]
 			);
@@ -776,11 +763,9 @@ class HandoffService implements HandoffServiceInterface {
 	 * transaction on large instances).
 	 *
 	 * @param ObjectEntity $source The source object.
-	 * @param ObjectEntity $target The created target object.
+	 * @param HandoffTarget $target The created target object, in its magic-table context.
 	 * @param string $handoffId The handoff entry id.
 	 * @param Schema $sourceSchema The source schema (magic-table context).
-	 * @param Register $targetRegister The target register (magic-table context).
-	 * @param Schema $targetSchema The target schema (magic-table context).
 	 *
 	 * @return void
 	 *
@@ -789,11 +774,9 @@ class HandoffService implements HandoffServiceInterface {
 	 */
 	private function writeProvenanceRelations(
 		ObjectEntity $source,
-		ObjectEntity $target,
+		HandoffTarget $target,
 		string $handoffId,
 		Schema $sourceSchema,
-		Register $targetRegister,
-		Schema $targetSchema,
 	): void {
 		$sourceRegister = $this->providers->semanticTypeResolver->findRegisterForSchema(schema: $sourceSchema);
 
@@ -808,14 +791,14 @@ class HandoffService implements HandoffServiceInterface {
 		);
 
 		$sourceRelations = ($rawSource->getRelations() ?? []);
-		$sourceRelations[self::RELATION_PREFIX . ':' . $handoffId . ':handed-off-to'] = (string)$target->getUuid();
+		$sourceRelations[self::RELATION_PREFIX . ':' . $handoffId . ':handed-off-to'] = (string)$target->object->getUuid();
 		$rawSource->setRelations($sourceRelations);
 		$this->objects->objectMapper->update(entity: $rawSource, register: $sourceRegister, schema: $sourceSchema);
 
 		$rawTarget = $this->objects->objectMapper->find(
-			identifier: (string)$target->getUuid(),
-			register: $targetRegister,
-			schema: $targetSchema,
+			identifier: (string)$target->object->getUuid(),
+			register: $target->register,
+			schema: $target->schema,
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -823,7 +806,7 @@ class HandoffService implements HandoffServiceInterface {
 		$targetRelations = ($rawTarget->getRelations() ?? []);
 		$targetRelations[self::RELATION_PREFIX . ':' . $handoffId . ':originated-from'] = (string)$source->getUuid();
 		$rawTarget->setRelations($targetRelations);
-		$this->objects->objectMapper->update(entity: $rawTarget, register: $targetRegister, schema: $targetSchema);
+		$this->objects->objectMapper->update(entity: $rawTarget, register: $target->register, schema: $target->schema);
 
 	}//end writeProvenanceRelations()
 
@@ -832,12 +815,8 @@ class HandoffService implements HandoffServiceInterface {
 	 * correlationId, resolved schema, deferred flag).
 	 *
 	 * @param ObjectEntity $source The source object.
-	 * @param ObjectEntity $target The created target object.
-	 * @param Schema $provider The resolved provider schema.
-	 * @param string $kindUri The kind URI.
-	 * @param string $handoffId The handoff entry id.
-	 * @param string $correlationId The execution correlation id.
-	 * @param bool $deferred Whether this execution drained a parked entry.
+	 * @param HandoffTarget $target The created target object; its schema is the resolved provider.
+	 * @param HandoffAuditFacts $facts The kind, handoff id, correlation id and deferred flag.
 	 *
 	 * @return void
 	 *
@@ -846,32 +825,28 @@ class HandoffService implements HandoffServiceInterface {
 	 */
 	private function writeAuditRows(
 		ObjectEntity $source,
-		ObjectEntity $target,
-		Schema $provider,
-		string $kindUri,
-		string $handoffId,
-		string $correlationId,
-		bool $deferred,
+		HandoffTarget $target,
+		HandoffAuditFacts $facts,
 	): void {
 		$context = [
-			'handoffId' => $handoffId,
-			'targetKind' => $kindUri,
-			'correlationId' => $correlationId,
-			'resolvedSchema' => ($provider->getSlug() ?? (string)$provider->getId()),
-			'deferred' => $deferred,
+			'handoffId' => $facts->handoffId,
+			'targetKind' => $facts->kindUri,
+			'correlationId' => $facts->correlationId,
+			'resolvedSchema' => ($target->schema->getSlug() ?? (string)$target->schema->getId()),
+			'deferred' => $facts->deferred,
 			'drainedAt' => null,
 		];
-		if ($deferred === true) {
+		if ($facts->deferred === true) {
 			$context['drainedAt'] = (new DateTime())->format('c');
 		}
 
 		$this->ledger->auditTrailMapper->createAuditTrailEntry(
 			object: $source,
 			action: self::AUDIT_EXECUTED,
-			context: array_merge($context, ['direction' => 'handed-off-to', 'counterpart' => (string)$target->getUuid()])
+			context: array_merge($context, ['direction' => 'handed-off-to', 'counterpart' => (string)$target->object->getUuid()])
 		);
 		$this->ledger->auditTrailMapper->createAuditTrailEntry(
-			object: $target,
+			object: $target->object,
 			action: self::AUDIT_EXECUTED,
 			context: array_merge($context, ['direction' => 'originated-from', 'counterpart' => (string)$source->getUuid()])
 		);
