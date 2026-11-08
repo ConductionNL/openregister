@@ -647,6 +647,9 @@ final class ContractBindings {
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
 		OasServiceInterface::class => OasService::class,
 		ObjectActionBulkInterface::class => ObjectActionBulk::class,
+		\OCA\OpenRegister\Service\Oas\OasETagComputerInterface::class => \OCA\OpenRegister\Service\Oas\OasETagComputer::class,
+		\OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface::class
+			=> \OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory::class,
 		ObjectActionDefinitionsInterface::class => ObjectActionDefinitions::class,
 		ObjectActionListInterface::class => ObjectActionList::class,
 		ObjectActionRunnerInterface::class => ObjectActionRunner::class,
