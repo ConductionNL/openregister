@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
 /**
  * AVG compliance checks. Phase 1: unregistered-PII detection.
  */
-class AvgComplianceService {
+class AvgComplianceService implements AvgComplianceServiceInterface {
 
 	/**
 	 * Annotation key that satisfies the "processing-activity attached"
