@@ -129,22 +129,16 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	/**
 	 * Move one run to another version.
 	 *
-	 * @param string                $runUuid       The run.
-	 * @param int                   $targetVersion The version to move onto.
-	 * @param string                $reason        Why, recorded on the run.
-	 * @param string                $actor         Who asked.
-	 * @param array<string, string> $mapping       Old node id to new node id.
+	 * @param string                 $runUuid The run.
+	 * @param FlowRunMigrationTarget $target  The version to move onto, why, who asked and the node mapping.
 	 *
 	 * @return array{migrated: bool, dryRun: bool, run: string, from: int|null, to: int,
 	 *         marking: array<string, int>, unmapped: array<int, string>, reason: string}
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	public function migrate(string $runUuid, int $targetVersion, string $reason, string $actor, array $mapping = []): array {
-		return $this->perform(
-			migration: (new FlowRunMigration(runUuid: $runUuid, targetVersion: $targetVersion, reason: trim($reason), actor: $actor))
-				->withPlan(mapping: $mapping, dryRun: false)
-		);
+	public function migrate(string $runUuid, FlowRunMigrationTarget $target): array {
+		return $this->perform(migration: $target->forRun(runUuid: $runUuid, dryRun: false));
 	}//end migrate()
 
 	/**
@@ -157,22 +151,16 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * are two acts, and the flag that told them apart was the argument most
 	 * easily lost between the endpoint and here.
 	 *
-	 * @param string                $runUuid       The run.
-	 * @param int                   $targetVersion The version to move onto.
-	 * @param string                $reason        Why, for the answer's own record.
-	 * @param string                $actor         Who asked.
-	 * @param array<string, string> $mapping       Old node id to new node id.
+	 * @param string                 $runUuid The run.
+	 * @param FlowRunMigrationTarget $target  The version to move onto, why, who asked and the node mapping.
 	 *
 	 * @return array{migrated: bool, dryRun: bool, run: string, from: int|null, to: int,
 	 *         marking: array<string, int>, unmapped: array<int, string>, reason: string}
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	public function preview(string $runUuid, int $targetVersion, string $reason, string $actor, array $mapping = []): array {
-		return $this->perform(
-			migration: (new FlowRunMigration(runUuid: $runUuid, targetVersion: $targetVersion, reason: trim($reason), actor: $actor))
-				->withPlan(mapping: $mapping, dryRun: true)
-		);
+	public function preview(string $runUuid, FlowRunMigrationTarget $target): array {
+		return $this->perform(migration: $target->forRun(runUuid: $runUuid, dryRun: true));
 	}//end preview()
 
 	/**
@@ -302,35 +290,18 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * believing every run moved, and the ones that did not are exactly the ones
 	 * somebody has to go and look at.
 	 *
-	 * @param string                $flowId        The flow.
-	 * @param int                   $sourceVersion The version to move off.
-	 * @param int                   $targetVersion The version to move onto.
-	 * @param string                $reason        Why.
-	 * @param string                $actor         Who asked.
-	 * @param array<string, string> $mapping       One mapping for all of them.
-	 * @param int                   $limit         The batch bound.
+	 * @param string                 $flowId        The flow.
+	 * @param int                    $sourceVersion The version to move off.
+	 * @param FlowRunMigrationTarget $target        The version to move onto, why, who asked and one mapping for all of them.
+	 * @param int                    $limit         The batch bound.
 	 *
 	 * @return array{migrated: int, skipped: int, results: array<int, array<string, mixed>>}
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-runs-can-be-migrated-in-bulk-per-version
 	 */
-	public function migrateRunsOfVersion(
-		string $flowId,
-		int $sourceVersion,
-		int $targetVersion,
-		string $reason,
-		string $actor,
-		array $mapping = [],
-		int $limit = 100,
-	): array {
+	public function migrateRunsOfVersion(string $flowId, int $sourceVersion, FlowRunMigrationTarget $target, int $limit = 100): array {
 		$results = array_map(
-			fn (FlowRun $run): array => $this->migrate(
-				runUuid: (string)$run->getUuid(),
-				targetVersion: $targetVersion,
-				reason: $reason,
-				actor: $actor,
-				mapping: $mapping,
-			),
+			fn (FlowRun $run): array => $this->migrate(runUuid: (string)$run->getUuid(), target: $target),
 			$this->runsOnVersion(flowId: $flowId, version: $sourceVersion, limit: $limit)
 		);
 		$migrated = count(array_filter($results, static fn (array $outcome): bool => $outcome['migrated'] === true));
@@ -375,9 +346,11 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 		$outcomes = array_map(
 			fn (FlowRun $run): array => $this->migrate(
 				runUuid: (string)$run->getUuid(),
-				targetVersion: (int)$targetDefinitionRef,
-				reason: 'Migrated with its subject by ' . $actorUid,
-				actor: $actorUid,
+				target: new FlowRunMigrationTarget(
+					targetVersion: (int)$targetDefinitionRef,
+					reason: 'Migrated with its subject by ' . $actorUid,
+					actor: $actorUid
+				),
 			),
 			($live ?? [])
 		);
