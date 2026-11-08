@@ -250,32 +250,46 @@ class LockHandler {
 		?string $runUuid = null,
 		bool $break = false,
 	): bool {
+		return $this->unlockRequested(request: new UnlockRequest(identifier: $identifier, advisory: $advisory, runUuid: $runUuid, break: $break));
+	}//end unlock()
+
+	/**
+	 * Release the lock a request names: an advisory lock directly, any other through the lookup.
+	 *
+	 * @param UnlockRequest $request The object, the kind of lock and who releases it.
+	 *
+	 * @return bool True when a lock was released, false when there was none.
+	 *
+	 * @throws \Exception If unlock operation fails
+	 */
+	private function unlockRequested(UnlockRequest $request): bool {
 		$this->logger->debug(
 			message: '[LockHandler] Unlocking object',
-			context: $this->logContext(fields: ['identifier' => $identifier, 'advisory' => $advisory])
+			context: $this->logContext(fields: ['identifier' => $request->identifier, 'advisory' => $request->advisory])
 		);
 
 		// Advisory (pre-creation) fast-path — mirror of lock(): release the
 		// appConfig-backed advisory lock directly and skip the all-tables scan.
-		if ($advisory === true) {
-			return $this->releaseAdvisory(identifier: $identifier);
+		if ($request->advisory === true) {
+			return $this->releaseAdvisory(identifier: $request->identifier);
 		}
 
-		return $this->unlockLogged(identifier: $identifier, runUuid: $runUuid, break: $break);
-	}//end unlock()
+		return $this->unlockLogged(request: $request);
+	}//end unlockRequested()
 
 	/**
 	 * Release the lock on a resolved object, auditing what happened.
 	 *
-	 * @param array $context The resolved object with its register and schema.
-	 * @param string|null $runUuid Flow run releasing the lock, for a run-scoped lock.
-	 * @param bool $break Release regardless of holder; authorized at the call site.
+	 * A BREAK is recorded under its own action, naming the holder it displaced:
+	 * an administrator overriding somebody else's lock is not the same event as
+	 * a holder releasing their own.
+	 *
+	 * @param array         $context The resolved object with its register and schema.
+	 * @param UnlockRequest $request The run releasing the lock and whether this is a break.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors unlock()'s own break flag.
 	 */
-	private function releaseStoredLock(array $context, ?string $runUuid, bool $break): void {
+	private function releaseStoredLock(array $context, UnlockRequest $request): void {
 		$objectBefore = $context['object'];
 
 		// Capture the holder BEFORE the release, so a break can name what it
@@ -286,10 +300,15 @@ class LockHandler {
 			entity: $objectBefore,
 			register: $context['register'],
 			schema: $context['schema'],
-			runUuid: $runUuid,
-			break: $break
+			runUuid: $request->runUuid,
+			break: $request->break
 		);
-		$this->recordRelease(before: $objectBefore, after: $objectAfter, displaced: $displaced, break: $break);
+		$this->forgetDisplacedRun(displaced: $displaced, after: $objectAfter);
+		if ($request->break === true) {
+			$this->auditTrailMapper->createAuditTrailEntry(object: $objectAfter, action: 'lock.broken', context: $displaced);
+		}
+
+		$this->recordUnlock(before: $objectBefore, after: $objectAfter);
 	}//end releaseStoredLock()
 
 	/**
@@ -489,21 +508,19 @@ class LockHandler {
 	}//end recordLock()
 
 	/**
-	 * Release a lock on a resolved object; log a failure.
+	 * Release the lock on a stored object, logging a failure before it is rethrown.
 	 *
-	 * @param string      $identifier Object ID or UUID.
-	 * @param string|null $runUuid    Flow run releasing the lock.
-	 * @param bool        $break      Release regardless of holder.
+	 * @param UnlockRequest $request The object, the run releasing it and whether this is a break.
 	 *
 	 * @return bool True when a lock was released, false when there was none.
 	 *
 	 * @throws \Exception If unlock operation fails.
 	 */
-	private function unlockLogged(string $identifier, ?string $runUuid, bool $break): bool {
+	private function unlockLogged(UnlockRequest $request): bool {
 		try {
-			return $this->unlockResolved(identifier: $identifier, runUuid: $runUuid, break: $break);
+			return $this->unlockResolved(request: $request);
 		} catch (\Exception $e) {
-			$this->logger->error(message: '[LockHandler] Failed to unlock object', context: $this->failure(identifier: $identifier, error: $e));
+			$this->logger->error(message: '[LockHandler] Failed to unlock object', context: $this->failure(identifier: $request->identifier, error: $e));
 			throw $e;
 		}
 	}//end unlockLogged()
@@ -515,21 +532,19 @@ class LockHandler {
 	 * holder can still resolve the object, and the explicit authorization check
 	 * runs before any state is mutated.
 	 *
-	 * @param string      $identifier Object ID or UUID.
-	 * @param string|null $runUuid    Flow run releasing the lock.
-	 * @param bool        $break      Release regardless of holder.
+	 * @param UnlockRequest $request The object, the run releasing it and whether this is a break.
 	 *
 	 * @return bool True when a lock was released, false when there was none.
 	 *
 	 * @throws Exception If the caller may not unlock this object.
 	 */
-	private function unlockResolved(string $identifier, ?string $runUuid, bool $break): bool {
+	private function unlockResolved(UnlockRequest $request): bool {
 		try {
-			$context = $this->findObjectWithContext(identifier: $identifier, _rbacBypass: true);
+			$context = $this->findObjectWithContext(identifier: $request->identifier, _rbacBypass: true);
 		} catch (DoesNotExistException $e) {
 			// Pre-creation / advisory lock release: the identifier never resolved
 			// to a stored object (no-op if no advisory lock is present).
-			return $this->releaseAdvisory(identifier: $identifier);
+			return $this->releaseAdvisory(identifier: $request->identifier);
 		}
 
 		// Releasing a lock that does not exist needs no unlock permission: FALSE
@@ -538,8 +553,8 @@ class LockHandler {
 			return false;
 		}
 
-		$this->assertMayUnlock(identifier: $identifier, object: $context['object'], runUuid: $runUuid, break: $break);
-		$this->releaseStoredLock(context: $context, runUuid: $runUuid, break: $break);
+		$this->assertMayUnlock(request: $request, object: $context['object']);
+		$this->releaseStoredLock(context: $context, request: $request);
 
 		return true;
 	}//end unlockResolved()
@@ -547,21 +562,19 @@ class LockHandler {
 	/**
 	 * Refuse an unlock the caller may not perform; a break is authorized at its call site.
 	 *
-	 * @param string       $identifier Object ID or UUID.
-	 * @param ObjectEntity $object     The locked object.
-	 * @param string|null  $runUuid    Flow run releasing the lock.
-	 * @param bool         $break      Release regardless of holder.
+	 * @param UnlockRequest $request The object, the run releasing it and whether this is a break.
+	 * @param ObjectEntity  $object  The locked object.
 	 *
 	 * @return void
 	 *
 	 * @throws Exception If the caller may not unlock this object.
 	 */
-	private function assertMayUnlock(string $identifier, ObjectEntity $object, ?string $runUuid, bool $break): void {
-		if ($break === true || $this->authorization->mayUnlock(object: $object, runUuid: $runUuid) === true) {
+	private function assertMayUnlock(UnlockRequest $request, ObjectEntity $object): void {
+		if ($request->break === true || $this->authorization->mayUnlock(object: $object, runUuid: $request->runUuid) === true) {
 			return;
 		}
 
-		$this->logger->warning(message: '[LockHandler] Unauthorized unlock attempt', context: $this->logContext(fields: ['identifier' => $identifier]));
+		$this->logger->warning(message: '[LockHandler] Unauthorized unlock attempt', context: $this->logContext(fields: ['identifier' => $request->identifier]));
 		throw new Exception('User does not have permission to unlock this object');
 	}//end assertMayUnlock()
 
@@ -579,31 +592,31 @@ class LockHandler {
 	}//end releaseAdvisory()
 
 	/**
-	 * Record a release: the run bookkeeping, a break, the audit trail and the log.
+	 * Drop the run-lock bookkeeping of the run a release displaced, if it was a run lock.
 	 *
-	 * A BREAK is recorded under its own action, naming the holder it displaced:
-	 * an administrator overriding somebody else's lock is not the same event as
-	 * a holder releasing their own.
-	 *
-	 * @param ObjectEntity $before    The object before the release.
-	 * @param ObjectEntity $after     The released object.
 	 * @param array        $displaced The holder and run the release displaced.
-	 * @param bool         $break     Whether this was a break.
+	 * @param ObjectEntity $after     The released object.
 	 *
 	 * @return void
 	 */
-	private function recordRelease(ObjectEntity $before, ObjectEntity $after, array $displaced, bool $break): void {
+	private function forgetDisplacedRun(array $displaced, ObjectEntity $after): void {
 		if ($displaced['displacedRun'] !== null) {
 			$this->runLocks?->forget(runUuid: $displaced['displacedRun'], objectUuid: (string) $after->getUuid());
 		}
+	}//end forgetDisplacedRun()
 
-		if ($break === true) {
-			$this->auditTrailMapper->createAuditTrailEntry(object: $after, action: 'lock.broken', context: $displaced);
-		}
-
+	/**
+	 * Record a release in the audit trail and the log.
+	 *
+	 * @param ObjectEntity $before The object before the release.
+	 * @param ObjectEntity $after  The released object.
+	 *
+	 * @return void
+	 */
+	private function recordUnlock(ObjectEntity $before, ObjectEntity $after): void {
 		$this->auditTrailMapper->createAuditTrail(old: $before, new: $after, action: 'unlock');
 		$this->logger->info(message: '[LockHandler] Object unlocked successfully', context: $this->logContext(fields: ['uuid' => $after->getUuid()]));
-	}//end recordRelease()
+	}//end recordUnlock()
 
 	/**
 	 * The public, snake_case lock info for a raw lock payload.
