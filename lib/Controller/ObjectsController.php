@@ -91,7 +91,7 @@ use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
 use OCA\OpenRegister\Service\Export\ExportRunFile;
 use OCA\OpenRegister\Service\Export\ExportRunOrigin;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
@@ -6189,10 +6189,10 @@ class ObjectsController extends Controller {
 
 			/*
 			 * Get the FileService from the container.
-			 * @var FileService $fileService
+			 * @var FileServiceInterface $fileService
 			 */
 
-			$fileService = $this->container->get(FileService::class);
+			$fileService = $this->container->get(FileServiceInterface::class);
 
 			// Optional: get custom filename from query parameters.
 			$customFilename = $this->request->getParam(key: 'filename');
@@ -6262,7 +6262,7 @@ class ObjectsController extends Controller {
 	 */
 	private function auditBulkDownload(ObjectEntity $object, array $zipInfo): void {
 		try {
-			$fileService = $this->container->get(FileService::class);
+			$fileService = $this->container->get(FileServiceInterface::class);
 			$files = $fileService->getFiles($object);
 			$fileService->getAuditHandler()->logBulkDownload(
 				object: $object,
