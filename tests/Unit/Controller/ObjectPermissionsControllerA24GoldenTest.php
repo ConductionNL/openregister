@@ -38,6 +38,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectPermissionsControllerFactory;
 
 /**
  * Golden outcomes of the access-set endpoints.
@@ -81,7 +82,7 @@ class ObjectPermissionsControllerA24GoldenTest extends TestCase {
 		$objects->method('getRegister')->willReturn(1);
 		$objects->method('getSchema')->willReturn(7);
 
-		return new ObjectPermissionsController(
+		return ObjectPermissionsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			objectService: $objects,
