@@ -8,7 +8,7 @@ exports[`DashboardSideBar golden renders the totals tables 1`] = `
         <div class="filterSection">
           <h3>t:Filter Statistics</h3>
           <div class="filterGroup"><label for="registerSelect">t:Register</label>
-            <x-ncselect reduce="option => option[key]" label="title" getoptionlabel="option => optionLabel(option, key)" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
+            <x-ncselect reduce="[function]" label="title" getoptionlabel="[function]" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
           </div>
           <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
             <x-ncselect id="schemaSelect" loading="false" disabled="true" inputlabel="t:Schema" placeholder="t:Select a schema"></x-ncselect>
@@ -147,7 +147,7 @@ exports[`DashboardSideBar golden renders while loading 1`] = `
         <div class="filterSection">
           <h3>t:Filter Statistics</h3>
           <div class="filterGroup"><label for="registerSelect">t:Register</label>
-            <x-ncselect reduce="option => option[key]" label="title" getoptionlabel="option => optionLabel(option, key)" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
+            <x-ncselect reduce="[function]" label="title" getoptionlabel="[function]" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
           </div>
           <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
             <x-ncselect id="schemaSelect" loading="false" disabled="true" inputlabel="t:Schema" placeholder="t:Select a schema"></x-ncselect>
@@ -182,7 +182,7 @@ exports[`DashboardSideBar golden renders without statistics 1`] = `
         <div class="filterSection">
           <h3>t:Filter Statistics</h3>
           <div class="filterGroup"><label for="registerSelect">t:Register</label>
-            <x-ncselect reduce="option => option[key]" label="title" getoptionlabel="option => optionLabel(option, key)" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
+            <x-ncselect reduce="[function]" label="title" getoptionlabel="[function]" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
           </div>
           <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
             <x-ncselect id="schemaSelect" loading="false" disabled="true" inputlabel="t:Schema" placeholder="t:Select a schema"></x-ncselect>
@@ -211,7 +211,7 @@ exports[`DashboardSideBar golden renders zeros for empty totals 1`] = `
         <div class="filterSection">
           <h3>t:Filter Statistics</h3>
           <div class="filterGroup"><label for="registerSelect">t:Register</label>
-            <x-ncselect reduce="option => option[key]" label="title" getoptionlabel="option => optionLabel(option, key)" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
+            <x-ncselect reduce="[function]" label="title" getoptionlabel="[function]" id="registerSelect" loading="false" disabled="false" inputlabel="t:Register" placeholder="t:Select a register"></x-ncselect>
           </div>
           <div class="filterGroup"><label for="schemaSelect">t:Schema</label>
             <x-ncselect id="schemaSelect" loading="false" disabled="true" inputlabel="t:Schema" placeholder="t:Select a schema"></x-ncselect>
