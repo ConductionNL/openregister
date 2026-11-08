@@ -28,6 +28,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\SyncDataServices;
 
 /**
  * Pins which due sources the hourly sync harvests and what status each ends with.
@@ -94,10 +95,7 @@ class SyncDataJobTest extends TestCase {
 		);
 		$job = new SyncDataJob(
 			$this->createMock(ITimeFactory::class),
-			$this->sources,
-			$schedule,
-			$this->fetchers,
-			$this->pipeline,
+			new SyncDataServices($this->sources, $schedule, $this->fetchers, $this->pipeline),
 			$this->createMock(LoggerInterface::class)
 		);
 		$method = (new \ReflectionClass($job))->getMethod('run');

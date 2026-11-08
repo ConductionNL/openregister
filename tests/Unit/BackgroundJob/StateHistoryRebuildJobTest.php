@@ -28,6 +28,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\StateHistoryRebuildSources;
 
 /**
  * Pins the flag gate, the end of the walk and one rebuilt batch of the state history repair.
@@ -83,9 +84,7 @@ class StateHistoryRebuildJobTest extends TestCase {
 	private function runJob(): void {
 		$job = new StateHistoryRebuildJob(
 			$this->createMock(ITimeFactory::class),
-			$this->rebuild,
-			$this->audit,
-			$this->schemas,
+			new StateHistoryRebuildSources($this->rebuild, $this->audit, $this->schemas),
 			$this->appConfig,
 			$this->createMock(LoggerInterface::class)
 		);

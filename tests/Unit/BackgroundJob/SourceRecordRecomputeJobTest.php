@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\SourceRecordRecomputeJob;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\Merge\MasterRecomputeInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -48,10 +49,12 @@ class SourceRecordRecomputeJobTest extends TestCase {
 
 		$job = new SourceRecordRecomputeJob(
 			$this->createMock(ITimeFactory::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(OrganisationServiceInterface::class),
-			$this->createMock(LoggerInterface::class),
+			new ActorForwardingServices(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IUserManager::class),
+				$this->createMock(OrganisationServiceInterface::class),
+				$this->createMock(LoggerInterface::class)
+			),
 			$recompute
 		);
 
