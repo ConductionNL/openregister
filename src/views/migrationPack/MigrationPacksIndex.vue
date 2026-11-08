@@ -84,6 +84,12 @@
 				<template #column-packSlug="{ value }">
 					<code>{{ value }}</code>
 				</template>
+				<template #column-sourceFormat="{ value }">
+					{{ value }}
+				</template>
+				<template #column-version="{ value }">
+					{{ value }}
+				</template>
 				<template #column-builtin="{ value }">
 					{{ value ? t('openregister', 'Yes') : t('openregister', 'No') }}
 				</template>
@@ -217,8 +223,8 @@ export default {
 		 */
 		columns() {
 			return [
-				{ key: 'name', label: t('openregister', 'Name') },
-				{ key: 'packSlug', label: t('openregister', 'Slug') },
+				{ key: 'name', label: t('openregister', 'Name'), cellClass: 'cn-cell--wrap' },
+				{ key: 'packSlug', label: t('openregister', 'Slug'), cellClass: 'cn-cell--wrap' },
 				{ key: 'sourceFormat', label: t('openregister', 'Source format') },
 				{ key: 'version', label: t('openregister', 'Version') },
 				{ key: 'builtin', label: t('openregister', 'Built-in') },

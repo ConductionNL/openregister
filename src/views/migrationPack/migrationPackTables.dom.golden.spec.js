@@ -25,10 +25,33 @@ jest.mock('@nextcloud/l10n', () => ({
 	translatePlural: (app, one, many, count) => `n:${count}:${many}`,
 }))
 jest.mock('@nextcloud/vue', () => jest.requireActual('../../../tests/unit/support/ncGolden.js').ncLibrary())
-jest.mock('@conduction/nextcloud-vue', () => ({
-	__esModule: true,
-	CnDataTable: jest.requireActual('../../../tests/unit/support/tableGolden.js').CnDataTableStub,
-}))
+jest.mock('@conduction/nextcloud-vue', () => {
+	const { CnDataTableStub } = jest.requireActual('../../../tests/unit/support/tableGolden.js')
+	// A cell without a slot as the library's formatValue draws it: text cut at
+	// 100 characters plus an ellipsis, an empty value as a dash.
+	const formatValue = (value) => {
+		if (value === null || value === undefined || value === '') {
+			return '—'
+		}
+		const text = String(value)
+		return text.length > 100 ? `${text.substring(0, 100)}...` : text
+	}
+	return {
+		__esModule: true,
+		CnDataTable: {
+			...CnDataTableStub,
+			render() {
+				const $slots = { ...this.$slots }
+				for (const col of this.columns) {
+					$slots[`column-${col.key}`] ||= ({ value }) => formatValue(value)
+				}
+				return CnDataTableStub.render.call(new Proxy(this, {
+					get: (target, key) => (key === '$slots' ? $slots : target[key]),
+				}))
+			},
+		},
+	}
+})
 jest.mock('vue-material-design-icons/Download.vue', () => ({ __esModule: true, default: { render: () => null } }))
 jest.mock('vue-material-design-icons/Eye.vue', () => ({ __esModule: true, default: { render: () => null } }))
 jest.mock('vue-material-design-icons/Pencil.vue', () => ({ __esModule: true, default: { render: () => null } }))
@@ -75,6 +98,16 @@ describe('MigrationPacksIndex table', () => {
 		expect(wrapper.findAll('tbody button').map((b) => b.attributes())).toMatchSnapshot()
 	})
 
+	it('lets the name and slug wrap and leaves a missing format blank', async () => {
+		const wrapper = await mountList([{ id: 1, name: 'One', packSlug: 'one', sourceFormat: null, version: null, builtin: false, updatedAt: null }])
+		const wrapping = wrapper.findComponent({ name: 'CnDataTable' }).props('columns')
+			.filter((column) => column.cellClass === 'cn-cell--wrap')
+			.map((column) => column.key)
+		expect(wrapping).toEqual(['name', 'packSlug'])
+		const cells = wrapper.findAll('tbody td').map((cell) => cell.text())
+		expect([cells[2], cells[3]]).toEqual(['', ''])
+	})
+
 	it('shows the empty state without packs', async () => {
 		const wrapper = await mountList([])
 		expect(wrapper.findAll('table')).toHaveLength(0)
@@ -114,6 +147,19 @@ describe('PackPreviewPanel tables', () => {
 			},
 		})
 		expect(tableText(wrapper)).toMatchSnapshot()
+		wrapper.unmount()
+	})
+
+	it('keeps a long problem whole and lets the free text wrap', async () => {
+		const long = 'A long sentence that runs on. '.repeat(6).trim()
+		const wrapper = mount(PackPreviewPanel, { props: { definition: null, columns: [] } })
+		await wrapper.setData({ result: { data: { naam: long }, errors: [{ source: 'Datum', target: 'geboren', message: long }] } })
+		expect(wrapper.findAll('tbody td').map((cell) => cell.text()).filter((text) => text.includes(long))).toHaveLength(2)
+		const [fields, problems] = wrapper.findAllComponents({ name: 'CnDataTable' }).map((table) => table.props('columns')
+			.filter((column) => column.cellClass === 'cn-cell--wrap')
+			.map((column) => column.key))
+		expect(fields).toEqual(['name', 'value'])
+		expect(problems).toEqual(['source', 'target', 'message'])
 		wrapper.unmount()
 	})
 

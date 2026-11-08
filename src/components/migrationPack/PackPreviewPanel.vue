@@ -111,6 +111,9 @@
 						<template #column-target="{ value }">
 							{{ value || '-' }}
 						</template>
+						<template #column-message="{ value }">
+							{{ value }}
+						</template>
 					</CnDataTable>
 				</template>
 			</template>
@@ -163,7 +166,7 @@ export default {
 		 */
 		sampleColumns() {
 			return [
-				{ key: 'id', label: t('openregister', 'Source column') },
+				{ key: 'id', label: t('openregister', 'Source column'), cellClass: 'cn-cell--wrap' },
 				{ key: 'value', label: t('openregister', 'Sample value') },
 			]
 		},
@@ -184,8 +187,8 @@ export default {
 		 */
 		fieldColumns() {
 			return [
-				{ key: 'name', label: t('openregister', 'Field') },
-				{ key: 'value', label: t('openregister', 'Value') },
+				{ key: 'name', label: t('openregister', 'Field'), cellClass: 'cn-cell--wrap' },
+				{ key: 'value', label: t('openregister', 'Value'), cellClass: 'cn-cell--wrap' },
 			]
 		},
 
@@ -196,9 +199,9 @@ export default {
 		 */
 		problemColumns() {
 			return [
-				{ key: 'source', label: t('openregister', 'Source column') },
-				{ key: 'target', label: t('openregister', 'Target field') },
-				{ key: 'message', label: t('openregister', 'Problem') },
+				{ key: 'source', label: t('openregister', 'Source column'), cellClass: 'cn-cell--wrap' },
+				{ key: 'target', label: t('openregister', 'Target field'), cellClass: 'cn-cell--wrap' },
+				{ key: 'message', label: t('openregister', 'Problem'), cellClass: 'cn-cell--wrap' },
 			]
 		},
 
