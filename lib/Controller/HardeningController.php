@@ -39,9 +39,9 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\HardeningControllerServices;
-use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
+use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
-use OCA\OpenRegister\Service\Hardening\HardeningFloorException;
+use OCA\OpenRegister\Service\Hardening\HardeningFloorExceptionInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCA\OpenRegister\Service\Hardening\HardeningReportServiceInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningSettingsServiceInterface;
@@ -219,9 +219,9 @@ class HardeningController extends Controller {
 			}
 
 			return new JSONResponse(data: $answer);
-		} catch (ElevationRequiredException $stale) {
+		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
-		} catch (HardeningFloorException $refusal) {
+		} catch (HardeningFloorExceptionInterface $refusal) {
 			return new JSONResponse(data: $refusal->toArray(), statusCode: Http::STATUS_CONFLICT);
 		} catch (InvalidArgumentException $invalid) {
 			return new JSONResponse(data: ['error' => $invalid->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
@@ -266,9 +266,9 @@ class HardeningController extends Controller {
 			}
 
 			return new JSONResponse(data: ['floors' => $applied]);
-		} catch (ElevationRequiredException $stale) {
+		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
-		} catch (HardeningFloorException $refusal) {
+		} catch (HardeningFloorExceptionInterface $refusal) {
 			return new JSONResponse(data: $refusal->toArray(), statusCode: Http::STATUS_CONFLICT);
 		} catch (InvalidArgumentException $invalid) {
 			return new JSONResponse(data: ['error' => $invalid->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
