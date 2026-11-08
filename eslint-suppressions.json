@@ -604,9 +604,6 @@
     }
   },
   "src/modals/settings/LLMConfigModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 4
-    },
     "no-console": {
       "count": 2
     },
