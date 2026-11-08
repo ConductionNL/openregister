@@ -244,14 +244,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function removeParty(string $objectUuid, string $partyUuid, ?string $role = null): int {
-		$targets = array_values(
-			array_filter(
-				$this->links->findPartiesForObject(objectUuid: $objectUuid),
-				static fn (ContactLink $link): bool => $link->getPartyUuid() === $partyUuid
-					&& ($role === null || $link->getRole() === $role)
-			)
-		);
-
+		$targets = $this->linksOfParty(objectUuid: $objectUuid, partyUuid: $partyUuid, role: $role);
 		if ($targets === []) {
 			throw new Exception('Party link not found', 404);
 		}
@@ -263,6 +256,25 @@ class PartyRoleService implements PartyRoleServiceInterface {
 
 		return count($targets);
 	}//end removeParty()
+
+	/**
+	 * The object's links to a party, in one role or in every role.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param string $partyUuid The party uuid.
+	 * @param string|null $role The role; null for every role.
+	 *
+	 * @return array<int, ContactLink> The links.
+	 */
+	private function linksOfParty(string $objectUuid, string $partyUuid, ?string $role): array {
+		return array_values(
+			array_filter(
+				$this->links->findPartiesForObject(objectUuid: $objectUuid),
+				static fn (ContactLink $link): bool => $link->getPartyUuid() === $partyUuid
+					&& ($role === null || $link->getRole() === $role)
+			)
+		);
+	}//end linksOfParty()
 
 	/**
 	 * Replace the party the object is filed against, and record it.
@@ -326,16 +338,44 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	private function assertAcceptedParty(int|string|null $schemaId, string $partyUuid, ?string $role, bool $unscoped): void {
-		$schema = $this->schemaOf(schemaId: $schemaId);
-		if ($schema === null) {
-			return;
-		}
-
-		$kinds = $schema->getPartyKinds();
+		$kinds = $this->declaredKinds(schemaId: $schemaId);
 		if ($kinds === []) {
 			return;
 		}
 
+		$definition = $this->definitionOfParty(partyUuid: $partyUuid, unscoped: $unscoped);
+		$accepted   = self::acceptedKind(kinds: $kinds, kind: $definition->kind());
+		$this->assertRoleOfKind(accepted: $accepted, role: $role);
+	}//end assertAcceptedParty()
+
+	/**
+	 * The party kinds the object's schema accepts; none when there is no
+	 * schema to read, so every party is accepted.
+	 *
+	 * @param int|string|null $schemaId The object's schema.
+	 *
+	 * @return array<int, array<string, mixed>> The kinds.
+	 */
+	private function declaredKinds(int|string|null $schemaId): array {
+		$schema = $this->schemaOf(schemaId: $schemaId);
+		if ($schema === null) {
+			return [];
+		}
+
+		return $schema->getPartyKinds();
+	}//end declaredKinds()
+
+	/**
+	 * The declaration of the party being linked.
+	 *
+	 * @param string $partyUuid The party's uuid.
+	 * @param bool $unscoped Whether to read it without RBAC (a trusted import).
+	 *
+	 * @return PartyDefinition The declaration.
+	 *
+	 * @throws Exception 404 when the party is not found, 400 when it is not a party.
+	 */
+	private function definitionOfParty(string $partyUuid, bool $unscoped): PartyDefinition {
 		$party = match ($unscoped) {
 			true  => $this->parties->findUnscoped(uuid: $partyUuid),
 			false => $this->parties->find(partyUuid: $partyUuid),
@@ -350,24 +390,32 @@ class PartyRoleService implements PartyRoleServiceInterface {
 			throw new Exception('Object "' . $partyUuid . '" is not a party: its schema declares no party model', 400);
 		}
 
-		$accepted = null;
-		foreach ($kinds as $kind) {
-			if ($kind['key'] === $definition->kind()) {
-				$accepted = $kind;
-				break;
+		return $definition;
+	}//end definitionOfParty()
+
+	/**
+	 * The first declared kind with the party's kind as its key.
+	 *
+	 * @param array<int, array<string, mixed>> $kinds The declared kinds.
+	 * @param string $kind The party's kind.
+	 *
+	 * @return array<string, mixed> The accepted kind.
+	 *
+	 * @throws Exception 400 when no declared kind matches, naming every declared key.
+	 */
+	private static function acceptedKind(array $kinds, string $kind): array {
+		foreach ($kinds as $declared) {
+			if ($declared['key'] === $kind) {
+				return $declared;
 			}
 		}
 
-		if ($accepted === null) {
-			$keys = array_map(static fn (array $kind): string => $kind['key'], $kinds);
-			throw new Exception(
-				'Party kind "' . $definition->kind() . '" is not one of: ' . implode(', ', $keys),
-				400
-			);
-		}
-
-		$this->assertRoleOfKind(accepted: $accepted, role: $role);
-	}//end assertAcceptedParty()
+		$keys = array_map(static fn (array $declared): string => $declared['key'], $kinds);
+		throw new Exception(
+			'Party kind "' . $kind . '" is not one of: ' . implode(', ', $keys),
+			400
+		);
+	}//end acceptedKind()
 
 	/**
 	 * Refuse a role the accepted kind does not name; a kind naming none takes any.
@@ -380,12 +428,8 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @throws Exception 400 naming the kind and its roles.
 	 */
 	private function assertRoleOfKind(array $accepted, ?string $role): void {
-		$roles = ($accepted['roles'] ?? null);
-		if (is_array($roles) === false || $roles === [] || $role === null) {
-			return;
-		}
-
-		if (in_array($role, $roles, true) === true) {
+		$roles = self::declaredRoles(accepted: $accepted);
+		if ($roles === [] || $role === null || in_array($role, $roles, true) === true) {
 			return;
 		}
 
@@ -394,6 +438,22 @@ class PartyRoleService implements PartyRoleServiceInterface {
 			400
 		);
 	}//end assertRoleOfKind()
+
+	/**
+	 * The roles a kind declares; none when it names no list of roles.
+	 *
+	 * @param array<string, mixed> $accepted The accepted kind.
+	 *
+	 * @return array<int, mixed> The roles.
+	 */
+	private static function declaredRoles(array $accepted): array {
+		$roles = ($accepted['roles'] ?? null);
+		if (is_array($roles) === false) {
+			return [];
+		}
+
+		return $roles;
+	}//end declaredRoles()
 
 	/**
 	 * Make one link the object's primary party, and no other.
@@ -462,7 +522,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @return Schema|null The schema.
 	 */
 	private function schemaOf(int|string|null $schemaId): ?Schema {
-		if ($schemaId === null || $schemaId === '' || $schemaId === 0) {
+		if (in_array($schemaId, [null, '', 0], true) === true) {
 			return null;
 		}
 
