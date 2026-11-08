@@ -39,7 +39,7 @@ jest.mock('../../components/shared/ActionMenu.vue', () => ({
 		props: ['actions'],
 		render() {
 			const { h } = jest.requireActual('vue')
-			return h('menu', this.actions.map((a) => h('button', { class: 'menuItem', onClick: () => a.run() }, a.label)))
+			return h('menu', this.actions.map((a) => h('button', { class: 'menuItem', onClick: (event) => { event.stopPropagation(); a.run() } }, a.label)))
 		},
 	},
 }))
