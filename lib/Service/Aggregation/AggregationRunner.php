@@ -3542,7 +3542,10 @@ class AggregationRunner implements AggregationRunnerInterface {
 		// UTC explicitly; only fall back to strtotime for offset-bearing text.
 		$hasTimezone = (preg_match('/(Z|[+-]\d{2}:?\d{2})$/', trim($raw)) === 1);
 		if ($hasTimezone === false) {
-			$formats = ['Y-m-d H:i:s', 'Y-m-d\TH:i:s', 'Y-m-d H:i', 'Y-m-d'];
+			// `!` on the date-only shape: without it createFromFormat() takes
+			// the missing time of day from the wall clock, so a day bucket
+			// would be labelled with the moment of the request.
+			$formats = ['Y-m-d H:i:s', 'Y-m-d\TH:i:s', 'Y-m-d H:i', '!Y-m-d'];
 			foreach ($formats as $format) {
 				$parsed = DateTimeImmutable::createFromFormat($format, trim($raw), new DateTimeZone('UTC'));
 				if ($parsed !== false) {
