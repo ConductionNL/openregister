@@ -50,7 +50,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\MapLink;
-use OCA\OpenRegister\Db\MapLinkMapper;
+use OCA\OpenRegister\Db\MapLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -80,7 +80,7 @@ class MapLinkService implements MapLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param MapLinkMapper $mapLinkMapper Persistence for link rows.
+	 * @param MapLinkMapperInterface $mapLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound Maps classes.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
@@ -88,7 +88,7 @@ class MapLinkService implements MapLinkServiceInterface {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly MapLinkMapper $mapLinkMapper,
+		private readonly MapLinkMapperInterface $mapLinkMapper,
 		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,

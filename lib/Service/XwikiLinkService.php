@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\XwikiLink;
-use OCA\OpenRegister\Db\XwikiLinkMapper;
+use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -89,14 +89,14 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param XwikiLinkMapper $xwikiLinkMapper Persistence for link rows.
+	 * @param XwikiLinkMapperInterface $xwikiLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound provider/router.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly XwikiLinkMapper $xwikiLinkMapper,
+		private readonly XwikiLinkMapperInterface $xwikiLinkMapper,
 		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,

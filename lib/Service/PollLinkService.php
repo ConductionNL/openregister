@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\PollLink;
-use OCA\OpenRegister\Db\PollLinkMapper;
+use OCA\OpenRegister\Db\PollLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -91,14 +91,14 @@ class PollLinkService implements PollLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param PollLinkMapper $pollLinkMapper Persistence for link rows.
+	 * @param PollLinkMapperInterface $pollLinkMapper Persistence for link rows.
 	 * @param IDBConnection $db Database connection.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly PollLinkMapper $pollLinkMapper,
+		private readonly PollLinkMapperInterface $pollLinkMapper,
 		private readonly IDBConnection $db,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,

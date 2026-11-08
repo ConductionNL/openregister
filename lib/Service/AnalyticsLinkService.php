@@ -52,7 +52,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AnalyticsLink;
-use OCA\OpenRegister\Db\AnalyticsLinkMapper;
+use OCA\OpenRegister\Db\AnalyticsLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -112,14 +112,14 @@ class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param AnalyticsLinkMapper $analyticsLinkMapper Persistence for link rows.
+	 * @param AnalyticsLinkMapperInterface $analyticsLinkMapper Persistence for link rows.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ContainerInterface $container App container NC Analytics' ReportService is resolved from.
 	 */
 	public function __construct(
-		private readonly AnalyticsLinkMapper $analyticsLinkMapper,
+		private readonly AnalyticsLinkMapperInterface $analyticsLinkMapper,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
