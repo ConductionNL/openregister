@@ -457,3 +457,13 @@ describe.each(Object.keys(PAGES))('list page %s', (name) => {
 		expect(wrapper.find('.pagination').exists()).toBe(false)
 	})
 })
+
+describe('webhook tables', () => {
+	it('lets the webhook name and log text wrap', () => {
+		const wrapping = (columns) => columns
+			.filter((column) => column.cellClass === 'cn-cell--wrap')
+			.map((column) => column.key)
+		expect(wrapping(WebhooksIndex.computed.webhookColumns.call({}))).toEqual(['name'])
+		expect(wrapping(WebhookLogsIndex.computed.logColumns.call({}))).toEqual(['webhookId', 'errorMessage'])
+	})
+})

@@ -311,11 +311,11 @@ export default {
 		 */
 		columns() {
 			return [
-				{ key: 'title', label: t('openregister', 'Title') },
+				{ key: 'title', label: t('openregister', 'Title'), cellClass: 'cn-cell--wrap' },
 				{ key: 'sourceType', label: t('openregister', 'Source') },
 				{ key: 'localVersion', label: t('openregister', 'Local Version') },
 				{ key: 'remoteVersion', label: t('openregister', 'Remote Version') },
-				{ key: 'status', label: t('openregister', 'Status') },
+				{ key: 'status', label: t('openregister', 'Status'), cellClass: 'cn-cell--wrap' },
 				{ key: 'updated', label: t('openregister', 'Updated') },
 			]
 		},

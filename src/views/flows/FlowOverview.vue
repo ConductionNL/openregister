@@ -528,7 +528,7 @@ export default {
 			return [
 				{ key: 'semver', label: t('openregister', 'Version') },
 				{ key: 'status', label: t('openregister', 'Status') },
-				{ key: 'publishedAt', label: t('openregister', 'Published') },
+				{ key: 'publishedAt', label: t('openregister', 'Published'), cellClass: 'cn-cell--wrap' },
 			]
 		},
 
@@ -552,7 +552,7 @@ export default {
 				{ key: 'created', label: t('openregister', 'Started') },
 				{ key: 'duration', label: t('openregister', 'Duration') },
 				{ key: 'subjectUuid', label: t('openregister', 'About') },
-				{ key: 'stoppedAt', label: t('openregister', 'Stopped at') },
+				{ key: 'stoppedAt', label: t('openregister', 'Stopped at'), cellClass: 'cn-cell--wrap' },
 				{ key: 'flowVersion', label: t('openregister', 'Version') },
 			]
 		},

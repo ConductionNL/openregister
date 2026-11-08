@@ -61,7 +61,14 @@
 				data-testid="provenance-table"
 				:columns="provenanceColumns"
 				:rows="provenanceEntries"
-				rowKey="attribute" />
+				rowKey="attribute">
+				<template #column-source="{ value }">
+					{{ value }}
+				</template>
+				<template #column-confidence="{ value }">
+					{{ value ?? '—' }}
+				</template>
+			</CnDataTable>
 		</template>
 
 		<MdmConflictResolutionModal
@@ -134,9 +141,9 @@ export default {
 		 */
 		provenanceColumns() {
 			return [
-				{ key: 'attribute', label: t('openregister', 'Attribute') },
-				{ key: 'source', label: t('openregister', 'Winning source') },
-				{ key: 'confidence', label: t('openregister', 'Confidence') },
+				{ key: 'attribute', label: t('openregister', 'Attribute'), cellClass: 'cn-cell--wrap' },
+				{ key: 'source', label: t('openregister', 'Winning source'), cellClass: 'cn-cell--wrap' },
+				{ key: 'confidence', label: t('openregister', 'Confidence'), cellClass: 'cn-cell--wrap' },
 				{ key: 'timestamp', label: t('openregister', 'Timestamp') },
 			]
 		},
