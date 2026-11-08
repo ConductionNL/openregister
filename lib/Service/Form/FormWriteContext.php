@@ -72,6 +72,8 @@ final readonly class FormWriteContext {
 	 * Whether the save asks RBAC.
 	 *
 	 * @return bool False only for a scope-value owner.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function rbac(): bool {
 		return $this->isScoped() === false;
@@ -81,6 +83,8 @@ final readonly class FormWriteContext {
 	 * Whether the object is stored without an owner: an anonymous, unscoped write.
 	 *
 	 * @return bool True when nobody owns it.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function unowned(): bool {
 		return $this->subject === null && $this->isScoped() === false;
@@ -90,6 +94,8 @@ final readonly class FormWriteContext {
 	 * The owner stamped on a new object: the scope value of a draft being started, else none.
 	 *
 	 * @return string|null The owner value.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function explicitOwner(): ?string {
 		if ($this->isScoped() === true && $this->uuid === null) {

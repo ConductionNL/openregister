@@ -33,29 +33,71 @@ use OCP\IUser;
 final readonly class FormSubmission {
 
 	/**
+	 * The writes, in order: `{ register, schema, mapping?, as? }`.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public array $writes;
+
+	/**
+	 * What the submitter filled in.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public array $payload;
+
+	/**
+	 * The signed-in subject; null for anonymous.
+	 *
+	 * @var IUser|null
+	 */
+	public ?IUser $subject;
+
+	/**
+	 * The form id the key and upload tokens belong to.
+	 *
+	 * @var string
+	 */
+	public string $scope;
+
+	/**
+	 * The draft saved into or left, or null.
+	 *
+	 * @var string|null
+	 */
+	public ?string $draftId;
+
+	/**
+	 * The draft's asserted owner; null takes the subject.
+	 *
+	 * @var DraftOwner|null
+	 */
+	public ?DraftOwner $owner;
+
+	/**
 	 * Bundle the request.
 	 *
 	 * @param array<int, array<string, mixed>> $writes  The writes, in order: `{ register, schema, mapping?, as? }`.
 	 * @param array<string, mixed>             $payload What the submitter filled in.
-	 * @param IUser|null                       $subject The signed-in subject; null for anonymous.
-	 * @param string                           $scope   The form id the key and upload tokens belong to.
-	 * @param string|null                      $draftId The draft saved into or left, or null.
-	 * @param DraftOwner|null                  $owner   The draft's asserted owner; null takes the subject.
+	 * @param FormSubmitter                    $by      Who submits it and where it lands.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
-	public function __construct(
-		public array $writes,
-		public array $payload,
-		public ?IUser $subject = null,
-		public string $scope = '',
-		public ?string $draftId = null,
-		public ?DraftOwner $owner = null,
-	) {
+	public function __construct(array $writes, array $payload, FormSubmitter $by=new FormSubmitter()) {
+		$this->writes  = $writes;
+		$this->payload = $payload;
+		$this->subject = $by->subject;
+		$this->scope   = $by->scope;
+		$this->draftId = $by->draftId;
+		$this->owner   = $by->owner;
 	}//end __construct()
 
 	/**
 	 * Who the submit is by, as the idempotency binding reads it.
 	 *
 	 * @return string The user id, a scope value, or the anonymous marker.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function submitter(): string {
 		if ($this->subject !== null) {
@@ -73,6 +115,8 @@ final readonly class FormSubmission {
 	 * The scope an idempotency key belongs to: the form, else the first destination.
 	 *
 	 * @return string The scope.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function keyScope(): string {
 		if ($this->scope !== '') {
