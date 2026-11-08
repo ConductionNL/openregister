@@ -38,7 +38,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
-use OCA\OpenRegister\Tests\Unit\Controller\Support\ScopesControllerFactory;
 
 /**
  * Pins what each caller (anonymous, member, admin) is told it may do, and every fallback.
@@ -88,7 +87,7 @@ class ScopesControllerA24GoldenTest extends TestCase {
 		$this->registers = $this->createMock(RegisterMapperInterface::class);
 		$this->schemas = $this->createMock(SchemaMapperInterface::class);
 		$this->permissions = $this->createMock(PermissionHandlerInterface::class);
-		$this->controller = ScopesControllerFactory::create(
+		$this->controller = new ScopesController(
 			'openregister',
 			$this->createMock(IRequest::class),
 			new ControllerSession($this->userSession, $this->groupManager, new NullLogger()),
