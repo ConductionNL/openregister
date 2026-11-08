@@ -32,7 +32,7 @@ use OCA\OpenRegister\Controller\Support\PartyObjectAccess;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Service\Party\PartyIndicatorGuardInterface;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
@@ -76,9 +76,9 @@ class PartyController extends Controller {
 	/**
 	 * The declared effects.
 	 *
-	 * @var PartyIndicatorGuard
+	 * @var PartyIndicatorGuardInterface
 	 */
-	private readonly PartyIndicatorGuard $indicators;
+	private readonly PartyIndicatorGuardInterface $indicators;
 
 	/**
 	 * The capped party query.
