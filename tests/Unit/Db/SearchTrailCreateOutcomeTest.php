@@ -82,7 +82,6 @@ final class SearchTrailCreateOutcomeTest extends TestCase {
 		$outcome = new SearchTrail();
 		$outcome->setResultCount($counts[0]);
 		$outcome->setTotalResults($counts[1]);
-		$outcome->setResponseTime((int)round($responseTime));
-		return $this->mapper()->createSearchTrail($query, $outcome, $type);
+		return $this->mapper()->createSearchTrail($query, $outcome, $responseTime, $type);
 	}//end create()
 }//end class

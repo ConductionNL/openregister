@@ -79,13 +79,13 @@ interface SearchTrailMapperInterface {
 	 *
 	 * @param array       $searchQuery   The search query parameters
 	 * @param SearchTrail $outcome       The unsaved trail carrying what the search
-	 *                                   returned: result count, total results and
-	 *                                   response time in whole milliseconds.
+	 *                                   returned: result count and total results.
+	 * @param float       $responseTime  The response time in milliseconds
 	 * @param string      $executionType The execution type ('sync' or 'async')
 	 *
 	 * @return SearchTrail The created search trail entity
 	 */
-	public function createSearchTrail(array $searchQuery, SearchTrail $outcome, string $executionType = 'sync'): SearchTrail;
+	public function createSearchTrail(array $searchQuery, SearchTrail $outcome, float $responseTime, string $executionType = 'sync'): SearchTrail;
 
 	/**
 	 * Get search statistics for the given time period

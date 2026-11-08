@@ -67,17 +67,17 @@ class SearchTrailServiceGoldenTest extends TestCase {
 	 *
 	 * @param SearchTrail $outcome The unsaved trail.
 	 *
-	 * @return array{0: int|null, 1: int|null, 2: int|null}
+	 * @return array{0: int|null, 1: int|null}
 	 */
 	private static function outcomeOf(SearchTrail $outcome): array {
-		return [$outcome->getResultCount(), $outcome->getTotalResults(), $outcome->getResponseTime()];
+		return [$outcome->getResultCount(), $outcome->getTotalResults()];
 	}
 
 	public function testCreatePassesArgumentsAndDoesNotClearByDefault(): void {
 		$trail = new SearchTrail();
 		$this->trailMapper->expects($this->once())->method('createSearchTrail')
-			->willReturnCallback(function (array $query, SearchTrail $outcome, string $type) use ($trail) {
-				$this->assertSame([['q' => 'x', '_limit' => 3], 4, 40, 13, 'async'], [$query, ...self::outcomeOf($outcome), $type]);
+			->willReturnCallback(function (array $query, SearchTrail $outcome, float $responseTime, string $type) use ($trail) {
+				$this->assertSame([['q' => 'x', '_limit' => 3], 4, 40, 12.5, 'async'], [$query, ...self::outcomeOf($outcome), $responseTime, $type]);
 				return $trail;
 			});
 		$this->trailMapper->expects($this->never())->method('clearLogs');
@@ -89,7 +89,7 @@ class SearchTrailServiceGoldenTest extends TestCase {
 		$trail = new SearchTrail();
 		$this->trailMapper->method('createSearchTrail')->willReturnCallback(function (...$args) use ($trail) {
 			$this->calls[] = 'create';
-			$this->assertSame([[], 1, 2, 0, 'sync'], [$args[0], ...self::outcomeOf($args[1]), $args[2]]);
+			$this->assertSame([[], 1, 2, 0.0, 'sync'], [$args[0], ...self::outcomeOf($args[1]), $args[2], $args[3]]);
 			return $trail;
 		});
 		$this->trailMapper->expects($this->once())->method('clearLogs')->willReturnCallback(function () {

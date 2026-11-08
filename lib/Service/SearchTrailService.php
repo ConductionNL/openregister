@@ -159,18 +159,40 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	): SearchTrail {
 		try {
 			// Mapper handles filtering of system parameters (starting with _).
-			$outcome = new SearchTrail();
-			$outcome->setResultCount($resultCount);
-			$outcome->setTotalResults($totalResults);
-			$outcome->setResponseTime((int)round($responseTime));
-			$trail = $this->searchTrailMapper->createSearchTrail(searchQuery: $query, outcome: $outcome, executionType: $executionType);
-			$this->selfClearIfEnabled();
-			return $trail;
+			$outcome = $this->outcome(resultCount: $resultCount, totalResults: $totalResults);
+			return $this->selfCleared(trail: $this->searchTrailMapper->createSearchTrail($query, $outcome, $responseTime, $executionType));
 		} catch (Exception $e) {
 			// Wrap exception with more context for debugging.
 			throw new Exception('Search trail creation failed: ' . $e->getMessage(), 0, $e);
 		}
 	}//end createSearchTrail()
+
+	/**
+	 * The unsaved trail carrying what a search returned.
+	 *
+	 * @param int $resultCount  The number of results returned
+	 * @param int $totalResults The total number of matching results
+	 *
+	 * @return SearchTrail
+	 */
+	private function outcome(int $resultCount, int $totalResults): SearchTrail {
+		$outcome = new SearchTrail();
+		$outcome->setResultCount($resultCount);
+		$outcome->setTotalResults($totalResults);
+		return $outcome;
+	}//end outcome()
+
+	/**
+	 * Run the self-clearing a new trail triggers, and hand the trail back.
+	 *
+	 * @param SearchTrail $trail The trail just created.
+	 *
+	 * @return SearchTrail The same trail.
+	 */
+	private function selfCleared(SearchTrail $trail): SearchTrail {
+		$this->selfClearIfEnabled();
+		return $trail;
+	}//end selfCleared()
 
 	/**
 	 * Clean up expired search trails
