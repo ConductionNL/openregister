@@ -1247,8 +1247,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		}
 
 		try {
-			return $this->container
-				->get(\OCA\OpenRegister\Service\Lifecycle\LifecycleActionContextInterface::class)
+			return AuditTrailCollaborators::lifecycleActionContextFrom(container: $this->container)
 				->systemAppFor($uuid);
 		} catch (\Throwable $contextUnavailable) {
 			return null;
@@ -1314,7 +1313,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 */
 	private function resolveAuditExpiry(ObjectEntity $objectEntity, \DateTime $createdAt): array {
 		try {
-			$resolver = $this->container->get(\OCA\OpenRegister\Service\AuditRetentionResolverInterface::class);
+			$resolver = AuditTrailCollaborators::retentionResolverFrom(container: $this->container);
 
 			$resolved = $resolver->resolve(object: $objectEntity, createdAt: $createdAt);
 

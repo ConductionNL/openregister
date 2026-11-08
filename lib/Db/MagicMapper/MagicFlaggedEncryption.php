@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FieldEncryptionHandlerInterface;
+use OCA\OpenRegister\Service\PropertyAccessCollaborators;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
 
@@ -126,7 +127,7 @@ final class MagicFlaggedEncryption {
 	 * @throws RuntimeException When no handler is available.
 	 */
 	private function handler(Schema $schema): FieldEncryptionHandlerInterface {
-		$handler = $this->container->get(FieldEncryptionHandlerInterface::class);
+		$handler = PropertyAccessCollaborators::fieldEncryptionFrom(container: $this->container);
 		if ($handler instanceof FieldEncryptionHandlerInterface === false) {
 			throw new RuntimeException(
 				'Schema "' . ($schema->getSlug() ?? (string) $schema->getId())

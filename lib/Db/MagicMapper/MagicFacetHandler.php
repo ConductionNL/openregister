@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
+use OCA\OpenRegister\Service\PropertyAccessCollaborators;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use DateTime;
 use LogicException;
@@ -1666,7 +1666,7 @@ class MagicFacetHandler {
 	 */
 	private function readRuleAdmits(Schema $schema, string $property): bool {
 		try {
-			$rbac = $this->container->get(PropertyRbacHandlerInterface::class);
+			$rbac = PropertyAccessCollaborators::propertyRbacFrom(container: $this->container);
 
 			// The object is empty because a facet is not about one record: it
 			// asks whether this property is readable AT ALL for this caller, not

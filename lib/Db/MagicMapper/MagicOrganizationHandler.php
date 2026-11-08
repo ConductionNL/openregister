@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
+use OCA\OpenRegister\Service\TenancyCollaborators;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -445,7 +446,7 @@ class MagicOrganizationHandler {
 	 */
 	private function sharedMasterDataResolver(): ?SharedMasterDataServiceInterface {
 		try {
-			$resolver = $this->container->get(SharedMasterDataServiceInterface::class);
+			$resolver = TenancyCollaborators::sharedMasterDataFrom(container: $this->container);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[MagicOrganizationHandler] Shared master data resolver unavailable',

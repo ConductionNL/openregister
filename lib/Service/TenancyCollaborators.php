@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use Psr\Container\ContainerInterface;
 
 /**
  * Builds the tenancy helpers the mappers' tenancy traits use.
@@ -32,6 +33,9 @@ use OCP\IDBConnection;
  * connection and the app config they already hold. This class does exactly
  * that and hands the instance back typed against its interface, so the Db
  * layer names the interface and never the class that implements it.
+ *
+ * The shared resolver the organisation handler looks up is asked for under the
+ * same container id as before and handed back as the container returns it.
  *
  * Types only: what is checked, logged or refused stays with the caller.
  */
@@ -58,4 +62,15 @@ final class TenancyCollaborators {
 	public static function tenantLogRedactor(?IAppConfig $appConfig): TenantLogRedactorInterface {
 		return new TenantLogRedactor(appConfig: $appConfig);
 	}//end tenantLogRedactor()
+
+	/**
+	 * The shared shared-master-data resolver, exactly as the container returns it.
+	 *
+	 * @param ContainerInterface $container The container the caller holds.
+	 *
+	 * @return mixed The shared SharedMasterDataServiceInterface instance.
+	 */
+	public static function sharedMasterDataFrom(ContainerInterface $container): mixed {
+		return $container->get(SharedMasterDataService::class);
+	}//end sharedMasterDataFrom()
 }//end class
