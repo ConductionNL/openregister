@@ -154,7 +154,8 @@ class CalculationOnSaveGoldenTest extends TestCase {
 
 		return new CalculationOnSaveListener(
 			new CalculationOnSaveLookups($schemaMapper, $registerMapper, $this->createMock(SequenceServiceInterface::class), $logger),
-			new CalculationOnSaveEngine($evaluator, $builder, $ruleRuns)
+			new CalculationOnSaveEngine($evaluator, $builder),
+			$ruleRuns
 		);
 	}//end listener()
 

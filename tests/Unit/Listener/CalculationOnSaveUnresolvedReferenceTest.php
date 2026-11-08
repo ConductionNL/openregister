@@ -125,7 +125,8 @@ class CalculationOnSaveUnresolvedReferenceTest extends TestCase {
 
 		$this->listener = new CalculationOnSaveListener(
 			new CalculationOnSaveLookups($schemaMapper, $this->createMock(RegisterMapper::class), $this->createMock(SequenceService::class), $logger),
-			new CalculationOnSaveEngine(new CalculationEvaluator(new PlaceholderResolver($userSession)), $payloadBuilder, $this->ruleRuns)
+			new CalculationOnSaveEngine(new CalculationEvaluator(new PlaceholderResolver($userSession)), $payloadBuilder),
+			$this->ruleRuns
 		);
 	}//end setUp()
 

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\EventDispatcher\Event;
@@ -66,8 +67,9 @@ class CalculationOnSaveListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up schema calculations.
 	 *
-	 * @param CalculationOnSaveLookups $lookups Schema, register, counter and log.
-	 * @param CalculationOnSaveEngine  $engine  Evaluator, payload builder and rule run log.
+	 * @param CalculationOnSaveLookups $lookups  Schema, register, counter and log.
+	 * @param CalculationOnSaveEngine  $engine   Evaluator and payload builder.
+	 * @param RuleRunRecorderInterface $ruleRuns Records each calculation's verdict for the rule inventory.
 	 *
 	 * @return void
 	 *
@@ -79,6 +81,7 @@ class CalculationOnSaveListener implements IEventListener {
 	public function __construct(
 		private readonly CalculationOnSaveLookups $lookups,
 		private readonly CalculationOnSaveEngine $engine,
+		private readonly RuleRunRecorderInterface $ruleRuns,
 	) {
 	}//end __construct()
 
@@ -324,7 +327,7 @@ class CalculationOnSaveListener implements IEventListener {
 			return;
 		}
 
-		$this->engine->ruleRuns->record(
+		$this->ruleRuns->record(
 			ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_CALCULATION, schemaSlug: $run->slug, key: $name),
 			schemaSlug: $run->slug,
 			trace: $trace,

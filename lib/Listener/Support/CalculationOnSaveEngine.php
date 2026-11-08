@@ -24,11 +24,10 @@ namespace OCA\OpenRegister\Listener\Support;
 
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilderInterface;
-use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 
 /**
- * What the save-time calculation pass evaluates with: the payload it builds,
- * the evaluator, and the rule run log each verdict goes to.
+ * What the save-time calculation pass evaluates with: the payload it builds
+ * and the evaluator.
  *
  * @spec openspec/specs/computed-fields/spec.md
  */
@@ -38,14 +37,12 @@ final class CalculationOnSaveEngine {
 	 *
 	 * @param CalculationEvaluatorInterface      $evaluator      Expression evaluator.
 	 * @param CalculationPayloadBuilderInterface $payloadBuilder Shared @self/@ref/@aggregate payload prep.
-	 * @param RuleRunRecorderInterface           $ruleRuns       Records each calculation's verdict for the rule inventory.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function __construct(
 		public readonly CalculationEvaluatorInterface $evaluator,
 		public readonly CalculationPayloadBuilderInterface $payloadBuilder,
-		public readonly RuleRunRecorderInterface $ruleRuns,
 	) {
 	}//end __construct()
 }//end class

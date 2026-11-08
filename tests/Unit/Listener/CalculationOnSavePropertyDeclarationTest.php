@@ -80,7 +80,8 @@ class CalculationOnSavePropertyDeclarationTest extends TestCase {
 
 		$this->listener = new CalculationOnSaveListener(
 			new CalculationOnSaveLookups($this->schemaMapper, $registerMapper, $this->createMock(originalClassName: SequenceService::class), $this->createMock(originalClassName: LoggerInterface::class)),
-			new CalculationOnSaveEngine(new CalculationEvaluator(new PlaceholderResolver($userSession)), $payloadBuilder, $this->createMock(originalClassName: RuleRunRecorder::class))
+			new CalculationOnSaveEngine(new CalculationEvaluator(new PlaceholderResolver($userSession)), $payloadBuilder),
+			$this->createMock(originalClassName: RuleRunRecorder::class)
 		);
 
 	}//end setUp()
