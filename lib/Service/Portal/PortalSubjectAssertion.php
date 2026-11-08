@@ -206,10 +206,12 @@ class PortalSubjectAssertion {
 
 		return new PortalSubject(
 			subjectRef: $subjectRef,
-			audience: trim((string)($claims['audience'] ?? '')),
-			organisation: trim((string)($claims['organisation'] ?? '')),
-			trust: trim((string)($claims['trust'] ?? '')),
-			jti: trim((string)($claims['jti'] ?? ''))
+			claims: new PortalSubjectClaims(
+				audience: trim((string)($claims['audience'] ?? '')),
+				organisation: trim((string)($claims['organisation'] ?? '')),
+				trust: trim((string)($claims['trust'] ?? '')),
+				jti: trim((string)($claims['jti'] ?? ''))
+			)
 		);
 	}//end subjectOf()
 

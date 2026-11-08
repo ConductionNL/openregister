@@ -62,23 +62,43 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	public const PRIMARY_REPLACED_ACTION = 'party.primary-replaced';
 
 	/**
+	 * The link rows.
+	 *
+	 * @var ContactLinkMapper
+	 */
+	private readonly ContactLinkMapper $links;
+
+	/**
+	 * Writes one party link.
+	 *
+	 * @var PartyLinkWriter
+	 */
+	private readonly PartyLinkWriter $writer;
+
+	/**
+	 * The audit trail.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $audit;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $links The link rows.
-	 * @param PartyLinkWriter $writer Writes one party link.
+	 * @param PartyRoleRecords $records The link rows, the link writer and the audit trail.
 	 * @param TrustedPartyReaderInterface $parties The party records.
 	 * @param SchemaMapperInterface $schemas The schemas, for the accepted kinds and roles.
-	 * @param AuditTrailMapperInterface $audit The audit trail.
 	 * @param PersonLinkEvents $events Announces what happened to a link.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
-		private readonly PartyLinkWriter $writer,
+		PartyRoleRecords $records,
 		private readonly TrustedPartyReaderInterface $parties,
 		private readonly SchemaMapperInterface $schemas,
-		private readonly AuditTrailMapperInterface $audit,
 		private readonly PersonLinkEvents $events,
 	) {
+		$this->links = $records->links;
+		$this->writer = $records->writer;
+		$this->audit = $records->audit;
 	}//end __construct()
 
 	/**
@@ -137,7 +157,12 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function addParty(string $objectUuid, int $registerId, int|string|null $schemaId, array $payload): ContactLink {
-		return $this->linkParty(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, payload: $payload, linkedBy: null);
+		return $this->linkParty(
+			target: new PartyLinkTarget(objectUuid: $objectUuid, registerId: $registerId, schemaId: self::intOrNull(value: $schemaId)),
+			schemaId: $schemaId,
+			payload: $payload,
+			linkedBy: null
+		);
 	}//end addParty()
 
 	/**
@@ -159,15 +184,19 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function importParty(string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, string $linkedBy): ContactLink {
-		return $this->linkParty(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, payload: $payload, linkedBy: $linkedBy);
+		return $this->linkParty(
+			target: new PartyLinkTarget(objectUuid: $objectUuid, registerId: $registerId, schemaId: self::intOrNull(value: $schemaId)),
+			schemaId: $schemaId,
+			payload: $payload,
+			linkedBy: $linkedBy
+		);
 	}//end importParty()
 
 	/**
 	 * Link the party after the kind and role checks, as the signed-in user or the named linker.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|string|null $schemaId The object's schema id.
+	 * @param PartyLinkTarget $target The object, register and numeric schema id the link records.
+	 * @param int|string|null $schemaId The object's schema id, uuid or slug, for the accepted kinds.
 	 * @param array<string, mixed> $payload The link fields.
 	 * @param string|null $linkedBy The linker when nobody is signed in.
 	 *
@@ -175,7 +204,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 	 *
 	 * @throws Exception 400 for an undeclared kind or role, 404 for an unknown party.
 	 */
-	private function linkParty(string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, ?string $linkedBy): ContactLink {
+	private function linkParty(PartyLinkTarget $target, int|string|null $schemaId, array $payload, ?string $linkedBy): ContactLink {
 		$partyUuid = trim((string)($payload['partyUuid'] ?? ''));
 		if ($partyUuid === '') {
 			throw new Exception('partyUuid is required', 400);
@@ -185,9 +214,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 		$this->assertAcceptedParty(schemaId: $schemaId, partyUuid: $partyUuid, role: $role, unscoped: ($linkedBy !== null));
 
 		$link = $this->writer->write(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: self::intOrNull(value: $schemaId),
+			target: $target,
 			partyUuid: $partyUuid,
 			role: $role,
 			linkedBy: $linkedBy
@@ -195,7 +222,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 
 		$link = $this->applyPeriodAndNote(link: $link, payload: $payload);
 		if (($payload['primary'] ?? false) === true) {
-			$link = $this->markPrimary(objectUuid: $objectUuid, link: $link);
+			$link = $this->markPrimary(objectUuid: $target->objectUuid, link: $link);
 		}
 
 		$this->events->linked(link: $link);
