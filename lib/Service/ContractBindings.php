@@ -40,6 +40,14 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
+use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
+use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
@@ -208,6 +216,10 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
+use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
+use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
@@ -564,6 +576,12 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectWriterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		CallerPolicyInterface::class => CallerPolicy::class,
+		CallerRateLimiterInterface::class => CallerRateLimiter::class,
+		ApiCallRecorderInterface::class => ApiCallRecorder::class,
+		ApiVersionNegotiatorInterface::class => ApiVersionNegotiator::class,
+		OasRequestValidatorInterface::class => OasRequestValidator::class,
+		ProblemDetailsBuilderInterface::class => ProblemDetailsBuilder::class,
 	];
 
 	/**
