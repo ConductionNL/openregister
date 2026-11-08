@@ -41,27 +41,7 @@ use Throwable;
  *
  * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
  */
-class DedupCreatePolicy {
-
-	/**
-	 * The payload key a caller sets to save through a blocking match.
-	 *
-	 * `SaveObject` strips it from the body before anything reads the body as
-	 * data, so it never reaches schema validation, never lands in the stored
-	 * object, and never has to be declared as a schema property. The constant
-	 * lives here, beside the policy it belongs to, so the two spellings cannot
-	 * drift apart.
-	 *
-	 * @var string
-	 */
-	public const OVERRIDE_KEY = '_dedupOverride';
-
-	/**
-	 * Audit action recorded when an override is exercised.
-	 *
-	 * @var string
-	 */
-	public const OVERRIDE_ACTION = 'dedup.overridden';
+class DedupCreatePolicy implements DedupCreatePolicyInterface {
 
 	/**
 	 * The policy a schema gets when it declares none.

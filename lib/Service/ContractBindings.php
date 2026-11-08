@@ -501,6 +501,8 @@ use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
+use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Service\Survivorship\TrustTierResolverInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
@@ -1004,6 +1006,7 @@ final class ContractBindings {
 		RevealFlusherInterface::class => RevealFlusher::class,
 		UserPrincipalResolverInterface::class => UserPrincipalResolver::class,
 		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
+		TrustTierResolverInterface::class => TrustTierResolver::class,
 	];
 
 	/**
