@@ -40,7 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -304,7 +304,7 @@ class MagicSearchHandler {
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not
 	 *                                                        be healed still lacks, so the lifecycle predicates
 	 *                                                        leave them out
-	 * @param ExplicitReveal|null $explicitReveal The request's reveal state; a filter or sort on an explicit-reveal
+	 * @param ExplicitRevealInterface|null $explicitReveal The request's reveal state; a filter or sort on an explicit-reveal
 	 *                                            property is refused unless the code is trusted
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
@@ -319,7 +319,7 @@ class MagicSearchHandler {
 		private readonly RelatedRowQueryApplier $relatedRows,
 		private readonly ?LanguageServiceInterface $languageService = null,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
-		private readonly ?ExplicitReveal $explicitReveal = null,
+		private readonly ?ExplicitRevealInterface $explicitReveal = null,
 	) {
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
