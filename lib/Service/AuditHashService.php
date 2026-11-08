@@ -67,6 +67,17 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  *
+ * @phpstan-type ChainWalk array{
+ *     from: int|null,
+ *     to: int|null,
+ *     afterId: int,
+ *     previousHash: string|null,
+ *     brokenAt: int|null,
+ *     entriesVerified: int,
+ *     skippedNullHashes: int,
+ *     purgedTombstones: int
+ * }
+ *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
 class AuditHashService implements AuditHashServiceInterface, AuditSealInterface {
@@ -332,32 +343,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface 
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
 	public function sealUnsealed(int $limit = self::SWEEP_BATCH_SIZE): int {
-		if ($limit < 1) {
-			return 0;
-		}
-
-		$fromId = $this->getEarliestUnsealedId();
+		$fromId = $this->sweepStart(limit: $limit);
 		if ($fromId === null) {
-			return 0;
-		}
-
-		// Re-chaining the tail is bounded, because this runs on a five-minute
-		// cron and must not turn into a 300k-row rewrite. A gap older than the
-		// window is a backlog, not a hiccup, and belongs to the operator repair.
-		$tail = $this->countRowsFrom(fromId: $fromId);
-		if ($tail > self::MAX_SWEEP_RECHAIN) {
-			$this->logger->warning(
-				message: sprintf(
-					'[AuditHashService] Oldest unsealed audit row is id %d, with %d row(s) after it — '
-					. 'beyond the %d the sweep may rewrite in one pass. Sealing it in place would fan the '
-					. 'chain out, so the sweep is standing down. Run occ openregister:rechain-audit-trail.',
-					$fromId,
-					$tail,
-					self::MAX_SWEEP_RECHAIN
-				),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
-			);
-
 			return 0;
 		}
 
@@ -371,42 +358,122 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface 
 		}
 
 		try {
-			$previousHash = $this->getHashBefore(id: $fromId);
-			if ($previousHash === null) {
-				$previousHash = $this->getGenesisHash();
-			}
-
-			$sealed = 0;
-			$afterId = ($fromId - 1);
-
-			while (true) {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select('*')
-					->from('openregister_audit_trails')
-					->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
-					->orderBy('id', 'ASC')
-					->setMaxResults($limit);
-
-				$result = $qb->executeQuery();
-				$rows = $result->fetchAll();
-				$result->closeCursor();
-
-				if ($rows === []) {
-					break;
-				}
-
-				$window = $this->rechainWindow(rows: $rows, previousHash: $previousHash);
-				$previousHash = $window['previousHash'];
-				$sealed += $window['rechained'];
-				$afterId = $window['lastId'];
-			}//end while
-
-			return $sealed;
+			return $this->sweepFrom(fromId: $fromId, limit: $limit);
 		} finally {
 			$this->releaseSealLock();
-		}//end try
+		}
 
 	}//end sealUnsealed()
+
+	/**
+	 * The id a sweep starts from, or null when the sweep has nothing it may do.
+	 *
+	 * @param int $limit Maximum rows to seal in one pass.
+	 *
+	 * @return int|null The oldest unsealed id, or null for no sweep.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function sweepStart(int $limit): ?int {
+		if ($limit < 1) {
+			return null;
+		}
+
+		$fromId = $this->getEarliestUnsealedId();
+		if ($fromId === null || $this->tailTooLong(fromId: $fromId) === true) {
+			return null;
+		}
+
+		return $fromId;
+	}//end sweepStart()
+
+	/**
+	 * Whether the rows from the oldest gap on are more than the sweep may rewrite.
+	 *
+	 * Re-chaining the tail is bounded, because this runs on a five-minute
+	 * cron and must not turn into a 300k-row rewrite. A gap older than the
+	 * window is a backlog, not a hiccup, and belongs to the operator repair.
+	 *
+	 * @param int $fromId The oldest unsealed id.
+	 *
+	 * @return bool True (and logged) when the sweep must stand down.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function tailTooLong(int $fromId): bool {
+		$tail = $this->countRowsFrom(fromId: $fromId);
+		if ($tail <= self::MAX_SWEEP_RECHAIN) {
+			return false;
+		}
+
+		$this->logger->warning(
+			message: sprintf(
+				'[AuditHashService] Oldest unsealed audit row is id %d, with %d row(s) after it — '
+				. 'beyond the %d the sweep may rewrite in one pass. Sealing it in place would fan the '
+				. 'chain out, so the sweep is standing down. Run occ openregister:rechain-audit-trail.',
+				$fromId,
+				$tail,
+				self::MAX_SWEEP_RECHAIN
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+		);
+
+		return true;
+	}//end tailTooLong()
+
+	/**
+	 * Re-chain every row from the oldest gap forward, window by window.
+	 *
+	 * The caller holds the seal lock.
+	 *
+	 * @param int $fromId The oldest unsealed id.
+	 * @param int $limit  Rows per window.
+	 *
+	 * @return int The number of rows sealed.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function sweepFrom(int $fromId, int $limit): int {
+		$previousHash = ($this->getHashBefore(id: $fromId) ?? $this->getGenesisHash());
+		$sealed = 0;
+		$afterId = ($fromId - 1);
+
+		$rows = $this->rowsAfter(afterId: $afterId, limit: $limit);
+		while ($rows !== []) {
+			$window = $this->rechainWindow(rows: $rows, previousHash: $previousHash);
+			$previousHash = $window['previousHash'];
+			$sealed += $window['rechained'];
+			$afterId = $window['lastId'];
+			$rows = $this->rowsAfter(afterId: $afterId, limit: $limit);
+		}
+
+		return $sealed;
+	}//end sweepFrom()
+
+	/**
+	 * Up to `$limit` rows after the given id, oldest first.
+	 *
+	 * @param int $afterId Exclusive lower bound on `id`.
+	 * @param int $limit   Most rows to return.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function rowsAfter(int $afterId, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_audit_trails')
+			->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return $rows;
+	}//end rowsAfter()
 
 	/**
 	 * The id of the oldest row still missing a hash.
@@ -732,16 +799,38 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface 
 	 * @param int[] $ids The audit-trail row ids to seal (non-empty).
 	 *
 	 * @return int Number of rows sealed.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chain walking requires sealed/unsealed branching
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same — early-outs plus per-row sealed/unsealed paths
 	 */
 	private function sealRowsLocked(array $ids): int {
 		$minId = min($ids);
-		$maxId = max($ids);
 
 		// Fetch every row in the id range so interleaved foreign rows keep
 		// their place in the chain.
+		$rows = $this->rowsBetween(minId: $minId, maxId: max($ids));
+		if ($rows === []) {
+			return 0;
+		}
+
+		$previousHash = ($this->getHashBefore(id: $minId) ?? $this->getGenesisHash());
+
+		$updates = $this->chainUnsealed(rows: $rows, previousHash: $previousHash);
+		if ($updates === []) {
+			return 0;
+		}
+
+		$this->writeSeals(updates: $updates);
+
+		return count($updates);
+	}//end sealRowsLocked()
+
+	/**
+	 * Every row with an id in the inclusive range, oldest first.
+	 *
+	 * @param int $minId Inclusive lower bound.
+	 * @param int $maxId Inclusive upper bound.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function rowsBetween(int $minId, int $maxId): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_audit_trails')
@@ -753,16 +842,20 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface 
 		$rows = $result->fetchAll();
 		$result->closeCursor();
 
-		if ($rows === []) {
-			return 0;
-		}
+		return $rows;
+	}//end rowsBetween()
 
-		$previousHash = $this->getHashBefore(id: $minId);
-		if ($previousHash === null) {
-			$previousHash = $this->getGenesisHash();
-		}
-
-		// Walk the range in id order, computing hashes for unsealed rows.
+	/**
+	 * The hash and predecessor of each unsealed row, walking the range in id order.
+	 *
+	 * An already sealed row is not rewritten; its hash becomes the next chain link.
+	 *
+	 * @param array<int, array<string, mixed>> $rows         The range, oldest first.
+	 * @param string                           $previousHash Hash of the sealed row before the range.
+	 *
+	 * @return array<int, array{hash: string, previousHash: string}> Keyed by row id.
+	 */
+	private function chainUnsealed(array $rows, string $previousHash): array {
 		$updates = [];
 		foreach ($rows as $row) {
 			$storedHash = ($row['hash'] ?? null);
@@ -785,11 +878,17 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface 
 			$previousHash = $hash;
 		}
 
-		if ($updates === []) {
-			return 0;
-		}
+		return $updates;
+	}//end chainUnsealed()
 
-		// Single CASE-based UPDATE for the whole batch.
+	/**
+	 * Write a batch of seals as a single CASE-based UPDATE.
+	 *
+	 * @param array<int, array{hash: string, previousHash: string}> $updates Keyed by row id (non-empty).
+	 *
+	 * @return void
+	 */
+	private function writeSeals(array $updates): void {
 		$tableName = $this->db->getQueryBuilder()->getTableName('openregister_audit_trails');
 		$hashCases = [];
 		$prevCases = [];
@@ -812,9 +911,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface 
 			. ' WHERE id IN (' . $idList . ')';
 
 		$this->db->executeStatement($sql, $parameters);
-
-		return count($updates);
-	}//end sealRowsLocked()
+	}//end writeSeals()
 
 	/**
 	 * Try to acquire the exclusive advisory lock serializing seal passes.
@@ -990,22 +1087,11 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface 
 	 *     range?: array{from: int, to: int}
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function verifyChain(?int $from = null, ?int $to = null): array {
-		$entriesVerified = 0;
-		$skippedNullHashes = 0;
-		$purgedTombstones = 0;
-		$previousHash = null;
-
-		// If starting from a specific ID, get the previous entry's hash.
-		if ($from !== null) {
-			$previousHash = $this->getHashBefore(id: $from);
-		}
+		$walk = $this->startChainWalk(from: $from, to: $to);
 
 		// Walk in windows rather than one unbounded query. The DB is not the
 		// constraint here — Postgres returns the whole trail by index scan in
@@ -1017,74 +1103,135 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface 
 		// here as an occ run dying with SIGKILL while PHP still reported a 57 MB
 		// peak. Windowing keeps the driver's buffer bounded and, incidentally,
 		// cuts a partial walk from ~129 s to under a second.
-		$afterId = 0;
-		if ($from !== null) {
-			$afterId = ($from - 1);
-		}
-
-		while (true) {
-			$rows = $this->readChainWindow(afterId: $afterId, to: $to);
-
+		while ($walk['brokenAt'] === null) {
+			$rows = $this->readChainWindow(afterId: $walk['afterId'], to: $to);
 			if (empty($rows) === true) {
 				break;
 			}
 
-			foreach ($rows as $row) {
-				$afterId = (int)$row['id'];
-				$storedHash = ($row['hash'] ?? null);
+			$walk = $this->verifyChainWindow(walk: $walk, rows: $rows);
+		}
 
-				// Skip entries without hashes (pre-migration entries).
-				if ($storedHash === null || $storedHash === '') {
-					$skippedNullHashes++;
-					continue;
-				}
-
-				// A retention tombstone: the payload was lawfully destroyed, so
-				// it cannot re-hash, but its stored hash is still the link the
-				// next row committed to. Carry it forward and count it.
-				// Reporting this as a break would recreate the exact ambiguity
-				// the tombstone exists to remove.
-				if (($row['purged_at'] ?? null) !== null) {
-					$purgedTombstones++;
-					$previousHash = $storedHash;
-					continue;
-				}
-
-				$entry = new AuditTrail();
-				$entry->hydrate(object: $this->mapRowToEntity(row: $row));
-
-				// Determine the previous hash for verification.
-				if ($previousHash === null) {
-					$previousHash = $this->getGenesisHash();
-				}
-
-				$computedHash = $this->computeHash(entry: $entry, previousHash: $previousHash);
-
-				if ($computedHash !== $storedHash) {
-					return $this->buildChainReport(
-						brokenAt: (int)$row['id'],
-						entriesVerified: $entriesVerified,
-						skippedNullHashes: $skippedNullHashes,
-						purgedTombstones: $purgedTombstones,
-						from: $from,
-						to: $to
-					);
-				}
-
-				$previousHash = $storedHash;
-				$entriesVerified++;
-			}//end foreach
-		}//end while
-
-		return $this->buildChainReport(
-			brokenAt: null,
-			entriesVerified: $entriesVerified,
-			skippedNullHashes: $skippedNullHashes,
-			purgedTombstones: $purgedTombstones,
-			from: $from,
-			to: $to
-		);
+		return $this->buildChainReport(walk: $walk);
 	}//end verifyChain()
+
+	/**
+	 * The state a chain walk starts in.
+	 *
+	 * When starting from a specific id, the walk carries on from the hash of
+	 * the nearest sealed entry before it.
+	 *
+	 * @param int|null $from Start entry ID (inclusive), null for beginning.
+	 * @param int|null $to   End entry ID (inclusive), null for end.
+	 *
+	 * @return ChainWalk
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function startChainWalk(?int $from, ?int $to): array {
+		$walk = [
+			'from' => $from,
+			'to' => $to,
+			'afterId' => 0,
+			'previousHash' => null,
+			'brokenAt' => null,
+			'entriesVerified' => 0,
+			'skippedNullHashes' => 0,
+			'purgedTombstones' => 0,
+		];
+
+		if ($from !== null) {
+			$walk['previousHash'] = $this->getHashBefore(id: $from);
+			$walk['afterId'] = ($from - 1);
+		}
+
+		return $walk;
+	}//end startChainWalk()
+
+	/**
+	 * Verify one window of the chain, stopping at the first break.
+	 *
+	 * @param ChainWalk $walk The walk so far.
+	 * @param array<int, array<string, mixed>> $rows The window's rows, oldest first.
+	 *
+	 * @return ChainWalk
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function verifyChainWindow(array $walk, array $rows): array {
+		foreach ($rows as $row) {
+			$walk = $this->verifyChainRow(walk: $walk, row: $row);
+			if ($walk['brokenAt'] !== null) {
+				return $walk;
+			}
+		}
+
+		return $walk;
+	}//end verifyChainWindow()
+
+	/**
+	 * Carry the walk over one row.
+	 *
+	 * Entries without hashes (pre-migration entries) are skipped. A retention
+	 * tombstone: the payload was lawfully destroyed, so it cannot re-hash, but
+	 * its stored hash is still the link the next row committed to. Carry it
+	 * forward and count it. Reporting this as a break would recreate the exact
+	 * ambiguity the tombstone exists to remove.
+	 *
+	 * @param ChainWalk $walk The walk so far.
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return ChainWalk
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function verifyChainRow(array $walk, array $row): array {
+		$walk['afterId'] = (int)$row['id'];
+		$storedHash = ($row['hash'] ?? null);
+
+		if ($storedHash === null || $storedHash === '') {
+			$walk['skippedNullHashes']++;
+			return $walk;
+		}
+
+		if (($row['purged_at'] ?? null) !== null) {
+			$walk['purgedTombstones']++;
+			$walk['previousHash'] = $storedHash;
+			return $walk;
+		}
+
+		return $this->verifySealedRow(walk: $walk, row: $row);
+	}//end verifyChainRow()
+
+	/**
+	 * Re-hash a sealed row over the walk's previous hash and compare.
+	 *
+	 * @param ChainWalk $walk The walk so far.
+	 * @param array<string, mixed> $row The row, carrying a non-empty hash.
+	 *
+	 * @return ChainWalk
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	private function verifySealedRow(array $walk, array $row): array {
+		$entry = new AuditTrail();
+		$entry->hydrate(object: $this->mapRowToEntity(row: $row));
+
+		// Determine the previous hash for verification.
+		$previousHash = ($walk['previousHash'] ?? $this->getGenesisHash());
+
+		$computedHash = $this->computeHash(entry: $entry, previousHash: $previousHash);
+
+		if ($computedHash !== $row['hash']) {
+			$walk['brokenAt'] = (int)$row['id'];
+			return $walk;
+		}
+
+		$walk['previousHash'] = $row['hash'];
+		$walk['entriesVerified']++;
+
+		return $walk;
+	}//end verifySealedRow()
 
 	/**
 	 * Read one window of the chain, in id order, after the given id.
@@ -1130,12 +1277,9 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface 
 	 * apart — which for a tamper-evidence report would mean the "valid" and
 	 * "broken" answers disagreeing about what they counted.
 	 *
-	 * @param int|null $brokenAt Row id where verification failed, or null when the range is intact.
-	 * @param int $entriesVerified Rows whose content re-hashed correctly.
-	 * @param int $skippedNullHashes Rows carrying no hash (pre-migration or fail-soft leftovers).
-	 * @param int $purgedTombstones Rows lawfully purged under a retention policy.
-	 * @param int|null $from Requested range start, or null.
-	 * @param int|null $to Requested range end, or null.
+	 * @param ChainWalk $walk The finished walk: where it broke (null when the range
+	 *                   is intact), the rows that re-hashed, carried no hash or
+	 *                   were lawfully purged, and the requested range.
 	 *
 	 * @return array{
 	 *     valid: bool,
@@ -1146,26 +1290,20 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface 
 	 *     range?: array{from: int|null, to: int|null}
 	 * }
 	 */
-	private function buildChainReport(
-		?int $brokenAt,
-		int $entriesVerified,
-		int $skippedNullHashes,
-		int $purgedTombstones,
-		?int $from,
-		?int $to,
-	): array {
+	private function buildChainReport(array $walk): array {
+		$brokenAt = $walk['brokenAt'];
 		$response = [
 			'valid' => ($brokenAt === null),
-			'entriesVerified' => $entriesVerified,
+			'entriesVerified' => $walk['entriesVerified'],
 			'brokenAt' => $brokenAt,
-			'skippedNullHashes' => $skippedNullHashes,
-			'purgedTombstones' => $purgedTombstones,
+			'skippedNullHashes' => $walk['skippedNullHashes'],
+			'purgedTombstones' => $walk['purgedTombstones'],
 		];
 
-		if ($from !== null || $to !== null) {
+		if ($walk['from'] !== null || $walk['to'] !== null) {
 			$response['range'] = [
-				'from' => ($from ?? $brokenAt),
-				'to' => ($to ?? $brokenAt),
+				'from' => ($walk['from'] ?? $brokenAt),
+				'to' => ($walk['to'] ?? $brokenAt),
 			];
 		}
 
