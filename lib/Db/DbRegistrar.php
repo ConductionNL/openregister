@@ -91,6 +91,7 @@ final class DbRegistrar {
 		RegisterMapperInterface::class => RegisterMapper::class,
 		RuleRunSummaryMapperInterface::class => RuleRunSummaryMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
+		SearchTrailCleanupInterface::class => SearchTrailMapper::class,
 		SourceMapperInterface::class => SourceMapper::class,
 		SyncRecordMapperInterface::class => SyncRecordMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,

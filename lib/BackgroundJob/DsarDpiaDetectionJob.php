@@ -48,7 +48,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
-use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
+use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -106,7 +106,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 	 * @param IAppConfig $appConfig App-config reader.
 	 * @param ObjectOperationsInterface $objectService Object read/write path.
 	 * @param DsarPolicyPackResolver $packResolver Active-pack resolution per jurisdiction.
-	 * @param DpiaPatternDetectionService $detectionService Pure grouping/threshold engine.
+	 * @param DpiaPatternDetectorInterface $detectionService Pure grouping/threshold engine.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable detection audit rows.
 	 * @param LoggerInterface $logger Logger.
 	 */
@@ -115,7 +115,7 @@ class DsarDpiaDetectionJob extends TimedJob {
 		private readonly IAppConfig $appConfig,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly DsarPolicyPackResolver $packResolver,
-		private readonly DpiaPatternDetectionService $detectionService,
+		private readonly DpiaPatternDetectorInterface $detectionService,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 	) {
