@@ -1851,33 +1851,46 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 */
 	private function metricsNeedPhpPath(array $metrics): bool {
 		foreach ($metrics as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			// A DERIVED metric has no SQL form at all: it is arithmetic over the
-			// other metrics' results, which do not exist until they have been
-			// computed. Stated explicitly rather than relying on the `as` check
-			// below to catch it, so removing `as` could never route an
-			// expression at the native path and have it silently compute
-			// nothing.
-			if (($entry['metric'] ?? null) === 'expression') {
-				return true;
-			}
-
-			$condition = ($entry['condition'] ?? null);
-			if (is_array($condition) === true && $condition !== []) {
-				return true;
-			}
-
-			$alias = ($entry['as'] ?? null);
-			if (is_string($alias) === true && $alias !== '') {
+			if ($this->metricEntryNeedsPhpPath(entry: $entry) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end metricsNeedPhpPath()
+
+	/**
+	 * Whether one metric entry is a derived metric, or carries a `condition` or an `as` alias.
+	 *
+	 * @param mixed $entry The metric entry; a non-array entry needs nothing.
+	 *
+	 * @return bool
+	 */
+	private function metricEntryNeedsPhpPath(mixed $entry): bool {
+		if (is_array($entry) === false) {
+			return false;
+		}
+
+		if (($entry['metric'] ?? null) === 'expression') {
+			return true;
+		}
+
+		return $this->declaresConditionOrAlias(entry: $entry);
+	}//end metricEntryNeedsPhpPath()
+
+	/**
+	 * Whether a metric entry declares a non-empty `condition` or a non-empty `as` alias.
+	 *
+	 * @param array<string, mixed> $entry The metric entry.
+	 *
+	 * @return bool
+	 */
+	private function declaresConditionOrAlias(array $entry): bool {
+		$condition = ($entry['condition'] ?? null);
+		$alias     = ($entry['as'] ?? null);
+		return (is_array($condition) === true && $condition !== [])
+			|| (is_string($alias) === true && $alias !== '');
+	}//end declaresConditionOrAlias()
 
 	/**
 	 * Compute every requested metric over one row set.
@@ -4138,6 +4151,27 @@ class AggregationRunner implements AggregationRunnerInterface {
 			return $this->resolveJoinKeyMap(onClause: $onClause, groupFields: $groupFields);
 		}
 
+		$joinedField = $this->joinOnColumn(onClause: $onClause);
+
+		// Same-named group field wins; otherwise the first group field.
+		$parentField = $groupFields[0];
+		if (in_array($joinedField, $groupFields, true) === true) {
+			$parentField = $joinedField;
+		}
+
+		return [$parentField => $joinedField];
+	}//end resolveJoinKey()
+
+	/**
+	 * The joined column a `"Schema.column"` join.on string names.
+	 *
+	 * @param mixed $onClause The join.on value, when it is not a map.
+	 *
+	 * @return string
+	 *
+	 * @throws RuntimeException When join.on is not a non-empty string or names an empty column.
+	 */
+	private function joinOnColumn(mixed $onClause): string {
 		if (is_string($onClause) === false || $onClause === '') {
 			throw new RuntimeException(
 				'Aggregation join.on must be a "Schema.column" string or a {parentField: joinedField} map.'
@@ -4149,14 +4183,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 			throw new RuntimeException('Aggregation join.on names an empty column.');
 		}
 
-		// Same-named group field wins; otherwise the first group field.
-		$parentField = $groupFields[0];
-		if (in_array($joinedField, $groupFields, true) === true) {
-			$parentField = $joinedField;
-		}
-
-		return [$parentField => $joinedField];
-	}//end resolveJoinKey()
+		return $joinedField;
+	}//end joinOnColumn()
 
 	/**
 	 * Resolve the explicit `{parentField: joinedField}` spelling of `on`.
@@ -4281,6 +4309,26 @@ class AggregationRunner implements AggregationRunnerInterface {
 			];
 		}
 
+		$field  = $this->joinSelectField(raw: $raw);
+		$metric = $this->joinSelectMetric(raw: $raw);
+
+		return [
+			'alias' => (string)($raw['alias'] ?? $field),
+			'field' => $this->stripSchemaPrefix(ref: $field),
+			'metric' => $metric,
+		];
+	}//end parseJoinSelectEntry()
+
+	/**
+	 * The non-empty string `field` of a `{field, metric?}` select entry.
+	 *
+	 * @param mixed $raw The select entry.
+	 *
+	 * @return string
+	 *
+	 * @throws RuntimeException When the entry is not an object with a non-empty string field.
+	 */
+	private function joinSelectField(mixed $raw): string {
 		if (is_array($raw) === false
 			|| isset($raw['field']) === false
 			|| is_string($raw['field']) === false
@@ -4291,6 +4339,19 @@ class AggregationRunner implements AggregationRunnerInterface {
 			);
 		}
 
+		return $raw['field'];
+	}//end joinSelectField()
+
+	/**
+	 * The metric of a `{field, metric?}` select entry, `sum` by default.
+	 *
+	 * @param array<string, mixed> $raw The select entry.
+	 *
+	 * @return string
+	 *
+	 * @throws RuntimeException When the metric is not one of JOIN_SELECT_METRICS.
+	 */
+	private function joinSelectMetric(array $raw): string {
 		$metric = (string)($raw['metric'] ?? 'sum');
 		if (in_array($metric, self::JOIN_SELECT_METRICS, true) === false) {
 			throw new RuntimeException(
@@ -4298,12 +4359,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 			);
 		}
 
-		return [
-			'alias' => (string)($raw['alias'] ?? $raw['field']),
-			'field' => $this->stripSchemaPrefix(ref: $raw['field']),
-			'metric' => $metric,
-		];
-	}//end parseJoinSelectEntry()
+		return $metric;
+	}//end joinSelectMetric()
 
 	/**
 	 * Aggregate the joined schema, grouped on the joined side of the join key.
@@ -4442,15 +4499,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 
 				$tuple = [($group['key'] ?? null)];
 				if ($isMulti === true) {
-					$keys = [];
-					if (isset($group['keys']) === true && is_array($group['keys']) === true) {
-						$keys = $group['keys'];
-					}
-
-					$tuple = [];
-					foreach ($joinedFields as $joinedField) {
-						$tuple[] = ($keys[$joinedField] ?? null);
-					}
+					$tuple = $this->joinedKeysTuple(group: $group, joinedFields: $joinedFields);
 				}
 
 				$tupleKey = $this->joinTupleKey(values: $tuple);
@@ -4460,6 +4509,28 @@ class AggregationRunner implements AggregationRunnerInterface {
 
 		return $lookup;
 	}//end indexJoinedGroups()
+
+	/**
+	 * A multi-key group's `keys` values, in joined-field order (null for a missing one).
+	 *
+	 * @param array<string, mixed> $group        The group row.
+	 * @param array<int, string>   $joinedFields Joined-side join key fields.
+	 *
+	 * @return list<mixed>
+	 */
+	private function joinedKeysTuple(array $group, array $joinedFields): array {
+		$keys = [];
+		if (isset($group['keys']) === true && is_array($group['keys']) === true) {
+			$keys = $group['keys'];
+		}
+
+		$tuple = [];
+		foreach ($joinedFields as $joinedField) {
+			$tuple[] = ($keys[$joinedField] ?? null);
+		}
+
+		return $tuple;
+	}//end joinedKeysTuple()
 
 	/**
 	 * Build the merge key for one join-key tuple.
@@ -4483,27 +4554,13 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private function joinTupleKey(array $values): string {
 		$parts = [];
 		foreach ($values as $value) {
-			if ($value === null) {
-				$parts[] = "\x00null";
-				continue;
-			}
-
-			if ($value === true) {
-				$parts[] = 'true';
-				continue;
-			}
-
-			if ($value === false) {
-				$parts[] = 'false';
-				continue;
-			}
-
-			if (is_scalar($value) === true) {
-				$parts[] = (string)$value;
-				continue;
-			}
-
-			$parts[] = (string)json_encode($value);
+			$parts[] = match (true) {
+				$value === null => "\x00null",
+				$value === true => 'true',
+				$value === false => 'false',
+				is_scalar($value) === true => (string)$value,
+				default => (string)json_encode($value),
+			};
 		}
 
 		return implode("\x1f", $parts);
@@ -5186,24 +5243,38 @@ class AggregationRunner implements AggregationRunnerInterface {
 
 		$fields = [];
 		foreach ($groupBy as $key => $entry) {
-			if (is_string($entry) === true) {
-				$fields[] = $entry;
-				continue;
-			}
-
-			if (is_array($entry) === true && is_string(($entry['field'] ?? null)) === true) {
-				$fields[] = $entry['field'];
-				continue;
-			}
-
-			// A map keyed by field name is the other shape this spec takes.
-			if (is_string($key) === true) {
-				$fields[] = $key;
+			$field = $this->groupByEntryField(key: $key, entry: $entry);
+			if ($field !== null) {
+				$fields[] = $field;
 			}
 		}
 
 		return $fields;
 	}//end groupByFields()
+
+	/**
+	 * The field one groupBy entry names: a string entry, a `{field}` object, or a string key.
+	 *
+	 * @param int|string $key   The entry's key.
+	 * @param mixed      $entry The entry.
+	 *
+	 * @return string|null Null when the entry names no field.
+	 */
+	private function groupByEntryField(int|string $key, mixed $entry): string|null {
+		if (is_string($entry) === true) {
+			return $entry;
+		}
+
+		if (is_array($entry) === true && is_string(($entry['field'] ?? null)) === true) {
+			return $entry['field'];
+		}
+
+		if (is_string($key) === true) {
+			return $key;
+		}
+
+		return null;
+	}//end groupByEntryField()
 
 	/**
 	 * The property names a metrics spec refers to.
@@ -5213,12 +5284,8 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @return array<int, string> The names.
 	 */
 	private function metricFields(?array $metrics): array {
-		if ($metrics === null) {
-			return [];
-		}
-
 		$fields = [];
-		foreach ($metrics as $metric) {
+		foreach (($metrics ?? []) as $metric) {
 			if (is_array($metric) === true && is_string(($metric['field'] ?? null)) === true) {
 				$fields[] = $metric['field'];
 			}
