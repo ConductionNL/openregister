@@ -173,6 +173,30 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			return null;
 		}
 
+		$opened = $this->openForFind(config: $config, schema: $schema);
+		if ($opened === null) {
+			return null;
+		}
+
+		[$connection, $columns] = $opened;
+
+		$row = $this->findRow(connection: $connection, config: $config, columns: $columns, id: $id);
+		if ($row === false) {
+			return null;
+		}
+
+		return $this->toObjectEntity(register: $register, schema: $schema, row: $row, config: $config);
+	}//end find()
+
+	/**
+	 * Resolve the source and connect for a single-object read.
+	 *
+	 * @param array<string, mixed> $config The object-source `config` block.
+	 * @param Schema               $schema The sourced schema.
+	 *
+	 * @return array{0: Connection, 1: array<int, string>}|null [connection, scalar columns], or null when unresolvable/unreachable.
+	 */
+	private function openForFind(array $config, Schema $schema): ?array {
 		$context = $this->resolveContext(config: $config, schema: $schema);
 		if ($context === null) {
 			return null;
@@ -180,30 +204,54 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		[$source, $columns] = $context;
 
+		$connection = $this->connectForFind(source: $source);
+		if ($connection === null) {
+			return null;
+		}
+
+		return [$connection, $columns];
+	}//end openForFind()
+
+	/**
+	 * Connect for a single-object read; an unreachable database finds nothing.
+	 *
+	 * @param Source $source The backing database source.
+	 *
+	 * @return Connection|null The connection, or null when it cannot be opened.
+	 */
+	private function connectForFind(Source $source): ?Connection {
 		try {
-			$connection = $this->connect(source: $source);
+			return $this->connect(source: $source);
 		} catch (DbalConnectionException $e) {
 			$this->logger->warning('[ObjectSource:dbal-source] connection unavailable for find: ' . $e->getMessage());
 			return null;
 		}
+	}//end connectForFind()
 
+	/**
+	 * Read the one row whose key matches the object id.
+	 *
+	 * @param Connection           $connection The DBAL connection.
+	 * @param array<string, mixed> $config     The object-source `config` block.
+	 * @param array<int, string>   $columns    The scalar columns to select.
+	 * @param string               $id         The object id (composite ids are separator-joined).
+	 *
+	 * @return array<string, mixed>|false The row, or false when none matches.
+	 *
+	 * @throws DbalObjectSourceException When the query fails (502).
+	 */
+	private function findRow(Connection $connection, array $config, array $columns, string $id): array|false {
 		try {
 			$qb = $this->baseSelect(connection: $connection, config: $config, columns: $columns);
-			(new DbalStatement(qb: $qb, connection: $connection))->andEquals(pairs: self::idPairs(idColumns: $idColumns, id: $id));
+			(new DbalStatement(qb: $qb, connection: $connection))->andEquals(pairs: self::idPairs(idColumns: $this->idColumns(config: $config), id: $id));
 			$qb->setMaxResults(1);
 
-			$row = $qb->executeQuery()->fetchAssociative();
+			return $qb->executeQuery()->fetchAssociative();
 		} catch (DbalException $e) {
 			$this->logger->warning('[ObjectSource:dbal-source] query failed for find: ' . $e->getMessage());
 			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
 		}
-
-		if ($row === false) {
-			return null;
-		}
-
-		return $this->toObjectEntity(register: $register, schema: $schema, row: $row, config: $config);
-	}//end find()
+	}//end findRow()
 
 	/**
 	 * {@inheritDoc}
@@ -229,17 +277,56 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		[$source, $columns] = $context;
 
+		$connection = $this->connectForList(source: $source);
+		if ($connection === null) {
+			return [];
+		}
+
+		$rows = $this->listRows(connection: $connection, config: $config, columns: $columns, query: $query);
+
+		$objects = [];
+		foreach ($rows as $row) {
+			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, row: $row, config: $config);
+		}
+
+		return $objects;
+	}//end findAll()
+
+	/**
+	 * Connect for a list read; a missing driver extension lists nothing.
+	 *
+	 * @param Source $source The backing database source.
+	 *
+	 * @return Connection|null The connection, or null when the driver is missing.
+	 *
+	 * @throws DbalObjectSourceException When the external database is unreachable (503).
+	 */
+	private function connectForList(Source $source): ?Connection {
 		try {
-			$connection = $this->connect(source: $source);
+			return $this->connect(source: $source);
 		} catch (DbalConnectionException $e) {
 			if ($this->driverMissing(source: $source) === true) {
 				$this->logger->warning('[ObjectSource:dbal-source] driver unavailable — returning empty list: ' . $e->getMessage());
-				return [];
+				return null;
 			}
 
 			throw new DbalObjectSourceException('The external database is unreachable.', 503, $e);
 		}
+	}//end connectForList()
 
+	/**
+	 * Read one page of filtered, sorted rows.
+	 *
+	 * @param Connection           $connection The DBAL connection.
+	 * @param array<string, mixed> $config     The object-source `config` block.
+	 * @param array<int, string>   $columns    The scalar columns.
+	 * @param array<string, mixed> $query      Query (filters/search/sort/limit/offset).
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 *
+	 * @throws DbalObjectSourceException When the query fails (502).
+	 */
+	private function listRows(Connection $connection, array $config, array $columns, array $query): array {
 		try {
 			$qb = $this->baseSelect(connection: $connection, config: $config, columns: $columns);
 			$statement = new DbalStatement(qb: $qb, connection: $connection);
@@ -251,19 +338,12 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			$qb->setMaxResults($limit);
 			$qb->setFirstResult($offset);
 
-			$rows = $qb->executeQuery()->fetchAllAssociative();
+			return $qb->executeQuery()->fetchAllAssociative();
 		} catch (DbalException $e) {
 			$this->logger->warning('[ObjectSource:dbal-source] query failed for findAll: ' . $e->getMessage());
 			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
 		}//end try
-
-		$objects = [];
-		foreach ($rows as $row) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, row: $row, config: $config);
-		}
-
-		return $objects;
-	}//end findAll()
+	}//end listRows()
 
 	/**
 	 * {@inheritDoc}
@@ -486,12 +566,23 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			return null;
 		}
 
-		if ($source === null || (string)$source->getType() !== 'database') {
+		if (self::isDatabaseSource(source: $source) === false) {
 			return null;
 		}
 
 		return $source;
 	}//end resolveSource()
+
+	/**
+	 * Whether a loaded source is a database source.
+	 *
+	 * @param Source|null $source The loaded source.
+	 *
+	 * @return bool
+	 */
+	private static function isDatabaseSource(?Source $source): bool {
+		return $source !== null && (string)$source->getType() === 'database';
+	}//end isDatabaseSource()
 
 	/**
 	 * Open the read-only DBAL connection for a source.
@@ -573,22 +664,61 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		}
 
 		foreach ($filters as $column => $value) {
-			if (is_string($column) === false || in_array($column, $filterable, true) === false) {
-				continue;
-			}
-
-			if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-				$this->applyLikeFilter(statement: $statement, column: $column, value: $value[LikeOperator::KEY]);
-				continue;
-			}
-
-			if (is_array($value) === false && is_object($value) === false) {
-				$statement->andEquals(pairs: [[$column, $value]]);
-			}
+			$this->applyFilter(statement: $statement, column: $column, value: $value, filterable: $filterable);
 		}
 
 		$this->applySearch(statement: $statement, query: $query, filterable: $filterable);
 	}//end applyFilters()
+
+	/**
+	 * Apply one filter entry: a `like` bag or a scalar equality on an allowlisted column.
+	 *
+	 * Any other value (a non-`like` bag, an object) stays unsupported on this path.
+	 *
+	 * @param DbalStatement      $statement  The statement (mutated).
+	 * @param int|string         $column     The filter key.
+	 * @param mixed              $value      The filter value.
+	 * @param array<int, string> $filterable The filterable columns.
+	 *
+	 * @return void
+	 */
+	private function applyFilter(DbalStatement $statement, int|string $column, mixed $value, array $filterable): void {
+		if (self::isFilterable(column: $column, filterable: $filterable) === false) {
+			return;
+		}
+
+		if (self::isLikeFilter(value: $value) === true) {
+			$this->applyLikeFilter(statement: $statement, column: (string)$column, value: $value[LikeOperator::KEY]);
+			return;
+		}
+
+		if (is_array($value) === false && is_object($value) === false) {
+			$statement->andEquals(pairs: [[$column, $value]]);
+		}
+	}//end applyFilter()
+
+	/**
+	 * Whether a filter key names an allowlisted column.
+	 *
+	 * @param int|string         $column     The filter key.
+	 * @param array<int, string> $filterable The filterable columns.
+	 *
+	 * @return bool
+	 */
+	private static function isFilterable(int|string $column, array $filterable): bool {
+		return is_string($column) === true && in_array($column, $filterable, true) === true;
+	}//end isFilterable()
+
+	/**
+	 * Whether a filter value is an operator bag carrying a `like` term.
+	 *
+	 * @param mixed $value The filter value.
+	 *
+	 * @return bool
+	 */
+	private static function isLikeFilter(mixed $value): bool {
+		return is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true;
+	}//end isLikeFilter()
 
 	/**
 	 * Apply a `like` filter on one allowlisted column with bound parameters.
@@ -669,18 +799,28 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		}
 
 		foreach ($sort as $column => $direction) {
-			if (is_string($column) === false || in_array($column, $columns, true) === false) {
+			if (self::isFilterable(column: $column, filterable: $columns) === false) {
 				continue;
 			}
 
-			$dir = 'ASC';
-			if (strtolower((string)$direction) === 'desc') {
-				$dir = 'DESC';
-			}
-
-			$statement->qb->addOrderBy($statement->quote(identifier: $column), $dir);
+			$statement->qb->addOrderBy($statement->quote(identifier: $column), self::sortDirection(direction: $direction));
 		}
 	}//end applySort()
+
+	/**
+	 * The SQL direction for a requested sort direction: DESC only for `desc`, any case.
+	 *
+	 * @param mixed $direction The requested direction.
+	 *
+	 * @return string ASC or DESC.
+	 */
+	private static function sortDirection(mixed $direction): string {
+		if (strtolower((string)$direction) === 'desc') {
+			return 'DESC';
+		}
+
+		return 'ASC';
+	}//end sortDirection()
 
 	/**
 	 * The column and value pairs that select a single object by its id.
@@ -1010,29 +1150,8 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	public function update(Register $register, Schema $schema, string $id, array $data, array $config = []): ObjectEntity {
 		[, $connection, $columns] = $this->writeContext(schema: $schema, config: $config, needsId: true);
 
-		$idColumns = $this->idColumns(config: $config);
-		$values = $this->writeValues(data: $data, columns: $columns, config: $config);
-
-		// Primary-key columns are the row's identity — never updatable.
-		foreach ($idColumns as $idColumn) {
-			unset($values[$idColumn]);
-		}
-
-		if ($values === []) {
-			throw new DbalWriteException('The update contains no writable columns.', 400);
-		}
-
-		try {
-			$qb = $connection->createQueryBuilder()->update($this->quote(connection: $connection, identifier: $this->table(config: $config)));
-			foreach ($values as $column => $value) {
-				$qb->set($this->quote(connection: $connection, identifier: $column), $qb->createNamedParameter($value));
-			}
-
-			(new DbalStatement(qb: $qb, connection: $connection))->andEquals(pairs: self::writeIdPairs(idColumns: $idColumns, id: $id));
-			$affected = (int)$qb->executeStatement();
-		} catch (DbalException $e) {
-			throw $this->translateWriteError(exception: $e);
-		}
+		$values   = $this->updateValues(data: $data, columns: $columns, config: $config);
+		$affected = $this->executeUpdate(connection: $connection, config: $config, values: $values, id: $id);
 
 		if ($affected === 0) {
 			throw new DoesNotExistException('No external row matches id ' . $id);
@@ -1045,6 +1164,58 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		return $this->toObjectEntity(register: $register, schema: $schema, row: array_merge($values, ['id' => $id]), config: $config);
 	}//end update()
+
+	/**
+	 * The column values an update writes: the payload minus the key columns, never empty.
+	 *
+	 * @param array<string, mixed> $data    The validated object data.
+	 * @param array<int, string>   $columns The scalar column allowlist.
+	 * @param array<string, mixed> $config  The object-source `config` block.
+	 *
+	 * @return array<string, mixed> The column => value map to write.
+	 *
+	 * @throws DbalWriteException When the payload names a non-column property or nothing writable (400).
+	 */
+	private function updateValues(array $data, array $columns, array $config): array {
+		$values = $this->writeValues(data: $data, columns: $columns, config: $config);
+
+		// Primary-key columns are the row's identity — never updatable.
+		foreach ($this->idColumns(config: $config) as $idColumn) {
+			unset($values[$idColumn]);
+		}
+
+		if ($values === []) {
+			throw new DbalWriteException('The update contains no writable columns.', 400);
+		}
+
+		return $values;
+	}//end updateValues()
+
+	/**
+	 * Execute the key-predicated UPDATE and return the affected row count.
+	 *
+	 * @param Connection           $connection The DBAL connection.
+	 * @param array<string, mixed> $config     The object-source `config` block.
+	 * @param array<string, mixed> $values     The column => value map.
+	 * @param string               $id         The object id (external key).
+	 *
+	 * @return int The affected row count.
+	 *
+	 * @throws DbalWriteException On a malformed composite id or a driver error.
+	 */
+	private function executeUpdate(Connection $connection, array $config, array $values, string $id): int {
+		try {
+			$qb = $connection->createQueryBuilder()->update($this->quote(connection: $connection, identifier: $this->table(config: $config)));
+			foreach ($values as $column => $value) {
+				$qb->set($this->quote(connection: $connection, identifier: $column), $qb->createNamedParameter($value));
+			}
+
+			(new DbalStatement(qb: $qb, connection: $connection))->andEquals(pairs: self::writeIdPairs(idColumns: $this->idColumns(config: $config), id: $id));
+			return (int)$qb->executeStatement();
+		} catch (DbalException $e) {
+			throw $this->translateWriteError(exception: $e);
+		}
+	}//end executeUpdate()
 
 	/**
 	 * {@inheritDoc}
@@ -1191,64 +1362,125 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	private function executeInsert(Connection $connection, string $table, array $values, array $idColumns): ?string {
 		// Composite key: every part must be supplied; the id is derived from the payload.
 		if (count($idColumns) > 1) {
-			$parts = [];
-			foreach ($idColumns as $idColumn) {
-				if (isset($values[$idColumn]) === false) {
-					throw new DbalWriteException(
-						sprintf('Composite-key inserts must supply every key column; "%s" is missing.', $idColumn),
-						400
-					);
-				}
-
-				$parts[] = (string)$values[$idColumn];
-			}
-
-			$connection->insert(
-				$this->quote(connection: $connection, identifier: $table),
-				$this->quoteColumns(connection: $connection, values: $values)
-			);
-			return implode(DatabaseIntrospectionService::COMPOSITE_ID_SEPARATOR, $parts);
+			return $this->insertComposite(connection: $connection, table: $table, values: $values, idColumns: $idColumns);
 		}
 
 		$idColumn = ($idColumns[0] ?? null);
+		if ($idColumn === null) {
+			$this->insertRow(connection: $connection, table: $table, values: $values);
+			return null;
+		}
 
+		return $this->insertKeyed(connection: $connection, table: $table, values: $values, idColumn: $idColumn);
+	}//end executeInsert()
+
+	/**
+	 * Insert into a composite-key table; every key part must be in the payload.
+	 *
+	 * @param Connection           $connection The DBAL connection.
+	 * @param string               $table      The unquoted table name.
+	 * @param array<string, mixed> $values     The column => value map.
+	 * @param array<int, string>   $idColumns  The key columns.
+	 *
+	 * @return string The separator-joined object id.
+	 *
+	 * @throws DbalWriteException When a key part is missing (400).
+	 * @throws DbalException On any driver error (translated by the caller).
+	 */
+	private function insertComposite(Connection $connection, string $table, array $values, array $idColumns): string {
+		$parts = [];
+		foreach ($idColumns as $idColumn) {
+			if (isset($values[$idColumn]) === false) {
+				throw new DbalWriteException(
+					sprintf('Composite-key inserts must supply every key column; "%s" is missing.', $idColumn),
+					400
+				);
+			}
+
+			$parts[] = (string)$values[$idColumn];
+		}
+
+		$this->insertRow(connection: $connection, table: $table, values: $values);
+		return implode(DatabaseIntrospectionService::COMPOSITE_ID_SEPARATOR, $parts);
+	}//end insertComposite()
+
+	/**
+	 * Insert into a single-key table and return the key, supplied or generated.
+	 *
+	 * @param Connection           $connection The DBAL connection.
+	 * @param string               $table      The unquoted table name.
+	 * @param array<string, mixed> $values     The column => value map.
+	 * @param string               $idColumn   The key column.
+	 *
+	 * @return string The new object id.
+	 *
+	 * @throws DbalException On any driver error (translated by the caller).
+	 */
+	private function insertKeyed(Connection $connection, string $table, array $values, string $idColumn): string {
 		// Caller-supplied primary key wins (no generation round-trip needed).
-		if ($idColumn !== null && isset($values[$idColumn]) === true) {
-			$connection->insert(
-				$this->quote(connection: $connection, identifier: $table),
-				$this->quoteColumns(connection: $connection, values: $values)
-			);
+		if (isset($values[$idColumn]) === true) {
+			$this->insertRow(connection: $connection, table: $table, values: $values);
 			return (string)$values[$idColumn];
 		}
 
 		// PostgreSQL: RETURNING is the only reliable generated-key retrieval.
-		if ($idColumn !== null && $connection->getDatabasePlatform() instanceof PostgreSQLPlatform === true) {
-			$columnsSql = [];
-			$params = [];
-			foreach ($values as $column => $value) {
-				$columnsSql[] = $this->quote(connection: $connection, identifier: $column);
-				$params[] = $value;
-			}
-
-			$sql = sprintf(
-				'INSERT INTO %s (%s) VALUES (%s) RETURNING %s',
-				$this->quote(connection: $connection, identifier: $table),
-				implode(', ', $columnsSql),
-				implode(', ', array_fill(0, count($params), '?')),
-				$this->quote(connection: $connection, identifier: $idColumn)
-			);
-
-			$newId = $connection->fetchOne($sql, $params);
-			return (string)$newId;
+		if ($connection->getDatabasePlatform() instanceof PostgreSQLPlatform === true) {
+			return $this->insertReturning(connection: $connection, table: $table, values: $values, idColumn: $idColumn);
 		}
 
-		$connection->insert($this->quote(connection: $connection, identifier: $table), $this->quoteColumns(connection: $connection, values: $values));
-		if ($idColumn === null) {
-			return null;
-		}
-
+		$this->insertRow(connection: $connection, table: $table, values: $values);
 		return (string)$connection->lastInsertId();
-	}//end executeInsert()
+	}//end insertKeyed()
+
+	/**
+	 * Insert with `RETURNING` the generated key (PostgreSQL).
+	 *
+	 * @param Connection           $connection The DBAL connection.
+	 * @param string               $table      The unquoted table name.
+	 * @param array<string, mixed> $values     The column => value map.
+	 * @param string               $idColumn   The key column.
+	 *
+	 * @return string The generated key.
+	 *
+	 * @throws DbalException On any driver error (translated by the caller).
+	 */
+	private function insertReturning(Connection $connection, string $table, array $values, string $idColumn): string {
+		$columnsSql = [];
+		$params = [];
+		foreach ($values as $column => $value) {
+			$columnsSql[] = $this->quote(connection: $connection, identifier: $column);
+			$params[] = $value;
+		}
+
+		$sql = sprintf(
+			'INSERT INTO %s (%s) VALUES (%s) RETURNING %s',
+			$this->quote(connection: $connection, identifier: $table),
+			implode(', ', $columnsSql),
+			implode(', ', array_fill(0, count($params), '?')),
+			$this->quote(connection: $connection, identifier: $idColumn)
+		);
+
+		$newId = $connection->fetchOne($sql, $params);
+		return (string)$newId;
+	}//end insertReturning()
+
+	/**
+	 * Insert one row with platform-quoted table and column names.
+	 *
+	 * @param Connection           $connection The DBAL connection.
+	 * @param string               $table      The unquoted table name.
+	 * @param array<string, mixed> $values     The column => value map.
+	 *
+	 * @return void
+	 *
+	 * @throws DbalException On any driver error (translated by the caller).
+	 */
+	private function insertRow(Connection $connection, string $table, array $values): void {
+		$connection->insert(
+			$this->quote(connection: $connection, identifier: $table),
+			$this->quoteColumns(connection: $connection, values: $values)
+		);
+	}//end insertRow()
 
 	/**
 	 * Quote the column keys of a value map for Connection::insert().
@@ -1302,21 +1534,12 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	private function translateWriteError(DbalException $exception): DbalWriteException {
 		// Doctrine's typed constraint exceptions are platform-independent
 		// (SQLite reports the generic SQLSTATE 23000 for every constraint
-		// class); prefer them over raw SQLSTATE inspection.
-		if ($exception instanceof \Doctrine\DBAL\Exception\UniqueConstraintViolationException === true) {
-			return new DbalWriteException('A unique constraint on the external table was violated.', 409, $exception);
-		}
-
-		if ($exception instanceof \Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException === true) {
-			return new DbalWriteException('A foreign-key constraint on the external table was violated.', 409, $exception);
-		}
-
-		if ($exception instanceof \Doctrine\DBAL\Exception\NotNullConstraintViolationException === true) {
-			return new DbalWriteException('A required (not-null) column on the external table was not provided.', 422, $exception);
-		}
-
-		if ($exception instanceof \Doctrine\DBAL\Exception\ConstraintViolationException === true) {
-			return new DbalWriteException('A constraint on the external table was violated.', 422, $exception);
+		// class); prefer them over raw SQLSTATE inspection. The generic
+		// constraint class comes last: the others extend it.
+		foreach (self::constraintErrors() as [$class, $message, $status]) {
+			if ($exception instanceof $class === true) {
+				return new DbalWriteException($message, $status, $exception);
+			}
 		}
 
 		$sqlState = '';
@@ -1326,4 +1549,20 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		return DbalWriteException::fromSqlState(sqlState: $sqlState, previous: $exception);
 	}//end translateWriteError()
+
+	/**
+	 * Typed constraint errors and the sanitized message and status each maps to.
+	 *
+	 * Checked in order: the generic constraint class is last because the others extend it.
+	 *
+	 * @return array<int, array{0: class-string, 1: string, 2: int}>
+	 */
+	private static function constraintErrors(): array {
+		return [
+			[\Doctrine\DBAL\Exception\UniqueConstraintViolationException::class, 'A unique constraint on the external table was violated.', 409],
+			[\Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException::class, 'A foreign-key constraint on the external table was violated.', 409],
+			[\Doctrine\DBAL\Exception\NotNullConstraintViolationException::class, 'A required (not-null) column on the external table was not provided.', 422],
+			[\Doctrine\DBAL\Exception\ConstraintViolationException::class, 'A constraint on the external table was violated.', 422],
+		];
+	}//end constraintErrors()
 }//end class

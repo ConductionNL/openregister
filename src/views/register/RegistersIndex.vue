@@ -32,13 +32,7 @@ import {
 			:selectable="true"
 			:selectedIds="selectedRegisters"
 			:schema="registerSchema"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Add Register')"
 			rowKey="id"
@@ -179,6 +173,10 @@ import {
 	registerPayload,
 	schemaOptionsOf,
 } from '../../services/registerForm.js'
+import {
+	BUILTIN_ACTIONS_OFF,
+	timestampColumns,
+} from '../indexPageOptions.js'
 
 /**
  * How the names cache changed in size, in words.
@@ -252,6 +250,7 @@ export default {
 
 	data() {
 		return {
+			builtinActionsOff: BUILTIN_ACTIONS_OFF,
 			selectedRegisters: [],
 			isRefreshing: false,
 			schemaSelectOptions: [],
@@ -322,16 +321,7 @@ export default {
 			return [
 				{ key: 'title', label: t('openregister', 'Title'), sortable: true },
 				{ key: 'schemas', label: t('openregister', 'Schemas') },
-				{
-					key: 'created',
-					label: t('openregister', 'Created'),
-					sortable: true,
-				},
-				{
-					key: 'updated',
-					label: t('openregister', 'Updated'),
-					sortable: true,
-				},
+				...timestampColumns(),
 			]
 		},
 

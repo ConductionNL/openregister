@@ -91,21 +91,12 @@ class QualityScorer implements QualityScorerInterface {
 		$totalWeight = 0.0;
 
 		foreach ($rules as $rule) {
-			if (is_array($rule) === false) {
-				continue;
-			}
-
-			$type = (string)($rule['type'] ?? '');
-			if ($type === '') {
-				continue;
-			}
-
-			$weight = $this->ruleWeight(rule: $rule);
+			$weight = $this->usableWeight(rule: $rule);
 			if ($weight <= 0.0) {
 				continue;
 			}
 
-			$sub = $this->scoreRule(object: $object, rule: $rule, type: $type, now: $now);
+			$sub = $this->scoreRule(object: $object, rule: $rule, type: (string)$rule['type'], now: $now);
 
 			$weightedSum += ($sub * $weight);
 			$totalWeight += $weight;
@@ -120,6 +111,28 @@ class QualityScorer implements QualityScorerInterface {
 		// Clamp defensively; sub-scores are already bounded but float math drifts.
 		return max(0.0, min(1.0, round($score, 4)));
 	}//end score()
+
+	/**
+	 * The weight a rule counts with, or 0.0 when the rule cannot be scored.
+	 *
+	 * A rule that is not an object or names no type is skipped, exactly as a
+	 * rule with a zero or negative weight is.
+	 *
+	 * @param mixed $rule Rule definition.
+	 *
+	 * @return float Weight (>= 0); 0.0 means skip the rule.
+	 */
+	private function usableWeight($rule): float {
+		if (is_array($rule) === false) {
+			return 0.0;
+		}
+
+		if ((string)($rule['type'] ?? '') === '') {
+			return 0.0;
+		}
+
+		return $this->ruleWeight(rule: $rule);
+	}//end usableWeight()
 
 	/**
 	 * Map a numeric score to a status label using optional thresholds.
@@ -192,42 +205,78 @@ class QualityScorer implements QualityScorerInterface {
 	 * @param array<string, mixed> $rule Rule definition.
 	 *
 	 * @return float 1.0 on match, else 0.0.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The branch count tracks the rule's optional
-	 *   inputs (presence, named format, custom pattern, regex outcome); each is a distinct,
-	 *   independently-testable guard and folding them would obscure the format-resolution flow.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same rationale — sequential optional guards.
-	 * @SuppressWarnings(PHPMD.ErrorControlOperator) The @ on preg_match() suppresses a warning
-	 *   for a user-supplied pattern that fails to compile; the false return is handled as a
-	 *   non-match, so the operator is the guard, not a swallowed error.
 	 */
 	private function scoreFormat(array $object, array $rule): float {
-		$value = $this->fieldValue(object: $object, field: (string)($rule['field'] ?? ''));
-		if ($this->isPresent(value: $value) === false || is_scalar($value) === false) {
+		$subject = $this->scalarSubject(object: $object, rule: $rule);
+		if ($subject === null) {
 			return 0.0;
 		}
 
-		$subject = (string)$value;
-
-		$pattern = null;
-		$named = (string)($rule['format'] ?? '');
-		if ($named !== '' && isset(self::NAMED_FORMATS[$named]) === true) {
-			$pattern = self::NAMED_FORMATS[$named];
-		}
-
-		$custom = ($rule['pattern'] ?? null);
-		if (is_string($custom) === true && $custom !== '') {
-			$pattern = '/' . str_replace('/', '\\/', $custom) . '/';
-		}
-
+		$pattern = $this->formatPattern(rule: $rule);
 		if ($pattern === null) {
 			return 0.0;
 		}
 
+		return $this->matchScore(pattern: $pattern, subject: $subject);
+	}//end scoreFormat()
+
+	/**
+	 * The rule's field value as a string, or null when absent or not scalar.
+	 *
+	 * @param array<string, mixed> $object Object payload.
+	 * @param array<string, mixed> $rule Rule definition.
+	 *
+	 * @return string|null
+	 */
+	private function scalarSubject(array $object, array $rule): ?string {
+		$value = $this->fieldValue(object: $object, field: (string)($rule['field'] ?? ''));
+		if ($this->isPresent(value: $value) === false || is_scalar($value) === false) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end scalarSubject()
+
+	/**
+	 * The PCRE pattern a format rule checks against.
+	 *
+	 * A custom `pattern` wins over a named `format`; an unknown name with no
+	 * pattern yields null, and the rule cannot be evaluated.
+	 *
+	 * @param array<string, mixed> $rule Rule definition.
+	 *
+	 * @return string|null
+	 */
+	private function formatPattern(array $rule): ?string {
+		$named = (string)($rule['format'] ?? '');
+
+		$custom = ($rule['pattern'] ?? null);
+		if (is_string($custom) === true && $custom !== '') {
+			return '/' . str_replace('/', '\\/', $custom) . '/';
+		}
+
+		return (self::NAMED_FORMATS[$named] ?? null);
+	}//end formatPattern()
+
+	/**
+	 * Match a subject against a pattern; a pattern that fails to compile is a non-match.
+	 *
+	 * The compile warning of a user-supplied pattern is swallowed for the
+	 * duration of the call only.
+	 *
+	 * @param string $pattern PCRE pattern.
+	 * @param string $subject Value to test.
+	 *
+	 * @return float 1.0 on match, else 0.0.
+	 */
+	private function matchScore(string $pattern, string $subject): float {
+		set_error_handler(callback: static fn (): bool => true);
 		try {
-			$matched = @preg_match($pattern, $subject);
+			$matched = preg_match($pattern, $subject);
 		} catch (Throwable $e) {
 			return 0.0;
+		} finally {
+			restore_error_handler();
 		}
 
 		if ($matched === 1) {
@@ -235,7 +284,7 @@ class QualityScorer implements QualityScorerInterface {
 		}
 
 		return 0.0;
-	}//end scoreFormat()
+	}//end matchScore()
 
 	/**
 	 * Score a freshness rule via exponential decay against now.
@@ -248,13 +297,13 @@ class QualityScorer implements QualityScorerInterface {
 	 *               the date is absent or unparseable.
 	 */
 	private function scoreFreshness(array $object, array $rule, DateTimeImmutable $now): float {
-		$value = $this->fieldValue(object: $object, field: (string)($rule['field'] ?? ''));
-		if ($this->isPresent(value: $value) === false || is_scalar($value) === false) {
+		$value = $this->scalarSubject(object: $object, rule: $rule);
+		if ($value === null) {
 			return 0.0;
 		}
 
 		try {
-			$when = new DateTimeImmutable((string)$value);
+			$when = new DateTimeImmutable($value);
 		} catch (Throwable $e) {
 			return 0.0;
 		}

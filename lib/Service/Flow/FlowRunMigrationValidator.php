@@ -157,9 +157,7 @@ class FlowRunMigrationValidator {
 			// from, and the run would park forever with nothing saying why.
 			// An UNKNOWN kind on either side is not a mismatch: a graph that
 			// does not declare one has nothing to disagree about.
-			$from = $this->kindOf(node: (($sourceNodes ?? [])[$nodeId] ?? []));
-			$to = $this->kindOf(node: $nodes[$targetId]);
-			if ($from !== '' && $to !== '' && $from !== $to) {
+			if ($this->kindsClash(sourceNodes: $sourceNodes, nodeId: $nodeId, target: $nodes[$targetId]) === true) {
 				$unmapped[] = (string)$place;
 				continue;
 			}
@@ -174,6 +172,23 @@ class FlowRunMigrationValidator {
 	}//end remapMarking()
 
 	/**
+	 * Whether a source node and its target declare different kinds; an unknown kind never clashes.
+	 *
+	 * @param array<string, array<string, mixed>>|null $sourceNodes The run's current version's nodes.
+	 * @param string                                   $nodeId      The source node.
+	 * @param array<string, mixed>                     $target      The target node.
+	 *
+	 * @return bool True on a mismatch of two known kinds.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function kindsClash(?array $sourceNodes, string $nodeId, array $target): bool {
+		$from = $this->kindOf(node: (($sourceNodes ?? [])[$nodeId] ?? []));
+		$to = $this->kindOf(node: $target);
+		return $from !== '' && $to !== '' && $from !== $to;
+	}//end kindsClash()
+
+	/**
 	 * The nodes of one version, keyed by id, or null when unreadable.
 	 *
 	 * @param string $flowId  The flow.
@@ -182,6 +197,25 @@ class FlowRunMigrationValidator {
 	 * @return array<string, array<string, mixed>>|null The nodes.
 	 */
 	private function nodesOf(string $flowId, int $version): ?array {
+		$nodes = $this->graphNodesOf(flowId: $flowId, version: $version);
+		if ($nodes === null) {
+			return null;
+		}
+
+		return $this->keyNodes(nodes: $nodes);
+	}//end nodesOf()
+
+	/**
+	 * The raw `nodes` list of one stored version, or null when it cannot be read.
+	 *
+	 * @param string $flowId  The flow.
+	 * @param int    $version The version number.
+	 *
+	 * @return array<int|string, mixed>|null The nodes.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function graphNodesOf(string $flowId, int $version): ?array {
 		$found = $this->versions->versionOf(flowUuid: $flowId, number: $version);
 		if ($found === null) {
 			return null;
@@ -197,25 +231,52 @@ class FlowRunMigrationValidator {
 			return null;
 		}
 
+		return $nodes;
+	}//end graphNodesOf()
+
+	/**
+	 * Key a version's nodes by id; a node without one falls back to its string key.
+	 *
+	 * @param array<int|string, mixed> $nodes The raw nodes.
+	 *
+	 * @return array<string, array<string, mixed>> The nodes by id; junk and blank ids are skipped.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function keyNodes(array $nodes): array {
 		$keyed = [];
 		foreach ($nodes as $key => $node) {
 			if (is_array($node) === false) {
 				continue;
 			}
 
-			$fallbackId = '';
-			if (is_string($key) === true) {
-				$fallbackId = $key;
-			}
-
-			$id = trim((string)($node['id'] ?? $fallbackId));
+			$id = $this->nodeIdOf(key: $key, node: $node);
 			if ($id !== '') {
 				$keyed[$id] = $node;
 			}
 		}
 
 		return $keyed;
-	}//end nodesOf()
+	}//end keyNodes()
+
+	/**
+	 * A node's trimmed id, or its string key when it declares none.
+	 *
+	 * @param int|string           $key  The node's key in the list.
+	 * @param array<string, mixed> $node The node.
+	 *
+	 * @return string The id, possibly empty.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function nodeIdOf(int|string $key, array $node): string {
+		$fallbackId = '';
+		if (is_string($key) === true) {
+			$fallbackId = $key;
+		}
+
+		return trim((string)($node['id'] ?? $fallbackId));
+	}//end nodeIdOf()
 
 	/**
 	 * The run's marking as `place => tokens`.

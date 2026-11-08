@@ -172,58 +172,8 @@ export default {
 }
 </script>
 
-<style scoped>
-.emails-tab__loading {
-	display: flex;
-	justify-content: center;
-	padding: 2em 0;
-}
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
 
-.emails-tab__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.emails-tab__item {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.emails-tab__item:last-child {
-	border-bottom: none;
-}
-
-.emails-tab__icon {
-	flex-shrink: 0;
-	color: var(--color-text-maxcontrast);
-}
-
-.emails-tab__content {
-	flex-grow: 1;
-	min-width: 0;
-}
-
-.emails-tab__subject {
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.emails-tab__meta {
-	display: flex;
-	gap: 6px;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.85em;
-}
-
-.emails-tab__from {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
+@include relation-tab-list('emails-tab', 'subject', 'from', $toolbar: false);
 </style>
