@@ -39,6 +39,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
+use OCA\OpenRegister\Service\Flow\Timer\TermQuery;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
@@ -124,10 +125,12 @@ class FlowTimerDiagnosticController extends Controller {
 
 			return new JSONResponse(
 				data: $this->diagnostic->explain(
-					calendar: WorkingCalendars::fromDefinition(definition: $calendar),
-					anchor: $anchor,
-					sla: $sla,
-					ladder: $ladder
+					query: new TermQuery(
+						calendar: WorkingCalendars::fromDefinition(definition: $calendar),
+						anchor: $anchor,
+						sla: $sla,
+						ladder: $ladder
+					)
 				)
 			);
 		} catch (FlowTimerValidationException $refused) {

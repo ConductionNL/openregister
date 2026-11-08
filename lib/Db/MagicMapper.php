@@ -127,7 +127,7 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
-use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugTargetInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -4320,7 +4320,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string {
-		return $this->container->get(ObjectSlugHandler::class)->slugForMove(entity: $entity, register: $register, schema: $schema);
+		return $this->container->get(ObjectSlugTargetInterface::class)->slugForMove(entity: $entity, register: $register, schema: $schema);
 	}//end slugForMove()
 
 	/**
@@ -8739,7 +8739,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// The slug it held may have been given to another object since the delete
 		// (#4037). Resolved lazily: the handler needs this mapper.
-		$restoredSlug = $this->container->get(ObjectSlugHandler::class)->slugForRestore(
+		$restoredSlug = $this->container->get(ObjectSlugTargetInterface::class)->slugForRestore(
 			entity: $entity,
 			register: $register,
 			schema: $schema

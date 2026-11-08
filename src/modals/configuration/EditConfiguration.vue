@@ -60,37 +60,20 @@ import {
 							"
 							@update:modelValue="updateDescription" />
 
-						<div class="selectField">
-							<label for="type-select">{{
-								t('openregister', 'Type')
-							}}</label>
-							<NcSelect
-								id="type-select"
-								v-model="selectedType"
-								inputLabel="Selected Type"
-								:options="typeOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t('openregister', 'Select configuration type...')
-								"
-								@update:modelValue="updateType">
-								<template #option="{ label, description }">
-									<SelectOption
-										:title="label"
-										:description="description" />
-								</template>
-							</NcSelect>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Configuration type (default, application, etc.)',
-									)
-								}}
-							</p>
-						</div>
+						<FormSelectField
+							id="type-select"
+							v-model="selectedType"
+							:title="t('openregister', 'Type')"
+							:hint="t('openregister', 'Configuration type (default, application, etc.)')"
+							inputLabel="Selected Type"
+							:options="typeOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="
+								t('openregister', 'Select configuration type...')
+							"
+							@update:modelValue="updateType" />
 
 						<NcTextField
 							:label="t('openregister', 'App ID')"
@@ -123,134 +106,107 @@ import {
 					</template>
 
 					<div class="form-editor">
-						<div class="selectField">
-							<label for="registers-select">{{
-								t('openregister', 'Registers')
-							}}</label>
-							<NcSelect
-								id="registers-select"
-								v-model="selectedRegisters"
-								inputLabel="Selected Registers"
-								:options="registerOptions"
-								:loading="loadingRegisters"
-								:multiple="true"
-								label="title"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="
-									t('openregister', 'Search registers...')
-								"
-								:closeOnSelect="false"
-								@searchChange="searchRegisters"
-								@update:modelValue="updateRegisters">
-								<template #option="{ title, description }">
-									<SelectOption
-										:title="title"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingRegisters">{{
-										t('openregister', 'Searching...')
-									}}</span>
-									<span v-else>{{
-										t('openregister', 'No registers found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="registers-select"
+							v-model="selectedRegisters"
+							:title="t('openregister', 'Registers')"
+							inputLabel="Selected Registers"
+							:options="registerOptions"
+							:loading="loadingRegisters"
+							:multiple="true"
+							label="title"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="
+								t('openregister', 'Search registers...')
+							"
+							:closeOnSelect="false"
+							@searchChange="searchRegisters"
+							@update:modelValue="updateRegisters">
+							<template #noOptions>
+								<span v-if="loadingRegisters">{{
+									t('openregister', 'Searching...')
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No registers found')
+								}}</span>
+							</template>
+							<template #hint>
 								{{ selectedRegisters.length }} register(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="schemas-select">{{
-								t('openregister', 'Schemas')
-							}}</label>
-							<NcSelect
-								id="schemas-select"
-								v-model="selectedSchemas"
-								inputLabel="Selected Schemas"
-								:options="schemaOptions"
-								:loading="loadingSchemas"
-								:multiple="true"
-								label="title"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="t('openregister', 'Search schemas...')"
-								:closeOnSelect="false"
-								@searchChange="searchSchemas"
-								@update:modelValue="updateSchemas">
-								<template #option="{ title, description }">
-									<SelectOption
-										:title="title"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingSchemas">{{
-										t('openregister', 'Searching...')
-									}}</span>
-									<span v-else>{{
-										t('openregister', 'No schemas found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="schemas-select"
+							v-model="selectedSchemas"
+							:title="t('openregister', 'Schemas')"
+							inputLabel="Selected Schemas"
+							:options="schemaOptions"
+							:loading="loadingSchemas"
+							:multiple="true"
+							label="title"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="t('openregister', 'Search schemas...')"
+							:closeOnSelect="false"
+							@searchChange="searchSchemas"
+							@update:modelValue="updateSchemas">
+							<template #noOptions>
+								<span v-if="loadingSchemas">{{
+									t('openregister', 'Searching...')
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No schemas found')
+								}}</span>
+							</template>
+							<template #hint>
 								{{ selectedSchemas.length }} schema(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="objects-select">{{
-								t('openregister', 'Objects')
-							}}</label>
-							<NcSelect
-								id="objects-select"
-								v-model="selectedObjects"
-								inputLabel="Selected Objects"
-								:options="objectOptions"
-								:loading="loadingObjects"
-								:multiple="true"
-								label="title"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="t('openregister', 'Search objects...')"
-								:closeOnSelect="false"
-								:disabled="
-									selectedRegisters.length === 0
-									&& selectedSchemas.length === 0
-								"
-								@searchChange="searchObjects"
-								@update:modelValue="updateObjects">
-								<template #option="{ title, description }">
-									<SelectOption
-										:title="title"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingObjects">{{
-										t('openregister', 'Searching...')
-									}}</span>
-									<span
-										v-else-if="
-											selectedRegisters.length === 0
-											&& selectedSchemas.length === 0
-										"
-										>{{
-											t(
-												'openregister',
-												'Please select registers or schemas first',
-											)
-										}}</span
-									>
-									<span v-else>{{
-										t('openregister', 'No objects found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="objects-select"
+							v-model="selectedObjects"
+							:title="t('openregister', 'Objects')"
+							inputLabel="Selected Objects"
+							:options="objectOptions"
+							:loading="loadingObjects"
+							:multiple="true"
+							label="title"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="t('openregister', 'Search objects...')"
+							:closeOnSelect="false"
+							:disabled="
+								selectedRegisters.length === 0
+								&& selectedSchemas.length === 0
+							"
+							@searchChange="searchObjects"
+							@update:modelValue="updateObjects">
+							<template #noOptions>
+								<span v-if="loadingObjects">{{
+									t('openregister', 'Searching...')
+								}}</span>
+								<span
+									v-else-if="
+										selectedRegisters.length === 0
+										&& selectedSchemas.length === 0
+									"
+									>{{
+										t(
+											'openregister',
+											'Please select registers or schemas first',
+										)
+									}}</span
+								>
+								<span v-else>{{
+									t('openregister', 'No objects found')
+								}}</span>
+							</template>
+							<template #hint>
 								{{ selectedObjects.length }} object(s) selected
 								<span
 									v-if="
@@ -259,159 +215,123 @@ import {
 									">
 									- filtered by selected registers/schemas</span
 								>
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="sources-select">{{
-								t('openregister', 'Data Sources')
-							}}</label>
-							<NcSelect
-								id="sources-select"
-								v-model="selectedSources"
-								inputLabel="Selected Sources"
-								:options="sourceOptions"
-								:loading="loadingSources"
-								:multiple="true"
-								label="title"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="
-									t('openregister', 'Search data sources...')
-								"
-								:closeOnSelect="false"
-								@searchChange="searchSources"
-								@update:modelValue="updateSources">
-								<template #option="{ title, description }">
-									<SelectOption
-										:title="title"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingSources">{{
-										t('openregister', 'Searching...')
-									}}</span>
-									<span v-else>{{
-										t('openregister', 'No sources found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="sources-select"
+							v-model="selectedSources"
+							:title="t('openregister', 'Data Sources')"
+							inputLabel="Selected Sources"
+							:options="sourceOptions"
+							:loading="loadingSources"
+							:multiple="true"
+							label="title"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="
+								t('openregister', 'Search data sources...')
+							"
+							:closeOnSelect="false"
+							@searchChange="searchSources"
+							@update:modelValue="updateSources">
+							<template #noOptions>
+								<span v-if="loadingSources">{{
+									t('openregister', 'Searching...')
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No sources found')
+								}}</span>
+							</template>
+							<template #hint>
 								{{ selectedSources.length }} source(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="agents-select">{{
-								t('openregister', 'Agents')
-							}}</label>
-							<NcSelect
-								id="agents-select"
-								v-model="selectedAgents"
-								inputLabel="Selected Agents"
-								:options="agentOptions"
-								:loading="loadingAgents"
-								:multiple="true"
-								label="name"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="t('openregister', 'Search agents...')"
-								:closeOnSelect="false"
-								@searchChange="searchAgents"
-								@update:modelValue="updateAgents">
-								<template #option="{ name, description }">
-									<SelectOption
-										:title="name"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingAgents">{{
-										t('openregister', 'Searching...')
-									}}</span>
-									<span v-else>{{
-										t('openregister', 'No agents found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="agents-select"
+							v-model="selectedAgents"
+							:title="t('openregister', 'Agents')"
+							inputLabel="Selected Agents"
+							:options="agentOptions"
+							:loading="loadingAgents"
+							:multiple="true"
+							label="name"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="t('openregister', 'Search agents...')"
+							:closeOnSelect="false"
+							@searchChange="searchAgents"
+							@update:modelValue="updateAgents">
+							<template #noOptions>
+								<span v-if="loadingAgents">{{
+									t('openregister', 'Searching...')
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No agents found')
+								}}</span>
+							</template>
+							<template #hint>
 								{{ selectedAgents.length }} agent(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="views-select">{{
-								t('openregister', 'Views')
-							}}</label>
-							<NcSelect
-								id="views-select"
-								v-model="selectedViews"
-								inputLabel="Selected Views"
-								:options="viewOptions"
-								:loading="loadingViews"
-								:multiple="true"
-								label="name"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="t('openregister', 'Search views...')"
-								:closeOnSelect="false"
-								@searchChange="searchViews"
-								@update:modelValue="updateViews">
-								<template #option="{ name, description }">
-									<SelectOption
-										:title="name"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingViews">Searching...</span>
-									<span v-else>No views found</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="views-select"
+							v-model="selectedViews"
+							:title="t('openregister', 'Views')"
+							inputLabel="Selected Views"
+							:options="viewOptions"
+							:loading="loadingViews"
+							:multiple="true"
+							label="name"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="t('openregister', 'Search views...')"
+							:closeOnSelect="false"
+							@searchChange="searchViews"
+							@update:modelValue="updateViews">
+							<template #noOptions>
+								<span v-if="loadingViews">Searching...</span>
+								<span v-else>No views found</span>
+							</template>
+							<template #hint>
 								{{ selectedViews.length }} view(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
-						<div class="selectField">
-							<label for="managed-applications-select"
-								>Applications</label
-							>
-							<NcSelect
-								id="managed-applications-select"
-								v-model="selectedManagedApplications"
-								inputLabel="Selected Managed Applications"
-								:options="applicationOptions"
-								:loading="loadingApplications"
-								:multiple="true"
-								label="name"
-								trackBy="id"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="
-									t('openregister', 'Search applications...')
-								"
-								:closeOnSelect="false"
-								@searchChange="searchApplications"
-								@update:modelValue="updateManagedApplications">
-								<template #option="{ name, description }">
-									<SelectOption
-										:title="name"
-										:description="description" />
-								</template>
-								<template #no-options>
-									<span v-if="loadingApplications"
-										>Searching...</span
-									>
-									<span v-else>No applications found</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="managed-applications-select"
+							v-model="selectedManagedApplications"
+							title="Applications"
+							inputLabel="Selected Managed Applications"
+							:options="applicationOptions"
+							:loading="loadingApplications"
+							:multiple="true"
+							label="name"
+							trackBy="id"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="
+								t('openregister', 'Search applications...')
+							"
+							:closeOnSelect="false"
+							@searchChange="searchApplications"
+							@update:modelValue="updateManagedApplications">
+							<template #noOptions>
+								<span v-if="loadingApplications"
+									>Searching...</span
+								>
+								<span v-else>No applications found</span>
+							</template>
+							<template #hint>
 								{{ selectedManagedApplications.length }}
 								application(s) selected
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 					</div>
 				</AppTab>
 
@@ -423,30 +343,23 @@ import {
 					</template>
 
 					<div class="form-editor">
-						<div class="selectField">
-							<label for="source-type-select">Source Type *</label>
-							<NcSelect
-								id="source-type-select"
-								v-model="selectedSourceType"
-								inputLabel="Selected Source Type"
-								:options="sourceTypeOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t('openregister', 'Select source type...')
-								"
-								@update:modelValue="updateSourceType">
-								<template #option="{ label, description }">
-									<SelectOption
-										:title="label"
-										:description="description" />
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="source-type-select"
+							v-model="selectedSourceType"
+							title="Source Type *"
+							inputLabel="Selected Source Type"
+							:options="sourceTypeOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="
+								t('openregister', 'Select source type...')
+							"
+							@update:modelValue="updateSourceType">
+							<template #hint>
 								Determines where the configuration is managed
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
 						<NcTextField
 							v-if="
@@ -479,37 +392,32 @@ import {
 							</template>
 						</NcTextField>
 
-						<div class="selectField">
-							<label for="application-select">Owner Application</label>
-							<NcSelect
-								id="application-select"
-								v-model="selectedApplication"
-								inputLabel="Selected Application"
-								:options="applicationOptions"
-								label="name"
-								trackBy="id"
-								:labelOutside="true"
-								:placeholder="
-									t(
-										'openregister',
-										'Select owner application (optional)...',
-									)
-								"
-								@update:modelValue="updateApplication">
-								<template #option="{ name, description }">
-									<SelectOption
-										:title="name"
-										:description="description" />
-								</template>
-							</NcSelect>
-							<p v-if="selectedApplication" class="field-hint">
-								Owner: {{ selectedApplication.name }}
-							</p>
-							<p v-else class="field-hint">
+						<FormSelectField
+							id="application-select"
+							v-model="selectedApplication"
+							title="Owner Application"
+							inputLabel="Selected Application"
+							:options="applicationOptions"
+							label="name"
+							trackBy="id"
+							:labelOutside="true"
+							:placeholder="
+								t(
+									'openregister',
+									'Select owner application (optional)...',
+								)
+							"
+							@update:modelValue="updateApplication">
+							<template #hint>
+								<template v-if="selectedApplication">
+									Owner: {{ selectedApplication.name }}
+							</template>
+							<template v-else>
 								The application that owns this configuration
 								(optional)
-							</p>
-						</div>
+							</template>
+							</template>
+						</FormSelectField>
 
 						<NcTextField
 							label="Local Version"
@@ -542,48 +450,39 @@ import {
 							</template>
 						</NcTextField>
 
-						<div class="checkboxField">
-							<NcCheckboxRadioSwitch
-								:modelValue="
-									configurationStore.configurationItem?.autoUpdate
-									|| false
-								"
-								@update:modelValue="updateAutoUpdate">
-								Enable Auto-Update
-							</NcCheckboxRadioSwitch>
-							<p class="field-hint">
-								Automatically import updates when a new version is
-								detected
-							</p>
-						</div>
+						<FormCheckboxField
+							:modelValue="
+								configurationStore.configurationItem?.autoUpdate
+								|| false
+							"
+							hint="Automatically import updates when a new version is detected"
+							@update:modelValue="updateAutoUpdate">
+							Enable Auto-Update
+						</FormCheckboxField>
 
-						<div class="selectField">
-							<label for="notification-groups-select"
-								>Notification Groups</label
-							>
-							<NcSelect
-								id="notification-groups-select"
-								v-model="selectedNotificationGroups"
-								inputLabel="Selected Notification Groups"
-								:options="notificationGroupOptions"
-								:multiple="true"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t('openregister', 'Select groups to notify...')
-								"
-								:closeOnSelect="false"
-								@update:modelValue="updateNotificationGroups">
-								<template #option="{ label }">
-									<span>{{ label }}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
+						<FormSelectField
+							id="notification-groups-select"
+							v-model="selectedNotificationGroups"
+							title="Notification Groups"
+							inputLabel="Selected Notification Groups"
+							:options="notificationGroupOptions"
+							:multiple="true"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="
+								t('openregister', 'Select groups to notify...')
+							"
+							:closeOnSelect="false"
+							@update:modelValue="updateNotificationGroups">
+							<template #option="{ label }">
+								<span>{{ label }}</span>
+							</template>
+							<template #hint>
 								Groups that will receive notifications when updates
 								are available (admin is always included)
-							</p>
-						</div>
+							</template>
+						</FormSelectField>
 
 						<NcNoteCard
 							v-if="
@@ -676,11 +575,9 @@ import {
 <script>
 import {
 	NcButton,
-	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
@@ -689,7 +586,8 @@ import CloudSync from 'vue-material-design-icons/CloudSync.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
-import SelectOption from '../../components/shared/SelectOption.vue'
+import FormCheckboxField from '../../components/shared/FormCheckboxField.vue'
+import FormSelectField from '../../components/shared/FormSelectField.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import { freshState } from '../../services/initialState.js'
@@ -885,14 +783,13 @@ export default {
 	components: {
 		NcDialog,
 		NcButton,
-		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
 		NcNoteCard,
-		NcSelect,
 		NcTextField,
 		NcTextArea,
 		AppTabs,
-		SelectOption,
+		FormCheckboxField,
+		FormSelectField,
 		AppTab,
 		// Icons
 		Cancel,

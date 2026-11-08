@@ -100,7 +100,6 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
-use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
@@ -5078,7 +5077,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'You may not move this object there.'], statusCode: 403);
 		}
 
-		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObject::class)->move(
+		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObjectInterface::class)->move(
 			object: $object,
 			sourceRegister: $ends['from']['register'],
 			sourceSchema: $ends['from']['schema'],
@@ -5277,7 +5276,7 @@ class ObjectsController extends Controller {
 		// is the whole of D-2 and the reason `heartbeat()` reports which it was
 		// rather than leaving the caller to work it out.
 		if ($beat['arrived'] === true) {
-			$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
+			$this->container->get(\OCA\OpenRegister\Listener\PresencePushInterface::class)
 				->pushPresence(object: $object, present: $service->present(objectUuid: $id));
 		}
 
@@ -5323,7 +5322,7 @@ class ObjectsController extends Controller {
 			}
 
 			if ($object !== null) {
-				$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
+				$this->container->get(\OCA\OpenRegister\Listener\PresencePushInterface::class)
 					->pushPresence(object: $object, present: $service->present(objectUuid: $id));
 			}
 		}

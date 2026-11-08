@@ -2041,7 +2041,7 @@ class ObjectServiceTest extends TestCase {
 		$this->stubMigrationSides(readable: ['uuid-1', 'uuid-2'], updatable: ['uuid-1']);
 		$this->getProperty('migrationHandler')->expects($this->once())
 			->method('migrateObjects')
-			->with('1', '2', '3', '4', ['uuid-1'], ['a' => 'b'])
+			->with(['1', '2'], ['3', '4'], ['uuid-1'], ['a' => 'b'])
 			->willReturn(
 				[
 					'success' => true,

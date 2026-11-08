@@ -69,18 +69,7 @@ import {
 							class="statusPill statusPill--success">
 							{{ t('openregister', 'In use') }}
 						</span>
-						<span
-							v-if="isManagedByExternalConfig(row)"
-							class="managedBadge managedBadge--external">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Managed') }}
-						</span>
-						<span
-							v-else-if="isManagedByLocalConfig(row)"
-							class="managedBadge managedBadge--local">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Local') }}
-						</span>
+						<ManagedBadge :config="getManagingConfiguration(row)" />
 					</div>
 					<span
 						v-if="row.description"
@@ -116,9 +105,14 @@ import {
 <script>
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import { NcAppContent } from '@nextcloud/vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
+import ManagedBadge from '../../components/shared/ManagedBadge.vue'
+import {
+	isExternalConfiguration,
+	isLocalConfiguration,
+	managedRowClass,
+} from '../../composables/managedConfiguration.js'
 import { applyFilterChange, filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
 import { deleteAction, editAction } from '../../services/menuActions.js'
@@ -147,7 +141,7 @@ export default {
 		ActionMenu,
 		NcAppContent,
 		CnIndexPage,
-		CogOutline,
+		ManagedBadge,
 		RegisterSchemaCard,
 	},
 
@@ -407,11 +401,10 @@ export default {
 		 * @return {string}
 		 */
 		getRowClass(schema) {
-			if (this.isManagedByExternalConfig(schema))
-				return 'viewTableRow--managed'
-			if (this.isManagedByLocalConfig(schema)) return 'viewTableRow--local'
-			if (this.hasObjects(schema)) return 'viewTableRow--in-use'
-			return ''
+			return (
+				managedRowClass(this.getManagingConfiguration(schema))
+				|| (this.hasObjects(schema) ? 'viewTableRow--in-use' : '')
+			)
 		},
 
 		/**
@@ -451,13 +444,7 @@ export default {
 		 * @return {boolean}
 		 */
 		isManagedByExternalConfig(schema) {
-			const config = this.getManagingConfiguration(schema)
-			if (!config) return false
-			return (
-				(config.sourceType
-					&& ['github', 'gitlab', 'url'].includes(config.sourceType))
-				|| config.isLocal === false
-			)
+			return isExternalConfiguration(this.getManagingConfiguration(schema))
 		},
 
 		/**
@@ -468,13 +455,7 @@ export default {
 		 * @return {boolean}
 		 */
 		isManagedByLocalConfig(schema) {
-			const config = this.getManagingConfiguration(schema)
-			if (!config) return false
-			return (
-				config.sourceType === 'local'
-				|| config.sourceType === 'manual'
-				|| config.isLocal === true
-			)
+			return isLocalConfiguration(this.getManagingConfiguration(schema))
 		},
 	},
 }
@@ -523,13 +504,4 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 }
-
-/* Managed by Configuration badge */
-@include managed-badge;
-
-/* External (managed) badge - green */
-@include managed-badge-external;
-
-/* Local configuration badge - orange */
-@include managed-badge-local;
 </style>

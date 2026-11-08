@@ -77,7 +77,7 @@ use Psr\Log\LoggerInterface;
  *   (ObjectCreated/Updated/DeletedEvent), the slug resolver, a container, logger, appConfig,
  *   and PermissionHandlerInterface; each dependency is required for the push-routing.
  */
-class NotifyPushListener implements IEventListener {
+class NotifyPushListener implements IEventListener, PresencePushInterface {
 
 	/**
 	 * Whether batch mode is active.

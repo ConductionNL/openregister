@@ -51,6 +51,16 @@ use OCA\OpenRegister\Db\Source;
 class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOverviewInterface, ChunkStoreInterface {
 
 	/**
+	 * File-source summary sort fields and the column each one orders by.
+	 */
+	private const FILE_SOURCE_SORTS = [
+		'fileName' => 'fc.name',
+		'fileSize' => 'fc.size',
+		'extractedAt' => 'last_extracted',
+		'chunkCount' => 'chunk_count',
+	];
+
+	/**
 	 * PSR-3 logger.
 	 *
 	 * @var LoggerInterface
@@ -243,19 +253,6 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 		string $sort = 'extractedAt',
 		string $order = 'DESC',
 	): array {
-		$sortMap = [
-			'fileName' => 'fc.name',
-			'fileSize' => 'fc.size',
-			'extractedAt' => 'last_extracted',
-			'chunkCount' => 'chunk_count',
-		];
-
-		$sqlSort = $sortMap[$sort] ?? 'last_extracted';
-		$sqlOrder = 'DESC';
-		if (strtoupper($order) === 'ASC') {
-			$sqlOrder = 'ASC';
-		}
-
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('ch.source_id')
@@ -270,17 +267,9 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 			->leftJoin('fc', 'mimetypes', 'mt', $qb->expr()->eq('fc.mimetype', 'mt.id'))
 			->where($qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)))
 			->groupBy('ch.source_id', 'fc.name', 'mt.mimetype', 'fc.size')
-			->orderBy($sqlSort, $sqlOrder);
+			->orderBy(self::FILE_SOURCE_SORTS[$sort] ?? 'last_extracted', self::sortDirection(order: $order));
 
-		if ($search !== null && $search !== '') {
-			$searchPattern = '%' . $this->db->escapeLikeParameter($search) . '%';
-			$qb->andWhere(
-				$qb->expr()->iLike(
-					'fc.name',
-					$qb->createNamedParameter($searchPattern, IQueryBuilder::PARAM_STR)
-				)
-			);
-		}
+		$this->applyFileNameSearch(qb: $qb, search: $search);
 
 		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
@@ -289,15 +278,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 
 		$row = $result->fetch();
 		while ($row !== false) {
-			$rows[] = [
-				'sourceId' => (int)$row['source_id'],
-				'chunkCount' => (int)$row['chunk_count'],
-				'firstExtracted' => $row['first_extracted'],
-				'lastExtracted' => $row['last_extracted'],
-				'fileName' => $row['file_name'],
-				'mimeType' => $row['mime_type'],
-				'fileSize' => (int)$row['file_size'],
-			];
+			$rows[] = self::fileSourceSummary(row: $row);
 			$row = $result->fetch();
 		}
 
@@ -305,6 +286,62 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 
 		return $rows;
 	}//end getFileSourceSummaries()
+
+	/**
+	 * The SQL sort direction: ASC when asked for (any case), DESC otherwise.
+	 *
+	 * @param string $order Requested direction.
+	 *
+	 * @return string ASC or DESC.
+	 */
+	private static function sortDirection(string $order): string {
+		if (strtoupper($order) === 'ASC') {
+			return 'ASC';
+		}
+
+		return 'DESC';
+	}//end sortDirection()
+
+	/**
+	 * Narrow a file-source query to file names containing the search term.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param string|null   $search The search term; null or empty adds nothing.
+	 *
+	 * @return void
+	 */
+	private function applyFileNameSearch(IQueryBuilder $qb, ?string $search): void {
+		if ($search === null || $search === '') {
+			return;
+		}
+
+		$searchPattern = '%' . $this->db->escapeLikeParameter($search) . '%';
+		$qb->andWhere(
+			$qb->expr()->iLike(
+				'fc.name',
+				$qb->createNamedParameter($searchPattern, IQueryBuilder::PARAM_STR)
+			)
+		);
+	}//end applyFileNameSearch()
+
+	/**
+	 * Shape one aggregated row as a file source summary.
+	 *
+	 * @param array $row The database row.
+	 *
+	 * @return array The summary.
+	 */
+	private static function fileSourceSummary(array $row): array {
+		return [
+			'sourceId' => (int)$row['source_id'],
+			'chunkCount' => (int)$row['chunk_count'],
+			'firstExtracted' => $row['first_extracted'],
+			'lastExtracted' => $row['last_extracted'],
+			'fileName' => $row['file_name'],
+			'mimeType' => $row['mime_type'],
+			'fileSize' => (int)$row['file_size'],
+		];
+	}//end fileSourceSummary()
 
 	/**
 	 * Count distinct file sources that have chunks.
@@ -321,15 +358,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 			->innerJoin('ch', 'filecache', 'fc', $qb->expr()->eq('ch.source_id', 'fc.fileid'))
 			->where($qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)));
 
-		if ($search !== null && $search !== '') {
-			$searchPattern = '%' . $this->db->escapeLikeParameter($search) . '%';
-			$qb->andWhere(
-				$qb->expr()->iLike(
-					'fc.name',
-					$qb->createNamedParameter($searchPattern, IQueryBuilder::PARAM_STR)
-				)
-			);
-		}
+		$this->applyFileNameSearch(qb: $qb, search: $search);
 
 		$result = $qb->executeQuery();
 		$count = (int)$result->fetchOne();
@@ -415,32 +444,47 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function searchByKeyword(string $query, int $limit, array $filters = [], bool $allowUnrankedFallback = false): array {
+		$search = new KeywordChunkSearch(query: $query, limit: $limit, filters: $filters);
 		$platform = $this->db->getDatabasePlatform();
 
-		if (str_contains(get_class($platform), 'PostgreSQL') === false) {
-			if ($allowUnrankedFallback === true) {
-				return $this->searchByKeywordUnranked(query: $query, limit: $limit, filters: $filters);
-			}
-
-			$this->logger->warning(
-				message: '[ChunkMapper] Ranked keyword search unavailable: requires PostgreSQL '
-					. 'with the tsvector keyword-search index',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'platform' => get_class($platform),
-				]
-			);
-			return [];
+		if (str_contains(get_class($platform), 'PostgreSQL') === true) {
+			return $this->searchByKeywordRanked(search: $search);
 		}
 
+		if ($allowUnrankedFallback === true) {
+			return $this->searchByKeywordUnranked(search: $search);
+		}
+
+		$this->logger->warning(
+			message: '[ChunkMapper] Ranked keyword search unavailable: requires PostgreSQL '
+				. 'with the tsvector keyword-search index',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'platform' => get_class($platform),
+			]
+		);
+		return [];
+	}//end searchByKeyword()
+
+	/**
+	 * Ranked `ts_rank` keyword search (PostgreSQL); [] with a logged warning when the query fails.
+	 *
+	 * @param KeywordChunkSearch $search Query text, result cap and filters.
+	 *
+	 * @return array<int, array{entity_type: string, entity_id: string, score: float,
+	 *                          chunk_text: string|null, chunk_index: int, metadata: array}>
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.3
+	 */
+	private function searchByKeywordRanked(KeywordChunkSearch $search): array {
 		$tsVector = "to_tsvector('simple', text_content)";
 		$where = [$tsVector . " @@ plainto_tsquery('simple', :query)"];
-		$params = ['query' => $query];
+		$params = ['query' => $search->query];
 
-		if (($filters['source_type'] ?? null) !== null) {
+		if ($search->sourceType() !== null) {
 			$where[] = 'source_type = :sourceType';
-			$params['sourceType'] = $filters['source_type'];
+			$params['sourceType'] = $search->sourceType();
 		}
 
 		$sql = 'SELECT id, source_type, source_id, text_content, chunk_index, '
@@ -448,7 +492,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 			. 'FROM *PREFIX*openregister_chunks '
 			. 'WHERE ' . implode(' AND ', $where) . ' '
 			. 'ORDER BY score DESC '
-			. 'LIMIT ' . max(1, $limit);
+			. 'LIMIT ' . $search->rowCap();
 
 		try {
 			$result = $this->db->executeQuery($sql, $params);
@@ -468,20 +512,31 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 			return [];
 		}
 
-		$results = [];
-		foreach ($rows as $row) {
-			$results[] = [
-				'entity_type' => (string)($row['source_type'] ?? 'file'),
-				'entity_id' => (string)$row['source_id'],
-				'score' => (float)$row['score'],
-				'chunk_text' => $row['text_content'],
-				'chunk_index' => (int)$row['chunk_index'],
-				'metadata' => [],
-			];
-		}
+		return array_map(
+			static fn (array $row): array => self::keywordHit(row: $row, score: (float)$row['score']),
+			$rows
+		);
+	}//end searchByKeywordRanked()
 
-		return $results;
-	}//end searchByKeyword()
+	/**
+	 * Shape one chunk row as a keyword-search hit.
+	 *
+	 * @param array $row   The chunk row.
+	 * @param float $score The hit's score.
+	 *
+	 * @return array{entity_type: string, entity_id: string, score: float,
+	 *               chunk_text: string|null, chunk_index: int, metadata: array}
+	 */
+	private static function keywordHit(array $row, float $score): array {
+		return [
+			'entity_type' => (string)($row['source_type'] ?? 'file'),
+			'entity_id' => (string)$row['source_id'],
+			'score' => $score,
+			'chunk_text' => $row['text_content'],
+			'chunk_index' => (int)$row['chunk_index'],
+			'metadata' => [],
+		];
+	}//end keywordHit()
 
 	/**
 	 * Unranked `LIKE` fallback for platforms without a `tsvector` index (e.g. MariaDB).
@@ -492,18 +547,16 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 	 * `$allowUnrankedFallback` is true; the pre-existing hybrid-search RRF caller does not
 	 * opt in and keeps seeing `[]` on non-PostgreSQL platforms.
 	 *
-	 * @param string $query Search query text.
-	 * @param int $limit Maximum number of results.
-	 * @param array $filters Optional filters (source_type).
+	 * @param KeywordChunkSearch $search Query text, result cap and filters.
 	 *
 	 * @return array<int, array{entity_type: string, entity_id: string, score: float,
 	 *                          chunk_text: string|null, chunk_index: int, metadata: array}>
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	private function searchByKeywordUnranked(string $query, int $limit, array $filters = []): array {
+	private function searchByKeywordUnranked(KeywordChunkSearch $search): array {
 		$qb = $this->db->getQueryBuilder();
-		$searchPattern = '%' . $this->db->escapeLikeParameter($query) . '%';
+		$searchPattern = '%' . $this->db->escapeLikeParameter($search->query) . '%';
 
 		$qb->select('id', 'source_type', 'source_id', 'text_content', 'chunk_index')
 			->from($this->getTableName())
@@ -514,13 +567,13 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 				)
 			)
 			->orderBy('id', 'ASC')
-			->setMaxResults(max(1, $limit));
+			->setMaxResults($search->rowCap());
 
-		if (($filters['source_type'] ?? null) !== null) {
+		if ($search->sourceType() !== null) {
 			$qb->andWhere(
 				$qb->expr()->eq(
 					'source_type',
-					$qb->createNamedParameter($filters['source_type'], IQueryBuilder::PARAM_STR)
+					$qb->createNamedParameter($search->sourceType(), IQueryBuilder::PARAM_STR)
 				)
 			);
 		}
@@ -541,18 +594,6 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 			return [];
 		}
 
-		$results = [];
-		foreach ($rows as $row) {
-			$results[] = [
-				'entity_type' => (string)($row['source_type'] ?? 'file'),
-				'entity_id' => (string)$row['source_id'],
-				'score' => 0.0,
-				'chunk_text' => $row['text_content'],
-				'chunk_index' => (int)$row['chunk_index'],
-				'metadata' => [],
-			];
-		}
-
-		return $results;
+		return array_map(static fn (array $row): array => self::keywordHit(row: $row, score: 0.0), $rows);
 	}//end searchByKeywordUnranked()
 }//end class
