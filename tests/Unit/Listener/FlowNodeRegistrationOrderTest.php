@@ -112,7 +112,7 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 				$ns . 'SendTalkMessageNodeInterface',
 				$ns . 'UserTaskNodeInterface',
 				$ns . 'PortalTaskNodeInterface',
-				$ns . 'LockObjectNode',
+				$ns . 'LockObjectNodeInterface',
 				$ns . 'UnlockObjectNodeInterface',
 				'OCA\\OpenRegister\\Service\\Case\\Nodes\\CaseOpenNodeInterface',
 				'OCA\\OpenRegister\\Service\\Case\\Nodes\\CaseAdvanceNodeInterface',
