@@ -94,7 +94,7 @@ use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
@@ -6815,7 +6815,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function unreadCounts(ObjectEntity $object): array {
-		$readState = $this->container->get(ReadStateService::class);
+		$readState = $this->container->get(ReadStateServiceInterface::class);
 		if ($readState->callerUid() === null) {
 			return [];
 		}

@@ -50,7 +50,6 @@ use OCA\OpenRegister\Notifications\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Search\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
-use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -724,8 +723,8 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectTransitionedEvent::class, AggregationCacheInvalidationListener::class);
 
 		// Webhook auto-create installer for x-openregister-notifications with webhook.persistent: true.
-		$context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstaller::class);
-		$context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstaller::class);
+		$context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstallListener::class);
+		$context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstallListener::class);
 
 		// Semantic-object handoff engine (ADR-051):
 		// - lifecycle-triggered handoffs run off ObjectTransitionedEvent (real actors only);
