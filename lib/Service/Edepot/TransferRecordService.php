@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
  *   (Requirement: Durable transfer-list objects served over the API)
  */
-class TransferRecordService {
+class TransferRecordService implements TransferRecordServiceInterface {
 
 	/**
 	 * Register slug the durable transfer records live under.
