@@ -51,7 +51,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class TmloService {
+class TmloService implements TmloServiceInterface {
 
 	/**
 	 * Valid values for archiefnominatie field
@@ -59,13 +59,7 @@ class TmloService {
 	public const ARCHIEFNOMINATIE_BLIJVEND_BEWAREN = 'blijvend_bewaren';
 	public const ARCHIEFNOMINATIE_VERNIETIGEN = 'vernietigen';
 
-	/**
-	 * Valid values for archiefstatus field
-	 */
-	public const ARCHIEFSTATUS_ACTIEF = 'actief';
-	public const ARCHIEFSTATUS_SEMI_STATISCH = 'semi_statisch';
-	public const ARCHIEFSTATUS_OVERGEBRACHT = 'overgebracht';
-	public const ARCHIEFSTATUS_VERNIETIGD = 'vernietigd';
+	// The archiefstatus values (ARCHIEFSTATUS_*) are declared on TmloServiceInterface.
 
 	/**
 	 * MDTO XML namespace
