@@ -243,23 +243,11 @@ class ActivityProvider extends AbstractIntegrationProvider {
 	 * @param array $filters Optional `type` / `actor` / `after` filters.
 	 *
 	 * @return array Filtered rows.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) — three independent
-	 * predicate filters short-circuit; splitting them would only add
-	 * indirection.
 	 */
 	private function applyFilters(array $rows, array $filters): array {
-		$type = '';
-		$actor = '';
+		$type = self::filterString(filters: $filters, key: 'type');
+		$actor = self::filterString(filters: $filters, key: 'actor');
 		$after = 0;
-		if (isset($filters['type']) === true) {
-			$type = (string)$filters['type'];
-		}
-
-		if (isset($filters['actor']) === true) {
-			$actor = (string)$filters['actor'];
-		}
-
 		if (isset($filters['after']) === true) {
 			$after = (int)$filters['after'];
 		}
@@ -271,24 +259,78 @@ class ActivityProvider extends AbstractIntegrationProvider {
 		return array_values(
 			array_filter(
 				$rows,
-				static function (array $row) use ($type, $actor, $after): bool {
-					if ($type !== '' && (string)($row['type'] ?? '') !== $type) {
-						return false;
-					}
-
-					if ($actor !== '' && (string)($row['affecteduser'] ?? '') !== $actor) {
-						return false;
-					}
-
-					if ($after > 0 && (int)($row['timestamp'] ?? 0) < $after) {
-						return false;
-					}
-
-					return true;
-				}
+				static fn (array $row): bool => self::rowMatches(row: $row, type: $type, actor: $actor, after: $after)
 			)
 		);
 	}//end applyFilters()
+
+	/**
+	 * Whether a row passes all three filters.
+	 *
+	 * @param array  $row   The activity row.
+	 * @param string $type  The type filter ('' for none).
+	 * @param string $actor The actor filter ('' for none).
+	 * @param int    $after The lower time bound (0 or less for none).
+	 *
+	 * @return bool
+	 */
+	private static function rowMatches(array $row, string $type, string $actor, int $after): bool {
+		return self::matchesType(row: $row, type: $type)
+			&& self::matchesActor(row: $row, actor: $actor)
+			&& self::matchesAfter(row: $row, after: $after);
+	}//end rowMatches()
+
+	/**
+	 * A string filter value, or '' when it is not set.
+	 *
+	 * @param array  $filters The filters.
+	 * @param string $key     The filter key.
+	 *
+	 * @return string
+	 */
+	private static function filterString(array $filters, string $key): string {
+		if (isset($filters[$key]) === true) {
+			return (string)$filters[$key];
+		}
+
+		return '';
+	}//end filterString()
+
+	/**
+	 * Whether a row passes the `type` filter ('' passes everything).
+	 *
+	 * @param array  $row  The activity row.
+	 * @param string $type The type filter.
+	 *
+	 * @return bool
+	 */
+	private static function matchesType(array $row, string $type): bool {
+		return $type === '' || (string)($row['type'] ?? '') === $type;
+	}//end matchesType()
+
+	/**
+	 * Whether a row passes the `actor` filter ('' passes everything).
+	 *
+	 * @param array  $row   The activity row.
+	 * @param string $actor The actor filter.
+	 *
+	 * @return bool
+	 */
+	private static function matchesActor(array $row, string $actor): bool {
+		return $actor === '' || (string)($row['affecteduser'] ?? '') === $actor;
+	}//end matchesActor()
+
+	/**
+	 * Whether a row passes the `after` filter (0 or less passes everything).
+	 *
+	 * @param array $row   The activity row.
+	 * @param int   $after The lower time bound.
+	 *
+	 * @return bool
+	 */
+	private static function matchesAfter(array $row, int $after): bool {
+		return $after <= 0 || (int)($row['timestamp'] ?? 0) >= $after;
+	}//end matchesAfter()
 
 	/**
 	 * Return the health descriptor for this provider.
