@@ -6321,10 +6321,12 @@ class ObjectsControllerTest extends TestCase {
 		$audit = $this->createMock(\OCA\OpenRegister\Files\Service\File\FileAuditHandler::class);
 		$audit->expects($this->once())->method('logBulkDownload')->with(
 			$objectEntity,
-			[11, 12],
-			['a.txt', 'b.txt'],
-			'test-files.zip',
-			16
+			new \OCA\OpenRegister\Files\Service\File\BulkDownloadArchive(
+				fileIds: [11, 12],
+				fileNames: ['a.txt', 'b.txt'],
+				zipName: 'test-files.zip',
+				totalBytes: 16
+			)
 		);
 		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
 		$fileService->method('createObjectFilesZip')->willReturn(

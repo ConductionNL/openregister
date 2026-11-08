@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\BulkDownloadArchive;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -105,11 +106,13 @@ class FileAuditHandlerBulkDownloadGoldenTest extends TestCase {
 		$user->method('getDisplayName')->willReturn('Behandelaar');
 
 		$result = $this->handler(user: $user)->logBulkDownload(
-			$this->object(),
-			[7 => 42, 9 => 43],
-			[7 => 'a.pdf', 9 => 'b.pdf'],
-			'object_abc-123_files.zip',
-			2048
+			object: $this->object(),
+			archive: new BulkDownloadArchive(
+				fileIds: [7 => 42, 9 => 43],
+				fileNames: [7 => 'a.pdf', 9 => 'b.pdf'],
+				zipName: 'object_abc-123_files.zip',
+				totalBytes: 2048
+			)
 		);
 
 		$this->assertCount(1, $this->inserted);
@@ -138,7 +141,14 @@ class FileAuditHandlerBulkDownloadGoldenTest extends TestCase {
 	}//end testASignedInDownloadWritesOneRowWithTheArchivePayload()
 
 	public function testAnAnonymousDownloadIsAttributedToTheRemoteAddress(): void {
-		$this->handler(user: null)->logBulkDownload($this->object(), [42], ['a.pdf'], 'one.zip');
+		$this->handler(user: null)->logBulkDownload(
+			object: $this->object(),
+			archive: new BulkDownloadArchive(
+				fileIds: [42],
+				fileNames: ['a.pdf'],
+				zipName: 'one.zip'
+			)
+		);
 
 		$this->assertCount(1, $this->inserted);
 		$this->assertSame('Anonymous', $this->inserted[0]->getUser());
@@ -147,7 +157,14 @@ class FileAuditHandlerBulkDownloadGoldenTest extends TestCase {
 	}//end testAnAnonymousDownloadIsAttributedToTheRemoteAddress()
 
 	public function testAFailingWriteAnswersNullInsteadOfThrowing(): void {
-		$this->assertNull($this->handler(user: null, failing: true)->logBulkDownload($this->object(), [42], ['a.pdf'], 'one.zip'));
+		$this->assertNull($this->handler(user: null, failing: true)->logBulkDownload(
+			object: $this->object(),
+			archive: new BulkDownloadArchive(
+				fileIds: [42],
+				fileNames: ['a.pdf'],
+				zipName: 'one.zip'
+			)
+		));
 		$this->assertSame([], $this->inserted);
 	}//end testAFailingWriteAnswersNullInsteadOfThrowing()
 }//end class
