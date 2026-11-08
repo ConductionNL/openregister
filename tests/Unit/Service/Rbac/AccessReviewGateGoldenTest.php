@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -73,8 +74,7 @@ class AccessReviewGateGoldenTest extends TestCase {
 		return new AccessReviewGate(
 			objectService: $objectService,
 			report: $report,
-			userSession: $session,
-			groupManager: $groupManager,
+			caller: new CallerContext(userSession: $session, groupManager: $groupManager),
 			grantManage: $guard
 		);
 	}//end build()
