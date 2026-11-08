@@ -40,6 +40,10 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Service\Archival\SelectielijstImportService;
+use OCA\OpenRegister\Service\Archival\SelectielijstImportServiceInterface;
+use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolver;
+use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolverInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
@@ -353,8 +357,11 @@ final class ContractBindings {
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
 		RouterNodeInterface::class => RouterNode::class,
+		SelectielijstImportServiceInterface::class => SelectielijstImportService::class,
+		SelectielijstReferenceResolverInterface::class => SelectielijstReferenceResolver::class,
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
 		SubFlowNodeInterface::class => SubFlowNode::class,
+		\OCA\OpenRegister\Service\TmloServiceInterface::class => \OCA\OpenRegister\Service\TmloService::class,
 		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
