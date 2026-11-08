@@ -19,6 +19,8 @@ use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
 use OCA\OpenRegister\Service\Audit\SecuritySettingRegistry;
 use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SettingsDirectory;
+use OCA\OpenRegister\Service\Settings\ConfigurationSettingsSupport;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
@@ -144,14 +146,9 @@ class OwnSettingsChangeRecorderTest extends TestCase {
 
 		return new ConfigurationSettingsHandler(
 			$this->appConfig,
-			$groups,
-			$users,
-			$organisations,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IAppManager::class),
-			'openregister',
-			null,
-			$this->recorder()
+			new SettingsDirectory($groups, $users, $organisations),
+			new ConfigurationSettingsSupport($this->createMock(LoggerInterface::class), $this->createMock(IAppManager::class), null, $this->recorder()),
+			'openregister'
 		);
 	}//end configurationHandler()
 
