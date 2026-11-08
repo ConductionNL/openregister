@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Calendar;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -213,7 +214,6 @@ class RegisterCalendar implements ICalendar {
 	 * @return array Array of VEVENT-compatible arrays
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 * @spec openspec/specs/calendar-integration/spec.md
@@ -226,61 +226,9 @@ class RegisterCalendar implements ICalendar {
 		?int $offset = null,
 	): array {
 		try {
-			// Extract user ID from principal URI for RBAC.
-			$userId = $this->extractUserId(principalUri: $this->principalUri);
-			if ($userId === null) {
-				return [];
-			}
-
-			// Build query filters from timerange.
-			$filters = $this->buildTimerangeFilters(options: $options);
-
-			// Get all registers that use this schema.
-			$registers = $this->findRegistersForSchema(schema: $this->schema);
-
-			if (empty($registers) === true) {
-				return [];
-			}
-
-			$events = [];
-
-			foreach ($registers as $register) {
-				try {
-					$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-						register: $register,
-						schema: $this->schema,
-						limit: $limit,
-						offset: $offset,
-						filters: $filters
-					);
-
-					foreach ($objects as $object) {
-						$event = $this->transformer->transform(
-							$object,
-							$this->schema,
-							$this->calendarConfig
-						);
-
-						if ($event === null) {
-							continue;
-						}
-
-						// Apply text pattern filter on summary.
-						if ($pattern !== '' && $this->matchesPattern(event: $event, pattern: $pattern) === false) {
-							continue;
-						}
-
-						$events[] = $event;
-					}
-				} catch (\Exception $e) {
-					$this->logger->warning(
-						'[RegisterCalendar] Failed to query register ' . $register->getId() . ': ' . $e->getMessage(),
-						['exception' => $e]
-					);
-				}//end try
-			}//end foreach
-
-			return $events;
+			return $this->searchEvents(
+				query: new CalendarSearchQuery(pattern: $pattern, options: $options, limit: $limit, offset: $offset)
+			);
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				'[RegisterCalendar] Search failed: ' . $e->getMessage(),
@@ -289,6 +237,99 @@ class RegisterCalendar implements ICalendar {
 			return [];
 		}//end try
 	}//end search()
+
+	/**
+	 * Run a search: refuse a principal that is not a user, then collect the
+	 * events of every register that uses this schema.
+	 *
+	 * @param CalendarSearchQuery $query The search arguments.
+	 *
+	 * @return array Array of VEVENT-compatible arrays
+	 */
+	private function searchEvents(CalendarSearchQuery $query): array {
+		// Extract user ID from principal URI for RBAC.
+		$userId = $this->extractUserId(principalUri: $this->principalUri);
+		if ($userId === null) {
+			return [];
+		}
+
+		// Build query filters from timerange.
+		$filters = $this->buildTimerangeFilters(options: $query->options);
+
+		// Get all registers that use this schema.
+		$registers = $this->findRegistersForSchema(schema: $this->schema);
+
+		if (empty($registers) === true) {
+			return [];
+		}
+
+		$events = [];
+		foreach ($registers as $register) {
+			$this->collectRegisterEvents(register: $register, filters: $filters, query: $query, events: $events);
+		}
+
+		return $events;
+	}//end searchEvents()
+
+	/**
+	 * Append the events of one register; a failing register is logged and skipped,
+	 * keeping the events it produced before the failure.
+	 *
+	 * @param Register            $register The register.
+	 * @param array|null          $filters  The timerange filters.
+	 * @param CalendarSearchQuery $query    The search arguments.
+	 * @param array               $events   The events collected so far, appended to.
+	 *
+	 * @return void
+	 */
+	private function collectRegisterEvents(Register $register, ?array $filters, CalendarSearchQuery $query, array &$events): void {
+		try {
+			$objects = $this->magicMapper->findAllInRegisterSchemaTable(
+				register: $register,
+				schema: $this->schema,
+				limit: $query->limit,
+				offset: $query->offset,
+				filters: $filters
+			);
+
+			foreach ($objects as $object) {
+				$this->appendEvent(object: $object, pattern: $query->pattern, events: $events);
+			}
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				'[RegisterCalendar] Failed to query register ' . $register->getId() . ': ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}//end try
+	}//end collectRegisterEvents()
+
+	/**
+	 * Transform one object and append its event when it has one and it matches the pattern.
+	 *
+	 * @param ObjectEntity $object  The object.
+	 * @param string       $pattern The summary text pattern ('' matches all).
+	 * @param array        $events  The events collected so far, appended to.
+	 *
+	 * @return void
+	 */
+	private function appendEvent(ObjectEntity $object, string $pattern, array &$events): void {
+		$event = $this->transformer->transform(
+			$object,
+			$this->schema,
+			$this->calendarConfig
+		);
+
+		if ($event === null) {
+			return;
+		}
+
+		// Apply text pattern filter on summary.
+		if ($pattern !== '' && $this->matchesPattern(event: $event, pattern: $pattern) === false) {
+			return;
+		}
+
+		$events[] = $event;
+	}//end appendEvent()
 
 	/**
 	 * Extract user ID from a principal URI
@@ -331,25 +372,7 @@ class RegisterCalendar implements ICalendar {
 		// Use canonical operator-filter shape (`field => ['gte' => v, 'lte' => v]`)
 		// — the suffix-on-key form (`'field>='`) is not recognised by the
 		// magic-table search pipeline and silently filters out everything.
-		$rangeOps = [];
-
-		if (isset($timerange['start']) === true) {
-			$start = $timerange['start'];
-			if ($start instanceof \DateTimeInterface) {
-				$start = $start->format(\DateTimeInterface::ATOM);
-			}
-
-			$rangeOps['gte'] = (string)$start;
-		}
-
-		if (isset($timerange['end']) === true) {
-			$end = $timerange['end'];
-			if ($end instanceof \DateTimeInterface) {
-				$end = $end->format(\DateTimeInterface::ATOM);
-			}
-
-			$rangeOps['lte'] = (string)$end;
-		}
+		$rangeOps = $this->rangeOps(timerange: $timerange);
 
 		if (empty($rangeOps) === true) {
 			return null;
@@ -357,6 +380,39 @@ class RegisterCalendar implements ICalendar {
 
 		return [$dtstartField => $rangeOps];
 	}//end buildTimerangeFilters()
+
+	/**
+	 * The `gte` / `lte` operators for the set `start` / `end` of a timerange.
+	 *
+	 * @param mixed $timerange The timerange option.
+	 *
+	 * @return array<string, string>
+	 */
+	private function rangeOps(mixed $timerange): array {
+		$rangeOps = [];
+		foreach (['start' => 'gte', 'end' => 'lte'] as $bound => $operator) {
+			if (isset($timerange[$bound]) === true) {
+				$rangeOps[$operator] = $this->boundValue(value: $timerange[$bound]);
+			}
+		}
+
+		return $rangeOps;
+	}//end rangeOps()
+
+	/**
+	 * A timerange bound as text: a date as ATOM, anything else cast to string.
+	 *
+	 * @param mixed $value The bound.
+	 *
+	 * @return string
+	 */
+	private function boundValue(mixed $value): string {
+		if ($value instanceof \DateTimeInterface) {
+			return $value->format(\DateTimeInterface::ATOM);
+		}
+
+		return (string)$value;
+	}//end boundValue()
 
 	/**
 	 * Find all registers that contain the given schema
