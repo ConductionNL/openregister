@@ -46,7 +46,7 @@ use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -78,9 +78,9 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	/**
 	 * Open timers of a run.
 	 *
-	 * @var FlowTimerMapper
+	 * @var FlowTimerMapperInterface
 	 */
-	private readonly FlowTimerMapper $timers;
+	private readonly FlowTimerMapperInterface $timers;
 
 	/**
 	 * Supersession.

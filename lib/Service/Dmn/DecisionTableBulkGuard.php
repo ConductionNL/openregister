@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Dmn;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Listener\DecisionTableValidationListener;
+use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -42,9 +42,9 @@ class DecisionTableBulkGuard {
 	/**
 	 * The single-save rule, resolved on first use.
 	 *
-	 * @var DecisionTableValidationListener|null
+	 * @var DecisionTableValidationListenerInterface|null
 	 */
-	private ?DecisionTableValidationListener $listener = null;
+	private ?DecisionTableValidationListenerInterface $listener = null;
 
 	/**
 	 * Constructor.
@@ -63,13 +63,13 @@ class DecisionTableBulkGuard {
 	/**
 	 * The single-save rule.
 	 *
-	 * @return DecisionTableValidationListener The listener.
+	 * @return DecisionTableValidationListenerInterface The listener.
 	 *
 	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
 	 */
-	private function listener(): DecisionTableValidationListener {
+	private function listener(): DecisionTableValidationListenerInterface {
 		if ($this->listener === null) {
-			$this->listener = $this->container->get(DecisionTableValidationListener::class);
+			$this->listener = $this->container->get(DecisionTableValidationListenerInterface::class);
 		}
 
 		return $this->listener;

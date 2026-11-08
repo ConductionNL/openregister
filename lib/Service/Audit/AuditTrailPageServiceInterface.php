@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
-use OCA\OpenRegister\Db\AuditTrailPageQuery;
+use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
 
 /**
  * The audit-trail page and export the audit trail endpoints serve.
@@ -52,7 +52,7 @@ interface AuditTrailPageServiceInterface {
 	/**
 	 * One page, newest first.
 	 *
-	 * @param array<string, mixed> $filters The filters (see AuditTrailPageQuery::page()).
+	 * @param array<string, mixed> $filters The filters (see AuditTrailPageQueryInterface::page()).
 	 * @param string|null          $search  Full text on the change summary.
 	 * @param int                  $limit   Page size.
 	 * @param int                  $cursor  The cursor, 0 for the first page.

@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Listener\DecisionTableValidationListener;
+use OCA\OpenRegister\Listener\DecisionTableValidationListenerInterface;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Object\BulkRowChecks;
@@ -82,7 +83,7 @@ class DecisionTableBulkGuardTest extends TestCase {
 
 		$listener  = new DecisionTableValidationListener($schemas, new DecisionTableValidator(), $objects, $registers);
 		$container = $this->createMock(\Psr\Container\ContainerInterface::class);
-		$container->method('get')->with(DecisionTableValidationListener::class)->willReturn($listener);
+		$container->method('get')->with(DecisionTableValidationListenerInterface::class)->willReturn($listener);
 
 		return new DecisionTableBulkGuard($container);
 	}//end guard()

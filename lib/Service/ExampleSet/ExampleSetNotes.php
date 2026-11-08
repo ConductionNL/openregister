@@ -129,15 +129,14 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 	/**
 	 * Leave the note on the object, as the account, at `createdAt` or now.
 	 *
-	 * @param string               $app  The app that ships the fragment (unused: a note names its author).
-	 * @param string               $key  The note's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{id: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		try {
 			$comments = $this->comments();
 			$comment  = $this->newComment(comments: $comments, data: $data);

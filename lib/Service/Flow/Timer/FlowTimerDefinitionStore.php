@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
-use OCA\OpenRegister\Repair\SeedFlowTimerRegister;
+use OCA\OpenRegister\Repair\FlowTimerRegisterPathInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -189,28 +189,14 @@ class FlowTimerDefinitionStore {
 	 * @return array<string, array<string, mixed>> Definitions keyed by slug.
 	 */
 	private function fromDescriptor(string $schema): array {
-		try {
-			$path = $this->appManager->getAppPath('openregister') . SeedFlowTimerRegister::REGISTER_PATH;
-			if (is_file($path) === false) {
-				$this->logger->warning('[FlowTimerDefinitionStore] Descriptor absent: ' . $path);
-
-				return [];
-			}
-
-			$data = json_decode((string)file_get_contents($path), true);
-		} catch (Throwable $failure) {
-			$this->logger->warning('[FlowTimerDefinitionStore] Descriptor unreadable: ' . $failure->getMessage());
-
+		$data = $this->descriptor();
+		if ($data === false) {
 			return [];
 		}
 
 		$definitions = [];
 		foreach (($data['components']['objects'] ?? []) as $object) {
-			if (is_array($object) === false || (string)($object['@self']['schema'] ?? '') !== $schema) {
-				continue;
-			}
-
-			$slug = trim((string)($object['slug'] ?? ''));
+			$slug = $this->slugOf(object: $object, schema: $schema);
 			if ($slug === '') {
 				continue;
 			}
@@ -221,4 +207,42 @@ class FlowTimerDefinitionStore {
 
 		return $definitions;
 	}//end fromDescriptor()
+
+	/**
+	 * The decoded descriptor, or false when it is absent or unreadable.
+	 *
+	 * @return mixed The decoded JSON (null when it is not JSON), or false.
+	 */
+	private function descriptor(): mixed {
+		try {
+			$path = $this->appManager->getAppPath('openregister') . FlowTimerRegisterPathInterface::REGISTER_PATH;
+			if (is_file($path) === false) {
+				$this->logger->warning('[FlowTimerDefinitionStore] Descriptor absent: ' . $path);
+
+				return false;
+			}
+
+			return json_decode((string)file_get_contents($path), true);
+		} catch (Throwable $failure) {
+			$this->logger->warning('[FlowTimerDefinitionStore] Descriptor unreadable: ' . $failure->getMessage());
+
+			return false;
+		}
+	}//end descriptor()
+
+	/**
+	 * The trimmed slug of a descriptor object of the asked schema, or ''.
+	 *
+	 * @param mixed  $object The descriptor entry.
+	 * @param string $schema The schema slug.
+	 *
+	 * @return string The slug, '' when the entry is not a definition of that schema.
+	 */
+	private function slugOf(mixed $object, string $schema): string {
+		if (is_array($object) === false || (string)($object['@self']['schema'] ?? '') !== $schema) {
+			return '';
+		}
+
+		return trim((string)($object['slug'] ?? ''));
+	}//end slugOf()
 }//end class

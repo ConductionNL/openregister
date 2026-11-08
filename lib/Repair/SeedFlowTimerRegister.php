@@ -42,9 +42,10 @@ use Throwable;
 /**
  * Imports the flow-timers register descriptor idempotently on upgrade/install.
  */
-class SeedFlowTimerRegister implements IRepairStep {
+class SeedFlowTimerRegister implements IRepairStep, FlowTimerRegisterPathInterface {
+
 	/**
-	 * App-relative path to the register descriptor imported by this step.
+	 * The descriptor this step imports, as a literal so the step's own code names the file.
 	 *
 	 * @var string
 	 */

@@ -47,7 +47,7 @@ use OCP\IUserSession;
 /**
  * The flow endpoints' authorisation questions, in one place.
  */
-class FlowAccess {
+class FlowAccess implements FlowAccessInterface {
 	/**
 	 * Constructor.
 	 *

@@ -9,12 +9,7 @@
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="$emit('cancel')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ closeLabel }}
-			</NcButton>
+			<CloseCancelButton :label="closeLabel" @click="$emit('cancel')" />
 			<NcButton
 				v-if="showConfirm"
 				:disabled="loading || confirmDisabled"
@@ -34,8 +29,8 @@
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 /**
  * The frame of a dialog that asks before an irreversible action: the question
@@ -46,7 +41,7 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 export default {
 	name: 'ConfirmDialogFrame',
 	components: {
-		Cancel,
+		CloseCancelButton,
 		NcButton,
 		NcDialog,
 		NcLoadingIcon,

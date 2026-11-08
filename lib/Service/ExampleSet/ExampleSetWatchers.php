@@ -116,15 +116,14 @@ class ExampleSetWatchers extends ExampleSetEngineRows {
 	/**
 	 * Let the account follow the object.
 	 *
-	 * @param string               $app  The app that ships the fragment (unused: a follow names its user).
-	 * @param string               $key  The follow's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled follow fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{user: string, objectUuid: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-let-the-sets-own-accounts-follow-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		return $this->userObjectWrite(
 			write: fn () => $this->mapper()->subscribe(
 				userId: (string) $data['user'],

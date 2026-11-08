@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 
 /**
  * Validates the `recipients` of one `x-openregister-notifications` rule.
@@ -44,7 +44,7 @@ final class NotificationRecipientValidator {
 		'expression',
 		'watchers',
 		'parties',
-		ReferencedAddressNotifier::KIND,
+		ReferencedAddressNotifierInterface::KIND,
 	];
 
 	/**
@@ -154,7 +154,7 @@ final class NotificationRecipientValidator {
 		return match ($kind) {
 			'groups', 'users' => $this->namedListErrors(entry: $entry, kind: $kind),
 			'field' => $this->fieldRecipientErrors(entry: $entry),
-			ReferencedAddressNotifier::KIND => $this->emailRecipientErrors(entry: $entry),
+			ReferencedAddressNotifierInterface::KIND => $this->emailRecipientErrors(entry: $entry),
 			'object-acl' => $this->aclRecipientErrors(entry: $entry),
 			'role' => $this->roleRecipientErrors(entry: $entry),
 			'expression' => $this->expressionRecipientErrors(entry: $entry),
@@ -408,11 +408,11 @@ final class NotificationRecipientValidator {
 	 * @return array<int, array{code: string, message: string}>
 	 */
 	private function emailDepthErrors(RecipientEntry $entry, array $segments): array {
-		if (count($segments) <= (ReferencedAddressNotifier::MAX_HOPS + 1)) {
+		if (count($segments) <= (ReferencedAddressNotifierInterface::MAX_HOPS + 1)) {
 			return [];
 		}
 
-		$detail = sprintf('field "%s" follows more than %d references.', $this->emailPath(entry: $entry), ReferencedAddressNotifier::MAX_HOPS);
+		$detail = sprintf('field "%s" follows more than %d references.', $this->emailPath(entry: $entry), ReferencedAddressNotifierInterface::MAX_HOPS);
 		return [$entry->error(code: 'notification-recipient-email-path-too-deep', detail: $detail)];
 	}//end emailDepthErrors()
 

@@ -29,7 +29,6 @@ namespace OCA\OpenRegister\Service\Configuration;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
 
 /**
  * Judges a bundle against the register it was uploaded to.
@@ -69,10 +68,10 @@ class RegisterBundleBinding implements RegisterBundleBindingInterface {
 			return 'A register manager may only import schemas and the register itself';
 		}
 
-		$own = $this->schemasBySlug(register: $register);
+		$rules = new RegisterBundleEntryRules(register: $register, own: $this->schemasBySlug(register: $register));
 
-		return $this->registerRefusal(register: $register, components: $components, own: $own)
-			?? $this->schemaRefusal(schemas: ($components['schemas'] ?? []), own: $own);
+		return $this->registerRefusal(registers: ($components['registers'] ?? []), rules: $rules)
+			?? $this->schemaRefusal(schemas: ($components['schemas'] ?? []), rules: $rules);
 	}//end refusalFor()
 
 	/**
@@ -94,27 +93,20 @@ class RegisterBundleBinding implements RegisterBundleBindingInterface {
 	/**
 	 * Why the bundle's registers part may not be imported.
 	 *
-	 * @param Register              $register   The register the bundle was uploaded to.
-	 * @param array<string, mixed>  $components The bundle's components.
-	 * @param array<string, Schema> $own        The stored schemas of the register.
+	 * @param mixed                    $registers The bundle's registers part.
+	 * @param RegisterBundleEntryRules $rules     The register and its stored schemas.
 	 *
 	 * @return string|null The reason, or null.
 	 */
-	private function registerRefusal(Register $register, array $components, array $own): ?string {
-		$registers = ($components['registers'] ?? []);
+	private function registerRefusal(mixed $registers, RegisterBundleEntryRules $rules): string|null {
 		if (is_array($registers) === false) {
 			return 'The bundle has an unreadable registers part';
 		}
 
 		foreach ($registers as $key => $entry) {
-			$slug  = ($entry['slug'] ?? $key);
-			$named = ($entry['schemas'] ?? []);
-			if ($slug !== $register->getSlug() || $key !== $register->getSlug() || is_array($named) === false) {
-				return 'A register manager may not import another register';
-			}
-
-			if (array_diff($named, array_keys($own)) !== []) {
-				return 'A register manager may not link another schema to this register';
+			$reason = $rules->registerEntryRefusal(key: $key, entry: $entry);
+			if ($reason !== null) {
+				return $reason;
 			}
 		}
 
@@ -124,25 +116,20 @@ class RegisterBundleBinding implements RegisterBundleBindingInterface {
 	/**
 	 * Why the bundle's schemas part may not be imported.
 	 *
-	 * @param mixed                 $schemas The bundle's schemas part.
-	 * @param array<string, Schema> $own     The stored schemas of the register.
+	 * @param mixed                    $schemas The bundle's schemas part.
+	 * @param RegisterBundleEntryRules $rules   The register and its stored schemas.
 	 *
 	 * @return string|null The reason, or null.
 	 */
-	private function schemaRefusal(mixed $schemas, array $own): ?string {
+	private function schemaRefusal(mixed $schemas, RegisterBundleEntryRules $rules): string|null {
 		if (is_array($schemas) === false) {
 			return 'The bundle has an unreadable schemas part';
 		}
 
-		$change = new CrossOrganisationMarkerChange();
 		foreach ($schemas as $key => $document) {
-			$slug = ($document['slug'] ?? $key);
-			if (is_array($document) === false || isset($own[$key]) === false || $slug !== $key) {
-				return 'A register manager may only import schemas of this register';
-			}
-
-			if ($change->widens(old: $own[$key]->getAuthorization(), new: ($document['authorization'] ?? null)) === true) {
-				return 'Only an administrator may let a rule read across organisations (crossOrganisation: true)';
+			$reason = $rules->schemaEntryRefusal(key: $key, document: $document);
+			if ($reason !== null) {
+				return $reason;
 			}
 		}
 

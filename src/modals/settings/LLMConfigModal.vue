@@ -88,32 +88,17 @@
 				<LlmApiKeyField
 					id="openai-api-key"
 					v-model="openaiConfig.apiKey"
-					placeholder="sk-..."
-					:hint="t('openregister', 'Your OpenAI API key. Get one at')"
-					href="https://platform.openai.com/api-keys"
-					linkText="platform.openai.com" />
+					v-bind="openaiKeyLink" />
 
-				<div class="form-group">
-					<label for="openai-model">{{
-						t('openregister', 'Embedding Model')
-					}}</label>
-					<NcSelect
-						v-model="openaiConfig.model"
-						inputLabel="Openai Config Model"
-						:options="openaiModelOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select model')"
-						:labelOutside="true">
-						<template #option="{ name, dimensions, cost }">
-							<div class="model-option">
-								<strong>{{ name }}</strong>
-								<small
-									>{{ dimensions }} dimensions • {{ cost }}</small
-								>
-							</div>
-						</template>
-					</NcSelect>
-				</div>
+				<LlmModelSelect
+					v-model="openaiConfig.model"
+					labelFor="openai-model"
+					:label="t('openregister', 'Embedding Model')"
+					inputLabel="Openai Config Model"
+					:options="openaiModelOptions"
+					:placeholder="t('openregister', 'Select model')">
+					<template #detail="{ dimensions, cost }">{{ dimensions }} dimensions • {{ cost }}</template>
+				</LlmModelSelect>
 
 				<div class="form-group">
 					<label for="openai-org">{{
@@ -164,32 +149,17 @@
 				<LlmApiKeyField
 					id="fireworks-api-key"
 					v-model="fireworksConfig.apiKey"
-					placeholder="fw_..."
-					:hint="t('openregister', 'Your Fireworks AI API key. Get one at')"
-					href="https://fireworks.ai"
-					linkText="fireworks.ai" />
+					v-bind="fireworksKeyLink" />
 
-				<div class="form-group">
-					<label for="fireworks-embedding-model">{{
-						t('openregister', 'Embedding Model')
-					}}</label>
-					<NcSelect
-						v-model="fireworksConfig.embeddingModel"
-						inputLabel="Fireworks Config Embedding Model"
-						:options="fireworksEmbeddingModelOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select model')"
-						:labelOutside="true">
-						<template #option="{ name, dimensions, cost }">
-							<div class="model-option">
-								<strong>{{ name }}</strong>
-								<small
-									>{{ dimensions }} dimensions • {{ cost }}</small
-								>
-							</div>
-						</template>
-					</NcSelect>
-				</div>
+				<LlmModelSelect
+					v-model="fireworksConfig.embeddingModel"
+					labelFor="fireworks-embedding-model"
+					:label="t('openregister', 'Embedding Model')"
+					inputLabel="Fireworks Config Embedding Model"
+					:options="fireworksEmbeddingModelOptions"
+					:placeholder="t('openregister', 'Select model')">
+					<template #detail="{ dimensions, cost }">{{ dimensions }} dimensions • {{ cost }}</template>
+				</LlmModelSelect>
 
 				<div class="form-group">
 					<label for="fireworks-base-url">{{
@@ -221,33 +191,17 @@
 					v-if="selectedEmbeddingProvider?.id !== 'openai'"
 					id="openai-chat-api-key"
 					v-model="openaiConfig.apiKey"
-					placeholder="sk-..."
-					:hint="t('openregister', 'Your OpenAI API key. Get one at')"
-					href="https://platform.openai.com/api-keys"
-					linkText="platform.openai.com" />
+					v-bind="openaiKeyLink" />
 
-				<div class="form-group">
-					<label for="openai-chat-model">{{
-						t('openregister', 'Chat Model')
-					}}</label>
-					<NcSelect
-						v-model="openaiConfig.chatModel"
-						inputLabel="Openai Config Chat Model"
-						:options="openaiChatModelOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select chat model')"
-						:labelOutside="true">
-						<template #option="{ name, contextWindow, cost }">
-							<div class="model-option">
-								<strong>{{ name }}</strong>
-								<small
-									>{{ contextWindow }} tokens • {{ cost }}/1M
-									tokens</small
-								>
-							</div>
-						</template>
-					</NcSelect>
-				</div>
+				<LlmModelSelect
+					v-model="openaiConfig.chatModel"
+					labelFor="openai-chat-model"
+					:label="t('openregister', 'Chat Model')"
+					inputLabel="Openai Config Chat Model"
+					:options="openaiChatModelOptions"
+					:placeholder="t('openregister', 'Select chat model')">
+					<template #detail="{ contextWindow, cost }">{{ contextWindow }} tokens • {{ cost }}/1M tokens</template>
+				</LlmModelSelect>
 			</div>
 
 			<!-- Fireworks Chat Configuration -->
@@ -262,32 +216,17 @@
 					v-if="selectedEmbeddingProvider?.id !== 'fireworks'"
 					id="fireworks-chat-api-key"
 					v-model="fireworksConfig.apiKey"
-					placeholder="fw_..."
-					:hint="t('openregister', 'Your Fireworks AI API key. Get one at')"
-					href="https://fireworks.ai"
-					linkText="fireworks.ai" />
+					v-bind="fireworksKeyLink" />
 
-				<div class="form-group">
-					<label for="fireworks-chat-model">{{
-						t('openregister', 'Chat Model')
-					}}</label>
-					<NcSelect
-						v-model="fireworksConfig.chatModel"
-						inputLabel="Fireworks Config Chat Model"
-						:options="fireworksChatModelOptions"
-						label="name"
-						:placeholder="t('openregister', 'Select chat model')"
-						:labelOutside="true">
-						<template #option="{ name, contextWindow, cost }">
-							<div class="model-option">
-								<strong>{{ name }}</strong>
-								<small
-									>{{ contextWindow }} tokens • {{ cost }}</small
-								>
-							</div>
-						</template>
-					</NcSelect>
-				</div>
+				<LlmModelSelect
+					v-model="fireworksConfig.chatModel"
+					labelFor="fireworks-chat-model"
+					:label="t('openregister', 'Chat Model')"
+					inputLabel="Fireworks Config Chat Model"
+					:options="fireworksChatModelOptions"
+					:placeholder="t('openregister', 'Select chat model')">
+					<template #detail="{ contextWindow, cost }">{{ contextWindow }} tokens • {{ cost }}</template>
+				</LlmModelSelect>
 			</div>
 
 			<!-- Ollama Chat Configuration -->
@@ -484,6 +423,7 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import LlmApiKeyField from './llm/LlmApiKeyField.vue'
+import LlmModelSelect from './llm/LlmModelSelect.vue'
 import LlmOllamaModelSelect from './llm/LlmOllamaModelSelect.vue'
 import LlmOllamaUrlField from './llm/LlmOllamaUrlField.vue'
 import SettingsSaveActions from './SettingsSaveActions.vue'
@@ -577,6 +517,7 @@ export default {
 		TestTube,
 		Delete,
 		LlmApiKeyField,
+		LlmModelSelect,
 		LlmOllamaModelSelect,
 		LlmOllamaUrlField,
 		SettingsSaveActions,
@@ -594,6 +535,38 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The OpenAI API key field's placeholder, hint and where to get a key;
+		 * the embedding and the chat section both show it.
+		 *
+		 * @return {object} The LlmApiKeyField props
+		 * @spec exclude presentational props of the API key field
+		 */
+		openaiKeyLink() {
+			return {
+				placeholder: 'sk-...',
+				hint: this.t('openregister', 'Your OpenAI API key. Get one at'),
+				href: 'https://platform.openai.com/api-keys',
+				linkText: 'platform.openai.com',
+			}
+		},
+
+		/**
+		 * The Fireworks AI API key field's placeholder, hint and where to get
+		 * a key; the embedding and the chat section both show it.
+		 *
+		 * @return {object} The LlmApiKeyField props
+		 * @spec exclude presentational props of the API key field
+		 */
+		fireworksKeyLink() {
+			return {
+				placeholder: 'fw_...',
+				hint: this.t('openregister', 'Your Fireworks AI API key. Get one at'),
+				href: 'https://fireworks.ai',
+				linkText: 'fireworks.ai',
+			}
+		},
+
 		/**
 		 * @spec exclude UI state helper — enables the embedding test when its provider is configured.
 		 */

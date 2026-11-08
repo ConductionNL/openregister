@@ -131,9 +131,7 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	/**
 	 * Write the card on its board and list, and link it to the object.
 	 *
-	 * @param string               $app  The app that ships the fragment, recorded as the linker.
-	 * @param string               $key  The card's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled card fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{
 	 *     error: string,
@@ -146,7 +144,9 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-deck-cards-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$store = $this->store();
 		if ($store->available() === false) {
 			return ['error' => 'Deck is not installed', 'entry' => null];

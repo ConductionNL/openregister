@@ -31,12 +31,7 @@
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="clearing" @click="$emit('close')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
+			<CloseCancelButton label="Cancel" :disabled="clearing" @click="$emit('close')" />
 			<NcButton variant="error" :disabled="clearing" @click="confirmClear">
 				<template #icon>
 					<NcLoadingIcon v-if="clearing" :size="20" />
@@ -55,8 +50,8 @@ import {
 	NcDialog,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 /**
  * The cache types to choose from, in rows of radios.
@@ -81,7 +76,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
-		Cancel,
+		CloseCancelButton,
 		Delete,
 	},
 

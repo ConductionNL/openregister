@@ -48,7 +48,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Outbound
  */
-class ProxySettings {
+class ProxySettings implements ProxySettingsInterface {
 
 	/**
 	 * The app the setting lives under.

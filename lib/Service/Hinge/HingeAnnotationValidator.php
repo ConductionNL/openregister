@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Hinge;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hinge
  */
-class HingeAnnotationValidator {
+class HingeAnnotationValidator implements HingeAnnotationValidatorInterface {
 
 	/**
 	 * Validate the lens, list and geographic-inheritance blocks of one schema.

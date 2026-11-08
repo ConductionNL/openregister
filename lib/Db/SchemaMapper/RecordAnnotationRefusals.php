@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\UniqueHintException;
-use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
+use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidatorInterface;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
@@ -102,7 +102,7 @@ final class RecordAnnotationRefusals {
 			return;
 		}
 
-		$errors = (new UniqueHintAnnotationValidator())->validate($annotation->shape());
+		$errors = SearchAnnotationValidators::uniqueHint()->validate($annotation->shape());
 		if (count($errors) > 0) {
 			$messages = array_map(static fn (array $err) => $err['message'], $errors);
 			throw new UniqueHintException(

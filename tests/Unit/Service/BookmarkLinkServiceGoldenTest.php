@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\BookmarkLinkMapperInterface;
 use OCA\OpenRegister\Service\BookmarkDraft;
 use OCA\OpenRegister\Service\BookmarkLinkService;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -415,6 +416,6 @@ class BookmarkLinkServiceGoldenTest extends TestCase {
 				return $entity;
 			}
 		);
-		return new BookmarkLinkService($links, $appManager, $session, $logger, $container);
+		return new BookmarkLinkService($links, new LinkServiceRuntime($appManager, $session, $logger), $container);
 	}//end makeService()
 }//end class

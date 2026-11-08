@@ -33,10 +33,12 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
+use OCA\OpenRegister\Controller\Support\ArchivalNominationSubject;
+use OCA\OpenRegister\Controller\Support\ArchivalReviewAnswer;
+use OCA\OpenRegister\Controller\Support\ArchivalReviewEntry;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListCreatorInterface;
@@ -845,24 +847,26 @@ class ArchivalController extends Controller {
 			);
 		}
 
-		return $this->assignReviewerOn(list: $list, entryId: $entryId, reviewer: $reviewer);
+		return $this->assignReviewerOn(
+			target: new ArchivalReviewEntry(list: $list, entryId: $entryId, listData: ($list->getObject() ?? [])),
+			reviewer: $reviewer
+		);
 	}//end assignReviewer()
 
 	/**
 	 * Name the reviewer on the entry, save the list and record the act.
 	 *
-	 * @param ObjectEntity $list     The destruction list object.
-	 * @param string       $entryId  The uuid of the record the entry is about.
-	 * @param string|null  $reviewer The reviewer's user id, or null to unassign.
+	 * @param ArchivalReviewEntry $target   The list and the entry to assign.
+	 * @param string|null         $reviewer The reviewer's user id, or null to unassign.
 	 *
 	 * @return JSONResponse 200 with the entry, or 400 when the list holds no such entry.
 	 */
-	private function assignReviewerOn(ObjectEntity $list, string $entryId, string|null $reviewer): JSONResponse {
-		$listData = ($list->getObject() ?? []);
+	private function assignReviewerOn(ArchivalReviewEntry $target, string|null $reviewer): JSONResponse {
+		$entryId = $target->entryId;
 
 		try {
 			$listData = $this->reviews->assignReviewer(
-				listData: $listData,
+				listData: $target->listData,
 				entryUuid: $entryId,
 				reviewer: $reviewer
 			);
@@ -873,10 +877,10 @@ class ArchivalController extends Controller {
 			);
 		}
 
-		$this->lists->save(list: $list, listData: $listData);
+		$this->lists->save(list: $target->list, listData: $listData);
 
 		$this->auditMapper->createAuditTrailEntry(
-			$list,
+			$target->list,
 			'archival.review_assigned',
 			[
 				'entry' => $entryId,
@@ -934,9 +938,7 @@ class ArchivalController extends Controller {
 		}
 
 		return $this->recordDecision(
-			list: $read['list'],
-			listData: $read['listData'],
-			entryId: $entryId,
+			target: new ArchivalReviewEntry(list: $read['list'], entryId: $entryId, listData: $read['listData']),
 			userId: $userId
 		);
 	}//end decideEntry()
@@ -1014,21 +1016,56 @@ class ArchivalController extends Controller {
 	 * In that order: a transfer whose list could not be made must not leave a
 	 * history saying the record was handed over.
 	 *
-	 * @param ObjectEntity          $list     The destruction list object.
-	 * @param array<string, mixed>              $listData Its own data.
-	 * @param string                            $entryId  The record the entry is about.
-	 * @param string                            $userId   The reviewer answering.
+	 * @param ArchivalReviewEntry $target The list and the entry answered.
+	 * @param string              $userId The reviewer answering.
 	 *
 	 * @return JSONResponse The recorded decision.
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	private function recordDecision(
-		ObjectEntity $list,
-		array $listData,
-		string $entryId,
-		string $userId,
-	): JSONResponse {
+	private function recordDecision(ArchivalReviewEntry $target, string $userId): JSONResponse {
+		$answer = $this->readAnswer(userId: $userId);
+		if ($answer instanceof JSONResponse) {
+			return $answer;
+		}
+
+		$listData = $this->carryOutAnswer(target: $target, answer: $answer);
+		if ($listData instanceof JSONResponse) {
+			return $listData;
+		}
+
+		$this->lists->save(list: $target->list, listData: $listData);
+
+		$decisions = ($listData['decisions'] ?? []);
+		$decision = end($decisions);
+
+		$this->auditMapper->createAuditTrailEntry(
+			$target->list,
+			'archival.review_decided',
+			[
+				'entry' => $target->entryId,
+				'answer' => $answer->answer,
+				'reviewer' => $userId,
+			]
+		);
+
+		return new JSONResponse(
+			data: [
+				'decision' => $decision,
+				'entry' => $this->reviews->entry(listData: $listData, entryUuid: $target->entryId),
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end recordDecision()
+
+	/**
+	 * Read the reviewer's answer from the request and refuse one that is not an answer.
+	 *
+	 * @param string $userId The reviewer answering.
+	 *
+	 * @return ArchivalReviewAnswer|JSONResponse The answer, or 400 for an unknown answer.
+	 */
+	private function readAnswer(string $userId): ArchivalReviewAnswer|JSONResponse {
 		$answer = (string)$this->request->getParam('answer', '');
 		$reason = (string)$this->request->getParam('reason', '');
 		$newDate = $this->request->getParam('newArchiefactiedatum');
@@ -1049,22 +1086,34 @@ class ArchivalController extends Controller {
 			);
 		}
 
+		return new ArchivalReviewAnswer(answer: $answer, reason: $reason, newDate: $newDate, reviewer: $userId);
+	}//end readAnswer()
+
+	/**
+	 * Carry the answer out on the record, then write it into the list's data.
+	 *
+	 * @param ArchivalReviewEntry  $target The list and the entry answered.
+	 * @param ArchivalReviewAnswer $answer The reviewer's answer.
+	 *
+	 * @return array|JSONResponse The list data with the decision, or 400 / 500.
+	 */
+	private function carryOutAnswer(ArchivalReviewEntry $target, ArchivalReviewAnswer $answer): array|JSONResponse {
 		try {
 			$transferRef = $this->outcomes->apply(
-				answer: $answer,
-				entryUuid: $entryId,
-				reason: $reason,
-				newDate: $newDate,
-				reviewer: $userId
+				answer: $answer->answer,
+				entryUuid: $target->entryId,
+				reason: $answer->reason,
+				newDate: $answer->newDate,
+				reviewer: $answer->reviewer
 			);
 
-			$listData = $this->reviews->recordAnswer(
-				listData: $listData,
-				entryUuid: $entryId,
-				answer: $answer,
-				reviewer: $userId,
-				reason: $reason,
-				newDate: $newDate,
+			return $this->reviews->recordAnswer(
+				listData: $target->listData,
+				entryUuid: $target->entryId,
+				answer: $answer->answer,
+				reviewer: $answer->reviewer,
+				reason: $answer->reason,
+				newDate: $answer->newDate,
 				transferRef: $transferRef
 			);
 		} catch (InvalidArgumentException $e) {
@@ -1079,30 +1128,7 @@ class ArchivalController extends Controller {
 				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
 			);
 		}//end try
-
-		$this->lists->save(list: $list, listData: $listData);
-
-		$decisions = ($listData['decisions'] ?? []);
-		$decision = end($decisions);
-
-		$this->auditMapper->createAuditTrailEntry(
-			$list,
-			'archival.review_decided',
-			[
-				'entry' => $entryId,
-				'answer' => $answer,
-				'reviewer' => $userId,
-			]
-		);
-
-		return new JSONResponse(
-			data: [
-				'decision' => $decision,
-				'entry' => $this->reviews->entry(listData: $listData, entryUuid: $entryId),
-			],
-			statusCode: Http::STATUS_OK
-		);
-	}//end recordDecision()
+	}//end carryOutAnswer()
 
 	/**
 	 * What is waiting on the person asking, across every list.
@@ -1188,7 +1214,7 @@ class ArchivalController extends Controller {
 			);
 		}
 
-		return $this->recompute(id: $id, object: $subject['object'], schema: $subject['schema'], reason: $reason);
+		return $this->recompute(subject: $subject, reason: $reason);
 	}//end recomputeNomination()
 
 	/**
@@ -1196,9 +1222,9 @@ class ArchivalController extends Controller {
 	 *
 	 * @param string $id The record uuid.
 	 *
-	 * @return array|null `{object, schema}`, or null when either does not load.
+	 * @return ArchivalNominationSubject|null The record and its schema, or null when either does not load.
 	 */
-	private function nominationSubject(string $id): array|null {
+	private function nominationSubject(string $id): ArchivalNominationSubject|null {
 		try {
 			$object = $this->objectMapper->find($id, null, null, false, false, false);
 			$schema = $this->schemaMapper->find(id: (string)$object->getSchema());
@@ -1206,20 +1232,22 @@ class ArchivalController extends Controller {
 			return null;
 		}
 
-		return ['object' => $object, 'schema' => $schema];
+		return new ArchivalNominationSubject(id: $id, object: $object, schema: $schema);
 	}//end nominationSubject()
 
 	/**
 	 * Rederive the nomination, persist the record and record the act.
 	 *
-	 * @param string       $id     The record uuid.
-	 * @param ObjectEntity $object The record.
-	 * @param Schema       $schema Its schema.
-	 * @param string       $reason Why the nomination is recomputed.
+	 * @param ArchivalNominationSubject $subject The record and its schema.
+	 * @param string                    $reason  Why the nomination is recomputed.
 	 *
 	 * @return JSONResponse 200 with the nomination, 409 for a schema that does not archive, 500 on failure.
 	 */
-	private function recompute(string $id, ObjectEntity $object, Schema $schema, string $reason): JSONResponse {
+	private function recompute(ArchivalNominationSubject $subject, string $reason): JSONResponse {
+		$id = $subject->id;
+		$object = $subject->object;
+		$schema = $subject->schema;
+
 		try {
 			$nomination = $this->nominations->nominate(
 				object: $object,

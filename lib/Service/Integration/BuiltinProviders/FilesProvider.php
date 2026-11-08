@@ -33,8 +33,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\IL10N;
@@ -54,8 +55,8 @@ class FilesProvider extends AbstractIntegrationProvider {
 	 *                                      producing mapper at call
 	 *                                      time (the canonical mapper
 	 *                                      varies across OR builds
-	 *                                      — MagicMapper /
-	 *                                      AbstractObjectMapper).
+	 *                                      — MagicMapper, through
+	 *                                      MagicMapperInterface).
 	 * @param IL10N $l10n Localisation.
 	 *
 	 * @return void
@@ -150,7 +151,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 			}
 
 			$nodes = $this->fileService->getFilesForEntity($object);
-			$nodes = $this->container->get(FileRestrictionGuard::class)->readableNodes(nodes: $nodes);
+			$nodes = $this->container->get(FileRestrictionGuardInterface::class)->readableNodes(nodes: $nodes);
 
 			return $this->normalize(nodes: $nodes);
 		} catch (\Throwable $e) {
@@ -169,7 +170,8 @@ class FilesProvider extends AbstractIntegrationProvider {
 	private function resolveObject(string $objectId) {
 		foreach ([
 			'\OCA\OpenRegister\Db\ObjectEntityMapper',
-			'\OCA\OpenRegister\Db\MagicMapper',
+			MagicObjectFinderInterface::class,
+			'\OCA\OpenRegister\Db\MagicMapperInterface',
 			'\OCA\OpenRegister\Db\AbstractObjectMapper',
 		] as $candidate
 		) {

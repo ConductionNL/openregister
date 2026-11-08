@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
@@ -298,7 +298,7 @@ class FileChangeListener implements IEventListener {
 		);
 
 		try {
-			$this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
+			$this->jobList->add(job: JobHandles::FILE_TEXT_EXTRACTION, argument: ['file_id' => $fileId]);
 			$this->logger->debug(message: self::QUEUE_MESSAGES[$mode]['queued'], context: self::context(line: __LINE__, fields: ['file_id' => $fileId]));
 		} catch (\Exception $e) {
 			$this->logger->error(
@@ -321,7 +321,7 @@ class FileChangeListener implements IEventListener {
 			message: '[FileChangeListener] Unknown extraction mode, defaulting to background',
 			context: self::context(line: __LINE__, fields: ['file_id' => $fileId, 'extraction_mode' => $mode])
 		);
-		$this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
+		$this->jobList->add(job: JobHandles::FILE_TEXT_EXTRACTION, argument: ['file_id' => $fileId]);
 	}//end queueForUnknownMode()
 
 	/**

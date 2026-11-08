@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Files\Controller\Support;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
-use OCA\OpenRegister\Service\Object\FileWriteGuard;
+use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 
 /**
  * Access, write and restriction checks plus the file audit; each is null when absent.
@@ -37,7 +37,7 @@ final class FileGuards {
 	 * Bundle the services.
 	 *
 	 * @param ?ObjectFileAccess     $objectFileAccess The object file access check.
-	 * @param ?FileWriteGuard       $fileWriteGuard   The file write guard.
+	 * @param ?FileWriteGuardInterface       $fileWriteGuard   The file write guard.
 	 * @param ?FileRestrictionGuard $fileRestrictions The file restriction guard.
 	 * @param ?FileAuditHandler     $fileAuditHandler The file audit handler.
 	 *
@@ -45,7 +45,7 @@ final class FileGuards {
 	 */
 	public function __construct(
 		public readonly ?ObjectFileAccess $objectFileAccess = null,
-		public readonly ?FileWriteGuard $fileWriteGuard = null,
+		public readonly ?FileWriteGuardInterface $fileWriteGuard = null,
 		public readonly ?FileRestrictionGuard $fileRestrictions = null,
 		public readonly ?FileAuditHandler $fileAuditHandler = null,
 	) {

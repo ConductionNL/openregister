@@ -28,9 +28,9 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Listener\Support\NodeWriteTarget;
-use OCA\OpenRegister\Service\Object\FileWriteGuard;
+use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -102,7 +102,7 @@ class FrozenNodeWriteListener implements IEventListener {
 	 *
 	 * @var string
 	 */
-	private const HOME = '/' . FileOwnershipHandler::APP_USER . '/files/';
+	private const HOME = '/' . FileOwnershipHandlerInterface::APP_USER . '/files/';
 
 	/**
 	 * What the user reads when the object that owns a file could not be checked.
@@ -140,7 +140,7 @@ class FrozenNodeWriteListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileWriteGuard     $guard      Decides whether the owning object refuses file writes.
+	 * @param FileWriteGuardInterface     $guard      Decides whether the owning object refuses file writes.
 	 * @param ContainerInterface $container  Resolves the MagicMapper (the owning object by its UUID) once a node
 	 *                                       has proved to be in an object folder: this listener sits on the four
 	 *                                       node events of every file operation on the instance, and the mapper's
@@ -149,7 +149,7 @@ class FrozenNodeWriteListener implements IEventListener {
 	 * @param IRootFolder        $rootFolder Finds a shared node's twin in the `openregister` home by file id.
 	 */
 	public function __construct(
-		private readonly FileWriteGuard $guard,
+		private readonly FileWriteGuardInterface $guard,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly IRootFolder $rootFolder,
@@ -423,11 +423,11 @@ class FrozenNodeWriteListener implements IEventListener {
 	 * @return array{node: Node, exact: bool}|null The twin, or null when the node is not one of the app's files.
 	 */
 	private function twinInHome(array $stored): ?array {
-		if ($stored['owner']?->getUID() !== FileOwnershipHandler::APP_USER) {
+		if ($stored['owner']?->getUID() !== FileOwnershipHandlerInterface::APP_USER) {
 			return null;
 		}
 
-		$twins = $this->rootFolder->getUserFolder(FileOwnershipHandler::APP_USER)->getById($stored['id']);
+		$twins = $this->rootFolder->getUserFolder(FileOwnershipHandlerInterface::APP_USER)->getById($stored['id']);
 		foreach ($twins as $twin) {
 			if (str_starts_with($twin->getPath(), self::HOME) === true) {
 				return ['node' => $twin, 'exact' => $stored['exact']];

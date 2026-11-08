@@ -36,16 +36,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use Closure;
+use OCA\OpenRegister\Controller\Support\CredentialCaller;
 use OCA\OpenRegister\Controller\Support\CredentialControllerServices;
+use OCA\OpenRegister\Controller\Support\CredentialUpdateTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
-use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
-use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
+use OCA\OpenRegister\Service\Credential\CredentialUpdateRequestInterface;
+use OCA\OpenRegister\Service\Credential\CredentialUpdateRequests;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
-use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriverInterface;
@@ -140,13 +142,41 @@ class CredentialController extends Controller {
 			return $this->indexOrganisation();
 		}
 
+		$objects = $this->listCredentialObjects();
+		if ($objects instanceof JSONResponse) {
+			return $objects;
+		}
+
+		return new JSONResponse(['results' => $this->ownPersonal(objects: $objects, uid: $uid)]);
+	}//end index()
+
+	/**
+	 * Every credential object, metadata only, or the 500 a failed listing answers.
+	 *
+	 * @return array|JSONResponse The credential objects, or the 500 answer.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function listCredentialObjects(): array|JSONResponse {
 		try {
 			$this->objectService->setRegister(CredentialBrokerService::REGISTER)->setSchema(CredentialBrokerService::SCHEMA);
-			$objects = $this->objectService->findAll();
+			return $this->objectService->findAll();
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to list credentials'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
+	}//end listCredentialObjects()
 
+	/**
+	 * The caller's own personal (scope-absent) credentials, serialised.
+	 *
+	 * @param array  $objects The credential objects.
+	 * @param string $uid     The caller.
+	 *
+	 * @return array<int, array<string, mixed>> The caller's personal credentials.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function ownPersonal(array $objects, string $uid): array {
 		$own = [];
 		foreach ($objects as $object) {
 			$data = $this->serialise(object: $object);
@@ -160,8 +190,8 @@ class CredentialController extends Controller {
 			}
 		}
 
-		return new JSONResponse(['results' => $own]);
-	}//end index()
+		return $own;
+	}//end ownPersonal()
 
 	/**
 	 * List the caller's active organisation's credential metadata (members may read).
@@ -181,13 +211,25 @@ class CredentialController extends Controller {
 			return new JSONResponse(['results' => []]);
 		}
 
-		try {
-			$this->objectService->setRegister(CredentialBrokerService::REGISTER)->setSchema(CredentialBrokerService::SCHEMA);
-			$objects = $this->objectService->findAll();
-		} catch (Throwable $e) {
-			return new JSONResponse(['message' => 'Unable to list credentials'], Http::STATUS_INTERNAL_SERVER_ERROR);
+		$objects = $this->listCredentialObjects();
+		if ($objects instanceof JSONResponse) {
+			return $objects;
 		}
 
+		return new JSONResponse(['results' => $this->organisationCredentials(objects: $objects, organisation: $activeOrg)]);
+	}//end indexOrganisation()
+
+	/**
+	 * The organisation-scoped credentials of one organisation, serialised.
+	 *
+	 * @param array  $objects      The credential objects.
+	 * @param string $organisation The organisation uuid.
+	 *
+	 * @return array<int, array<string, mixed>> That organisation's credentials.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function organisationCredentials(array $objects, string $organisation): array {
 		$results = [];
 		foreach ($objects as $object) {
 			$data = $this->serialise(object: $object);
@@ -195,13 +237,13 @@ class CredentialController extends Controller {
 				continue;
 			}
 
-			if ((string)($data['organisation'] ?? '') === $activeOrg) {
+			if ((string)($data['organisation'] ?? '') === $organisation) {
 				$results[] = $data;
 			}
 		}
 
-		return new JSONResponse(['results' => $results]);
-	}//end indexOrganisation()
+		return $results;
+	}//end organisationCredentials()
 
 	/**
 	 * GET /api/credentials/providers — list the read-only provider catalogue (id + title only).
@@ -222,37 +264,53 @@ class CredentialController extends Controller {
 
 		$out = [];
 		foreach ($this->services->vault->catalogue->all() as $entry) {
-			if (is_array($entry) === false) {
-				continue;
+			$listed = $this->providerListing(entry: $entry);
+			if ($listed !== null) {
+				$out[] = $listed;
 			}
-
-			$identifier = (string)($entry['identifier'] ?? '');
-			if ($identifier === '') {
-				continue;
-			}
-
-			// `kind` and `requiresInstanceBaseUrl` are the two things a picker needs to
-			// know to offer the right form, and neither is a secret: one says which
-			// shape of credential this provider takes, the other says whether the
-			// person has to name their own server. The allow-rules and the endpoints
-			// stay behind, as they always have: they are an internal guardrail, and
-			// publishing them would tell a caller exactly which paths to probe.
-			$kind = 'secret';
-			if (trim((string)($entry['kind'] ?? '')) === 'oauth2-token-set') {
-				$kind = 'oauth2-token-set';
-			}
-
-			$out[] = [
-				'identifier' => $identifier,
-				'title' => $this->providerTitle(entry: $entry, identifier: $identifier),
-				'kind' => $kind,
-				'requiresInstanceBaseUrl' => (trim((string)($entry['baseUrlFrom'] ?? '')) !== ''),
-				'preview' => (($entry['preview'] ?? false) === true),
-			];
 		}
 
 		return new JSONResponse(['results' => $out]);
 	}//end providers()
+
+	/**
+	 * One catalogue entry as the provider picker sees it, or null for a malformed one.
+	 *
+	 * @param mixed $entry The catalogue entry.
+	 *
+	 * @return array<string, mixed>|null `{identifier, title, kind, requiresInstanceBaseUrl, preview}`, or null.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function providerListing(mixed $entry): ?array {
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$identifier = (string)($entry['identifier'] ?? '');
+		if ($identifier === '') {
+			return null;
+		}
+
+		// `kind` and `requiresInstanceBaseUrl` are the two things a picker needs to
+		// know to offer the right form, and neither is a secret: one says which
+		// shape of credential this provider takes, the other says whether the
+		// person has to name their own server. The allow-rules and the endpoints
+		// stay behind, as they always have: they are an internal guardrail, and
+		// publishing them would tell a caller exactly which paths to probe.
+		$kind = 'secret';
+		if (trim((string)($entry['kind'] ?? '')) === 'oauth2-token-set') {
+			$kind = 'oauth2-token-set';
+		}
+
+		return [
+			'identifier' => $identifier,
+			'title' => $this->providerTitle(entry: $entry, identifier: $identifier),
+			'kind' => $kind,
+			'requiresInstanceBaseUrl' => (trim((string)($entry['baseUrlFrom'] ?? '')) !== ''),
+			'preview' => (($entry['preview'] ?? false) === true),
+		];
+	}//end providerListing()
 
 	/**
 	 * The title a person reads for one catalogue entry, in their own language.
@@ -311,7 +369,7 @@ class CredentialController extends Controller {
 
 		$name = trim((string)$this->request->getParam('name', ''));
 		$provider = (string)$this->request->getParam('provider', '');
-		$secret = $this->request->getParam('secret');
+		$secret = $this->requestedSecret();
 		$allowed = $this->normaliseAllowedApps(value: $this->request->getParam('allowedApps', []));
 		$scope = $this->requestedScope();
 
@@ -321,29 +379,79 @@ class CredentialController extends Controller {
 
 		// Organisation scope: resolve + admin-gate the owning organisation (D4). This is a
 		// request/authz concern and stays here; the broker is handed the resolved value.
-		$organisation = null;
-		if ($scope === self::SCOPE_ORGANISATION) {
-			$organisation = $this->gatedOrganisation(uid: $uid);
-			if ($organisation instanceof JSONResponse) {
-				return $organisation;
-			}
+		$organisation = $this->organisationFor(scope: $scope, uid: $uid);
+		if ($organisation instanceof JSONResponse) {
+			return $organisation;
 		}
 
+		return $this->mint(
+			mint: [
+				'name' => $name,
+				'provider' => $provider,
+				'owner' => $uid,
+				'allowedApps' => $allowed,
+				'secret' => $secret,
+				'scope' => $scope,
+				'organisation' => $organisation,
+			]
+		);
+	}//end create()
+
+	/**
+	 * The secret a create request carries, or null when it carries no string.
+	 *
+	 * @return string|null The secret, or null.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function requestedSecret(): ?string {
+		$secret = $this->request->getParam('secret');
 		if (is_string($secret) === false) {
-			$secret = null;
+			return null;
 		}
 
+		return $secret;
+	}//end requestedSecret()
+
+	/**
+	 * The owning organisation of a create: none for personal, the gated one for organisation scope.
+	 *
+	 * @param string $scope The requested scope.
+	 * @param string $uid   The caller.
+	 *
+	 * @return string|null|JSONResponse The organisation, null for personal, or the 400 / 403.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function organisationFor(string $scope, string $uid): string|null|JSONResponse {
+		if ($scope !== self::SCOPE_ORGANISATION) {
+			return null;
+		}
+
+		return $this->gatedOrganisation(uid: $uid);
+	}//end organisationFor()
+
+	/**
+	 * Mint the credential through the broker and answer with its metadata.
+	 *
+	 * @param array<string, mixed> $mint The broker's mint arguments, by name, except the metadata.
+	 *
+	 * @return JSONResponse 201 with the credential metadata, or the static 400 / 500.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function mint(array $mint): JSONResponse {
 		try {
 			// The single mint path (metadata object + vault secret) lives in the broker so
 			// an in-process caller can mint identically without an HTTP session.
 			$saved = $this->services->vault->broker->mint(
-				name: $name,
-				provider: $provider,
-				owner: $uid,
-				allowedApps: $allowed,
-				secret: $secret,
-				scope: $scope,
-				organisation: $organisation,
+				name: $mint['name'],
+				provider: $mint['provider'],
+				owner: $mint['owner'],
+				allowedApps: $mint['allowedApps'],
+				secret: $mint['secret'],
+				scope: $mint['scope'],
+				organisation: $mint['organisation'],
 				metadata: $this->connectionMetadataParams()
 			);
 		} catch (InvalidArgumentException $invalid) {
@@ -356,7 +464,7 @@ class CredentialController extends Controller {
 		}
 
 		return new JSONResponse($this->serialise(object: $saved), Http::STATUS_CREATED);
-	}//end create()
+	}//end mint()
 
 	/**
 	 * PUT /api/credentials/{id} — update metadata / allowedApps (owner only); optional rotation.
@@ -382,43 +490,99 @@ class CredentialController extends Controller {
 		$data  = $existing->getObject();
 		$scope = $this->scopeOf(data: $data);
 
-		$update = new CredentialUpdateRequest(request: $this->request);
+		$update = CredentialUpdateRequests::fromRequest(request: $this->request);
 		$data = $update->applyTo(data: $data);
 
-		if ($update->wouldRepointHost(data: $data) === true || $update->exceedsBounds(data: $data) === true) {
+		if ($this->isInvalidUpdate(update: $update, data: $data) === true) {
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		}
 
-		// The secret is written before the metadata, as OAuth2RefreshService::persist
-		// does: a failed rotation then leaves the whole credential as it was, so the
-		// 500 is true. Caught, and logged by class only: a vault fault escaping here
-		// would reach Nextcloud's own handler, which logs the trace with its
-		// arguments, and the core CredentialsManager::store frame below put() holds
-		// the secret unredacted.
-		$rotated = $update->rotatedSecret();
-		if ($rotated !== null) {
-			try {
-				$this->services->vault->credentialStore->put($uuid, $rotated, $scope);
-			} catch (Throwable $e) {
-				$this->services->session->logger->error('[CredentialController] could not rotate a credential secret: ' . $e::class, ['credentialId' => $id]);
+		$target = new CredentialUpdateTarget(id: $id, uuid: $uuid, scope: $scope, rotated: $update->rotatedSecret());
 
-				return new JSONResponse(['message' => 'Unable to update credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
-			}
+		$refusal = $this->rotateSecret(target: $target);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
+		return $this->saveUpdate(data: $data, target: $target);
+	}//end update()
+
+	/**
+	 * Whether the updated data would repoint the credential's host or break its bounds.
+	 *
+	 * @param CredentialUpdateRequestInterface $update The update.
+	 * @param array                            $data   The data with the update applied.
+	 *
+	 * @return bool True when the update is refused as an invalid request.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function isInvalidUpdate(CredentialUpdateRequestInterface $update, array $data): bool {
+		return $update->wouldRepointHost(data: $data) === true || $update->exceedsBounds(data: $data) === true;
+	}//end isInvalidUpdate()
+
+	/**
+	 * Write the rotated secret to the vault, when the update carries one.
+	 *
+	 * The secret is written before the metadata, as OAuth2RefreshService::persist
+	 * does: a failed rotation then leaves the whole credential as it was, so the
+	 * 500 is true. Caught, and logged by class only: a vault fault escaping here
+	 * would reach Nextcloud's own handler, which logs the trace with its
+	 * arguments, and the core CredentialsManager::store frame below put() holds
+	 * the secret unredacted.
+	 *
+	 * @param CredentialUpdateTarget $target The credential and the secret it rotates in.
+	 *
+	 * @return JSONResponse|null The 500 when the rotation failed, or null.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function rotateSecret(CredentialUpdateTarget $target): ?JSONResponse {
+		if ($target->rotated === null) {
+			return null;
+		}
+
+		try {
+			$this->services->vault->credentialStore->put($target->uuid, $target->rotated, $target->scope);
+		} catch (Throwable $e) {
+			$this->services->session->logger->error(
+				'[CredentialController] could not rotate a credential secret: ' . $e::class,
+				['credentialId' => $target->id]
+			);
+
+			return new JSONResponse(['message' => 'Unable to update credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		return null;
+	}//end rotateSecret()
+
+	/**
+	 * Save the updated metadata to the checked row and answer with it.
+	 *
+	 * @param array                  $data   The data with the update applied.
+	 * @param CredentialUpdateTarget $target The credential and whether its secret was rotated.
+	 *
+	 * @return JSONResponse The updated credential metadata, or the 500.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function saveUpdate(array $data, CredentialUpdateTarget $target): JSONResponse {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
-				uuid: $uuid
+				uuid: $target->uuid
 			);
 		} catch (Throwable $e) {
-			$this->services->session->logger->error('[CredentialController] could not save a credential update: ' . $e::class, ['credentialId' => $id]);
+			$this->services->session->logger->error(
+				'[CredentialController] could not save a credential update: ' . $e::class,
+				['credentialId' => $target->id]
+			);
 
 			// The secret is already rotated, so say that rather than "nothing changed".
 			$message = 'Unable to update credential';
-			if ($rotated !== null) {
+			if ($target->rotated !== null) {
 				$message = 'The secret was rotated, but the other changes could not be saved';
 			}
 
@@ -426,7 +590,7 @@ class CredentialController extends Controller {
 		}
 
 		return new JSONResponse($this->serialise(object: $saved));
-	}//end update()
+	}//end saveUpdate()
 
 	/**
 	 * GET /api/credentials/{id}/shares — the principals this credential is shared with (owner only).
@@ -547,11 +711,7 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
 		}
 
-		$user = $this->services->session->userSession->getUser();
-		$groups = [];
-		if ($user !== null) {
-			$groups = $this->services->session->groupManager->getUserGroupIds($user);
-		}
+		$caller = new CredentialCaller(uid: $uid, groups: $this->callerGroups());
 
 		try {
 			// Register/schema come from the setter context, as in index().
@@ -572,6 +732,38 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Unable to list shared credentials'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
+		$shared = $this->sharedWithCaller(all: $all, caller: $caller);
+
+		return new JSONResponse(['results' => $shared, 'total' => count($shared)]);
+	}//end sharedWithMe()
+
+	/**
+	 * The session user's group ids, or none when no user is signed in.
+	 *
+	 * @return string[] The group ids.
+	 *
+	 * @spec openspec/changes/shared-credentials-and-flows/specs/credential-sharing/spec.md#requirement-shares-are-discoverable-by-owner-and-recipient
+	 */
+	private function callerGroups(): array {
+		$user = $this->services->session->userSession->getUser();
+		if ($user === null) {
+			return [];
+		}
+
+		return $this->services->session->groupManager->getUserGroupIds($user);
+	}//end callerGroups()
+
+	/**
+	 * The credentials others shared with the caller for use, serialised.
+	 *
+	 * @param array            $all    Every credential object, read without RBAC.
+	 * @param CredentialCaller $caller The caller and their groups.
+	 *
+	 * @return array<int, array<string, mixed>> The shared credentials.
+	 *
+	 * @spec openspec/changes/shared-credentials-and-flows/specs/credential-sharing/spec.md#requirement-shares-are-discoverable-by-owner-and-recipient
+	 */
+	private function sharedWithCaller(array $all, CredentialCaller $caller): array {
 		$shared = [];
 		foreach ($all as $object) {
 			if (($object instanceof ObjectEntity) === false) {
@@ -582,14 +774,14 @@ class CredentialController extends Controller {
 
 			// The owner sees their own credentials through the ordinary index;
 			// this endpoint is about what OTHERS shared with the caller.
-			if ($object->getOwner() === $uid) {
+			if ($object->getOwner() === $caller->uid) {
 				continue;
 			}
 
 			$admits = $this->services->tokens->shareDeriver->grants(
 				sharedWith: ($data[SharePrincipalDeriverInterface::PROP_SHARED_WITH] ?? null),
-				userId: $uid,
-				userGroups: $groups,
+				userId: $caller->uid,
+				userGroups: $caller->groups,
 				permissions: ['use', null]
 			);
 
@@ -600,8 +792,8 @@ class CredentialController extends Controller {
 			$shared[] = $this->serialise(object: $object);
 		}//end foreach
 
-		return new JSONResponse(['results' => $shared, 'total' => count($shared)]);
-	}//end sharedWithMe()
+		return $shared;
+	}//end sharedWithCaller()
 
 	/**
 	 * DELETE /api/credentials/{id} — delete the object and its vault secret (owner only).
@@ -702,23 +894,57 @@ class CredentialController extends Controller {
 		$method = (string)$this->request->getParam('method', 'GET');
 		$path = (string)$this->request->getParam('path', '');
 
-		try {
-			// Pass method+path so a request-bound token (harden-credential-token-binding)
-			// is only accepted for the exact call it was minted for. Unbound tokens
-			// ignore these (backward-compatible).
-			$claims = $this->services->tokens->tokenService->verify(token: $token, method: $method, path: $path);
-			if ($claims['credentialId'] !== $id) {
-				throw new CredentialAccessDeniedException(message: 'token/credential mismatch');
-			}
+		return $this->brokered(
+			call: fn (): array => $this->tokenBrokeredRequest(
+				id: $id,
+				call: ['token' => $token, 'method' => $method, 'path' => $path]
+			)
+		);
+	}//end brokerRequest()
 
-			$result = $this->services->vault->broker->request(
-				credentialId: $id,
-				appId: $claims['appId'],
-				method: $method,
-				path: $path,
-				headers: $this->normaliseHeaders(value: $this->request->getParam('headers', [])),
-				body: $this->normaliseBody(value: $this->request->getParam('body'))
-			);
+	/**
+	 * Verify the signed token for this exact call, then make the brokered request as its app.
+	 *
+	 * @param string                                             $id   The credential UUID.
+	 * @param array{token: string, method: string, path: string} $call The token and the call it must be bound to.
+	 *
+	 * @return array `{status, headers, body}` from the upstream.
+	 *
+	 * @throws CredentialAccessDeniedException When the token names another credential.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function tokenBrokeredRequest(string $id, array $call): array {
+		// Pass method+path so a request-bound token (harden-credential-token-binding)
+		// is only accepted for the exact call it was minted for. Unbound tokens
+		// ignore these (backward-compatible).
+		$claims = $this->services->tokens->tokenService->verify(token: $call['token'], method: $call['method'], path: $call['path']);
+		if ($claims['credentialId'] !== $id) {
+			throw new CredentialAccessDeniedException(message: 'token/credential mismatch');
+		}
+
+		return $this->services->vault->broker->request(
+			credentialId: $id,
+			appId: $claims['appId'],
+			method: $call['method'],
+			path: $call['path'],
+			headers: $this->normaliseHeaders(value: $this->request->getParam('headers', [])),
+			body: $this->normaliseBody(value: $this->request->getParam('body'))
+		);
+	}//end tokenBrokeredRequest()
+
+	/**
+	 * Run one brokered call and map every broker refusal to its static answer.
+	 *
+	 * @param Closure(): array $call The brokered call.
+	 *
+	 * @return JSONResponse `{status, headers, body}` from the upstream, or 409 / 403 / 502.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function brokered(Closure $call): JSONResponse {
+		try {
+			$result = $call();
 		} catch (CredentialRelinkRequiredException $e) {
 			// A distinct status, because this is the one broker refusal a client can
 			// actually act on: reconnect the account. It stays static about WHY, so
@@ -733,7 +959,7 @@ class CredentialController extends Controller {
 		}//end try
 
 		return new JSONResponse($result);
-	}//end brokerRequest()
+	}//end brokered()
 
 	/**
 	 * POST /api/credentials/{id}/session-request — the session-authenticated browser broker call.
@@ -772,29 +998,16 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
 		}
 
-		try {
-			$result = $this->services->vault->broker->request(
+		return $this->brokered(
+			call: fn (): array => $this->services->vault->broker->request(
 				credentialId: $id,
 				appId: $appId,
 				method: (string)$this->request->getParam('method', 'GET'),
 				path: (string)$this->request->getParam('path', ''),
 				headers: $this->normaliseHeaders(value: $this->request->getParam('headers', [])),
 				body: $this->normaliseBody(value: $this->request->getParam('body'))
-			);
-		} catch (CredentialRelinkRequiredException $e) {
-			// A distinct status, because this is the one broker refusal a client can
-			// actually act on: reconnect the account. It stays static about WHY, so
-			// it is not an oracle for which guard or which provider error fired.
-			return new JSONResponse(['message' => 'Credential must be reconnected'], Http::STATUS_CONFLICT);
-		} catch (CredentialAccessDeniedException $e) {
-			return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
-		} catch (CredentialUpstreamException $e) {
-			return new JSONResponse(['message' => 'Upstream request failed'], Http::STATUS_BAD_GATEWAY);
-		} catch (Throwable $e) {
-			return new JSONResponse(['message' => 'Request not permitted'], Http::STATUS_FORBIDDEN);
-		}//end try
-
-		return new JSONResponse($result);
+			)
+		);
 	}//end sessionBrokerRequest()
 
 	/**
@@ -864,19 +1077,34 @@ class CredentialController extends Controller {
 			$object = null;
 		}
 
-		// Uniform 403: never distinguish "missing" from "not yours". A row without
-		// a uuid is refused too, since its writes would have nothing to name it by.
+		$refusal = $this->refuseManagement(object: $object, uid: $uid);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $object;
+	}//end ensureManageable()
+
+	/**
+	 * Refuse a credential the caller may not manage, with one uniform 403.
+	 *
+	 * Never distinguishes "missing" from "not yours". A row without a uuid is
+	 * refused too, since its writes would have nothing to name it by.
+	 *
+	 * @param ObjectEntity|null $object The credential, or null when it did not load.
+	 * @param string            $uid    The caller.
+	 *
+	 * @return JSONResponse|null The 403, or null when the caller may manage it.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function refuseManagement(ObjectEntity|null $object, string $uid): JSONResponse|null {
 		if ($object === null || (string) $object->getUuid() === '') {
 			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
 		}
 
 		if ($this->scopeOf(data: $object->getObject()) === self::SCOPE_ORGANISATION) {
-			$organisation = (string)($object->getObject()['organisation'] ?? '');
-			if ($organisation === '' || $this->services->tokens->organisationService->isOrganisationAdmin($organisation, $uid) === false) {
-				return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
-			}
-
-			return $object;
+			return $this->refuseOrganisationManagement(object: $object, uid: $uid);
 		}
 
 		// Personal — the per-object owner IDOR guard, unchanged.
@@ -884,8 +1112,27 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
 		}
 
-		return $object;
-	}//end ensureManageable()
+		return null;
+	}//end refuseManagement()
+
+	/**
+	 * Refuse an organisation credential to anybody but an administrator of its organisation.
+	 *
+	 * @param ObjectEntity $object The organisation-scoped credential.
+	 * @param string       $uid    The caller.
+	 *
+	 * @return JSONResponse|null The 403, or null when the caller administers the organisation.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function refuseOrganisationManagement(ObjectEntity $object, string $uid): ?JSONResponse {
+		$organisation = (string)($object->getObject()['organisation'] ?? '');
+		if ($organisation === '' || $this->services->tokens->organisationService->isOrganisationAdmin($organisation, $uid) === false) {
+			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
+		}
+
+		return null;
+	}//end refuseOrganisationManagement()
 
 	/**
 	 * Resolve the requested scope from the request (body `scope` / query `scope`).
@@ -1021,13 +1268,27 @@ class CredentialController extends Controller {
 
 		$headers = [];
 		foreach ($value as $key => $entry) {
-			if (is_string($key) === true && (is_string($entry) === true || is_numeric($entry) === true)) {
+			if ($this->isHeaderPair(key: $key, entry: $entry) === true) {
 				$headers[$key] = (string)$entry;
 			}
 		}
 
 		return $headers;
 	}//end normaliseHeaders()
+
+	/**
+	 * Whether one header entry is a string name with a string or numeric value.
+	 *
+	 * @param mixed $key   The header name.
+	 * @param mixed $entry The header value.
+	 *
+	 * @return bool True when the pair is forwarded.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function isHeaderPair(mixed $key, mixed $entry): bool {
+		return is_string($key) === true && (is_string($entry) === true || is_numeric($entry) === true);
+	}//end isHeaderPair()
 
 	/**
 	 * Coerce a caller-supplied body value into a raw string or null.

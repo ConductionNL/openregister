@@ -55,39 +55,22 @@
 				}}
 			</p>
 
-			<NcNoteCard v-if="error" type="error">
-				{{ error }}
-			</NcNoteCard>
-
-			<div class="denialActions">
-				<NcButton
-					variant="tertiary"
-					:disabled="saving"
-					@click="$emit('close')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					variant="primary"
-					type="submit"
-					:disabled="saving || !ground">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-					</template>
-					{{ t('openregister', 'Draft denial') }}
-				</NcButton>
-			</div>
+			<AvgFormFooter
+				:error="error"
+				:saving="saving"
+				:incomplete="!ground"
+				:submitLabel="t('openregister', 'Draft denial')"
+				@close="$emit('close')" />
 		</form>
 	</NcDialog>
 </template>
 
 <script>
 import {
-	NcButton,
 	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
+import AvgFormFooter from './AvgFormFooter.vue'
 import { resolveGroundOptions, resolveTemplateRef } from '../../store/modules/avg.js'
 import { avgStore } from '../../store/store.js'
 
@@ -95,11 +78,9 @@ export default {
 	name: 'DenialComposerDialog',
 
 	components: {
+		AvgFormFooter,
 		NcDialog,
 		NcSelect,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
 	},
 
 	props: {
@@ -207,9 +188,5 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
 	margin-top: 4px;
-}
-
-.denialActions {
-	@include end-aligned-actions;
 }
 </style>

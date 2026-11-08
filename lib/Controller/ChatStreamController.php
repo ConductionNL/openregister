@@ -42,8 +42,9 @@ use OCA\OpenRegister\Controller\Support\ChatStreamTurn;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
-use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannels;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Response;
@@ -390,10 +391,10 @@ class ChatStreamController extends Controller {
 	 * deliberately no `onHeartbeat` registration; see the note at the foot of
 	 * StreamYieldChannel.
 	 *
-	 * @return StreamYieldChannel The channel.
+	 * @return ChatStreamChannelInterface The channel.
 	 */
-	private function streamChannel(): StreamYieldChannel {
-		$channel = new StreamYieldChannel();
+	private function streamChannel(): ChatStreamChannelInterface {
+		$channel = StreamYieldChannels::channel();
 		$channel->onToken(fn (string $delta) => $this->forwardWithHeartbeat(eventType: 'token', payload: ['delta' => $delta]));
 		$channel->onToolCall(fn (array $payload) => $this->forwardWithHeartbeat(eventType: 'tool_call', payload: $payload));
 		$channel->onToolResult(fn (array $payload) => $this->forwardWithHeartbeat(eventType: 'tool_result', payload: $payload));

@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
-class FileSharingHandler {
+class FileSharingHandler implements FileSharingHandlerInterface {
 	/**
 	 * Share manager for share operations.
 	 *

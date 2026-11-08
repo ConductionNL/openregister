@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
@@ -153,7 +154,7 @@ class TagsController extends Controller {
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		try {
-			$object = $this->selectObject(register: $register, schema: $schema, id: $id);
+			$object = $this->selectObject(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 			if ($object === null) {
 				return $this->objectNotFound();
 			}
@@ -182,9 +183,7 @@ class TagsController extends Controller {
 	 */
 	public function add(string $register, string $schema, string $id): JSONResponse {
 		return $this->changeTags(
-			register: $register,
-			schema: $schema,
-			id: $id,
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			change: fn (ObjectEntity $object): JSONResponse => $this->addTag(object: $object)
 		);
 	}//end add()
@@ -206,9 +205,7 @@ class TagsController extends Controller {
 	 */
 	public function remove(string $register, string $schema, string $id, string $tag): JSONResponse {
 		return $this->changeTags(
-			register: $register,
-			schema: $schema,
-			id: $id,
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
 			change: fn (ObjectEntity $object): JSONResponse => $this->removeTag(object: $object, tag: $tag)
 		);
 	}//end remove()
@@ -216,16 +213,14 @@ class TagsController extends Controller {
 	/**
 	 * Select the object addressed by the route and load it through the read path.
 	 *
-	 * @param string $register The register slug or identifier
-	 * @param string $schema   The schema slug or identifier
-	 * @param string $id       The object ID
+	 * @param ObjectLinkRoute $route The register slug or identifier, the schema slug or identifier and the object ID
 	 *
 	 * @return ObjectEntity|null The object, or null when it is not found.
 	 */
-	private function selectObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	private function selectObject(ObjectLinkRoute $route): ?ObjectEntity {
+		$this->objectService->setRegister($route->register);
+		$this->objectService->setSchema($route->schema);
+		$this->objectService->setObject($route->id);
 
 		return $this->objectService->getObject();
 	}//end selectObject()
@@ -236,16 +231,14 @@ class TagsController extends Controller {
 	 * The right is checked BEFORE the change runs; every failure maps to the
 	 * same statuses add() and remove() always answered.
 	 *
-	 * @param string   $register The register slug or identifier
-	 * @param string   $schema   The schema slug or identifier
-	 * @param string   $id       The object ID
-	 * @param callable $change   The change, given the object: (ObjectEntity): JSONResponse
+	 * @param ObjectLinkRoute $route  The register slug or identifier, the schema slug or identifier and the object ID
+	 * @param callable        $change The change, given the object: (ObjectEntity): JSONResponse
 	 *
 	 * @return JSONResponse The change's response, or the refusal.
 	 */
-	private function changeTags(string $register, string $schema, string $id, callable $change): JSONResponse {
+	private function changeTags(ObjectLinkRoute $route, callable $change): JSONResponse {
 		try {
-			$object = $this->selectObject(register: $register, schema: $schema, id: $id);
+			$object = $this->selectObject(route: $route);
 			if ($object === null) {
 				return $this->objectNotFound();
 			}

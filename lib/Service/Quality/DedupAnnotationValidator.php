@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Quality;
  *
  * @spec openspec/changes/mdm-foundation/tasks.md#task-5
  */
-class DedupAnnotationValidator {
+class DedupAnnotationValidator implements DedupAnnotationValidatorInterface {
 	/**
 	 * Recognised match methods.
 	 *

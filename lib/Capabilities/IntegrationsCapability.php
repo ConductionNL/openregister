@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Capabilities;
 
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
-use OCA\OpenRegister\Service\Integration\LeafRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRegistryInterface;
 use OCP\App\IAppManager;
 use OCP\Capabilities\ICapability;
 use OCP\IGroupManager;
@@ -57,11 +57,11 @@ class IntegrationsCapability implements ICapability {
 	/**
 	 * Constructor.
 	 *
-	 * @param IntegrationCatalogueInterface $registry Integration registry.
-	 * @param IUserSession $userSession Current user session.
-	 * @param IGroupManager $groupManager Group manager (admin check).
-	 * @param IAppManager $appManager App manager (installed check).
-	 * @param LeafRegistry $leafRegistry Cross-app leaf catalogue (ADR-066).
+	 * @param IntegrationCatalogueInterface $registry     Integration registry.
+	 * @param IUserSession                  $userSession  Current user session.
+	 * @param IGroupManager                 $groupManager Group manager (admin check).
+	 * @param IAppManager                   $appManager   App manager (installed check).
+	 * @param LeafRegistryInterface         $leafRegistry Cross-app leaf catalogue (ADR-066).
 	 *
 	 * @return void
 	 */
@@ -70,7 +70,7 @@ class IntegrationsCapability implements ICapability {
 		private IUserSession $userSession,
 		private IGroupManager $groupManager,
 		private IAppManager $appManager,
-		private LeafRegistry $leafRegistry,
+		private LeafRegistryInterface $leafRegistry,
 	) {
 	}//end __construct()
 

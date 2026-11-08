@@ -9,12 +9,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 		:message="deleteMessage"
 		@update:open="handleDialogClose">
 		<template #actions>
-			<NcButton @click="navigationStore.setDialog(false)">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton :label="t('openregister', 'Cancel')" @click="navigationStore.setDialog(false)" />
 			<NcButton variant="error" @click="deleteApplication">
 				<template #icon>
 					<TrashCanOutline :size="20" />
@@ -27,15 +22,15 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcButton, NcDialog } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'DeleteApplication',
 	components: {
 		NcDialog,
 		NcButton,
-		Cancel,
+		CloseCancelButton,
 		TrashCanOutline,
 	},
 

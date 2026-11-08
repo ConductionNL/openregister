@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
@@ -115,7 +116,7 @@ class ObjectFavouriteController extends Controller {
 		}
 
 		$body = array_merge($favourite->jsonSerialize(), ['favourite' => true, 'watching' => true]);
-		return $this->deprecated(response: new JSONResponse($body), register: $register, schema: $schema, id: $id);
+		return $this->deprecated(response: new JSONResponse($body), route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 
 	}//end star()
 
@@ -149,23 +150,21 @@ class ObjectFavouriteController extends Controller {
 		}
 
 		$body = ['favourite' => false, 'watching' => false, 'removed' => $removed];
-		return $this->deprecated(response: new JSONResponse($body), register: $register, schema: $schema, id: $id);
+		return $this->deprecated(response: new JSONResponse($body), route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 
 	}//end unstar()
 
 	/**
 	 * Mark a response as coming from a deprecated route, naming its successor.
 	 *
-	 * @param JSONResponse $response The response to mark.
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object uuid.
+	 * @param JSONResponse    $response The response to mark.
+	 * @param ObjectLinkRoute $route    Register slug or id, schema slug or id, and object uuid.
 	 *
 	 * @return JSONResponse The same response, with the two headers.
 	 */
-	private function deprecated(JSONResponse $response, string $register, string $schema, string $id): JSONResponse {
-		$successor = '/index.php/apps/openregister/api/objects/'.rawurlencode($register)
-			.'/'.rawurlencode($schema).'/'.rawurlencode($id).'/watch';
+	private function deprecated(JSONResponse $response, ObjectLinkRoute $route): JSONResponse {
+		$successor = '/index.php/apps/openregister/api/objects/'.rawurlencode($route->register)
+			.'/'.rawurlencode($route->schema).'/'.rawurlencode($route->id).'/watch';
 
 		$response->addHeader('Deprecation', 'true');
 		$response->addHeader('Link', '<'.$successor.'>; rel="successor-version"');

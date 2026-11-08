@@ -147,7 +147,9 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 		$owner = $this->ownerOf(appId: $appId, descriptor: $descriptor);
 		$rows  = [];
 		foreach ($descriptor['registers'] as $slug => $register) {
-			$rows[] = $this->inventoryRow(owner: $owner, slug: $slug, register: $register, file: $descriptor['file'], installed: $installed);
+			$rows[] = ['appId' => $owner]
+				+ $this->registerState(slug: $slug, register: $register, installed: $installed)
+				+ ['descriptor' => $descriptor['file']];
 		}
 
 		return $rows;
@@ -177,30 +179,28 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	}//end ownerOf()
 
 	/**
-	 * One inventory row: a declared register and whether, and how current, it landed.
+	 * The middle of an inventory row: a declared register and whether, and how current, it landed.
 	 *
-	 * @param string                $owner     The owning app id.
+	 * The caller puts the owning app before it and the descriptor file after it.
+	 *
 	 * @param int|string            $slug      The register key in the descriptor.
 	 * @param mixed                 $register  The declared register.
-	 * @param string                $file      The descriptor's file name.
 	 * @param array<string, string> $installed Lowercased slug to installed version.
 	 *
-	 * @return array<string, string|null> The row.
+	 * @return array<string, string|null> slug, title, state, installedVersion, shippedVersion.
 	 */
-	private function inventoryRow(string $owner, int|string $slug, mixed $register, string $file, array $installed): array {
+	private function registerState(int|string $slug, mixed $register, array $installed): array {
 		$shipped = (string)($register['version'] ?? '0.0.1');
 		$current = ($installed[strtolower($slug)] ?? null);
 
 		return [
-			'appId'            => $owner,
 			'slug'             => (string)$slug,
 			'title'            => (string)($register['title'] ?? $slug),
 			'state'            => $this->stateOf(shipped: $shipped, current: $current),
 			'installedVersion' => $current,
 			'shippedVersion'   => $shipped,
-			'descriptor'       => $file,
 		];
-	}//end inventoryRow()
+	}//end registerState()
 
 	/**
 	 * The state of a declared register against what the instance holds.
@@ -266,33 +266,19 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 		}
 
 		if (in_array(strtolower($slug), $declared, true) === true) {
-			return $this->reimportDocument(appId: $appId, slug: $slug, declared: $declared, document: $document, via: $via);
+			// The app's base document with its fragments, through the app's own forced import.
+			return $this->counted->run(
+				slug: $slug,
+				slugs: $declared,
+				version: $document['version'],
+				fragments: $document['fragments'],
+				via: $via,
+				import: fn (): array => $this->importRunner->run(appId: $appId)
+			);
 		}
 
 		return $this->reimportDescriptor(appId: $appId, slug: $slug, declared: $declared, via: $via);
 	}//end reimport()
-
-	/**
-	 * Re-import the app's base document with its fragments, through the app's own forced import.
-	 *
-	 * @param string               $appId    The app that ships the configuration.
-	 * @param string               $slug     The register slug.
-	 * @param array<int, string>   $declared The slugs the base document declares.
-	 * @param array<string, mixed> $document The base document: data, version, fragments.
-	 * @param string               $via      Who asked.
-	 *
-	 * @return array<string, mixed> The counted outcome.
-	 */
-	private function reimportDocument(string $appId, string $slug, array $declared, array $document, string $via): array {
-		return $this->counted->run(
-			slug: $slug,
-			slugs: $declared,
-			version: $document['version'],
-			fragments: $document['fragments'],
-			via: $via,
-			import: fn (): array => $this->importRunner->run(appId: $appId)
-		);
-	}//end reimportDocument()
 
 	/**
 	 * Re-import the one non-mock descriptor declaring a slug.
@@ -376,12 +362,12 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 			$imported = $this->forcedImport(configId: $configId, data: $descriptor['data'], version: $version);
 		} catch (Throwable $e) {
 			$this->logger->warning('[RegisterDescriptorService] re-import failed: ' . $e->getMessage());
-			return $this->fileImportResult(success: false, via: $via, message: $e->getMessage(), jobId: null, configId: $configId);
+			return $this->fileImportResult(via: $via, configId: $configId, jobId: null, failure: $e->getMessage());
 		}
 
 		$jobId = $this->jobIdOf(imported: $imported);
 
-		return $this->fileImportResult(success: true, via: $via, message: '', jobId: $jobId, configId: $configId);
+		return $this->fileImportResult(via: $via, configId: $configId, jobId: $jobId, failure: null);
 	}//end importDescriptorFile()
 
 	/**
@@ -421,20 +407,19 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	/**
 	 * The result shape of a descriptor-file import.
 	 *
-	 * @param bool        $success  Whether the import ran without throwing.
 	 * @param string      $via      The import path label.
-	 * @param string      $message  The failure message, or empty.
-	 * @param string|null $jobId    The recorded import job id.
 	 * @param string      $configId The configuration id it ran under.
+	 * @param string|null $jobId    The recorded import job id.
+	 * @param string|null $failure  Why the import threw, or null when it ran without throwing.
 	 *
 	 * @return array{success: bool, path: string, via: string, message: string, importJobId: string|null, importAppId: string}
 	 */
-	private function fileImportResult(bool $success, string $via, string $message, ?string $jobId, string $configId): array {
+	private function fileImportResult(string $via, string $configId, ?string $jobId, ?string $failure): array {
 		return [
-			'success'     => $success,
+			'success'     => $failure === null,
 			'path'        => self::PATH_DESCRIPTOR,
 			'via'         => $via,
-			'message'     => $message,
+			'message'     => ($failure ?? ''),
 			'importJobId' => $jobId,
 			'importAppId' => $configId,
 		];

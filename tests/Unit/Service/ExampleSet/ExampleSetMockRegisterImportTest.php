@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -159,7 +160,8 @@ class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 			new AppRegisterImportRunner(
 				appManager: $appManager,
 				containers: $this->createMock(AppContainerLocator::class),
-				configurationService: $configuration
+				configurationService: $configuration,
+				documents: new RegisterDocumentLoader(appManager: $appManager)
 			)
 		);
 

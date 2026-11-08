@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\CollectiveLinkService;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\LinkTarget;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IURLGenerator;
@@ -246,7 +247,7 @@ class AppLinkServicesGoldenTest extends TestCase {
 			fn (string $uuid, int $pageId) => $this->record('findByObjectAndPage(' . $uuid . ', ' . $pageId . ')') ?? ($w['duplicate'] === true ? new CollectiveLink() : null)
 		);
 		$mapper->method('insert')->willReturnCallback(fn ($link) => $this->record('insert') ?? $link);
-		return new CollectiveLinkService($mapper, $container, $appManager, $session, $urls, $logger);
+		return new CollectiveLinkService($mapper, $container, new LinkServiceRuntime($appManager, $session, $logger), $urls);
 	}//end collectiveService()
 
 	private function emailService(int $rows): EmailLinkService {

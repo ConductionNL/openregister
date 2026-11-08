@@ -139,10 +139,6 @@ class FlowTestRunController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::normalise is a pure
-	 * value-normaliser with no state to inject; wrapping it in a collaborator
-	 * would add a constructor dependency to say the same thing.
 	 */
 	#[NoAdminRequired]
 	public function test(): JSONResponse {
@@ -166,18 +162,21 @@ class FlowTestRunController extends Controller {
 			return new JSONResponse(['error' => 'No such flow: ' . $flowId], Http::STATUS_NOT_FOUND);
 		}
 
-		$startAt = trim((string)$this->request->getParam('startAt', ''));
-		if ($startAt === '') {
-			$startAt = null;
-		}
+		return $this->runTest(flowId: $flowId, flow: $flow);
+	}//end test()
 
+	/**
+	 * Queue and execute the test run of a resolved flow.
+	 *
+	 * @param string $flowId The flow id.
+	 * @param array  $flow   The resolved flow definition.
+	 *
+	 * @return JSONResponse The run, or 409 when the engine declines to run it.
+	 */
+	private function runTest(string $flowId, array $flow): JSONResponse {
+		$startAt = $this->startAtParam();
 		$pins = (array)$this->request->getParam('pins', []);
-
-		$seed = null;
-		$seedParam = $this->request->getParam('seedItems');
-		if ($seedParam !== null) {
-			$seed = FlowItems::normalise(value: $seedParam);
-		}
+		$seed = $this->seedItemsParam();
 
 		// Attribute the test run to the caller. Without this the run is
 		// ownerless, so `context['triggeredBy']` is null and every
@@ -225,5 +224,37 @@ class FlowTestRunController extends Controller {
 		}//end try
 
 		return new JSONResponse($run->jsonSerialize());
-	}//end test()
+	}//end runTest()
+
+	/**
+	 * The node a test run starts at, or null to start at the trigger.
+	 *
+	 * @return string|null
+	 */
+	private function startAtParam(): string|null {
+		$startAt = trim((string)$this->request->getParam('startAt', ''));
+		if ($startAt === '') {
+			return null;
+		}
+
+		return $startAt;
+	}//end startAtParam()
+
+	/**
+	 * The items a test run is seeded with, normalised, or null when none are sent.
+	 *
+	 * @return array|null
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::normalise is a pure
+	 * value-normaliser with no state to inject; wrapping it in a collaborator
+	 * would add a constructor dependency to say the same thing.
+	 */
+	private function seedItemsParam(): array|null {
+		$seedParam = $this->request->getParam('seedItems');
+		if ($seedParam === null) {
+			return null;
+		}
+
+		return FlowItems::normalise(value: $seedParam);
+	}//end seedItemsParam()
 }//end class

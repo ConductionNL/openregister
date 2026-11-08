@@ -71,14 +71,9 @@ SPDX-License-Identifier: EUPL-1.2
 						</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Unlink email')"
-					@click="unlinkEmail(email)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Unlink email')"
+					@unlink="unlinkEmail(email)" />
 			</li>
 		</ul>
 	</div>
@@ -86,11 +81,11 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import axios from '@nextcloud/axios'
-import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
+import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
 import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
 import { relationTab } from './relationTab.js'
 
 /**
@@ -111,10 +106,9 @@ export default {
 		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
-		NcButton,
 		EmailOutline,
 		EmailOffOutline,
-		CloseCircleOutline,
+		UnlinkButton,
 	},
 
 	mixins: [relationTab],

@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -64,7 +64,7 @@ class PruneRetiredSchemasCommand extends Command {
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper (app-scoped resolution).
 	 * @param RegisterMapperInterface $registerMapper Register mapper, to unlink the retired id.
-	 * @param SchemaDeletionService $deletionService Cascade teardown (objects, tables, row).
+	 * @param SchemaTeardownInterface $deletionService Cascade teardown (objects, tables, row).
 	 *
 	 * @return void
 	 *
@@ -73,7 +73,7 @@ class PruneRetiredSchemasCommand extends Command {
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaDeletionService $deletionService,
+		private readonly SchemaTeardownInterface $deletionService,
 	) {
 		parent::__construct();
 	}//end __construct()

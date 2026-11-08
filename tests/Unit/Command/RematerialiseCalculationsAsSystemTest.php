@@ -133,7 +133,8 @@ class RematerialiseCalculationsAsSystemTest extends TestCase {
 
 		$command = new RematerialiseCalculationsCommand(
 			new RematerialiseStorage($registers, $schemas, $magic, $objects),
-			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), $this->createMock(AggregateReferenceResolver::class))
+			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), $this->createMock(AggregateReferenceResolver::class)),
+			new \OCA\OpenRegister\Service\Object\SchemaTypeConverter()
 		);
 
 		$output = new BufferedOutput();

@@ -5494,7 +5494,7 @@ class ObjectsControllerTest extends TestCase {
 					return $runs;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Export\ExportAuditRecorder::class) {
+				if ($id === \OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface::class) {
 					return $recorder;
 				}
 

@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\ValidationLookups;
 use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -121,7 +122,8 @@ class RematerialiseWritesCalculatedValuesTest extends TestCase {
 
 		$command = new RematerialiseCalculationsCommand(
 			new RematerialiseStorage($registers, $schemas, $magic, $objects),
-			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), ($aggregates ?? $this->createMock(AggregateReferenceResolver::class)))
+			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), ($aggregates ?? $this->createMock(AggregateReferenceResolver::class))),
+			new SchemaTypeConverter()
 		);
 
 		$output = new BufferedOutput();

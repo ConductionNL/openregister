@@ -292,10 +292,8 @@ class LinkRowStampGoldenTest extends TestCase {
 		$service = new CospendLinkService(
 			$this->mapper(CospendLinkMapper::class, 'findDuplicate'),
 			$this->container(['OCA\\Cospend\\Service\\ProjectService' => $projects]),
-			$this->apps(),
-			$this->session('alice'),
-			$this->db($row),
-			$this->createMock(LoggerInterface::class)
+			new LinkServiceRuntime($this->apps(), $this->session('alice'), $this->createMock(LoggerInterface::class)),
+			$this->db($row)
 		);
 
 		$this->assertGolden(
@@ -395,9 +393,7 @@ class LinkRowStampGoldenTest extends TestCase {
 		};
 		return new BookmarkLinkService(
 			$this->mapper(BookmarkLinkMapper::class, 'findByObjectAndBookmark'),
-			$this->apps(),
-			$this->session('alice'),
-			$this->createMock(LoggerInterface::class),
+			new LinkServiceRuntime($this->apps(), $this->session('alice'), $this->createMock(LoggerInterface::class)),
 			$this->container(['\\OCA\\Bookmarks\\Db\\BookmarkMapper' => $bookmarks])
 		);
 	}//end bookmarkService()

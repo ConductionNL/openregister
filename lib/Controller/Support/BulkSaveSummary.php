@@ -35,6 +35,7 @@ final class BulkSaveSummary {
 	 * @param int    $savedCount     Rows created or updated.
 	 * @param int    $requestedCount Rows the caller submitted.
 	 * @param array  $extra          Path-specific payload merged into the response body.
+	 * @param int    $accountedCount Rows written or left unchanged.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -43,6 +44,7 @@ final class BulkSaveSummary {
 		public readonly int $savedCount,
 		public readonly int $requestedCount,
 		public readonly array $extra,
+		public readonly int $accountedCount,
 	) {
 	}//end __construct()
 }//end class

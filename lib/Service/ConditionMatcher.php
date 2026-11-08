@@ -110,6 +110,30 @@ class ConditionMatcher {
 	];
 
 	/**
+	 * The variable family of each bare token.
+	 *
+	 * @var array<string, string>
+	 */
+	private const BARE_TOKEN_FAMILIES = [
+		'$organisation' => 'organisation',
+		'$activeOrganisation' => 'organisation',
+		'$userId' => 'user',
+		'$user' => 'user',
+		'$now' => 'now',
+	];
+
+	/**
+	 * The variable family of each dotted-token prefix.
+	 *
+	 * @var array<string, string>
+	 */
+	private const DOTTED_TOKEN_FAMILIES = [
+		'$organisation.' => 'organisationDot',
+		'$activeOrganisation.' => 'organisationDot',
+		'$user.' => 'userDot',
+	];
+
+	/**
 	 * Constructor for ConditionMatcher
 	 *
 	 * @param IUserSession $userSession User session for current user context
@@ -151,7 +175,10 @@ class ConditionMatcher {
 		}
 
 		foreach ($match as $property => $value) {
-			if ($this->singleConditionMatches(object: $object, property: $property, value: $value) === false) {
+			$objectValue = $this->unwrapResolvedRelation(
+				value: $this->getObjectValue(object: $object, property: $property)
+			);
+			if ($this->conditionMet(objectValue: $objectValue, value: $value) === false) {
 				return false;
 			}
 		}//end foreach
@@ -211,22 +238,16 @@ class ConditionMatcher {
 	}//end filterOrganisationMatchForCreate()
 
 	/**
-	 * Check if a single match condition is satisfied
+	 * Check if a single match condition is satisfied by an object's value
 	 *
-	 * @param array $object Object data to check
-	 * @param string $property Property name from the match condition
-	 * @param mixed $value Expected value or operator expression
+	 * @param mixed $objectValue The object's value for the condition's property, relations unwrapped
+	 * @param mixed $value       Expected value or operator expression
 	 *
 	 * @return bool True if the condition is satisfied
 	 *
 	 * @spec openspec/specs/actions/spec.md
 	 */
-	private function singleConditionMatches(array $object, string $property, mixed $value): bool {
-		// Get object value, checking both direct property and @self.
-		$objectValue = $this->unwrapResolvedRelation(
-			value: $this->getObjectValue(object: $object, property: $property)
-		);
-
+	private function conditionMet(mixed $objectValue, mixed $value): bool {
 		// Resolve dynamic variables in the match value.
 		$resolvedValue = $this->resolveDynamicValue(value: $value);
 
@@ -235,26 +256,44 @@ class ConditionMatcher {
 			return false;
 		}
 
-		// Simple value: equals comparison.
-		if (is_string($resolvedValue) === true
-			|| is_numeric($resolvedValue) === true
-			|| is_bool($resolvedValue) === true
-		) {
+		return $this->valueSatisfies(objectValue: $objectValue, resolvedValue: $resolvedValue);
+	}//end conditionMet()
+
+	/**
+	 * Compare an object's value with a resolved match value
+	 *
+	 * A scalar compares strictly, an array is an operator object, a null
+	 * requires a null value, and anything else is satisfied.
+	 *
+	 * @param mixed $objectValue   The object's value
+	 * @param mixed $resolvedValue The match value with dynamic variables resolved
+	 *
+	 * @return bool True if the value satisfies the match value
+	 */
+	private function valueSatisfies(mixed $objectValue, mixed $resolvedValue): bool {
+		if ($this->isScalarMatch(value: $resolvedValue) === true) {
 			return $objectValue === $resolvedValue;
 		}
 
-		// Operator object.
 		if (is_array($resolvedValue) === true) {
 			return $this->operatorEvaluator->valueMatchesOperator(value: $objectValue, operators: $resolvedValue);
 		}
 
-		// Null value: check if object value is null.
-		if ($resolvedValue === null && $objectValue !== null) {
-			return false;
-		}
+		return ($resolvedValue === null && $objectValue !== null) === false;
+	}//end valueSatisfies()
 
-		return true;
-	}//end singleConditionMatches()
+	/**
+	 * Whether a match value is compared by strict equality: a string, number or bool
+	 *
+	 * @param mixed $value The resolved match value
+	 *
+	 * @return bool
+	 */
+	private function isScalarMatch(mixed $value): bool {
+		return is_string($value) === true
+			|| is_numeric($value) === true
+			|| is_bool($value) === true;
+	}//end isScalarMatch()
 
 	/**
 	 * Unwrap resolved relations to their scalar id.
@@ -337,58 +376,86 @@ class ConditionMatcher {
 	 */
 	public function resolveDynamicValue(mixed $value): mixed {
 		if (isset($value[MemberOfResolver::OPERATOR]) === true) {
-			return $this->memberOfResolver?->resolveOperators(
-				operators: $value,
-				userId: $this->userSession->getUser()?->getUID(),
-				resolveSibling: fn (mixed $sibling): mixed => $this->resolveDynamicValue(value: $sibling)
-			);
+			return $this->resolveMemberOf(operators: $value);
 		}
 
 		// For operator arrays, resolve dynamic values inside operands.
 		if (is_array($value) === true) {
-			$resolved = [];
-			foreach ($value as $key => $operand) {
-				$resolved[$key] = $this->resolveDynamicValue(value: $operand);
-			}
-
-			return $resolved;
+			return array_map(fn (mixed $operand): mixed => $this->resolveDynamicValue(value: $operand), $value);
 		}
 
 		if (is_string($value) === false) {
 			return $value;
 		}
 
-		// $organisation (bare and dotted forms).
-		if (in_array($value, ['$organisation', '$activeOrganisation'], true) === true) {
-			return $this->getActiveOrganisationUuid();
-		}
-
-		if (str_starts_with($value, '$organisation.') === true
-			|| str_starts_with($value, '$activeOrganisation.') === true
-		) {
-			$property = substr($value, (int)strpos($value, '.') + 1);
-			return $this->resolveOrganisationDotProperty(property: $property, originalToken: $value);
-		}
-
-		// $userId / $user (bare and dotted forms).
-		if (in_array($value, ['$userId', '$user'], true) === true) {
-			return $this->userSession->getUser()?->getUID();
-		}
-
-		if (str_starts_with($value, '$user.') === true) {
-			$property = substr($value, strlen('$user.'));
-			return $this->resolveUserDotProperty(property: $property, originalToken: $value);
-		}
-
-		// $now — MUST stay 'Y-m-d H:i:s' to match the SQL path, which compares
-		// text/JSON-stored dates lexicographically. ISO 8601's "T" separator once
-		// made list and find disagree.
-		if ($value === '$now') {
-			return date('Y-m-d H:i:s');
-		}
-
-		return $value;
+		return $this->resolveToken(token: $value);
 	}//end resolveDynamicValue()
+
+	/**
+	 * Resolve a `$memberOf` operator object, see {@see MemberOfResolver::resolveOperators()}
+	 *
+	 * Without a resolver the result is null, so the condition admits nobody.
+	 *
+	 * @param mixed $operators The operator object carrying `$memberOf`
+	 *
+	 * @return array|null The operators with `$in` over the caller's membership set, or null
+	 */
+	private function resolveMemberOf(mixed $operators): ?array {
+		return $this->memberOfResolver?->resolveOperators(
+			operators: $operators,
+			userId: $this->userSession->getUser()?->getUID(),
+			resolveSibling: fn (mixed $sibling): mixed => $this->resolveDynamicValue(value: $sibling)
+		);
+	}//end resolveMemberOf()
+
+	/**
+	 * Resolve one string token, or return it unchanged when it names no variable
+	 *
+	 * $now MUST stay 'Y-m-d H:i:s' to match the SQL path, which compares
+	 * text/JSON-stored dates lexicographically. ISO 8601's "T" separator once
+	 * made list and find disagree.
+	 *
+	 * @param string $token The string match value
+	 *
+	 * @return mixed The resolved value, or null if the variable cannot be resolved
+	 */
+	private function resolveToken(string $token): mixed {
+		return match ($this->tokenFamily(token: $token)) {
+			'organisation' => $this->getActiveOrganisationUuid(),
+			'organisationDot' => $this->resolveOrganisationDotProperty(
+				property: substr($token, (int)strpos($token, '.') + 1),
+				originalToken: $token
+			),
+			'user' => $this->userSession->getUser()?->getUID(),
+			'userDot' => $this->resolveUserDotProperty(property: substr($token, strlen('$user.')), originalToken: $token),
+			'now' => date('Y-m-d H:i:s'),
+			default => $token,
+		};
+	}//end resolveToken()
+
+	/**
+	 * Which variable family a string token belongs to, or 'literal'
+	 *
+	 * The bare tokens and the dotted prefixes are disjoint, so the bare
+	 * lookup and the prefix scan never both match.
+	 *
+	 * @param string $token The string match value
+	 *
+	 * @return string One of organisation, organisationDot, user, userDot, now or literal
+	 */
+	private function tokenFamily(string $token): string {
+		if (isset(self::BARE_TOKEN_FAMILIES[$token]) === true) {
+			return self::BARE_TOKEN_FAMILIES[$token];
+		}
+
+		foreach (self::DOTTED_TOKEN_FAMILIES as $prefix => $family) {
+			if (str_starts_with($token, $prefix) === true) {
+				return $family;
+			}
+		}
+
+		return 'literal';
+	}//end tokenFamily()
 
 	/**
 	 * Resolve a dotted `$user.<property>` token.
@@ -526,13 +593,25 @@ class ConditionMatcher {
 			return $this->cachedActiveOrg[$subject];
 		}
 
+		// The miss is memoised too, so an anonymous evaluation does not re-ask
+		// the container once per condition.
+		$this->cachedActiveOrg[$subject] = $this->lookupActiveOrganisationUuid();
+
+		return $this->cachedActiveOrg[$subject];
+	}//end getActiveOrganisationUuid()
+
+	/**
+	 * Ask the organisation service for the active organisation's UUID
+	 *
+	 * @return string|null The UUID, or null when there is none or the lookup fails
+	 */
+	private function lookupActiveOrganisationUuid(): ?string {
 		try {
 			$organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
 			$activeOrg = $organisationService->getActiveOrganisation();
 
 			if ($activeOrg !== null) {
-				$this->cachedActiveOrg[$subject] = $activeOrg->getUuid();
-				return $this->cachedActiveOrg[$subject];
+				return $activeOrg->getUuid();
 			}
 		} catch (\Exception $e) {
 			$this->logger->debug(
@@ -541,10 +620,6 @@ class ConditionMatcher {
 			);
 		}
 
-		// Memoise the miss too, so an anonymous evaluation does not re-ask the
-		// container once per condition.
-		$this->cachedActiveOrg[$subject] = null;
-
 		return null;
-	}//end getActiveOrganisationUuid()
+	}//end lookupActiveOrganisationUuid()
 }//end class

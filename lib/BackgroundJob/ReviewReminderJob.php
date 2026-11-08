@@ -30,9 +30,9 @@ use DateInterval;
 use DateTime;
 use DateTimeImmutable;
 use Exception;
-use OCA\OpenRegister\Service\Archival\DestructionListRepository;
-use OCA\OpenRegister\Service\Archival\DestructionReviewService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
+use OCA\OpenRegister\Service\Archival\DestructionReviewReminderInterface;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\Notification\IManager as INotificationManager;
@@ -86,7 +86,7 @@ class ReviewReminderJob extends TimedJob {
 	 */
 	private function intervalSeconds(): int {
 		try {
-			$handler = $this->container->get(ObjectRetentionHandler::class);
+			$handler = $this->container->get(ArchivalSettingsReaderInterface::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$frequency = (string)($settings['reviewReminderFrequency'] ?? self::DEFAULT_FREQUENCY);
 
@@ -119,8 +119,8 @@ class ReviewReminderJob extends TimedJob {
 		$logger = $this->container->get(LoggerInterface::class);
 
 		try {
-			$lists = $this->container->get(DestructionListRepository::class);
-			$reviews = $this->container->get(DestructionReviewService::class);
+			$lists = $this->container->get(DestructionListRepositoryInterface::class);
+			$reviews = $this->container->get(DestructionReviewReminderInterface::class);
 
 			if ($lists->isConfigured() === false) {
 				$logger->debug('[ReviewReminderJob] No destruction list register configured, skipping');
@@ -130,7 +130,7 @@ class ReviewReminderJob extends TimedJob {
 			$cutoff = (new DateTimeImmutable())->sub(new DateInterval($this->frequency()));
 
 			$pending = [];
-			foreach ($lists->findLists(statuses: DestructionListRepository::OPEN_STATUSES) as $list) {
+			foreach ($lists->findLists(statuses: DestructionListRepositoryInterface::OPEN_STATUSES) as $list) {
 				$pending = array_merge(
 					$pending,
 					$reviews->pendingEntries(
@@ -165,7 +165,7 @@ class ReviewReminderJob extends TimedJob {
 	 */
 	private function frequency(): string {
 		try {
-			$handler = $this->container->get(ObjectRetentionHandler::class);
+			$handler = $this->container->get(ArchivalSettingsReaderInterface::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$frequency = (string)($settings['reviewReminderFrequency'] ?? self::DEFAULT_FREQUENCY);
 

@@ -139,20 +139,45 @@ class ContactLinkMapper extends QBMapper implements ContactLinkMapperInterface {
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
 	public function findByObjectContactAndRole(string $objectUuid, string $contactUid, string|null $role): ContactLink|null {
+		$qb = $this->objectContactQuery(objectUuid: $objectUuid, contactUid: $contactUid);
+		$this->applyRoleCondition(qb: $qb, role: $role);
+
+		return $this->findOneOrNull(qb: $qb);
+	}//end findByObjectContactAndRole()
+
+	/**
+	 * At most one link of one object to one contact, before the role predicate.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $contactUid The contact UID.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function objectContactQuery(string $objectUuid, string $contactUid): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
 			->setMaxResults(1);
-		$this->applyRoleCondition(qb: $qb, role: $role);
 
+		return $qb;
+	}//end objectContactQuery()
+
+	/**
+	 * The one link a query matches, or null when it matches none.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return ContactLink|null The link.
+	 */
+	private function findOneOrNull(IQueryBuilder $qb): ContactLink|null {
 		try {
 			return $this->findEntity(query: $qb);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return null;
 		}
-	}//end findByObjectContactAndRole()
+	}//end findOneOrNull()
 
 	/**
 	 * Match the given role, or a link without a role when the role is null or empty.

@@ -32,10 +32,10 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Archival\Appraisal;
-use OCA\OpenRegister\Service\Archival\RecordState;
+use OCA\OpenRegister\Service\Archival\AppraisalInterface;
+use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IGroupManager;
@@ -78,7 +78,7 @@ class DestructionCheckJob extends TimedJob {
 		parent::__construct(time: $time);
 
 		try {
-			$handler = $this->container->get(ObjectRetentionHandler::class);
+			$handler = $this->container->get(ArchivalSettingsReaderInterface::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$interval = (int)($settings['destructionCheckInterval'] ?? self::DEFAULT_INTERVAL);
 		} catch (Exception $e) {
@@ -108,7 +108,7 @@ class DestructionCheckJob extends TimedJob {
 
 		try {
 			$retentionService = $this->container->get(RetentionServiceInterface::class);
-			$settingsHandler = $this->container->get(ObjectRetentionHandler::class);
+			$settingsHandler = $this->container->get(ArchivalSettingsReaderInterface::class);
 			$settings = $settingsHandler->getArchivalSettingsOnly();
 
 			if (empty($settings['destructionListRegister']) === true
@@ -217,7 +217,7 @@ class DestructionCheckJob extends TimedJob {
 					// pre-destruction warning, so the first a records officer
 					// would hear of a destruction is after it happened.
 					$status = ($retention['archiefstatus'] ?? null);
-					if ($actionDate === null || in_array($status, RecordState::ACTIVE_ALIASES, true) === false) {
+					if ($actionDate === null || in_array($status, RecordStateInterface::ACTIVE_ALIASES, true) === false) {
 						return false;
 					}
 
@@ -241,7 +241,7 @@ class DestructionCheckJob extends TimedJob {
 				}
 
 				$subject = 'Object approaching destruction date';
-				if (in_array(($retention['archiefnominatie'] ?? null), Appraisal::RETAIN_PERMANENTLY_ALIASES, true) === true) {
+				if (in_array(($retention['archiefnominatie'] ?? null), AppraisalInterface::RETAIN_PERMANENTLY_ALIASES, true) === true) {
 					$subject = 'Object requires e-Depot transfer';
 				}
 

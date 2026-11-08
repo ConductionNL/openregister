@@ -46,7 +46,7 @@ use Throwable;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
  */
-class FormDependentsCheck {
+class FormDependentsCheck implements FormDependentsCheckInterface {
 
 	/**
 	 * The owning app's setting: `unpublish` (default) or `refuse`.
