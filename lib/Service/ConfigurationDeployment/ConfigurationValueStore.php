@@ -158,41 +158,14 @@ class ConfigurationValueStore {
 	/**
 	 * Write one address, returning what it takes to put it back.
 	 *
-	 * @param string      $layer          The layer.
-	 * @param string|null $layerRef       The layer reference.
-	 * @param string      $configKey      The configuration key.
-	 * @param mixed       $value          The value to make live.
-	 * @param string|null $deploymentUuid The deployment doing the writing.
-	 * @param string|null $actor          Who is doing the writing.
+	 * @param ConfigurationAddress $address The layer, layer reference and key.
+	 * @param ConfigurationWrite   $write   The value to make live, the deployment doing the writing and who is doing it.
 	 *
 	 * @return array<string, mixed> The undo entry for this write.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function write(
-		string $layer,
-		?string $layerRef,
-		string $configKey,
-		mixed $value,
-		?string $deploymentUuid,
-		?string $actor
-	): array {
-		return $this->writeAt(
-			address: new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey),
-			write: new ConfigurationWrite(value: $value, deploymentUuid: $deploymentUuid, actor: $actor)
-		);
-
-	}//end write()
-
-	/**
-	 * Write one address, returning what it takes to put it back.
-	 *
-	 * @param ConfigurationAddress $address The layer, layer reference and key.
-	 * @param ConfigurationWrite   $write   The value, deployment and actor.
-	 *
-	 * @return array<string, mixed> The undo entry for this write.
-	 */
-	private function writeAt(ConfigurationAddress $address, ConfigurationWrite $write): array {
+	public function write(ConfigurationAddress $address, ConfigurationWrite $write): array {
 		$undo = $this->undoEntryFor(layer: $address->layer, configKey: $address->configKey);
 
 		$row = $this->values->findAtAddress(
@@ -226,7 +199,7 @@ class ConfigurationValueStore {
 
 		return $undo;
 
-	}//end writeAt()
+	}//end write()
 
 	/**
 	 * Remove one address, returning what it takes to put it back.
