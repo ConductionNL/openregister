@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Config\Types;
 
 use OCA\OpenRegister\Service\Config\BundleCrossingGuard;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
-use OCA\OpenRegister\Service\ConfigurationServiceInterface;
+use OCA\OpenRegister\Service\ConfigurationTransferInterface;
 use OCA\OpenRegister\Service\RegisterService;
 use Throwable;
 use UnexpectedValueException;
@@ -47,12 +47,12 @@ class RegisterSchemaShareableConfigType implements IShareableConfigType {
 	 * Constructor.
 	 *
 	 * @param RegisterService $registerService Loads the register to share.
-	 * @param ConfigurationServiceInterface $configService Exports and imports the bundle.
+	 * @param ConfigurationTransferInterface $configService Exports and imports the bundle.
 	 * @param BundleCrossingGuard $crossingGuard Judges the bundle's schemas for the caller.
 	 */
 	public function __construct(
 		private readonly RegisterService $registerService,
-		private readonly ConfigurationServiceInterface $configService,
+		private readonly ConfigurationTransferInterface $configService,
 		private readonly BundleCrossingGuard $crossingGuard,
 	) {
 
