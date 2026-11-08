@@ -29,7 +29,7 @@ use DateTime;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SearchTrailPageLinks;
 use OCA\OpenRegister\Db\SearchTrail;
-use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\SearchTrailMapperInterface;
 use OCA\OpenRegister\Service\SearchTrailServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -91,7 +91,7 @@ class SearchTrailController extends Controller {
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
 	 * @param SearchTrailServiceInterface $searchTrailService The search trail service
-	 * @param SearchTrailMapper $searchTrailMapper Mapper the admin clear-all path deletes through
+	 * @param SearchTrailMapperInterface $searchTrailMapper Mapper the admin clear-all path deletes through
 	 * @param IUserSession $userSession Active user session for caller identity
 	 * @param IGroupManager $groupManager Group manager for admin / role checks
 	 */
@@ -99,7 +99,7 @@ class SearchTrailController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly SearchTrailServiceInterface $searchTrailService,
-		private readonly SearchTrailMapper $searchTrailMapper,
+		private readonly SearchTrailMapperInterface $searchTrailMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 	) {

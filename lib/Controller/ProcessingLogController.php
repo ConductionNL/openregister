@@ -43,7 +43,7 @@ use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
 use OCA\OpenRegister\Controller\Support\ProcessingLogAccess;
 use OCA\OpenRegister\Controller\Support\ProcessingLogPolicy;
-use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -86,7 +86,7 @@ class ProcessingLogController extends Controller {
 	 *
 	 * @param string                       $appName             App identifier.
 	 * @param IRequest                     $request             Active request.
-	 * @param ProcessingLogMapper          $logMapper           Append-only log mapper.
+	 * @param ProcessingLogMapperInterface          $logMapper           Append-only log mapper.
 	 * @param ControllerSession            $session             Session, group manager and logger.
 	 * @param IAppConfig                   $appConfig           App-config reader.
 	 * @param OrganisationServiceInterface $organisationService Org-scoping helper.
@@ -94,7 +94,7 @@ class ProcessingLogController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ProcessingLogMapper $logMapper,
+		private readonly ProcessingLogMapperInterface $logMapper,
 		private readonly ControllerSession $session,
 		IAppConfig $appConfig,
 		OrganisationServiceInterface $organisationService,
