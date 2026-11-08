@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Mcp\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Service\Mcp\ToolRegistryFacade;
@@ -44,7 +45,6 @@ use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
 
 /**
  * Dual-surface + precedence tests for the schema-derived provider.
