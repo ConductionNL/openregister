@@ -729,27 +729,25 @@ exports[`quality pages golden quality: renders middlePage 1`] = `
       </section>
       <section class="lowestQualitySection">
         <h2>t:Lowest-quality objects</h2>
-        <table class="lowestQualityTable">
-          <thead>
-            <tr>
-              <th scope="col">t:Id</th>
-              <th scope="col">t:Quality score</th>
-              <th scope="col">t:Quality status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>q1</td>
-              <td>12</td>
-              <td><span class="badge badge-status-undefined"></span></td>
-            </tr>
-            <tr>
-              <td>q2</td>
-              <td>30</td>
-              <td><span class="badge badge-status-undefined"></span></td>
-            </tr>
-          </tbody>
-        </table>
+        <x-cndatatable rowkey="id">
+          <x-thead>
+            <x-th>t:Id</x-th>
+            <x-th>t:Quality score</x-th>
+            <x-th>t:Quality status</x-th>
+          </x-thead>
+          <x-tbody>
+            <x-tr>
+              <x-td>q1</x-td>
+              <x-td>12</x-td>
+              <x-td><span class="badge badge-status-undefined"></span></x-td>
+            </x-tr>
+            <x-tr>
+              <x-td>q2</x-td>
+              <x-td>30</x-td>
+              <x-td><span class="badge badge-status-undefined"></span></x-td>
+            </x-tr>
+          </x-tbody>
+        </x-cndatatable>
         <div class="pagination">
           <x-ncbutton disabled="false">
             <slot-default>t:Previous</slot-default>
