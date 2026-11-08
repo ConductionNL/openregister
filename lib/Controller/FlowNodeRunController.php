@@ -58,7 +58,7 @@ use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
-use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
+use OCA\OpenRegister\Service\Flow\FlowPublishedGraphInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowUnattributed;
@@ -114,9 +114,9 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * Resolves the flow's PUBLISHED
 	 *
-	 * @var FlowPublishedGraph
+	 * @var FlowPublishedGraphInterface
 	 */
-	private readonly FlowPublishedGraph $publishedGraphs;
+	private readonly FlowPublishedGraphInterface $publishedGraphs;
 
 	/**
 	 * Resolves the live flow document (for

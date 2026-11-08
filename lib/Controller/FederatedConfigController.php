@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices;
-use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
+use OCA\OpenRegister\Service\Config\FederatedConfigAccessInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -75,9 +75,9 @@ class FederatedConfigController extends Controller {
 	/**
 	 * Per-org publish/install gating.
 	 *
-	 * @var FederatedConfigAccess
+	 * @var FederatedConfigAccessInterface
 	 */
-	private readonly FederatedConfigAccess $access;
+	private readonly FederatedConfigAccessInterface $access;
 
 	/**
 	 * Reads the user's chosen store credential.

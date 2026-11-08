@@ -106,6 +106,8 @@ use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
+use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
+use OCA\OpenRegister\Service\Config\FederatedConfigAccessInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
@@ -121,6 +123,8 @@ use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigTypeInter
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\Configuration\RegisterBundleBinding;
+use OCA\OpenRegister\Service\Configuration\RegisterBundleBindingInterface;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
@@ -152,6 +156,8 @@ use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolverInterface;
 use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCA\OpenRegister\Service\Federation\ShareGrantorInterface;
+use OCA\OpenRegister\Service\Flow\FlowDryRunService;
+use OCA\OpenRegister\Service\Flow\FlowDryRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeCatalogueInterface;
@@ -159,6 +165,8 @@ use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
+use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
+use OCA\OpenRegister\Service\Flow\FlowPublishedGraphInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
@@ -242,6 +250,8 @@ use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
@@ -510,6 +520,9 @@ final class ContractBindings {
 		DoriathCredentialKeys::class => DoriathCredentialStore::class,
 		FileVectorizationStrategyInterface::class => FileVectorizationStrategy::class,
 		FlowRunSubjectsInterface::class => FlowRunSubjects::class,
+		FlowDryRunServiceInterface::class => FlowDryRunService::class,
+		FlowPublishedGraphInterface::class => FlowPublishedGraph::class,
+		WorkingCalendarInterface::class => WorkingCalendar::class,
 		MatrixRowKeys::class => MatrixRowWhere::class,
 		MovedJobStateInterface::class => MovedJobState::class,
 		ObjectVectorizationStrategyInterface::class => ObjectVectorizationStrategy::class,
@@ -636,6 +649,8 @@ final class ContractBindings {
 		FacetResultCacheClearerInterface::class => FacetResultCacheClearer::class,
 		FavouriteServiceInterface::class => FavouriteService::class,
 		FederatedConfigServiceInterface::class => FederatedConfigService::class,
+		FederatedConfigAccessInterface::class => FederatedConfigAccess::class,
+		RegisterBundleBindingInterface::class => RegisterBundleBinding::class,
 		FileFolderServiceInterface::class => FileService::class,
 		FileHandlerSupportInterface::class => FileService::class,
 		FileReaderInterface::class => FileService::class,
