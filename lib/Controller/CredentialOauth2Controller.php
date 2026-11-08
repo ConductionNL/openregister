@@ -49,6 +49,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\CredentialOauth2ControllerServices;
+use OCA\OpenRegister\Controller\Support\OAuth2StartRequest;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepositoryInterface;
@@ -220,29 +221,55 @@ class CredentialOauth2Controller extends Controller {
 			return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
 		}
 
-		$providerId = (string)$this->request->getParam('provider', '');
-		$requestedScope = (string)$this->request->getParam('scope', 'personal');
+		$start = new OAuth2StartRequest(
+			uid: $uid,
+			providerId: (string)$this->request->getParam('provider', ''),
+			scope: (string)$this->request->getParam('scope', 'personal')
+		);
 
-		// The request and the caller: a refusal here is theirs, so 400 or 403.
+		$prepared = $this->startClaims(start: $start);
+		if ($prepared instanceof JSONResponse) {
+			return $prepared;
+		}
+
+		return $this->authorise(start: $start, prepared: $prepared);
+	}//end start()
+
+	/**
+	 * Resolve the provider, the gated organisation and the host, and assemble the claims.
+	 *
+	 * The request and the caller: a refusal here is theirs, so 400 or 403.
+	 *
+	 * @param OAuth2StartRequest $start Who starts, with which provider and scope.
+	 *
+	 * @return array{provider: array<string, mixed>, claims: array<string, mixed>}|JSONResponse
+	 *         The provider entry and the claims, or the 403 / 400 / 500.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 */
+	private function startClaims(OAuth2StartRequest $start): array|JSONResponse {
 		try {
-			$provider = $this->connect->oauth2Provider(providerId: $providerId);
-			$organisation = $this->connections->gatedOrganisation(uid: $uid, requestedScope: $requestedScope);
+			$provider = $this->connect->oauth2Provider(providerId: $start->providerId);
+			$organisation = $this->connections->gatedOrganisation(uid: $start->uid, requestedScope: $start->scope);
 			$host = $this->requestedHost(provider: $provider);
 			// Who, which provider, which scope, organisation and host come
 			// first; the claims the request names follow them.
-			$claims = [
-				'u' => $uid,
-				'p' => $providerId,
-				's' => $requestedScope,
-				'o' => $organisation,
-				'h' => $host,
-			] + $this->buildClaims(uid: $uid, providerId: $providerId, provider: $provider);
+			return [
+				'provider' => $provider,
+				'claims' => [
+					'u' => $start->uid,
+					'p' => $start->providerId,
+					's' => $start->scope,
+					'o' => $organisation,
+					'h' => $host,
+				] + $this->buildClaims(start: $start, provider: $provider),
+			];
 		} catch (CredentialAccessDeniedException $denied) {
 			// A warning, so it reaches a default install's log: this is where an admin
 			// looks when a person cannot connect a shared account. The reason is static.
 			$this->logger->warning(
 				'[CredentialOauth2Controller] refused a connection start: ' . $denied->getMessage(),
-				['uid' => $uid, 'provider' => $providerId]
+				['uid' => $start->uid, 'provider' => $start->providerId]
 			);
 
 			return new JSONResponse(['message' => 'Connection not permitted'], Http::STATUS_FORBIDDEN);
@@ -250,7 +277,22 @@ class CredentialOauth2Controller extends Controller {
 			return new JSONResponse(['message' => 'Invalid connection request'], Http::STATUS_BAD_REQUEST);
 		} catch (Throwable $failure) {
 			return $this->startFailed(failure: $failure);
-		}
+		}//end try
+	}//end startClaims()
+
+	/**
+	 * Ensure the provider client, store the state and build the authorization URL.
+	 *
+	 * @param OAuth2StartRequest                                                  $start    Who starts, in which scope.
+	 * @param array{provider: array<string, mixed>, claims: array<string, mixed>} $prepared The provider entry and the claims.
+	 *
+	 * @return JSONResponse `{authorizationUrl, expiresIn}`, or the 409 / 502 / 500.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 */
+	private function authorise(OAuth2StartRequest $start, array $prepared): JSONResponse {
+		$provider = $prepared['provider'];
+		$claims = $prepared['claims'];
 
 		// This server's own setup and the provider's: nothing here is the caller's
 		// fault, so anything but the two named states is a 500.
@@ -280,7 +322,7 @@ class CredentialOauth2Controller extends Controller {
 			);
 		} catch (OAuth2ClientNotConfiguredException $notConfigured) {
 			$this->withdrawState(nonce: $nonce);
-			$this->discardMintedClient(credentialId: $minted, scope: $requestedScope);
+			$this->discardMintedClient(credentialId: $minted, scope: $start->scope);
 
 			return new JSONResponse(['message' => 'This provider is not configured on this server'], Http::STATUS_CONFLICT);
 		} catch (OAuth2RegistrationFailedException $upstream) {
@@ -289,13 +331,13 @@ class CredentialOauth2Controller extends Controller {
 			return new JSONResponse(['message' => 'The provider server did not accept the connection'], Http::STATUS_BAD_GATEWAY);
 		} catch (Throwable $failure) {
 			$this->withdrawState(nonce: $nonce);
-			$this->discardMintedClient(credentialId: $minted, scope: $requestedScope);
+			$this->discardMintedClient(credentialId: $minted, scope: $start->scope);
 
 			return $this->startFailed(failure: $failure);
 		}
 
 		return new JSONResponse(['authorizationUrl' => $url, 'expiresIn' => OAuth2StateServiceInterface::STATE_TTL_SECONDS]);
-	}//end start()
+	}//end authorise()
 
 	/**
 	 * Answer a genuine fault: log it and return a static 500.
@@ -388,9 +430,9 @@ class CredentialOauth2Controller extends Controller {
 			return $this->refuse();
 		}
 
-		$destination = (string)($shape['cb'] ?? '');
-		if ($destination !== '' && rtrim($destination, '/') !== rtrim($this->endpoints->callbackUrl(), '/')) {
-			return $this->forward(destination: $destination, code: $code, state: $state);
+		$destination = $this->foreignCallback(shape: $shape);
+		if ($destination !== '') {
+			return $this->forward(destination: $destination, query: ['code' => $code, 'state' => $state]);
 		}
 
 		$redeemed = $this->states->consume(state: $state);
@@ -398,6 +440,38 @@ class CredentialOauth2Controller extends Controller {
 			return $this->refuse();
 		}
 
+		return $this->completeConnection(redeemed: $redeemed, code: $code);
+	}//end callback()
+
+	/**
+	 * The callback a state names when it is another instance's, or an empty string.
+	 *
+	 * @param array<string, mixed> $shape The state's unverified claims.
+	 *
+	 * @return string The foreign callback URL to relay to, or '' when the code is this server's.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
+	 */
+	private function foreignCallback(array $shape): string {
+		$destination = (string)($shape['cb'] ?? '');
+		if ($destination !== '' && rtrim($destination, '/') !== rtrim($this->endpoints->callbackUrl(), '/')) {
+			return $destination;
+		}
+
+		return '';
+	}//end foreignCallback()
+
+	/**
+	 * Exchange the code for the redeemed state and send the browser back.
+	 *
+	 * @param array{claims: array<string, mixed>, verifier: string} $redeemed The consumed state.
+	 * @param string                                               $code     The authorization code.
+	 *
+	 * @return RedirectResponse To the return URL, marked ok or failed.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 */
+	private function completeConnection(array $redeemed, string $code): RedirectResponse {
 		$returnUrl = $this->endpoints->safeReturnUrl(candidate: (string)($redeemed['claims']['r'] ?? ''));
 
 		try {
@@ -416,7 +490,7 @@ class CredentialOauth2Controller extends Controller {
 		}
 
 		return new RedirectResponse($returnUrl . '?connected=ok' . self::USER_SETTINGS_HASH);
-	}//end callback()
+	}//end completeConnection()
 
 	/**
 	 * DELETE /api/credentials/oauth2/{id} — revoke upstream and disable locally.
@@ -503,21 +577,20 @@ class CredentialOauth2Controller extends Controller {
 	/**
 	 * Relay a code onward, without exchanging it.
 	 *
-	 * @param string $destination The receiving instance's callback, from the state.
-	 * @param string $code The authorization code.
-	 * @param string $state The state, forwarded unchanged.
+	 * @param string                              $destination The receiving instance's callback, from the state.
+	 * @param array{code: string, state: string} $query       The authorization code and the state, forwarded unchanged.
 	 *
 	 * @return RedirectResponse|JSONResponse The forward, or a refusal.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
 	 */
-	private function forward(string $destination, string $code, string $state): RedirectResponse | JSONResponse {
+	private function forward(string $destination, array $query): RedirectResponse | JSONResponse {
 		if ($this->relay->permits(callbackUrl: $destination) === false) {
 			return $this->refuse();
 		}
 
 		return new RedirectResponse(
-			$destination . '?' . http_build_query(['code' => $code, 'state' => $state])
+			$destination . '?' . http_build_query($query)
 		);
 	}//end forward()
 
@@ -547,15 +620,16 @@ class CredentialOauth2Controller extends Controller {
 	 * name, client, re-authorised credential and the return and callback URLs.
 	 * The caller puts the user, provider, scope, organisation and host first.
 	 *
-	 * @param string $uid The initiating user.
-	 * @param string $providerId The catalogue provider identifier.
+	 * @param OAuth2StartRequest   $start    The initiating user and the provider identifier.
 	 * @param array<string, mixed> $provider The catalogue provider entry.
 	 *
 	 * @return array<string, mixed> The request-named claims.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
-	private function buildClaims(string $uid, string $providerId, array $provider): array {
+	private function buildClaims(OAuth2StartRequest $start, array $provider): array {
+		$uid = $start->uid;
+		$providerId = $start->providerId;
 		$clientRef = trim((string)$this->request->getParam('credentialRef', ''));
 		$clientId = trim((string)$this->request->getParam('clientId', ''));
 		$reauthorise = trim((string)$this->request->getParam('credentialId', ''));
