@@ -35,6 +35,7 @@ use Exception;
 use OCA\OpenRegister\Db\FlowLink;
 use OCA\OpenRegister\Db\FlowLinkMapper;
 use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -82,10 +83,8 @@ class FlowLinkServiceTest extends TestCase {
 		$this->service = new FlowLinkService(
 			$this->mapper,
 			$this->db,
-			$this->appManager,
-			$this->userSession,
-			$this->groupManager,
-			$this->logger
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger),
+			$this->groupManager
 		);
 	}
 

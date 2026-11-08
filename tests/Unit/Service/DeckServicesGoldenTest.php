@@ -392,7 +392,7 @@ class DeckServicesGoldenTest extends TestCase {
 		$links->method('delete')->willReturnCallback(fn ($e) => $this->record('delete(' . json_encode($this->normalise($e)) . ')') ?? $e);
 		$links->method('insert')->willReturnCallback(fn ($e) => $this->record('insert(' . json_encode($this->normalise($e)) . ')') ?? $e);
 		if ($kind === 'link') {
-			return new DeckLinkService($links, $appManager, $session, $users, $logger, $container);
+			return new DeckLinkService($links, new LinkServiceRuntime($appManager, $session, $logger), $users, $container);
 		}
 
 		$urls = $this->createMock(IURLGenerator::class);
