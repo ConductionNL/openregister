@@ -77,7 +77,7 @@ use Throwable;
  *
  * @package OCA\OpenRegister\Service
  */
-class SchemaDeletionService {
+class SchemaDeletionService implements SchemaTeardownInterface {
 
 	/**
 	 * Audit action recorded for every object removed by a schema-wide delete.

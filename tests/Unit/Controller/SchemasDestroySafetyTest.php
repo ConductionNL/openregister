@@ -165,7 +165,7 @@ class SchemasDestroySafetyTest extends TestCase {
 					return $groupManager;
 				}
 
-				if ($id === SchemaDeletionService::class) {
+				if ($id === \OCA\OpenRegister\Service\SchemaTeardownInterface::class) {
 					return $schemaDeletionService;
 				}
 

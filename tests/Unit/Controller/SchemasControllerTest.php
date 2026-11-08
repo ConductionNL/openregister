@@ -135,7 +135,7 @@ class SchemasControllerTest extends TestCase {
 					return $groupManager;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\SchemaDeletionService::class) {
+				if ($id === \OCA\OpenRegister\Service\SchemaTeardownInterface::class) {
 					return $schemaDeletionService;
 				}
 

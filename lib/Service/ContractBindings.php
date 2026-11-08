@@ -1043,6 +1043,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\LoginSecurityInterface::class => \OCA\OpenRegister\Service\SecurityService::class,
 		\OCA\OpenRegister\Service\RateLimitResetInterface::class => \OCA\OpenRegister\Service\SecurityService::class,
 		\OCA\OpenRegister\Service\SecurityHeadersInterface::class => \OCA\OpenRegister\Service\SecurityService::class,
+		\OCA\OpenRegister\Service\SchemaTeardownInterface::class => \OCA\OpenRegister\Service\SchemaDeletionService::class,
 		\OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface::class => \OCA\OpenRegister\Service\Authorization\GroupReconciler::class,
 		\OCA\OpenRegister\Service\AvgRetentionPassInterface::class => \OCA\OpenRegister\Service\AvgRetentionService::class,
 		\OCA\OpenRegister\Service\Credential\OAuth2CredentialSweepInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2RefreshService::class,

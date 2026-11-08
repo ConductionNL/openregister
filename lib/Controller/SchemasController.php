@@ -61,7 +61,7 @@ use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownInterface;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
@@ -1956,12 +1956,12 @@ class SchemasController extends Controller {
 	 *
 	 * @throws \RuntimeException If the service cannot be resolved.
 	 *
-	 * @return SchemaDeletionService The service.
+	 * @return SchemaTeardownInterface The service.
 	 */
-	private function getSchemaDeletionService(): SchemaDeletionService {
-		$service = $this->container->get(SchemaDeletionService::class);
+	private function getSchemaDeletionService(): SchemaTeardownInterface {
+		$service = $this->container->get(SchemaTeardownInterface::class);
 
-		if (($service instanceof SchemaDeletionService) === false) {
+		if (($service instanceof SchemaTeardownInterface) === false) {
 			throw new RuntimeException('SchemaDeletionService could not be resolved');
 		}
 
