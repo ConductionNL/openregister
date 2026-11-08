@@ -1,0 +1,1066 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`dialog application asks 1`] = `
+"<x-ncdialog name="t:Delete Application" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone.">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="error">
+      <slot-default> t:Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+</x-ncdialog>"
+`;
+
+exports[`dialog application cancels 1`] = `
+{
+  "calls": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog application confirms 1`] = `
+"<x-ncdialog name="t:Delete Application" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone.">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="error">
+      <slot-default> t:Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+</x-ncdialog>"
+`;
+
+exports[`dialog application confirms 2`] = `
+{
+  "afterTimer": [],
+  "calls": [
+    [
+      "applicationStore.deleteApplication",
+      {
+        "name": "A",
+      },
+    ],
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog application dismisses through the dialog itself 1`] = `
+{
+  "calls": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog application reports a refusal 1`] = `
+"<x-ncdialog name="t:Delete Application" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone.">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="error">
+      <slot-default> t:Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+</x-ncdialog>"
+`;
+
+exports[`dialog application shows the busy state 1`] = `
+"<x-ncdialog name="t:Delete Application" message="t:Are you sure you want to delete the application &quot;{name}&quot;? This action cannot be undone.">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="error">
+      <slot-default> t:Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+</x-ncdialog>"
+`;
+
+exports[`dialog configuration asks 1`] = `
+"<x-ncdialog name="Delete Configuration" size="small" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete </slot-default>
+      <slot-icon>
+        <x-delete size="20"></x-delete>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <p> Are you sure you want to delete the configuration "C"? </p>
+      <p>t:This action cannot be undone.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog configuration cancels 1`] = `
+{
+  "calls": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog configuration confirms 1`] = `""`;
+
+exports[`dialog configuration confirms 2`] = `
+{
+  "afterTimer": [],
+  "calls": [
+    [
+      "configurationStore.deleteConfiguration",
+      {
+        "title": "C",
+      },
+    ],
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog configuration dismisses through the dialog itself 1`] = `
+{
+  "calls": [],
+  "emitted": {},
+}
+`;
+
+exports[`dialog configuration reports a refusal 1`] = `
+"<x-ncdialog name="Delete Configuration" size="small" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete </slot-default>
+      <slot-icon>
+        <x-delete size="20"></x-delete>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div class="formContainer">
+      <p> Are you sure you want to delete the configuration "C"? </p>
+      <p>t:This action cannot be undone.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog configuration shows the busy state 1`] = `
+"<x-ncdialog name="Delete Configuration" size="small" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Delete </slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="formContainer">
+      <p> Are you sure you want to delete the configuration "C"? </p>
+      <p>t:This action cannot be undone.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog endpoint asks 1`] = `
+"<x-ncdialog name="Delete Endpoint">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="error">
+      <slot-default> Delete </slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="modal">
+      <p> Are you sure you want to delete the endpoint <b>E</b>? </p>
+      <p>t:This action cannot be undone.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog endpoint cancels 1`] = `
+{
+  "calls": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog endpoint confirms 1`] = `""`;
+
+exports[`dialog endpoint confirms 2`] = `
+{
+  "afterTimer": [],
+  "calls": [
+    [
+      "endpointStore.deleteEndpoint",
+      {
+        "name": "E",
+      },
+    ],
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog endpoint dismisses through the dialog itself 1`] = `
+{
+  "calls": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog endpoint reports a refusal 1`] = `
+"<x-ncdialog name="Delete Endpoint">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="error">
+      <slot-default> Delete </slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="modal">
+      <p> Are you sure you want to delete the endpoint <b>E</b>? </p>
+      <p>t:This action cannot be undone.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog endpoint shows the busy state 1`] = `
+"<x-ncdialog name="Delete Endpoint">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton variant="error">
+      <slot-default> Delete </slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="modal">
+      <p> Are you sure you want to delete the endpoint <b>E</b>? </p>
+      <p>t:This action cannot be undone.</p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog removeConnection asks 1`] = `
+"<x-ncdialog name="t:Remove connection" noclose="false" class="or-remove-connection-dialog">
+  <slot-actions>
+    <x-ncbutton disabled="false">
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> t:Remove connection</slot-default>
+      <slot-icon>
+        <x-linkvariantoff size="20"></x-linkvariantoff>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Remove the connection between this email and {name}?</p>
+    <p class="or-remove-connection-dialog__warning">
+      <x-alertoutline size="18" class="or-remove-connection-dialog__warning-icon"></x-alertoutline><span>t:This cannot be undone.</span>
+    </p>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog removeConnection cancels 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "cancel": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog removeConnection confirms 1`] = `
+"<x-ncdialog name="t:Remove connection" noclose="false" class="or-remove-connection-dialog">
+  <slot-actions>
+    <x-ncbutton disabled="false">
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> t:Remove connection</slot-default>
+      <slot-icon>
+        <x-linkvariantoff size="20"></x-linkvariantoff>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Remove the connection between this email and {name}?</p>
+    <p class="or-remove-connection-dialog__warning">
+      <x-alertoutline size="18" class="or-remove-connection-dialog__warning-icon"></x-alertoutline><span>t:This cannot be undone.</span>
+    </p>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog removeConnection confirms 2`] = `
+{
+  "afterTimer": [],
+  "calls": [],
+  "emitted": {
+    "confirm": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog removeConnection dismisses through the dialog itself 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "cancel": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog removeConnection shows the busy state 1`] = `
+"<x-ncdialog name="t:Remove connection" noclose="true" class="or-remove-connection-dialog">
+  <slot-actions>
+    <x-ncbutton disabled="true">
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> t:Remove connection</slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Remove the connection between this email and {name}?</p>
+    <p class="or-remove-connection-dialog__warning">
+      <x-alertoutline size="18" class="or-remove-connection-dialog__warning-icon"></x-alertoutline><span>t:This cannot be undone.</span>
+    </p>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog removeUser asks 1`] = `
+"<x-ncdialog name="Remove User" noclose="false" class="remove-user-dialog">
+  <slot-actions>
+    <x-ncbutton disabled="false">
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Remove User </slot-default>
+      <slot-icon>
+        <x-accountminus size="20"></x-accountminus>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Are you sure you want to remove user <strong>alice</strong> from this organisation? </p>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog removeUser cancels 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "cancel": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog removeUser confirms 1`] = `
+"<x-ncdialog name="Remove User" noclose="false" class="remove-user-dialog">
+  <slot-actions>
+    <x-ncbutton disabled="false">
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Remove User </slot-default>
+      <slot-icon>
+        <x-accountminus size="20"></x-accountminus>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Are you sure you want to remove user <strong>alice</strong> from this organisation? </p>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog removeUser confirms 2`] = `
+{
+  "afterTimer": [],
+  "calls": [],
+  "emitted": {
+    "confirm": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog removeUser dismisses through the dialog itself 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "cancel": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog removeUser shows the busy state 1`] = `
+"<x-ncdialog name="Remove User" noclose="true" class="remove-user-dialog">
+  <slot-actions>
+    <x-ncbutton disabled="true">
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Remove User </slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Are you sure you want to remove user <strong>alice</strong> from this organisation? </p>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog schemaObjects asks 1`] = `
+"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete All Objects </slot-default>
+      <slot-icon>
+        <x-deletesweep size="20"></x-deletesweep>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <p> Are you sure you want to delete <strong>all objects</strong> in the schema <strong>Books</strong>? </p>
+      <div class="deletion-warning-section">
+        <x-ncnotecard type="warning" class="deletion-warning">
+          <slot-default> t:Objects will be soft-deleted (marked as deleted but kept in database). They can be recovered later if needed.</slot-default>
+          <slot-icon>
+            <x-alertcircle size="20"></x-alertcircle>
+          </slot-icon>
+          <slot-title>t:Soft Delete Mode</slot-title>
+        </x-ncnotecard>
+      </div>
+      <div class="object-count-info">
+        <x-schemastatsblock objectcount="4" objectstats="{&quot;total&quot;:4,&quot;deleted&quot;:1}" loading="false" title="t:Objects to be deleted"></x-schemastatsblock>
+        <div class="hard-delete-option">
+          <x-nccheckboxradioswitch modelvalue="[]" name="hardDelete" label="t:Permanently delete already soft-deleted objects" type="checkbox" value="hardDelete"></x-nccheckboxradioswitch>
+          <p class="hard-delete-description">t:This will permanently remove {count} already soft-deleted objects from the database. This action cannot be undone.</p>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog schemaObjects cancels 1`] = `
+{
+  "calls": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog schemaObjects confirms 1`] = `
+"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Close</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="success-container">
+      <x-ncnotecard type="success">
+        <slot-default>
+          <h3>Deletion Completed Successfully</h3>
+          <p><strong>Objects deleted:</strong> 4</p>
+          <p><strong>Schema:</strong> Books</p>
+        </slot-default>
+      </x-ncnotecard>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog schemaObjects confirms 2`] = `
+{
+  "afterTimer": [],
+  "calls": [
+    [
+      "registerStore.refreshRegisterList",
+    ],
+    [
+      "schemaStore.getSchemaStats",
+      3,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog schemaObjects dismisses through the dialog itself 1`] = `
+{
+  "calls": [],
+  "emitted": {},
+}
+`;
+
+exports[`dialog schemaObjects shows the busy state 1`] = `
+"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="loading-container">
+      <x-ncloadingicon size="40"></x-ncloadingicon>
+      <p> Deleting objects from schema 'Books'... </p>
+      <p class="loading-subtitle"> This may take a moment for large datasets. </p>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog schemaObjects with a failing request reports the refusal 1`] = `
+"<x-ncdialog name="Delete Schema Objects" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <p> Are you sure you want to delete <strong>all objects</strong> in the schema <strong>Books</strong>? </p>
+      <div class="deletion-warning-section">
+        <x-ncnotecard type="warning" class="deletion-warning">
+          <slot-default> t:Objects will be soft-deleted (marked as deleted but kept in database). They can be recovered later if needed.</slot-default>
+          <slot-icon>
+            <x-alertcircle size="20"></x-alertcircle>
+          </slot-icon>
+          <slot-title>t:Soft Delete Mode</slot-title>
+        </x-ncnotecard>
+      </div>
+      <div class="object-count-info">
+        <x-schemastatsblock objectcount="4" objectstats="{&quot;total&quot;:4,&quot;deleted&quot;:1}" loading="false" title="t:Objects to be deleted"></x-schemastatsblock>
+        <div class="hard-delete-option">
+          <x-nccheckboxradioswitch modelvalue="[]" name="hardDelete" label="t:Permanently delete already soft-deleted objects" type="checkbox" value="hardDelete"></x-nccheckboxradioswitch>
+          <p class="hard-delete-description">t:This will permanently remove {count} already soft-deleted objects from the database. This action cannot be undone.</p>
+        </div>
+      </div>
+    </div>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <h3>Deletion Failed</h3>
+        <p>Deletion failed: Forbidden</p>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog schemaProperty asks 1`] = `
+"<x-ncdialog name="Verwijder Schema-eigenschap" noclose="">
+  <slot-actions>
+    <x-ncbutton disabled="false" icon="">
+      <slot-default> Annuleren</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" icon="Delete" variant="error">
+      <slot-default> Verwijder </slot-default>
+      <slot-icon>
+        <x-delete size="20"></x-delete>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Weet u zeker dat u <b>ISBN</b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog schemaProperty blocked by objects that use it disables the confirm button 1`] = `
+"<x-ncdialog name="Verwijder Schema-eigenschap" noclose="">
+  <slot-actions>
+    <x-ncbutton disabled="false" icon="">
+      <slot-default> Annuleren</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" icon="Delete" variant="error">
+      <slot-default> Verwijder </slot-default>
+      <slot-icon>
+        <x-delete size="20"></x-delete>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Weet u zeker dat u <b></b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p>
+    <x-ncnotecard type="warning">
+      <slot-default>
+        <p> Meerdere objecten zullen niet beschikbaar zijn, omdat ze deze eigenschap gebruiken. </p>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog schemaProperty cancels 1`] = `
+{
+  "calls": [
+    [
+      "navigationStore.setModal",
+      null,
+    ],
+    [
+      "schemaStore.setSchemaPropertyKey",
+      null,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog schemaProperty confirms 1`] = `
+"<x-ncdialog name="Verwijder Schema-eigenschap" noclose="">
+  <slot-actions>
+    <x-ncbutton disabled="false" icon="">
+      <slot-default> Sluiten</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <x-ncnotecard type="success">
+        <slot-default>
+          <p>Schema-eigenschap succesvol verwijderd</p>
+        </slot-default>
+      </x-ncnotecard>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog schemaProperty confirms 2`] = `
+{
+  "afterTimer": [
+    [
+      "navigationStore.setModal",
+      null,
+    ],
+    [
+      "schemaStore.setSchemaPropertyKey",
+      null,
+    ],
+  ],
+  "calls": [
+    [
+      "schemaStore.saveSchema",
+      {
+        "id": 3,
+        "properties": {},
+        "required": [],
+        "title": "Books",
+      },
+    ],
+    [
+      "navigationStore.setModal",
+      null,
+    ],
+    [
+      "schemaStore.setSchemaPropertyKey",
+      null,
+    ],
+  ],
+  "emitted": {},
+}
+`;
+
+exports[`dialog schemaProperty dismisses through the dialog itself 1`] = `
+{
+  "calls": [],
+  "emitted": {},
+}
+`;
+
+exports[`dialog schemaProperty reports a refusal 1`] = `
+"<x-ncdialog name="Verwijder Schema-eigenschap" noclose="">
+  <slot-actions>
+    <x-ncbutton disabled="false" icon="">
+      <slot-default> Annuleren</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" icon="Delete" variant="error">
+      <slot-default> Verwijder </slot-default>
+      <slot-icon>
+        <x-delete size="20"></x-delete>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <x-ncnotecard type="error">
+        <slot-default>
+          <p> Er is een fout opgetreden bij het verwijderen van de schema-eigenschap </p>
+        </slot-default>
+      </x-ncnotecard>
+      <x-ncnotecard type="error">
+        <slot-default>
+          <p>Error: refused</p>
+        </slot-default>
+      </x-ncnotecard>
+    </div>
+    <p> Weet u zeker dat u <b></b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog schemaProperty shows the busy state 1`] = `
+"<x-ncdialog name="Verwijder Schema-eigenschap" noclose="">
+  <slot-actions>
+    <x-ncbutton disabled="true" icon="">
+      <slot-default> Annuleren</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" icon="Delete" variant="error">
+      <slot-default> Verwijder </slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Weet u zeker dat u <b></b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog view asks 1`] = `
+"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-close size="20"></x-close>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> t:Delete View</slot-default>
+      <slot-icon>
+        <x-delete size="20"></x-delete>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Are you sure you want to permanently delete <b>V</b>? t:This action cannot be undone.</p>
+    <x-ncnotecard type="warning">
+      <slot-default>
+        <p><strong>t:Warning:</strong> t:This will permanently delete:</p>
+        <ul>
+          <li>t:The saved view and all its search configuration</li>
+          <li>t:Any favorites and sharing settings for this view</li>
+        </ul>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog view cancels 1`] = `
+{
+  "calls": [],
+  "emitted": {
+    "close": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog view confirms 1`] = `
+"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Close</slot-default>
+      <slot-icon>
+        <x-close size="20"></x-close>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>t:View successfully deleted</p>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog view confirms 2`] = `
+{
+  "afterTimer": [],
+  "calls": [
+    [
+      "viewsStore.deleteView",
+      7,
+    ],
+  ],
+  "emitted": {
+    "close": [
+      [],
+    ],
+  },
+}
+`;
+
+exports[`dialog view dismisses through the dialog itself 1`] = `
+{
+  "calls": [],
+  "emitted": {},
+}
+`;
+
+exports[`dialog view reports a refusal 1`] = `
+"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-close size="20"></x-close>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> t:Delete View</slot-default>
+      <slot-icon>
+        <x-delete size="20"></x-delete>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Are you sure you want to permanently delete <b>V</b>? t:This action cannot be undone.</p>
+    <x-ncnotecard type="warning">
+      <slot-default>
+        <p><strong>t:Warning:</strong> t:This will permanently delete:</p>
+        <ul>
+          <li>t:The saved view and all its search configuration</li>
+          <li>t:Any favorites and sharing settings for this view</li>
+        </ul>
+      </slot-default>
+    </x-ncnotecard>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`dialog view shows the busy state 1`] = `
+"<x-ncdialog name="t:Delete View" size="normal" noclose="">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-close size="20"></x-close>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> t:Delete View</slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Are you sure you want to permanently delete <b>V</b>? t:This action cannot be undone.</p>
+    <x-ncnotecard type="warning">
+      <slot-default>
+        <p><strong>t:Warning:</strong> t:This will permanently delete:</p>
+        <ul>
+          <li>t:The saved view and all its search configuration</li>
+          <li>t:Any favorites and sharing settings for this view</li>
+        </ul>
+      </slot-default>
+    </x-ncnotecard>
+  </slot-default>
+</x-ncdialog>"
+`;
