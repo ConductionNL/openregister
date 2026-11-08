@@ -65,10 +65,10 @@ class TimeTrackerLinkMapper extends QBMapper implements TimeTrackerLinkMapperInt
 	public function findByObjectAndEntry(
 		string $objectUuid,
 		string $entryType,
-		?string $clientId,
-		?string $taskId,
-		?string $timeId,
-	): ?TimeTrackerLink {
+		string|null $clientId,
+		string|null $taskId,
+		string|null $timeId,
+	): TimeTrackerLink|null {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())

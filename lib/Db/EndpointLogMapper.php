@@ -111,7 +111,7 @@ class EndpointLogMapper extends QBMapper implements EndpointLogMapperInterface {
 	 *
 	 * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
 	 */
-	public function findByEndpoints(array $endpointIds, ?int $limit = null, ?int $offset = null): array {
+	public function findByEndpoints(array $endpointIds, int|null $limit = null, int|null $offset = null): array {
 		if ($endpointIds === []) {
 			return [];
 		}
@@ -130,19 +130,31 @@ class EndpointLogMapper extends QBMapper implements EndpointLogMapperInterface {
 			)
 			->orderBy('created', 'DESC');
 
-		// Step 3: Apply pagination if limit specified.
+		// Step 3: Apply pagination: a limit and an offset, each only when given.
+		$this->applyPaging(qb: $qb, limit: $limit, offset: $offset);
+
+		// Step 4: Execute query and return entities.
+		return $this->findEntities(query: $qb);
+	}//end findByEndpoints()
+
+	/**
+	 * Apply a limit and an offset, each only when given.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param int|null      $limit  Maximum rows, or null for no limit.
+	 * @param int|null      $offset Rows to skip, or null for none.
+	 *
+	 * @return void
+	 */
+	private function applyPaging(IQueryBuilder $qb, int|null $limit, int|null $offset): void {
 		if ($limit !== null) {
 			$qb->setMaxResults($limit);
 		}
 
-		// Step 4: Apply offset if specified.
 		if ($offset !== null) {
 			$qb->setFirstResult($offset);
 		}
-
-		// Step 5: Execute query and return entities.
-		return $this->findEntities(query: $qb);
-	}//end findByEndpoints()
+	}//end applyPaging()
 
 	/**
 	 * One page of logs, and their total, of the given visible endpoints or of one of them
