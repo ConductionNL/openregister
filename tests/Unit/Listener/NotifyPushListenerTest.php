@@ -39,6 +39,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
 
 /**
  * Tests for NotifyPushListener.
@@ -111,11 +112,9 @@ class NotifyPushListenerTest extends TestCase {
 			->getMock();
 
 		$this->listener = new NotifyPushListener(
-			logger: $this->logger,
-			container: $this->container,
+			platform: new NotifyPushPlatform(logger: $this->logger, container: $this->container, appConfig: $this->appConfig),
 			permissionHandler: $this->permissionHandler,
-			appConfig: $this->appConfig,
-			slugs: new PushSlugResolver($this->registerMapper, $this->schemaMapper),
+			slugs: new PushSlugResolver($this->registerMapper, $this->schemaMapper)
 		);
 	}//end setUp()
 

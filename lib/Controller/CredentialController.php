@@ -42,16 +42,15 @@ use OCA\OpenRegister\Controller\Support\CredentialControllerServices;
 use OCA\OpenRegister\Controller\Support\CredentialUpdateTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
-use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
-use OCA\OpenRegister\Service\Credential\CredentialUpdateRequest;
+use OCA\OpenRegister\Service\Credential\CredentialUpdateRequestInterface;
+use OCA\OpenRegister\Service\Credential\CredentialUpdateRequests;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
-use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriverInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -491,7 +490,7 @@ class CredentialController extends Controller {
 		$data  = $existing->getObject();
 		$scope = $this->scopeOf(data: $data);
 
-		$update = new CredentialUpdateRequest(request: $this->request);
+		$update = CredentialUpdateRequests::fromRequest(request: $this->request);
 		$data = $update->applyTo(data: $data);
 
 		if ($this->isInvalidUpdate(update: $update, data: $data) === true) {
@@ -511,14 +510,14 @@ class CredentialController extends Controller {
 	/**
 	 * Whether the updated data would repoint the credential's host or break its bounds.
 	 *
-	 * @param CredentialUpdateRequest $update The update.
-	 * @param array                   $data   The data with the update applied.
+	 * @param CredentialUpdateRequestInterface $update The update.
+	 * @param array                            $data   The data with the update applied.
 	 *
 	 * @return bool True when the update is refused as an invalid request.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	private function isInvalidUpdate(CredentialUpdateRequest $update, array $data): bool {
+	private function isInvalidUpdate(CredentialUpdateRequestInterface $update, array $data): bool {
 		return $update->wouldRepointHost(data: $data) === true || $update->exceedsBounds(data: $data) === true;
 	}//end isInvalidUpdate()
 
@@ -614,10 +613,10 @@ class CredentialController extends Controller {
 		return new JSONResponse(
 			[
 				'sharedWith' => $this->services->tokens->shareDeriver->validEntries(
-					sharedWith: ($data[SharePrincipalDeriver::PROP_SHARED_WITH] ?? null)
+					sharedWith: ($data[SharePrincipalDeriverInterface::PROP_SHARED_WITH] ?? null)
 				),
-				'sharedUsers' => ($data[SharePrincipalDeriver::PROP_SHARED_USERS] ?? []),
-				'sharedGroups' => ($data[SharePrincipalDeriver::PROP_SHARED_GROUPS] ?? []),
+				'sharedUsers' => ($data[SharePrincipalDeriverInterface::PROP_SHARED_USERS] ?? []),
+				'sharedGroups' => ($data[SharePrincipalDeriverInterface::PROP_SHARED_GROUPS] ?? []),
 			]
 		);
 	}//end shares()
@@ -652,7 +651,7 @@ class CredentialController extends Controller {
 			return $existing;
 		}
 
-		$requested = $this->request->getParam(SharePrincipalDeriver::PROP_SHARED_WITH);
+		$requested = $this->request->getParam(SharePrincipalDeriverInterface::PROP_SHARED_WITH);
 		if (is_array($requested) === false) {
 			return new JSONResponse(['message' => 'sharedWith must be an array'], Http::STATUS_BAD_REQUEST);
 		}
@@ -668,7 +667,7 @@ class CredentialController extends Controller {
 		}
 
 		$data = $existing->getObject();
-		$data[SharePrincipalDeriver::PROP_SHARED_WITH] = $valid;
+		$data[SharePrincipalDeriverInterface::PROP_SHARED_WITH] = $valid;
 		$data = $this->services->tokens->shareDeriver->apply(object: $data);
 
 		try {
@@ -686,9 +685,9 @@ class CredentialController extends Controller {
 
 		return new JSONResponse(
 			[
-				'sharedWith' => ($savedData[SharePrincipalDeriver::PROP_SHARED_WITH] ?? []),
-				'sharedUsers' => ($savedData[SharePrincipalDeriver::PROP_SHARED_USERS] ?? []),
-				'sharedGroups' => ($savedData[SharePrincipalDeriver::PROP_SHARED_GROUPS] ?? []),
+				'sharedWith' => ($savedData[SharePrincipalDeriverInterface::PROP_SHARED_WITH] ?? []),
+				'sharedUsers' => ($savedData[SharePrincipalDeriverInterface::PROP_SHARED_USERS] ?? []),
+				'sharedGroups' => ($savedData[SharePrincipalDeriverInterface::PROP_SHARED_GROUPS] ?? []),
 			]
 		);
 	}//end updateShares()
@@ -780,7 +779,7 @@ class CredentialController extends Controller {
 			}
 
 			$admits = $this->services->tokens->shareDeriver->grants(
-				sharedWith: ($data[SharePrincipalDeriver::PROP_SHARED_WITH] ?? null),
+				sharedWith: ($data[SharePrincipalDeriverInterface::PROP_SHARED_WITH] ?? null),
 				userId: $caller->uid,
 				userGroups: $caller->groups,
 				permissions: ['use', null]

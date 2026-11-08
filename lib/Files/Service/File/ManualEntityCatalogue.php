@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
-use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 
@@ -35,7 +35,7 @@ final class ManualEntityCatalogue {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param GdprEntityMapper              $gdprEntityMapper     Catalogue mapper.
+	 * @param GdprEntityMapperInterface              $gdprEntityMapper     Catalogue mapper.
 	 * @param EntityRelationMapperInterface $entityRelationMapper Relation mapper.
 	 * @param ChunkSourceReaderInterface    $chunkMapper          Chunk reader for the target file.
 	 * @param ChunkTextMatcher              $matcher              Chunk-aware string-match utility.
@@ -43,7 +43,7 @@ final class ManualEntityCatalogue {
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(
-		public readonly GdprEntityMapper $gdprEntityMapper,
+		public readonly GdprEntityMapperInterface $gdprEntityMapper,
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
 		public readonly ChunkSourceReaderInterface $chunkMapper,
 		public readonly ChunkTextMatcher $matcher,

@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Hardening;
 
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredException;
 use OCA\OpenRegister\Service\Hardening\ElevationService;
+use OCA\OpenRegister\Service\Hardening\ElevationIdentity;
 use OCA\OpenRegister\Service\Hardening\HardeningAuditWriter;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -100,9 +101,7 @@ class ElevationServiceTest extends TestCase {
 		$this->audit = $this->createMock(HardeningAuditWriter::class);
 
 		$this->service = new ElevationService(
-			session: $session,
-			userSession: $userSession,
-			users: $this->users,
+			identity: new ElevationIdentity(session: $session, userSession: $userSession, users: $this->users),
 			time: $time,
 			policy: new HardeningPolicy($appConfig),
 			audit: $this->audit

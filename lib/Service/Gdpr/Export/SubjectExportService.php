@@ -42,11 +42,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Export;
 
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\SubjectExportJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\SubjectExport;
-use OCA\OpenRegister\Db\SubjectExportMapperInterface;
-use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
-use OCP\BackgroundJob\IJobList;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -60,7 +57,7 @@ use Throwable;
  *
  * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
-class SubjectExportService implements SubjectExportServiceInterface {
+class SubjectExportService implements SubjectExportServiceInterface, SubjectExportAssemblerInterface {
 	/**
 	 * The audit action an export is recorded under.
 	 *
@@ -71,9 +68,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 	/**
 	 * Wire the service.
 	 *
-	 * @param SubjectExportMapperInterface       $mapper       The export rows.
-	 * @param DataSubjectRequestService $subjects     The RBAC scoped assembler.
-	 * @param IJobList                  $jobList      Where the assembly is queued.
+	 * @param SubjectExportQueue $queue The export rows, the scoped assembler and the job queue.
 	 * @param IUserSession              $userSession  The requester.
 	 * @param IGroupManager             $groupManager Administrator reach.
 	 * @param LoggerInterface           $logger       PSR logger, which carries the audit line.
@@ -81,9 +76,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SubjectExportMapperInterface $mapper,
-		private readonly DataSubjectRequestService $subjects,
-		private readonly IJobList $jobList,
+		private readonly SubjectExportQueue $queue,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
@@ -102,7 +95,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function request(string $subject, ?string $type = null, ?string $requestId = null): SubjectExport {
-		$export = $this->mapper->createFromArray(
+		$export = $this->queue->mapper->createFromArray(
 			[
 				'subject' => trim($subject),
 				'subjectType' => $type,
@@ -112,7 +105,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 			]
 		);
 
-		$this->jobList->add(SubjectExportJob::class, ['uuid' => $export->getUuid()]);
+		$this->queue->jobList->add(JobHandles::SUBJECT_EXPORT, ['uuid' => $export->getUuid()]);
 
 		$this->audit(export: $export, event: 'requested');
 
@@ -144,7 +137,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 			$export->setError($e->getMessage());
 		}
 
-		$saved = $this->mapper->save(export: $export);
+		$saved = $this->queue->mapper->save(export: $export);
 		$this->audit(export: $saved, event: $saved->getStatus() ?? '');
 
 		return $saved;
@@ -161,7 +154,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 	 */
 	public function load(string $uuid): ?SubjectExport {
 		try {
-			$export = $this->mapper->findByUuid(uuid: $uuid);
+			$export = $this->queue->mapper->findByUuid(uuid: $uuid);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -198,7 +191,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 		$bundle = $this->bundleOf(export: $export);
 
 		$export->setDeliveredAt(new DateTime());
-		$this->mapper->save(export: $export);
+		$this->queue->mapper->save(export: $export);
 		$this->audit(export: $export, event: 'delivered');
 
 		return (string)json_encode($bundle, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
@@ -213,7 +206,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 	 */
 	private function findQueued(string $uuid): ?SubjectExport {
 		try {
-			return $this->mapper->findByUuid(uuid: $uuid);
+			return $this->queue->mapper->findByUuid(uuid: $uuid);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[SubjectExport] The queued export no longer exists',
@@ -231,7 +224,7 @@ class SubjectExportService implements SubjectExportServiceInterface {
 	 * @return array<string, mixed> The assembled export.
 	 */
 	private function bundleOf(SubjectExport $export): array {
-		return $this->subjects->assembleAccessExport(
+		return $this->queue->subjects->assembleAccessExport(
 			subjectId: (string)$export->getSubject(),
 			type: $export->getSubjectType()
 		);

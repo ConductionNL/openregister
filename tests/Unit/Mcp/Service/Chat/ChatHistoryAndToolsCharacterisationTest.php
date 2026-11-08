@@ -22,6 +22,7 @@ use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 
 /**
  * Pins message-history building, message storage and agent tool loading.
@@ -119,7 +120,9 @@ class ChatHistoryAndToolsCharacterisationTest extends TestCase
         $mapper->expects($this->once())->method('insert')->willReturnArgument(0);
         $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->logger());
 
-        $message = $handler->storeMessage(5, 'user', 'body', $sources, $context);
+        $request = new ChatMessageRequest(5, 'u1', 'body');
+        $request->cnAiContext = ($context ?? []);
+        $message = $handler->storeUserMessage($request);
 
         $this->assertSame(5, $message->getConversationId());
         $this->assertSame('user', $message->getRole());
@@ -143,10 +146,12 @@ class ChatHistoryAndToolsCharacterisationTest extends TestCase
         $mapper->expects($this->once())->method('insert')->willReturnArgument(0);
         $handler = new MessageHistoryHandler($mapper, $this->createMock(ConversationMapper::class), $this->logger());
 
-        $message = $handler->storeMessage(5, 'assistant', 'body', ['s'], ['c' => 1]);
+        $message = $handler->storeAssistantMessage(5, 'body', ['s']);
 
+        $this->assertSame(5, $message->getConversationId());
+        $this->assertSame('assistant', $message->getRole());
         $this->assertSame(['s'], $message->getSources());
-        $this->assertSame(['c' => 1], $message->getContext());
+        $this->assertArrayNotHasKey('context', $message->getUpdatedFields());
         $this->assertTrue($this->logged[0][2]['hasSources']);
     }
 

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\AppHost\AppContainerLocator;
+use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -31,6 +32,7 @@ use OCA\OpenRegister\Service\AppRegisterImportRunner;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\CountedRegisterImport;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
+use OCA\OpenRegister\Service\RegisterImporters;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -94,18 +96,21 @@ class RegisterDescriptorServiceShapeGoldenTest extends TestCase {
 		$this->service = new RegisterDescriptorService(
 			$this->appManager,
 			$this->registerMapper,
-			$this->configurationService,
-			$this->createMock(LoggerInterface::class),
-			new CountedRegisterImport(
+			new RegisterImporters(
+				$this->configurationService,
+				new CountedRegisterImport(
 				registerMapper: $this->registerMapper,
 				schemaMapper: $this->createMock(SchemaMapper::class),
 				decision: new ShippedAuthorizationDecision()
 			),
-			new AppRegisterImportRunner(
+				new AppRegisterImportRunner(
 				appManager: $this->appManager,
 				containers: $this->createMock(AppContainerLocator::class),
-				configurationService: $this->configurationService
+				configurationService: $this->configurationService,
+				documents: new RegisterDocumentLoader(appManager: $this->appManager)
 			)
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 

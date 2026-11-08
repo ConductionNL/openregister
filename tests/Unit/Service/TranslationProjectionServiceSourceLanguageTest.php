@@ -28,7 +28,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\TranslationProjectionService;
+use OCA\OpenRegister\Service\TranslationStores;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -50,10 +52,8 @@ class TranslationProjectionServiceSourceLanguageTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service = new TranslationProjectionService(
-			$this->createMock(TranslationMapper::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
+			new TranslationStores($this->createMock(TranslationMapper::class), $this->createMock(TranslationHandler::class)),
+			new RegisterSchemaMappers($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class)),
 			$this->createMock(IUserSession::class),
 			new NullLogger()
 		);

@@ -39,6 +39,9 @@ use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Task\TaskForm;
@@ -101,13 +104,9 @@ final class UserTaskAgentPerformerTest extends TestCase {
 		);
 
 		return new UserTaskNode(
-			$bridge,
-			$l10n,
-			$this->createMock(IURLGenerator::class),
-			$forms,
-			$this->createMock(FlowTimerService::class),
-			null,
-			$events
+			new UserTaskServices($bridge, $forms, $this->createMock(FlowTimerService::class)),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class)),
+			new UserTaskHooks(null, $events)
 		);
 	}//end node()
 
@@ -249,11 +248,8 @@ final class UserTaskAgentPerformerTest extends TestCase {
 		$forms->method('fromConfig')->willReturn(new TaskForm(kind: null));
 
 		$node = new UserTaskNode(
-			$bridge,
-			$l10n,
-			$this->createMock(IURLGenerator::class),
-			$forms,
-			$this->createMock(FlowTimerService::class)
+			new UserTaskServices($bridge, $forms, $this->createMock(FlowTimerService::class)),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 
 		$state = new FlowResumeState();

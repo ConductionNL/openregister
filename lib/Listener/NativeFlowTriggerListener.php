@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\Flow\FlowTriggerService;
+use OCA\OpenRegister\Service\Flow\FlowTriggerServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Files\Events\Node\NodeCreatedEvent;
@@ -60,11 +60,11 @@ class NativeFlowTriggerListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerService $triggers Queues the runs.
+	 * @param FlowTriggerServiceInterface $triggers Queues the runs.
 	 * @param IUserSession $userSession The acting user, for attribution.
 	 */
 	public function __construct(
-		private readonly FlowTriggerService $triggers,
+		private readonly FlowTriggerServiceInterface $triggers,
 		private readonly IUserSession $userSession,
 	) {
 

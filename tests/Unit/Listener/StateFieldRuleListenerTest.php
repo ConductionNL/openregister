@@ -48,6 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\StateFieldRulePlatform;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\StateFieldRuleListener
@@ -100,11 +101,9 @@ class StateFieldRuleListenerTest extends TestCase {
 		$resolver = new StateFieldRuleResolver($this->userSession, $this->groupManager, $dialect);
 
 		return new StateFieldRuleListener(
-			$this->schemaMapper,
+			new StateFieldRulePlatform($this->schemaMapper, $this->ruleRuns, $this->createMock(LoggerInterface::class)),
 			$resolver,
-			new StateConditionEvaluator($resolver, $dialect, new ConditionTracer($dialect)),
-			$this->ruleRuns,
-			$this->createMock(LoggerInterface::class)
+			new StateConditionEvaluator($resolver, $dialect, new ConditionTracer($dialect))
 		);
 	}
 

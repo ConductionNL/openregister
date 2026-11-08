@@ -46,7 +46,7 @@ use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
  */
-class AccessLinkActs {
+class AccessLinkActs implements AccessLinkActsInterface {
 
 	/**
 	 * The comment actor type a link writes under.

@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
+use OCA\OpenRegister\Service\File\CreateFileSources;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -94,11 +95,9 @@ class CreateFileHandlerTest extends TestCase {
 		$this->fileService = $this->createMock(FileService::class);
 
 		$this->handler = new CreateFileHandler(
-			$this->folderMgmtHandler,
+			new CreateFileSources($this->folderMgmtHandler, $this->objectEntityMapper, $this->logger),
 			$this->fileValidHandler,
-			$this->fileOwnershipHandler,
-			$this->objectEntityMapper,
-			$this->logger
+			$this->fileOwnershipHandler
 		);
 		$this->handler->setFileService($this->fileService);
 	}//end setUp()

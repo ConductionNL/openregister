@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use DateTime;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -683,7 +683,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			relatedRows: $relatedRowApplier,
 			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageServiceInterface::class),
 			metadataColumns: $this->metadataColumnHealer,
-			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class)
+			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class)
 		);
 	}//end initializeSearchHandler()
 
@@ -8465,7 +8465,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		try {
 			$jobList = $this->container->get(\OCP\BackgroundJob\IJobList::class);
 			$jobList->add(
-				\OCA\OpenRegister\BackgroundJob\DeferredObjectEventJob::class,
+				\OCA\OpenRegister\BackgroundJob\JobHandles::DEFERRED_OBJECT_EVENT,
 				[
 					'uuid' => $uuid,
 					'registerId' => (int)($register?->getId() ?? 0),
@@ -10341,7 +10341,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function purposeBoundTables(): PurposeBoundTables {
-		return new PurposeBoundTables(guard: $this->container->get(PurposeGuard::class));
+		return new PurposeBoundTables(guard: $this->container->get(PurposeGuardInterface::class));
 	}//end purposeBoundTables()
 
 	/**

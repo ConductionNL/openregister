@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapperInterface;
 use OCA\OpenRegister\Db\FlowStateMapperInterface;
-use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
@@ -130,7 +130,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 *                                      without it; history is then simply
 	 *                                      not recorded, never faked.
 	 * @param IAppConfig|null $appConfig Reads the instance-wide runtime
-	 * @param FlowStreamMapper|null $streamMapper Stream rows; with the two below, enables the stream walk.
+	 * @param FlowStreamMapperInterface|null $streamMapper Stream rows; with the two below, enables the stream walk.
 	 * @param FlowPlaceClaims|null $claims The claim protocol.
 	 * @param FlowRunCommit|null $commit The locked delta commit path.
 	 * @param FlowHopAudit|null $hopAudit Audits each hop recorded by the step history.
@@ -150,7 +150,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		private readonly ContainerInterface $container,
 		private readonly ?FlowRunStepMapperInterface $steps = null,
 		private readonly ?IAppConfig $appConfig = null,
-		private readonly ?FlowStreamMapper $streamMapper = null,
+		private readonly ?FlowStreamMapperInterface $streamMapper = null,
 		private readonly ?FlowPlaceClaims $claims = null,
 		private readonly ?FlowRunCommit $commit = null,
 		private readonly ?FlowHopAudit $hopAudit = null,

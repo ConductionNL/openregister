@@ -52,45 +52,7 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class TenantLifecycleService {
-	/**
-	 * Valid lifecycle states
-	 */
-	public const STATUS_PROVISIONING = 'provisioning';
-	public const STATUS_ACTIVE = 'active';
-	public const STATUS_SUSPENDED = 'suspended';
-	public const STATUS_DEPROVISIONING = 'deprovisioning';
-	public const STATUS_ARCHIVED = 'archived';
-
-	/**
-	 * Access has ended and the data is kept.
-	 *
-	 * The terminal state for an organisation with a retention duty: a tenant
-	 * whose contract ended, whose records must still be kept for a legal
-	 * period. API access is blocked exactly as for `suspended`, and nothing is
-	 * deleted. No background job selects this state, and TenantPurgeJob can
-	 * only ever delete a row in PURGEABLE_STATUS, so a retained organisation
-	 * keeps its data for as long as it stays here.
-	 *
-	 * It is entered from `active` or `suspended`, the same two states
-	 * `deprovisioning` is entered from: the operator ending a tenancy chooses
-	 * between deleting it and keeping it. There is no way back to `active`.
-	 * The one way out is `deprovisioning`, taken on purpose when the retention
-	 * period is over, so the data leaves through the same deletion path and
-	 * grace period as every other organisation.
-	 */
-	public const STATUS_RETAINED = 'retained';
-
-	/**
-	 * The one lifecycle state TenantPurgeJob may permanently delete.
-	 *
-	 * Declared here, beside the transitions, so which states are deletable is
-	 * a property of the lifecycle and not of the job. The job selects on it and
-	 * re-checks every row against it before deleting anything, so a state that
-	 * is not this one, `retained` above all, is never purged.
-	 */
-	public const PURGEABLE_STATUS = self::STATUS_ARCHIVED;
-
+class TenantLifecycleService implements TenantLifecycleServiceInterface {
 	/**
 	 * Valid state transitions: current-state => [allowed-next-states]
 	 */
@@ -104,39 +66,35 @@ class TenantLifecycleService {
 	];
 
 	/**
-	 * Valid OTAP environments
+	 * Nextcloud group manager
+	 *
+	 * @var IGroupManager
 	 */
-	public const ENV_DEVELOPMENT = 'development';
-	public const ENV_TEST = 'test';
-	public const ENV_ACCEPTANCE = 'acceptance';
-	public const ENV_PRODUCTION = 'production';
+	private readonly IGroupManager $groupManager;
 
 	/**
-	 * OTAP order for promotion validation
+	 * Nextcloud user manager, to look up the org admin
+	 *
+	 * @var IUserManager
 	 */
-	public const OTAP_ORDER = [
-		self::ENV_DEVELOPMENT => 0,
-		self::ENV_TEST => 1,
-		self::ENV_ACCEPTANCE => 2,
-		self::ENV_PRODUCTION => 3,
-	];
+	private readonly IUserManager $userManager;
 
 	/**
 	 * Constructor
 	 *
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param IGroupManager $groupManager Nextcloud group manager
-	 * @param IUserManager $userManager Nextcloud user manager, to look up the org admin
+	 * @param TenantDirectory $directory Group and user managers for the tenant groups and admin user.
 	 * @param LoggerInterface $logger Logger
 	 * @param OrganisationLifecycleAuditor|null $auditor Writes each status change to the audit trail. Null only in legacy fixtures.
 	 */
 	public function __construct(
 		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
+		TenantDirectory $directory,
 		private readonly LoggerInterface $logger,
 		private readonly ?OrganisationLifecycleAuditor $auditor = null,
 	) {
+		$this->groupManager = $directory->groupManager;
+		$this->userManager = $directory->userManager;
 	}//end __construct()
 
 	/**

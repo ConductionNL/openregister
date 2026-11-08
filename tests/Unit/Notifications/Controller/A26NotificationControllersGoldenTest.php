@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Controller;
 
 use DateTimeInterface;
 use InvalidArgumentException;
-use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -35,6 +34,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Notifications\Controller\NotificationBroadcastController;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationGroupPreferencesControllerServices;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationSubscriptionsControllerServices;
 use OCA\OpenRegister\Notifications\Controller\NotificationDeliveryWindowController;
 use OCA\OpenRegister\Notifications\Controller\NotificationGroupPreferencesController;
 use OCA\OpenRegister\Notifications\Controller\NotificationPreferencesController;
@@ -54,7 +55,6 @@ use OCP\IUserSession;
 use OCP\Group\ISubAdmin;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionNamedType;
 use RuntimeException;
@@ -192,15 +192,13 @@ class A26NotificationControllersGoldenTest extends TestCase {
 		return match ($name) {
 			'prefs'     => new NotificationPreferencesController('openregister', $request, $this->preferences(), $session),
 			'group'     => new NotificationGroupPreferencesController(
-				'openregister',
 				$request,
-				$this->preferences(),
-				$this->schemas(),
-				new ControllerSession($session, $groups, $this->createMock(LoggerInterface::class)),
+				new NotificationGroupPreferencesControllerServices($this->preferences(), $this->schemas(), $session),
+				$groups,
 				$subAdmin
 			),
-			'broadcast' => new NotificationBroadcastController('openregister', $request, $this->broadcasts(), $groups, $session),
-			'templates' => new NotificationTemplatesController('openregister', $request, $this->templates(), $groups, $session),
+			'broadcast' => new NotificationBroadcastController($request, $this->broadcasts(), $groups, $session),
+			'templates' => new NotificationTemplatesController($request, $this->templates(), $groups, $session),
 			'subs'      => $this->subscriptions(request: $request, session: $session),
 			'window'    => new NotificationDeliveryWindowController('openregister', $request, $this->window(), $session),
 		};
@@ -297,7 +295,7 @@ class A26NotificationControllersGoldenTest extends TestCase {
 			class: SchemaMapperInterface::class,
 			returns: ['find' => static fn (int|string $id): Schema => (int) $id === 404 ? throw new RuntimeException('gone') : $schema]
 		);
-		return new NotificationSubscriptionsController('openregister', $request, $mapper, $session, $registers, $schemas);
+		return new NotificationSubscriptionsController($request, new NotificationSubscriptionsControllerServices($mapper, $registers, $schemas), $session);
 	}//end subscriptions()
 
 	private function window(): NotificationDeliveryWindowService {

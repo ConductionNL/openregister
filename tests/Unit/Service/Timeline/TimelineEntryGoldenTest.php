@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Timeline;
 
+use OCA\OpenRegister\Notifications\Service\Timeline\WrittenEntry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryDerivations;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryRecords;
@@ -255,8 +256,8 @@ class TimelineEntryGoldenTest extends TestCase {
 		);
 		$mentions = $this->createMock(EntryMentionService::class);
 		$mentions->method('apply')->willReturnCallback(
-			function (ObjectEntity $object, string $entryUuid, ?string $text, ?string $register, ?string $schema) use ($failing): array {
-				$this->log[] = 'mentions '.json_encode([$object->getUuid(), $entryUuid, $text, $register, $schema]);
+			function (WrittenEntry $written, ?string $register, ?string $schema) use ($failing): array {
+				$this->log[] = 'mentions '.json_encode([$written->object->getUuid(), $written->uuid(), $written->message, $register, $schema]);
 				if ($failing !== null) {
 					$failing();
 				}

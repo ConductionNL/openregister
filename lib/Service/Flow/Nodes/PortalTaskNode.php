@@ -113,24 +113,58 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 	private readonly PortalTaskConfig $config;
 
 	/**
+	 * Creates and reads the node's task.
+	 *
+	 * @var FlowTaskBridge
+	 */
+	private readonly FlowTaskBridge $bridge;
+
+	/**
+	 * Resolves the party role against the case.
+	 *
+	 * @var PortalPartyResolver
+	 */
+	private readonly PortalPartyResolver $parties;
+
+	/**
+	 * Records the ask for the portal seam.
+	 *
+	 * @var PortalTaskDeliveryService
+	 */
+	private readonly PortalTaskDeliveryService $delivery;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Resolves the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowTaskBridge $bridge Creates and reads the node's task.
-	 * @param PortalPartyResolver $parties Resolves the party role against the case.
-	 * @param PortalTaskDeliveryService $delivery Records the ask for the portal seam.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param PortalTaskServices   $services     The task bridge, party resolver and delivery seam.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
 	 */
 	public function __construct(
-		private readonly FlowTaskBridge $bridge,
-		private readonly PortalPartyResolver $parties,
-		private readonly PortalTaskDeliveryService $delivery,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		PortalTaskServices $services,
+		FlowNodePresentation $presentation,
 	) {
-		$this->config = new PortalTaskConfig(l10n: $l10n);
+		$this->bridge   = $services->bridge;
+		$this->parties  = $services->parties;
+		$this->delivery = $services->delivery;
+		$this->l10n     = $presentation->l10n;
+		$this->urls     = $presentation->urls;
+		$this->config   = new PortalTaskConfig(l10n: $this->l10n);
 
 	}//end __construct()
 

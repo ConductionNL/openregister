@@ -35,7 +35,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\Support\StateFieldWrite;
 use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
-use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
+use OCA\OpenRegister\Service\Lifecycle\StateFieldRulesInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
@@ -44,6 +44,7 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Listener\Support\StateFieldRulePlatform;
 
 /**
  * The save half of a state's field rules.
@@ -90,23 +91,43 @@ class StateFieldRuleListener implements IEventListener {
 	public const CODE_HIDDEN = 'state-field-hidden';
 
 	/**
+	 * Resolves the object's schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Records a refusal for the rule run log.
+	 *
+	 * @var RuleRunRecorderInterface
+	 */
+	private readonly RuleRunRecorderInterface $ruleRuns;
+
+	/**
+	 * PSR logger for lookup failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapperInterface            $schemaMapper    Resolves the object's schema.
+	 * @param StateFieldRulePlatform $platform Schema lookup, rule-run recorder and logger.
 	 * @param StateFieldRuleResolverInterface  $resolver        Resolves the rules that apply to this object and user.
 	 * @param StateConditionEvaluatorInterface $stateConditions Evaluates a state's entry and exit conditions.
-	 * @param RuleRunRecorderInterface                  $ruleRuns        Records a refusal for the rule run log.
-	 * @param LoggerInterface                  $logger          PSR logger for lookup failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
+		StateFieldRulePlatform $platform,
 		private readonly StateFieldRuleResolverInterface $resolver,
 		private readonly StateConditionEvaluatorInterface $stateConditions,
-		private readonly RuleRunRecorderInterface $ruleRuns,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->schemaMapper = $platform->schemaMapper;
+		$this->ruleRuns = $platform->ruleRuns;
+		$this->logger = $platform->logger;
 	}//end __construct()
 
 	/**
@@ -253,12 +274,12 @@ class StateFieldRuleListener implements IEventListener {
 	/**
 	 * The refusal a changed read-only field earns.
 	 *
-	 * @param StateFieldRules $rules The rules of the state the edit was made in.
+	 * @param StateFieldRulesInterface $rules The rules of the state the edit was made in.
 	 * @param StateFieldWrite $write The save.
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 */
-	private function readOnlyRefusal(StateFieldRules $rules, StateFieldWrite $write): ?array {
+	private function readOnlyRefusal(StateFieldRulesInterface $rules, StateFieldWrite $write): ?array {
 		$state = (string)$write->editState();
 		foreach ($rules->getReadOnly() as $property) {
 			if ($write->changes(property: $property) === true) {
@@ -277,12 +298,12 @@ class StateFieldRuleListener implements IEventListener {
 	/**
 	 * The refusal a written hidden field earns.
 	 *
-	 * @param StateFieldRules $rules The rules of the state the edit was made in.
+	 * @param StateFieldRulesInterface $rules The rules of the state the edit was made in.
 	 * @param StateFieldWrite $write The save.
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 */
-	private function hiddenRefusal(StateFieldRules $rules, StateFieldWrite $write): ?array {
+	private function hiddenRefusal(StateFieldRulesInterface $rules, StateFieldWrite $write): ?array {
 		$state = (string)$write->editState();
 		foreach ($rules->getHidden() as $property) {
 			if ($write->changes(property: $property) === true) {
@@ -323,13 +344,13 @@ class StateFieldRuleListener implements IEventListener {
 	/**
 	 * The refusal an unanswered required property earns.
 	 *
-	 * @param StateFieldRules $rules    The rules of the state the object ends in.
+	 * @param StateFieldRulesInterface $rules    The rules of the state the object ends in.
 	 * @param string          $property The unanswered property.
 	 * @param string          $state    The state the object ends in.
 	 *
 	 * @return array<string, mixed> The structured refusal.
 	 */
-	private static function requiredRefusalFor(StateFieldRules $rules, string $property, string $state): array {
+	private static function requiredRefusalFor(StateFieldRulesInterface $rules, string $property, string $state): array {
 		return [
 			'code' => self::CODE_REQUIRED,
 			'field' => $property,

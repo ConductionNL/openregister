@@ -83,25 +83,26 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
-use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
+use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
 use OCA\OpenRegister\Service\Export\ExportRunFile;
 use OCA\OpenRegister\Service\Export\ExportRunOrigin;
-use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
-use OCA\OpenRegister\Service\Hinge\ReferencedByService;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
+use OCA\OpenRegister\Service\FileServiceInterface;
+use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
+use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
+use OCA\OpenRegister\Service\ObjectHandlerAccessInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsFactory;
+use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsInterface;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
@@ -2227,7 +2228,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
-		$crs = new GeoResponseCrs(accept: $this->request->getHeader('Accept-Crs'));
+		$crs = GeoResponseCrsFactory::fromAccept(accept: $this->request->getHeader('Accept-Crs'));
 		if ($crs->isServable() === false) {
 			return new JSONResponse(data: $crs->refusal(), statusCode: Http::STATUS_NOT_ACCEPTABLE);
 		}
@@ -2252,14 +2253,14 @@ class ObjectsController extends Controller {
 	/**
 	 * A FeatureCollection in the requested CRS, naming that CRS when one was asked for.
 	 *
-	 * @param array<string, mixed> $collection The collection, in WGS84.
-	 * @param GeoResponseCrs       $crs        The negotiated CRS.
+	 * @param array<string, mixed>    $collection The collection, in WGS84.
+	 * @param GeoResponseCrsInterface $crs        The negotiated CRS.
 	 *
 	 * @return JSONResponse The response.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
 	 */
-	private function geoCollectionResponse(array $collection, GeoResponseCrs $crs): JSONResponse {
+	private function geoCollectionResponse(array $collection, GeoResponseCrsInterface $crs): JSONResponse {
 		$response = new JSONResponse(data: $crs->applyTo(collection: $collection));
 		$contentCrs = $crs->contentCrs();
 		if ($contentCrs !== null) {
@@ -2296,7 +2297,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
-		$crs = new GeoResponseCrs(accept: $this->request->getHeader('Accept-Crs'));
+		$crs = GeoResponseCrsFactory::fromAccept(accept: $this->request->getHeader('Accept-Crs'));
 		if ($crs->isServable() === false) {
 			return new JSONResponse(data: $crs->refusal(), statusCode: Http::STATUS_NOT_ACCEPTABLE);
 		}
@@ -2918,7 +2919,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The object ID
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectHandlerAccessInterface $objectService The object service
 	 *
 	 * @NoAdminRequired
 	 *
@@ -2936,7 +2937,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function show(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function show(string $id, string $register, string $schema, ObjectHandlerAccessInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.show.in');
 
 		try {
@@ -2961,13 +2962,13 @@ class ObjectsController extends Controller {
 	/**
 	 * What show() asks of the request's object service.
 	 *
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectHandlerAccessInterface $objectService The object service.
 	 *
 	 * @return ShowServices The services.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function showServices(ObjectService $objectService): ShowServices {
+	private function showServices(ObjectHandlerAccessInterface $objectService): ShowServices {
 		return new ShowServices(
 			objects: $objectService,
 			permissions: $objectService->getPermissionHandler(),
@@ -3102,8 +3103,8 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function grantExplicitReveal(ObjectEntity $object): void {
-		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
-		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
+		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class);
+		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface) {
 			$params = $this->request->getParams();
 			$explicitReveal->grantFor(objectId: (string)$object->getUuid(), reveal: (string)($params['_reveal'] ?? ''));
 		}
@@ -4169,7 +4170,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to delete
 	 * @param string $register The register ID
 	 * @param string $schema The schema ID
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectHandlerAccessInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with success or error.
 	 *
@@ -4183,7 +4184,7 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+	public function destroy(string $id, string $register, string $schema, ObjectHandlerAccessInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.destroy.in');
 
 		try {
@@ -4312,7 +4313,7 @@ class ObjectsController extends Controller {
 	 * @param string $id The ID/UUID of the object to check
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectHandlerAccessInterface $objectService The object service
 	 *
 	 * @return JSONResponse JSON response with DeletionAnalysis
 	 *
@@ -4325,7 +4326,7 @@ class ObjectsController extends Controller {
 		string $id,
 		string $register,
 		string $schema,
-		ObjectService $objectService,
+		ObjectHandlerAccessInterface $objectService,
 	): JSONResponse {
 		try {
 			$objectService->setRegister(register: $register);
@@ -4694,8 +4695,8 @@ class ObjectsController extends Controller {
 		$logs = $objectService->getLogs(uuid: $id, filters: $config['filters']);
 
 		// An explicit-reveal value reads masked for an administrator too.
-		$trailMasker = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class);
-		if ($trailMasker instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker) {
+		$trailMasker = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface::class);
+		if ($trailMasker instanceof \OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface) {
 			$logs = $trailMasker->mask(entries: $logs);
 		}
 
@@ -4731,7 +4732,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$page = $this->container->get(ObjectHistoryForReaders::class)->page(
+			$page = $this->container->get(ObjectHistoryForReadersInterface::class)->page(
 				register: $register,
 				schema: $schema,
 				id: $id,
@@ -5905,11 +5906,11 @@ class ObjectsController extends Controller {
 	 * export: see ExportAuditRecorder's own note on why a ledger hiccup must
 	 * not fail a monthly aanlevering.
 	 *
-	 * @return ExportAuditRecorder|null The recorder.
+	 * @return ExportAuditRecorderInterface|null The recorder.
 	 */
-	private function exportAuditRecorder(): ?ExportAuditRecorder {
+	private function exportAuditRecorder(): ?ExportAuditRecorderInterface {
 		try {
-			return $this->container->get(ExportAuditRecorder::class);
+			return $this->container->get(ExportAuditRecorderInterface::class);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ObjectsController] Export audit recorder unresolvable, the export is not on the trail',
@@ -6188,10 +6189,10 @@ class ObjectsController extends Controller {
 
 			/*
 			 * Get the FileService from the container.
-			 * @var FileService $fileService
+			 * @var FileServiceInterface $fileService
 			 */
 
-			$fileService = $this->container->get(FileService::class);
+			$fileService = $this->container->get(FileServiceInterface::class);
 
 			// Optional: get custom filename from query parameters.
 			$customFilename = $this->request->getParam(key: 'filename');
@@ -6261,7 +6262,7 @@ class ObjectsController extends Controller {
 	 */
 	private function auditBulkDownload(ObjectEntity $object, array $zipInfo): void {
 		try {
-			$fileService = $this->container->get(FileService::class);
+			$fileService = $this->container->get(FileServiceInterface::class);
 			$files = $fileService->getFiles($object);
 			$fileService->getAuditHandler()->logBulkDownload(
 				object: $object,
@@ -6618,12 +6619,12 @@ class ObjectsController extends Controller {
 	 */
 	private function callerRunUuid(): ?string {
 		try {
-			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContext::class);
+			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContextInterface::class);
 		} catch (\Throwable $unavailable) {
 			return null;
 		}
 
-		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContext === false) {
+		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContextInterface === false) {
 			return null;
 		}
 
@@ -6815,7 +6816,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function unreadCounts(ObjectEntity $object): array {
-		$readState = $this->container->get(ReadStateService::class);
+		$readState = $this->container->get(ReadStateServiceInterface::class);
 		if ($readState->callerUid() === null) {
 			return [];
 		}
@@ -6836,7 +6837,7 @@ class ObjectsController extends Controller {
 	 * @param string $register The register slug or identifier.
 	 * @param string $schema The schema slug or identifier.
 	 * @param ObjectOperationsInterface $objectService The object service.
-	 * @param ReferencedByService $referencedByService The reverse view.
+	 * @param ReferencedByServiceInterface $referencedByService The reverse view.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -6851,7 +6852,7 @@ class ObjectsController extends Controller {
 		string $register,
 		string $schema,
 		ObjectOperationsInterface $objectService,
-		ReferencedByService $referencedByService,
+		ReferencedByServiceInterface $referencedByService,
 	): JSONResponse {
 		$isAdmin = $this->isCurrentUserAdmin();
 		$rbac = ($isAdmin === false);
@@ -6903,7 +6904,7 @@ class ObjectsController extends Controller {
 	 * @param string $register The register slug or identifier.
 	 * @param string $schema The schema slug or identifier.
 	 * @param ObjectOperationsInterface $objectService The object service.
-	 * @param InheritedGeoCollector $collector The feature collector.
+	 * @param InheritedGeoCollectorInterface $collector The feature collector.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -6918,7 +6919,7 @@ class ObjectsController extends Controller {
 		string $register,
 		string $schema,
 		ObjectOperationsInterface $objectService,
-		InheritedGeoCollector $collector,
+		InheritedGeoCollectorInterface $collector,
 	): JSONResponse {
 		$isAdmin = $this->isCurrentUserAdmin();
 		$rbac = ($isAdmin === false);

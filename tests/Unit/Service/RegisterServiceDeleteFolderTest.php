@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceHelpers;
 use OCA\OpenRegister\Service\RegisterServiceStorage;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\Files\Config\IUserMountCache;
@@ -137,10 +138,9 @@ class RegisterServiceDeleteFolderTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->service = new RegisterService(
 			storage: new RegisterServiceStorage(registerMapper: $this->registerMapper, schemaMapper: $schemaMapper, db: $this->createMock(IDBConnection::class)),
-			fileService: $fileService,
+			helpers: new RegisterServiceHelpers($fileService, new RegisterSerializer($schemaMapper, $this->logger)),
 			organisationService: $this->createMock(OrganisationService::class),
-			logger: $this->logger,
-			registerSerializer: new RegisterSerializer($schemaMapper, $this->logger)
+			logger: $this->logger
 		);
 	}//end setUp()
 

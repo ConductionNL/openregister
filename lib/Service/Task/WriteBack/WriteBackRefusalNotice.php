@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Task\WriteBack;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
-use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapters;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -93,7 +93,7 @@ final class WriteBackRefusalNotice {
 	 */
 	private function dispatch(WriteBackAttempt $attempt, string $reason): void {
 		$actor   = (string)$attempt->actor;
-		$adapter = new TaskObjectAdapter(
+		$adapter = TaskObjectAdapters::forTask(
 			task: $attempt->task,
 			row: $this->inbox->enrich(task: $attempt->task),
 			extra: ['writeBackActor' => $actor, 'writeBackReason' => $reason]

@@ -5,11 +5,15 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteSchemaObjects'"
 		name="Delete Schema Objects"
-		size="normal"
-		noClose>
+		:loading="loading"
+		:closeLabel="success ? 'Close' : 'Cancel'"
+		confirmLabel="Delete All Objects"
+		:showConfirm="!success && !loading && !error && objectCount > 0"
+		@cancel="closeDialog"
+		@confirm="confirmDeletion()">
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>
@@ -130,45 +134,26 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<template #actions>
-			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeDialog" />
-			<NcButton
-				v-if="!success && !loading && !error && objectCount > 0"
-				:disabled="loading"
-				variant="error"
-				@click="confirmDeletion()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<DeleteSweep v-if="!loading" :size="20" />
-				</template>
-				Delete All Objects
-			</NcButton>
+		<template #confirmIcon>
+			<DeleteSweep :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcCheckboxRadioSwitch,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
-import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { schemaObjectCount } from './schemaObjectCount.js'
 
 export default {
 	name: 'DeleteSchemaObjects',
 	components: {
-		NcDialog,
-		NcButton,
+		ConfirmDialogFrame,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
-		CloseCancelButton,
 		DeleteSweep,
 		AlertCircle,
 		SchemaStatsBlock,

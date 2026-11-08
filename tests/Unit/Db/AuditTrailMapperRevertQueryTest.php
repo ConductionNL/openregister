@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
@@ -65,10 +66,9 @@ class AuditTrailMapperRevertQueryTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			container: $container,
 			userSession: $this->createMock(IUserSession::class),
 			request: $this->createMock(IRequest::class),
-			logger: new NullLogger()
+			services: new AuditTrailMapperServices(container: $container, logger: new NullLogger())
 		);
 
 		// The object was created, then edited twice; another object was edited in between.

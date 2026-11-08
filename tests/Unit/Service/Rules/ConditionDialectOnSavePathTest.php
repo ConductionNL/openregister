@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IGroupManager;
@@ -82,8 +83,7 @@ class ConditionDialectOnSavePathTest extends TestCase {
 		return new LifecycleConditionEvaluator(
 			$this->createMock(originalClassName: IUserSession::class),
 			$this->createMock(originalClassName: IGroupManager::class),
-			$this->createMock(originalClassName: IL10N::class),
-			$this->createMock(originalClassName: LoggerInterface::class),
+			new LifecycleConditionReporting($this->createMock(originalClassName: IL10N::class), $this->createMock(originalClassName: LoggerInterface::class)),
 			$this->dialect()
 		);
 

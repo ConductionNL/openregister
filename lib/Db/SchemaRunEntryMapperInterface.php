@@ -37,4 +37,13 @@ interface SchemaRunEntryMapperInterface {
 	 * @return SchemaRunEntry[] The entries.
 	 */
 	public function findByRun(int $runId, ?OutcomeFilter $filter = null): array;
+
+	/**
+	 * Create an entry from an array of values.
+	 *
+	 * @param array<string, mixed> $data The entry values.
+	 *
+	 * @return SchemaRunEntry The persisted entry.
+	 */
+	public function createFromArray(array $data): SchemaRunEntry;
 }//end interface

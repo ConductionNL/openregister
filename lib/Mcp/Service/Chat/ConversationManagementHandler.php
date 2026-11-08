@@ -118,25 +118,23 @@ class ConversationManagementHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param MessageMapperInterface $messageMapper Message mapper.
-	 * @param SettingsServiceInterface $settingsService Settings service.
+	 * @param ConversationStores        $stores          Conversation and message rows.
+	 * @param SettingsServiceInterface  $settingsService Settings service.
 	 * @param ResponseGenerationHandler $responseHandler Response handler for API calls.
-	 * @param LoggerInterface $logger Logger.
+	 * @param LoggerInterface           $logger          Logger.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		ConversationMapper $conversationMapper,
-		MessageMapperInterface $messageMapper,
+		ConversationStores $stores,
 		SettingsServiceInterface $settingsService,
 		ResponseGenerationHandler $responseHandler,
 		LoggerInterface $logger,
 	) {
-		$this->conversationMapper = $conversationMapper;
-		$this->messageMapper = $messageMapper;
+		$this->conversationMapper = $stores->conversationMapper;
+		$this->messageMapper = $stores->messageMapper;
 		$this->settingsService = $settingsService;
 		$this->responseHandler = $responseHandler;
 		$this->logger = $logger;

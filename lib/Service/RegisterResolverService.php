@@ -92,22 +92,35 @@ final class RegisterResolverService implements RegisterResolverServiceInterface 
 	private ?string $lastTenantUuid = null;
 
 	/**
+	 * Register lookup mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Wire the resolver against the canonical OR mappers + IAppConfig.
 	 *
 	 * @param IAppConfig $appConfig The app config store.
-	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
+	 * @param RegisterSchemaMappers $mappers The register and schema mappers.
 	 * @param OrganisationServiceInterface $organisationService Active-tenant resolution.
 	 * @param LoggerInterface $logger Logger for diagnostics.
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		RegisterSchemaMappers $mappers,
 		private readonly OrganisationServiceInterface $organisationService,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->registerMapper = $mappers->registerMapper;
+		$this->schemaMapper = $mappers->schemaMapper;
 	}//end __construct()
 
 	/**

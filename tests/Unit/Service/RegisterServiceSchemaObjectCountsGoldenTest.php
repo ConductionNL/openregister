@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\RegisterServiceHelpers;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\RegisterServiceStorage;
@@ -111,10 +112,12 @@ class RegisterServiceSchemaObjectCountsGoldenTest extends TestCase {
 
 		return new RegisterService(
 			new RegisterServiceStorage($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class), $db),
-			$this->createMock(FileService::class),
+			new RegisterServiceHelpers(
+				$this->createMock(FileService::class),
+				new RegisterSerializer($this->createMock(SchemaMapper::class), $logger)
+			),
 			$this->createMock(OrganisationService::class),
-			$logger,
-			new RegisterSerializer($this->createMock(SchemaMapper::class), $logger)
+			$logger
 		);
 	}
 

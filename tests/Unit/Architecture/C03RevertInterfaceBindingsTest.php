@@ -64,19 +64,11 @@ final class C03RevertInterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * This lane retypes only the controllers. The Service files that inject the two
-	 * schema-run mappers are in other lanes and left for them. The reset command now
-	 * types against ShippedBaselineResetServiceInterface.
+	 * Every outside caller now types against the interface, so none is listed.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
-		SchemaRunEntryMapper::class => [
-			'Service/Integration/BuiltinIntegrationServices.php',
-			'Service/Schema/SchemaMigrationService.php',
-			'Service/Schema/SchemaRevalidationService.php',
-			'Service/Schema/SchemaVersioningService.php',
-		],
 	];
 
 	/**

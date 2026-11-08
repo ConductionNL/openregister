@@ -150,10 +150,8 @@ class LinkRowStampGoldenTest extends TestCase {
 		};
 		$service = new DeckLinkService(
 			$mapper,
-			$this->apps(),
-			$this->session('alice'),
+			new LinkServiceRuntime($this->apps(), $this->session('alice'), $this->createMock(LoggerInterface::class)),
 			$this->createMock(IUserManager::class),
-			$this->createMock(LoggerInterface::class),
 			$this->container(['OCA\\Deck\\Service\\CardService' => $cards, 'OCA\\Deck\\Db\\CardMapper' => $cardMapper])
 		);
 

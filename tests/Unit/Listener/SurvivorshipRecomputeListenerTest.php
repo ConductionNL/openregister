@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\SurvivorshipResolvers;
 
 class SurvivorshipRecomputeListenerTest extends TestCase {
 
@@ -52,9 +53,7 @@ class SurvivorshipRecomputeListenerTest extends TestCase {
 		$this->listener = new SurvivorshipRecomputeListener(
 			$this->schemaMapper,
 			$this->objectService,
-			new SurvivorshipResolver(),
-			new TrustTierResolver(),
-			new SourceRecordResolver($this->objectService, $this->schemaMapper, $this->logger),
+			new SurvivorshipResolvers(new SurvivorshipResolver(), new TrustTierResolver(), new SourceRecordResolver($this->objectService, $this->schemaMapper, $this->logger)),
 			$this->logger
 		);
 	}//end setUp()

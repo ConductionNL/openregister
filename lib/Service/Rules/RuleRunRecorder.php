@@ -29,8 +29,6 @@ namespace OCA\OpenRegister\Service\Rules;
 
 use DateTime;
 use OCA\OpenRegister\Db\RuleRun;
-use OCA\OpenRegister\Db\RuleRunMapperInterface;
-use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -92,8 +90,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RuleRunMapperInterface $runs The detail log.
-	 * @param RuleRunSummaryMapperInterface $summaries Last run and last error per rule.
+	 * @param RuleRunStores $stores The rule run rows and their summaries.
 	 * @param IUserSession $userSession Names the actor whose write was evaluated.
 	 * @param IAppConfig $config Reads whether the detail log is on.
 	 * @param LoggerInterface $logger Reports a log write that failed.
@@ -101,8 +98,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RuleRunMapperInterface $runs,
-		private readonly RuleRunSummaryMapperInterface $summaries,
+		private readonly RuleRunStores $stores,
 		private readonly IUserSession $userSession,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,
@@ -148,7 +144,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	 */
 	private function recordSummary(RuleRun $run, RuleTrace $trace): void {
 		try {
-			$this->summaries->record(
+			$this->stores->summaries->record(
 				ruleId: $run->getRuleId(),
 				schemaSlug: $run->getSchemaSlug(),
 				verdict: $trace->getVerdict(),
@@ -191,7 +187,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 			$run->setMessage($trace->getMessage());
 			$run->setActor($this->userSession->getUser()?->getUID());
 
-			$this->runs->insert($run);
+			$this->stores->runs->insert($run);
 		} catch (Throwable $e) {
 			$this->warn(what: 'write a run row', run: $run, failure: $e);
 		}

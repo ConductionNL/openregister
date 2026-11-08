@@ -69,10 +69,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Service\Integration\LeafBundle;
+use OCA\OpenRegister\Service\Integration\LeafBundles;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
-use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCA\OpenRegister\Service\EntryScripts;
+use OCA\OpenRegister\Service\Integration\LeafRegistryInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\EventDispatcher\Event;
@@ -100,13 +100,13 @@ class LeafScriptListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param LeafRegistry    $leaves     The collected leaf catalogue.
-	 * @param IAppManager     $appManager App installation + path lookups.
-	 * @param IRequest        $request    The current request, for the app id.
-	 * @param LoggerInterface $logger     PSR-3 logger.
+	 * @param LeafRegistryInterface $leaves     The collected leaf catalogue.
+	 * @param IAppManager           $appManager App installation + path lookups.
+	 * @param IRequest              $request    The current request, for the app id.
+	 * @param LoggerInterface       $logger     PSR-3 logger.
 	 */
 	public function __construct(
-		private readonly LeafRegistry $leaves,
+		private readonly LeafRegistryInterface $leaves,
 		private readonly IAppManager $appManager,
 		private readonly IRequest $request,
 		private readonly LoggerInterface $logger,
@@ -341,7 +341,7 @@ class LeafScriptListener implements IEventListener {
 		// Delegated so the loader and the registry give ONE answer. They
 		// disagreeing is the failure this whole change is about: the registry
 		// accepting a leaf the loader never puts on a page.
-		return (new LeafBundle(appManager: $this->appManager))->existsFor(appId: $appId);
+		return LeafBundles::forApps(appManager: $this->appManager)->existsFor(appId: $appId);
 	}//end hasLeafBundle()
 
 	/**

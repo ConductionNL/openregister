@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectLockInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectWriterInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRelationReaderInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugStoreInterface;
@@ -39,6 +40,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableLocatorInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableMaintenanceInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
+use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeResolverInterface;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -66,6 +68,7 @@ final class DbRegistrar {
 		AnalyticsSeriesMapperInterface::class => AnalyticsSeriesMapper::class,
 		ApiCallRecordMapperInterface::class => ApiCallRecordMapper::class,
 		ApplicationMapperInterface::class => ApplicationMapper::class,
+		AuditFlowAttributionInterface::class => AuditFlowAttribution::class,
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		AuditTrailPageQueryInterface::class => AuditTrailPageQuery::class,
 		BookmarkLinkMapperInterface::class => BookmarkLinkMapper::class,
@@ -73,9 +76,13 @@ final class DbRegistrar {
 		BulkJobMemberMapperInterface::class => BulkJobMemberMapper::class,
 		CalendarFeedTokenMapperInterface::class => CalendarFeedTokenMapper::class,
 		CalendarLinkMapperInterface::class => CalendarLinkMapper::class,
+		CaseItemAuditMapperInterface::class => CaseItemAuditMapper::class,
 		CaseItemMapperInterface::class => CaseItemMapper::class,
 		CaseTokenMapperInterface::class => CaseTokenMapper::class,
 		CollectiveLinkMapperInterface::class => CollectiveLinkMapper::class,
+		ConfigurationDeploymentMapperInterface::class => ConfigurationDeploymentMapper::class,
+		ConfigurationDraftMapperInterface::class => ConfigurationDraftMapper::class,
+		ConfigurationDraftSetMapperInterface::class => ConfigurationDraftSetMapper::class,
 		ConfigurationMapperInterface::class => ConfigurationMapper::class,
 		ConsumerMapperInterface::class => ConsumerMapper::class,
 		ContactLinkMapperInterface::class => ContactLinkMapper::class,
@@ -89,6 +96,7 @@ final class DbRegistrar {
 		EndpointMapperInterface::class => EndpointMapper::class,
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
 		ErasurePreviewMapperInterface::class => ErasurePreviewMapper::class,
+		ExportProfileMapperInterface::class => ExportProfileMapper::class,
 		FederatedShareMapperInterface::class => FederatedShareMapper::class,
 		FeedbackMapperInterface::class => FeedbackMapper::class,
 		FlowDefinitionMapperInterface::class => FlowDefinitionMapper::class,
@@ -97,13 +105,19 @@ final class DbRegistrar {
 		FlowRunMapperInterface::class => FlowRunMapper::class,
 		FlowRunStepMapperInterface::class => FlowRunStepMapper::class,
 		FlowStateMapperInterface::class => FlowStateMapper::class,
+		FlowStreamMapperInterface::class => FlowStreamMapper::class,
+		FlowTimerEventMapperInterface::class => FlowTimerEventMapper::class,
+		FlowTimerFireMapperInterface::class => FlowTimerFireMapper::class,
 		FlowTimerMapperInterface::class => FlowTimerMapper::class,
 		FlowTriggerMapperInterface::class => FlowTriggerMapper::class,
 		FlowVersionMapperInterface::class => FlowVersionMapper::class,
+		FormLinkMapperInterface::class => FormLinkMapper::class,
+		GdprEntityMapperInterface::class => GdprEntityMapper::class,
 		HandoffQueueEntryMapperInterface::class => HandoffQueueEntryMapper::class,
 		ImportPreviewFinderInterface::class => ImportPreviewMapper::class,
 		ImportPreviewMapperInterface::class => ImportPreviewMapper::class,
 		ImportPreviewRowMapperInterface::class => ImportPreviewRowMapper::class,
+		OrganisationScopeResolverInterface::class => MagicOrganizationHandler::class,
 		SchemaRunMapperInterface::class => SchemaRunMapper::class,
 		SchemaRunStoreInterface::class => SchemaRunMapper::class,
 		JobRunMapperInterface::class => JobRunMapper::class,
@@ -134,6 +148,7 @@ final class DbRegistrar {
 		PhotoLinkMapperInterface::class => PhotoLinkMapper::class,
 		PollLinkMapperInterface::class => PollLinkMapper::class,
 		ProcessingLogMapperInterface::class => ProcessingLogMapper::class,
+		RecordTemplateMapperInterface::class => RecordTemplateMapper::class,
 		RegisterMapperInterface::class => RegisterMapper::class,
 		RegistrySubscriptionMapperInterface::class => RegistrySubscriptionMapper::class,
 		RelatedRowRbacInterface::class => MagicRbacHandler::class,
@@ -158,6 +173,7 @@ final class DbRegistrar {
 		TaskSequenceMapperInterface::class => TaskSequenceMapper::class,
 		TimeTrackerLinkMapperInterface::class => TimeTrackerLinkMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,
+		TranslationSourceLanguageBackfillInterface::class => TranslationMapper::class,
 		\OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface::class => \OCA\OpenRegister\Db\VerwerkingsactiviteitMapper::class,
 		WebhookLogMapperInterface::class => WebhookLogMapper::class,
 		WebhookMapperInterface::class => WebhookMapper::class,

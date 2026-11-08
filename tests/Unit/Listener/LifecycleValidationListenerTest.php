@@ -40,6 +40,7 @@ use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
@@ -142,8 +143,7 @@ class LifecycleValidationListenerTest extends TestCase {
 			new LifecycleTransitionChecks($this->guardRegistry, new LifecycleConditionEvaluator(
 				$this->userSession,
 				$this->groupManager,
-				$this->l10n,
-				$this->logger,
+				new LifecycleConditionReporting($this->l10n, $this->logger),
 				$this->realConditionDialect()
 			), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(

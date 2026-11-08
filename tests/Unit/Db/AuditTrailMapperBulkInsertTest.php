@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCP\DB\IResult;
@@ -111,10 +112,9 @@ class AuditTrailMapperBulkInsertTest extends TestCase {
 
 		$this->mapper = new AuditTrailMapper(
 			$this->db,
-			$this->container,
 			$userSession,
 			$request,
-			$logger
+			new AuditTrailMapperServices($this->container, $logger)
 		);
 	}//end setUp()
 

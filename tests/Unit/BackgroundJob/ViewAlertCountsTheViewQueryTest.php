@@ -46,6 +46,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use ReflectionNamedType;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
 
 class ViewAlertCountsTheViewQueryTest extends TestCase {
 
@@ -106,7 +108,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 			}
 		);
 
-		$job = new ViewAlertSweepJob($this->createMock(ITimeFactory::class), $views, $objects, $users, $dispatcher, new NullLogger(), new ViewObjectQuery());
+		$job = new ViewAlertSweepJob($this->createMock(ITimeFactory::class), new ViewAlertSweepSources($views, $objects, new ViewObjectQuery()), new ViewAlertSweepPlatform($users, $dispatcher, new NullLogger()));
 		$run = new \ReflectionMethod(ViewAlertSweepJob::class, 'run');
 		$run->setAccessible(true);
 		$run->invoke($job, null);

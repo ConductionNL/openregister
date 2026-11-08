@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
@@ -438,7 +438,7 @@ class FlowTaskBridge implements FlowTaskBridgeInterface {
 		}
 
 		try {
-			$streams = $this->container->get(FlowStreamMapper::class)->findByRun(runUuid: $runUuid);
+			$streams = $this->container->get(FlowStreamMapperInterface::class)->findByRun(runUuid: $runUuid);
 		} catch (Throwable $unavailable) {
 			$this->logger->debug(
 				message: '[FlowTaskBridge] The stream layer is not available: ' . $unavailable->getMessage(),

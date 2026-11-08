@@ -39,6 +39,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationWrite;
 
 /**
  * Runs deploy() over every combination of set state, four-eyes setting,
@@ -344,8 +346,9 @@ class DeploymentServiceAccessGoldenTest extends TestCase {
 		$fails = (($case['preview'] ?? $case['kind'] ?? '') === 'write-fails');
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('write')->willReturnCallback(
-			function (string $layer, ?string $layerRef, string $configKey, mixed $value, string $deploymentUuid, ?string $actor) use ($fails): array {
-				$this->calls[] = ['store.write', $layer, $layerRef, $configKey, $value, $deploymentUuid, $actor];
+			function (ConfigurationAddress $address, ConfigurationWrite $write) use ($fails): array {
+				$this->calls[] = ['store.write', $address->layer, $address->layerRef, $address->configKey, $write->value, $write->deploymentUuid, $write->actor];
+				$configKey = $address->configKey;
 				if ($fails === true && str_starts_with($configKey, 'fail-') === true) {
 					throw new RuntimeException('disk full');
 				}

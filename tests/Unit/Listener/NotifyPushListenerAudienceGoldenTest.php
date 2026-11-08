@@ -35,6 +35,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\NotifyPushPlatform;
 
 /**
  * Pins who receives which push: only the object's readers, on which channels,
@@ -208,10 +209,8 @@ class NotifyPushListenerAudienceGoldenTest extends TestCase {
 		array $mappers
 	): NotifyPushListener {
 		return new NotifyPushListener(
-			$logger,
-			$container,
+			new NotifyPushPlatform($logger, $container, $appConfig),
 			$permissions,
-			$appConfig,
 			new PushSlugResolver($mappers[0], $mappers[1])
 		);
 	}//end construct()

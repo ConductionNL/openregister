@@ -31,6 +31,8 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
 
 class ViewAlertSweepJobTest extends TestCase {
 
@@ -78,11 +80,8 @@ class ViewAlertSweepJobTest extends TestCase {
 
 		$this->job = new ViewAlertSweepJob(
 			$this->createMock(ITimeFactory::class),
-			$this->views,
-			$this->objects,
-			$this->users,
-			$dispatcher,
-			new NullLogger(), new ViewObjectQuery()
+			new ViewAlertSweepSources($this->views, $this->objects, new ViewObjectQuery()),
+			new ViewAlertSweepPlatform($this->users, $dispatcher, new NullLogger())
 		);
 	}//end setUp()
 
@@ -209,11 +208,8 @@ class ViewAlertSweepJobTest extends TestCase {
 		$this->pass(
 			new ViewAlertSweepJob(
 				$this->createMock(ITimeFactory::class),
-				$views,
-				$objects,
-				$users,
-				$this->createMock(IEventDispatcher::class),
-				new NullLogger(), new ViewObjectQuery()
+				new ViewAlertSweepSources($views, $objects, new ViewObjectQuery()),
+				new ViewAlertSweepPlatform($users, $this->createMock(IEventDispatcher::class), new NullLogger())
 			)
 		);
 
@@ -238,11 +234,8 @@ class ViewAlertSweepJobTest extends TestCase {
 		$this->pass(
 			new ViewAlertSweepJob(
 				$this->createMock(ITimeFactory::class),
-				$views,
-				$objects,
-				$users,
-				$this->createMock(IEventDispatcher::class),
-				new NullLogger(), new ViewObjectQuery()
+				new ViewAlertSweepSources($views, $objects, new ViewObjectQuery()),
+				new ViewAlertSweepPlatform($users, $this->createMock(IEventDispatcher::class), new NullLogger())
 			)
 		);
 

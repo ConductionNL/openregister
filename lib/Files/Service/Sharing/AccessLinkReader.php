@@ -44,7 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
-use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\AccessLink;
@@ -427,7 +427,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		);
 
 		// A link never reveals an explicit-reveal value: it reads masked.
-		return ExplicitReveal::maskAll(schema: $schema, object: $readable);
+		return ExplicitRevealMasks::maskAll(schema: $schema, object: $readable);
 	}//end filteredProperties()
 
 	/**

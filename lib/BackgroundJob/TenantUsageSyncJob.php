@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsageMapper;
-use OCA\OpenRegister\Service\TenantLifecycleService;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -86,7 +86,7 @@ class TenantUsageSyncJob extends TimedJob {
 			// organisation in this table but NOT a tenant of this installation, and
 			// selecting on status alone would sweep it up with the tenants.
 			$organisations = $this->organisationMapper->findLocalTenants(
-				filters: ['status' => TenantLifecycleService::STATUS_ACTIVE]
+				filters: ['status' => TenantLifecycleServiceInterface::STATUS_ACTIVE]
 			);
 		} catch (\Exception $e) {
 			$this->logger->error(

@@ -174,6 +174,12 @@ class MapperPagingGoldenTest extends TestCase {
 				continue;
 			}
 
+			if ($type instanceof ReflectionNamedType && $type->isBuiltin() === false && (new ReflectionClass($type->getName()))->isFinal() === true) {
+				// A final service bundle cannot be doubled: build it from doubles of its own services.
+				$args[] = $this->mapper(class: $type->getName(), db: $db);
+				continue;
+			}
+
 			if ($type instanceof ReflectionNamedType && $type->isBuiltin() === false) {
 				$args[] = $this->createMock($type->getName());
 				continue;

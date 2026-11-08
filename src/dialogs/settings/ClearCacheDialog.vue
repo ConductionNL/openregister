@@ -51,37 +51,28 @@
 					</NcCheckboxRadioSwitch>
 				</div>
 			</div>
-			<div class="dialog-actions">
-				<NcButton :disabled="clearing" @click="$emit('closing')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					variant="error"
-					:disabled="clearing"
-					@click="$emit('confirm')">
-					<template #icon>
-						<NcLoadingIcon v-if="clearing" :size="20" />
-						<Delete v-else :size="20" />
-					</template>
-					{{ clearing ? 'Clearing...' : 'Clear Cache' }}
-				</NcButton>
-			</div>
+			<SettingsDialogActions
+				:busy="clearing"
+				:cancelDisabled="clearing"
+				:label="clearing ? 'Clearing...' : 'Clear Cache'"
+				@cancel="$emit('closing')"
+				@confirm="$emit('confirm')">
+				<template #icon>
+					<Delete :size="20" />
+				</template>
+			</SettingsDialogActions>
 		</div>
 	</NcDialog>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcCheckboxRadioSwitch,
-	NcDialog,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcDialog } from '@nextcloud/vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import SettingsDialogActions from './SettingsDialogActions.vue'
 
 export default {
 	name: 'ClearCacheDialog',
-	components: { NcButton, NcCheckboxRadioSwitch, NcDialog, NcLoadingIcon, Delete },
+	components: { NcCheckboxRadioSwitch, NcDialog, Delete, SettingsDialogActions },
 	props: {
 		open: { type: Boolean, required: true },
 		clearing: { type: Boolean, default: false },

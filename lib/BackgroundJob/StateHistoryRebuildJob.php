@@ -42,6 +42,7 @@ use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\BackgroundJob\Support\StateHistoryRebuildSources;
 
 /**
  * Walks the instance once, rebuilding the projection.
@@ -81,23 +82,43 @@ class StateHistoryRebuildJob extends TimedJob {
 	private const INTERVAL_SECONDS = 300;
 
 	/**
+	 * Derives the intervals.
+	 *
+	 * @var StateHistoryRebuildInterface
+	 */
+	private readonly StateHistoryRebuildInterface $rebuild;
+
+	/**
+	 * Lists the objects to walk.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $audit;
+
+	/**
+	 * Resolves each object's declared lifecycle property.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory        $time      Time factory for TimedJob.
-	 * @param StateHistoryRebuildInterface $rebuild   Derives the intervals.
-	 * @param AuditTrailMapperInterface    $audit     Lists the objects to walk.
-	 * @param SchemaMapperInterface        $schemas   Resolves each object's declared lifecycle property.
+	 * @param StateHistoryRebuildSources $sources The rebuild, the audit trail and the schemas.
 	 * @param IAppConfig          $appConfig Holds the flag and the cursor.
 	 * @param LoggerInterface     $logger    Diagnostics.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly StateHistoryRebuildInterface $rebuild,
-		private readonly AuditTrailMapperInterface $audit,
-		private readonly SchemaMapperInterface $schemas,
+		StateHistoryRebuildSources $sources,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->rebuild = $sources->rebuild;
+		$this->audit = $sources->audit;
+		$this->schemas = $sources->schemas;
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 	}//end __construct()

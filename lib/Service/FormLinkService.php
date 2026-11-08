@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\FormLink;
-use OCA\OpenRegister\Db\FormLinkMapper;
+use OCA\OpenRegister\Db\FormLinkMapperInterface;
 use OCA\OpenRegister\Db\FormSubmissionRef;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
@@ -122,9 +122,9 @@ class FormLinkService implements FormLinkServiceInterface {
 	/**
 	 * Form-link mapper.
 	 *
-	 * @var FormLinkMapper
+	 * @var FormLinkMapperInterface
 	 */
-	private readonly FormLinkMapper $formLinkMapper;
+	private readonly FormLinkMapperInterface $formLinkMapper;
 
 	/**
 	 * Container (used for late-bound `OCA\Forms\*` classes that only
@@ -166,29 +166,25 @@ class FormLinkService implements FormLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FormLinkMapper $formLinkMapper Form-link mapper.
-	 * @param ContainerInterface $container DI container for late-bound NC Forms classes.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IDBConnection $db DB connection.
-	 * @param IUserSession $userSession User session.
-	 * @param LoggerInterface $logger Logger.
+	 * @param FormLinkMapperInterface $formLinkMapper Form-link mapper.
+	 * @param ContainerInterface      $container      DI container for late-bound NC Forms classes.
+	 * @param IDBConnection           $db             DB connection.
+	 * @param LinkServiceRuntime      $runtime        App manager, user session and logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		FormLinkMapper $formLinkMapper,
+		FormLinkMapperInterface $formLinkMapper,
 		ContainerInterface $container,
-		IAppManager $appManager,
 		IDBConnection $db,
-		IUserSession $userSession,
-		LoggerInterface $logger,
+		LinkServiceRuntime $runtime,
 	) {
 		$this->formLinkMapper = $formLinkMapper;
 		$this->container = $container;
-		$this->appManager = $appManager;
 		$this->db = $db;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
+		$this->appManager = $runtime->appManager();
+		$this->userSession = $runtime->userSession();
+		$this->logger = $runtime->logger();
 
 	}//end __construct()
 

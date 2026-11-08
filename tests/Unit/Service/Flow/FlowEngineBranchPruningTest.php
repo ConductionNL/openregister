@@ -11,6 +11,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowEngineServices;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
@@ -104,7 +105,7 @@ class FlowEngineBranchPruningTest extends TestCase {
 			->method('placesPruned')
 			->with($this->anything(), ['lo'], 's');
 
-		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), mootness: $mootness);
+		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), services: new FlowEngineServices(mootness: $mootness));
 
 		$state = new FlowResumeState();
 		$state->forNode(nodeId: 'lo')->set(key: 'taskUuid', value: 't-lo');
@@ -122,7 +123,7 @@ class FlowEngineBranchPruningTest extends TestCase {
 		$mootness = $this->createMock(FlowTaskMootness::class);
 		$mootness->expects($this->never())->method('placesPruned');
 
-		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), mootness: $mootness);
+		$engine = new FlowEngine(new FlowDefinitionBuilder(), new NullLogger(), services: new FlowEngineServices(mootness: $mootness));
 
 		$this->walk($engine, new PruningDispatcher(), [], $this->linearFlow());
 	}//end testALinearFlowReportsNoPruning()

@@ -48,43 +48,28 @@
 			</template>
 		</NcEmptyContent>
 
-		<table v-else class="runTable">
-			<thead>
-				<tr>
-					<th scope="col">
-						{{ t('openregister', 'When') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'Verdict') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'Object') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'What decided it') }}
-					</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr v-for="run in runs" :key="run.id">
-					<td>{{ run.ranAt || run.created }}</td>
-					<td>{{ run.verdict }}</td>
-					<td>
-						<code>{{ run.objectUuid || '' }}</code>
-					</td>
-					<td>
-						<template v-if="run.operand">
-							<code>{{ run.operand }}</code>
-							<span class="operandValue"
-								>{{ t('openregister', 'read as') }}
-								<code>{{ run.operandValue }}</code></span
-							>
-						</template>
-						<span v-else class="muted">{{ run.message || '' }}</span>
-					</td>
-				</tr>
-			</tbody>
-		</table>
+		<CnDataTable
+			v-else
+			class="runTable"
+			:columns="columns"
+			:rows="runs">
+			<template #column-ranAt="{ row: run }">
+				{{ run.ranAt || run.created }}
+			</template>
+			<template #column-objectUuid="{ row: run }">
+				<code>{{ run.objectUuid || '' }}</code>
+			</template>
+			<template #column-operand="{ row: run }">
+				<template v-if="run.operand">
+					<code>{{ run.operand }}</code>
+					<span class="operandValue"
+						>{{ t('openregister', 'read as') }}
+						<code>{{ run.operandValue }}</code></span
+					>
+				</template>
+				<span v-else class="muted">{{ run.message || '' }}</span>
+			</template>
+		</CnDataTable>
 
 		<p v-if="total > runs.length" class="muted">
 			{{
@@ -102,6 +87,7 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcEmptyContent, NcLoadingIcon, NcSelect, NcTextField } from '@nextcloud/vue'
 import HistoryIcon from 'vue-material-design-icons/History.vue'
@@ -118,6 +104,7 @@ export default {
 	name: 'RuleRunsPanel',
 
 	components: {
+		CnDataTable,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcSelect,
@@ -157,6 +144,20 @@ export default {
 				id: row.verdict,
 				label: row.verdict,
 			}))
+		},
+
+		/**
+		 * The run log columns.
+		 *
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		columns() {
+			return [
+				{ key: 'ranAt', label: t('openregister', 'When') },
+				{ key: 'verdict', label: t('openregister', 'Verdict') },
+				{ key: 'objectUuid', label: t('openregister', 'Object') },
+				{ key: 'operand', label: t('openregister', 'What decided it'), cellClass: 'cn-cell--wrap' },
+			]
 		},
 	},
 
@@ -231,16 +232,7 @@ export default {
 	align-items: flex-end;
 }
 
-.runTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.runTable th,
-.runTable td {
-	text-align: start;
-	padding: 6px 10px;
-	border-bottom: 1px solid var(--color-border);
+.runTable :deep(td) {
 	vertical-align: top;
 }
 

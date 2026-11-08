@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
+use OCA\OpenRegister\Service\Archival\ArchivalRegisterMappers;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use PHPUnit\Framework\TestCase;
@@ -87,9 +88,7 @@ class SelectionListSeederTest extends TestCase {
 
 		$this->seeder = new SelectionListSeeder(
 			settingsHandler: $settings,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			objectMapper: $objectMapper,
+			mappers: new ArchivalRegisterMappers(registerMapper: $registerMapper, schemaMapper: $schemaMapper, objectMapper: $objectMapper),
 			saveObject: $saveObject,
 			logger: $this->createMock(LoggerInterface::class)
 		);

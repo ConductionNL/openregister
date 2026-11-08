@@ -6,7 +6,7 @@
  * Permanently deletes archived organisations and their data after the
  * configured retention period (default: 90 days).
  *
- * Only an organisation in TenantLifecycleService::PURGEABLE_STATUS is ever
+ * Only an organisation in TenantLifecycleServiceInterface::PURGEABLE_STATUS is ever
  * deleted. A `retained` organisation, whose access ended but whose data must
  * be kept, is outside this job's reach by construction.
  *
@@ -34,11 +34,12 @@ use DateTime;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsageMapper;
-use OCA\OpenRegister\Service\TenantLifecycleService;
+use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\TenantPurgeStores;
 
 /**
  * Purges archived organisations after retention period.
@@ -52,21 +53,35 @@ class TenantPurgeJob extends TimedJob {
 	private const DEFAULT_RETENTION_DAYS = 90;
 
 	/**
+	 * Organisation mapper
+	 *
+	 * @var OrganisationMapperInterface
+	 */
+	private readonly OrganisationMapperInterface $organisationMapper;
+
+	/**
+	 * Usage mapper
+	 *
+	 * @var TenantUsageMapper
+	 */
+	private readonly TenantUsageMapper $tenantUsageMapper;
+
+	/**
 	 * Constructor
 	 *
 	 * @param ITimeFactory $time Time factory
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
+	 * @param TenantPurgeStores $stores Organisations and their usage rows.
 	 * @param IAppConfig $appConfig App config
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly TenantUsageMapper $tenantUsageMapper,
+		TenantPurgeStores $stores,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->organisationMapper = $stores->organisationMapper;
+		$this->tenantUsageMapper = $stores->tenantUsageMapper;
 		parent::__construct(time: $time);
 		// Run daily.
 		$this->setInterval(seconds: 86400);
@@ -127,7 +142,7 @@ class TenantPurgeJob extends TimedJob {
 			// organisation in this table but NOT a tenant of this installation, and
 			// selecting on status alone would sweep it up with the tenants.
 			return $this->organisationMapper->findLocalTenants(
-				filters: ['status' => TenantLifecycleService::PURGEABLE_STATUS]
+				filters: ['status' => TenantLifecycleServiceInterface::PURGEABLE_STATUS]
 			);
 		} catch (\Exception $e) {
 			$this->logger->error(
@@ -180,7 +195,7 @@ class TenantPurgeJob extends TimedJob {
 		// row itself. The query is the only thing between a retained
 		// organisation and a permanent delete, so a filter that was dropped
 		// or ignored must not be enough to delete one.
-		if ($organisation->getStatus() !== TenantLifecycleService::PURGEABLE_STATUS) {
+		if ($organisation->getStatus() !== TenantLifecycleServiceInterface::PURGEABLE_STATUS) {
 			$this->logger->warning(
 				'[TenantPurgeJob] Skipped an organisation that is not in the purgeable state',
 				['uuid' => $organisation->getUuid(), 'status' => $organisation->getStatus()]

@@ -37,7 +37,9 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
+use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionStores;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -145,16 +147,15 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 			fn (ObjectEntity $entry): array => ['listRevision' => 'rev-'.$entry->getObject()['bron']]
 		);
 		$this->service = new RetentionService(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->createMock(AuditTrailMapperInterface::class),
-			$this->settings,
+			new RetentionStores(
+				$this->objectMapper,
+				$this->schemaMapper,
+				$this->registerMapper,
+				$this->createMock(AuditTrailMapperInterface::class)
+			),
+			new RetentionRules($this->settings, $this->rowScanner, $calculator, $resolver),
 			$this->userSession,
-			$logger,
-			$this->rowScanner,
-			$calculator,
-			$resolver
+			$logger
 		);
 	}//end setUp()
 

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
+use OCA\OpenRegister\Service\Rbac\RevealRecording;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -187,7 +188,7 @@ class ExplicitRevealRoutesTest extends TestCase {
 	public function testAListRowIsMaskedWithItsNameCopy(): void {
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturn(true);
-		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), new RevealRecording($this->createMock(LoggerInterface::class)));
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($masker);
 		$render = $this->bare(RenderObject::class, ['container' => $container]);
@@ -258,7 +259,7 @@ class ExplicitRevealRoutesTest extends TestCase {
 	private function masking(): RenderObject {
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturn(true);
-		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), $this->createMock(LoggerInterface::class));
+		$masker = new ExplicitRevealMasker(new ExplicitReveal(), $rbac, $this->createMock(IUserSession::class), new RevealRecording($this->createMock(LoggerInterface::class)));
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($masker);
 

@@ -22,15 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost;
 
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
+ * The body and the binding map live in AppHostWiring, in this component;
+ * this class keeps the entry points its callers use.
+ *
  * Binds the interfaces other components type against to the AppHost classes.
  *
  * FeatureToggleRegistrar and ObservabilityRegistrar keep their own wiring;
@@ -43,11 +40,7 @@ final class AppHostRegistrar {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [
-		ScheduleFlowStoreInterface::class => ScheduleFlowStore::class,
-		ScheduleManifestLoaderInterface::class => ScheduleManifestLoader::class,
-		ScheduleRefusalReportInterface::class => ScheduleRefusals::class,
-	];
+	public const BINDINGS = AppHostWiring::BINDINGS;
 
 	/**
 	 * Register the AppHost component's bindings.
@@ -59,8 +52,6 @@ final class AppHostRegistrar {
 	 * @spec exclude Container wiring; no behaviour of its own.
 	 */
 	public static function register(IRegistrationContext $context): void {
-		foreach (self::BINDINGS as $contract => $service) {
-			$context->registerServiceAlias($contract, $service);
-		}
+		AppHostWiring::register(context: $context);
 	}//end register()
 }//end class

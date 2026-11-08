@@ -22,42 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
-use OCA\OpenRegister\Search\Db\ViewMapper;
-use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
-use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
-use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
-use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;
-use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
-use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
-use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
-use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
-use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
-use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
-use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
-use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
-use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
-use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
-use OCA\OpenRegister\Search\Service\VectorizationService;
-use OCA\OpenRegister\Search\Service\MetricsService;
-use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
-use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
-use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
-use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 
 /**
+ * The body and the binding map live in SearchWiring, in this component;
+ * this class keeps the entry points its callers use.
+ *
  * Registers the services of the Search component that the container cannot
  * autowire, and binds the interfaces other components type against.
  */
@@ -68,23 +38,7 @@ final class SearchRegistrar {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [
-		VectorEmbeddingsInterface::class => VectorEmbeddings::class,
-		EmbeddingGeneratorInterface::class => VectorEmbeddings::class,
-		GeoFeatureCollectionBuilderInterface::class => GeoFeatureCollectionBuilder::class,
-		GeoFilterApplierInterface::class => GeoFilterApplier::class,
-		GeoFilterParserInterface::class => GeoFilterParser::class,
-		MetricsRetentionInterface::class => MetricsService::class,
-		PlaceholderResolverInterface::class => PlaceholderResolver::class,
-		SearchIndexMaintenanceInterface::class => SearchIndexMaintenance::class,
-		DuplicateDetectionServiceInterface::class => DuplicateDetectionService::class,
-		UniqueHintAnnotationValidatorInterface::class => UniqueHintAnnotationValidator::class,
-		TimeseriesRequestValidatorInterface::class => TimeseriesRequestValidator::class,
-		VectorizationServiceInterface::class => VectorizationService::class,
-		VectorStorageHandlerInterface::class => VectorStorageHandler::class,
-		AggregationCacheInterface::class => AggregationCache::class,
-		ViewMapperInterface::class => ViewMapper::class,
-	];
+	public const BINDINGS = SearchWiring::BINDINGS;
 
 	/**
 	 * Register the Search component's services.
@@ -96,29 +50,6 @@ final class SearchRegistrar {
 	 * @spec exclude Container wiring; no behaviour of its own.
 	 */
 	public static function register(IRegistrationContext $context): void {
-		$context->registerService(VectorizationService::class, self::buildVectorizationService(...));
-
-		foreach (self::BINDINGS as $contract => $service) {
-			$context->registerServiceAlias($contract, $service);
-		}
+		SearchWiring::register(context: $context);
 	}//end register()
-
-	/**
-	 * Build the VectorizationService with the file and object strategies.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return VectorizationServiceInterface
-	 */
-	private static function buildVectorizationService(ContainerInterface $container): VectorizationServiceInterface {
-		$service = new VectorizationService(
-			vectorService: $container->get(VectorEmbeddingsInterface::class),
-			logger: $container->get(LoggerInterface::class)
-		);
-
-		$service->registerStrategy('file', $container->get(FileVectorizationStrategyInterface::class));
-		$service->registerStrategy('object', $container->get(ObjectVectorizationStrategyInterface::class));
-
-		return $service;
-	}//end buildVectorizationService()
 }//end class

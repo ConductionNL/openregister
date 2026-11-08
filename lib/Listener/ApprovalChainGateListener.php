@@ -47,6 +47,7 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
 
 /**
  * Gates a declared lifecycle transition on approval-sequence completion.
@@ -57,23 +58,43 @@ use Psr\Log\LoggerInterface;
  */
 class ApprovalChainGateListener implements IEventListener {
 	/**
+	 * Reads the anchor's sequences.
+	 *
+	 * @var TaskSequenceMapperInterface
+	 */
+	private readonly TaskSequenceMapperInterface $sequenceMapper;
+
+	/**
+	 * Provisions a sequence on the first attempt.
+	 *
+	 * @var TaskSequenceServiceInterface
+	 */
+	private readonly TaskSequenceServiceInterface $sequenceService;
+
+	/**
+	 * Compiles the declared chain into a task template.
+	 *
+	 * @var ApprovalChainAnnotationInstaller
+	 */
+	private readonly ApprovalChainAnnotationInstaller $installer;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LifecycleEditReader              $edits           Reads the edit and the transition it amounts to.
-	 * @param TaskSequenceMapperInterface               $sequenceMapper  Reads the anchor's sequences.
-	 * @param TaskSequenceServiceInterface     $sequenceService Provisions a sequence on the first attempt.
-	 * @param ApprovalChainAnnotationInstaller $installer       Compiles the declared chain into a task template.
+	 * @param ApprovalChainSequences $sequences Sequence store, sequence service and annotation installer.
 	 * @param IUserSession                     $userSession     Current user session (requester identity).
 	 * @param LoggerInterface                  $logger          Logger for gate diagnostics.
 	 */
 	public function __construct(
 		private readonly LifecycleEditReader $edits,
-		private readonly TaskSequenceMapperInterface $sequenceMapper,
-		private readonly TaskSequenceServiceInterface $sequenceService,
-		private readonly ApprovalChainAnnotationInstaller $installer,
+		ApprovalChainSequences $sequences,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->sequenceMapper = $sequences->sequenceMapper;
+		$this->sequenceService = $sequences->sequenceService;
+		$this->installer = $sequences->installer;
 	}//end __construct()
 
 	/**

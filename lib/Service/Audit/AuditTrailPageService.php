@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
-use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\AuditTrailPageQueryInterface;
 use OCA\OpenRegister\Service\LogService;
 use OCP\BackgroundJob\IJobList;
@@ -93,11 +93,11 @@ class AuditTrailPageService implements AuditTrailPageServiceInterface {
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
 	 */
 	public function export(array $filters, ?string $search, string $format, bool $includeChanges, ?string $actor): array {
-		$collected = $this->pageQuery->collect(filters: $filters, search: $search, ceiling: AuditTrailExportJob::INLINE_LIMIT);
+		$collected = $this->pageQuery->collect(filters: $filters, search: $search, ceiling: JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT);
 
 		if ($collected['truncated'] === true) {
 			$this->jobList->add(
-				AuditTrailExportJob::class,
+				JobHandles::AUDIT_TRAIL_EXPORT,
 				[
 					'actor' => $actor,
 					'filters' => $filters,

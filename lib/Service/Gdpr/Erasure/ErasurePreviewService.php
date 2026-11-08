@@ -58,18 +58,14 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	 *
 	 * @param DataSubjectRequestService $subjects     Cross-register discovery.
 	 * @param ErasureProtectionResolver $protection   Legal hold, retention and immutable status, in that order.
-	 * @param CoSubjectProbe            $coSubjects   Other subjects on a record, from the PII index.
-	 * @param ErasureScopeCounter       $scopeCounter What goes with an erasable object.
-	 * @param SubjectPartyCounter       $parties      Party records naming the subject.
+	 * @param ErasureCounters $counters Co-subjects, the destruction scope and the party records.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly DataSubjectRequestService $subjects,
 		private readonly ErasureProtectionResolver $protection,
-		private readonly CoSubjectProbe $coSubjects,
-		private readonly ErasureScopeCounter $scopeCounter,
-		private readonly SubjectPartyCounter $parties,
+		private readonly ErasureCounters $counters,
 	) {
 	}//end __construct()
 
@@ -293,7 +289,7 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	 * @return array<string, mixed> The bucket, any downgrade ground, and the counts.
 	 */
 	private function wholeObject(ObjectEntity $object, string $subjectId, array $matched, int $parties): array {
-		$shared = $this->coSubjects->otherSubjectsOn(object: $object, subjectId: $subjectId, matched: $matched);
+		$shared = $this->counters->coSubjects->otherSubjectsOn(object: $object, subjectId: $subjectId, matched: $matched);
 		if ($shared !== []) {
 			return [
 				'bucket' => ErasureBucket::PSEUDONYMISED,
@@ -316,7 +312,7 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	 * @return array<string, int> The counts.
 	 */
 	private function destroyCounts(ObjectEntity $object, int $parties): array {
-		$scope = $this->scopeCounter->scopeCounts(object: $object);
+		$scope = $this->counters->scopeCounter->scopeCounts(object: $object);
 
 		return [
 			ErasureBucket::OBJECTS => 1,
@@ -350,9 +346,9 @@ class ErasurePreviewService implements ErasurePreviewServiceInterface {
 	 * @return int The number of party records naming the subject.
 	 */
 	private function countPartyRecords(ObjectEntity $object, string $subjectId, array $matched): int {
-		return $this->parties->count(
+		return $this->counters->parties->count(
 			payload: ($object->getObject() ?? []),
-			needles: $this->parties->needles(subjectId: $subjectId, matched: $matched)
+			needles: $this->counters->parties->needles(subjectId: $subjectId, matched: $matched)
 		);
 	}//end countPartyRecords()
 

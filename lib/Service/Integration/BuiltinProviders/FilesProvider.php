@@ -55,8 +55,8 @@ class FilesProvider extends AbstractIntegrationProvider {
 	 *                                      producing mapper at call
 	 *                                      time (the canonical mapper
 	 *                                      varies across OR builds
-	 *                                      — MagicMapper /
-	 *                                      AbstractObjectMapper).
+	 *                                      — MagicMapper, through
+	 *                                      MagicMapperInterface).
 	 * @param IL10N $l10n Localisation.
 	 *
 	 * @return void
@@ -171,6 +171,7 @@ class FilesProvider extends AbstractIntegrationProvider {
 		foreach ([
 			'\OCA\OpenRegister\Db\ObjectEntityMapper',
 			MagicObjectFinderInterface::class,
+			'\OCA\OpenRegister\Db\MagicMapperInterface',
 			'\OCA\OpenRegister\Db\AbstractObjectMapper',
 		] as $candidate
 		) {

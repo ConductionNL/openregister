@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Repair;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
-use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistryInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -120,7 +120,7 @@ class TypePerformerReferences implements IRepairStep {
 	public function run(IOutput $output): void {
 		try {
 			$flows = $this->container->get(FlowMapperInterface::class);
-			$principals = $this->container->get(PrincipalResolverRegistry::class);
+			$principals = $this->container->get(PrincipalResolverRegistryInterface::class);
 		} catch (Throwable $e) {
 			// The tables may not exist yet on a fresh install. Nothing to
 			// rewrite is not a failure.
@@ -224,7 +224,7 @@ class TypePerformerReferences implements IRepairStep {
 	 *
 	 * @param Flow                      $flow         The flow.
 	 * @param FlowMapperInterface                $flows        The mapper, to store the result.
-	 * @param PrincipalResolverRegistry $principals   Resolves a candidate type.
+	 * @param PrincipalResolverRegistryInterface $principals   Resolves a candidate type.
 	 * @param array<int, string>        $ambiguous    Collects what named more than one kind.
 	 * @param array<int, string>        $unresolvable Collects what named nothing.
 	 *
@@ -235,7 +235,7 @@ class TypePerformerReferences implements IRepairStep {
 	private function typeOneFlow(
 		Flow $flow,
 		FlowMapperInterface $flows,
-		PrincipalResolverRegistry $principals,
+		PrincipalResolverRegistryInterface $principals,
 		array &$ambiguous,
 		array &$unresolvable
 	): int {
@@ -285,7 +285,7 @@ class TypePerformerReferences implements IRepairStep {
 	 *
 	 * @param mixed                     $value        What is stored.
 	 * @param string|null               $impliedType  The type the field name already implies.
-	 * @param PrincipalResolverRegistry $principals   Resolves a candidate type.
+	 * @param PrincipalResolverRegistryInterface $principals   Resolves a candidate type.
 	 * @param string                    $where        Where it was found, for the report.
 	 * @param array<int, string>        $ambiguous    Collects what named more than one kind.
 	 * @param array<int, string>        $unresolvable Collects what named nothing.
@@ -302,7 +302,7 @@ class TypePerformerReferences implements IRepairStep {
 	private function typeValue(
 		mixed $value,
 		?string $impliedType,
-		PrincipalResolverRegistry $principals,
+		PrincipalResolverRegistryInterface $principals,
 		string $where,
 		array &$ambiguous,
 		array &$unresolvable,
@@ -403,7 +403,7 @@ class TypePerformerReferences implements IRepairStep {
 	 *
 	 * @param mixed              $entry        One stored entry.
 	 * @param string|null        $impliedType  The type the field name implies.
-	 * @param PrincipalResolverRegistry $principals Resolves a candidate type.
+	 * @param PrincipalResolverRegistryInterface $principals Resolves a candidate type.
 	 * @param string             $where        Where it was found, for the report.
 	 * @param array<int, string> $ambiguous    Collects what named more than one kind.
 	 * @param array<int, string> $unresolvable Collects what named nothing.
@@ -415,7 +415,7 @@ class TypePerformerReferences implements IRepairStep {
 	private function typeOneEntry(
 		mixed $entry,
 		?string $impliedType,
-		PrincipalResolverRegistry $principals,
+		PrincipalResolverRegistryInterface $principals,
 		string $where,
 		array &$ambiguous,
 		array &$unresolvable
@@ -466,7 +466,7 @@ class TypePerformerReferences implements IRepairStep {
 	 * Which registered kinds answer to this name, right now.
 	 *
 	 * @param string                    $name       The stored string.
-	 * @param PrincipalResolverRegistry $principals The registry.
+	 * @param PrincipalResolverRegistryInterface $principals The registry.
 	 *
 	 * @return array<int, string> The types that resolve it, in a stable order.
 	 *
@@ -474,7 +474,7 @@ class TypePerformerReferences implements IRepairStep {
 	 *
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md#requirement-stored-assignee-strings-are-migrated-once-and-what-cannot-be-migrated-is-reported
 	 */
-	private function kindsAnsweringTo(string $name, PrincipalResolverRegistry $principals): array {
+	private function kindsAnsweringTo(string $name, PrincipalResolverRegistryInterface $principals): array {
 		$kinds = [];
 		foreach ($principals->types() as $type) {
 			$reference = PrincipalReference::from(value: ['type' => $type, 'id' => $name]);

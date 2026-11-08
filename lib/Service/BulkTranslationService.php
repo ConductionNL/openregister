@@ -44,21 +44,35 @@ use Psr\Log\LoggerInterface;
 
 class BulkTranslationService implements BulkTranslationServiceInterface {
 	/**
+	 * The translation mapper.
+	 *
+	 * @var TranslationMapperInterface
+	 */
+	private readonly TranslationMapperInterface $translationMapper;
+
+	/**
+	 * The translation handler.
+	 *
+	 * @var TranslationHandler
+	 */
+	private readonly TranslationHandler $translationHandler;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param TranslationProviderInterface $provider The translation provider.
-	 * @param TranslationMapperInterface $translationMapper The translation mapper.
-	 * @param TranslationHandler $translationHandler The translation handler.
+	 * @param TranslationStores $stores The translation mapper and translation handler.
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly TranslationProviderInterface $provider,
-		private readonly TranslationMapperInterface $translationMapper,
-		private readonly TranslationHandler $translationHandler,
+		TranslationStores $stores,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->translationMapper = $stores->translationMapper;
+		$this->translationHandler = $stores->translationHandler;
 	}//end __construct()
 
 	/**

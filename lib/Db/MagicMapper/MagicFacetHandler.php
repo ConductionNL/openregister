@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
-use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use DateTime;
 use LogicException;
 use OCA\OpenRegister\Db\Register;
@@ -1620,7 +1620,7 @@ class MagicFacetHandler {
 	private function callerMayFacet(Schema $schema, string $property): bool {
 		// An explicit-reveal value is shown only through the logged reveal; its
 		// distinct values in a facet would list it unmasked, for anyone.
-		if (in_array($property, ExplicitReveal::explicitProperties(schema: $schema), true) === true) {
+		if (in_array($property, ExplicitRevealMasks::explicitProperties(schema: $schema), true) === true) {
 			return false;
 		}
 

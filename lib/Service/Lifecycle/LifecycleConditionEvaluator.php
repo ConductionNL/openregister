@@ -65,6 +65,20 @@ use Psr\Log\LoggerInterface;
  * implementation of {@see holds()}, which is the whole point of the class.
  */
 class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterface {
+	/**
+	 * Translation layer for the engine's own refusal message.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Logs refusals so a bad rule is diagnosable.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
 
 	/**
 	 * The code every condition refusal carries, malformed or merely unmet.
@@ -78,8 +92,7 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 *
 	 * @param IUserSession $userSession Current user session, for the `user` key.
 	 * @param IGroupManager $groupManager Resolves the caller's group ids.
-	 * @param IL10N $l10n Translation layer for the engine's own refusal message.
-	 * @param LoggerInterface $logger Logs refusals so a bad rule is diagnosable.
+	 * @param LifecycleConditionReporting $reporting The refusal message's translations and the diagnostic log.
 	 * @param ConditionDialect $dialect Decides which dialect a condition is written in.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
@@ -88,10 +101,11 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly IL10N $l10n,
-		private readonly LoggerInterface $logger,
+		LifecycleConditionReporting $reporting,
 		private readonly ConditionDialect $dialect,
 	) {
+		$this->l10n   = $reporting->l10n;
+		$this->logger = $reporting->logger;
 	}//end __construct()
 
 	/**

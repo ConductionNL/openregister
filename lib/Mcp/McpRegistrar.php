@@ -22,33 +22,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp;
 
-use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
-use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
-use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
-use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
-use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
-use OCA\OpenRegister\Mcp\Db\ConversationMapper;
-use OCA\OpenRegister\Mcp\Service\ChatService;
-use OCA\OpenRegister\Mcp\Service\ToolRegistry;
-use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
+ * The body and the binding map live in McpWiring, in this component;
+ * this class keeps the entry points its callers use.
+ *
  * Binds the Mcp component's interfaces and registers its McpToolsService factory.
  */
 final class McpRegistrar
 {
+
     /**
      * Interface => the class behind it.
      */
-    public const BINDINGS = [
-        AgentMapperInterface::class        => AgentMapper::class,
-        ChatServiceInterface::class        => ChatService::class,
-        ContextChatSubmissionListenerInterface::class => ContextChatSubmissionListener::class,
-        ConversationMapperInterface::class => ConversationMapper::class,
-        ToolRegistryInterface::class => ToolRegistry::class,
-    ];
+    public const BINDINGS = McpWiring::BINDINGS;
 
     /**
      * Register the Mcp component's bindings.
@@ -61,13 +49,6 @@ final class McpRegistrar
      */
     public static function register(IRegistrationContext $context): void
     {
-        foreach (self::BINDINGS as $contract => $service) {
-            $context->registerServiceAlias($contract, $service);
-        }
-
-        // McpToolsService is registered once, here, so the bootstrap names only
-        // this registrar. The factory is lazy, so where it sits among the other
-        // registrations does not change what it resolves to.
-        (new McpProviderDiscovery())->register(context: $context);
+        McpWiring::register(context: $context);
     }//end register()
 }//end class

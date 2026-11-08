@@ -37,9 +37,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
-use OCP\App\IAppManager;
-use OCP\IAppConfig;
-use OCP\IConfig;
 use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use Throwable;
@@ -66,18 +63,14 @@ class PlatformSecurityReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param IConfig $config Reads the session and brute-force system configuration.
-	 * @param IAppConfig $appConfig Reads the password policy app's own values.
-	 * @param IAppManager $appManager Answers whether the password policy is running.
+	 * @param PlatformConfiguration $platform The system and app configuration and the installed apps.
 	 * @param IThrottler $throttler Reports the brute-force state for the calling address.
 	 * @param IRequest $request Names the address the state is reported for.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IConfig $config,
-		private readonly IAppConfig $appConfig,
-		private readonly IAppManager $appManager,
+		private readonly PlatformConfiguration $platform,
 		private readonly IThrottler $throttler,
 		private readonly IRequest $request,
 	) {
@@ -93,7 +86,7 @@ class PlatformSecurityReader {
 	 */
 	public function passwordPolicyRuns(): bool {
 		try {
-			return $this->appManager->isEnabledForAnyone(self::POLICY_APP);
+			return $this->platform->appManager->isEnabledForAnyone(self::POLICY_APP);
 		} catch (Throwable) {
 			return false;
 		}
@@ -158,7 +151,7 @@ class PlatformSecurityReader {
 	public function bruteForceState(): array {
 		$enabled = null;
 		try {
-			$raw = $this->config->getSystemValue('auth.bruteforce.protection.enabled', true);
+			$raw = $this->platform->config->getSystemValue('auth.bruteforce.protection.enabled', true);
 			$enabled = 0;
 			if ($raw === true || $raw === 'true' || $raw === 1 || $raw === '1') {
 				$enabled = 1;
@@ -202,7 +195,7 @@ class PlatformSecurityReader {
 	 */
 	private function policyInt(string $key, int $default): ?int {
 		try {
-			return $this->appConfig->getValueInt(self::POLICY_APP, $key, $default);
+			return $this->platform->appConfig->getValueInt(self::POLICY_APP, $key, $default);
 		} catch (Throwable) {
 			return null;
 		}
@@ -218,7 +211,7 @@ class PlatformSecurityReader {
 	 */
 	private function policyFlag(string $key): ?int {
 		try {
-			if ($this->appConfig->getValueBool(self::POLICY_APP, $key, true) === true) {
+			if ($this->platform->appConfig->getValueBool(self::POLICY_APP, $key, true) === true) {
 				return 1;
 			}
 
@@ -239,7 +232,7 @@ class PlatformSecurityReader {
 	 */
 	private function systemInt(string $key, int $default): ?int {
 		try {
-			return (int)$this->config->getSystemValue($key, $default);
+			return (int)$this->platform->config->getSystemValue($key, $default);
 		} catch (Throwable) {
 			return null;
 		}
@@ -259,7 +252,7 @@ class PlatformSecurityReader {
 	 */
 	private function systemFlag(string $key): ?int {
 		try {
-			$raw = $this->config->getSystemValue($key, 'false');
+			$raw = $this->platform->config->getSystemValue($key, 'false');
 			if ($raw === true || $raw === 'true' || $raw === 1 || $raw === '1') {
 				return 1;
 			}

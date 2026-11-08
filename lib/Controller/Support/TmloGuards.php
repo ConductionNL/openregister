@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Export\ExportGate;
+use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,13 +34,13 @@ final class TmloGuards {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ExportGate      $exportGate The export verb, checked before any archival metadata leaves.
+	 * @param ExportGateInterface      $exportGate The export verb, checked before any archival metadata leaves.
 	 * @param LoggerInterface $logger     Logger interface
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
 	 */
 	public function __construct(
-		public readonly ExportGate $exportGate,
+		public readonly ExportGateInterface $exportGate,
 		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

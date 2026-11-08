@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
@@ -58,8 +59,7 @@ class DecisionTableNodeRefusalsGoldenTest extends TestCase {
 		$this->node = new DecisionTableNode(
 			engine: new DecisionTableEvaluator(),
 			validator: new DecisionTableValidator(),
-			l10n: $l10n,
-			urls: $this->createMock(IURLGenerator::class)
+			presentation: new FlowNodePresentation(l10n: $l10n, urls: $this->createMock(IURLGenerator::class))
 		);
 
 	}//end setUp()

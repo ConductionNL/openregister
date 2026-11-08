@@ -5,7 +5,7 @@
  *
  * The object-lifecycle triggers: when an OpenRegister object is created,
  * updated, deleted, locked, unlocked, reverted or changes state, this hands the
- * event to {@see FlowTriggerService}, which queues a run for every flow wired to
+ * event to {@see FlowTriggerServiceInterface}, which queues a run for every flow wired to
  * it. Each is one line in the event map here; the mechanism is written once.
  *
  * The lock/revert/state triggers were declared in the event catalog from the
@@ -44,8 +44,8 @@ use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Flow\FlowTriggerService;
-use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
+use OCA\OpenRegister\Service\Flow\FlowTriggerServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowTriggerSlugsInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -59,14 +59,14 @@ class FlowTriggerListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerService $triggers Queues the runs.
+	 * @param FlowTriggerServiceInterface $triggers Queues the runs.
 	 * @param IUserSession $userSession The acting user, for attribution.
-	 * @param FlowTriggerSlugs $slugs Turns the object's numeric ids into the slugs triggers match on.
+	 * @param FlowTriggerSlugsInterface $slugs Turns the object's numeric ids into the slugs triggers match on.
 	 */
 	public function __construct(
-		private readonly FlowTriggerService $triggers,
+		private readonly FlowTriggerServiceInterface $triggers,
 		private readonly IUserSession $userSession,
-		private readonly FlowTriggerSlugs $slugs,
+		private readonly FlowTriggerSlugsInterface $slugs,
 	) {
 
 	}//end __construct()

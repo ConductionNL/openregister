@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\Rules\RuleEnablementService;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleReplayService;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleRunStores;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
@@ -429,7 +430,7 @@ class RulesServicesGoldenTest extends TestCase {
 				$this->calls[] = ['warning', $message, array_keys($context)];
 			}
 		);
-		return new RuleRunRecorder(runs: $runs, summaries: $summaries, userSession: $session, config: $config, logger: $logger);
+		return new RuleRunRecorder(stores: new RuleRunStores(runs: $runs, summaries: $summaries), userSession: $session, config: $config, logger: $logger);
 	}//end recorder()
 
 	public function testRecorder(): void {

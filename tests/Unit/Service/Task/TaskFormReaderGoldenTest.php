@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
+use OCA\OpenRegister\Service\Task\TaskFormSources;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
@@ -216,6 +217,6 @@ class TaskFormReaderGoldenTest extends TestCase {
 			}
 		);
 
-		return new TaskFormReader(schemas: $schemas, engine: $engine, apps: $apps, l10n: $l10n);
+		return new TaskFormReader(sources: new TaskFormSources(schemas: $schemas, engine: $engine), apps: $apps, l10n: $l10n);
 	}//end reader()
 }//end class

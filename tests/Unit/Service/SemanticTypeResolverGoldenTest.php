@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\RegisterSchemaMappers;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
@@ -128,8 +129,10 @@ class SemanticTypeResolverGoldenTest extends TestCase {
 		$this->log = [];
 		$schemas = $this->schemas();
 		$resolver = new SemanticTypeResolver(
-			$this->schemaMapper($schemas, in_array('schemasThrow', $modes, true)),
-			$this->registerMapper(in_array('registersThrow', $modes, true)),
+			new RegisterSchemaMappers(
+				$this->registerMapper(in_array('registersThrow', $modes, true)),
+				$this->schemaMapper($schemas, in_array('schemasThrow', $modes, true))
+			),
 			new JsonLdContextService($this->createMock(IURLGenerator::class)),
 			$this->logger(),
 			in_array('noAppManager', $modes, true) ? null : $this->appManager()

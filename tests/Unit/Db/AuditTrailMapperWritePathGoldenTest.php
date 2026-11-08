@@ -34,6 +34,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\DB\IResult;
@@ -316,7 +317,7 @@ final class AuditTrailMapperWritePathGoldenTest extends TestCase {
 			}
 		);
 
-		$mapper = new AuditTrailMapper($db, $this->container(window: null), $this->session(uid: null), $this->request(), $this->logger());
+		$mapper = new AuditTrailMapper($db, $this->session(uid: null), $this->request(), new AuditTrailMapperServices($this->container(window: null), $this->logger()));
 		try {
 			$inserted = $mapper->insertAuditTrails($entries(), $chunkSize);
 		} catch (\Throwable $e) {
@@ -392,7 +393,7 @@ final class AuditTrailMapperWritePathGoldenTest extends TestCase {
 			$db = $database->idbConnection();
 		}
 
-		return new AuditTrailMapper($db, $this->container(window: $window), $this->session(uid: $uid), $this->request(), $this->logger());
+		return new AuditTrailMapper($db, $this->session(uid: $uid), $this->request(), new AuditTrailMapperServices($this->container(window: $window), $this->logger()));
 	}//end sqliteMapper()
 
 	/**

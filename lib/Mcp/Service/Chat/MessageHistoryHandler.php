@@ -31,6 +31,7 @@ use OCA\OpenRegister\Notifications\Db\Message;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 
 /**
  * MessageHistoryHandler
@@ -225,47 +226,78 @@ class MessageHistoryHandler {
 	}//end logUnknownRole()
 
 	/**
-	 * Store a message in the database
+	 * Store the user's message of a turn
 	 *
-	 * Persists a chat message with optional RAG sources metadata.
+	 * Persists the message with the CnAiContext snapshot the user sent with it
+	 * (orchestrator §8), so future replays and the LLM can ground answers in the
+	 * user's scope at send-time. An empty snapshot leaves the column at its
+	 * DEFAULT '{}' to avoid noise in the audit trail.
 	 *
-	 * @param int $conversationId Conversation ID.
-	 * @param string $role Message role (user or assistant).
-	 * @param string $content Message content.
-	 * @param array|null $sources Optional RAG sources.
-	 * @param array|null $context Optional CnAiContext snapshot the user
-	 *                            sent with the message (orchestrator §8).
+	 * @param ChatMessageRequest $request The turn: conversation, message text and CnAiContext.
 	 *
 	 * @return Message Stored message entity
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function storeMessage(
-		int $conversationId,
-		string $role,
-		string $content,
-		?array $sources = null,
-		?array $context = null,
-	): Message {
+	public function storeUserMessage(ChatMessageRequest $request): Message {
+		$message = $this->draftMessage(role: Message::ROLE_USER, content: $request->userMessage);
+		$message->setConversationId($request->conversationId);
+		if ($this->hasEntries(value: $request->cnAiContext) === true) {
+			$message->setContext($request->cnAiContext);
+		}
+
+		return $this->persistMessage(message: $message, sources: null);
+	}//end storeUserMessage()
+
+	/**
+	 * Store the assistant's reply of a turn
+	 *
+	 * Persists the reply with its optional RAG sources metadata.
+	 *
+	 * @param int        $conversationId Conversation ID.
+	 * @param string     $content        Reply content.
+	 * @param array|null $sources        Optional RAG sources.
+	 *
+	 * @return Message Stored message entity
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
+	 */
+	public function storeAssistantMessage(int $conversationId, string $content, ?array $sources): Message {
+		$message = $this->draftMessage(role: Message::ROLE_ASSISTANT, content: $content);
+		$message->setConversationId($conversationId);
+
+		return $this->persistMessage(message: $message, sources: $sources);
+	}//end storeAssistantMessage()
+
+	/**
+	 * A new message with its uuid, role, content and creation time.
+	 *
+	 * @param string $role    Message role (user or assistant).
+	 * @param string $content Message content.
+	 *
+	 * @return Message The unsaved message.
+	 */
+	private function draftMessage(string $role, string $content): Message {
 		$message = new Message();
 		$message->setUuid(Uuid::v4()->toRfc4122());
-		$message->setConversationId($conversationId);
 		$message->setRole($role);
 		$message->setContent($content);
 		$message->setCreated(new DateTime());
 
-		// Add RAG sources if provided.
+		return $message;
+	}//end draftMessage()
+
+	/**
+	 * Attach the RAG sources when there are any, insert the message and log it.
+	 *
+	 * @param Message    $message The unsaved message.
+	 * @param array|null $sources Optional RAG sources.
+	 *
+	 * @return Message Stored message entity
+	 */
+	private function persistMessage(Message $message, ?array $sources): Message {
 		if ($this->hasEntries(value: $sources) === true) {
 			$message->setSources($sources);
-		}
-
-		// Persist the CnAiContext snapshot the frontend sent with the
-		// message so future replays + the LLM can ground answers in the
-		// user's scope at send-time. Only set when non-empty; null/empty
-		// leaves the column at its DEFAULT '{}' to avoid noise in the
-		// audit trail.
-		if ($this->hasEntries(value: $context) === true) {
-			$message->setContext($context);
 		}
 
 		$this->messageMapper->insert($message);
@@ -276,14 +308,14 @@ class MessageHistoryHandler {
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'messageId' => $message->getId(),
-				'conversationId' => $conversationId,
-				'role' => $role,
+				'conversationId' => $message->getConversationId(),
+				'role' => $message->getRole(),
 				'hasSources' => $this->hasEntries(value: $sources),
 			]
 		);
 
 		return $message;
-	}//end storeMessage()
+	}//end persistMessage()
 
 	/**
 	 * Whether an optional array is set and non-empty.

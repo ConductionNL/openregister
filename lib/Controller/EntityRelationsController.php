@@ -55,8 +55,8 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
-use OCA\OpenRegister\Service\Decision\DecisionVisibility;
-use OCA\OpenRegister\Service\Decision\RelationDecisionService;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
+use OCA\OpenRegister\Service\Decision\RelationDecisionServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -140,16 +140,16 @@ class EntityRelationsController extends Controller {
 	/**
 	 * Takes the decision as its own object, under the ownership rule.
 	 *
-	 * @var RelationDecisionService
+	 * @var RelationDecisionServiceInterface
 	 */
-	private readonly RelationDecisionService $relationDecisions;
+	private readonly RelationDecisionServiceInterface $relationDecisions;
 
 	/**
 	 * Masks a decision the caller may not see (REQ-ROD-002).
 	 *
-	 * @var DecisionVisibility
+	 * @var DecisionVisibilityInterface
 	 */
-	private readonly DecisionVisibility $decisionVisibility;
+	private readonly DecisionVisibilityInterface $decisionVisibility;
 
 	/**
 	 * Constructor.

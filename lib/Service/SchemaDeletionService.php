@@ -77,7 +77,7 @@ use Throwable;
  *
  * @package OCA\OpenRegister\Service
  */
-class SchemaDeletionService {
+class SchemaDeletionService implements SchemaTeardownInterface {
 
 	/**
 	 * Audit action recorded for every object removed by a schema-wide delete.
@@ -115,24 +115,49 @@ class SchemaDeletionService {
 	public const TRIGGER_BULK_REGISTER_DELETE = 'bulk_register_delete';
 
 	/**
+	 * Magic-table mapper (row reads, bulk delete, table drop).
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Register mapper, to resolve register entities.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper, to resolve and delete schema entities.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Audit trail mapper (ADR-003 hash-chained writes).
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
 	 * SchemaDeletionService constructor.
 	 *
 	 * @param IDBConnection $db Database connection, for phase-1 transaction control.
-	 * @param MagicMapperInterface $magicMapper Magic-table mapper (row reads, bulk delete, table drop).
-	 * @param RegisterMapperInterface $registerMapper Register mapper, to resolve register entities.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper, to resolve and delete schema entities.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper (ADR-003 hash-chained writes).
+	 * @param SchemaDeletionStores $stores The object, register, schema and audit trail mappers.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		SchemaDeletionStores $stores,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->magicMapper = $stores->magicMapper;
+		$this->registerMapper = $stores->registerMapper;
+		$this->schemaMapper = $stores->schemaMapper;
+		$this->auditTrailMapper = $stores->auditTrailMapper;
 	}//end __construct()
 
 	/**

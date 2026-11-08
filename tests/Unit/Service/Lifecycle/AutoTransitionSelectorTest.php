@@ -27,6 +27,7 @@ namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IUserSession;
@@ -90,8 +91,7 @@ class AutoTransitionSelectorTest extends TestCase {
 		return new LifecycleConditionEvaluator(
 			$this->createMock(IUserSession::class),
 			$groupManager,
-			$l10n,
-			$this->createMock(LoggerInterface::class),
+			new LifecycleConditionReporting($l10n, $this->createMock(LoggerInterface::class)),
 			$this->realConditionDialect()
 		);
 	}//end realEvaluator()
@@ -368,8 +368,7 @@ class AutoTransitionSelectorTest extends TestCase {
 		$evaluator = new class (
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
-			$this->createMock(IL10N::class),
-			$this->createMock(LoggerInterface::class),
+			new LifecycleConditionReporting($this->createMock(IL10N::class), $this->createMock(LoggerInterface::class)),
 			$this->realConditionDialect()
 		) extends LifecycleConditionEvaluator {
 			/**

@@ -39,14 +39,10 @@ namespace OCA\OpenRegister\Service\Portal;
 
 use DateTime;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileWriterInterface;
 use OCA\OpenRegister\Service\Task\TaskBlockerGuard;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Task\TaskServiceInterface;
-use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -59,14 +55,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-an-upload-completion-lands-as-a-file-attachment-on-the-case-object
  */
-class PortalTaskService {
-
-	/**
-	 * The outcome a portal completion records when the party names none.
-	 *
-	 * @var string
-	 */
-	public const DEFAULT_OUTCOME = 'submitted';
+class PortalTaskService implements PortalTaskServiceInterface {
 
 	/**
 	 * The tag every stored upload carries, so the case's file list can say
@@ -87,18 +76,12 @@ class PortalTaskService {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskServiceInterface $tasks The authorized lifecycle.
-	 * @param TaskMapper $mapper The subject-scoped finders.
-	 * @param TaskInboxService $inbox Row shaping and case context.
-	 * @param TaskTemporalProjection $temporal The clock for the row projection.
+	 * @param PortalTaskSources $sources The task service, the task rows, the inbox and the temporal projection.
 	 * @param FileWriterInterface $files Stores uploads onto the case object.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly TaskServiceInterface $tasks,
-		private readonly TaskMapper $mapper,
-		private readonly TaskInboxService $inbox,
-		private readonly TaskTemporalProjection $temporal,
+		private readonly PortalTaskSources $sources,
 		private readonly FileWriterInterface $files,
 		private readonly LoggerInterface $logger,
 	) {
@@ -122,10 +105,10 @@ class PortalTaskService {
 		$offset = max(0, $offset);
 		$party = $subject->partyReference();
 
-		$page = $this->mapper->findOpenExternalForParty(partyReference: $party, limit: $limit, offset: $offset);
-		$total = $this->mapper->countOpenExternalForParty(partyReference: $party);
-		$contexts = $this->inbox->subjectContextsFor(tasks: $page);
-		$now = $this->temporal->now();
+		$page = $this->sources->mapper->findOpenExternalForParty(partyReference: $party, limit: $limit, offset: $offset);
+		$total = $this->sources->mapper->countOpenExternalForParty(partyReference: $party);
+		$contexts = $this->sources->inbox->subjectContextsFor(tasks: $page);
+		$now = $this->sources->temporal->now();
 
 		// The page was read with the open-blocker exclusion, so no row of it is
 		// blocked: saying so up front spares every row its own blocker query.
@@ -139,7 +122,7 @@ class PortalTaskService {
 				continue;
 			}
 
-			$results[] = $this->inbox->row(task: $task, subjects: $contexts, now: $now, openBlockers: $openBlockers);
+			$results[] = $this->sources->inbox->row(task: $task, subjects: $contexts, now: $now, openBlockers: $openBlockers);
 		}
 
 		return [
@@ -167,10 +150,10 @@ class PortalTaskService {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
 	public function show(PortalSubject $subject, string $uuid): Task {
-		$task = $this->tasks->get(uuid: $uuid);
+		$task = $this->sources->tasks->get(uuid: $uuid);
 		if ((string)$task->getPerformerType() !== Task::PERFORMER_EXTERNAL
 			|| hash_equals($subject->partyReference(), (string)$task->getAssignee()) === false
-			|| (new TaskBlockerGuard(tasks: $this->mapper))->isHeldBack(task: $task) === true
+			|| (new TaskBlockerGuard(tasks: $this->sources->mapper))->isHeldBack(task: $task) === true
 		) {
 			throw new DoesNotExistException('No such portal task.');
 		}
@@ -190,10 +173,10 @@ class PortalTaskService {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
 	public function row(Task $task): array {
-		return $this->inbox->row(
+		return $this->sources->inbox->row(
 			task: $task,
-			subjects: $this->inbox->subjectContextsFor(tasks: [$task]),
-			now: $this->temporal->now()
+			subjects: $this->sources->inbox->subjectContextsFor(tasks: [$task]),
+			now: $this->sources->temporal->now()
 		);
 	}//end row()
 
@@ -236,13 +219,13 @@ class PortalTaskService {
 		// 1. Authorize, and audit a denial, BEFORE any other step. A stranger
 		//    who knows the uuid must not get a validation message, let alone a
 		//    file on somebody else's case.
-		$task = $this->tasks->openFor(verb: 'complete', uuid: $uuid, actor: $subject->actor());
+		$task = $this->sources->tasks->openFor(verb: 'complete', uuid: $uuid, actor: $subject->actor());
 
 		// 1a. A task the case holds back behind an open blocker is not on the
 		//     party's list, so it is not theirs to complete either. Asked after
 		//     the authorization, so only the matched party can tell it from a
 		//     task that does not exist, and before anything is stored.
-		(new TaskBlockerGuard(tasks: $this->mapper))->assertNotHeldBack(task: $task);
+		(new TaskBlockerGuard(tasks: $this->sources->mapper))->assertNotHeldBack(task: $task);
 
 		// 1b. A task that names the app action completing it is completed by
 		//     that app alone, so the app's own checks cannot be skipped by
@@ -268,7 +251,7 @@ class PortalTaskService {
 			$outcome = self::DEFAULT_OUTCOME;
 		}
 
-		return $this->tasks->complete(
+		return $this->sources->tasks->complete(
 			uuid: $uuid,
 			outcome: $outcome,
 			resultText: null,

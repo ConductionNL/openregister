@@ -45,6 +45,8 @@ use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectClients;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectSteps;
 
 /**
  * Golden outcomes of the OAuth2 connect seam.
@@ -524,17 +526,21 @@ class OAuth2ConnectServiceGoldenTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		return new OAuth2ConnectService(
-			catalogue: $catalogue,
-			clients: $clients,
-			instanceClients: $this->createMock(OAuth2InstanceClient::class),
-			exchange: new OAuth2CodeExchange(clientService: $clientService),
-			writer: new OAuth2ConnectionWriter(
-				broker: $broker,
-				refresh: $refresh,
-				identities: $identities,
-				objectService: $objectService
+			sources: new OAuth2ConnectClients(
+				catalogue: $catalogue,
+				clients: $clients,
+				instanceClients: $this->createMock(OAuth2InstanceClient::class),
 			),
-			revoker: new OAuth2UpstreamRevoker(refresh: $refresh, clients: $clients, clientService: $clientService, logger: $logger)
+			steps: new OAuth2ConnectSteps(
+				exchange: new OAuth2CodeExchange(clientService: $clientService),
+				writer: new OAuth2ConnectionWriter(
+					broker: $broker,
+					refresh: $refresh,
+					identities: $identities,
+					objectService: $objectService
+				),
+				revoker: new OAuth2UpstreamRevoker(refresh: $refresh, clients: $clients, clientService: $clientService, logger: $logger),
+			),
 		);
 	}
 }

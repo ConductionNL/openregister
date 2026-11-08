@@ -30,8 +30,6 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -105,8 +103,7 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 * Sets retention period and self-clearing flag if provided.
 	 *
 	 * @param SearchTrailMapperInterface $searchTrailMapper Mapper for search trail database operations
-	 * @param RegisterMapperInterface $registerMapper Mapper for register database operations
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema database operations
+	 * @param RegisterSchemaMappers $mappers The register and schema mappers.
 	 * @param int|null $retentionDays Optional retention period in days (default: 365)
 	 * @param bool|null $selfClearing Optional flag to enable/disable self-clearing
 	 *                                (default: false, use cron jobs instead)
@@ -115,15 +112,14 @@ class SearchTrailService implements SearchTrailServiceInterface {
 	 */
 	public function __construct(
 		private readonly SearchTrailMapperInterface $searchTrailMapper,
-		RegisterMapperInterface $registerMapper,
-		SchemaMapperInterface $schemaMapper,
+		RegisterSchemaMappers $mappers,
 		?int $retentionDays = null,
 		?bool $selfClearing = null,
 	) {
 		$this->retentionDays = $retentionDays ?? $this->retentionDays;
 		$this->selfClearingEnabled = $selfClearing ?? $this->selfClearingEnabled;
 		$this->queryConfig = new SearchTrailQueryConfig();
-		$this->nameEnricher = new SearchTrailNameEnricher(registerMapper: $registerMapper, schemaMapper: $schemaMapper);
+		$this->nameEnricher = new SearchTrailNameEnricher(registerMapper: $mappers->registerMapper, schemaMapper: $mappers->schemaMapper);
 		$this->statistics = new SearchTrailStatistics();
 		$this->activityInsights = new SearchTrailActivityInsights();
 		$this->userAgentParser = new SearchTrailUserAgentParser();

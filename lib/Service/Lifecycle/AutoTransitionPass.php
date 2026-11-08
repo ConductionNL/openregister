@@ -68,7 +68,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-class AutoTransitionPass {
+class AutoTransitionPass implements AutoTransitionPassInterface {
 
 	/**
 	 * The most automatic moves one object may make in one pass.
