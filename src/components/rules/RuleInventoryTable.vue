@@ -14,84 +14,53 @@
 			</template>
 		</NcEmptyContent>
 
-		<table v-else class="ruleTable">
-			<thead>
-				<tr>
-					<th scope="col">
-						{{ t('openregister', 'Order') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'Rule') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'Kind') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'Declared in') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'Last run') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'On') }}
-					</th>
-					<th scope="col">
-						{{ t('openregister', 'Actions') }}
-					</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr
-					v-for="rule in rules"
-					:key="rule.id"
-					:class="{
-						selected: rule.id === selectedId,
-						idle: rule.idle === true,
-					}">
-					<td>{{ rule.order }}</td>
-					<td>
-						<strong>{{ rule.label || rule.key }}</strong>
-						<span class="ruleId">{{ rule.id }}</span>
-					</td>
-					<td>{{ kindLabel(rule.kind) }}</td>
-					<td>
-						<code>{{ rule.source }}</code>
-					</td>
-					<td>
-						<span v-if="rule.lastRun">{{ rule.lastRun }}</span>
-						<span v-else class="muted">{{
-							t('openregister', 'Never')
-						}}</span>
-						<span v-if="rule.idle === true" class="idleFlag">
-							{{
-								t('openregister', 'Nothing in the reporting window')
-							}}
-						</span>
-						<span v-if="rule.lastError" class="lastError">{{
-							rule.lastError
-						}}</span>
-					</td>
-					<td>
-						<NcCheckboxRadioSwitch
-							type="switch"
-							:modelValue="rule.enabled"
-							:disabled="switching === rule.id"
-							@update:modelValue="$emit('toggle', rule, $event)">
-							<span class="hiddenLabel">{{ switchLabel(rule) }}</span>
-						</NcCheckboxRadioSwitch>
-					</td>
-					<td>
-						<NcButton variant="tertiary" @click="$emit('select', rule)">
-							{{ t('openregister', 'Open') }}
-						</NcButton>
-					</td>
-				</tr>
-			</tbody>
-		</table>
+		<CnDataTable
+			v-else
+			class="ruleTable"
+			:columns="columns"
+			:rows="rules"
+			:rowClass="rowClass">
+			<template #column-label="{ row: rule }">
+				<strong>{{ rule.label || rule.key }}</strong>
+				<span class="ruleId">{{ rule.id }}</span>
+			</template>
+			<template #column-kind="{ row: rule }">
+				{{ kindLabel(rule.kind) }}
+			</template>
+			<template #column-source="{ value }">
+				<code>{{ value }}</code>
+			</template>
+			<template #column-lastRun="{ row: rule }">
+				<span v-if="rule.lastRun">{{ rule.lastRun }}</span>
+				<span v-else class="muted">{{ t('openregister', 'Never') }}</span>
+				<span v-if="rule.idle === true" class="idleFlag">
+					{{ t('openregister', 'Nothing in the reporting window') }}
+				</span>
+				<span v-if="rule.lastError" class="lastError">{{ rule.lastError }}</span>
+			</template>
+			<template #column-enabled="{ row: rule }">
+				<NcCheckboxRadioSwitch
+					type="switch"
+					:modelValue="rule.enabled"
+					:disabled="switching === rule.id"
+					@update:modelValue="$emit('toggle', rule, $event)">
+					<span class="hiddenLabel">{{ switchLabel(rule) }}</span>
+				</NcCheckboxRadioSwitch>
+			</template>
+			<template #actions-header>
+				{{ t('openregister', 'Actions') }}
+			</template>
+			<template #row-actions="{ row: rule }">
+				<NcButton variant="tertiary" @click="$emit('select', rule)">
+					{{ t('openregister', 'Open') }}
+				</NcButton>
+			</template>
+		</CnDataTable>
 	</div>
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcCheckboxRadioSwitch, NcEmptyContent } from '@nextcloud/vue'
 import GavelIcon from 'vue-material-design-icons/Gavel.vue'
@@ -107,6 +76,7 @@ export default {
 	name: 'RuleInventoryTable',
 
 	components: {
+		CnDataTable,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcEmptyContent,
@@ -126,8 +96,40 @@ export default {
 
 	emits: ['select', 'toggle'],
 
+	computed: {
+		/**
+		 * The inventory columns. None sorts: the order is the pipeline's.
+		 *
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		columns() {
+			return [
+				{ key: 'order', label: t('openregister', 'Order') },
+				{ key: 'label', label: t('openregister', 'Rule') },
+				{ key: 'kind', label: t('openregister', 'Kind') },
+				{ key: 'source', label: t('openregister', 'Declared in') },
+				{ key: 'lastRun', label: t('openregister', 'Last run') },
+				{ key: 'enabled', label: t('openregister', 'On') },
+			]
+		},
+	},
+
 	methods: {
 		t,
+
+		/**
+		 * The row classes: the open rule and an idle one.
+		 *
+		 * @param {object} rule The inventory row.
+		 *
+		 * @return {string} The classes
+		 */
+		rowClass(rule) {
+			return [
+				rule.id === this.selectedId ? 'selected' : '',
+				rule.idle === true ? 'idle' : '',
+			].join(' ').trim()
+		},
 
 		/**
 		 * The label for a kind, from the published vocabulary.
@@ -172,20 +174,11 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/common.scss' as *;
 
-.ruleTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.ruleTable th,
-.ruleTable td {
-	text-align: start;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
+.ruleTable :deep(td) {
 	vertical-align: top;
 }
 
-.ruleTable tr.selected {
+.ruleTable :deep(tr.selected) {
 	background-color: var(--color-primary-element-light);
 }
 
