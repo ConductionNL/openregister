@@ -181,6 +181,38 @@ final class ConfigurationExplainerTest extends TestCase {
 		$this->assertFalse($answer['predatesFirstDeployment']);
 	}//end testASettingNoLayerHoldsIsReportedAsNotFound()
 
+	public function testTheNotFoundAnswerIsPinnedKeyForKey(): void {
+		$answer = $this->explainer([])->explain('integration.mail', 'zaken');
+
+		$this->assertSame(
+			['key', 'found', 'value', 'layer', 'layerRef', 'deployment', 'predatesFirstDeployment', 'explanation', 'chain'],
+			array_keys($answer)
+		);
+		$this->assertSame('integration.mail', $answer['key']);
+		$this->assertNull($answer['deployment']);
+		$this->assertNull($answer['layerRef']);
+		$this->assertSame('no layer sets "integration.mail"', $answer['explanation']);
+		$this->assertCount(2, $answer['chain']);
+	}//end testTheNotFoundAnswerIsPinnedKeyForKey()
+
+	public function testTheFoundAnswerIsPinnedKeyForKey(): void {
+		$answer = $this->explainer(
+			[
+				ConfigurationLayer::REGISTER => new ConfigurationSnapshot(ConfigurationLayer::REGISTER, 'zaken', 'integration.mail', ['relay' => 'smtp'], true, 'dep-9'),
+			],
+			$this->deployment('dep-9', 'mail relay')
+		)->explain('integration.mail', 'zaken');
+
+		$this->assertSame(
+			['key', 'found', 'value', 'layer', 'layerRef', 'deployment', 'predatesFirstDeployment', 'explanation', 'chain'],
+			array_keys($answer)
+		);
+		$this->assertSame([true, ['relay' => 'smtp'], ConfigurationLayer::REGISTER, 'zaken', false], [$answer['found'], $answer['value'], $answer['layer'], $answer['layerRef'], $answer['predatesFirstDeployment']]);
+		$this->assertSame('dep-9', $answer['deployment']['uuid']);
+		$this->assertIsString($answer['explanation']);
+		$this->assertCount(2, $answer['chain']);
+	}//end testTheFoundAnswerIsPinnedKeyForKey()
+
 	public function testAProvenanceNamingADeploymentTheHistoryLostSaysSo(): void {
 		$explainer = $this->explainer(
 			[
