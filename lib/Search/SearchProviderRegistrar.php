@@ -39,9 +39,7 @@ final class SearchProviderRegistrar {
 	public static function register(IRegistrationContext $context): void {
 		$context->registerSearchProvider(ObjectsProvider::class);
 
-		// The entries beside the objects. Two providers, because a Woo
-		// request asks for every mention of a subject and the answer is a
-		// list of entries, each naming the case it sits on.
-		$context->registerSearchProvider(\OCA\OpenRegister\Notifications\Search\TimelineEntriesProvider::class);
+		// The timeline entries beside the objects have their own provider,
+		// registered by the Notifications component that owns it.
 	}//end register()
 }//end class
