@@ -407,10 +407,6 @@ abstract class AbstractTool implements ToolInterface {
 	 * @psalm-suppress MixedArgument
 	 * @psalm-suppress MixedMethodCall
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex type coercion for LLM compatibility
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple type conversion paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive type handling
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __call(string $name, array $arguments) {
@@ -422,87 +418,29 @@ abstract class AbstractTool implements ToolInterface {
 		$camelCaseMethod = lcfirst(str_replace('_', '', ucwords($name, '_')));
 
 		// Step 2: Check if camelCase method exists.
-		if (method_exists($this, $camelCaseMethod) === true) {
-			// Step 3: Use reflection to get method parameter information.
-			// This allows us to understand expected types and default values.
-			$reflection = new ReflectionMethod($this, $camelCaseMethod);
-			$parameters = $reflection->getParameters();
+		if (method_exists($this, $camelCaseMethod) === false) {
+			// Method doesn't exist in either snake_case or camelCase format.
+			throw new BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
+		}
 
-			// Step 4: Determine if arguments are associative (named) or positional.
-			// Associative arrays have non-sequential keys (e.g., ['param1' => 'value']).
-			// Positional arrays have sequential numeric keys (e.g., [0 => 'value', 1 => 'value']).
-			$isAssociative = array_keys($arguments) !== range(0, count($arguments) - 1);
+		// Steps 3-5: Match the arguments to the method's parameters (named or
+		// positional), apply defaults for (string) null and type-cast the rest.
+		$coercer = new ToolArgumentCoercer();
+		$typedArguments = $coercer->argumentsFor(
+			method: new ReflectionMethod($this, $camelCaseMethod),
+			arguments: $arguments
+		);
 
-			// Step 5: Process each parameter and type-cast arguments.
-			$typedArguments = [];
-			foreach ($parameters as $index => $param) {
-				$paramName = $param->getName();
+		// Step 6: Call the camelCase method with type-cast arguments.
+		$result = $this->$camelCaseMethod(...$typedArguments);
 
-				// Step 5a: Extract argument value.
-				// Priority: named argument > positional argument > null.
-				// Use positional argument as default.
-				$value = $arguments[$index] ?? null;
-				if ($isAssociative === true && (($arguments[$paramName] ?? null) !== null)) {
-					// Use named argument if available (associative array).
-					$value = $arguments[$paramName];
-				}
+		// Step 7: Convert array results to JSON for LLPhant compatibility.
+		// LLPhant expects tool results to be JSON strings, not PHP arrays.
+		if (is_array($result) === true) {
+			return json_encode($result);
+		}
 
-				// Step 5b: Handle null values and string 'null' from LLM.
-				// LLMs sometimes return string 'null' instead of actual null value.
-				if ($value === 'null' || $value === null) {
-					// Use default value if parameter has one, otherwise null.
-					$value = null;
-					if ($param->isDefaultValueAvailable() === true) {
-						$value = $param->getDefaultValue();
-					}
-				} elseif ($param->hasType() === true) {
-					// Step 5c: Type-cast argument to match method signature.
-					// This ensures type safety when LLM provides loosely-typed values.
-					$type = $param->getType();
-					if ($type instanceof \ReflectionNamedType) {
-						$typeName = $type->getName();
-
-						if ($typeName === 'int') {
-							// Cast to integer type.
-							$value = (int)$value;
-						} elseif ($typeName === 'float') {
-							// Cast to float type.
-							$value = (float)$value;
-						} elseif ($typeName === 'bool') {
-							// Cast to boolean type using filter_var for proper conversion.
-							// Handles 'true', 'false', '1', '0', etc.
-							$value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-						} elseif ($typeName === 'string') {
-							// Cast to string type.
-							$value = (string)$value;
-						} elseif ($typeName === 'array') {
-							// Cast to array type.
-							// If already array, keep it; otherwise convert to empty array.
-							if (is_array($value) !== true) {
-								$value = [];
-							}
-						}//end if
-					}//end if
-				}//end if
-
-				// Add processed argument to typed arguments array.
-				$typedArguments[] = $value;
-			}//end foreach
-
-			// Step 6: Call the camelCase method with type-cast arguments.
-			$result = $this->$camelCaseMethod(...$typedArguments);
-
-			// Step 7: Convert array results to JSON for LLPhant compatibility.
-			// LLPhant expects tool results to be JSON strings, not PHP arrays.
-			if (is_array($result) === true) {
-				return json_encode($result);
-			}
-
-			// Return non-array results as-is.
-			return $result;
-		}//end if
-
-		// Method doesn't exist in either snake_case or camelCase format.
-		throw new BadMethodCallException("Method {$name} (or {$camelCaseMethod}) does not exist");
+		// Return non-array results as-is.
+		return $result;
 	}//end __call()
 }//end class

@@ -104,3 +104,71 @@
 		overflow-wrap: break-word;
 	}
 }
+
+// The list an object-relations tab shows: an optional toolbar, a loading
+// state, then one row per related item with an icon, a bold $title line
+// and a muted meta line ending in $detail.
+@mixin relation-tab-list($block, $title, $detail, $toolbar: true) {
+	@if $toolbar {
+		.#{$block}__toolbar {
+			display: flex;
+			gap: 8px;
+			padding: 8px 12px;
+			border-bottom: 1px solid var(--color-border);
+		}
+	}
+
+	.#{$block}__loading {
+		display: flex;
+		justify-content: center;
+		padding: 2em 0;
+	}
+
+	.#{$block}__list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.#{$block}__item {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 8px 12px;
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.#{$block}__item:last-child {
+		border-bottom: none;
+	}
+
+	.#{$block}__icon {
+		flex-shrink: 0;
+		color: var(--color-text-maxcontrast);
+	}
+
+	.#{$block}__content {
+		flex-grow: 1;
+		min-width: 0;
+	}
+
+	.#{$block}__#{$title} {
+		font-weight: 500;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.#{$block}__meta {
+		display: flex;
+		gap: 6px;
+		color: var(--color-text-maxcontrast);
+		font-size: 0.85em;
+	}
+
+	.#{$block}__#{$detail} {
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+}

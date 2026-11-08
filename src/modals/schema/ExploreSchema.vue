@@ -2019,37 +2019,31 @@ export default {
 }
 
 /* Improvement and Issue Styles */
-.improvement-status {
-	background: var(--color-primary-element);
-	color: var(--color-primary-element-text);
+@mixin caps-badge {
 	padding: 0.25rem 0.5rem;
 	border-radius: var(--border-radius-small);
 	font-size: 0.7rem;
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
+}
+
+.improvement-status {
+	background: var(--color-primary-element);
+	color: var(--color-primary-element-text);
+	@include caps-badge;
 }
 
 .new-property-status {
 	background: var(--color-success);
 	color: white !important;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius-small);
-	font-size: 0.7rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+	@include caps-badge;
 }
 
 .issues-badge {
 	background: var(--color-warning);
 	color: white !important;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius-small);
-	font-size: 0.7rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+	@include caps-badge;
 }
 
 .type-warning {
