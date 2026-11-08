@@ -959,6 +959,56 @@ class HandoffServiceTest extends TestCase {
 	}//end testOnSuccessFailureRemovesTheTarget()
 
 	/**
+	 * A schema implementing the kind whose `handoffContract` is not an array
+	 * is not a provider.
+	 *
+	 * @return void
+	 */
+	public function testProviderWithNonArrayBindingIsUnavailable(): void {
+		$this->assertSame('unavailable', $this->availabilityWithBinding(binding: 'not an array'));
+
+	}//end testProviderWithNonArrayBindingIsUnavailable()
+
+	/**
+	 * A schema implementing the kind with an incomplete binding is not a
+	 * provider; the same schema with the complete binding is.
+	 *
+	 * @return void
+	 */
+	public function testProviderWithIncompleteBindingIsUnavailable(): void {
+		$this->assertSame('unavailable', $this->availabilityWithBinding(binding: [self::CASE_URI => ['title' => 'onderwerp']]));
+
+	}//end testProviderWithIncompleteBindingIsUnavailable()
+
+	/**
+	 * The availability state of the canonical handoff when the only schema
+	 * implementing the kind carries the given binding.
+	 *
+	 * @param mixed $binding The `handoffContract` configuration value.
+	 *
+	 * @return string The reported state.
+	 */
+	private function availabilityWithBinding(mixed $binding): string {
+		$this->wireSourceSchema();
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+		$this->queueMapper->method('findParkedForObject')->willReturn([]);
+
+		$candidate = new Schema();
+		$candidate->setId(50);
+		$candidate->setSlug('candidate');
+		$candidate->setProperties(['onderwerp' => ['type' => 'string']]);
+		$candidate->setConfiguration(['implements' => [self::CASE_URI], 'handoffContract' => $binding]);
+		$this->schemaMapper->method('findAll')->willReturn([$candidate]);
+
+		$register = new Register();
+		$register->setId(9);
+		$register->setSchemas([50]);
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+
+		return $this->service->listAvailability(register: '7', schema: '12', id: 'src-uuid')[0]['state'];
+	}//end availabilityWithBinding()
+
+	/**
 	 * Wire the source schema (id 12) into the schema mapper's find().
 	 *
 	 * @param string $whenUnavailable The degradation mode to declare.
