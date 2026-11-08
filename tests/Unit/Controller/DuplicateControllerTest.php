@@ -67,7 +67,6 @@ class DuplicateControllerTest extends TestCase {
 		$this->duplicates = $this->createMock(DuplicateDetectionService::class);
 		$this->dismissals = $this->createMock(DismissedPairStore::class);
 		$this->controller = new DuplicateController(
-			'openregister',
 			$this->request,
 			new \OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices(
 				$this->duplicates,
@@ -323,7 +322,6 @@ class DuplicateControllerTest extends TestCase {
 		$other = $this->createMock(DuplicateDetectionService::class);
 		$other->method('checkCandidate')->willThrowException(new RuntimeException('missing'));
 		$controller = new DuplicateController(
-			'openregister',
 			$this->request,
 			new \OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices(
 				$other,
