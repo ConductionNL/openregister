@@ -55,23 +55,49 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	public const DEFAULT_BATCH_SIZE = 50;
 
 	/**
+	 * Resolves the configured Mapping entity.
+	 *
+	 * @var MappingMapperInterface
+	 */
+	private readonly MappingMapperInterface $mappingMapper;
+
+	/**
+	 * Applies Twig field transformation.
+	 *
+	 * @var MappingService
+	 */
+	private readonly MappingService $mappingService;
+
+	/**
+	 * Validates + persists target objects.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Decides source/local conflicts.
+	 *
+	 * @var SyncConflictResolver
+	 */
+	private readonly SyncConflictResolver $conflictResolver;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SyncRecordMapperInterface $syncRecordMapper Per-record tracking persistence
-	 * @param MappingMapperInterface $mappingMapper Resolves the configured Mapping entity
-	 * @param MappingService $mappingService Applies Twig field transformation
-	 * @param ObjectOperationsInterface $objectService Validates + persists target objects
-	 * @param SyncConflictResolver $conflictResolver Decides source/local conflicts
+	 * @param HarvestImportServices $importServices Mapping, persistence and conflict resolution for the import stage
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		private readonly SyncRecordMapperInterface $syncRecordMapper,
-		private readonly MappingMapperInterface $mappingMapper,
-		private readonly MappingService $mappingService,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly SyncConflictResolver $conflictResolver,
+		HarvestImportServices $importServices,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->mappingMapper    = $importServices->mappingMapper;
+		$this->mappingService   = $importServices->mappingService;
+		$this->objectService    = $importServices->objectService;
+		$this->conflictResolver = $importServices->conflictResolver;
 	}//end __construct()
 
 	/**

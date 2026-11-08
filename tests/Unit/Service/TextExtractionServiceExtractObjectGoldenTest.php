@@ -7,6 +7,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -111,7 +112,7 @@ class TextExtractionServiceExtractObjectGoldenTest extends TestCase {
 			});
 		}
 
-		return new TextExtractionService(
+		return TextExtractionServiceFactory::create(
 			$this->createMock(FileMapper::class),
 			$chunkMapper,
 			$this->createMock(IRootFolder::class),

@@ -344,8 +344,7 @@ class SchemaTableMigrator {
 			table: ($this->prefix() . $targetBare),
 			registerId: $registerId,
 			oldId: $oldId,
-			newId: (int)$schema->getId(),
-			quote: $quote
+			newId: (int)$schema->getId()
 		);
 
 		$backup = ($source . self::BACKUP_SUFFIX);
@@ -387,12 +386,11 @@ class SchemaTableMigrator {
 	 * @param int    $registerId The owning register id, which bounds the uri rewrite.
 	 * @param int    $oldId      The shared schema id.
 	 * @param int    $newId      The register's new schema id.
-	 * @param string $quote      The identifier quote character.
 	 *
 	 * @return int The number of rows restamped.
 	 */
-	private function restamp(string $table, int $registerId, int $oldId, int $newId, string $quote): int {
-		$quoted = self::quoteIdentifier(name: $table, quote: $quote);
+	private function restamp(string $table, int $registerId, int $oldId, int $newId): int {
+		$quoted = self::quoteIdentifier(name: $table, quote: $this->quoteChar());
 
 		$rows = $this->db->executeStatement(
 			sprintf('UPDATE %s SET _schema = :new WHERE _schema = :old', $quoted),

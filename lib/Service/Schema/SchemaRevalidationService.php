@@ -44,7 +44,6 @@ use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
-use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
@@ -95,7 +94,9 @@ class SchemaRevalidationService {
 	 * Start a revalidation run.
 	 *
 	 * Creates the run record, refusing a second concurrent run on the same
-	 * schema, and returns it ready for the background job to process.
+	 * schema ({@see SchemaRunPopulation::assertNoActiveRun()} throws the
+	 * SchemaRunConcurrencyException), and returns it ready for the background
+	 * job to process.
 	 *
 	 * @param int $schemaId The schema id.
 	 * @param int $registerId The register the objects live in.
@@ -104,14 +105,10 @@ class SchemaRevalidationService {
 	 *
 	 * @return SchemaRun The created run.
 	 *
-	 * @throws SchemaRunConcurrencyException When an active run already exists.
-	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function start(int $schemaId, int $registerId, ?array $proposedDefinition = null, ?string $startedBy = null): SchemaRun {
 		$this->assertNoActiveRun(schemaId: $schemaId);
-
-		$total = $this->countPopulation(schemaId: $schemaId, registerId: $registerId);
 
 		return $this->runMapper->createFromArray(
 			[
@@ -120,7 +117,7 @@ class SchemaRevalidationService {
 				'type' => SchemaRun::TYPE_REVALIDATION,
 				'state' => SchemaRun::STATE_RUNNING,
 				'proposedDefinition' => $proposedDefinition,
-				'total' => $total,
+				'total' => $this->countPopulation(schemaId: $schemaId, registerId: $registerId),
 				'startedBy' => $startedBy,
 				'report' => ['valid' => 0, 'invalid' => 0],
 			]
@@ -144,50 +141,77 @@ class SchemaRevalidationService {
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
 	public function processBatch(SchemaRun $run, int $batchSize = self::DEFAULT_BATCH): bool {
-		$schema = $this->schemaMapper->find($run->getSchemaId());
-
-		$validationSchema = $schema;
-		$isDryRun = ($run->getProposedDefinition() !== null);
-		if ($isDryRun === true) {
-			$validationSchema = $this->transientSchema(base: $schema, proposed: $run->getProposedDefinition());
-		}
-
-		$objects = $this->loadBatch(run: $run, batchSize: $batchSize);
-		if (count($objects) === 0) {
-			$this->finish(run: $run, state: SchemaRun::STATE_COMPLETED);
+		$schema = $this->validationSchema(run: $run);
+		$objects = $this->nextBatch(run: $run, batchSize: $batchSize);
+		if ($objects === []) {
 			return false;
 		}
 
-		$report = ($run->getReport() ?? ['valid' => 0, 'invalid' => 0]);
-		$maxId = $run->getCursor();
-
+		$batch = new SchemaRunBatch(run: $run, schema: $schema, emptyReport: ['valid' => 0, 'invalid' => 0]);
 		foreach ($objects as $object) {
-			$maxId = max($maxId, (int)$object->getId());
+			$this->revalidateOne(batch: $batch, object: $object);
+		}
 
-			$errors = $this->validate(object: $object, schema: $validationSchema);
-			if (count($errors) === 0) {
-				$report['valid'] = (($report['valid'] ?? 0) + 1);
-			} else {
-				$report['invalid'] = (($report['invalid'] ?? 0) + 1);
-				$this->runEntryMapper->createFromArray(
-					[
-						'runId' => $run->getId(),
-						'objectUuid' => $object->getUuid(),
-						'outcome' => SchemaRunEntry::OUTCOME_INVALID,
-						'message' => implode('; ', array_slice($errors, 0, self::MAX_ERRORS_PER_OBJECT)),
-					]
-				);
-			}
-
-			$run->setProcessed(($run->getProcessed() + 1));
-		}//end foreach
-
-		$run->setCursor($maxId);
-		$run->setReport($report);
-		$this->runMapper->save($run);
-
-		return true;
+		return $this->saveBatch(batch: $batch);
 	}//end processBatch()
+
+	/**
+	 * The schema a run validates against: the stored one, or a transient proposed one for a dry run.
+	 *
+	 * @param SchemaRun $run The run.
+	 *
+	 * @return Schema The validation schema.
+	 */
+	private function validationSchema(SchemaRun $run): Schema {
+		$schema = $this->schemaMapper->find($run->getSchemaId());
+		if ($run->getProposedDefinition() === null) {
+			return $schema;
+		}
+
+		return $this->transientSchema(base: $schema, proposed: $run->getProposedDefinition());
+	}//end validationSchema()
+
+	/**
+	 * Validate one object of a batch, recording it when invalid.
+	 *
+	 * @param SchemaRunBatch $batch  The batch.
+	 * @param ObjectEntity   $object The object.
+	 *
+	 * @return void
+	 */
+	private function revalidateOne(SchemaRunBatch $batch, ObjectEntity $object): void {
+		$batch->reach(object: $object);
+		$errors = $this->validate(object: $object, schema: $batch->schema);
+		if (count($errors) === 0) {
+			$batch->tally(key: 'valid');
+		} else {
+			$this->recordInvalid(batch: $batch, object: $object, errors: $errors);
+		}
+
+		$batch->markProcessed();
+	}//end revalidateOne()
+
+	/**
+	 * Count an invalid object and record its first errors.
+	 *
+	 * @param SchemaRunBatch     $batch  The batch.
+	 * @param ObjectEntity       $object The object.
+	 * @param array<int, string> $errors The validation errors.
+	 *
+	 * @return void
+	 */
+	private function recordInvalid(SchemaRunBatch $batch, ObjectEntity $object, array $errors): void {
+		$batch->tally(key: 'invalid');
+		$this->recordEntry(
+			run: $batch->run,
+			entry: [
+				'objectUuid' => $object->getUuid(),
+				'outcome' => SchemaRunEntry::OUTCOME_INVALID,
+				'message' => implode('; ', array_slice($errors, 0, self::MAX_ERRORS_PER_OBJECT)),
+			]
+		);
+
+	}//end recordInvalid()
 
 	/**
 	 * Validate one object against a schema, returning a list of error strings.
@@ -199,21 +223,12 @@ class SchemaRevalidationService {
 	 */
 	private function validate(ObjectEntity $object, Schema $schema): array {
 		try {
-			$result = $this->validateObject->validateObject(
-				object: $object->getObject(),
-				schema: $schema
-			);
-
+			$result = $this->validateObject->validateObject(object: $object->getObject(), schema: $schema);
 			if ($result->isValid() === true) {
 				return [];
 			}
 
-			$error = $result->error();
-			if ($error === null) {
-				return ['Validation failed.'];
-			}
-
-			return [$error->message()];
+			return [($result->error()?->message() ?? 'Validation failed.')];
 		} catch (\Throwable $e) {
 			return [$e->getMessage()];
 		}

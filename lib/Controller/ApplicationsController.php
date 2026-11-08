@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\ApplicationsControllerServices;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
 use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use OCP\AppFramework\Controller;
@@ -90,26 +91,22 @@ class ApplicationsController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param ApplicationServiceInterface $applicationService Application service for business logic
-	 * @param ApplicationMapperInterface $applicationMapper Application mapper for database operations
-	 * @param LoggerInterface $logger Logger for error tracking
+	 * @param ApplicationsControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ApplicationServiceInterface $applicationService,
-		ApplicationMapperInterface $applicationMapper,
-		LoggerInterface $logger,
+		ApplicationsControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
 
 		// Store dependencies for use in controller methods.
-		$this->applicationService = $applicationService;
-		$this->applicationMapper = $applicationMapper;
-		$this->logger = $logger;
+		$this->applicationService = $services->applicationService;
+		$this->applicationMapper = $services->applicationMapper;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

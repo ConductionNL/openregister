@@ -54,6 +54,13 @@ class CaseObjectAccessor {
 	public const SCHEMA_SLUG = 'dataSubjectRequest';
 
 	/**
+	 * The findAll() config selecting every case object.
+	 *
+	 * @var array{filters: array{register: string, schema: string}}
+	 */
+	private const CASE_QUERY = ['filters' => ['register' => self::REGISTER_SLUG, 'schema' => self::SCHEMA_SLUG]];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objectService RBAC + tenant scoped object store.
@@ -99,29 +106,11 @@ class CaseObjectAccessor {
 	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
 	public function findAllCaseEntities(): array {
-		$rendered = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER_SLUG,
-					'schema' => self::SCHEMA_SLUG,
-				],
-			],
-			_rbac: true,
-			_multitenancy: true
-		);
+		$rendered = $this->objectService->findAll(config: self::CASE_QUERY, _rbac: true, _multitenancy: true);
 
 		$entities = [];
 		foreach ($rendered as $row) {
-			$uuid = '';
-			if (is_array($row) === true) {
-				$uuid = (string)($row['@self']['uuid'] ?? ($row['id'] ?? ''));
-			}
-
-			if ($uuid === '') {
-				continue;
-			}
-
-			$entity = $this->load(caseUuid: $uuid);
+			$entity = $this->reload(row: $row);
 			if ($entity !== null) {
 				$entities[] = $entity;
 			}
@@ -129,6 +118,26 @@ class CaseObjectAccessor {
 
 		return $entities;
 	}//end findAllCaseEntities()
+
+	/**
+	 * Re-load one rendered row as a live entity, by its `@self.uuid` or `id`.
+	 *
+	 * @param mixed $row One rendered findAll() row.
+	 *
+	 * @return ObjectEntity|null The entity, or null when the row names no case or it cannot be loaded.
+	 */
+	private function reload(mixed $row): ?ObjectEntity {
+		$uuid = '';
+		if (is_array($row) === true) {
+			$uuid = (string)($row['@self']['uuid'] ?? ($row['id'] ?? ''));
+		}
+
+		if ($uuid === '') {
+			return null;
+		}
+
+		return $this->load(caseUuid: $uuid);
+	}//end reload()
 
 	/**
 	 * Delete a case dossier via ObjectService, flagged as a retention sweep.

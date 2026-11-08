@@ -135,14 +135,9 @@ class ChunkVectorizationJob extends TimedJob {
 		$logger->info(
 			message: '[ChunkVectorizationJob] Batch completed',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'vectorized' => $vectorized,
-				'failed' => $failed,
-				'backfill_converted' => $backfill['converted'],
-				'backfill_failed' => $backfill['failed'],
-				'backfill_remaining' => $backfill['remaining'],
-				'execution_time_seconds' => round($executionTime, 2),
+				'file' => __FILE__, 'line' => __LINE__, 'vectorized' => $vectorized, 'failed' => $failed,
+				'backfill_converted' => $backfill['converted'], 'backfill_failed' => $backfill['failed'],
+				'backfill_remaining' => $backfill['remaining'], 'execution_time_seconds' => round($executionTime, 2),
 			]
 		);
 	}//end run()
@@ -164,11 +159,7 @@ class ChunkVectorizationJob extends TimedJob {
 			$logger->warning(
 				message: '[ChunkVectorizationJob] Chunk vectorization batch failed '
 					. '(embedding provider unavailable or misconfigured?)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
 			return [0, 0];
 		}
@@ -194,11 +185,7 @@ class ChunkVectorizationJob extends TimedJob {
 		} catch (\Throwable $e) {
 			$logger->error(
 				message: '[ChunkVectorizationJob] pgvector warm-up backfill failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
 			return ['converted' => 0, 'failed' => 0, 'remaining' => 0];
 		}

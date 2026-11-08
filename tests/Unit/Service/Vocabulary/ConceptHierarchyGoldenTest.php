@@ -31,6 +31,7 @@ namespace Unit\Service\Vocabulary;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Vocabulary\ConceptHierarchy;
 use OCA\OpenRegister\Service\Vocabulary\ConceptLifecycle;
+use OCA\OpenRegister\Service\Vocabulary\ConceptReading;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -164,17 +165,17 @@ class ConceptHierarchyGoldenTest extends TestCase {
 
 		$this->assertSame(
 			$this->expectedFullTree(),
-			json_encode($this->hierarchy->tree('urn:root', $this->scheme, 'en', $at))
+			json_encode($this->hierarchy->tree('urn:root', $this->scheme, new ConceptReading('en', $at)))
 		);
 		$this->assertSame(
 			'{"value":"urn:root","label":"Root","notation":null,"offerable":true,"leaf":false,"children":[]}',
-			json_encode($this->hierarchy->tree('urn:root', $this->scheme, 'en', $at, 0))
+			json_encode($this->hierarchy->tree('urn:root', $this->scheme, new ConceptReading('en', $at), 0))
 		);
 		$this->assertSame(
 			'{"value":"urn:a2","label":"urn:a2","notation":"  ","offerable":true,"leaf":false,"children":['
 			.'{"value":"urn:a3","label":"urn:a3","notation":null,"offerable":true,"leaf":true,"children":[]},'
 			.'{"value":"urn:root","label":"Wortel","notation":null,"offerable":true,"leaf":false,"children":[]}]}',
-			json_encode($this->hierarchy->tree('urn:a2', $this->scheme, 'nl', $at, 1))
+			json_encode($this->hierarchy->tree('urn:a2', $this->scheme, new ConceptReading('nl', $at), 1))
 		);
 	}//end testTreeAtSeveralDepths()
 

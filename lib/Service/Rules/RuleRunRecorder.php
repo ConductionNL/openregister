@@ -123,61 +123,95 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function record(
-		string $ruleId,
-		string $schemaSlug,
-		RuleTrace $trace,
-		?string $objectUuid = null,
-		?string $registerSlug = null,
-		?DateTime $moment = null,
-	): void {
-		$recordedAt = ($moment ?? new DateTime());
+	public function record(string $ruleId, string $schemaSlug, RuleTrace $trace,
+		?string $objectUuid = null, ?string $registerSlug = null, ?DateTime $moment = null): void {
+		$run = new RuleRun();
+		$run->setRuleId($ruleId);
+		$run->setSchemaSlug($schemaSlug);
+		$run->setRegisterSlug($registerSlug);
+		$run->setObjectUuid($objectUuid);
+		$run->setCreated($moment ?? new DateTime());
 
-		$error = null;
-		if ($trace->getVerdict() === RuleVocabulary::VERDICT_ERROR) {
-			$error = $trace->getMessage();
+		$this->recordSummary(run: $run, trace: $trace);
+		if ($this->detailEnabled() === true) {
+			$this->recordDetail(run: $run, trace: $trace);
 		}
+	}//end record()
 
+	/**
+	 * Update the rule's summary row: its last run and, on an error, its last error.
+	 *
+	 * @param RuleRun $run The evaluation's identity and moment.
+	 * @param RuleTrace $trace The verdict and the operand that decided it.
+	 *
+	 * @return void
+	 */
+	private function recordSummary(RuleRun $run, RuleTrace $trace): void {
 		try {
 			$this->summaries->record(
-				ruleId: $ruleId,
-				schemaSlug: $schemaSlug,
+				ruleId: $run->getRuleId(),
+				schemaSlug: $run->getSchemaSlug(),
 				verdict: $trace->getVerdict(),
-				moment: $recordedAt,
-				error: $error
+				moment: $run->getCreated(),
+				error: $this->errorOf(trace: $trace)
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[RuleRunRecorder] Could not update the summary for rule ' . $ruleId . ': ' . $e->getMessage(),
-				['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->warn(what: 'update the summary', run: $run, failure: $e);
+		}
+	}//end recordSummary()
+
+	/**
+	 * The error a summary keeps: the engine's sentence, on an error verdict only.
+	 *
+	 * @param RuleTrace $trace The verdict and its message.
+	 *
+	 * @return string|null The error, or null when the rule did not error.
+	 */
+	private function errorOf(RuleTrace $trace): ?string {
+		if ($trace->getVerdict() === RuleVocabulary::VERDICT_ERROR) {
+			return $trace->getMessage();
 		}
 
-		if ($this->detailEnabled() === false) {
-			return;
-		}
+		return null;
+	}//end errorOf()
 
+	/**
+	 * Write the detail row: the verdict, the deciding operand and the actor.
+	 *
+	 * @param RuleRun $run The evaluation's identity and moment.
+	 * @param RuleTrace $trace The verdict and the operand that decided it.
+	 *
+	 * @return void
+	 */
+	private function recordDetail(RuleRun $run, RuleTrace $trace): void {
 		try {
-			$run = new RuleRun();
-			$run->setRuleId($ruleId);
-			$run->setSchemaSlug($schemaSlug);
-			$run->setRegisterSlug($registerSlug);
-			$run->setObjectUuid($objectUuid);
 			$run->setVerdict($trace->getVerdict());
 			$run->setOperand($this->cut(value: $trace->getOperand()));
 			$run->setOperandValue($this->cut(value: $trace->getOperandValue()));
 			$run->setMessage($trace->getMessage());
 			$run->setActor($this->userSession->getUser()?->getUID());
-			$run->setCreated($recordedAt);
 
 			$this->runs->insert($run);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[RuleRunRecorder] Could not write a run row for rule ' . $ruleId . ': ' . $e->getMessage(),
-				['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->warn(what: 'write a run row', run: $run, failure: $e);
 		}
-	}//end record()
+	}//end recordDetail()
+
+	/**
+	 * Report a log write that failed, without letting it reach the save.
+	 *
+	 * @param string $what What could not be done, in words.
+	 * @param RuleRun $run The evaluation being logged.
+	 * @param Throwable $failure Why.
+	 *
+	 * @return void
+	 */
+	private function warn(string $what, RuleRun $run, Throwable $failure): void {
+		$this->logger->warning(
+			'[RuleRunRecorder] Could not ' . $what . ' for rule ' . $run->getRuleId() . ': ' . $failure->getMessage(),
+			['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end warn()
 
 	/**
 	 * Whether the detail log is switched on for this instance.

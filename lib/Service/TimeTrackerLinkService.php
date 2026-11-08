@@ -54,6 +54,8 @@ use Exception;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
 use OCP\App\IAppManager;
+use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -91,6 +93,33 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 
 	private const STALE_AFTER = 86400;
 	// 24 hours in seconds.
+
+	/**
+	 * Where each mapper-backed entry kind lives: [mapper class, fallback table]. Time
+	 * entries have no dedicated mapper and are read from `timemanager_time` directly.
+	 */
+	private const ENTRY_SOURCES = [
+		self::ENTRY_CLIENT => [self::CLIENT_MAPPER, 'timemanager_client'],
+		self::ENTRY_TASK => [self::TASK_MAPPER, 'timemanager_task'],
+	];
+
+	/**
+	 * The id column each entry kind fills; any other kind fills `time_id`.
+	 */
+	private const ID_COLUMNS = [
+		self::ENTRY_CLIENT => 'client_id',
+		self::ENTRY_TASK => 'task_id',
+	];
+
+	/**
+	 * The reconcile counters before the walk.
+	 */
+	private const RECONCILE_STATS = [
+		'walked' => 0,
+		'refreshed' => 0,
+		'missing' => 0,
+		'errors' => 0,
+	];
 
 	/**
 	 * Constructor.
@@ -156,12 +185,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @throws Exception When there is no active user.
 	 */
 	private function requireUid(): string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in', 401);
-		}
-
-		return $user->getUID();
+		return $this->userSession->getUser()?->getUID() ?? throw new Exception('No user logged in', 401);
 	}//end requireUid()
 
 	/**
@@ -204,18 +228,30 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 		$uid       = $this->requireUid();
 		$entryType = $this->normaliseEntryType(entryType: $entryType);
 		$id        = $this->requireEntryId(id: $id);
-		$this->assertEntryUnlinked(target: $target, key: $this->hydrateLink(entryType: $entryType, id: $id, info: []));
+		$this->assertEntryUnlinked(target: $target, key: $this->entryLink(entryType: $entryType, id: $id));
 
 		$info = $this->fetchEntryInfo(entryType: $entryType, id: $id, uid: $uid);
 		if ($info === null) {
 			throw new Exception('TimeManager entry not found', 404);
 		}
 
-		$link = $this->hydrateLink(entryType: $entryType, id: $id, info: $info);
+		return $this->persistLink(target: $target, uid: $uid, link: $this->hydrateLink(entryType: $entryType, id: $id, info: $info));
+	}//end linkEntry()
+
+	/**
+	 * Stamp a new link row with its object and linking user, and insert it.
+	 *
+	 * @param LinkTarget      $target The object to link to.
+	 * @param string          $uid    The linking user.
+	 * @param TimeTrackerLink $link   The unsaved row.
+	 *
+	 * @return TimeTrackerLink The persisted link row.
+	 */
+	private function persistLink(LinkTarget $target, string $uid, TimeTrackerLink $link): TimeTrackerLink {
 		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->timeTrackerLinkMapper->insert($link);
-	}//end linkEntry()
+	}//end persistLink()
 
 	/**
 	 * The trimmed entry id, once TimeManager is known to be available.
@@ -277,41 +313,37 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 *       owned by the integration-time-tracker capability.
 	 */
 	public function createAndLinkClient(LinkTarget $target, string $name): TimeTrackerLink {
-		$uid = $this->requireUid();
-
+		$uid  = $this->requireUid();
 		$name = trim($name);
 		if ($name === '') {
 			throw new Exception('Client name is required', 400);
 		}
 
-		$clientMapper = $this->resolveMapper(class: self::CLIENT_MAPPER);
-		if ($clientMapper === null) {
-			throw new Exception('NC TimeManager is not available', 503);
-		}
+		$clientUuid = $this->createClient(name: $name, uid: $uid);
+		$info       = ['name' => $name, 'duration' => null, 'billable' => null, 'startedAt' => null];
 
+		return $this->persistLink(target: $target, uid: $uid, link: $this->hydrateLink(entryType: self::ENTRY_CLIENT, id: $clientUuid, info: $info));
+	}//end createAndLinkClient()
+
+	/**
+	 * Create a TimeManager client for the user and return its uuid.
+	 *
+	 * @param string $name The client name (trimmed, non-empty).
+	 * @param string $uid  The owning user id.
+	 *
+	 * @return string The new client uuid.
+	 *
+	 * @throws Exception When TimeManager is unavailable (503) or the create fails (500).
+	 */
+	private function createClient(string $name, string $uid): string {
+		$clientMapper = $this->resolveMapper(class: self::CLIENT_MAPPER) ?? throw new Exception('NC TimeManager is not available', 503);
 		try {
-			$clientUuid = $this->insertClient(clientMapper: $clientMapper, name: $name, uid: $uid);
+			return $this->insertClient(clientMapper: $clientMapper, name: $name, uid: $uid);
 		} catch (Throwable $e) {
 			$this->logger->warning('TimeTrackerLinkService::createAndLinkClient failed: ' . $e->getMessage());
 			throw new Exception('Failed to create TimeManager client', 500);
 		}
-
-		$info = [
-			'name' => $name,
-			'duration' => null,
-			'billable' => null,
-			'startedAt' => null,
-		];
-
-		$link = $this->hydrateLink(
-			entryType: self::ENTRY_CLIENT,
-			id: $clientUuid,
-			info: $info
-		);
-		$target->stamp(link: $link, linkedBy: $uid);
-
-		return $this->timeTrackerLinkMapper->insert($link);
-	}//end createAndLinkClient()
+	}//end createClient()
 
 	/**
 	 * Insert a new TimeManager client row and return its uuid.
@@ -330,27 +362,47 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @throws Throwable On any upstream failure.
 	 */
 	private function insertClient(object $clientMapper, string $name, string $uid): string {
-		$uuid = $this->generateUuid();
-
+		$uuid      = $this->generateUuid();
 		$tableName = $clientMapper->getTableName();
-		$now = (new DateTime())->format('Y-m-d\TH:i:sP');
 
 		$qb = $this->db->getQueryBuilder();
-		$qb->insert($tableName)
-			->values(
-				[
-					'name' => $qb->createNamedParameter($name),
-					'user_id' => $qb->createNamedParameter($uid),
-					'uuid' => $qb->createNamedParameter($uuid),
-					'created' => $qb->createNamedParameter($now),
-					'changed' => $qb->createNamedParameter($now),
-					'commit' => $qb->createNamedParameter(''),
-				]
-			);
+		$qb->insert($tableName)->values($this->namedParameters(qb: $qb, values: $this->clientColumns(name: $name, uid: $uid, uuid: $uuid)));
 		$qb->executeStatement();
 
 		return $uuid;
 	}//end insertClient()
+
+	/**
+	 * The column values of a new TimeManager client row.
+	 *
+	 * @param string $name The client name.
+	 * @param string $uid  The owning user id.
+	 * @param string $uuid The new client uuid.
+	 *
+	 * @return array<string,string>
+	 */
+	private function clientColumns(string $name, string $uid, string $uuid): array {
+		$now = (new DateTime())->format('Y-m-d\TH:i:sP');
+
+		return ['name' => $name, 'user_id' => $uid, 'uuid' => $uuid, 'created' => $now, 'changed' => $now, 'commit' => ''];
+	}//end clientColumns()
+
+	/**
+	 * A named string parameter per column value, in column order.
+	 *
+	 * @param IQueryBuilder        $qb     The query being built.
+	 * @param array<string,string> $values Column => value.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function namedParameters(IQueryBuilder $qb, array $values): array {
+		$params = [];
+		foreach ($values as $column => $value) {
+			$params[$column] = $qb->createNamedParameter($value);
+		}
+
+		return $params;
+	}//end namedParameters()
 
 	/**
 	 * Build a TimeTrackerLink from normalised entry info.
@@ -361,18 +413,8 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 *
 	 * @return TimeTrackerLink
 	 */
-	private function hydrateLink(
-		string $entryType,
-		string $id,
-		array $info,
-	): TimeTrackerLink {
-		$components = $this->idComponents(entryType: $entryType, id: $id);
-
-		$link = new TimeTrackerLink();
-		$link->setEntryType($entryType);
-		$link->setClientId($components['client_id']);
-		$link->setTaskId($components['task_id']);
-		$link->setTimeId($components['time_id']);
+	private function hydrateLink(string $entryType, string $id, array $info): TimeTrackerLink {
+		$link = $this->entryLink(entryType: $entryType, id: $id);
 		$link->setName((string)($info['name'] ?? ''));
 		$link->setDuration($info['duration'] ?? null);
 		$link->setBillable($info['billable'] ?? null);
@@ -380,6 +422,26 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 
 		return $link;
 	}//end hydrateLink()
+
+	/**
+	 * An unsaved link row carrying only the entry type and its id columns.
+	 *
+	 * @param string $entryType Entry kind.
+	 * @param string $id        Upstream entry uuid.
+	 *
+	 * @return TimeTrackerLink
+	 */
+	private function entryLink(string $entryType, string $id): TimeTrackerLink {
+		$components = $this->idComponents(entryType: $entryType, id: $id);
+
+		$link = new TimeTrackerLink();
+		$link->setEntryType($entryType);
+		$link->setClientId($components['client_id']);
+		$link->setTaskId($components['task_id']);
+		$link->setTimeId($components['time_id']);
+
+		return $link;
+	}//end entryLink()
 
 	/**
 	 * Map an entry id into the three id columns per entry type.
@@ -390,23 +452,9 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @return array{client_id:?string,task_id:?string,time_id:?string}
 	 */
 	private function idComponents(string $entryType, string $id): array {
-		$components = [
-			'client_id' => null,
-			'task_id' => null,
-			'time_id' => null,
-		];
+		$components = ['client_id' => null, 'task_id' => null, 'time_id' => null];
+		$components[self::ID_COLUMNS[$entryType] ?? 'time_id'] = $id;
 
-		if ($entryType === self::ENTRY_CLIENT) {
-			$components['client_id'] = $id;
-			return $components;
-		}
-
-		if ($entryType === self::ENTRY_TASK) {
-			$components['task_id'] = $id;
-			return $components;
-		}
-
-		$components['time_id'] = $id;
 		return $components;
 	}//end idComponents()
 
@@ -446,21 +494,34 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 *       owned by the integration-time-tracker capability.
 	 */
 	public function getLinkedEntries(string $objectUuid): array {
-		$links = $this->timeTrackerLinkMapper->findByObjectUuid($objectUuid);
+		$links     = $this->timeTrackerLinkMapper->findByObjectUuid($objectUuid);
 		$available = $this->isTimeManagerAvailable();
-		$uid = $this->userSession->getUser()?->getUID();
+		$uid       = $this->userSession->getUser()?->getUID();
 
 		$results = [];
 		foreach ($links as $link) {
-			if ($available === true && $uid !== null && $this->isStale(link: $link) === true) {
-				$link = $this->refreshLink(link: $link, uid: $uid);
-			}
-
-			$results[] = $this->rowFromLink(link: $link);
+			$results[] = $this->rowFromLink(link: $this->currentLink(link: $link, available: $available, uid: $uid));
 		}
 
 		return $results;
 	}//end getLinkedEntries()
+
+	/**
+	 * The link, refreshed from TimeManager first when it and a user are there and the cache is stale.
+	 *
+	 * @param TimeTrackerLink $link      The link row.
+	 * @param bool            $available Whether TimeManager is available.
+	 * @param string|null     $uid       The current user, if any.
+	 *
+	 * @return TimeTrackerLink
+	 */
+	private function currentLink(TimeTrackerLink $link, bool $available, ?string $uid): TimeTrackerLink {
+		if ($available === true && $uid !== null && $this->isStale(link: $link) === true) {
+			return $this->refreshLink(link: $link, uid: $uid);
+		}
+
+		return $link;
+	}//end currentLink()
 
 	/**
 	 * Convert a TimeTrackerLink into the registry leaf-row shape (the
@@ -472,24 +533,34 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 */
 	private function rowFromLink(TimeTrackerLink $link): array {
 		$entryType = (string)$link->getEntryType();
-		$id = $this->entryId(link: $link);
+		$id        = $this->entryId(link: $link);
+		$name      = (string)$link->getName();
 
+		$row         = ['id' => $id, 'kind' => $entryType, 'type' => $entryType, 'title' => $name, 'name' => $name];
+		$row         = array_merge($row, $this->cachedColumns(link: $link));
+		$row['url']  = $this->entryDeepLink(entryType: $entryType, id: $id);
+		$row['data'] = $link->jsonSerialize();
+
+		return $row;
+	}//end rowFromLink()
+
+	/**
+	 * The id columns and cached metadata of a link, in leaf-row form.
+	 *
+	 * @param TimeTrackerLink $link Link row.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function cachedColumns(TimeTrackerLink $link): array {
 		return [
-			'id' => $id,
-			'kind' => $entryType,
-			'type' => $entryType,
-			'title' => (string)$link->getName(),
-			'name' => (string)$link->getName(),
 			'clientId' => $link->getClientId(),
 			'taskId' => $link->getTaskId(),
 			'timeId' => $link->getTimeId(),
 			'duration' => $link->getDuration(),
 			'billable' => $link->getBillable(),
 			'startedAt' => $link->getStartedAt()?->format(DateTime::ATOM),
-			'url' => $this->entryDeepLink(entryType: $entryType, id: $id),
-			'data' => $link->jsonSerialize(),
 		];
-	}//end rowFromLink()
+	}//end cachedColumns()
 
 	/**
 	 * The upstream entry id carried by the link, per entry type.
@@ -522,39 +593,65 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 */
 	public function getAvailableClients(?string $search = null): array {
 		$clientMapper = $this->resolveMapper(class: self::CLIENT_MAPPER);
-		$uid = $this->userSession->getUser()?->getUID();
+		$uid          = $this->userSession->getUser()?->getUID();
 		if ($clientMapper === null || $uid === null) {
 			return [];
 		}
 
-		$rows = $this->fetchClientRows(clientMapper: $clientMapper, uid: $uid, search: $search);
+		return $this->clientPickerRows(rows: $this->fetchClientRows(clientMapper: $clientMapper, uid: $uid, search: $search));
+	}//end getAvailableClients()
 
+	/**
+	 * Picker rows for the client rows that carry a uuid.
+	 *
+	 * @param array<int,object> $rows Raw client rows.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function clientPickerRows(array $rows): array {
 		$out = [];
 		foreach ($rows as $row) {
-			$uuid = '';
-			if (isset($row->uuid) === true) {
-				$uuid = (string)$row->uuid;
+			$entry = $this->clientPickerRow(row: $row);
+			if ($entry !== null) {
+				$out[] = $entry;
 			}
-
-			$name = '';
-			if (isset($row->name) === true) {
-				$name = (string)$row->name;
-			}
-
-			if ($uuid === '') {
-				continue;
-			}
-
-			$out[] = [
-				'id' => $uuid,
-				'kind' => self::ENTRY_CLIENT,
-				'name' => $name,
-				'title' => $name,
-			];
-		}//end foreach
+		}
 
 		return $out;
-	}//end getAvailableClients()
+	}//end clientPickerRows()
+
+	/**
+	 * A picker row for one client row, or null when it carries no uuid.
+	 *
+	 * @param object $row Raw client row.
+	 *
+	 * @return array{id:string,kind:string,name:string,title:string}|null
+	 */
+	private function clientPickerRow(object $row): ?array {
+		$uuid = $this->stringProperty(row: $row, property: 'uuid');
+		$name = $this->stringProperty(row: $row, property: 'name');
+		if ($uuid === '') {
+			return null;
+		}
+
+		return ['id' => $uuid, 'kind' => self::ENTRY_CLIENT, 'name' => $name, 'title' => $name];
+	}//end clientPickerRow()
+
+	/**
+	 * A row property as a string, '' when it is not set.
+	 *
+	 * @param object $row      Raw upstream row.
+	 * @param string $property Property name.
+	 *
+	 * @return string
+	 */
+	private function stringProperty(object $row, string $property): string {
+		if (isset($row->{$property}) === true) {
+			return (string)$row->{$property};
+		}
+
+		return '';
+	}//end stringProperty()
 
 	/**
 	 * Run the LIKE/scan query for the current user's TimeManager clients.
@@ -568,37 +665,56 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	private function fetchClientRows(object $clientMapper, string $uid, ?string $search): array {
 		try {
 			$tableName = $clientMapper->getTableName();
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from($tableName)
-				->where($qb->expr()->eq('user_id', $qb->createNamedParameter($uid)));
-
-			if ($search !== null && $search !== '') {
-				$qb->andWhere(
-					$qb->expr()->iLike(
-						'name',
-						$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($search) . '%')
-					)
-				);
-			}
-
-			$qb->orderBy('name', 'ASC');
-
-			$result = $qb->executeQuery();
-			$rows = [];
-			$row = $result->fetch();
-			while ($row !== false) {
-				$rows[] = (object)$row;
-				$row = $result->fetch();
-			}
-
-			$result->closeCursor();
-			return $rows;
+			return $this->fetchObjects(result: $this->clientsQuery(tableName: $tableName, uid: $uid, search: $search)->executeQuery());
 		} catch (Throwable $e) {
 			$this->logger->debug('TimeTrackerLinkService::fetchClientRows failed: ' . $e->getMessage());
 			return [];
-		}//end try
+		}
 	}//end fetchClientRows()
+
+	/**
+	 * The query for a user's clients, by name, optionally filtered on a name substring.
+	 *
+	 * @param string      $tableName The client table.
+	 * @param string      $uid       The owning user id.
+	 * @param string|null $search    Optional name-substring filter.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function clientsQuery(string $tableName, string $uid, ?string $search): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($tableName)
+			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($uid)));
+
+		if ($search !== null && $search !== '') {
+			$pattern = '%' . $this->db->escapeLikeParameter($search) . '%';
+			$qb->andWhere($qb->expr()->iLike('name', $qb->createNamedParameter($pattern)));
+		}
+
+		$qb->orderBy('name', 'ASC');
+
+		return $qb;
+	}//end clientsQuery()
+
+	/**
+	 * Every row of a result as an object, closing the cursor afterwards.
+	 *
+	 * @param IResult $result The query result.
+	 *
+	 * @return array<int,object>
+	 */
+	private function fetchObjects(IResult $result): array {
+		$rows = [];
+		$row  = $result->fetch();
+		while ($row !== false) {
+			$rows[] = (object)$row;
+			$row    = $result->fetch();
+		}
+
+		$result->closeCursor();
+		return $rows;
+	}//end fetchObjects()
 
 	/**
 	 * Reconcile every persisted link row's denormalised entry metadata
@@ -625,68 +741,115 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @spec openspec/specs/integration-time-tracker/spec.md
 	 */
 	public function reconcileAllLinks(?string $objectUuid = null, bool $dryRun = false): array {
-		$stats = [
-			'walked' => 0,
-			'refreshed' => 0,
-			'missing' => 0,
-			'errors' => 0,
-		];
-
 		if ($this->isTimeManagerAvailable() === false) {
-			return $stats;
+			return self::RECONCILE_STATS;
 		}
 
+		$links = $this->reconcileTargets(objectUuid: $objectUuid);
+		if ($links === null) {
+			return array_merge(self::RECONCILE_STATS, ['errors' => 1]);
+		}
+
+		return $this->reconcileLinks(links: $links, dryRun: $dryRun);
+	}//end reconcileAllLinks()
+
+	/**
+	 * The link rows to reconcile, or null when they cannot be read.
+	 *
+	 * @param string|null $objectUuid Optional object uuid scope.
+	 *
+	 * @return iterable<TimeTrackerLink>|null
+	 */
+	private function reconcileTargets(?string $objectUuid): ?iterable {
 		try {
-			$links = $this->timeTrackerLinkMapper->findAll($objectUuid);
+			return $this->timeTrackerLinkMapper->findAll($objectUuid);
 		} catch (Throwable $e) {
 			$this->logger->error('TimeTrackerLinkService::reconcileAllLinks findAll failed: ' . $e->getMessage());
-			$stats['errors'] = 1;
-			return $stats;
+			return null;
 		}
+	}//end reconcileTargets()
 
+	/**
+	 * Reconcile each link and count the outcomes.
+	 *
+	 * @param iterable<TimeTrackerLink> $links  The link rows.
+	 * @param bool                      $dryRun When true, nothing is written.
+	 *
+	 * @return array{walked: int, refreshed: int, missing: int, errors: int}
+	 */
+	private function reconcileLinks(iterable $links, bool $dryRun): array {
+		$stats = self::RECONCILE_STATS;
 		foreach ($links as $link) {
 			$stats['walked']++;
-			$uid = (string)$link->getLinkedBy();
-			if ($uid === '') {
-				$stats['missing']++;
-				continue;
+			foreach ($this->reconcileLink(link: $link, dryRun: $dryRun) as $counter) {
+				$stats[$counter]++;
 			}
-
-			$info = $this->fetchEntryInfo(
-				entryType: (string)$link->getEntryType(),
-				id: $this->entryId(link: $link),
-				uid: $uid
-			);
-			if ($info === null) {
-				$stats['missing']++;
-				continue;
-			}
-
-			$changed = $this->applyRefreshedInfo(link: $link, info: $info);
-			if ($changed === false) {
-				continue;
-			}
-
-			$stats['refreshed']++;
-
-			if ($dryRun === true) {
-				continue;
-			}
-
-			$link->setLinkedAt(new DateTime());
-			try {
-				$this->timeTrackerLinkMapper->update($link);
-			} catch (Throwable $e) {
-				$this->logger->error(
-					'TimeTrackerLinkService::reconcileAllLinks update failed for link id '
-					. ((string)$link->getId()) . ': ' . $e->getMessage()
-				);
-				$stats['errors']++;
-			}
-		}//end foreach
+		}
 
 		return $stats;
-	}//end reconcileAllLinks()
+	}//end reconcileLinks()
+
+	/**
+	 * Reconcile one link against TimeManager as its own linking user.
+	 *
+	 * @param TimeTrackerLink $link   The link row.
+	 * @param bool            $dryRun When true, nothing is written.
+	 *
+	 * @return array<int,string> The counters this link increments.
+	 */
+	private function reconcileLink(TimeTrackerLink $link, bool $dryRun): array {
+		$info = $this->linkerInfo(link: $link);
+		if ($info === null) {
+			return ['missing'];
+		}
+
+		if ($this->applyRefreshedInfo(link: $link, info: $info) === false) {
+			return [];
+		}
+
+		if ($dryRun === true) {
+			return ['refreshed'];
+		}
+
+		return $this->saveReconciled(link: $link);
+	}//end reconcileLink()
+
+	/**
+	 * The upstream info of a link, looked up as the user who linked it; null when
+	 * that user is unknown or the entry is gone.
+	 *
+	 * @param TimeTrackerLink $link The link row.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function linkerInfo(TimeTrackerLink $link): ?array {
+		$uid = (string)$link->getLinkedBy();
+		if ($uid === '') {
+			return null;
+		}
+
+		return $this->fetchLinkInfo(link: $link, uid: $uid);
+	}//end linkerInfo()
+
+	/**
+	 * Persist a reconciled link.
+	 *
+	 * @param TimeTrackerLink $link The changed link row.
+	 *
+	 * @return array<int,string> The counters this link increments.
+	 */
+	private function saveReconciled(TimeTrackerLink $link): array {
+		$link->setLinkedAt(new DateTime());
+		try {
+			$this->timeTrackerLinkMapper->update($link);
+			return ['refreshed'];
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'TimeTrackerLinkService::reconcileAllLinks update failed for link id ' . ((string)$link->getId()) . ': ' . $e->getMessage()
+			);
+			return ['refreshed', 'errors'];
+		}
+	}//end saveReconciled()
 
 	/**
 	 * Apply refreshed upstream metadata onto a link row. Returns whether
@@ -699,37 +862,86 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @return bool
 	 */
 	private function applyRefreshedInfo(TimeTrackerLink $link, array $info): bool {
-		$changed = false;
-
-		$name = (string)($info['name'] ?? '');
-		if ($name !== '' && $name !== (string)$link->getName()) {
-			$link->setName($name);
-			$changed = true;
-		}
-
-		$duration = $info['duration'] ?? null;
-		if ($duration !== null && (int)$duration !== (int)$link->getDuration()) {
-			$link->setDuration((int)$duration);
-			$changed = true;
-		}
-
-		$billable = $info['billable'] ?? null;
-		if ($billable !== null && (bool)$billable !== (bool)$link->getBillable()) {
-			$link->setBillable((bool)$billable);
-			$changed = true;
-		}
-
-		$startedAt = $info['startedAt'] ?? null;
-		if ($startedAt instanceof DateTime
-			&& ($link->getStartedAt() === null
-			|| $startedAt->getTimestamp() !== $link->getStartedAt()->getTimestamp())
-		) {
-			$link->setStartedAt($startedAt);
-			$changed = true;
-		}
+		$changed = $this->refreshName(link: $link, name: (string)($info['name'] ?? ''));
+		$changed = $this->refreshDuration(link: $link, duration: $info['duration'] ?? null) || $changed;
+		$changed = $this->refreshBillable(link: $link, billable: $info['billable'] ?? null) || $changed;
+		$changed = $this->refreshStartedAt(link: $link, startedAt: $info['startedAt'] ?? null) || $changed;
 
 		return $changed;
 	}//end applyRefreshedInfo()
+
+	/**
+	 * Take a non-empty upstream name that differs from the cached one.
+	 *
+	 * @param TimeTrackerLink $link The link row.
+	 * @param string          $name Upstream name.
+	 *
+	 * @return bool Whether it changed.
+	 */
+	private function refreshName(TimeTrackerLink $link, string $name): bool {
+		if ($name === '' || $name === (string)$link->getName()) {
+			return false;
+		}
+
+		$link->setName($name);
+		return true;
+	}//end refreshName()
+
+	/**
+	 * Take an upstream duration that differs from the cached one.
+	 *
+	 * @param TimeTrackerLink $link     The link row.
+	 * @param mixed           $duration Upstream duration, null when unknown.
+	 *
+	 * @return bool Whether it changed.
+	 */
+	private function refreshDuration(TimeTrackerLink $link, mixed $duration): bool {
+		if ($duration === null || (int)$duration === (int)$link->getDuration()) {
+			return false;
+		}
+
+		$link->setDuration((int)$duration);
+		return true;
+	}//end refreshDuration()
+
+	/**
+	 * Take an upstream billable flag that differs from the cached one.
+	 *
+	 * @param TimeTrackerLink $link     The link row.
+	 * @param mixed           $billable Upstream flag, null when unknown.
+	 *
+	 * @return bool Whether it changed.
+	 */
+	private function refreshBillable(TimeTrackerLink $link, mixed $billable): bool {
+		if ($billable === null || (bool)$billable === (bool)$link->getBillable()) {
+			return false;
+		}
+
+		$link->setBillable((bool)$billable);
+		return true;
+	}//end refreshBillable()
+
+	/**
+	 * Take an upstream start time that differs from the cached one.
+	 *
+	 * @param TimeTrackerLink $link      The link row.
+	 * @param mixed           $startedAt Upstream start, a DateTime or null.
+	 *
+	 * @return bool Whether it changed.
+	 */
+	private function refreshStartedAt(TimeTrackerLink $link, mixed $startedAt): bool {
+		if ($startedAt instanceof DateTime === false) {
+			return false;
+		}
+
+		$cached = $link->getStartedAt();
+		if ($cached !== null && $startedAt->getTimestamp() === $cached->getTimestamp()) {
+			return false;
+		}
+
+		$link->setStartedAt($startedAt);
+		return true;
+	}//end refreshStartedAt()
 
 	/**
 	 * Whether a link row's cache is older than the stale window.
@@ -740,11 +952,8 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 */
 	private function isStale(TimeTrackerLink $link): bool {
 		$linkedAt = $link->getLinkedAt();
-		if ($linkedAt === null) {
-			return true;
-		}
 
-		return (time() - $linkedAt->getTimestamp()) > self::STALE_AFTER;
+		return $linkedAt === null || (time() - $linkedAt->getTimestamp()) > self::STALE_AFTER;
 	}//end isStale()
 
 	/**
@@ -759,22 +968,12 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @return TimeTrackerLink The (possibly updated) link row.
 	 */
 	private function refreshLink(TimeTrackerLink $link, string $uid): TimeTrackerLink {
-		$info = $this->fetchEntryInfo(
-			entryType: (string)$link->getEntryType(),
-			id: $this->entryId(link: $link),
-			uid: $uid
-		);
+		$info = $this->fetchLinkInfo(link: $link, uid: $uid);
 		if ($info === null) {
 			return $link;
 		}
 
-		if (($info['name'] ?? '') !== '') {
-			$link->setName((string)$info['name']);
-		}
-
-		$link->setDuration($info['duration'] ?? $link->getDuration());
-		$link->setBillable($info['billable'] ?? $link->getBillable());
-		$link->setStartedAt($info['startedAt'] ?? $link->getStartedAt());
+		$this->applyCachedInfo(link: $link, info: $info);
 		$link->setLinkedAt(new DateTime());
 
 		try {
@@ -784,6 +983,36 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 			return $link;
 		}
 	}//end refreshLink()
+
+	/**
+	 * The upstream info of a link's entry, looked up as the given user.
+	 *
+	 * @param TimeTrackerLink $link The link row.
+	 * @param string          $uid  The user to look up as.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function fetchLinkInfo(TimeTrackerLink $link, string $uid): ?array {
+		return $this->fetchEntryInfo(entryType: (string)$link->getEntryType(), id: $this->entryId(link: $link), uid: $uid);
+	}//end fetchLinkInfo()
+
+	/**
+	 * Overwrite the cached metadata with upstream info; a missing name or value keeps the cached one.
+	 *
+	 * @param TimeTrackerLink     $link The link row.
+	 * @param array<string,mixed> $info Normalised upstream info.
+	 *
+	 * @return void
+	 */
+	private function applyCachedInfo(TimeTrackerLink $link, array $info): void {
+		if (($info['name'] ?? '') !== '') {
+			$link->setName((string)$info['name']);
+		}
+
+		$link->setDuration($info['duration'] ?? $link->getDuration());
+		$link->setBillable($info['billable'] ?? $link->getBillable());
+		$link->setStartedAt($info['startedAt'] ?? $link->getStartedAt());
+	}//end applyCachedInfo()
 
 	/**
 	 * Fetch normalised entry metadata from NC TimeManager.
@@ -800,26 +1029,13 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @return array<string,mixed>|null
 	 */
 	private function fetchEntryInfo(string $entryType, string $id, string $uid): ?array {
-		if ($entryType === self::ENTRY_CLIENT) {
-			return $this->fetchByUuid(
-				mapper: $this->resolveMapper(class: self::CLIENT_MAPPER),
-				uuid: $id,
-				uid: $uid,
-				table: 'timemanager_client'
-			);
+		$source = self::ENTRY_SOURCES[$entryType] ?? null;
+		if ($source === null) {
+			// Time entries: no dedicated mapper exposed; scan the table by uuid.
+			return $this->fetchTimeRow(uuid: $id, uid: $uid);
 		}
 
-		if ($entryType === self::ENTRY_TASK) {
-			return $this->fetchByUuid(
-				mapper: $this->resolveMapper(class: self::TASK_MAPPER),
-				uuid: $id,
-				uid: $uid,
-				table: 'timemanager_task'
-			);
-		}
-
-		// Time entries: no dedicated mapper exposed; scan the table by uuid.
-		return $this->fetchTimeRow(uuid: $id, uid: $uid);
+		return $this->fetchByUuid(mapper: $this->resolveMapper(class: $source[0]), uuid: $id, uid: $uid, table: $source[1]);
 	}//end fetchEntryInfo()
 
 	/**
@@ -833,22 +1049,46 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @return array<string,mixed>|null
 	 */
 	private function fetchByUuid(?object $mapper, string $uuid, string $uid, string $table): ?array {
-		$tableName = $table;
-		if ($mapper !== null) {
-			try {
-				$tableName = $mapper->getTableName();
-			} catch (Throwable $e) {
-				$tableName = $table;
-			}
+		return $this->fetchRow(table: $this->tableOf(mapper: $mapper, fallback: $table), uuid: $uuid, uid: $uid);
+	}//end fetchByUuid()
+
+	/**
+	 * A mapper's table name, or the fallback when there is no mapper or it cannot say.
+	 *
+	 * @param object|null $mapper   The late-bound mapper (or null when absent).
+	 * @param string      $fallback Fallback table name.
+	 *
+	 * @return string
+	 */
+	private function tableOf(?object $mapper, string $fallback): string {
+		if ($mapper === null) {
+			return $fallback;
 		}
 
-		$row = $this->queryRowByUuid(table: $tableName, uuid: $uuid, uid: $uid);
+		try {
+			return $mapper->getTableName();
+		} catch (Throwable $e) {
+			return $fallback;
+		}
+	}//end tableOf()
+
+	/**
+	 * Fetch and normalise one upstream row by uuid + user.
+	 *
+	 * @param string $table The table name.
+	 * @param string $uuid  The entry uuid.
+	 * @param string $uid   The owning user id.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function fetchRow(string $table, string $uuid, string $uid): ?array {
+		$row = $this->queryRowByUuid(table: $table, uuid: $uuid, uid: $uid);
 		if ($row === null) {
 			return null;
 		}
 
 		return $this->normaliseRow(row: $row);
-	}//end fetchByUuid()
+	}//end fetchRow()
 
 	/**
 	 * Fetch a time-entry row by uuid + user.
@@ -859,12 +1099,7 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @return array<string,mixed>|null
 	 */
 	private function fetchTimeRow(string $uuid, string $uid): ?array {
-		$row = $this->queryRowByUuid(table: 'timemanager_time', uuid: $uuid, uid: $uid);
-		if ($row === null) {
-			return null;
-		}
-
-		return $this->normaliseRow(row: $row);
+		return $this->fetchRow(table: 'timemanager_time', uuid: $uuid, uid: $uid);
 	}//end fetchTimeRow()
 
 	/**
@@ -878,15 +1113,8 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 */
 	private function queryRowByUuid(string $table, string $uuid, string $uid): ?object {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from($table)
-				->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
-				->andWhere($qb->expr()->eq('user_id', $qb->createNamedParameter($uid)))
-				->setMaxResults(1);
-
-			$result = $qb->executeQuery();
-			$row = $result->fetch();
+			$result = $this->rowByUuidQuery(table: $table, uuid: $uuid, uid: $uid)->executeQuery();
+			$row    = $result->fetch();
 			$result->closeCursor();
 
 			if ($row === false) {
@@ -897,8 +1125,28 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 		} catch (Throwable $e) {
 			$this->logger->debug('TimeTrackerLinkService::queryRowByUuid failed: ' . $e->getMessage());
 			return null;
-		}//end try
+		}
 	}//end queryRowByUuid()
+
+	/**
+	 * The uuid + user_id lookup query against an upstream table.
+	 *
+	 * @param string $table The table name.
+	 * @param string $uuid  The entry uuid.
+	 * @param string $uid   The owning user id.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function rowByUuidQuery(string $table, string $uuid, string $uid): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($table)
+			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
+			->andWhere($qb->expr()->eq('user_id', $qb->createNamedParameter($uid)))
+			->setMaxResults(1);
+
+		return $qb;
+	}//end rowByUuidQuery()
 
 	/**
 	 * Normalise a raw upstream row into the entry-info shape.
@@ -906,46 +1154,68 @@ class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	 * @param object $row Raw upstream row.
 	 *
 	 * @return array<string,mixed>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) normaliseRow() maps four fields (name/duration/billable/startedAt)
-	 * from NC TimeManager entity objects whose property names differ across client/task/time entry types
-	 * (`payed` vs `billable`, `start` vs `started_at`); each alternative is required for backward-compatibility
-	 * with TimeManager's schema evolution.
 	 */
 	private function normaliseRow(object $row): array {
-		$name = '';
-		if (isset($row->name) === true) {
-			$name = (string)$row->name;
-		}
-
-		$duration = null;
-		if (isset($row->duration) === true && $row->duration !== '') {
-			$duration = (int)$row->duration;
-		}
-
-		$billable = null;
-		if (isset($row->payed) === true) {
-			$billable = ((int)$row->payed) === 0;
-		} elseif (isset($row->billable) === true) {
-			$billable = (bool)$row->billable;
-		}
-
-		$startedAt = null;
-		if (isset($row->start) === true && (string)$row->start !== '') {
-			try {
-				$startedAt = new DateTime((string)$row->start);
-			} catch (Throwable $e) {
-				$startedAt = null;
-			}
-		}
-
 		return [
-			'name' => $name,
-			'duration' => $duration,
-			'billable' => $billable,
-			'startedAt' => $startedAt,
+			'name' => $this->stringProperty(row: $row, property: 'name'),
+			'duration' => $this->durationOf(row: $row),
+			'billable' => $this->billableOf(row: $row),
+			'startedAt' => $this->startedAtOf(row: $row),
 		];
 	}//end normaliseRow()
+
+	/**
+	 * A row's duration, null when unset or empty.
+	 *
+	 * @param object $row Raw upstream row.
+	 *
+	 * @return int|null
+	 */
+	private function durationOf(object $row): ?int {
+		if (isset($row->duration) === true && $row->duration !== '') {
+			return (int)$row->duration;
+		}
+
+		return null;
+	}//end durationOf()
+
+	/**
+	 * A row's billable flag: TimeManager's `payed` (0 means billable), else `billable`, else null.
+	 *
+	 * @param object $row Raw upstream row.
+	 *
+	 * @return bool|null
+	 */
+	private function billableOf(object $row): ?bool {
+		if (isset($row->payed) === true) {
+			return ((int)$row->payed) === 0;
+		}
+
+		if (isset($row->billable) === true) {
+			return (bool)$row->billable;
+		}
+
+		return null;
+	}//end billableOf()
+
+	/**
+	 * A row's start time, null when unset, empty or unreadable.
+	 *
+	 * @param object $row Raw upstream row.
+	 *
+	 * @return DateTime|null
+	 */
+	private function startedAtOf(object $row): ?DateTime {
+		if (isset($row->start) === false || (string)$row->start === '') {
+			return null;
+		}
+
+		try {
+			return new DateTime((string)$row->start);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end startedAtOf()
 
 	/**
 	 * Build the NC TimeManager deep link for an entry.

@@ -39,11 +39,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Listener\Support\PushSlugResolver;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Translation\TranslationCsvCodec;
-use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use PHPUnit\Framework\TestCase;
@@ -145,13 +145,11 @@ class ImportServiceNotifyPushBatchTest extends TestCase {
 		$permissionHandler->method('getReadableByUsers')->willReturn(['user1', 'user2']);
 
 		$this->listener = new NotifyPushListener(
-			appManager: $this->createMock(IAppManager::class),
 			logger: $this->createMock(LoggerInterface::class),
 			container: $container,
 			permissionHandler: $permissionHandler,
 			appConfig: $this->createMock(IAppConfig::class),
-			registerMapper: $registerMapper,
-			schemaMapper: $listenerSchemaMapper,
+			slugs: new PushSlugResolver($registerMapper, $listenerSchemaMapper),
 		);
 
 		$this->objectService = $this->createMock(ObjectService::class);

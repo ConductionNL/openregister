@@ -67,27 +67,8 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
 	public function setStatus(string $objectUuid, string $property, string $language, string $status): Translation {
-		if (in_array($status, Translation::ALL_STATUSES, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'Invalid translation status "%s"; expected one of: %s',
-					$status,
-					implode(', ', Translation::ALL_STATUSES)
-				)
-			);
-		}
-
-		$existing = $this->translationMapper->findOne($objectUuid, $property, $language);
-		if ($existing === null) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'No translation slot for object=%s property=%s language=%s — set a value before promoting status.',
-					$objectUuid,
-					$property,
-					$language
-				)
-			);
-		}
+		$this->assertKnownStatus(status: $status);
+		$existing = $this->requireSlot(objectUuid: $objectUuid, property: $property, language: $language);
 
 		$translator = $this->userSession->getUser()?->getUID();
 
@@ -100,6 +81,56 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 			translator: $translator
 		);
 	}//end setStatus()
+
+	/**
+	 * Refuse a status that is not one of the known workflow statuses.
+	 *
+	 * @param string $status The requested status.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the status is unknown.
+	 */
+	private function assertKnownStatus(string $status): void {
+		if (in_array($status, Translation::ALL_STATUSES, true) === true) {
+			return;
+		}
+
+		throw new InvalidArgumentException(
+			sprintf(
+				'Invalid translation status "%s"; expected one of: %s',
+				$status,
+				implode(', ', Translation::ALL_STATUSES)
+			)
+		);
+	}//end assertKnownStatus()
+
+	/**
+	 * The existing translation slot, or an exception when there is none.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $property   The property name.
+	 * @param string $language   The language code.
+	 *
+	 * @return Translation The existing slot.
+	 *
+	 * @throws InvalidArgumentException When no slot exists.
+	 */
+	private function requireSlot(string $objectUuid, string $property, string $language): Translation {
+		$existing = $this->translationMapper->findOne($objectUuid, $property, $language);
+		if ($existing !== null) {
+			return $existing;
+		}
+
+		throw new InvalidArgumentException(
+			sprintf(
+				'No translation slot for object=%s property=%s language=%s — set a value before promoting status.',
+				$objectUuid,
+				$property,
+				$language
+			)
+		);
+	}//end requireSlot()
 
 	/**
 	 * Per-object completeness ratio per language.
@@ -124,17 +155,24 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 		}
 
 		$counts = $this->translationMapper->getCompletenessByObject($objectUuid);
-		$out = [];
-		foreach ($counts as $language => $count) {
-			$out[$language] = [
-				'translated' => $count,
-				'total' => $total,
-				'ratio' => round(min($count, $total) / $total, 2),
-			];
-		}
-
-		return $out;
+		return array_map(fn ($count): array => $this->completenessEntry(count: $count, total: $total), $counts);
 	}//end completenessForObject()
+
+	/**
+	 * One language's completeness entry; the ratio is capped at 1 and rounded to 2dp.
+	 *
+	 * @param mixed $count The language's translated-slot count.
+	 * @param int   $total The schema's translatable-property count (> 0).
+	 *
+	 * @return array{translated: mixed, total: int, ratio: float}
+	 */
+	private function completenessEntry(mixed $count, int $total): array {
+		return [
+			'translated' => $count,
+			'total' => $total,
+			'ratio' => round(min($count, $total) / $total, 2),
+		];
+	}//end completenessEntry()
 
 	/**
 	 * Search translation rows.
@@ -160,15 +198,7 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 		?string $sourceLanguage = null,
 		bool $isOutOfDate = false,
 	): array {
-		$rows = $this->translationMapper->search(
-			query: $query,
-			language: $language,
-			status: $status,
-			objectUuid: $objectUuid,
-			limit: $limit,
-			sourceLanguage: $sourceLanguage,
-			isOutOfDate: $isOutOfDate
-		);
+		$rows = $this->findRows(filters: compact('query', 'language', 'status', 'objectUuid', 'limit', 'sourceLanguage', 'isOutOfDate'));
 		return array_map(fn (Translation $t) => $t->jsonSerialize(), $rows);
 	}//end search()
 
@@ -200,47 +230,66 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 		?string $sourceLanguage = null,
 		bool $isOutOfDate = false,
 	): array {
-		$rows = $this->translationMapper->search(
-			query: $query,
-			language: $language,
-			status: $status,
-			objectUuid: $objectUuid,
-			limit: $limit,
-			sourceLanguage: $sourceLanguage,
-			isOutOfDate: $isOutOfDate
-		);
+		$rows = $this->findRows(filters: compact('query', 'language', 'status', 'objectUuid', 'limit', 'sourceLanguage', 'isOutOfDate'));
+		return $this->withSourceValues(rows: $rows);
+	}//end searchWithSourceValues()
 
+	/**
+	 * Serialise each row with its source-language value as an extra `sourceValue` field.
+	 *
+	 * @param Translation[] $rows The translation rows.
+	 *
+	 * @return array<string, mixed>[]
+	 */
+	private function withSourceValues(array $rows): array {
 		// Resolve (uuid, property, sourceLanguage) -> sourceValue lookup once.
 		$cache = [];
 		$out = [];
 		foreach ($rows as $row) {
 			$entry = $row->jsonSerialize();
-			$uuid = (string)$row->getObjectUuid();
-			$prop = (string)$row->getProperty();
-			$source = (string)($row->getSourceLanguage() ?? '');
-
-			$key = $uuid . '|' . $prop . '|' . $source;
-			if ($source === '') {
-				$entry['sourceValue'] = null;
-			} elseif (isset($cache[$key]) === true) {
-				$entry['sourceValue'] = $cache[$key];
-			} else {
-				$sourceRow = $this->translationMapper->findOne($uuid, $prop, $source);
-				if ($sourceRow !== null) {
-					$value = $sourceRow->getValue();
-				} else {
-					$value = null;
-				}
-
-				$cache[$key] = $value;
-				$entry['sourceValue'] = $value;
-			}
-
+			$entry['sourceValue'] = $this->sourceValueFor(row: $row, cache: $cache);
 			$out[] = $entry;
-		}//end foreach
+		}
 
 		return $out;
-	}//end searchWithSourceValues()
+	}//end withSourceValues()
+
+	/**
+	 * Run the mapper search with the caller's filters, passed on by name.
+	 *
+	 * @param array<string, mixed> $filters The search() parameters by name.
+	 *
+	 * @return Translation[]
+	 */
+	private function findRows(array $filters): array {
+		return $this->translationMapper->search(...$filters);
+	}//end findRows()
+
+	/**
+	 * The source-language value of a row, memoised per (uuid, property, sourceLanguage).
+	 *
+	 * A null lookup result is not memoised (isset), so it is looked up again.
+	 *
+	 * @param Translation                $row   The translation row.
+	 * @param array<string, string|null> $cache The per-search memo, updated in place.
+	 *
+	 * @return string|null The source value, or null when unknown.
+	 */
+	private function sourceValueFor(Translation $row, array &$cache): ?string {
+		$uuid = (string)$row->getObjectUuid();
+		$prop = (string)$row->getProperty();
+		$source = (string)($row->getSourceLanguage() ?? '');
+		if ($source === '') {
+			return null;
+		}
+
+		$key = $uuid . '|' . $prop . '|' . $source;
+		if (isset($cache[$key]) === false) {
+			$cache[$key] = $this->translationMapper->findOne($uuid, $prop, $source)?->getValue();
+		}
+
+		return $cache[$key];
+	}//end sourceValueFor()
 
 	/**
 	 * Mark every non-source-language Translation row for a property as `outdated`.

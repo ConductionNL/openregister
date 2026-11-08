@@ -148,7 +148,12 @@ class TaskPerformerResolver {
 		$pool = array_map('strval', array_values($task->getCandidateUsers() ?? []));
 
 		// The role group comes last; a blank role expands to nobody.
-		$groupIds   = array_map('strval', array_values($task->getCandidateGroups() ?? []));
+		// A typed `{type, id}` entry is never a bare group name.
+		$groupNames = array_filter(
+			($task->getCandidateGroups() ?? []),
+			static fn ($groupId): bool => is_array($groupId) === false
+		);
+		$groupIds   = array_map('strval', array_values($groupNames));
 		$groupIds[] = trim((string)$task->getCandidateRole());
 		foreach ($groupIds as $groupId) {
 			array_push($pool, ...$this->groupMembers(groupId: $groupId));

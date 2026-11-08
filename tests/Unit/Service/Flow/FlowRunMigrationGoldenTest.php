@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationTimers;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -163,7 +164,12 @@ final class FlowRunMigrationGoldenTest extends TestCase {
 			}
 		};
 
-		return new FlowRunMigrationService($runs, new FlowRunMigrationValidator(versions: $versions), $timerMapper, $timerService, $logger);
+		return new FlowRunMigrationService(
+			$runs,
+			new FlowRunMigrationValidator(versions: $versions),
+			new FlowRunMigrationTimers(timers: $timerMapper, timerService: $timerService),
+			$logger
+		);
 	}//end service()
 
 	public function testMigrationMatchesGolden(): void {

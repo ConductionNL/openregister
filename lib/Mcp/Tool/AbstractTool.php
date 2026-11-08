@@ -97,6 +97,24 @@ abstract class AbstractTool implements ToolInterface {
 	}//end setAgent()
 
 	/**
+	 * The function rows of the tool; a subclass redeclares it.
+	 *
+	 * @var array<int, array<int, mixed>>
+	 */
+	protected const FUNCTIONS = [];
+
+	/**
+	 * Get function definitions for LLphant, expanded from the FUNCTIONS rows.
+	 *
+	 * @return array<int, array<string, mixed>> Array of function definitions
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function getFunctions(): array {
+		return ToolFunctionTable::expand(rows: static::FUNCTIONS);
+	}//end getFunctions()
+
+	/**
 	 * Run a function for a tool that refuses a call without a user context.
 	 *
 	 * The user context is checked before the function runs; a failure of the

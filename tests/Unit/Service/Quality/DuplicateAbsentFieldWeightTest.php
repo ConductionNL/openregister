@@ -94,9 +94,11 @@ class DuplicateAbsentFieldWeightTest extends TestCase {
 
 		$this->service = new DuplicateDetectionService(
 			$this->objectService,
-			$schemaMapper,
-			$registerMapper,
-			new SimilarityCalculator(),
+			new \OCA\OpenRegister\Search\Service\Quality\DedupScoringSources(
+				$schemaMapper,
+				$registerMapper,
+				new SimilarityCalculator()
+			),
 			$dismissals,
 			$this->createMock(originalClassName: LoggerInterface::class)
 		);

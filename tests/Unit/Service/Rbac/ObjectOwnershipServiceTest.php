@@ -40,10 +40,14 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
+use OCA\OpenRegister\Service\Rbac\ObjectLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnerWriter;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\OwnershipGuards;
+use OCA\OpenRegister\Service\Rbac\OwnershipWriters;
+use OCA\OpenRegister\Service\Rbac\PrincipalDirectory;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -166,19 +170,20 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->userManager->method('userExists')->willReturn(true);
 
 		$this->service = new ObjectOwnershipService(
-			$this->userSession,
-			$this->userManager,
-			$this->groupManager,
-			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
-			$this->permissions,
-			$this->ownerWriter,
-			$this->authorizationWriter,
-			$this->auditTrailMapper,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->createMock(LoggerInterface::class)
+			guards: new OwnershipGuards(
+				userSession: $this->userSession,
+				grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
+				permissions: $this->permissions
+			),
+			directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager),
+			writers: new OwnershipWriters(
+				ownerWriter: $this->ownerWriter,
+				authorizationWriter: $this->authorizationWriter,
+				auditTrailMapper: $this->auditTrailMapper,
+				notificationManager: $this->notificationManager
+			),
+			lookup: new ObjectLookup(magicMapper: $this->magicMapper, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 
@@ -695,19 +700,20 @@ class ObjectOwnershipServiceTest extends TestCase {
 			static fn (string $uid): bool => ($uid !== 'alice')
 		);
 		$service = new ObjectOwnershipService(
-			$this->userSession,
-			$this->userManager,
-			$this->groupManager,
-			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
-			$this->permissions,
-			$this->ownerWriter,
-			$this->authorizationWriter,
-			$this->auditTrailMapper,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->createMock(LoggerInterface::class)
+			guards: new OwnershipGuards(
+				userSession: $this->userSession,
+				grantManage: new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
+				permissions: $this->permissions
+			),
+			directory: new PrincipalDirectory(userManager: $this->userManager, groupManager: $this->groupManager),
+			writers: new OwnershipWriters(
+				ownerWriter: $this->ownerWriter,
+				authorizationWriter: $this->authorizationWriter,
+				auditTrailMapper: $this->auditTrailMapper,
+				notificationManager: $this->notificationManager
+			),
+			lookup: new ObjectLookup(magicMapper: $this->magicMapper, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$this->notificationManager->expects($this->never())->method('notify');

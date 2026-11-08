@@ -142,7 +142,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 		$logger = $this->logger();
 		$sizes = new DashboardSizes($objects, $audit, new RegisterSchemaLookup($registers, $this->schemas()), $logger);
 
-		return new DashboardService($objects, $audit, $webhooks, $registers, $sizes, $logger);
+		return new DashboardService(new \OCA\OpenRegister\Search\Service\DashboardMappers($objects, $audit, $webhooks, $registers), $sizes, $logger);
 	}//end service()
 
 	private function note(string $call, array $args): void {

@@ -62,11 +62,10 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Support\TaskEventsControllerServices;
-use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
-use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
+use OCA\OpenRegister\Controller\Support\TaskLeafGuard;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
-use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -74,41 +73,23 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
-use Throwable;
 
 /**
  * REST surface for the calendar leaf on a task.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The controller mediates
- * between HTTP, the two calendar services the object leaf already pairs,
- * and the task resolution plus its authorization. Splitting the guard out
- * would put the 404 decision in two places, which is how a leaf ends up
- * answering differently from its neighbour.
+ * The absent-or-invisible refusal is {@see TaskLeafGuard}'s, shared with
+ * {@see TaskNotesController} so both leaves answer it identically.
  *
  * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskEventsController extends Controller {
 
 	/**
-	 * The body every refusal carries, whether the task is absent or unreadable.
+	 * The shared task guard: resolve, check visibility, or answer 404.
 	 *
-	 * @var array<string, string>
+	 * @var TaskLeafGuard
 	 */
-	private const NOT_FOUND = ['error' => 'No such task'];
-
-	/**
-	 * Resolves a task by uuid.
-	 *
-	 * @var TaskManagerInterface
-	 */
-	private readonly TaskManagerInterface $tasks;
-
-	/**
-	 * Read-visibility decisions.
-	 *
-	 * @var TaskAuthorizationService
-	 */
-	private readonly TaskAuthorizationService $authorization;
+	private readonly TaskLeafGuard $guard;
 
 	/**
 	 * The link-table layer, uuid-anchored.
@@ -138,11 +119,14 @@ class TaskEventsController extends Controller {
 		string $appName,
 		IRequest $request,
 		TaskEventsControllerServices $services,
-		private readonly IUserSession $userSession,
+		IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->tasks = $services->tasks;
-		$this->authorization = $services->authorization;
+		$this->guard = new TaskLeafGuard(
+			tasks: $services->tasks,
+			authorization: $services->authorization,
+			userSession: $userSession
+		);
 		$this->links = $services->links;
 		$this->events = $services->events;
 
@@ -161,18 +145,7 @@ class TaskEventsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $uuid): JSONResponse {
-		$task = $this->readableTask(uuid: $uuid);
-		if ($task === null) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
-		}
-
-		try {
-			$events = $this->links->getLinkedEvents((string)$task->getUuid());
-		} catch (Exception $failure) {
-			return new JSONResponse(['error' => $failure->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
-		}
-
-		return new JSONResponse(['results' => $events, 'total' => count($events)]);
+		return $this->guard->withReadableTask(uuid: $uuid, action: $this->listEvents(...));
 	}//end index()
 
 	/**
@@ -188,33 +161,7 @@ class TaskEventsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function create(string $uuid): JSONResponse {
-		$task = $this->readableTask(uuid: $uuid);
-		if ($task === null) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
-		}
-
-		$data = $this->request->getParams();
-		if (trim((string)($data['summary'] ?? '')) === '') {
-			return new JSONResponse(['error' => 'Event summary is required'], Http::STATUS_BAD_REQUEST);
-		}
-
-		// The title the event carries into the calendar. A task always has a
-		// uuid and may have no title, so the uuid is the fallback, exactly as
-		// the object leaf falls back from the object's name.
-		$data['objectTitle'] = ($task->getTitle() ?? (string)$task->getUuid());
-
-		try {
-			$link = $this->links->createAndLinkEvent(
-				objectUuid: (string)$task->getUuid(),
-				registerId: (int)$task->getRegisterId(),
-				schemaId: (int)$task->getSchemaId(),
-				eventData: $data
-			);
-		} catch (Exception $failure) {
-			return new JSONResponse(['error' => $failure->getMessage()], Http::STATUS_BAD_REQUEST);
-		}
-
-		return new JSONResponse($link->jsonSerialize(), Http::STATUS_CREATED);
+		return $this->guard->withReadableTask(uuid: $uuid, action: $this->createEvent(...));
 	}//end create()
 
 	/**
@@ -230,32 +177,7 @@ class TaskEventsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function link(string $uuid): JSONResponse {
-		$task = $this->readableTask(uuid: $uuid);
-		if ($task === null) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
-		}
-
-		$data = $this->request->getParams();
-		$calendarUri = trim((string)($data['calendarUri'] ?? ''));
-		$eventUid = trim((string)($data['eventUid'] ?? ''));
-
-		if ($calendarUri === '' || $eventUid === '') {
-			return new JSONResponse(['error' => 'calendarUri and eventUid are required'], Http::STATUS_BAD_REQUEST);
-		}
-
-		try {
-			$link = $this->links->linkEvent(
-				objectUuid: (string)$task->getUuid(),
-				registerId: (int)$task->getRegisterId(),
-				schemaId: (int)$task->getSchemaId(),
-				calendarUri: $calendarUri,
-				eventUid: $eventUid
-			);
-		} catch (Exception $failure) {
-			return new JSONResponse(['error' => $failure->getMessage()], Http::STATUS_BAD_REQUEST);
-		}
-
-		return new JSONResponse($link->jsonSerialize(), Http::STATUS_CREATED);
+		return $this->guard->withReadableTask(uuid: $uuid, action: $this->linkEvent(...));
 	}//end link()
 
 	/**
@@ -272,18 +194,12 @@ class TaskEventsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function unlink(string $uuid, string $eventUid): JSONResponse {
-		$task = $this->readableTask(uuid: $uuid);
-		if ($task === null) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
-		}
-
-		try {
-			$this->links->unlinkEvent(objectUuid: (string)$task->getUuid(), eventUid: $eventUid);
-		} catch (Exception $failure) {
-			return new JSONResponse(['error' => $failure->getMessage()], Http::STATUS_BAD_REQUEST);
-		}
-
-		return new JSONResponse(['success' => true]);
+		return $this->guard->withReadableTask(
+			uuid: $uuid,
+			action: fn (TaskInterface $task): JSONResponse => $this->succeeds(
+				write: fn () => $this->links->unlinkEvent(objectUuid: (string)$task->getUuid(), eventUid: $eventUid)
+			)
+		);
 	}//end unlink()
 
 	/**
@@ -305,11 +221,107 @@ class TaskEventsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function destroy(string $uuid, string $eventId): JSONResponse {
-		$task = $this->readableTask(uuid: $uuid);
-		if ($task === null) {
-			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
+		return $this->guard->withReadableTask(
+			uuid: $uuid,
+			action: fn (TaskInterface $task): JSONResponse => $this->destroyEvent(task: $task, eventId: $eventId)
+		);
+	}//end destroy()
+
+	/**
+	 * The events linked to a readable task.
+	 *
+	 * @param TaskInterface $task The readable task.
+	 *
+	 * @return JSONResponse The events and their count, or 500 with the failure.
+	 */
+	private function listEvents(TaskInterface $task): JSONResponse {
+		try {
+			$events = $this->links->getLinkedEvents((string)$task->getUuid());
+		} catch (Exception $failure) {
+			return $this->failed(failure: $failure, status: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
+		return new JSONResponse(['results' => $events, 'total' => count($events)]);
+	}//end listEvents()
+
+	/**
+	 * Create an event from the request and link it to a readable task.
+	 *
+	 * @param TaskInterface $task The readable task.
+	 *
+	 * @return JSONResponse The link row, or 400.
+	 */
+	private function createEvent(TaskInterface $task): JSONResponse {
+		$data = $this->request->getParams();
+		if (trim((string)($data['summary'] ?? '')) === '') {
+			return new JSONResponse(['error' => 'Event summary is required'], Http::STATUS_BAD_REQUEST);
+		}
+
+		// The title the event carries into the calendar. A task always has a
+		// uuid and may have no title, so the uuid is the fallback, exactly as
+		// the object leaf falls back from the object's name.
+		$data['objectTitle'] = ($task->getTitle() ?? (string)$task->getUuid());
+
+		return $this->linked(
+			write: fn () => $this->links->createAndLinkEvent(
+				objectUuid: (string)$task->getUuid(),
+				registerId: (int)$task->getRegisterId(),
+				schemaId: (int)$task->getSchemaId(),
+				eventData: $data
+			)
+		);
+	}//end createEvent()
+
+	/**
+	 * Link the event the request names to a readable task.
+	 *
+	 * @param TaskInterface $task The readable task.
+	 *
+	 * @return JSONResponse The link row, or 400.
+	 */
+	private function linkEvent(TaskInterface $task): JSONResponse {
+		$named = $this->namedEvent();
+		if ($named === null) {
+			return new JSONResponse(['error' => 'calendarUri and eventUid are required'], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->linked(
+			write: fn () => $this->links->linkEvent(
+				objectUuid: (string)$task->getUuid(),
+				registerId: (int)$task->getRegisterId(),
+				schemaId: (int)$task->getSchemaId(),
+				calendarUri: $named['calendarUri'],
+				eventUid: $named['eventUid']
+			)
+		);
+	}//end linkEvent()
+
+	/**
+	 * The existing event the request names in full, trimmed, or null.
+	 *
+	 * @return array{calendarUri: string, eventUid: string}|null The event, or null when either part is blank.
+	 */
+	private function namedEvent(): ?array {
+		$data = $this->request->getParams();
+		$calendarUri = trim((string)($data['calendarUri'] ?? ''));
+		$eventUid = trim((string)($data['eventUid'] ?? ''));
+
+		if ($calendarUri === '' || $eventUid === '') {
+			return null;
+		}
+
+		return ['calendarUri' => $calendarUri, 'eventUid' => $eventUid];
+	}//end namedEvent()
+
+	/**
+	 * Delete a linked event of a readable task, then drop its link.
+	 *
+	 * @param TaskInterface $task    The readable task.
+	 * @param string        $eventId The event URI.
+	 *
+	 * @return JSONResponse Confirmation, 404 for an event not linked here, or 400.
+	 */
+	private function destroyEvent(TaskInterface $task, string $eventId): JSONResponse {
 		try {
 			$linked = $this->linkedEvent(taskUuid: (string)$task->getUuid(), eventId: $eventId);
 			if ($linked === null) {
@@ -322,19 +334,73 @@ class TaskEventsController extends Controller {
 			// meeting on the calendar, so deleting a task's meeting removed the
 			// link and nothing else while the response said success.
 			$this->events->deleteEvent(calendarId: (string)$linked['calendarId'], eventUri: $eventId);
-
-			if ($linked['uid'] !== null) {
-				$this->links->unlinkEvent(
-					objectUuid: (string)$task->getUuid(),
-					eventUid: (string)$linked['uid']
-				);
-			}
+			$this->unlinkUid(task: $task, uid: $linked['uid']);
 		} catch (Exception $failure) {
-			return new JSONResponse(['error' => $failure->getMessage()], Http::STATUS_BAD_REQUEST);
-		}//end try
+			return $this->failed(failure: $failure, status: Http::STATUS_BAD_REQUEST);
+		}
 
 		return new JSONResponse(['success' => true]);
-	}//end destroy()
+	}//end destroyEvent()
+
+	/**
+	 * Drop the link row of a deleted event, when the event carried a uid.
+	 *
+	 * @param TaskInterface $task The task.
+	 * @param string|null   $uid  The event uid.
+	 *
+	 * @return void
+	 */
+	private function unlinkUid(TaskInterface $task, ?string $uid): void {
+		if ($uid !== null) {
+			$this->links->unlinkEvent(objectUuid: (string)$task->getUuid(), eventUid: $uid);
+		}
+	}//end unlinkUid()
+
+	/**
+	 * Run a link write and answer its row with 201, or 400 on failure.
+	 *
+	 * @param callable $write Returns the link entity.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function linked(callable $write): JSONResponse {
+		try {
+			$link = $write();
+		} catch (Exception $failure) {
+			return $this->failed(failure: $failure, status: Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse($link->jsonSerialize(), Http::STATUS_CREATED);
+	}//end linked()
+
+	/**
+	 * Run a write and answer success, or 400 on failure.
+	 *
+	 * @param callable $write The write.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function succeeds(callable $write): JSONResponse {
+		try {
+			$write();
+		} catch (Exception $failure) {
+			return $this->failed(failure: $failure, status: Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse(['success' => true]);
+	}//end succeeds()
+
+	/**
+	 * A failure answered with its message.
+	 *
+	 * @param Exception $failure The failure.
+	 * @param int       $status  The status.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function failed(Exception $failure, int $status): JSONResponse {
+		return new JSONResponse(['error' => $failure->getMessage()], $status);
+	}//end failed()
 
 	/**
 	 * The linked event carrying this URI, as calendar id plus uid.
@@ -353,62 +419,31 @@ class TaskEventsController extends Controller {
 	 */
 	private function linkedEvent(string $taskUuid, string $eventId): ?array {
 		foreach ($this->links->getLinkedEvents($taskUuid) as $event) {
-			if (($event['id'] ?? null) !== $eventId) {
-				continue;
+			if (($event['id'] ?? null) === $eventId) {
+				return $this->eventReference(event: $event);
 			}
-
-			if (($event['calendarId'] ?? null) === null) {
-				return null;
-			}
-
-			$uid = null;
-			if (isset($event['uid']) === true) {
-				$uid = (string)$event['uid'];
-			}
-
-			return ['calendarId' => $event['calendarId'], 'uid' => $uid];
 		}
 
 		return null;
 	}//end linkedEvent()
 
 	/**
-	 * The task this request may act on, or null.
+	 * The calendar id plus uid of a linked event; null when it names no calendar.
 	 *
-	 * Fail-closed on every path: absent, invisible and undeterminable all
-	 * return null, and every caller turns null into the same 404.
+	 * @param array<string, mixed> $event The linked event.
 	 *
-	 * @param string $uuid The task uuid.
-	 *
-	 * @return TaskInterface|null The readable task, or null.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @return array{calendarId: mixed, uid: string|null}|null The reference, or null.
 	 */
-	private function readableTask(string $uuid): ?TaskInterface {
-		try {
-			$task = $this->tasks->get(uuid: $uuid);
-		} catch (Throwable) {
+	private function eventReference(array $event): ?array {
+		if (($event['calendarId'] ?? null) === null) {
 			return null;
 		}
 
-		if ($this->authorization->mayRead(task: $task, uid: $this->uid()) === false) {
-			return null;
+		$uid = null;
+		if (isset($event['uid']) === true) {
+			$uid = (string)$event['uid'];
 		}
 
-		return $task;
-	}//end readableTask()
-
-	/**
-	 * The acting identity, or null without a session.
-	 *
-	 * @return string|null The uid.
-	 */
-	private function uid(): ?string {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return null;
-		}
-
-		return $user->getUID();
-	}//end uid()
+		return ['calendarId' => $event['calendarId'], 'uid' => $uid];
+	}//end eventReference()
 }//end class

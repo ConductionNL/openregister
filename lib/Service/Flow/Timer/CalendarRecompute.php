@@ -90,21 +90,41 @@ class CalendarRecompute {
 	public const DONE_KEY_PREFIX = 'calendar_recompute_done_';
 
 	/**
+	 * The one dependency question.
+	 *
+	 * @var CalendarDependency
+	 */
+	private readonly CalendarDependency $dependency;
+
+	/**
+	 * The resolver.
+	 *
+	 * @var WorkingCalendarService
+	 */
+	private readonly WorkingCalendarService $calendars;
+
+	/**
+	 * The engine.
+	 *
+	 * @var SlaCalculatorInterface
+	 */
+	private readonly SlaCalculatorInterface $calculator;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param CalendarDependency     $dependency The one dependency question.
-	 * @param WorkingCalendarService $calendars  The resolver.
-	 * @param SlaCalculatorInterface          $calculator The engine.
-	 * @param IAppConfig             $appConfig  Where the idempotency mark lives.
-	 * @param LoggerInterface        $logger     The logger.
+	 * @param CalendarRecomputeSources $sources   The dependency question, the resolver and the engine.
+	 * @param IAppConfig               $appConfig Where the idempotency mark lives.
+	 * @param LoggerInterface          $logger    The logger.
 	 */
 	public function __construct(
-		private readonly CalendarDependency $dependency,
-		private readonly WorkingCalendarService $calendars,
-		private readonly SlaCalculatorInterface $calculator,
+		CalendarRecomputeSources $sources,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->dependency = $sources->dependency;
+		$this->calendars  = $sources->calendars;
+		$this->calculator = $sources->calculator;
 	}//end __construct()
 
 	/**

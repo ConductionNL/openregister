@@ -113,12 +113,31 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	private readonly RelationGraphShapes $shapes;
 
 	/**
+	 * Mapper for stored relation rows.
+	 *
+	 * @var ObjectRelationMapperInterface
+	 */
+	private readonly ObjectRelationMapperInterface $relationMapper;
+
+	/**
+	 * Mapper for schemas.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Resolves what a relation is called.
+	 *
+	 * @var RelationTypeResolver
+	 */
+	private readonly RelationTypeResolver $relationTypes;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param MagicObjectFinderInterface $objectEntityMapper Mapper for object entities.
-	 * @param ObjectRelationMapperInterface $relationMapper Mapper for stored relation rows.
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas.
-	 * @param RelationTypeResolver $relationTypes Resolves what a relation is called.
+	 * @param RelationGraphSources $sources The relation-row and schema mappers and the relation-type resolver.
 	 * @param IAppConfig $appConfig Instance settings.
 	 * @param LoggerInterface $logger Logger.
 	 *
@@ -126,13 +145,14 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objectEntityMapper,
-		private readonly ObjectRelationMapperInterface $relationMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RelationTypeResolver $relationTypes,
+		RelationGraphSources $sources,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->shapes = new RelationGraphShapes();
+		$this->relationMapper = $sources->relationMapper;
+		$this->schemaMapper   = $sources->schemaMapper;
+		$this->relationTypes  = $sources->relationTypes;
+		$this->shapes         = new RelationGraphShapes();
 	}//end __construct()
 
 	/**

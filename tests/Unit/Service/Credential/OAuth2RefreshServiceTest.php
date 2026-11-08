@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
+use OCA\OpenRegister\Service\Credential\OAuth2RefreshExchange;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
 use OCA\OpenRegister\Service\ObjectService;
@@ -566,8 +567,7 @@ class OAuth2RefreshServiceTest extends TestCase {
 			credentialStore: $store,
 			objectService: $objectService,
 			lock: $lock,
-			clients: $clients,
-			clientService: $clientService,
+			exchange: new OAuth2RefreshExchange(clients: $clients, clientService: $clientService),
 			relinkNotifier: $notifier,
 			logger: $this->createMock(LoggerInterface::class)
 		);

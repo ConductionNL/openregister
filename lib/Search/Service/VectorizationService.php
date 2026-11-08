@@ -50,6 +50,18 @@ use Psr\Log\LoggerInterface;
 class VectorizationService implements VectorizationServiceInterface {
 
 	/**
+	 * The counts of an entity, or run, with nothing processed yet.
+	 *
+	 * @var array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>}
+	 */
+	private const NO_ITEMS = [
+		'total_items' => 0,
+		'vectorized' => 0,
+		'failed' => 0,
+		'errors' => [],
+	];
+
+	/**
 	 * Vector embeddings coordinator
 	 *
 	 * @var VectorEmbeddingsInterface
@@ -120,10 +132,6 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *
 	 * @throws \Exception If strategy not found or vectorization fails.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch processing with error handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple processing paths with exceptions
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive batch processing with progress tracking
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function vectorizeBatch(string $entityType, array $options = []): array {
@@ -156,75 +164,9 @@ class VectorizationService implements VectorizationServiceInterface {
 				];
 			}
 
-			$this->logger->info(
-				message: '[VectorizationService] Processing entities',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'entityType' => $entityType,
-					'entityCount' => count($entities),
-				]
-			);
+			$tally = $this->vectorizeEntities(entities: $entities, strategy: $strategy, options: $options, entityType: $entityType);
 
-			// Process each entity.
-			$totalItems = 0;
-			$vectorized = 0;
-			$failed = 0;
-			$errors = [];
-
-			foreach ($entities as $entity) {
-				try {
-					$result = $this->vectorizeEntity(entity: $entity, strategy: $strategy, options: $options);
-
-					$totalItems += $result['total_items'];
-					$vectorized += $result['vectorized'];
-					$failed += $result['failed'];
-
-					if (empty($result['errors']) === false) {
-						$errors = array_merge($errors, $result['errors']);
-					}
-				} catch (\Exception $e) {
-					$entityId = $strategy->getEntityIdentifier($entity);
-					$this->logger->error(
-						message: '[VectorizationService] Failed to vectorize entity',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'entityType' => $entityType,
-							'entityId' => $entityId,
-							'error' => $e->getMessage(),
-						]
-					);
-					$errors[] = [
-						'entity_id' => $entityId,
-						'error' => $e->getMessage(),
-					];
-				}//end try
-			}//end foreach
-
-			$this->logger->info(
-				message: '[VectorizationService] Batch vectorization completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'entityType' => $entityType,
-					'totalEntities' => count($entities),
-					'totalItems' => $totalItems,
-					'vectorized' => $vectorized,
-					'failed' => $failed,
-				]
-			);
-
-			return [
-				'success' => true,
-				'message' => "Batch vectorization completed: {$vectorized} vectorized, {$failed} failed",
-				'entity_type' => $entityType,
-				'total_entities' => count($entities),
-				'total_items' => $totalItems,
-				'vectorized' => $vectorized,
-				'failed' => $failed,
-				'errors' => $errors,
-			];
+			return $this->completedBatch(entityType: $entityType, entityCount: count($entities), tally: $tally);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[VectorizationService] Batch vectorization failed',
@@ -238,6 +180,73 @@ class VectorizationService implements VectorizationServiceInterface {
 			throw $e;
 		}//end try
 	}//end vectorizeBatch()
+
+	/**
+	 * Vectorize every entity of a batch and tally the outcome.
+	 *
+	 * @param array                          $entities   The entities to vectorize
+	 * @param VectorizationStrategyInterface $strategy   Strategy to use
+	 * @param array                          $options    Processing options
+	 * @param string                         $entityType Entity type, for the log
+	 *
+	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>}
+	 */
+	private function vectorizeEntities(array $entities, VectorizationStrategyInterface $strategy, array $options, string $entityType): array {
+		$this->logger->info(
+			message: '[VectorizationService] Processing entities',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'entityType' => $entityType,
+				'entityCount' => count($entities),
+			]
+		);
+
+		$tally = self::NO_ITEMS;
+		foreach ($entities as $entity) {
+			$tally = $this->addTally(
+				tally: $tally,
+				part: $this->vectorizeEntitySafely(entity: $entity, strategy: $strategy, options: $options, entityType: $entityType)
+			);
+		}
+
+		return $tally;
+	}//end vectorizeEntities()
+
+	/**
+	 * Log a completed batch and build its result.
+	 *
+	 * @param string $entityType  Entity type
+	 * @param int    $entityCount How many entities the batch held
+	 * @param array  $tally       The batch's tally
+	 *
+	 * @return array The vectorization result.
+	 */
+	private function completedBatch(string $entityType, int $entityCount, array $tally): array {
+		$this->logger->info(
+			message: '[VectorizationService] Batch vectorization completed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'entityType' => $entityType,
+				'totalEntities' => $entityCount,
+				'totalItems' => $tally['total_items'],
+				'vectorized' => $tally['vectorized'],
+				'failed' => $tally['failed'],
+			]
+		);
+
+		return [
+			'success' => true,
+			'message' => "Batch vectorization completed: {$tally['vectorized']} vectorized, {$tally['failed']} failed",
+			'entity_type' => $entityType,
+			'total_entities' => $entityCount,
+			'total_items' => $tally['total_items'],
+			'vectorized' => $tally['vectorized'],
+			'failed' => $tally['failed'],
+			'errors' => $tally['errors'],
+		];
+	}//end completedBatch()
 
 	/**
 	 * Vectorize a single entity
@@ -261,10 +270,6 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *     }>
 	 * }
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch vs serial processing logic
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple embedding and error handling paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity vectorization with error handling
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	private function vectorizeEntity($entity, VectorizationStrategyInterface $strategy, array $options): array {
@@ -276,103 +281,178 @@ class VectorizationService implements VectorizationServiceInterface {
 		$items = $strategy->extractVectorizationItems($entity);
 
 		if ($items === []) {
-			return [
-				'total_items' => 0,
-				'vectorized' => 0,
-				'failed' => 0,
-				'errors' => [],
+			return self::NO_ITEMS;
+		}
+
+		$mode      = $options['mode'] ?? 'serial';
+		$batchSize = $options['batch_size'] ?? 50;
+
+		// Batch processing for efficiency; otherwise one item at a time.
+		$batches = array_map(static fn (array $item): array => [$item], $items);
+		$inBatch = $mode === 'parallel' && $batchSize > 1 && count($items) > 1;
+		if ($inBatch === true) {
+			$batches = array_chunk($items, $batchSize);
+		}
+
+		$tally = self::NO_ITEMS;
+		foreach ($batches as $position => $batch) {
+			if ($inBatch === true) {
+				$part = $this->vectorizeItemBatch(entity: $entity, strategy: $strategy, entityId: $entityId, batch: $batch);
+			} else {
+				$part = $this->vectorizeSerially(entity: $entity, strategy: $strategy, entityId: $entityId, item: [$position, $batch[0]]);
+			}
+
+			$tally = $this->addTally(tally: $tally, part: $part);
+		}
+
+		$tally['total_items'] = count($items);
+		return $tally;
+	}//end vectorizeEntity()
+
+	/**
+	 * Vectorize one entity, turning a failure into one listed error.
+	 *
+	 * @param mixed                          $entity     Entity to vectorize
+	 * @param VectorizationStrategyInterface $strategy   Strategy to use
+	 * @param array                          $options    Processing options
+	 * @param string                         $entityType Entity type, for the log
+	 *
+	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>}
+	 */
+	private function vectorizeEntitySafely($entity, VectorizationStrategyInterface $strategy, array $options, string $entityType): array {
+		try {
+			return $this->vectorizeEntity(entity: $entity, strategy: $strategy, options: $options);
+		} catch (\Exception $e) {
+			$entityId = $strategy->getEntityIdentifier($entity);
+			$this->logger->error(
+				message: '[VectorizationService] Failed to vectorize entity',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'entityType' => $entityType,
+					'entityId' => $entityId,
+					'error' => $e->getMessage(),
+				]
+			);
+			$failure = self::NO_ITEMS;
+			$failure['errors'][] = [
+				'entity_id' => $entityId,
+				'error' => $e->getMessage(),
+			];
+			return $failure;
+		}//end try
+	}//end vectorizeEntitySafely()
+
+	/**
+	 * Add one part's counts and errors to a running tally.
+	 *
+	 * @param array $tally The running tally.
+	 * @param array $part  The part to add.
+	 *
+	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>}
+	 */
+	private function addTally(array $tally, array $part): array {
+		$tally['total_items'] += $part['total_items'];
+		$tally['vectorized']  += $part['vectorized'];
+		$tally['failed']      += $part['failed'];
+		$tally['errors']       = array_merge($tally['errors'], $part['errors']);
+		return $tally;
+	}//end addTally()
+
+	/**
+	 * Embed and store one item; a failure is one listed error.
+	 *
+	 * @param mixed                          $entity   Entity being vectorized
+	 * @param VectorizationStrategyInterface $strategy Strategy to use
+	 * @param int|string                     $entityId The entity's identifier
+	 * @param array{0: int|string, 1: array} $item     The item's index and the item
+	 *
+	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>}
+	 */
+	private function vectorizeSerially($entity, VectorizationStrategyInterface $strategy, $entityId, array $item): array {
+		$part = self::NO_ITEMS;
+		try {
+			$embeddingData = $this->vectorService->generateEmbedding($item[1]['text']);
+			$this->storeVector(entity: $entity, item: $item[1], embeddingData: $embeddingData, strategy: $strategy);
+			$part['vectorized'] = 1;
+		} catch (\Exception $e) {
+			$part['failed']   = 1;
+			$part['errors'][] = [
+				'entity_id' => $entityId,
+				'item_index' => $item[0],
+				'error' => $e->getMessage(),
 			];
 		}
 
-		$vectorized = 0;
-		$failed = 0;
-		$errors = [];
+		return $part;
+	}//end vectorizeSerially()
 
-		$mode = $options['mode'] ?? 'serial';
-		$batchSize = $options['batch_size'] ?? 50;
+	/**
+	 * Embed one batch of items in one request and store each embedding.
+	 *
+	 * An item without an embedding is a listed failure; a failing request
+	 * (or store) counts the whole batch as failed and is only logged.
+	 *
+	 * @param mixed                          $entity   Entity being vectorized
+	 * @param VectorizationStrategyInterface $strategy Strategy to use
+	 * @param int|string                     $entityId The entity's identifier
+	 * @param array<int, array>              $batch    The items
+	 *
+	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>}
+	 */
+	private function vectorizeItemBatch($entity, VectorizationStrategyInterface $strategy, $entityId, array $batch): array {
+		$part = self::NO_ITEMS;
+		try {
+			$texts      = array_map(fn (array $item): string => $item['text'], $batch);
+			$embeddings = $this->vectorService->generateBatchEmbeddings($texts);
 
-		// Batch processing for efficiency.
-		if ($mode === 'parallel' && $batchSize > 1 && count($items) > 1) {
-			$itemBatches = array_chunk($items, $batchSize);
-
-			foreach ($itemBatches as $batch) {
-				try {
-					$texts = array_map(fn (array $item): string => $item['text'], $batch);
-					$embeddings = $this->vectorService->generateBatchEmbeddings($texts);
-
-					foreach ($batch as $index => $item) {
-						$embeddingData = $embeddings[$index] ?? null;
-
-						$hasEmbedding = $embeddingData !== null
-							&& (($embeddingData['embedding'] ?? null) !== null);
-						if ($hasEmbedding === true) {
-							$this->storeVector(
-								entity: $entity,
-								item: $item,
-								embeddingData: $embeddingData,
-								strategy: $strategy
-							);
-							$vectorized++;
-						}
-
-						if ($hasEmbedding === false) {
-							$failed++;
-							//
-							// EmbeddingData may contain 'error' key even if not in type definition.
-							$errorMsg = 'Embedding generation failed';
-							if (is_array($embeddingData) === true
-								&& array_key_exists('error', $embeddingData) === true
-							) {
-								$errorMsg = $embeddingData['error'];
-							}
-
-							$errors[] = [
-								'entity_id' => $entityId,
-								'item_index' => $index,
-								'error' => $errorMsg,
-							];
-						}//end if
-					}//end foreach
-				} catch (\Exception $e) {
-					$failed += count($batch);
-					$this->logger->error(
-						message: '[VectorizationService] Batch processing failed',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'entityId' => $entityId,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-		}//end if
-
-		if (($mode === 'parallel' && $batchSize > 1 && count($items) > 1) === false) {
-			// Serial processing.
-			foreach ($items as $index => $item) {
-				try {
-					$embeddingData = $this->vectorService->generateEmbedding($item['text']);
+			foreach ($batch as $index => $item) {
+				$embeddingData = $embeddings[$index] ?? null;
+				if ($embeddingData !== null && (($embeddingData['embedding'] ?? null) !== null)) {
 					$this->storeVector(entity: $entity, item: $item, embeddingData: $embeddingData, strategy: $strategy);
-					$vectorized++;
-				} catch (\Exception $e) {
-					$failed++;
-					$errors[] = [
-						'entity_id' => $entityId,
-						'item_index' => $index,
-						'error' => $e->getMessage(),
-					];
+					$part['vectorized']++;
+					continue;
 				}
-			}
-		}//end if
 
-		return [
-			'total_items' => count($items),
-			'vectorized' => $vectorized,
-			'failed' => $failed,
-			'errors' => $errors,
-		];
-	}//end vectorizeEntity()
+				$part['failed']++;
+				$part['errors'][] = [
+					'entity_id' => $entityId,
+					'item_index' => $index,
+					'error' => $this->embeddingError(embeddingData: $embeddingData),
+				];
+			}
+		} catch (\Exception $e) {
+			$part['failed'] += count($batch);
+			$this->logger->error(
+				message: '[VectorizationService] Batch processing failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'entityId' => $entityId,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+
+		return $part;
+	}//end vectorizeItemBatch()
+
+	/**
+	 * The error a batch embedding carries, or the generic message.
+	 *
+	 * EmbeddingData may contain an 'error' key even if not in the type definition.
+	 *
+	 * @param mixed $embeddingData The batch embedding entry.
+	 *
+	 * @return mixed The error.
+	 */
+	private function embeddingError(mixed $embeddingData): mixed {
+		if (is_array($embeddingData) === true && array_key_exists('error', $embeddingData) === true) {
+			return $embeddingData['error'];
+		}
+
+		return 'Embedding generation failed';
+	}//end embeddingError()
 
 	/**
 	 * Store a vector using strategy-provided metadata
