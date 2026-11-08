@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
@@ -76,18 +77,16 @@ class FileSearchController extends Controller {
 	/**
 	 * Constructor
 	 *
-	 * @param string                       $appName  App name
 	 * @param IRequest                     $request  Request object
 	 * @param FileSearchControllerServices $services Vectorization service, chunk mapper and the read scope
 	 * @param LoggerInterface              $logger   Logger
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		FileSearchControllerServices $services,
 		LoggerInterface $logger,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->vectorService = $services->vectorService;
 		$this->chunkMapper = $services->chunkMapper;
 		$this->readScope = $services->readScope;
