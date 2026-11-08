@@ -2093,7 +2093,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return false;
 		}
 
-		return \OCA\OpenRegister\Service\Task\TaskState::isRejectingOutcome(outcome: $outcome);
+		return \OCA\OpenRegister\Service\Task\TaskStateRules::isRejectingOutcome(outcome: $outcome);
 	}//end taskVerbNeedsForm()
 
 	/**
