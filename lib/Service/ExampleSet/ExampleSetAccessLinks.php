@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\AccessLink;
-use OCA\OpenRegister\Db\AccessLinkMapper;
+use OCA\OpenRegister\Db\AccessLinkMapperInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use Psr\Container\ContainerInterface;
@@ -397,10 +397,10 @@ class ExampleSetAccessLinks extends ExampleSetEngineRows {
 	/**
 	 * The link mapper.
 	 *
-	 * @return AccessLinkMapper
+	 * @return AccessLinkMapperInterface
 	 */
-	private function mapper(): AccessLinkMapper {
-		return $this->container->get(AccessLinkMapper::class);
+	private function mapper(): AccessLinkMapperInterface {
+		return $this->container->get(AccessLinkMapperInterface::class);
 	}//end mapper()
 
 	/**

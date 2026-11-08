@@ -44,6 +44,16 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidatorInterface;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorderInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerPolicy;
+use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
+use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiter;
+use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
+use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiator;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionNegotiatorInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
@@ -94,6 +104,8 @@ use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
 use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
+use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
+use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccessInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
@@ -127,6 +139,10 @@ use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidatorInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
+use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransportInterface;
+use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
+use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransportInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
@@ -236,6 +252,8 @@ use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarInterface;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
 use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
@@ -288,6 +306,13 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
+use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
+use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
+use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
@@ -300,7 +325,6 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
-use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
@@ -322,8 +346,6 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandlerInterface;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -358,14 +380,24 @@ use OCA\OpenRegister\Service\Quality\QualityScorer;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
 use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
+use OCA\OpenRegister\Service\Quota\ObjectQuotaServiceInterface;
+use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
+use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\MatrixRowKeys;
 use OCA\OpenRegister\Service\Rbac\MatrixRowWhere;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\RevealFlusher;
+use OCA\OpenRegister\Service\Rbac\RevealFlusherInterface;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
+use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
 use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
@@ -468,6 +500,7 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Rbac\AdminGateInterface::class => \OCA\OpenRegister\Service\Rbac\AdminGate::class,
 		AdministeredValidationEnforcerInterface::class => AdministeredValidationEnforcer::class,
 		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
@@ -476,6 +509,9 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Rbac\ObjectAccessReportInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectAccessReport::class,
 		\OCA\OpenRegister\Service\Rbac\ObjectGrantsReportInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectGrantsReport::class,
 		AnalyticsLinkServiceInterface::class => AnalyticsLinkService::class,
+		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,
+		\OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface::class => \OCA\OpenRegister\Service\ApiVersion\ApiContractService::class,
+		\OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface::class => \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue::class,
 		AppConfigurationImporterInterface::class => ConfigurationService::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		ApplicationServiceInterface::class => ApplicationService::class,
@@ -499,18 +535,19 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\AvgComplianceServiceInterface::class => \OCA\OpenRegister\Service\AvgComplianceService::class,
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		\OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface::class => \OCA\OpenRegister\Service\AuthenticationService::class,
-		\OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface::class => \OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
-		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
 		\OCA\OpenRegister\Service\Object\RevertHandlerInterface::class => \OCA\OpenRegister\Service\Object\RevertHandler::class,
-		ShippedBaselineResetServiceInterface::class => ShippedBaselineResetService::class,
+		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
 		\OCA\OpenRegister\Service\Task\TaskMetricsProviderInterface::class => \OCA\OpenRegister\Service\Task\TaskMetricsProvider::class,
 		DoriathApplicationRegistrarInterface::class => DoriathApplicationRegistrar::class,
+		ShippedBaselineResetServiceInterface::class => ShippedBaselineResetService::class,
+		\OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface::class => \OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService::class,
+		\OCA\OpenRegister\Service\Connection\ConnectionReporterInterface::class => \OCA\OpenRegister\Service\Connection\ConnectionReporter::class,
 		\OCA\OpenRegister\Service\DsarServiceInterface::class => \OCA\OpenRegister\Service\DsarService::class,
+		\OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface::class => \OCA\OpenRegister\Service\Edepot\EdepotTransferService::class,
 		\OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewServiceInterface::class => \OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService::class,
 		\OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStoreInterface::class => \OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore::class,
 		\OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunnerInterface::class => \OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner::class,
-		BatchOperationStatusInterface::class => BatchOperationStatus::class,
 		BrpPersonProviderInterface::class => BrpPersonProvider::class,
 		FlowStateNodeInterface::class => FlowStateNode::class,
 		IterateNodeInterface::class => IterateNode::class,
@@ -525,15 +562,25 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Credential\OAuth2RelayGuardInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2RelayGuard::class,
 		\OCA\OpenRegister\Service\Credential\OAuth2StateServiceInterface::class => \OCA\OpenRegister\Service\Credential\OAuth2StateService::class,
 		\OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface::class => \OCA\OpenRegister\Service\Portal\PortalSubjectAssertion::class,
+		\OCA\OpenRegister\Service\Rbac\ObjectSharingServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ObjectSharingService::class,
+		\OCA\OpenRegister\Service\Rbac\PermissionReportScopeInterface::class => \OCA\OpenRegister\Service\Rbac\PermissionReportScope::class,
+		\OCA\OpenRegister\Service\Rbac\ReachRevocationServiceInterface::class => \OCA\OpenRegister\Service\Rbac\ReachRevocationService::class,
+		\OCA\OpenRegister\Service\Rbac\ScopeAuditInterface::class => \OCA\OpenRegister\Service\Rbac\ScopeAudit::class,
 		OAuth2ConnectionRepositoryInterface::class => OAuth2ConnectionRepository::class,
+		OpenConnectorTransportInterface::class => OpenConnectorTransport::class,
 		PortalTaskDeliveryServiceInterface::class => PortalTaskDeliveryService::class,
+		RestApiTransportInterface::class => RestApiTransport::class,
 		RouterNodeInterface::class => RouterNode::class,
 		SelectielijstImportServiceInterface::class => SelectielijstImportService::class,
 		SelectielijstReferenceResolverInterface::class => SelectielijstReferenceResolver::class,
 		SetFieldsNodeInterface::class => SetFieldsNode::class,
+		\OCA\OpenRegister\Service\Edepot\TransferListServiceInterface::class => \OCA\OpenRegister\Service\Edepot\TransferListService::class,
+		\OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface::class => \OCA\OpenRegister\Service\Edepot\TransferRecordService::class,
+		\OCA\OpenRegister\Service\Edepot\Transport\SftpTransportInterface::class => \OCA\OpenRegister\Service\Edepot\Transport\SftpTransport::class,
 		\OCA\OpenRegister\Service\ShareLinkServiceInterface::class => \OCA\OpenRegister\Service\ShareLinkService::class,
-		SubFlowNodeInterface::class => SubFlowNode::class,
 		\OCA\OpenRegister\Service\TmloServiceInterface::class => \OCA\OpenRegister\Service\TmloService::class,
+		\OCA\OpenRegister\Service\UserServiceInterface::class => \OCA\OpenRegister\Service\UserService::class,
+		SubFlowNodeInterface::class => SubFlowNode::class,
 		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
@@ -567,6 +614,8 @@ final class ContractBindings {
 		DeepLinkResolverInterface::class => DeepLinkRegistryService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
 		DenyResolverInterface::class => DenyResolver::class,
+		ObjectGrantResolverInterface::class => ObjectGrantResolver::class,
+		SchemaManageGateInterface::class => SchemaManageGate::class,
 		DependentValueTableInterface::class => DependentValueTable::class,
 		DraftActivationInterface::class => DraftActivation::class,
 		DraftExpiryInterface::class => DraftExpiry::class,
@@ -793,6 +842,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\ArchiveHandlerInterface::class => \OCA\OpenRegister\Service\Object\ArchiveHandler::class,
 		RetentionServiceInterface::class => RetentionService::class,
 		\OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectCacheInvalidationInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectCacheMaintenanceInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ObjectEntityCacheInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
@@ -803,13 +853,23 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\PermissionCheckInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\PermissionEnforcementInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\PermissionExplanationInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
 		\OCA\OpenRegister\Service\Object\PermissionScopeInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		\OCA\OpenRegister\Service\Object\SaveObjectInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
+		\OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
+		\OCA\OpenRegister\Service\Object\SaveObjectWriterInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
 		\OCA\OpenRegister\Service\Object\SchemaUriResolverInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\TransitionAuthorizationInterface::class => \OCA\OpenRegister\Service\Object\PermissionHandler::class,
+		\OCA\OpenRegister\Service\Object\ValidateObjectInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\ValidationErrorResponseInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\WriteConstraintValidatorInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		AgentPrincipalResolverInterface::class => AgentPrincipalResolver::class,
-		CacheHandlerInterface::class => CacheHandler::class,
+		AnonymousEnvelopeInterface::class => AnonymousEnvelope::class,
+		ApiCallRecorderInterface::class => ApiCallRecorder::class,
+		ApiVersionNegotiatorInterface::class => ApiVersionNegotiator::class,
+		CallerPolicyInterface::class => CallerPolicy::class,
+		CallerRateLimiterInterface::class => CallerRateLimiter::class,
+		ChatProxyHandlerInterface::class => ChatProxyHandler::class,
 		CodedValueGuardInterface::class => CodedValueGuard::class,
 		ConceptShapeGuardInterface::class => ConceptShapeGuard::class,
 		ConfigSetShareableConfigTypeInterface::class => ConfigSetShareableConfigType::class,
@@ -818,14 +878,14 @@ final class ContractBindings {
 		FlowTaskBridgeInterface::class => FlowTaskBridge::class,
 		GroupPrincipalResolverInterface::class => GroupPrincipalResolver::class,
 		KillSwitchCheckInterface::class => KillSwitchCheck::class,
+		OasRequestValidatorInterface::class => OasRequestValidator::class,
+		ObjectQuotaServiceInterface::class => ObjectQuotaService::class,
 		OrganisationHaltCheckInterface::class => OrganisationHaltCheck::class,
-		PermissionHandlerInterface::class => PermissionHandler::class,
+		ProblemDetailsBuilderInterface::class => ProblemDetailsBuilder::class,
 		RegisterSchemaShareableConfigTypeInterface::class => RegisterSchemaShareableConfigType::class,
-		SaveObjectInterface::class => SaveObject::class,
-		SaveObjectRelationScannerInterface::class => SaveObject::class,
-		SaveObjectWriterInterface::class => SaveObject::class,
+		RevealFlusherInterface::class => RevealFlusher::class,
 		UserPrincipalResolverInterface::class => UserPrincipalResolver::class,
-		ValidateObjectInterface::class => ValidateObject::class,
+		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,
 	];
 
 	/**

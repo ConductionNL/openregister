@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\DeckLink;
-use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCA\OpenRegister\Db\DeckLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -53,9 +53,9 @@ class DeckCardService implements DeckCardServiceInterface {
 	/**
 	 * Deck link mapper.
 	 *
-	 * @var DeckLinkMapper
+	 * @var DeckLinkMapperInterface
 	 */
-	private readonly DeckLinkMapper $deckLinkMapper;
+	private readonly DeckLinkMapperInterface $deckLinkMapper;
 
 	/**
 	 * App manager.
@@ -102,7 +102,7 @@ class DeckCardService implements DeckCardServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param DeckLinkMapper $deckLinkMapper Deck link mapper
+	 * @param DeckLinkMapperInterface $deckLinkMapper Deck link mapper
 	 * @param IAppManager $appManager App manager
 	 * @param IUserSession $userSession User session
 	 * @param LoggerInterface $logger Logger
@@ -113,7 +113,7 @@ class DeckCardService implements DeckCardServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		DeckLinkMapper $deckLinkMapper,
+		DeckLinkMapperInterface $deckLinkMapper,
 		IAppManager $appManager,
 		IUserSession $userSession,
 		LoggerInterface $logger,

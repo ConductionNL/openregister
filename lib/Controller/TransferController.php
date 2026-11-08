@@ -34,12 +34,12 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
 use OCA\OpenRegister\Controller\Support\TransferControllerServices;
-use OCA\OpenRegister\Service\Edepot\TransferListService;
-use OCA\OpenRegister\Service\Edepot\TransferRecordService;
+use OCA\OpenRegister\Service\Edepot\TransferListServiceInterface;
+use OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\BackgroundJob\IJobList;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -59,9 +59,9 @@ class TransferController extends Controller {
 	/**
 	 * Durable transfer-record persistence.
 	 *
-	 * @var TransferRecordService
+	 * @var TransferRecordServiceInterface
 	 */
-	private readonly TransferRecordService $transferRecordService;
+	private readonly TransferRecordServiceInterface $transferRecordService;
 
 	/**
 	 * Background-job scheduler (dispatch execution).
@@ -80,9 +80,9 @@ class TransferController extends Controller {
 	/**
 	 * Approves and rejects transfer lists.
 	 *
-	 * @var TransferListService
+	 * @var TransferListServiceInterface
 	 */
-	private readonly TransferListService $transferListService;
+	private readonly TransferListServiceInterface $transferListService;
 
 	/**
 	 * Constructor.
@@ -146,7 +146,7 @@ class TransferController extends Controller {
 	 *
 	 * 🔴 WITHOUT THIS THE WHOLE FLOW WAS UNREACHABLE. `create()` refuses to
 	 * dispatch anything that is not `approved`, and nothing could set that
-	 * status: `TransferListService::approveTransferList()` was implemented,
+	 * status: `TransferListServiceInterface::approveTransferList()` was implemented,
 	 * specified, and had no caller anywhere in the fleet. A list could be built
 	 * and then never moved. The service was even already imported here — the
 	 * wiring was started and left unfinished.
@@ -330,7 +330,7 @@ class TransferController extends Controller {
 	 */
 	private function refuseUnapproved(array $list): ?JSONResponse {
 		$status = (string)($list['status'] ?? '');
-		if ($status === TransferListService::STATUS_APPROVED) {
+		if ($status === TransferListServiceInterface::STATUS_APPROVED) {
 			return null;
 		}
 

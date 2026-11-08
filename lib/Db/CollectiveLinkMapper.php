@@ -30,7 +30,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<CollectiveLink>
  * @method list<CollectiveLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class CollectiveLinkMapper extends QBMapper {
+class CollectiveLinkMapper extends QBMapper implements CollectiveLinkMapperInterface {
 
 	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;

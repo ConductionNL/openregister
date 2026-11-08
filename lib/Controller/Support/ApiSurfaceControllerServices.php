@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
-use OCA\OpenRegister\Service\ApiVersion\ApiContractService;
-use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesServiceInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiContractServiceInterface;
+use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogueInterface;
 
 /**
  * The collaborators of ApiSurfaceController, wired by DI autowiring.
@@ -35,17 +35,17 @@ final class ApiSurfaceControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ApiCapabilitiesService $capabilities Builds the capabilities answer.
-	 * @param ApiVersionCatalogue $catalogue The declared contract versions.
-	 * @param ApiContractService $contracts Builds one description per version.
+	 * @param ApiCapabilitiesServiceInterface $capabilities Builds the capabilities answer.
+	 * @param ApiVersionCatalogueInterface $catalogue The declared contract versions.
+	 * @param ApiContractServiceInterface $contracts Builds one description per version.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function __construct(
-		public readonly ApiCapabilitiesService $capabilities,
-		public readonly ApiVersionCatalogue $catalogue,
-		public readonly ApiContractService $contracts,
+		public readonly ApiCapabilitiesServiceInterface $capabilities,
+		public readonly ApiVersionCatalogueInterface $catalogue,
+		public readonly ApiContractServiceInterface $contracts,
 		public readonly ControllerSession $session,
 	) {
 	}//end __construct()

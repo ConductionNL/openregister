@@ -46,7 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db\XwikiLink;
-use OCA\OpenRegister\Db\XwikiLinkMapper;
+use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Support\FleetAppId;
@@ -87,7 +87,7 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * @param ExternalIntegrationRouterInterface $router External-call router.
 	 * @param IAppManager $appManager NC app manager (isEnabled check).
 	 * @param IL10N $l10n Localisation.
-	 * @param XwikiLinkMapper|null $xwikiLinkMapper Tier-2 local link table
+	 * @param XwikiLinkMapperInterface|null $xwikiLinkMapper Tier-2 local link table
 	 *                                              (nullable so the Tier-1
 	 *                                              external-only wiring + the
 	 *                                              provider unit test keep
@@ -99,7 +99,7 @@ class XwikiProvider extends AbstractIntegrationProvider {
 		private ExternalIntegrationRouterInterface $router,
 		private IAppManager $appManager,
 		private IL10N $l10n,
-		private ?XwikiLinkMapper $xwikiLinkMapper = null,
+		private ?XwikiLinkMapperInterface $xwikiLinkMapper = null,
 	) {
 	}//end __construct()
 
@@ -198,12 +198,12 @@ class XwikiProvider extends AbstractIntegrationProvider {
 	 * List the locally-linked xWiki pages for an object, enriching each
 	 * row from remote xWiki best-effort.
 	 *
-	 * @param XwikiLinkMapper     $mapper The Tier-2 link table.
+	 * @param XwikiLinkMapperInterface     $mapper The Tier-2 link table.
 	 * @param array<string,mixed> $scope  The `{register, schema, object}` context.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	private function listLinkedPages(XwikiLinkMapper $mapper, array $scope): array {
+	private function listLinkedPages(XwikiLinkMapperInterface $mapper, array $scope): array {
 		$out = [];
 		foreach ($mapper->findByObjectUuid($scope['object']) as $link) {
 			$out[] = $this->linkedPageRow(link: $link, scope: $scope);

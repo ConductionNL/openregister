@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Db\CalendarLink;
-use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Db\CalendarLinkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -66,7 +66,7 @@ class BackfillCalendarLinksJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory.
-	 * @param CalendarLinkMapper $linkMapper Link-table mapper.
+	 * @param CalendarLinkMapperInterface $linkMapper Link-table mapper.
 	 * @param ObjectCalendarEventsInterface $calendarEventService Legacy X-OR-* CalDAV service.
 	 * @param IUserManager $userManager User manager.
 	 * @param IUserSession $userSession User session.
@@ -77,7 +77,7 @@ class BackfillCalendarLinksJob extends QueuedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly CalendarLinkMapper $linkMapper,
+		private readonly CalendarLinkMapperInterface $linkMapper,
 		private readonly ObjectCalendarEventsInterface $calendarEventService,
 		private readonly IUserManager $userManager,
 		private readonly IUserSession $userSession,

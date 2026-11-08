@@ -63,7 +63,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
  */
-class UserService {
+class UserService implements UserServiceInterface {
 
 	/**
 	 * Request-scoped cache for organisation stats to avoid duplicate lookups

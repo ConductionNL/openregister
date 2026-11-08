@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 
 use DateTime;
 use OCA\OpenRegister\Db\ErasurePreview;
-use OCA\OpenRegister\Db\ErasurePreviewMapper;
+use OCA\OpenRegister\Db\ErasurePreviewMapperInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -54,7 +54,7 @@ class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 	/**
 	 * Wire the store.
 	 *
-	 * @param ErasurePreviewMapper $mapper       The preview rows.
+	 * @param ErasurePreviewMapperInterface $mapper       The preview rows.
 	 * @param IUserSession         $userSession  The acting principal.
 	 * @param IGroupManager        $groupManager Administrator reach.
 	 * @param LoggerInterface      $logger       PSR logger.
@@ -62,7 +62,7 @@ class ErasurePreviewStore implements ErasurePreviewStoreInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ErasurePreviewMapper $mapper,
+		private readonly ErasurePreviewMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,

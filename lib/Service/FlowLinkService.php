@@ -49,7 +49,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\FlowLink;
-use OCA\OpenRegister\Db\FlowLinkMapper;
+use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -75,7 +75,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowLinkMapper $flowLinkMapper Persistence for link rows.
+	 * @param FlowLinkMapperInterface $flowLinkMapper Persistence for link rows.
 	 * @param IDBConnection $db Database connection.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
@@ -83,7 +83,7 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly FlowLinkMapper $flowLinkMapper,
+		private readonly FlowLinkMapperInterface $flowLinkMapper,
 		private readonly IDBConnection $db,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,

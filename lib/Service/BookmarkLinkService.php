@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\BookmarkLink;
-use OCA\OpenRegister\Db\BookmarkLinkMapper;
+use OCA\OpenRegister\Db\BookmarkLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -94,14 +94,14 @@ class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param BookmarkLinkMapper $bookmarkLinkMapper Persistence for link rows.
+	 * @param BookmarkLinkMapperInterface $bookmarkLinkMapper Persistence for link rows.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ContainerInterface $container App container the Bookmarks mappers are resolved from.
 	 */
 	public function __construct(
-		private readonly BookmarkLinkMapper $bookmarkLinkMapper,
+		private readonly BookmarkLinkMapperInterface $bookmarkLinkMapper,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,

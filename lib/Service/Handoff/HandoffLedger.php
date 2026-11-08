@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Handoff;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\HandoffQueueEntryMapper;
+use OCA\OpenRegister\Db\HandoffQueueEntryMapperInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -38,13 +38,13 @@ final readonly class HandoffLedger {
 	 * Bundle the collaborators.
 	 *
 	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable audit rows.
-	 * @param HandoffQueueEntryMapper $queueMapper Durable queue-mode storage.
+	 * @param HandoffQueueEntryMapperInterface $queueMapper Durable queue-mode storage.
 	 * @param IDBConnection $db Transaction boundary.
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
 		public AuditTrailMapperInterface $auditTrailMapper,
-		public HandoffQueueEntryMapper $queueMapper,
+		public HandoffQueueEntryMapperInterface $queueMapper,
 		public IDBConnection $db,
 		public LoggerInterface $logger,
 	) {

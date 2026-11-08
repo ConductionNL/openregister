@@ -55,7 +55,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\OpenProjectLink;
-use OCA\OpenRegister\Db\OpenProjectLinkMapper;
+use OCA\OpenRegister\Db\OpenProjectLinkMapperInterface;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
@@ -97,7 +97,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param OpenProjectLinkMapper $openProjectLinkMapper Persistence for link rows.
+	 * @param OpenProjectLinkMapperInterface $openProjectLinkMapper Persistence for link rows.
 	 * @param OpenProjectProvider $provider Provider exposing the external dispatch.
 	 * @param ExternalIntegrationRouterInterface $router External-call router (OpenConnector).
 	 * @param IAppManager $appManager NC app manager.
@@ -105,7 +105,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly OpenProjectLinkMapper $openProjectLinkMapper,
+		private readonly OpenProjectLinkMapperInterface $openProjectLinkMapper,
 		private readonly OpenProjectProvider $provider,
 		private readonly ExternalIntegrationRouterInterface $router,
 		private readonly IAppManager $appManager,

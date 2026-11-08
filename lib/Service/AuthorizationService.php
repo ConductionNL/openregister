@@ -19,7 +19,7 @@
 namespace OCA\OpenRegister\Service;
 
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
-use OCA\OpenRegister\Db\ConsumerMapper;
+use OCA\OpenRegister\Db\ConsumerMapperInterface;
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\Audit\TokenContext;
 use OCA\OpenRegister\Service\Audit\TokenIdentity;
@@ -88,7 +88,7 @@ class AuthorizationService {
 	 *
 	 * @param IUserManager $userManager Nextcloud user manager
 	 * @param IUserSession $userSession Nextcloud user session
-	 * @param ConsumerMapper $consumerMapper Consumer database mapper
+	 * @param ConsumerMapperInterface $consumerMapper Consumer database mapper
 	 * @param \OCA\OpenRegister\Service\Rbac\TokenGrantSource|null $tokenGrantSource What the calling token may do
 	 * @param TokenContext|null $tokenContext Carries the calling token to the audit writer
 	 * @param ICacheFactory|null $cacheFactory Distributed cache for jti replay refusal
@@ -98,7 +98,7 @@ class AuthorizationService {
 	public function __construct(
 		private readonly IUserManager $userManager,
 		private readonly IUserSession $userSession,
-		private readonly ConsumerMapper $consumerMapper,
+		private readonly ConsumerMapperInterface $consumerMapper,
 		// BOTH SIDES OF THIS MERGE ADDED A NULLABLE-LAST PARAMETER and neither
 		// replaces the other: `tokenGrantSource` answers what a token may DO,
 		// `tokenContext` carries who presented it to the audit writer. Keeping

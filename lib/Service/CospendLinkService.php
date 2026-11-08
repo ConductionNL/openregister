@@ -54,7 +54,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\CospendEntryKey;
 use OCA\OpenRegister\Db\CospendLink;
-use OCA\OpenRegister\Db\CospendLinkMapper;
+use OCA\OpenRegister\Db\CospendLinkMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -94,7 +94,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param CospendLinkMapper $cospendLinkMapper Persistence for link rows.
+	 * @param CospendLinkMapperInterface $cospendLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound Cospend classes.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IUserSession $userSession Active session.
@@ -102,7 +102,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly CospendLinkMapper $cospendLinkMapper,
+		private readonly CospendLinkMapperInterface $cospendLinkMapper,
 		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,
 		private readonly IUserSession $userSession,
