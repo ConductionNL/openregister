@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -119,8 +120,7 @@ class AccessReviewGateTest extends TestCase {
 		return new AccessReviewGate(
 			objectService: $objectService,
 			report: $report,
-			userSession: $session,
-			groupManager: $groupManager,
+			caller: new CallerContext(userSession: $session, groupManager: $groupManager),
 			grantManage: new GrantManageGuard(new ObjectScopeResolver(), $rights)
 		);
 	}//end gateFor()
