@@ -73,7 +73,6 @@ use OCA\OpenRegister\Service\Integration\LeafBundles;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
 use OCA\OpenRegister\Service\EntryScripts;
 use OCA\OpenRegister\Service\Integration\LeafRegistryInterface;
-use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\EventDispatcher\Event;
