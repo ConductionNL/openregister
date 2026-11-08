@@ -36,8 +36,9 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarInterface;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -48,9 +49,6 @@ use OCP\IUserSession;
 
 /**
  * Previews the non-working dates a calendar definition produces in a year.
- *
- * @SuppressWarnings(PHPMD.StaticAccess) WorkingCalendars::fromDefinition() is the
- * value object's validating named constructor.
  */
 class WorkingCalendarController extends Controller {
 
@@ -75,20 +73,20 @@ class WorkingCalendarController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The current request.
 	 * @param IUserSession $userSession Resolves the caller.
 	 * @param IGroupManager $groupManager Answers whether they are an administrator.
+	 * @param WorkingCalendarDefinitionsInterface $calendars Builds and validates the definition.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
+		private readonly WorkingCalendarDefinitionsInterface $calendars,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -122,7 +120,7 @@ class WorkingCalendarController extends Controller {
 		}
 
 		try {
-			$definition = WorkingCalendars::fromDefinition(definition: $calendar);
+			$definition = $this->calendars->parse(definition: $calendar);
 		} catch (FlowTimerValidationException $refused) {
 			return $this->invalidDefinition(refused: $refused);
 		}

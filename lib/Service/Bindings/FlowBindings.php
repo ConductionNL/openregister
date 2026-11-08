@@ -37,5 +37,10 @@ final class FlowBindings {
 	 *
 	 * @var array<class-string, class-string>
 	 */
-	public const BINDINGS = [];
+	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Flow\FlowRunSignalInterface::class => \OCA\OpenRegister\Service\Flow\FlowRunSignalService::class,
+		\OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeInterface::class => \OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute::class,
+		\OCA\OpenRegister\Service\Flow\Timer\TermDiagnosticInterface::class => \OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic::class,
+		\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinitionsInterface::class => \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendars::class,
+	];
 }//end class
