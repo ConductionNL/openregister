@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Search\Service\ExampleSet;
 
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Search\Service\ViewService;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use Psr\Container\ContainerInterface;
 use Throwable;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
@@ -165,19 +166,20 @@ class ExampleSetViews extends ExampleSetEngineRows {
 	 * A view the set wrote before under that uuid (an earlier install that was removed without its views, or a record
 	 * that was lost) is updated where it is, so the uuid every link, menu entry and route names stays valid.
 	 *
-	 * @param string               $app  The app that ships the fragment.
-	 * @param string               $key  The view's key in the fragment.
-	 * @param array<string, mixed> $data The filled view fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$key = $row->key;
+		$data = $row->data;
 		$uuid = self::uuidFor(app: $app, key: $key);
 		if ($this->exists(uuid: $uuid) === true) {
-			return $this->update(entry: ['uuid' => $uuid], app: $app, key: $key, data: $data);
+			return $this->update(entry: ['uuid' => $uuid], row: $row);
 		}
 
 		try {
@@ -216,18 +218,17 @@ class ExampleSetViews extends ExampleSetEngineRows {
 	 * Update the view the record holds to its declaration; a view that is gone is written again.
 	 *
 	 * @param array<string, mixed> $entry The record entry, with the view's uuid.
-	 * @param string               $app   The app that ships the fragment.
-	 * @param string               $key   The view's key in the fragment.
-	 * @param array<string, mixed> $data  The filled view fields.
+	 * @param ExampleSetRow        $row   The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string}|null} The record entry, or why the update failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
 	 */
-	public function update(array $entry, string $app, string $key, array $data): array {
+	public function update(array $entry, ExampleSetRow $row): array {
+		$data = $row->data;
 		$uuid = (string) ($entry['uuid'] ?? '');
 		if ($this->exists(uuid: $uuid) === false) {
-			return $this->write(app: $app, key: $key, data: $data);
+			return $this->write(row: $row);
 		}
 
 		try {
