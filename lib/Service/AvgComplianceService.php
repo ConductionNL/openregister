@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\ProcessingLogMapper;
+use OCA\OpenRegister\Db\ProcessingLogMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -79,7 +79,7 @@ class AvgComplianceService {
 	 * @param RegisterMapperInterface $registerMapper Register lookup (annotation
 	 *                                       fallback).
 	 * @param LoggerInterface $logger Logger.
-	 * @param ProcessingLogMapper|null $logMapper Read-log mapper (fallback-gap count).
+	 * @param ProcessingLogMapperInterface|null $logMapper Read-log mapper (fallback-gap count).
 	 * @param VerwerkingsactiviteitMapper|null $vrwMapper Activity resolver (fallback uuid).
 	 */
 	public function __construct(
@@ -87,7 +87,7 @@ class AvgComplianceService {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
-		private readonly ?ProcessingLogMapper $logMapper = null,
+		private readonly ?ProcessingLogMapperInterface $logMapper = null,
 		private readonly ?VerwerkingsactiviteitMapper $vrwMapper = null,
 	) {
 
