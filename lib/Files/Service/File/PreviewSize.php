@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Files\Service\File;
  *
  * @spec openspec/specs/file-actions/spec.md
  */
-final class PreviewSize {
+final class PreviewSize implements PreviewSizeInterface {
 
 	/**
 	 * A preview size; both sides default to 256 pixels.
@@ -42,6 +42,28 @@ final class PreviewSize {
 		public readonly int $height = 256,
 	) {
 	}//end __construct()
+
+	/**
+	 * The width in pixels.
+	 *
+	 * @return int The width.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function width(): int {
+		return $this->width;
+	}//end width()
+
+	/**
+	 * The height in pixels.
+	 *
+	 * @return int The height.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function height(): int {
+		return $this->height;
+	}//end height()
 
 	/**
 	 * Describes the size as width x height.

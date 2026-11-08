@@ -25,7 +25,7 @@ use OCP\Files\File;
 use OCP\Files\SimpleFS\ISimpleFile;
 use OCP\IPreview;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\PreviewSize;
+use OCA\OpenRegister\Files\Service\File\PreviewSizeInterface;
 
 /**
  * Handles file preview and thumbnail generation.
@@ -67,7 +67,7 @@ class FilePreviewHandler {
 	 * Get a preview for a file.
 	 *
 	 * @param File             $file The file to generate a preview for.
-	 * @param PreviewSize|null $size The preview size (default: 256x256).
+	 * @param PreviewSizeInterface $size The preview size.
 	 *
 	 * @return ISimpleFile The preview image file.
 	 *
@@ -75,13 +75,13 @@ class FilePreviewHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function getPreview(File $file, ?PreviewSize $size = null): ISimpleFile {
+	public function getPreview(File $file, PreviewSizeInterface $size): ISimpleFile {
 		if ($this->previewManager->isAvailable($file) === false) {
 			throw new Exception(self::UNAVAILABLE);
 		}
 
 		try {
-			return $this->generate(file: $file, size: $size ?? new PreviewSize());
+			return $this->generate(file: $file, size: $size);
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[FilePreviewHandler] Failed to generate preview: ' . $e->getMessage(),
@@ -95,14 +95,14 @@ class FilePreviewHandler {
 	 * Generates the preview and logs its size.
 	 *
 	 * @param File        $file The file to generate a preview for.
-	 * @param PreviewSize $size The preview size.
+	 * @param PreviewSizeInterface $size The preview size.
 	 *
 	 * @return ISimpleFile The preview image file.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	private function generate(File $file, PreviewSize $size): ISimpleFile {
-		$preview = $this->previewManager->getPreview($file, $size->width, $size->height);
+	private function generate(File $file, PreviewSizeInterface $size): ISimpleFile {
+		$preview = $this->previewManager->getPreview($file, $size->width(), $size->height());
 
 		$this->logger->debug(
 			message: "[FilePreviewHandler] Generated preview for file {$file->getName()} ({$size->label()})",

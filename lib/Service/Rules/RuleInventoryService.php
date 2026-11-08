@@ -28,11 +28,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use DateTime;
-use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
 use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
-use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 
 /**
  * The inventory, derived on every read and stored nowhere.
@@ -65,32 +63,22 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	private readonly RuleScope $scopes;
 
 	/**
-	 * Reads the flows a schema's objects trigger.
-	 *
-	 * @var FlowRuleDescriptors
-	 */
-	private readonly FlowRuleDescriptors $flows;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerMapperInterface $triggers The derived flow trigger index.
 	 * @param RuleRunSummaryMapperInterface $summaries Last run and last error per rule.
 	 * @param PropertyCalculations $propertyCalculations Lifts a property's own calculation into the one map.
 	 * @param RuleVocabulary $vocabulary The published kinds, verdicts and actions.
-	 * @param FlowPublishedGraph|null $published Reads a flow's published graph, where its trigger node's scope lives.
+	 * @param FlowRuleDescriptors $flows Reads the flows a schema's objects trigger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		FlowTriggerMapperInterface $triggers,
 		private readonly RuleRunSummaryMapperInterface $summaries,
 		private readonly PropertyCalculations $propertyCalculations,
 		private readonly RuleVocabulary $vocabulary,
-		?FlowPublishedGraph $published = null,
+		private readonly FlowRuleDescriptors $flows,
 	) {
 		$this->scopes = new RuleScope();
-		$this->flows = new FlowRuleDescriptors(triggers: $triggers, published: $published);
 	}//end __construct()
 
 	/**

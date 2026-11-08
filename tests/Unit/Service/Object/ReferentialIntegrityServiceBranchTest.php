@@ -160,7 +160,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 	public function testApplyDeletionActionsEmptyAnalysis(): void {
 		$analysis = DeletionAnalysis::empty();
 
-		$this->service->applyDeletionActions(
+		$result = $this->service->applyDeletionActions(
 			$analysis,
 			'admin',
 			'root-uuid',
@@ -168,7 +168,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase {
 			'my-schema'
 		);
 
-		$this->assertTrue(true);
+		$this->assertSame(['retained' => []], $result);
 	}
 
 	// =========================================================================

@@ -122,7 +122,9 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 		$schema->setProperties($properties);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->handler, $this->makeQueryBuilder(), new SortRequest(order: $order, schema: $schema, dateTimeColumns: $dateTimeColumns));
+		$sort = new SortRequest(order: $order, schema: $schema);
+		$sort->dateTimeColumns = $dateTimeColumns;
+		$method->invoke($this->handler, $this->makeQueryBuilder(), $sort);
 
 		return $this->orderBy;
 	}//end sort()
