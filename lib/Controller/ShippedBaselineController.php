@@ -22,11 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 
 /**
@@ -41,12 +41,12 @@ class ShippedBaselineController extends Controller {
 	 *
 	 * @param string                      $appName The app name.
 	 * @param IRequest                    $request The request.
-	 * @param ShippedBaselineResetService $reset   The reset.
+	 * @param ShippedBaselineResetServiceInterface $reset   The reset.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ShippedBaselineResetService $reset,
+		private readonly ShippedBaselineResetServiceInterface $reset,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

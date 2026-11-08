@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\SchemaChangelogMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\SchemaRunEntryMapper;
+use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 
 /**
@@ -39,7 +39,7 @@ final class SchemaMigrationMappers {
 	 * @param SchemaMapperInterface          $schemaMapper    Schema lookup.
 	 * @param SchemaChangelogMapperInterface $changelogMapper Changelog read.
 	 * @param SchemaRunMapper       $runMapper       Run read.
-	 * @param SchemaRunEntryMapper  $runEntryMapper  Run entry read.
+	 * @param SchemaRunEntryMapperInterface  $runEntryMapper  Run entry read.
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
@@ -47,7 +47,7 @@ final class SchemaMigrationMappers {
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly SchemaChangelogMapperInterface $changelogMapper,
 		public readonly SchemaRunMapper $runMapper,
-		public readonly SchemaRunEntryMapper $runEntryMapper,
+		public readonly SchemaRunEntryMapperInterface $runEntryMapper,
 	) {
 	}//end __construct()
 }//end class
