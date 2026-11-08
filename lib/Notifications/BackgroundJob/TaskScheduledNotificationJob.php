@@ -183,12 +183,8 @@ class TaskScheduledNotificationJob extends TimedJob {
 		$now = $this->time->getTime();
 
 		foreach ($this->rules->getRules() as $name => $rule) {
-			$trigger = ($rule['trigger'] ?? null);
-			if (is_array($trigger) === false || (string)($trigger['type'] ?? '') !== 'scheduled') {
-				continue;
-			}
-
-			if (($rule['enabled'] ?? true) === false) {
+			$trigger = $this->scheduledTrigger(rule: $rule);
+			if ($trigger === null) {
 				continue;
 			}
 
@@ -201,6 +197,26 @@ class TaskScheduledNotificationJob extends TimedJob {
 			$this->appConfig->setValueString('openregister', $this->stateKey(name: (string)$name), (string)$now);
 		}//end foreach
 	}//end run()
+
+	/**
+	 * The trigger block of an enabled scheduled rule, or null for any other rule.
+	 *
+	 * @param array<string, mixed> $rule The rule.
+	 *
+	 * @return array<string, mixed>|null The trigger block.
+	 */
+	private function scheduledTrigger(array $rule): ?array {
+		$trigger = ($rule['trigger'] ?? null);
+		if (is_array($trigger) === false || (string)($trigger['type'] ?? '') !== 'scheduled') {
+			return null;
+		}
+
+		if (($rule['enabled'] ?? true) === false) {
+			return null;
+		}
+
+		return $trigger;
+	}//end scheduledTrigger()
 
 	/**
 	 * Evaluate one scheduled rule over the open, past-due tasks.
@@ -220,8 +236,12 @@ class TaskScheduledNotificationJob extends TimedJob {
 		// "now", so the two derivations cannot disagree within a run.
 		$nowMutable = $this->time->getDateTime();
 		$nowDt = DateTimeImmutable::createFromMutable($nowMutable);
-		$schema = $this->schemaFor(name: $name, rule: $rule);
-		$watched = $this->watchedFields(trigger: $trigger);
+		$sweep = new TaskSweep(
+			name: $name,
+			filter: $filter,
+			watched: $this->watchedFields(trigger: $trigger),
+			schema: $this->schemaFor(name: $name, rule: $rule)
+		);
 
 		$matched = 0;
 		$dispatched = 0;
@@ -235,44 +255,10 @@ class TaskScheduledNotificationJob extends TimedJob {
 			$offset += count($page);
 
 			foreach ($page as $task) {
-				$row = $this->inbox->enrich(task: $task);
-				$adapter = new TaskObjectAdapter(task: $task, row: $row);
-				$payload = ($adapter->getObject() ?? []);
-
-				if ($this->filters->matches(objectData: $payload, filter: $filter, now: $nowDt) === false) {
-					continue;
-				}
-
-				$matched++;
-				$uuid = (string)$task->getUuid();
-				$fingerprint = $this->fingerprint(payload: $payload, watched: $watched);
-				$existing = $this->dedupe->findOne(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $name, objectUuid: $uuid);
-				if ($existing !== null && (string)$existing->getFingerprint() === $fingerprint) {
-					continue;
-				}
-
-				try {
-					$this->dispatcher->dispatchWithSchema(
-						object: $adapter,
-						trigger: 'scheduled',
-						context: ['notificationName' => $name],
-						schema: $schema
-					);
-					$this->dedupe->upsert(
-						schemaId: self::DEDUPE_SCHEMA_ID,
-						ruleKey: $name,
-						objectUuid: $uuid,
-						fingerprint: $fingerprint,
-						now: $nowMutable,
-						dispatched: true
-					);
-					$dispatched++;
-				} catch (Throwable $failure) {
-					$this->logger->warning(
-						sprintf('[TaskScheduledNotificationJob] Rule "%s" failed for task %s: %s', $name, $uuid, $failure->getMessage())
-					);
-				}
-			}//end foreach
+				$outcome = $this->fireTask(task: $task, sweep: $sweep, now: $nowMutable, nowDt: $nowDt);
+				$matched += $outcome['matched'];
+				$dispatched += $outcome['dispatched'];
+			}
 
 			if (count($page) < self::PAGE) {
 				break;
@@ -283,6 +269,76 @@ class TaskScheduledNotificationJob extends TimedJob {
 			sprintf('[TaskScheduledNotificationJob] Rule "%s": matched=%d dispatched=%d', $name, $matched, $dispatched)
 		);
 	}//end fire()
+
+	/**
+	 * Evaluate one candidate task: filter, dedupe, then dispatch.
+	 *
+	 * @param Task              $task  The candidate task.
+	 * @param TaskSweep         $sweep The rule being swept.
+	 * @param DateTime          $now   The sweep's clock instant.
+	 * @param DateTimeImmutable $nowDt The same instant, immutable, for the filter.
+	 *
+	 * @return array{matched: int, dispatched: int} Whether the task matched and was dispatched (0/1).
+	 */
+	private function fireTask(Task $task, TaskSweep $sweep, DateTime $now, DateTimeImmutable $nowDt): array {
+		$row = $this->inbox->enrich(task: $task);
+		$adapter = new TaskObjectAdapter(task: $task, row: $row);
+		$payload = ($adapter->getObject() ?? []);
+
+		if ($this->filters->matches(objectData: $payload, filter: $sweep->filter, now: $nowDt) === false) {
+			return ['matched' => 0, 'dispatched' => 0];
+		}
+
+		$uuid = (string)$task->getUuid();
+		$fingerprint = $this->fingerprint(payload: $payload, watched: $sweep->watched);
+		$existing = $this->dedupe->findOne(schemaId: self::DEDUPE_SCHEMA_ID, ruleKey: $sweep->name, objectUuid: $uuid);
+		if ($existing !== null && (string)$existing->getFingerprint() === $fingerprint) {
+			return ['matched' => 1, 'dispatched' => 0];
+		}
+
+		return [
+			'matched' => 1,
+			'dispatched' => $this->dispatchTask(adapter: $adapter, sweep: $sweep, fingerprint: $fingerprint, now: $now),
+		];
+	}//end fireTask()
+
+	/**
+	 * Dispatch one task and record its fingerprint; a failure is logged, not raised.
+	 *
+	 * @param TaskObjectAdapter $adapter     The task as a notifiable object.
+	 * @param TaskSweep         $sweep       The rule being swept.
+	 * @param string            $fingerprint The task's dedupe fingerprint.
+	 * @param DateTime          $now         The sweep's clock instant.
+	 *
+	 * @return int 1 when dispatched, 0 when the dispatch failed.
+	 */
+	private function dispatchTask(TaskObjectAdapter $adapter, TaskSweep $sweep, string $fingerprint, DateTime $now): int {
+		// The adapter carries the task uuid as its own.
+		$uuid = (string)$adapter->getUuid();
+
+		try {
+			$this->dispatcher->dispatchWithSchema(
+				object: $adapter,
+				trigger: 'scheduled',
+				context: ['notificationName' => $sweep->name],
+				schema: $sweep->schema
+			);
+			$this->dedupe->upsert(
+				schemaId: self::DEDUPE_SCHEMA_ID,
+				ruleKey: $sweep->name,
+				objectUuid: $uuid,
+				fingerprint: $fingerprint,
+				now: $now,
+				dispatched: true
+			);
+			return 1;
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				sprintf('[TaskScheduledNotificationJob] Rule "%s" failed for task %s: %s', $sweep->name, $uuid, $failure->getMessage())
+			);
+			return 0;
+		}
+	}//end dispatchTask()
 
 	/**
 	 * The candidate page: open tasks whose deadline lies before now, through

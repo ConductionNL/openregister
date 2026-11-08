@@ -37,6 +37,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SurvivorshipControllerFactory;
 
 /**
  * Pins the RBAC/tenant-scoped read, the write order and every status mapping.
@@ -106,7 +107,7 @@ class SurvivorshipControllerA24GoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new SurvivorshipController('openregister', $request, $this->objects, $this->schemas, $this->resolver, $session);
+		return SurvivorshipControllerFactory::create('openregister', $request, $this->objects, $this->schemas, $this->resolver, $session);
 	}//end controller()
 
 	/**

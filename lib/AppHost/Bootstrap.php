@@ -211,28 +211,21 @@ class Bootstrap {
 		$listenerNs = (string)($options['listenerNamespace'] ?? ($base . '\\Listener'));
 		$serviceNs = (string)($options['serviceNamespace'] ?? ($base . '\\Service'));
 
-		$sectionId = (string)($options['sectionId'] ?? $appId);
-		$sectionName = (string)($options['sectionName'] ?? $studly);
-		$sectionIcon = (string)($options['sectionIcon'] ?? 'app-dark.svg');
-		$sectionPriority = (int)($options['sectionPriority'] ?? 75);
-		$adminPriority = (int)($options['adminPriority'] ?? 10);
+		$section = [
+			'id' => (string)($options['sectionId'] ?? $appId),
+			'name' => (string)($options['sectionName'] ?? $studly),
+			'icon' => (string)($options['sectionIcon'] ?? 'app-dark.svg'),
+			'priority' => (int)($options['sectionPriority'] ?? 75),
+			'adminPriority' => (int)($options['adminPriority'] ?? 10),
+		];
 		$registerDeepLinks = ($options['deepLinks'] ?? true) !== false;
 		$registerObserv = ($options['observability'] ?? true) !== false;
 
 		self::registerControllers(context: $context, appId: $appId, controllerNs: $controllerNs, observability: $registerObserv);
 		self::registerServices(context: $context, appId: $appId, serviceNs: $serviceNs);
 		self::registerRepairSteps(context: $context, appId: $appId, repairNs: $repairNs);
-		self::registerAdminSettings(
-			context: $context,
-			appId: $appId,
-			settingsNs: $settingsNs,
-			sectionsNs: $sectionsNs,
-			sectionId: $sectionId,
-			sectionName: $sectionName,
-			sectionIcon: $sectionIcon,
-			sectionPriority: $sectionPriority,
-			adminPriority: $adminPriority
-		);
+		self::registerAdminForm(context: $context, appId: $appId, settingsNs: $settingsNs, section: $section);
+		self::registerSettingsSection(context: $context, appId: $appId, sectionsNs: $sectionsNs, section: $section);
 
 		if ($registerDeepLinks === true) {
 			self::registerDeepLinkListener(context: $context, appId: $appId, listenerNs: $listenerNs);
@@ -537,32 +530,25 @@ class Bootstrap {
 	}//end registerRepairSteps()
 
 	/**
-	 * Bind the leaf admin-settings + section class names (referenced by
-	 * info.xml) to the generic admin settings/section with the leaf metadata.
+	 * Bind the leaf admin-settings class name (referenced by info.xml) to the
+	 * generic admin settings form with the leaf metadata.
 	 *
-	 * @param IRegistrationContext $context Leaf registration context.
-	 * @param string $appId Leaf app id.
-	 * @param string $settingsNs Leaf settings namespace.
-	 * @param string $sectionsNs Leaf sections namespace.
-	 * @param string $sectionId Section id.
-	 * @param string $sectionName Section display name.
-	 * @param string $sectionIcon Section icon file.
-	 * @param int $sectionPriority Section priority.
-	 * @param int $adminPriority Admin form priority.
+	 * @param IRegistrationContext $context    Leaf registration context.
+	 * @param string               $appId      Leaf app id.
+	 * @param string               $settingsNs Leaf settings namespace.
+	 * @param array{id: string, name: string, icon: string, priority: int, adminPriority: int} $section Section metadata.
 	 *
 	 * @return void
 	 */
-	private static function registerAdminSettings(
+	private static function registerAdminForm(
 		IRegistrationContext $context,
 		string $appId,
 		string $settingsNs,
-		string $sectionsNs,
-		string $sectionId,
-		string $sectionName,
-		string $sectionIcon,
-		int $sectionPriority,
-		int $adminPriority,
+		array $section,
 	): void {
+		$sectionId = $section['id'];
+		$adminPriority = $section['adminPriority'];
+
 		$context->registerService(
 			$settingsNs . '\\AdminSettings',
 			static function (ContainerInterface $c) use ($appId, $sectionId, $adminPriority) {
@@ -577,6 +563,29 @@ class Bootstrap {
 				);
 			}
 		);
+	}//end registerAdminForm()
+
+	/**
+	 * Bind the leaf settings-section class name (referenced by info.xml) to
+	 * the generic settings section with the leaf metadata.
+	 *
+	 * @param IRegistrationContext $context    Leaf registration context.
+	 * @param string               $appId      Leaf app id.
+	 * @param string               $sectionsNs Leaf sections namespace.
+	 * @param array{id: string, name: string, icon: string, priority: int, adminPriority: int} $section Section metadata.
+	 *
+	 * @return void
+	 */
+	private static function registerSettingsSection(
+		IRegistrationContext $context,
+		string $appId,
+		string $sectionsNs,
+		array $section,
+	): void {
+		$sectionId = $section['id'];
+		$sectionName = $section['name'];
+		$sectionIcon = $section['icon'];
+		$sectionPriority = $section['priority'];
 
 		$context->registerService(
 			$sectionsNs . '\\SettingsSection',
@@ -592,7 +601,7 @@ class Bootstrap {
 				);
 			}
 		);
-	}//end registerAdminSettings()
+	}//end registerSettingsSection()
 
 	/**
 	 * Register the generic deep-link listener (manifest-driven) and bind the

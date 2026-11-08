@@ -67,6 +67,36 @@ class HistoryNarrowing {
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
 	public function narrow(HistoryPredicate $predicate, ?array $ids = null): array {
+		$candidates = $this->candidatesFor(predicate: $predicate);
+
+		if ($candidates === null) {
+			// Nothing read, so nothing to narrow by. The caller checks
+			// narrows() first; this is the belt on that brace.
+			return ($ids ?? []);
+		}
+
+		if ($ids !== null && $ids !== []) {
+			$candidates = array_values(array_intersect($ids, $candidates));
+		}
+
+		$this->logger->debug(
+			'[HistoryNarrowing] History predicate narrowed the query to {count} candidates',
+			['count' => count($candidates)]
+		);
+
+		return $candidates;
+	}//end narrow()
+
+	/**
+	 * Intersect the candidates of every filter, was-ever filters first.
+	 *
+	 * @param HistoryPredicate $predicate The parsed predicate.
+	 *
+	 * @return string[]|null The candidates, or null when no filter read.
+	 *
+	 * @psalm-return list<string>|null
+	 */
+	private function candidatesFor(HistoryPredicate $predicate): ?array {
 		$candidates = null;
 
 		foreach ($predicate->wasEver() as $property => $value) {
@@ -87,23 +117,8 @@ class HistoryNarrowing {
 			);
 		}
 
-		if ($candidates === null) {
-			// Nothing read, so nothing to narrow by. The caller checks
-			// narrows() first; this is the belt on that brace.
-			return ($ids ?? []);
-		}
-
-		if ($ids !== null && $ids !== []) {
-			$candidates = array_values(array_intersect($ids, $candidates));
-		}
-
-		$this->logger->debug(
-			'[HistoryNarrowing] History predicate narrowed the query to {count} candidates',
-			['count' => count($candidates)]
-		);
-
 		return $candidates;
-	}//end narrow()
+	}//end candidatesFor()
 
 	/**
 	 * Intersect two candidate sets, treating "not yet set" as "everything".

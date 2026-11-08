@@ -38,6 +38,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\UserSettingsControllerFactory;
 
 /**
  * Golden allowed/refused outcomes of UserSettingsController.
@@ -76,7 +77,7 @@ class UserSettingsControllerA24GoldenTest extends TestCase {
 			);
 		}
 
-		$this->controller = new UserSettingsController('openregister', $this->request, $this->gitHub, $this->userSession, $logger);
+		$this->controller = UserSettingsControllerFactory::create('openregister', $this->request, $this->gitHub, $this->userSession, $logger);
 	}
 
 	private function signedIn(): void {

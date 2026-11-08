@@ -3,7 +3,6 @@ import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import {
 	navigationStore,
 	registerStore,
-	schemaStore,
 	sourceStore,
 } from '../../store/store.js'
 </script>
@@ -39,105 +38,83 @@ import {
 							sourceStore.sourceItem.databaseUrl
 						}}</span>
 					</div>
-					<div v-if="sourceStore.sourceItem?.created" class="propertyItem">
-						<strong>{{ t('openregister', 'Created') }}:</strong>
-						<span>{{
-							new Date(sourceStore.sourceItem.created).toLocaleString()
-						}}</span>
-					</div>
-					<div v-if="sourceStore.sourceItem?.updated" class="propertyItem">
-						<strong>{{ t('openregister', 'Updated') }}:</strong>
-						<span>{{
-							new Date(sourceStore.sourceItem.updated).toLocaleString()
-						}}</span>
-					</div>
+					<TimestampProperties
+						:created="sourceStore.sourceItem?.created"
+						:updated="sourceStore.sourceItem?.updated" />
 				</div>
 			</div>
 
 			<!-- Tabs for additional information -->
-			<div class="tabContainer">
-				<div class="tabHeaders">
-					<button
-						v-for="(tab, index) in tabs"
-						:key="tab"
-						class="tabHeader"
-						:class="{ active: activeTab === index }"
-						@click="activeTab = index">
-						{{ tab }}
-					</button>
-				</div>
-
-				<div class="tabContent">
-					<!-- Registers Tab -->
-					<div v-if="activeTab === 0" class="tabPanel">
-						<div v-if="filterRegisters.length > 0" class="registersGrid">
-							<div
-								v-for="register in filterRegisters"
-								:key="register.id"
-								class="registerCard">
-								<div class="registerHeader">
-									<h3>{{ register.title }}</h3>
-									<NcActions>
-										<NcActionButton
-											closeAfterClick
-											@click="viewRegister(register)">
-											<template #icon>
-												<Eye :size="20" />
-											</template>
-											View
-										</NcActionButton>
-										<NcActionButton
-											closeAfterClick
-											@click="editRegister(register)">
-											<template #icon>
-												<Pencil :size="20" />
-											</template>
-											Edit
-										</NcActionButton>
-									</NcActions>
-								</div>
-								<p
-									v-if="register.description"
-									class="registerDescription">
-									{{ register.description }}
-								</p>
+			<ViewDialogTabs v-model="activeTab" :tabs="tabs">
+				<!-- Registers Tab -->
+				<div v-if="activeTab === 0" class="tabPanel">
+					<div v-if="filterRegisters.length > 0" class="registersGrid">
+						<div
+							v-for="register in filterRegisters"
+							:key="register.id"
+							class="registerCard">
+							<div class="registerHeader">
+								<h3>{{ register.title }}</h3>
+								<NcActions>
+									<NcActionButton
+										closeAfterClick
+										@click="viewRegister(register)">
+										<template #icon>
+											<Eye :size="20" />
+										</template>
+										View
+									</NcActionButton>
+									<NcActionButton
+										closeAfterClick
+										@click="editRegister(register)">
+										<template #icon>
+											<Pencil :size="20" />
+										</template>
+										Edit
+									</NcActionButton>
+								</NcActions>
 							</div>
-						</div>
-						<div v-else class="emptyTabContent">
-							<NcEmptyContent
-								:name="t('openregister', 'No registers found')"
-								:description="
-									t(
-										'openregister',
-										'This source has no associated registers.',
-									)
-								">
-								<template #icon>
-									<DatabaseOutline :size="64" />
-								</template>
-							</NcEmptyContent>
+							<p
+								v-if="register.description"
+								class="registerDescription">
+								{{ register.description }}
+							</p>
 						</div>
 					</div>
-
-					<!-- Logs Tab -->
-					<div v-if="activeTab === 1" class="tabPanel">
-						<div class="emptyTabContent">
-							<NcEmptyContent
-								:name="t('openregister', 'No logs found')"
-								:description="
-									t(
-										'openregister',
-										'No logs are available for this source.',
-									)
-								">
-								<template #icon>
-									<PostOutline :size="64" />
-								</template>
-							</NcEmptyContent>
-						</div>
+					<div v-else class="emptyTabContent">
+						<NcEmptyContent
+							:name="t('openregister', 'No registers found')"
+							:description="
+								t(
+									'openregister',
+									'This source has no associated registers.',
+								)
+							">
+							<template #icon>
+								<DatabaseOutline :size="64" />
+							</template>
+						</NcEmptyContent>
 					</div>
 				</div>
-			</div>
+
+				<!-- Logs Tab -->
+				<div v-if="activeTab === 1" class="tabPanel">
+					<div class="emptyTabContent">
+						<NcEmptyContent
+							:name="t('openregister', 'No logs found')"
+							:description="
+								t(
+									'openregister',
+									'No logs are available for this source.',
+								)
+							">
+							<template #icon>
+								<PostOutline :size="64" />
+							</template>
+						</NcEmptyContent>
+					</div>
+				</div>
+			</ViewDialogTabs>
 		</div>
 
 		<template #actions>
@@ -184,10 +161,14 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import EditRegisterFormDialog from '../register/EditRegisterFormDialog.vue'
+import TimestampProperties from '../shared/TimestampProperties.vue'
+import ViewDialogTabs from '../shared/ViewDialogTabs.vue'
 
 export default {
 	name: 'ViewSource',
 	components: {
+		TimestampProperties,
+		ViewDialogTabs,
 		EditRegisterFormDialog,
 		NcDialog,
 		NcButton,
@@ -301,57 +282,14 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/modals.scss' as *;
 
-.viewSourceDialog {
-	display: flex;
-	flex-direction: column;
-	gap: 1.5rem;
-}
-
-.sourceDetailsGrid {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-}
-
-.sourceMainInfo h2 {
-	margin: 0 0 0.5rem 0;
-	color: var(--color-main-text);
-}
-
-.sourceDescription {
-	color: var(--color-text-lighter);
-	margin: 0;
-}
-
-.sourceProperties {
-	display: flex;
-	flex-direction: column;
-	gap: 0.75rem;
-	padding: 1rem;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-@include property-item-rules;
+@include view-dialog-details('source', 'Source');
 
 .urlValue {
 	word-break: break-all;
 	font-family: monospace;
 }
 
-.tabContainer {
-	margin-top: 1rem;
-}
-
-@include tab-headers-rules;
-
-.tabContent {
-	min-height: 200px;
-}
-
-.tabPanel {
-	padding: 1rem 0;
-}
+@include view-dialog-tab-panels;
 
 .registersGrid {
 	display: grid;

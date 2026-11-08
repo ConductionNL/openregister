@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Controller\Support\PropertyVocabularyControllerServices;
 
 /**
  * Discovery for the property vocabulary.
@@ -42,24 +43,44 @@ use OCP\IRequest;
 class PropertyVocabularyController extends Controller {
 
 	/**
+	 * The published vocabulary.
+	 *
+	 * @var PropertyVocabularyInterface
+	 */
+	private readonly PropertyVocabularyInterface $vocabulary;
+
+	/**
+	 * The extending-form declaration reader.
+	 *
+	 * @var ExtendingFormDeclarationInterface
+	 */
+	private readonly ExtendingFormDeclarationInterface $declarations;
+
+	/**
+	 * Schema lookup, for the declared narrowings.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param PropertyVocabularyInterface $vocabulary The published vocabulary.
-	 * @param ExtendingFormDeclarationInterface $declarations The extending-form declaration reader.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup, for the declared narrowings.
+	 * @param PropertyVocabularyControllerServices $services The services, bundled.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly PropertyVocabularyInterface $vocabulary,
-		private readonly ExtendingFormDeclarationInterface $declarations,
-		private readonly SchemaMapperInterface $schemaMapper,
+		PropertyVocabularyControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->vocabulary = $services->vocabulary;
+		$this->declarations = $services->declarations;
+		$this->schemaMapper = $services->schemaMapper;
 
 	}//end __construct()
 
