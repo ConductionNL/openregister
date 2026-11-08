@@ -44,10 +44,10 @@ namespace OCA\OpenRegister\Service\Task;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
-use OCA\OpenRegister\Db\TaskAuditMapper;
-use OCA\OpenRegister\Db\TaskCandidateMapper;
+use OCA\OpenRegister\Db\TaskAuditMapperInterface;
+use OCA\OpenRegister\Db\TaskCandidateMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Db\TaskRelationMapper;
+use OCA\OpenRegister\Db\TaskRelationMapperInterface;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
@@ -108,9 +108,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 * Constructor.
 	 *
 	 * @param TaskMapper $tasks The task table.
-	 * @param TaskCandidateMapper $candidates The candidate index rows.
-	 * @param TaskRelationMapper $relations The typed relation rows.
-	 * @param TaskAuditMapper $audits The append-only audit.
+	 * @param TaskCandidateMapperInterface $candidates The candidate index rows.
+	 * @param TaskRelationMapperInterface $relations The typed relation rows.
+	 * @param TaskAuditMapperInterface $audits The append-only audit.
 	 * @param TaskAuthorizationService $authorization The per-verb, fail-closed decisions.
 	 * @param TaskPerformerResolver $resolver The routing strategies.
 	 * @param IDBConnection $db Holds the one transaction per verb.
@@ -170,9 +170,9 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
-		private readonly TaskCandidateMapper $candidates,
-		private readonly TaskRelationMapper $relations,
-		private readonly TaskAuditMapper $audits,
+		private readonly TaskCandidateMapperInterface $candidates,
+		private readonly TaskRelationMapperInterface $relations,
+		private readonly TaskAuditMapperInterface $audits,
 		private readonly TaskAuthorizationService $authorization,
 		private readonly TaskPerformerResolver $resolver,
 		private readonly IDBConnection $db,

@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunStep;
-use OCA\OpenRegister\Db\FlowRunStepMapper;
+use OCA\OpenRegister\Db\FlowRunStepMapperInterface;
 use OCA\OpenRegister\Db\FlowStream;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -56,14 +56,14 @@ class FlowStepHistory {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunStepMapper|null $steps  Reads the highest sequence already recorded.
+	 * @param FlowRunStepMapperInterface|null $steps  Reads the highest sequence already recorded.
 	 *                                       Null where history is not being recorded at
 	 *                                       all, in which case numbering starts at zero.
 	 * @param LoggerInterface|null   $logger Records a failed read.
 	 * @param FlowHopAudit|null      $hopAudit Audits each hop recorded here.
 	 */
 	public function __construct(
-		private readonly ?FlowRunStepMapper $steps = null,
+		private readonly ?FlowRunStepMapperInterface $steps = null,
 		private readonly ?LoggerInterface $logger = null,
 		private readonly ?FlowHopAudit $hopAudit = null,
 	) {

@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Db\TaskAuditMapper;
-use OCA\OpenRegister\Db\TaskCandidateMapper;
+use OCA\OpenRegister\Db\TaskAuditMapperInterface;
+use OCA\OpenRegister\Db\TaskCandidateMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 
 /**
@@ -36,13 +36,13 @@ final class TaskFixtureMappers {
 	 * Bundle the mappers.
 	 *
 	 * @param TaskMapper          $tasks      The task rows.
-	 * @param TaskCandidateMapper $candidates The candidate index rows.
-	 * @param TaskAuditMapper     $audits     The audit rows.
+	 * @param TaskCandidateMapperInterface $candidates The candidate index rows.
+	 * @param TaskAuditMapperInterface     $audits     The audit rows.
 	 */
 	public function __construct(
 		public readonly TaskMapper $tasks,
-		public readonly TaskCandidateMapper $candidates,
-		public readonly TaskAuditMapper $audits,
+		public readonly TaskCandidateMapperInterface $candidates,
+		public readonly TaskAuditMapperInterface $audits,
 	) {
 	}//end __construct()
 }//end class
