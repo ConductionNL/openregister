@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\ContactLinkMapperInterface;
  *
  * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
  */
-class PartyIndicatorGuard implements PartyIndicatorGuardInterface {
+class PartyIndicatorGuard implements PartyIndicatorGuardInterface, PartySendRefusalInterface {
 
 	/**
 	 * The effect refusing a publication.

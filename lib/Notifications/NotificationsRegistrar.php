@@ -40,6 +40,8 @@ use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidatorInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
@@ -112,6 +114,7 @@ final class NotificationsRegistrar {
 		NotificationClearingServiceInterface::class => NotificationClearingService::class,
 		NotificationChannelPolicyInterface::class => NotificationChannelPolicy::class,
 		ScheduledReportMapperInterface::class => ScheduledReportMapper::class,
+		NotificationAnnotationValidatorInterface::class => NotificationAnnotationValidator::class,
 	];
 
 	/**

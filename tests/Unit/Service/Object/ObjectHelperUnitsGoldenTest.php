@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\FacetResponseCache;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillLedger;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillWriter;
+use OCA\OpenRegister\Service\Object\ObjectSlugChangeSet;
 use OCA\OpenRegister\Service\Object\ObjectVersionHandler;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
@@ -104,7 +105,7 @@ class ObjectHelperUnitsGoldenTest extends TestCase {
 		];
 		(new ReflectionMethod(ObjectSlugBackfillWriter::class, 'writeChunk'))->invokeArgs(
 			$writer,
-			[$chunk, $register, $schema, &$tally]
+			[new ObjectSlugChangeSet($register, $schema, $chunk, []), &$tally]
 		);
 
 		$this->assertSame(

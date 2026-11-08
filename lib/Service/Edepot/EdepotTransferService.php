@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
  */
-class EdepotTransferService implements EdepotTransferServiceInterface {
+class EdepotTransferService implements EdepotTransferServiceInterface, EdepotTransferAttemptInterface {
 
 	/**
 	 * Available SIP profiles.

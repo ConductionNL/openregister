@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Queues a flow run for every flow wired to a fired event.
  */
-class FlowTriggerService {
+class FlowTriggerService implements FlowTriggerServiceInterface {
 
 	/**
 	 * The execution mode that runs a flow inline rather than queueing it.

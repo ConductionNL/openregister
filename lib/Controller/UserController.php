@@ -29,7 +29,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\UserControllerServices;
 use OCA\OpenRegister\Controller\Support\UserResponses;
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\LoginSecurityInterface;
 use OCA\OpenRegister\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -80,9 +80,9 @@ class UserController extends Controller {
 	/**
 	 * Security service for input sanitization
 	 *
-	 * @var SecurityService
+	 * @var LoginSecurityInterface
 	 */
-	private readonly SecurityService $securityService;
+	private readonly LoginSecurityInterface $securityService;
 
 	/**
 	 * User manager for authentication
@@ -165,8 +165,7 @@ class UserController extends Controller {
 			action: fn (IUser $user): JSONResponse => new JSONResponse(
 				data: $this->userService->buildUserDataArray(user: $user)
 			),
-			logMessage: 'Failed to get user profile',
-			failure: 'Failed to retrieve user profile'
+			messages: ['log' => 'Failed to get user profile', 'failure' => 'Failed to retrieve user profile']
 		);
 	}//end me()
 
@@ -188,7 +187,7 @@ class UserController extends Controller {
 			action: fn (IUser $user): JSONResponse => new JSONResponse(
 				data: $this->userService->updateUserProperties(user: $user, data: $this->profileUpdates())
 			),
-			logMessage: 'Failed to update user profile'
+			messages: ['log' => 'Failed to update user profile']
 		);
 	}//end updateMe()
 
@@ -273,10 +272,11 @@ class UserController extends Controller {
 			return $this->responses->error(message: $credentialValidation['error'], statusCode: 400);
 		}
 
+		$credentials = $credentialValidation['credentials'];
+
 		return $this->checkCredentials(
-			credentials: $credentialValidation['credentials'],
-			clientIp: $clientIp,
-			initialMemoryUsage: $initialMemoryUsage
+			credentials: $credentials,
+			attempt: ['username' => $credentials['username'], 'ipAddress' => $clientIp, 'initialMemoryUsage' => $initialMemoryUsage]
 		);
 	}//end authenticate()
 
@@ -295,17 +295,16 @@ class UserController extends Controller {
 	/**
 	 * Apply the rate limit, check the password and start the session.
 	 *
-	 * @param array{username: string, password: string} $credentials        The validated credentials.
-	 * @param string                                     $clientIp           The client IP address.
-	 * @param int                                        $initialMemoryUsage Memory usage when the login started.
+	 * @param array{username: string, password: string}                           $credentials The validated credentials.
+	 * @param array{username: string, ipAddress: string, initialMemoryUsage: int} $attempt     The login attempt: the username, the client
+	 *                                                                                         IP address and the memory usage when the
+	 *                                                                                         login started.
 	 *
 	 * @return JSONResponse The login outcome.
 	 */
-	private function checkCredentials(array $credentials, string $clientIp, int $initialMemoryUsage): JSONResponse {
-		$attempt = ['username' => $credentials['username'], 'ipAddress' => $clientIp];
-
+	private function checkCredentials(array $credentials, array $attempt): JSONResponse {
 		// Rate limiting is checked before attempting authentication.
-		$rateLimitCheck = $this->securityService->checkLoginRateLimit(username: $attempt['username'], ipAddress: $clientIp);
+		$rateLimitCheck = $this->securityService->checkLoginRateLimit(username: $attempt['username'], ipAddress: $attempt['ipAddress']);
 		if ($rateLimitCheck['allowed'] === false) {
 			return $this->rateLimitedLoginResponse(rateLimitCheck: $rateLimitCheck);
 		}
@@ -316,23 +315,23 @@ class UserController extends Controller {
 			return $refusal;
 		}
 
-		return $this->startSession(user: $user, attempt: $attempt, initialMemoryUsage: $initialMemoryUsage);
+		return $this->startSession(user: $user, attempt: $attempt);
 	}//end checkCredentials()
 
 	/**
 	 * Record the successful login (clears rate limits) and create the login session.
 	 *
-	 * @param IUser                                       $user               The authenticated user.
-	 * @param array{username: string, ipAddress: string} $attempt            The login attempt.
-	 * @param int                                         $initialMemoryUsage Memory usage when the login started.
+	 * @param IUser                                                               $user    The authenticated user.
+	 * @param array{username: string, ipAddress: string, initialMemoryUsage: int} $attempt The login attempt, with the memory usage when
+	 *                                                                                     the login started.
 	 *
 	 * @return JSONResponse The successful login response.
 	 */
-	private function startSession(IUser $user, array $attempt, int $initialMemoryUsage): JSONResponse {
+	private function startSession(IUser $user, array $attempt): JSONResponse {
 		$this->securityService->recordSuccessfulLogin(username: $attempt['username'], ipAddress: $attempt['ipAddress']);
 		$this->userSession->setUser($user);
 		$userData = $this->userService->buildUserDataArray(user: $user);
-		$this->logLoginMemoryIncrease(user: $user, initialMemoryUsage: $initialMemoryUsage);
+		$this->logLoginMemoryIncrease(user: $user, initialMemoryUsage: $attempt['initialMemoryUsage']);
 
 		return $this->responses->secured(
 			data: ['message' => 'Login successful', 'user' => $userData, 'session_created' => true]
@@ -856,13 +855,13 @@ class UserController extends Controller {
 	 *
 	 * Profile responses carry no security headers.
 	 *
-	 * @param callable(IUser): JSONResponse $action     The action.
-	 * @param string                        $logMessage The logged failure message.
-	 * @param string|null                   $failure    The failure response message; null exposes the exception message.
+	 * @param callable(IUser): JSONResponse        $action   The action.
+	 * @param array{log: string, failure?: string} $messages The logged failure message, and the failure response
+	 *                                                       message; without one the exception message is exposed.
 	 *
 	 * @return JSONResponse The response.
 	 */
-	private function forProfileUser(callable $action, string $logMessage, ?string $failure=null): JSONResponse {
+	private function forProfileUser(callable $action, array $messages): JSONResponse {
 		try {
 			$currentUser = $this->userService->getCurrentUser();
 			if ($currentUser === null) {
@@ -871,8 +870,8 @@ class UserController extends Controller {
 
 			return $action($currentUser);
 		} catch (Exception $e) {
-			$this->logError(message: $logMessage, exception: $e);
-			return new JSONResponse(data: ['error' => $failure ?? $e->getMessage()], statusCode: 500);
+			$this->logError(message: $messages['log'], exception: $e);
+			return new JSONResponse(data: ['error' => ($messages['failure'] ?? $e->getMessage())], statusCode: 500);
 		}//end try
 	}//end forProfileUser()
 

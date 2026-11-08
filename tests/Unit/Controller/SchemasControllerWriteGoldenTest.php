@@ -28,6 +28,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationE
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
@@ -291,7 +292,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 				return $audit;
 			}
 
-			if ($id === FormDependentsCheck::class) {
+			if ($id === FormDependentsCheckInterface::class) {
 				$this->record(method: 'container.get', args: ['FormDependentsCheck']);
 				if (($case['forms'] ?? null) === 'throws') {
 					throw new Exception('No form check');

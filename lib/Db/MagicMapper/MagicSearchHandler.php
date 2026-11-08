@@ -60,9 +60,9 @@ use OCA\OpenRegister\Service\LanguageServiceInterface;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
-use OCA\OpenRegister\Service\Search\SearchTermNode;
-use OCA\OpenRegister\Service\Search\SearchTermParser;
-use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
+use OCA\OpenRegister\Service\Search\SearchGrammar;
+use OCA\OpenRegister\Service\Search\SearchTermParserInterface;
+use OCA\OpenRegister\Service\Search\SearchTermSqlCompilerInterface;
 use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Support\NullFilter;
 use OCA\OpenRegister\Support\OrderParameter;
@@ -263,16 +263,16 @@ class MagicSearchHandler {
 	 * adding a seventh constructor argument would break every caller that
 	 * constructs this handler positionally.
 	 *
-	 * @var SearchTermParser
+	 * @var SearchTermParserInterface
 	 */
-	private SearchTermParser $termParser;
+	private SearchTermParserInterface $termParser;
 
 	/**
 	 * Compiler turning a parsed term into SQL.
 	 *
-	 * @var SearchTermSqlCompiler
+	 * @var SearchTermSqlCompilerInterface
 	 */
-	private SearchTermSqlCompiler $termCompiler;
+	private SearchTermSqlCompilerInterface $termCompiler;
 
 	/**
 	 * Tells metadata columns from underscore-named property columns.
@@ -321,8 +321,8 @@ class MagicSearchHandler {
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 		private readonly ?ExplicitRevealInterface $explicitReveal = null,
 	) {
-		$this->termParser = new SearchTermParser();
-		$this->termCompiler = new SearchTermSqlCompiler();
+		$this->termParser = SearchGrammar::termParser();
+		$this->termCompiler = SearchGrammar::termCompiler();
 		$this->columnRoles  = new MagicMetadataColumn();
 		$this->nestedPaths  = new NestedPathFilter();
 	}//end __construct()
@@ -1744,17 +1744,17 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) SearchTermNode::likeEscape() is a pure function over a
+	 * @SuppressWarnings(PHPMD.StaticAccess) SearchGrammar::likeEscape() is a pure function over a
 	 *                                      string, shared so a declared match type escapes a
 	 *                                      user's `%` exactly as a parsed term does.
 	 */
 	private function patternForMatchType(string $matchType, SearchLeaf $leaf): string {
 		if ($matchType === PropertySearchProfile::MATCH_EXACT) {
-			return SearchTermNode::likeEscape(value: $leaf->literal);
+			return SearchGrammar::likeEscape(value: $leaf->literal);
 		}
 
 		if ($matchType === PropertySearchProfile::MATCH_PREFIX) {
-			return SearchTermNode::likeEscape(value: $leaf->literal) . '%';
+			return SearchGrammar::likeEscape(value: $leaf->literal) . '%';
 		}
 
 		return $leaf->pattern;

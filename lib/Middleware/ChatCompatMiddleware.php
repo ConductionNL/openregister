@@ -45,11 +45,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use Exception;
-use OCA\OpenRegister\Controller\AgentsController;
-use OCA\OpenRegister\Controller\ChatController;
-use OCA\OpenRegister\Controller\ChatHealthController;
 use OCA\OpenRegister\Controller\ChatStreamController;
-use OCA\OpenRegister\Controller\ConversationController;
+use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Middleware\Exception\ChatProxiedResponseException;
 use OCA\OpenRegister\Service\Chat\ChatProxyHandlerInterface;
 use OCP\AppFramework\Controller;
@@ -69,16 +66,16 @@ class ChatCompatMiddleware extends Middleware {
 	/**
 	 * Controllers this middleware decorates/may proxy. Membership is checked
 	 * via `instanceof` (not `get_class()`) so PHPUnit mocks — which subclass
-	 * the real controller — match correctly.
+	 * the real controller — match correctly. ChatController,
+	 * ChatHealthController, ConversationController and AgentsController are
+	 * matched through the ChatFamilyControllerInterface marker they implement;
+	 * ChatStreamController is still listed by name.
 	 *
 	 * @var array<int, class-string>
 	 */
 	private const CHAT_FAMILY_CONTROLLERS = [
-		ChatController::class,
+		ChatFamilyControllerInterface::class,
 		ChatStreamController::class,
-		ChatHealthController::class,
-		ConversationController::class,
-		AgentsController::class,
 	];
 
 	/**

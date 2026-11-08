@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\Schema;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hinge
  */
-class ListPresentationResolver {
+class ListPresentationResolver implements ListPresentationResolverInterface {
 
 	/**
 	 * The columns every OpenRegister list already shows.

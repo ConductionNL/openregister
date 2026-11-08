@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowTimer;
-use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Migration\IOutput;
@@ -54,12 +54,12 @@ class CheckFlowTimerInvariants implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimerMapper $timers The timer table.
+	 * @param FlowTimerMapperInterface $timers The timer table.
 	 * @param TaskMapper $tasks The task table, for subject existence and terminality.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly FlowTimerMapper $timers,
+		private readonly FlowTimerMapperInterface $timers,
 		private readonly TaskMapper $tasks,
 		private readonly LoggerInterface $logger,
 	) {

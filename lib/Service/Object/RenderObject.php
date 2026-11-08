@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\FileReaderInterface;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -2054,7 +2054,7 @@ class RenderObject implements RenderObjectInterface {
 			return $fileRecords;
 		}
 
-		$verdicts = $this->container->get(FileRestrictionGuard::class)->readable(
+		$verdicts = $this->container->get(FileRestrictionGuardInterface::class)->readable(
 			fileIds: array_map(static fn (array $record): int => (int)($record['fileid'] ?? 0), $fileRecords)
 		);
 

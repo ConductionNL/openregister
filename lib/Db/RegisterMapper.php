@@ -30,8 +30,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
-use OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings;
-use OCA\OpenRegister\Service\Rbac\MetadataConditionFindings;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -248,25 +247,49 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			return $this->findCache[$cacheKey];
 		}
 
+		$register = $this->findFiltered(
+			lookup: new RegisterLookup(id: $id, rbac: $_rbac, multitenancy: $_multitenancy)
+		);
+
+		$this->findCache[$cacheKey] = $register;
+		$this->cacheRegisterByIdentifiers(register: $register, cacheSuffix: $cacheSuffix);
+
+		return $register;
+	}//end find()
+
+	/**
+	 * Run one uncached register lookup through the organisation filter.
+	 *
+	 * Logs the attempt, probes whether the row exists before the filters (for
+	 * the miss diagnostics), then reads the oldest matching row.
+	 *
+	 * @param RegisterLookup $lookup The identifier and filter flags.
+	 *
+	 * @return Register The register.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no row survives the filters.
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException Never in practice; findEntity() declares it.
+	 */
+	private function findFiltered(RegisterLookup $lookup): Register {
 		$this->logger->info(
 			message: '[RegisterMapper] Searching for register',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'identifier' => $id,
-				'rbac' => $_rbac,
-				'multi' => $_multitenancy,
+				'identifier' => $lookup->id,
+				'rbac' => $lookup->rbac,
+				'multi' => $lookup->multitenancy,
 			]
 		);
 
-		$qb = $this->buildFindByIdentifierQuery(id: $id);
-		$existsBeforeFilter = $this->probeRegisterBeforeFilters(qb: $qb, id: $id);
+		$qb = $this->buildFindByIdentifierQuery(id: $lookup->id);
+		$existsBeforeFilter = $this->probeRegisterBeforeFilters(qb: $qb, id: $lookup->id);
 
 		$this->applyOrganisationFilter(
 			qb: $qb,
 			columnName: 'organisation',
 			allowNullOrg: true,
-			multiTenancyEnabled: $_multitenancy
+			multiTenancyEnabled: $lookup->multitenancy
 		);
 
 		// Deterministic slug/uuid resolution: env churn can leave several rows
@@ -278,7 +301,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		$qb->setMaxResults(1);
 
 		try {
-			$register = $this->findEntity(query: $qb);
+			return $this->findEntity(query: $qb);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			// `existsBeforeFilter` separates "no such row" from "the row matched
 			// and then a filter removed it": a bad identifier versus a scoping bug.
@@ -287,22 +310,17 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'identifier' => $id,
+					'identifier' => $lookup->id,
 					'existsBeforeFilter' => $existsBeforeFilter,
-					'multiEnabled' => $_multitenancy,
-					'rbacEnabled' => $_rbac,
+					'multiEnabled' => $lookup->multitenancy,
+					'rbacEnabled' => $lookup->rbac,
 					'error' => $e->getMessage(),
 				]
 			);
 
 			throw $e;
 		}//end try
-
-		$this->findCache[$cacheKey] = $register;
-		$this->cacheRegisterByIdentifiers(register: $register, cacheSuffix: $cacheSuffix);
-
-		return $register;
-	}//end find()
+	}//end findFiltered()
 
 	/**
 	 * The find-cache key suffix for a pair of filter flags, such as `:1:0`.
@@ -733,8 +751,8 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			return;
 		}
 
-		(new MetadataConditionFindings(db: $this->db))->assertRegisterSavable(register: $register, subject: $subject);
-		(new UnknownRuleKeyFindings(db: $this->db))->assertRegisterSavable(register: $register, subject: $subject);
+		RbacChecks::metadataConditions(db: $this->db)->assertRegisterSavable(register: $register, subject: $subject);
+		RbacChecks::unknownRuleKeys(db: $this->db)->assertRegisterSavable(register: $register, subject: $subject);
 
 		AccessDeclarationValidators::denyValidator()->assertStorable(
 			authorization: $authorization,
@@ -929,14 +947,25 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy
 		);
-		$schemaIds = $register->getSchemas();
 
+		return $this->findLinkedSchemas(schemaIds: $register->getSchemas(), _rbac: $_rbac);
+	}//end getSchemasByRegisterId()
+
+	/**
+	 * Fetch each schema a register links, skipping the ones that no longer exist.
+	 *
+	 * Uses $_multitenancy=false to bypass the organisation filter: the register
+	 * has already passed access checks, so schemas linked to an accessible
+	 * register can always be found.
+	 *
+	 * @param array $schemaIds The register's schema ids.
+	 * @param bool  $_rbac     Whether to apply RBAC filtering to each schema.
+	 *
+	 * @return Schema[] The schemas found, in link order.
+	 */
+	private function findLinkedSchemas(array $schemaIds, bool $_rbac): array {
 		$schemas = [];
-
-		// Fetch each schema by its ID.
-		// Use $_multitenancy=false to bypass organization filter since the register has already passed access checks.
-		// This ensures schemas linked to accessible registers can always be found.
-		foreach ($schemaIds ?? [] as $schemaId) {
+		foreach ($schemaIds as $schemaId) {
 			try {
 				$schemas[] = $this->schemaMapper->find(id: (int)$schemaId, _extend: [], _rbac: $_rbac, _multitenancy: false);
 			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -946,7 +975,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		}
 
 		return $schemas;
-	}//end getSchemasByRegisterId()
+	}//end findLinkedSchemas()
 
 	/**
 	 * Retrieves the ID of the first register that includes the given schema ID.

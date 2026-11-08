@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\TextExtraction\AnalyzeDialect;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
 
 /**
  * Unit tests for EntityRecognitionHandler
@@ -864,9 +866,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectWithRegexFindsEmails(): void {
 		$entities = $this->invokePrivateMethod('detectWithRegex', [
-			'Send to user@example.com please',
-			null,
-			0.5,
+			new EntityDetectionQuery('Send to user@example.com please', null, 0.5),
 		]);
 
 		$this->assertNotEmpty($entities);
@@ -884,9 +884,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectWithRegexFindsIban(): void {
 		$entities = $this->invokePrivateMethod('detectWithRegex', [
-			'Bank account: NL91ABNA0417164300',
-			null,
-			0.5,
+			new EntityDetectionQuery('Bank account: NL91ABNA0417164300', null, 0.5),
 		]);
 
 		$this->assertNotEmpty($entities);
@@ -902,9 +900,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectWithRegexFindsPhoneNumbers(): void {
 		$entities = $this->invokePrivateMethod('detectWithRegex', [
-			'Call us at +31612345678 for more info.',
-			null,
-			0.5,
+			new EntityDetectionQuery('Call us at +31612345678 for more info.', null, 0.5),
 		]);
 
 		$this->assertNotEmpty($entities);
@@ -921,9 +917,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectWithRegexReturnsEmptyForCleanText(): void {
 		$entities = $this->invokePrivateMethod('detectWithRegex', [
-			'This is a clean text with no PII.',
-			null,
-			0.5,
+			new EntityDetectionQuery('This is a clean text with no PII.', null, 0.5),
 		]);
 
 		$this->assertEmpty($entities);
@@ -932,9 +926,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 	public function testDetectWithRegexFiltersEntityTypes(): void {
 		// Text with both email and phone.
 		$entities = $this->invokePrivateMethod('detectWithRegex', [
-			'Email user@test.com or call +31612345678',
-			['EMAIL'],
-			0.5,
+			new EntityDetectionQuery('Email user@test.com or call +31612345678', ['EMAIL'], 0.5),
 		]);
 
 		foreach ($entities as $entity) {
@@ -945,9 +937,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 	public function testDetectWithRegexFiltersEntityTypesExcludesUnrequested(): void {
 		// Only ask for IBAN type, should not return email or phone.
 		$entities = $this->invokePrivateMethod('detectWithRegex', [
-			'Email user@test.com or call +31612345678',
-			['IBAN'],
-			0.5,
+			new EntityDetectionQuery('Email user@test.com or call +31612345678', ['IBAN'], 0.5),
 		]);
 
 		$this->assertEmpty($entities);
@@ -956,9 +946,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 	public function testDetectWithRegexFiltersByConfidenceThreshold(): void {
 		// Phone has 0.7 confidence, set threshold to 0.8.
 		$entities = $this->invokePrivateMethod('detectWithRegex', [
-			'Call +31612345678 now.',
-			null,
-			0.8,
+			new EntityDetectionQuery('Call +31612345678 now.', null, 0.8),
 		]);
 
 		// Phone should be filtered out (0.7 < 0.8).
@@ -968,7 +956,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectWithRegexIncludesPositionInfo(): void {
 		$text = 'Contact user@example.com here.';
-		$entities = $this->invokePrivateMethod('detectWithRegex', [$text, null, 0.5]);
+		$entities = $this->invokePrivateMethod('detectWithRegex', [new EntityDetectionQuery($text, null, 0.5)]);
 
 		$this->assertNotEmpty($entities);
 		$email = $entities[0];
@@ -983,9 +971,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectWithRegexFindsMultipleEntitiesOfSameType(): void {
 		$entities = $this->invokePrivateMethod('detectWithRegex', [
-			'Send to alice@example.com and bob@example.com',
-			null,
-			0.5,
+			new EntityDetectionQuery('Send to alice@example.com and bob@example.com', null, 0.5),
 		]);
 
 		$emailCount = 0;
@@ -1004,7 +990,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 	public function testDetectEntitiesUnknownMethodFallsBackToRegex(): void {
 		// Since resolveMethod() was added, unknown methods fall back to regex
 		// instead of throwing. "some text" contains no PII patterns.
-		$result = $this->invokePrivateMethod('detectEntities', ['some text', 'foobar', null, 0.5]);
+		$result = $this->invokePrivateMethod('detectEntities', [new EntityDetectionQuery('some text', null, 0.5), 'foobar']);
 		$this->assertIsArray($result);
 		$this->assertEmpty($result);
 	}
@@ -1018,15 +1004,13 @@ class EntityRecognitionHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Unknown detection method: foobar');
 
-		$this->invokePrivateMethod('detectEntities', ['some text', 'foobar', null, 0.5]);
+		$this->invokePrivateMethod('detectEntities', [new EntityDetectionQuery('some text', null, 0.5), 'foobar']);
 	}
 
 	public function testDetectEntitiesCallsRegexMethod(): void {
 		$result = $this->invokePrivateMethod('detectEntities', [
-			'Send to user@test.com',
+			new EntityDetectionQuery('Send to user@test.com', null, 0.5),
 			'regex',
-			null,
-			0.5,
 		]);
 
 		$this->assertNotEmpty($result);
@@ -1034,10 +1018,8 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectEntitiesCallsHybridMethod(): void {
 		$result = $this->invokePrivateMethod('detectEntities', [
-			'Send to user@test.com',
+			new EntityDetectionQuery('Send to user@test.com', null, 0.5),
 			'hybrid',
-			null,
-			0.5,
 		]);
 
 		$this->assertNotEmpty($result);
@@ -1045,10 +1027,8 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectEntitiesCallsLlmMethod(): void {
 		$result = $this->invokePrivateMethod('detectEntities', [
-			'Send to user@test.com',
+			new EntityDetectionQuery('Send to user@test.com', null, 0.5),
 			'llm',
-			null,
-			0.5,
 		]);
 
 		// LLM falls back to regex.
@@ -1061,9 +1041,8 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testBuildAnalyzeRequestBodyBasic(): void {
 		$body = $this->invokePrivateMethod('buildAnalyzeRequestBody', [
-			'test text',
-			'en',
-			null,
+			new EntityDetectionQuery('test text', null, 0.0),
+			new AnalyzeDialect('en', null, 'presidio', 0.0),
 		]);
 
 		$this->assertSame('test text', $body['text']);
@@ -1073,9 +1052,8 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testBuildAnalyzeRequestBodyWithEntityTypes(): void {
 		$body = $this->invokePrivateMethod('buildAnalyzeRequestBody', [
-			'test text',
-			'nl',
-			['EMAIL', 'PHONE'],
+			new EntityDetectionQuery('test text', ['EMAIL', 'PHONE'], 0.0),
+			new AnalyzeDialect('nl', null, 'presidio', 0.0),
 		]);
 
 		$this->assertSame('test text', $body['text']);
@@ -1085,9 +1063,8 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testBuildAnalyzeRequestBodyWithEmptyEntityTypes(): void {
 		$body = $this->invokePrivateMethod('buildAnalyzeRequestBody', [
-			'test text',
-			'en',
-			[],
+			new EntityDetectionQuery('test text', [], 0.0),
+			new AnalyzeDialect('en', null, 'presidio', 0.0),
 		]);
 
 		// Empty entity types should NOT add entities key.
@@ -1096,9 +1073,8 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testBuildAnalyzeRequestBodyWithUnmappableEntityTypes(): void {
 		$body = $this->invokePrivateMethod('buildAnalyzeRequestBody', [
-			'test text',
-			'en',
-			['TOTALLY_UNKNOWN'],
+			new EntityDetectionQuery('test text', ['TOTALLY_UNKNOWN'], 0.0),
+			new AnalyzeDialect('en', null, 'presidio', 0.0),
 		]);
 
 		// Unknown types produce empty mapping, so no entities key.
@@ -1189,7 +1165,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 		$text = 'Send user@example.com here';
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			$apiResults, $text, 0.5, 'presidio', 0,
+			$apiResults,
+			new EntityDetectionQuery($text, null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		$this->assertCount(1, $entities);
@@ -1207,7 +1185,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 		];
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			$apiResults, 'John says hello', 0.5, 'presidio', 0,
+			$apiResults,
+			new EntityDetectionQuery('John says hello', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		$this->assertEmpty($entities);
@@ -1219,7 +1199,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 		];
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			$apiResults, 'John says hello', 0.5, 'openanonymiser', 0.85,
+			$apiResults,
+			new EntityDetectionQuery('John says hello', null, 0.5),
+			new AnalyzeDialect('en', null, 'openanonymiser', 0.85),
 		]);
 
 		$this->assertCount(1, $entities);
@@ -1233,7 +1215,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		// Default confidence 0 is below threshold 0.5.
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			$apiResults, 'John says hello', 0.5, 'presidio', 0,
+			$apiResults,
+			new EntityDetectionQuery('John says hello', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		$this->assertEmpty($entities);
@@ -1252,7 +1236,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 		];
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			$apiResults, 'John Doe is a person', 0.5, 'openanonymiser', 0.85,
+			$apiResults,
+			new EntityDetectionQuery('John Doe is a person', null, 0.5),
+			new AnalyzeDialect('en', null, 'openanonymiser', 0.85),
 		]);
 
 		$this->assertSame('John Doe', $entities[0]['value']);
@@ -1269,7 +1255,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 		];
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			$apiResults, 'John Doe is a person', 0.5, 'presidio', 0,
+			$apiResults,
+			new EntityDetectionQuery('John Doe is a person', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		$this->assertSame('John Doe', $entities[0]['value']);
@@ -1284,7 +1272,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 		];
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			$apiResults, 'Some text', 0.5, 'presidio', 0,
+			$apiResults,
+			new EntityDetectionQuery('Some text', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		$this->assertCount(1, $entities);
@@ -1303,7 +1293,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 		];
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			$apiResults, 'Hello world', 0.5, 'presidio', 0,
+			$apiResults,
+			new EntityDetectionQuery('Hello world', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		// UNKNOWN is not in mapping, so it passes through.
@@ -1320,7 +1312,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 		];
 
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			$apiResults, 'Hello world', 0.5, 'presidio', 0,
+			$apiResults,
+			new EntityDetectionQuery('Hello world', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		// Missing entity_type defaults to 'UNKNOWN'.
@@ -1336,7 +1330,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		$text = 'John sent user@example.com from London.';
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			$apiResults, $text, 0.5, 'presidio', 0,
+			$apiResults,
+			new EntityDetectionQuery($text, null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		// Third entity (score 0.2) should be filtered out.
@@ -1347,7 +1343,9 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testConvertApiResultsEmptyArray(): void {
 		$entities = $this->invokePrivateMethod('convertApiResultsToEntities', [
-			[], 'some text', 0.5, 'presidio', 0,
+			[],
+			new EntityDetectionQuery('some text', null, 0.5),
+			new AnalyzeDialect('en', null, 'presidio', 0),
 		]);
 
 		$this->assertEmpty($entities);
@@ -1394,9 +1392,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		// The curl call will fail, and it should fall back to regex.
 		$entities = $this->invokePrivateMethod('detectWithPresidio', [
-			'Contact user@test.com',
-			null,
-			0.5,
+			new EntityDetectionQuery('Contact user@test.com', null, 0.5),
 		]);
 
 		// Should still return results from regex fallback.
@@ -1412,9 +1408,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 			->willReturn(['openAnonymiserApiEndpoint' => 'http://invalid-host:9999']);
 
 		$entities = $this->invokePrivateMethod('detectWithOpenAnonymiser', [
-			'Contact user@test.com',
-			null,
-			0.5,
+			new EntityDetectionQuery('Contact user@test.com', null, 0.5),
 		]);
 
 		$this->assertIsArray($entities);
@@ -1429,9 +1423,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 			->method('debug');
 
 		$entities = $this->invokePrivateMethod('detectWithLLM', [
-			'Contact user@test.com',
-			null,
-			0.5,
+			new EntityDetectionQuery('Contact user@test.com', null, 0.5),
 		]);
 
 		$this->assertIsArray($entities);
@@ -1444,9 +1436,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectWithHybridReturnsRegexResults(): void {
 		$entities = $this->invokePrivateMethod('detectWithHybrid', [
-			'Send to user@example.com',
-			null,
-			0.5,
+			new EntityDetectionQuery('Send to user@example.com', null, 0.5),
 		]);
 
 		$this->assertNotEmpty($entities);
@@ -1455,9 +1445,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectWithHybridRespectsEntityTypeFilter(): void {
 		$entities = $this->invokePrivateMethod('detectWithHybrid', [
-			'Send to user@example.com call +31612345678',
-			['EMAIL'],
-			0.5,
+			new EntityDetectionQuery('Send to user@example.com call +31612345678', ['EMAIL'], 0.5),
 		]);
 
 		foreach ($entities as $entity) {
@@ -1637,9 +1625,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 	public function testDetectWithRegexIbanHasSensitivePiiCategory(): void {
 		$entities = $this->invokePrivateMethod('detectWithRegex', [
-			'Account: NL91ABNA0417164300',
-			null,
-			0.5,
+			new EntityDetectionQuery('Account: NL91ABNA0417164300', null, 0.5),
 		]);
 
 		$ibanEntities = array_filter($entities, fn ($e) => $e['type'] === 'IBAN');
@@ -1659,9 +1645,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 			->willReturn(['presidioApiEndpoint' => '']);
 
 		$entities = $this->invokePrivateMethod('detectWithPresidio', [
-			'Contact user@test.com',
-			null,
-			0.5,
+			new EntityDetectionQuery('Contact user@test.com', null, 0.5),
 		]);
 
 		// Should fall back to regex and find the email.
@@ -1673,9 +1657,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 			->willReturn(['openAnonymiserApiEndpoint' => '']);
 
 		$entities = $this->invokePrivateMethod('detectWithOpenAnonymiser', [
-			'Contact user@test.com',
-			null,
-			0.5,
+			new EntityDetectionQuery('Contact user@test.com', null, 0.5),
 		]);
 
 		$this->assertNotEmpty($entities);
@@ -1688,7 +1670,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 	public function testDetectsEmailAndIbanTogether(): void {
 		$text = 'Send money to NL91ABNA0417164300 and email info@bank.com';
 
-		$entities = $this->invokePrivateMethod('detectWithRegex', [$text, null, 0.5]);
+		$entities = $this->invokePrivateMethod('detectWithRegex', [new EntityDetectionQuery($text, null, 0.5)]);
 
 		$types = array_column($entities, 'type');
 		$this->assertContains('EMAIL', $types);
@@ -1698,7 +1680,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 	public function testDetectsPhoneAndEmailTogether(): void {
 		$text = 'Email info@test.com or call +31612345678';
 
-		$entities = $this->invokePrivateMethod('detectWithRegex', [$text, null, 0.5]);
+		$entities = $this->invokePrivateMethod('detectWithRegex', [new EntityDetectionQuery($text, null, 0.5)]);
 
 		$types = array_column($entities, 'type');
 		$this->assertContains('EMAIL', $types);
@@ -1775,7 +1757,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 
 		$result = $this->invokePrivateMethod(
 			'detectWithOpenAnonymiser',
-			[$text, null, 0.5]
+			[new EntityDetectionQuery($text, null, 0.5)]
 		);
 
 		// Since curl will fail in test environment, it falls back to regex.
@@ -1848,7 +1830,7 @@ class EntityRecognitionHandlerTest extends TestCase {
 	public function testDetectWithRegexIbanCategoryIsSensitivePii(): void {
 		$result = $this->invokePrivateMethod(
 			'detectWithRegex',
-			['Account NL02ABNA0123456789', null, 0.0]
+			[new EntityDetectionQuery('Account NL02ABNA0123456789', null, 0.0)]
 		);
 
 		$ibanEntities = array_filter($result, fn ($e) => $e['type'] === 'IBAN');

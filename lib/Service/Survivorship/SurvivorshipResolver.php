@@ -85,7 +85,7 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	 * @param array<int, array<string, mixed>> $sourceRecords Linked source records.
 	 * @param array<string, mixed> $config The `x-openregister-survivorship` annotation.
 	 * @param array<int, array<string, mixed>> $trustRows Candidate trust-configuration rows.
-	 * @param TrustTierResolver $trustResolver Pure trust-tier lookup + decay engine.
+	 * @param TrustTierResolverInterface $trustResolver Pure trust-tier lookup + decay engine.
 	 * @param DateTimeImmutable $asOf Reference instant for effectiveFrom + decay.
 	 * @param mixed $overrides Optional per-object attribute-override map
 	 *                         (`attribute => {value, overriddenBy, rationale?}`
@@ -101,7 +101,7 @@ class SurvivorshipResolver implements SurvivorshipResolverInterface {
 		array $sourceRecords,
 		array $config,
 		array $trustRows,
-		TrustTierResolver $trustResolver,
+		TrustTierResolverInterface $trustResolver,
 		DateTimeImmutable $asOf,
 		mixed $overrides = null,
 	): array {

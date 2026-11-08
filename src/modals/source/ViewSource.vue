@@ -130,12 +130,7 @@ import {
 				</template>
 				Delete Source
 			</NcActionButton>
-			<NcButton variant="primary" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Close
-			</NcButton>
+			<CloseCancelButton label="Close" variant="primary" @click="closeModal" />
 		</template>
 	</NcDialog>
 
@@ -150,16 +145,15 @@ import {
 import {
 	NcActionButton,
 	NcActions,
-	NcButton,
 	NcDialog,
 	NcEmptyContent,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import EditRegisterFormDialog from '../register/EditRegisterFormDialog.vue'
 import TimestampProperties from '../shared/TimestampProperties.vue'
 import ViewDialogTabs from '../shared/ViewDialogTabs.vue'
@@ -171,11 +165,10 @@ export default {
 		ViewDialogTabs,
 		EditRegisterFormDialog,
 		NcDialog,
-		NcButton,
 		NcActions,
 		NcActionButton,
 		NcEmptyContent,
-		Cancel,
+		CloseCancelButton,
 		Pencil,
 		TrashCanOutline,
 		DatabaseOutline,

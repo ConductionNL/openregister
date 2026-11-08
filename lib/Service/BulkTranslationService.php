@@ -97,14 +97,9 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 			return ['translated' => [], 'skipped' => ['_global' => 'fromLang === toLang']];
 		}
 
-		$schema = $this->loadSchema(object: $object);
-		if ($schema === null) {
-			return ['translated' => [], 'skipped' => ['_global' => 'schema-not-resolvable']];
-		}
-
-		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-		if (count($translatableProps) === 0) {
-			return ['translated' => [], 'skipped' => ['_global' => 'no-translatable-properties']];
+		$translatableProps = $this->translatablePropertiesOf(object: $object);
+		if (is_string($translatableProps) === true) {
+			return ['translated' => [], 'skipped' => ['_global' => $translatableProps]];
 		}
 
 		$request = new ObjectTranslationRequest(object: $object, fromLong: $fromLong, toLong: $toLong);
@@ -113,6 +108,28 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 			properties: $this->selectedProperties(translatable: $translatableProps, whitelist: $properties)
 		);
 	}//end translateObject()
+
+	/**
+	 * The translatable properties of the object's schema, or why there are none.
+	 *
+	 * @param ObjectEntity $object The object to translate.
+	 *
+	 * @return array<int|string,string>|string The properties; the skip reason when the
+	 *                                         schema cannot be resolved or has none.
+	 */
+	private function translatablePropertiesOf(ObjectEntity $object): array|string {
+		$schema = $this->loadSchema(object: $object);
+		if ($schema === null) {
+			return 'schema-not-resolvable';
+		}
+
+		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
+		if (count($translatableProps) === 0) {
+			return 'no-translatable-properties';
+		}
+
+		return $translatableProps;
+	}//end translatablePropertiesOf()
 
 	/**
 	 * The translatable properties, narrowed to the whitelist when one is given, in schema order.

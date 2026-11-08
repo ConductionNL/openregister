@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Service\ScriptManifestLoader;
+use OCA\OpenRegister\Service\EntryScripts;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -108,7 +108,7 @@ class MailAppScriptListener implements IEventListener {
 		// Inject the sidebar script (only if compiled JS exists).
 		$jsPath = __DIR__ . '/../../js/openregister-mail-sidebar.js';
 		if (file_exists($jsPath) === true) {
-			ScriptManifestLoader::addEntryScripts('openregister', 'mailSidebar', 'openregister-mail-sidebar');
+			EntryScripts::add(appId: 'openregister', entry: 'mailSidebar', fallbackScript: 'openregister-mail-sidebar');
 			Util::addStyle('openregister', 'mail-sidebar');
 		}
 

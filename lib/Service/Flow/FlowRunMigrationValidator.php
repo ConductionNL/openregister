@@ -80,74 +80,95 @@ class FlowRunMigrationValidator {
 	 */
 	public function validate(FlowRun $run, int $targetVersion, array $mapping = []): array {
 		if (in_array((string)$run->getStatus(), self::MIGRATABLE_STATUSES, true) === false) {
-			return [
-				'ok' => false,
-				'marking' => [],
-				'unmapped' => [],
-				'reason' => 'This run is ' . (string)$run->getStatus()
-					. ', so there is nothing left to move. Migrating a finished run would rewrite what already happened.',
-			];
+			return $this->refusal(
+				reason: 'This run is ' . (string)$run->getStatus()
+					. ', so there is nothing left to move. Migrating a finished run would rewrite what already happened.'
+			);
 		}
 
 		$nodes = $this->nodesOf(flowId: (string)$run->getFlowId(), version: $targetVersion);
 		if ($nodes === null) {
-			return [
-				'ok' => false,
-				'marking' => [],
-				'unmapped' => [],
-				'reason' => 'Version ' . $targetVersion . ' of this flow could not be read, so nothing was migrated.',
-			];
+			return $this->refusal(
+				reason: 'Version ' . $targetVersion . ' of this flow could not be read, so nothing was migrated.'
+			);
 		}
 
 		$sourceNodes = $this->nodesOf(flowId: (string)$run->getFlowId(), version: (int)$run->getFlowVersion());
 
-		['marking' => $marking, 'unmapped' => $unmapped] = $this->remapMarking(
+		$remapped = $this->remapMarking(
 			run: $run,
-			nodes: $nodes,
-			sourceNodes: $sourceNodes,
-			mapping: $mapping
+			remap: new FlowRunMarkingRemap(nodes: $nodes, sourceNodes: $sourceNodes, mapping: $mapping)
 		);
 
-		if ($unmapped !== []) {
-			$unmappedPronoun = 'them';
-			if (count($unmapped) === 1) {
-				$unmappedPronoun = 'it';
-			}
-
-			return [
-				'ok' => false,
-				'marking' => [],
-				'unmapped' => $unmapped,
-				'reason' => 'Version ' . $targetVersion . ' has nowhere for this run to land: '
-					. implode(', ', $unmapped) . '. Map ' . $unmappedPronoun
-					. ' to a node of the same kind, or leave the run where it is.',
-			];
+		if ($remapped['unmapped'] !== []) {
+			return $this->refusal(
+				reason: $this->unmappedReason(targetVersion: $targetVersion, unmapped: $remapped['unmapped']),
+				unmapped: $remapped['unmapped']
+			);
 		}
 
-		return ['ok' => true, 'marking' => $marking, 'unmapped' => [], 'reason' => ''];
+		return ['ok' => true, 'marking' => $remapped['marking'], 'unmapped' => [], 'reason' => ''];
 	}//end validate()
+
+	/**
+	 * A refused verdict.
+	 *
+	 * @param string             $reason   Why the run cannot move.
+	 * @param array<int, string> $unmapped The places with nowhere to land, if that is why.
+	 *
+	 * @return array{ok: bool, marking: array<string, int>, unmapped: array<int, string>, reason: string}
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function refusal(string $reason, array $unmapped = []): array {
+		return [
+			'ok' => false,
+			'marking' => [],
+			'unmapped' => $unmapped,
+			'reason' => $reason,
+		];
+	}//end refusal()
+
+	/**
+	 * The reason a run with unmappable places cannot move.
+	 *
+	 * @param int                $targetVersion The version asked for.
+	 * @param array<int, string> $unmapped      The places with nowhere to land, at least one.
+	 *
+	 * @return string The reason, naming the places.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function unmappedReason(int $targetVersion, array $unmapped): string {
+		$unmappedPronoun = 'them';
+		if (count($unmapped) === 1) {
+			$unmappedPronoun = 'it';
+		}
+
+		return 'Version ' . $targetVersion . ' has nowhere for this run to land: '
+			. implode(', ', $unmapped) . '. Map ' . $unmappedPronoun
+			. ' to a node of the same kind, or leave the run where it is.';
+	}//end unmappedReason()
 
 	/**
 	 * Where each token would land on the target version, and what would not.
 	 *
-	 * @param FlowRun               $run         The run.
-	 * @param array<string, mixed>  $nodes       The target version's nodes, by id.
-	 * @param array<string, mixed>|null $sourceNodes The run's own version's nodes, by id.
-	 * @param array<string, string> $mapping     Old node id to new node id.
+	 * @param FlowRun             $run   The run.
+	 * @param FlowRunMarkingRemap $remap The target's nodes, the run's own nodes and the node mapping.
 	 *
 	 * @return array{marking: array<string, int>, unmapped: array<int, string>} The remapped marking.
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	private function remapMarking(FlowRun $run, array $nodes, ?array $sourceNodes, array $mapping): array {
+	private function remapMarking(FlowRun $run, FlowRunMarkingRemap $remap): array {
 		$marking = [];
 		$unmapped = [];
 
 		foreach ($this->markingOf(run: $run) as $place => $tokens) {
 			[$nodeId, $suffix] = $this->splitPlace(place: (string)$place);
-			$targetId = ($mapping[$nodeId] ?? $nodeId);
+			$targetId = ($remap->mapping[$nodeId] ?? $nodeId);
 
-			if (array_key_exists($targetId, $nodes) === false) {
+			if (array_key_exists($targetId, $remap->nodes) === false) {
 				$unmapped[] = (string)$place;
 				continue;
 			}
@@ -157,7 +178,8 @@ class FlowRunMigrationValidator {
 			// from, and the run would park forever with nothing saying why.
 			// An UNKNOWN kind on either side is not a mismatch: a graph that
 			// does not declare one has nothing to disagree about.
-			if ($this->kindsClash(sourceNodes: $sourceNodes, nodeId: $nodeId, target: $nodes[$targetId]) === true) {
+			$source = (($remap->sourceNodes ?? [])[$nodeId] ?? []);
+			if ($this->kindsClash(source: $source, target: $remap->nodes[$targetId]) === true) {
 				$unmapped[] = (string)$place;
 				continue;
 			}
@@ -174,16 +196,15 @@ class FlowRunMigrationValidator {
 	/**
 	 * Whether a source node and its target declare different kinds; an unknown kind never clashes.
 	 *
-	 * @param array<string, array<string, mixed>>|null $sourceNodes The run's current version's nodes.
-	 * @param string                                   $nodeId      The source node.
-	 * @param array<string, mixed>                     $target      The target node.
+	 * @param array<string, mixed> $source The source node, or [] when the run's own graph does not hold it.
+	 * @param array<string, mixed> $target The target node.
 	 *
 	 * @return bool True on a mismatch of two known kinds.
 	 *
 	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
 	 */
-	private function kindsClash(?array $sourceNodes, string $nodeId, array $target): bool {
-		$from = $this->kindOf(node: (($sourceNodes ?? [])[$nodeId] ?? []));
+	private function kindsClash(array $source, array $target): bool {
+		$from = $this->kindOf(node: $source);
 		$to = $this->kindOf(node: $target);
 		return $from !== '' && $to !== '' && $from !== $to;
 	}//end kindsClash()

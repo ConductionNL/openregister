@@ -54,7 +54,7 @@ use OCA\OpenRegister\Exception\SearchTermSyntaxException;
  * constructor is private. Injecting a factory for four calls to `all`, `any`,
  * `not` and `term` would add a seam nothing else would ever use.
  */
-final class SearchTermParser {
+final class SearchTermParser implements SearchTermParserInterface {
 	/**
 	 * Token type for a literal word or quoted phrase.
 	 */

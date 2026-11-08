@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -248,7 +248,7 @@ class ObjectChangeListener implements IEventListener {
 		);
 
 		try {
-			$this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
+			$this->jobList->add(job: JobHandles::OBJECT_TEXT_EXTRACTION, argument: ['object_id' => $objectId]);
 			$this->logger->debug(
 				message: '[ObjectChangeListener] Background extraction job queued',
 				context: self::context(line: __LINE__, fields: ['object_id' => $objectId])
@@ -292,7 +292,7 @@ class ObjectChangeListener implements IEventListener {
 			context: self::context(line: __LINE__, fields: ['object_id' => $objectId, 'extraction_mode' => $mode])
 		);
 
-		$this->jobList->add(job: ObjectTextExtractionJob::class, argument: ['object_id' => $objectId]);
+		$this->jobList->add(job: JobHandles::OBJECT_TEXT_EXTRACTION, argument: ['object_id' => $objectId]);
 	}//end processUnknownMode()
 
 	/**

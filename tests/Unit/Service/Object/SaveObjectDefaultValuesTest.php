@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -169,7 +170,7 @@ final class SaveObjectDefaultValuesTest extends TestCase {
 				throw new RuntimeException('stop');
 			}
 		);
-		$this->services[DedupCreatePolicy::class] = $policy;
+		$this->services[DedupCreatePolicyInterface::class] = $policy;
 	}
 
 	public function testDefaultsApplyByBehaviourRenderAgainstStoredDataAndYieldToConstants(): void {

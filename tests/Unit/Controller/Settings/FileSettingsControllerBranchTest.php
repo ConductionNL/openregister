@@ -10,6 +10,7 @@ use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
@@ -172,7 +173,7 @@ class FileSettingsControllerBranchTest extends TestCase {
 		$mockService->method('testConnection')->willReturn($probe);
 
 		$this->container->method('get')
-			->with(AnonymisationBackendService::class)
+			->with(AnonymisationBackendServiceInterface::class)
 			->willReturn($mockService);
 
 		$response = $this->controller->testOpenAnonymiserConnection('');

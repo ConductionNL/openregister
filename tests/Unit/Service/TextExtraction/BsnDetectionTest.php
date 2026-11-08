@@ -44,6 +44,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
@@ -77,7 +78,7 @@ class BsnDetectionTest extends TestCase {
 
 		$method = new ReflectionMethod(EntityRecognitionHandler::class, 'detectWithRegex');
 
-		return array_values($method->invoke($handler, $text, $entityTypes, 0.5));
+		return array_values($method->invoke($handler, new EntityDetectionQuery($text, $entityTypes, 0.5)));
 
 	}//end detect()
 

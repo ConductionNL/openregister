@@ -18,12 +18,7 @@
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
+			<CloseCancelButton label="Cancel" @click="closeModal" />
 			<NcButton
 				:disabled="loading"
 				variant="error"
@@ -40,8 +35,8 @@
 
 <script>
 import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import { configurationStore, navigationStore } from '../../store/store.js'
 
 export default {
@@ -52,7 +47,7 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		// Icons
-		Cancel,
+		CloseCancelButton,
 		Delete,
 	},
 

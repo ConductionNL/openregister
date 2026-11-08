@@ -42,7 +42,7 @@ use Throwable;
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
  */
-class DecisionVisibility {
+class DecisionVisibility implements DecisionVisibilityInterface {
 
 	/**
 	 * What a masked relation carries in place of its decision.

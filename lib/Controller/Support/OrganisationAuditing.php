@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
+use OCA\OpenRegister\Service\Organisation\OrganisationEditAuditorInterface;
 
 /**
  * The domain services of the organisation API.
@@ -33,12 +33,12 @@ final class OrganisationAuditing {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ?OrganisationLifecycleAuditor $lifecycleAuditor Records an edit of an organisation's details. Null only in legacy fixtures.
+	 * @param ?OrganisationEditAuditorInterface $lifecycleAuditor Records an edit of an organisation's details. Null only in legacy fixtures.
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function __construct(
-		public readonly ?OrganisationLifecycleAuditor $lifecycleAuditor = null,
+		public readonly ?OrganisationEditAuditorInterface $lifecycleAuditor = null,
 	) {
 	}//end __construct()
 }//end class

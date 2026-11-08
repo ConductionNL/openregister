@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileReaderInterface;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
@@ -70,9 +70,9 @@ class FileReadScope {
 	/**
 	 * Finds an object's file in the openregister account's home.
 	 *
-	 * @var FileService|null
+	 * @var FileReaderInterface|null
 	 */
-	private readonly ?FileService $fileService;
+	private readonly ?FileReaderInterface $fileService;
 
 	/**
 	 * The object read rule for an object's file.
@@ -91,16 +91,16 @@ class FileReadScope {
 	/**
 	 * Wire the file tree and the session.
 	 *
-	 * @param FileReadScopeTree  $tree        The Nextcloud file tree and the signed-in caller.
-	 * @param FileReadScopeRules $rules       The object read rule for an object's file and the restriction guard, each nullable.
-	 * @param LoggerInterface    $logger      Logs a lookup that failed, at debug level.
-	 * @param FileService|null   $fileService Finds an object's file in the openregister account's home.
+	 * @param FileReadScopeTree        $tree        The Nextcloud file tree and the signed-in caller.
+	 * @param FileReadScopeRules       $rules       The object read rule for an object's file and the restriction guard, each nullable.
+	 * @param LoggerInterface          $logger      Logs a lookup that failed, at debug level.
+	 * @param FileReaderInterface|null $fileService Finds an object's file in the openregister account's home.
 	 */
 	public function __construct(
 		FileReadScopeTree $tree,
 		FileReadScopeRules $rules,
 		LoggerInterface $logger,
-		?FileService $fileService = null,
+		?FileReaderInterface $fileService = null,
 	) {
 		$this->rootFolder = $tree->rootFolder;
 		$this->userSession = $tree->userSession;

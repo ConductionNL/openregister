@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskConfig;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskRound;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCP\App\IAppManager;
@@ -124,8 +125,10 @@ final class TaskConfigsGoldenTest extends TestCase {
 			$round = (new PortalTaskRound(items: $items, config: $config))->atNode(nodeId: 'ask');
 			$actual[$label] = [
 				'user' => [
-					'taskData' => $this->outcome(fn () => $user->taskData($config, $items, 'ask', 'openregister.user-task')),
-					'slotValues' => $this->outcome(fn () => $user->slotValues($config, $items, 't-1')),
+					'taskData' => $this->outcome(
+						fn () => $user->taskData(new UserTaskStep(items: $items, config: $config, nodeId: 'ask'), 'openregister.user-task')
+					),
+					'slotValues' => $this->outcome(fn () => $user->slotValues(new UserTaskStep(items: $items, config: $config), 't-1')),
 					'outcomeKey' => $user->outcomeKey($config),
 					'renderedTitle' => $user->renderedTitle($config, $items),
 					'heartbeat' => $this->minutesFromNow($user->heartbeatAt($config)),

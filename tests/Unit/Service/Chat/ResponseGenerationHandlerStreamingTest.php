@@ -52,7 +52,11 @@ class TestableResponseGenerationHandler extends ResponseGenerationHandler {
 		$method = $reflection->getMethod('invokeChat');
 		$method->setAccessible(true);
 
-		return (string)$method->invoke($this, $chat, $messageHistory, $channel, $provider);
+		return (string)$method->invoke(
+			$this,
+			$chat,
+			['messageHistory' => $messageHistory, 'channel' => $channel, 'provider' => $provider]
+		);
 	}//end invokeChatPublic()
 }//end class
 

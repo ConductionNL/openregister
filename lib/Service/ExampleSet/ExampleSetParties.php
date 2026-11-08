@@ -130,15 +130,15 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 * occ install has no user, and a schema that refuses "Anonymous" would
 	 * otherwise read as "no such object".
 	 *
-	 * @param string               $app  The app that ships the fragment, recorded as the linker.
-	 * @param string               $key  The link's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled link fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{objectUuid: string, partyUuid: string, role: string}|null} The record entry, or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		$objectUuid = (string) $data['objectUuid'];
 		$object     = $this->parties()->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {

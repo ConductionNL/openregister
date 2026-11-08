@@ -82,7 +82,7 @@ class FlowRunServiceOutcomesGoldenTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($versions, $pin): object {
-				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 

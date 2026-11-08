@@ -37,7 +37,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCP\AppFramework\Http\JSONResponse;
 use Symfony\Component\Yaml\Yaml;
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 
 /**
  * UploadService handles file and JSON uploads
@@ -258,7 +258,7 @@ class UploadService implements UploadServiceInterface {
 	private function getJSONfromURL(string $url): array|JSONResponse {
 		// Anti-SSRF: reject non-public/loopback/private hosts before fetching (SEC-SVC-1).
 		try {
-			SecurityService::assertSafeFetchUrl($url);
+			SafeFetchUrl::assert(url: $url);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => 'URL is not allowed: ' . $e->getMessage()], statusCode: 400);
 		}

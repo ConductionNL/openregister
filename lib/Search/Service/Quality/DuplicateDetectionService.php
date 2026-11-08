@@ -37,7 +37,8 @@ namespace OCA\OpenRegister\Search\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -101,7 +102,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 		private readonly LoggerInterface $logger,
 	) {
 		$this->ruleResolver = new DedupRuleResolver(
-			scopedSchemaResolver: new RegisterScopedSchemaResolver(registerMapper: $sources->registerMapper, schemaMapper: $sources->schemaMapper)
+			scopedSchemaResolver: RegisterScopedSchemaResolvers::over(registerMapper: $sources->registerMapper, schemaMapper: $sources->schemaMapper)
 		);
 		$this->comparator = new PayloadComparator(similarity: $sources->similarity);
 	}//end __construct()

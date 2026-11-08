@@ -347,9 +347,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 * Store the flow for the shipping app, switched off, then publish it
 	 * unless the fragment says not to, and switch it on when it says so.
 	 *
-	 * @param string               $app  The app that ships the fragment; the flow is that app's.
-	 * @param string               $key  The flow's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{uuid: string, runs?: array<string, string>, waitsOn?: array<string, string>}|null}
 	 *         The record entry (the flow's uuid, and its keyed runs), or why the write failed.
@@ -357,7 +355,9 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-name-its-application-and-be-switched-on
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$app = $row->app;
+		$data = $row->data;
 		try {
 			$flow = new Flow();
 			$flow->setUuid($this->newUuid());
@@ -412,20 +412,19 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 * flow stays switched on or off as it is, and keeps its runs.
 	 *
 	 * @param array<string, mixed> $entry The record entry, with the flow's uuid.
-	 * @param string               $app   The app that ships the fragment.
-	 * @param string               $key   The flow's key in the fragment.
-	 * @param array<string, mixed> $data  The filled fields.
+	 * @param ExampleSetRow        $row   The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array<string, mixed>|null} The record entry, keeping the flow's runs,
 	 *                                                                 or why the update failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-updates-a-held-flow-to-its-declaration
 	 */
-	public function update(array $entry, string $app, string $key, array $data): array {
+	public function update(array $entry, ExampleSetRow $row): array {
+		$data = $row->data;
 		$uuid = (string) ($entry['uuid'] ?? '');
 		$flow = $this->held(uuid: $uuid);
 		if ($flow === null) {
-			return $this->write(app: $app, key: $key, data: $data);
+			return $this->write(row: $row);
 		}
 
 		try {

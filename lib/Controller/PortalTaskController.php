@@ -54,7 +54,7 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertionInterface;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryServiceInterface;
-use OCA\OpenRegister\Service\Portal\PortalTaskService;
+use OCA\OpenRegister\Service\Portal\PortalTaskServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -90,9 +90,9 @@ class PortalTaskController extends Controller {
 	/**
 	 * The subject-scoped read and completion.
 	 *
-	 * @var PortalTaskService
+	 * @var PortalTaskServiceInterface
 	 */
-	private readonly PortalTaskService $portal;
+	private readonly PortalTaskServiceInterface $portal;
 
 	/**
 	 * The delivery ledger.
@@ -202,13 +202,11 @@ class PortalTaskController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function complete(string $uuid, string $outcome = PortalTaskService::DEFAULT_OUTCOME, ?string $comment = null): JSONResponse {
+	public function complete(string $uuid, string $outcome = PortalTaskServiceInterface::DEFAULT_OUTCOME, ?string $comment = null): JSONResponse {
 		return $this->asSubject(
 			action: fn (PortalSubject $subject): JSONResponse => $this->completeAs(
 				subject: $subject,
-				uuid: $uuid,
-				outcome: $outcome,
-				comment: $comment
+				completion: ['uuid' => $uuid, 'outcome' => $outcome, 'comment' => $comment]
 			)
 		);
 	}//end complete()
@@ -375,21 +373,20 @@ class PortalTaskController extends Controller {
 	/**
 	 * Complete the task as the subject, with the request's answers and uploads.
 	 *
-	 * @param PortalSubject $subject The acting subject.
-	 * @param string        $uuid    The task uuid.
-	 * @param string        $outcome The outcome to record.
-	 * @param string|null   $comment The party's comment.
+	 * @param PortalSubject                                             $subject    The acting subject.
+	 * @param array{uuid: string, outcome: string, comment: string|null} $completion The task uuid, the outcome to record and
+	 *                                                                               the party's comment.
 	 *
 	 * @return JSONResponse The completed task row.
 	 */
-	private function completeAs(PortalSubject $subject, string $uuid, string $outcome, ?string $comment): JSONResponse {
+	private function completeAs(PortalSubject $subject, array $completion): JSONResponse {
 		$task = $this->portal->complete(
 			subject: $subject,
-			uuid: $uuid,
+			uuid: $completion['uuid'],
 			answers: $this->answers(),
-			comment: $comment,
+			comment: $completion['comment'],
 			files: $this->uploads(),
-			outcome: $outcome
+			outcome: $completion['outcome']
 		);
 
 		return new JSONResponse($this->portal->row(task: $task));

@@ -161,4 +161,14 @@ interface DestructionReviewServiceInterface {
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function unassignedEntries(array $listData): array;
+	/**
+	 * How many entries each reviewer is holding.
+	 *
+	 * @param array<int, array<string, mixed>> $entries Pending entries, from pendingEntries().
+	 *
+	 * @return array<string, int> Reviewer user id mapped to their pending count.
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
+	 */
+	public function countByReviewer(array $entries): array;
 }//end interface
